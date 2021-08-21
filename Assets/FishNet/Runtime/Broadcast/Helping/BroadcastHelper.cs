@@ -1,0 +1,19 @@
+﻿using FishNet.Object.Helping;
+
+namespace FishNet.Broadcast.Helping
+{
+    public static class BroadcastHelper
+    {
+        /// <summary>
+        /// Gets the key for a broadcast type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="broadcastType"></param>
+        /// <returns></returns>
+        public static ushort GetKey<T>()
+        {
+            return typeof(T).FullName.GetStableHash16();
+        }
+    }
+
+}

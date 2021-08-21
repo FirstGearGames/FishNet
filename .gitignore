@@ -1,0 +1,14 @@
+# Ignore everything:
+/Assets/*
+!/Assets/FishNet
+!.gitignore
+
+/Library/
+/Packages/
+/ProjectSettings/
+/Temp/
+/UserSettings/
+/Obj/
+*.csproj
+*.vs/
+*.vsconfig
