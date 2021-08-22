@@ -7,6 +7,7 @@
 /Packages/
 /ProjectSettings/
 /Temp/
+/Builds/
 /UserSettings/
 /Obj/
 *.csproj
