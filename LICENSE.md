@@ -1,14 +1,12 @@
 "Fish-Net" means FishNet, FishNetworking, Fish-Networking, networking for Unity Engine.
 
-“Reference Purposes” means for the sole purpose of inspecting functionality to understand or improve performance of your games, applications, software, or other content developed with Fish-Net.
-
 "Repository Service" means the respository service through which Fish-Net is made available.
 
-“Software” means the software (including code in source or object format as applicable) that accompanies this License.
+“Software” means the software (including code in source or object format as applicable) of Fish-Net that accompanies this License.
 
 "FirstGearGames" means FirstGearGames LLC of North Carolina.
 
-1. License Grant to the Software. FirstGearGames grants to you a worldwide, non-exclusive, no-charge, and royalty-free license to reproduce and use the Software for Reference Purposes only. For clarity, while display, performance, and reproduction on the Repository Service through its functionality is allowed, no other distribution or modification of the Software is permitted.
+1. License Grant to the Software. FirstGearGames grants to you a worldwide, non-exclusive, no-charge, and royalty-free license to reproduce and use the Software for game, or other content with or for Software developed. No other distribution or modification of the Software is permitted.
 
 2. Trademarks. You are not granted any right or license under this License to use any trademarks, service marks, trade names, products names, or branding of FirstGearGames or its affiliates (“Trademarks”).
 
