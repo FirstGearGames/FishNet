@@ -371,9 +371,7 @@ namespace FishNet.CodeGenerating.Processing
             }
             else
             {
-                //Create a read for each type.
-                //for (int i = 0; i < writtenParameters.Count; i++)
-                    //readVariableDefs[i] = CodegenSession.ReaderHelper.CreateRead(createdProcessor, createdMethodDef, readerParameterDef, writtenParameters[i].ParameterType);
+                createdProcessor.Add(allReadInsts);
             }
 
             //Add each read variable as an argument.
