@@ -6,7 +6,7 @@
 
 "FirstGearGames" means FirstGearGames LLC of North Carolina.
 
-1. License Grant to the Software. FirstGearGames grants to you a worldwide, non-exclusive, no-charge, and royalty-free license to reproduce and use the Software for game, or other content with or for Software developed. No other distribution or modification of the Software is permitted.
+1. License Grant to the Software. FirstGearGames grants to you a worldwide, non-exclusive, no-charge, and royalty-free license to reproduce, modify, and use the Software for developed game, or other content with Software.
 
 2. Trademarks. You are not granted any right or license under this License to use any trademarks, service marks, trade names, products names, or branding of FirstGearGames or its affiliates (“Trademarks”).
 
@@ -26,6 +26,4 @@
 
 8. Governing Law and Venue. This License is governed by and construed in accordance with the laws of North Carolina, United States. You and FirstGearGames agree to submit to the personal and exclusive jurisdiction of and venue in the state and federal courts located in Onslow County, North Carolina concerning any dispute arising out of this License (“Dispute”).
 
-9. You agree to use the Repository Service for only legal activities as governed by the United States law.
-
-10. You may not claim ownership on any submissions, ideas, modifications, additions or changes of any kind made to Fish-Net within the Repository Service.
+9. By submitting ideas, modifications, or changes of any kind to Fish-Net within the Repository Service you agree to relinquish claims, ownership, and rights to said submissions.
