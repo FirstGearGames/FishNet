@@ -26,4 +26,4 @@
 
 8. Governing Law and Venue. This License is governed by and construed in accordance with the laws of North Carolina, United States. You and FirstGearGames agree to submit to the personal and exclusive jurisdiction of and venue in the state and federal courts located in Onslow County, North Carolina concerning any dispute arising out of this License (“Dispute”).
 
-9. By submitting ideas, modifications, or changes of any kind to Fish-Net within the Repository Service you agree to relinquish claims, ownership, and rights to said submissions.
+9. You agree by submitting ideas, modifications, or changes of any kind to Software within the Repository Service does not grant you ownership to Software nor additional rights to Software.
