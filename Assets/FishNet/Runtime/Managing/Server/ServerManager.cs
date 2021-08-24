@@ -18,13 +18,13 @@ namespace FishNet.Managing.Server
         /// </summary>
         public event Action<ServerConnectionStateArgs> OnServerConnectionState;
         /// <summary>
-        /// Called when authenitcator has concluded a result for a connection. Boolean is true if authentication passed, false if failed. This invokes before OnClientAuthenticated so FishNet may run operations on authenticated clients before user code does.
-        /// </summary>
-        internal event Action<NetworkConnection, bool> OnAuthenticationResultInternal;
-        /// <summary>
         /// Called when authenitcator has concluded a result for a connection. Boolean is true if authentication passed, false if failed.
         /// </summary>
         public event Action<NetworkConnection, bool> OnAuthenticationResult;
+        /// <summary>
+        /// Called when a client state changes with the server.
+        /// </summary>
+        public event Action<NetworkConnection, RemoteConnectionStateArgs> OnRemoteConnectionState;
         /// <summary>
         /// True if the server connection has started.
         /// </summary>
@@ -159,6 +159,8 @@ namespace FishNet.Managing.Server
                     NetworkConnection conn = new NetworkConnection(NetworkManager, args.ConnectionId);
                     Clients.Add(args.ConnectionId, conn);
 
+                    OnRemoteConnectionState?.Invoke(conn, args);
+
                     if (Authenticator != null)
                         Authenticator.OnRemoteConnection(conn);
                     else
@@ -171,6 +173,8 @@ namespace FishNet.Managing.Server
                      * them up from server. */
                     if (Clients.TryGetValue(args.ConnectionId, out NetworkConnection conn))
                     {
+                        OnRemoteConnectionState?.Invoke(conn, args);
+
                         Clients.Remove(args.ConnectionId);
                         Objects.ClientDisconnected(conn);
                         conn.Reset();
@@ -279,8 +283,8 @@ namespace FishNet.Managing.Server
             * on the spot. */
             connection.ConnectionAuthenticated();
             SendConnectionId(connection);
-            
-            OnAuthenticationResultInternal?.Invoke(connection, true);
+
+            NetworkManager.SceneManager.OnClientAuthenticated(connection);
             OnAuthenticationResult?.Invoke(connection, true);
         }
 

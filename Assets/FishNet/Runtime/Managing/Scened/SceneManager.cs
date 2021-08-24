@@ -132,7 +132,6 @@ namespace FishNet.Managing.Scened
 
         private void Start()
         {
-            _serverManager.OnAuthenticationResultInternal += _serverManager_OnAuthenticationResult;
             _networkManager.TransportManager.Transport.OnRemoteConnectionState += Transport_OnRemoteConnectionState;
             //No need to unregister since managers are on the same object.
             _clientManager.RegisterBroadcast<LoadScenesBroadcast>(OnLoadScenes);
@@ -209,18 +208,13 @@ namespace FishNet.Managing.Scened
         /// Called when authenitcator has concluded a result for a connection. Boolean is true if authentication passed, false if failed. This invokes before OnClientAuthenticated so FishNet may run operations on authenticated clients before user code does.
         /// </summary>
         /// <param name="obj"></param>
-        private void _serverManager_OnAuthenticationResult(NetworkConnection conn, bool passed)
+        internal void OnClientAuthenticated(NetworkConnection connection)
         {
-            if (!passed)
-                return;
-            if (!conn.IsValid)
-                return;
-
             //No networked scenes to load.
             if (string.IsNullOrEmpty(_networkedScenes.Single) && (_networkedScenes.Additive == null || _networkedScenes.Additive.Length == 0))
             {
-                AddToScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(), conn);
-                TryInvokeLoadedStartScenes(conn);
+                AddToScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(), connection);
+                TryInvokeLoadedStartScenes(connection);
                 return;
             }
             //Networked scenes to load.
@@ -228,7 +222,7 @@ namespace FishNet.Managing.Scened
             {
                 //If there is no single networked scene then add client to current scene.
                 if (string.IsNullOrEmpty(_networkedScenes.Single))
-                    AddToScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(), conn);
+                    AddToScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(), connection);
             }
 
             SingleSceneData ssd = null;
@@ -252,7 +246,7 @@ namespace FishNet.Managing.Scened
                 SceneQueueData = sqd
             };
 
-            conn.Broadcast(msg, true);
+            connection.Broadcast(msg, true);
         }
         #endregion
 
