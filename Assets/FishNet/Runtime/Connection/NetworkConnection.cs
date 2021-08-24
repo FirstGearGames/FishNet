@@ -65,10 +65,11 @@ namespace FishNet.Connection
         {
             if (nc is null)
                 return false;
+            //If either is -1 Id.
+            if (this.ClientId == -1 || nc.ClientId == -1)
+                return false;
             if (System.Object.ReferenceEquals(this, nc))
                 return true;
-            if (this.GetType() != nc.GetType())
-                return false;
 
             return (this.ClientId == nc.ClientId);
         }
@@ -77,7 +78,7 @@ namespace FishNet.Connection
             return base.GetHashCode();
         }
         public static bool operator ==(NetworkConnection a, NetworkConnection b)
-        {
+        {   
             if (a is null && b is null)
                 return true;
             if (a is null && !(b is null))

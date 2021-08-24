@@ -31,7 +31,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if the owner of this object. Only contains value on clients.
         /// </summary>
-        public bool IsOwner => (NetworkManager == null || !IsClient) ? false : (NetworkManager.ClientManager.Connection == Owner);
+        public bool IsOwner => (NetworkManager == null || !OwnerIsValid || !IsClient) ? false : (NetworkManager.ClientManager.Connection == Owner);
         /// <summary> 
         /// True if the owner is a valid connection.
         /// </summary>

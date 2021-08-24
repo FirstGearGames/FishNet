@@ -322,7 +322,7 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates exit method condition if remote client is not owner.
         /// </summary>
         /// <param name="processor"></param>
-        internal void CreateRemoteClientIsOwnerCheck(ILProcessor processor, ParameterDefinition connectionParameterDef)
+        internal Instruction CreateRemoteClientIsOwnerCheck(ILProcessor processor, ParameterDefinition connectionParameterDef)
         {
             /* This is placed after the if check.
              * Should the if check pass then code
@@ -335,10 +335,13 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Call, NetworkBehaviour_CompareOwner_MethodRef);
             processor.Emit(OpCodes.Brtrue, endIf);
             //Return block.
-            processor.Emit(OpCodes.Ret);
+            Instruction retInst = processor.Create(OpCodes.Ret);
+            processor.Append(retInst);
 
             //After if statement, jumped to when successful check.
             processor.Append(endIf);
+
+            return retInst;
         }
 
         /// <summary>

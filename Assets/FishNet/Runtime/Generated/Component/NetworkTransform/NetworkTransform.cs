@@ -13,7 +13,7 @@ namespace FishNet.Component.Transforming
         private bool _clientAuthoritative = true;
         [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
         [SerializeField]
-        private bool _synchrnonizeToOwner = true;
+        private bool _synchronizeToOwner = true;
 
         private const float UPDATE_RATE = 0.02f;
         private const float INTERPOLATION = 0.025f;
@@ -207,7 +207,7 @@ namespace FishNet.Component.Transforming
         [ObserversRpc]
         private void ObserversUpdateTransform(Vector3 pos, Quaternion rot, Vector3 scale, Channel channel)
         {
-            if (!_clientAuthoritative && base.IsOwner && !_synchrnonizeToOwner)
+            if (!_clientAuthoritative && base.IsOwner && !_synchronizeToOwner)
                 return;
             if (_clientAuthoritative && base.IsOwner)
                 return;
