@@ -26,7 +26,7 @@ public class NetworkHudCanvases : MonoBehaviour
             OnClick_Server();
             OnClick_Client();
         }
-    } 
+    }
     private void Update()
     {
         Text t;

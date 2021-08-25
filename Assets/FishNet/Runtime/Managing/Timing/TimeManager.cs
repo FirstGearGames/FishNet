@@ -21,7 +21,7 @@ namespace FishNet.Managing.Timing
 
         #region Public.
         /// <summary>
-        /// Called right before a tick occurs.
+        /// Called right before a tick occurs, as well before data is read.
         /// </summary>
         public event Action<uint> OnPreTick;
         /// <summary>
@@ -168,7 +168,7 @@ namespace FishNet.Managing.Timing
             _adjustedTickDelta = TickDelta;
             _networkManager = networkManager;
 
-            if (_automaticPhysics)
+            if (!_automaticPhysics)
             {
                 Physics.autoSimulation = false;
 #if !UNITY_2020_2_OR_NEWER
@@ -216,10 +216,10 @@ namespace FishNet.Managing.Timing
                 _networkManager.TransportManager.IterateIncoming(false);
 
                 OnTick?.Invoke(Tick);
-                if (_automaticPhysics)
+                if (!_automaticPhysics)
                 {
-                    Physics.Simulate((float)timePerSimulation);
-                    Physics2D.Simulate((float)timePerSimulation);
+                    Physics.Simulate((float)TickDelta);
+                    Physics2D.Simulate((float)TickDelta);
                 }
 
                 OnPostTick?.Invoke(Tick);
