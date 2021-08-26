@@ -12,5 +12,3 @@ A brief summary of these folders are as follows:
 
 - iOS 
 -- FAT Library (armv7 + arm64). Targeted for iOS 8 minimum. Unsigned library.
-
-Special thanks to Coburn for supplying these precompiled libraries.

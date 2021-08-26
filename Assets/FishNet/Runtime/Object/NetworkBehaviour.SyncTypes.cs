@@ -164,7 +164,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="index"></param>
-        internal virtual void ReadSyncVar(PooledReader reader, uint index) { } 
+        internal virtual void ReadSyncVar(PooledReader reader, uint index) { }
 
         /// <summary>
         /// Writers dirty SyncTypes if their write tick has been met.
@@ -206,14 +206,14 @@ namespace FishNet.Object
                             _syncTypeWriters[i].Reset();
                     }
 
+                    //Find channel.
+                    byte channel = (byte)sb.Channel;
                     sb.ResetDirty();
                     //If ReadPermission is owner but no owner skip this syncvar write.
                     if (sb.Settings.ReadPermission == ReadPermission.OwnerOnly && !NetworkObject.OwnerIsValid)
                         continue;
 
                     dataWritten = true;
-                    //Find channel. If not available use default reliable.
-                    byte channel = (byte)sb.Settings.Channel;
                     //Find PooledWriter to use.
                     PooledWriter writer = null;
                     for (int i = 0; i < _syncTypeWriters.Length; i++)

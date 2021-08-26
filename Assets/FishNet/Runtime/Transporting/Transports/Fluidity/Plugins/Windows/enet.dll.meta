@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 49ce15e77a23ee94f86750106641ee94
+guid: ea612cd63b7675e45a42fb9dfe0f1130
 PluginImporter:
   externalObjects: {}
   serializedVersion: 2
@@ -16,33 +16,36 @@ PluginImporter:
     second:
       enabled: 0
       settings:
-        Exclude Android: 1
         Exclude Editor: 0
         Exclude Linux: 0
         Exclude Linux64: 0
         Exclude LinuxUniversal: 0
         Exclude OSXUniversal: 0
-        Exclude WebGL: 1
         Exclude Win: 1
         Exclude Win64: 0
-        Exclude iOS: 1
   - first:
-      Android: Android
+      : OSXIntel
     second:
       enabled: 0
       settings:
-        CPU: ARMv7
+        CPU: None
+  - first:
+      : OSXIntel64
+    second:
+      enabled: 1
+      settings:
+        CPU: AnyCPU
   - first:
       Any: 
     second:
-      enabled: 0
+      enabled: 1
       settings: {}
   - first:
       Editor: Editor
     second:
       enabled: 1
       settings:
-        CPU: AnyCPU
+        CPU: x86_64
         DefaultValueInitialized: true
         OS: AnyOS
   - first:
@@ -54,7 +57,7 @@ PluginImporter:
   - first:
       Facebook: Win64
     second:
-      enabled: 0
+      enabled: 1
       settings:
         CPU: AnyCPU
   - first:
@@ -62,7 +65,7 @@ PluginImporter:
     second:
       enabled: 1
       settings:
-        CPU: x86
+        CPU: None
   - first:
       Standalone: Linux64
     second:
@@ -80,7 +83,7 @@ PluginImporter:
     second:
       enabled: 1
       settings:
-        CPU: AnyCPU
+        CPU: x86_64
   - first:
       Standalone: Win
     second:
@@ -93,19 +96,6 @@ PluginImporter:
       enabled: 1
       settings:
         CPU: AnyCPU
-  - first:
-      WebGL: WebGL
-    second:
-      enabled: 0
-      settings: {}
-  - first:
-      iPhone: iOS
-    second:
-      enabled: 0
-      settings:
-        AddToEmbeddedBinaries: false
-        CompileFlags: 
-        FrameworkDependencies: 
   userData: 
   assetBundleName: 
   assetBundleVariant: 

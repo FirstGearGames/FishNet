@@ -69,9 +69,9 @@ namespace FishNet.Managing.Timing
         /// 
         /// </summary>
         [Tooltip("How many times per second the server will simulate")]
-        [Range(1, 9000)]
+        [Range(1, 500)]
         [SerializeField]
-        private ushort _tickRate = 9000;
+        private ushort _tickRate = 500;
         /// <summary>
         /// True to enable support for client side prediction. Leaving this false when CSP is not needed will save a small amount of bandwidth and CPU.
         /// </summary>
@@ -270,7 +270,7 @@ namespace FishNet.Managing.Timing
         /// <returns></returns>
         public uint TimeToTicks(float time)
         {
-            return (uint)Mathf.RoundToInt(time / (1f / _tickRate));
+            return (uint)Mathf.RoundToInt(time / (float)TickDelta);
         }
 
         /// <summary>

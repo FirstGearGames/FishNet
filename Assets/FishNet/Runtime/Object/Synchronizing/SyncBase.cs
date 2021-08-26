@@ -2,6 +2,7 @@
 using FishNet.Managing.Timing;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using UnityEngine;
 
 namespace FishNet.Object.Synchronizing.Internal
 {
@@ -41,6 +42,10 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Index within the sync collection.
         /// </summary>
         public uint SyncIndex { get; protected set; } = 0;
+        /// <summary>
+        /// Channel to send on.
+        /// </summary>
+        internal Channel Channel => _currentChannel;
         #endregion
 
         #region Private.
@@ -48,6 +53,10 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Sync interval converted to ticks.
         /// </summary>
         private uint _timeToTicks = 0;
+        /// <summary>
+        /// Channel to use for next write. To ensure eventual consistency this eventually changes to reliable when Settings are unreliable.
+        /// </summary>
+        private Channel _currentChannel;
         #endregion
 
         /// <summary>
@@ -69,6 +78,7 @@ namespace FishNet.Object.Synchronizing.Internal
                 Channel = channel
             };
 
+            _currentChannel = channel;
             IsSyncObject = isSyncObject;
         }
 
@@ -97,9 +107,14 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         public void Dirty()
         {
+            /* Reset channel even if already dirty.
+             * This is because the value might have changed
+             * which will reset the eventual consistency state. */
+            _currentChannel = Settings.Channel;
+
             if (IsDirty)
                 return;
-            
+
             if (NetworkBehaviour.DirtySyncType(IsSyncObject))
                 IsDirty = true;
         }
@@ -109,7 +124,21 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         internal void ResetDirty()
         {
-            IsDirty = false;
+            //If not a sync object and using unreliable channel.
+            if (!IsSyncObject && Settings.Channel == Channel.Unreliable)
+            {
+                //Check if dirty can be unset or if another tick must be run using reliable.
+                if (_currentChannel == Channel.Unreliable)
+                    _currentChannel = Channel.Reliable;
+                //Already sent reliable, can undirty. Channel will reset next time this dirties.
+                else
+                    IsDirty = false;
+            }
+            //If syncObject or using reliable unset dirty.
+            else
+            {
+                IsDirty = false;
+            }
         }
 
         internal bool WriteTimeMet(uint tick)
@@ -124,7 +153,7 @@ namespace FishNet.Object.Synchronizing.Internal
         public virtual void Write(PooledWriter writer, bool resetSyncTick = true)
         {
             if (resetSyncTick)
-                NextSyncTick += _timeToTicks;
+                NextSyncTick = _timeManager.Tick +  _timeToTicks;
 
             //writer.WriteByte((byte)SyncIndex);
             writer.WriteUInt32(SyncIndex, AutoPackType.Unpacked);

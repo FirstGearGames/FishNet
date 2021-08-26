@@ -1140,8 +1140,9 @@ namespace ENet
 
 		public static bool Initialize()
 		{
-			if (Native.enet_linked_version() != version)
-				throw new InvalidOperationException("You're trying to use an incompatible version of ENet with this Managed Library.");
+			//UnityEngine.Debug.Log(Native.enet_linked_version());
+			//if (Native.enet_linked_version() != version)
+			//	throw new InvalidOperationException("You're trying to use an incompatible version of ENet with this Managed Library.");
 
 			return Native.enet_initialize() == 0;
 		}
