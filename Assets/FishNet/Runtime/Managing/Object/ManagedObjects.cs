@@ -1,4 +1,5 @@
 ﻿using FishNet.Object;
+using FishNet.Transporting;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -88,10 +89,44 @@ namespace FishNet.Managing.Object
             {
                 //Scene object.
                 if (nob.SceneObject)
+                {
                     nob.gameObject.SetActive(false);
+                }
                 //Not a scene object, destroy normally.
                 else
-                    MonoBehaviour.Destroy(nob.gameObject);
+                {
+                    /* If being despawned same tick it was spawned run some checks
+                     * to throw warnings and proceed differently so the object is not
+                     * destroyed immediately. */
+                    if (NetworkManager.TimeManager.Tick == nob.SpawnedTick && asServer)
+                    {
+                        /* If definitely host then disable the object. Client side will
+                         * get rid of it. */
+                        if (NetworkManager.IsHost)
+                        {
+                            Debug.LogWarning($"Object {nob.gameObject.name} is being despawned the same tick as it was spawned. Since operation is being run as host the object will be disabled until the client can destroy it.");
+                            nob.gameObject.SetActive(false);
+                        }
+                        //Not host at this time but client connection isn't stopped, so it may be connecting.
+                        else if (NetworkManager.TransportManager.Transport.GetConnectionState(false) != LocalConnectionStates.Stopped)
+                        {
+                            Debug.LogWarning($"Object {nob.gameObject.name} is being despawned the same tick as it was spawned. Host isn't started but client connection is not stopped. The object must be destroyed since client host will not reliably get the spawn message. In result client overrides for the object may not be called.");
+                            MonoBehaviour.Destroy(nob.gameObject);
+                        }
+                        //No special conditions.
+                        else
+                        {
+                            MonoBehaviour.Destroy(nob.gameObject);
+                        }
+                    }
+                    /* Not the same tick as it was spawned which means
+                     * spawn message had definitely already gone out.
+                     * Destroy normally. */
+                    else
+                    {
+                        MonoBehaviour.Destroy(nob.gameObject);
+                    }
+                }
             }
 
             Spawned.Remove(nob.ObjectId);

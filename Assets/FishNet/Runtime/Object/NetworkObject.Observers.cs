@@ -44,7 +44,6 @@ namespace FishNet.Object
         {
             int startCount = Observers.Count;
             bool removed = Observers.Remove(connection);
-
             if (removed)
                 TryInvokeOnObserversActive(startCount);
 

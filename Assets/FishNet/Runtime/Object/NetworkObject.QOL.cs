@@ -51,9 +51,6 @@ namespace FishNet.Object
         /// </summary>
         public void Despawn()
         {
-            if (!CanSpawnOrDespawn(true))
-                return;
-
             NetworkManager.ServerManager.Despawn(this);
         }
         /// <summary>

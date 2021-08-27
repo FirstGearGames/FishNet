@@ -66,11 +66,8 @@ namespace FishNet.Object
         /// </summary>
         public void Despawn()
         {
-            if (IsNetworkObjectNull(true))
-                return;
-
-            if (NetworkObject != null)
-                NetworkObject.Despawn();
+            if (!IsNetworkObjectNull(true))
+                NetworkObject.Despawn();                
         }
         /// <summary>
         /// Spawns an object over the network.

@@ -13,6 +13,7 @@ namespace FishNet.Object
     [DisallowMultipleComponent]
     public partial class NetworkObject : MonoBehaviour
     {
+        #region Public.
         /// <summary>
         /// True if this NetworkObject was active during edit. Will be true if placed in scene during edit, and was in active state on run.
         /// </summary>
@@ -43,11 +44,15 @@ namespace FishNet.Object
         /// </summary>
         [SerializeField, HideInInspector]
         internal SceneTransformProperties SceneTransformProperties = new SceneTransformProperties();
-
         /// <summary>
         /// NetworkManager for this object.
         /// </summary>
         public NetworkManager NetworkManager { get; private set; }
+        /// <summary>
+        /// Tick when this was spawned.
+        /// </summary>
+        internal uint SpawnedTick { get; private set; } = 0;
+        #endregion
 
         private void Start()
         {
@@ -107,12 +112,14 @@ namespace FishNet.Object
         /// PreInitializes this script.
         /// </summary>
         /// <param name="networkManager"></param>
-        internal void PreInitialize(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
+        internal void PreInitialize(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer, uint tick)
         {
             Deinitializing = false;
             NetworkManager = networkManager;
             Owner = owner;
             ObjectId = objectId;
+            SpawnedTick = tick;
+
             //Add to connection objects if owner exist.
             if (owner != null)
                 owner.AddObject(this);

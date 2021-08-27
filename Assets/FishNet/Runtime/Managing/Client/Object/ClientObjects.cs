@@ -196,13 +196,26 @@ namespace FishNet.Managing.Client.Object
                 nob = ReadSpawnedObject(reader, objectId);
 
             ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
+
+            /*If nob is null then exit method. Since ClientObjects gets nob from
+             * server objects as host this can occur sometimes
+             * when the object is destroyed on server before client gets
+             * spawn packet. */
+            if (nob == null)
+            {
+                //Only error if client only.
+                if (!NetworkManager.IsHost)
+                    Debug.LogError($"Spawn object could not be found or created for Id {objectId}; scene object: {sceneObject}.");
+
+                return;
+            }
             /* If not host then pre-initialize. Pre-initializing applies
              * values needed to run such as owner, network manager, and completes
              * other reference creating functions. */
             if (!base.NetworkManager.IsHost)
             {
                 NetworkConnection owner = new NetworkConnection(NetworkManager, ownerId);
-                nob.PreInitialize(NetworkManager, objectId, owner, false);
+                nob.PreInitialize(NetworkManager, objectId, owner, false, base.NetworkManager.TimeManager.Tick);
             }
 
             _objectCache.AddSpawn(nob, syncValues, NetworkManager);

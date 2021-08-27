@@ -78,6 +78,16 @@ namespace FishNet.Managing.Client
         }
 
         /// <summary>
+        /// Sets Started state. Only to be used when acting as a host so that client may set as Started immediately after authenticating.
+        /// Otherwise user code which relies on IsHost or IsClient when host starts may not function properly.
+        /// </summary>
+        /// <param name="started"></param>
+        internal void SetHostStarted(bool started)
+        {
+            Started = started;
+        }
+
+        /// <summary>
         /// Called when a connection state changes local server or client, or a remote client.
         /// </summary>
         /// <param name="args"></param>
