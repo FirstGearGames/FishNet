@@ -234,10 +234,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public char ReadChar()
-        {
-            return (char)ReadUInt16();
-        }
+        public char ReadChar() => (char)ReadUInt16();
 
         /// <summary>
         /// Reads a boolean.
@@ -255,86 +252,77 @@ namespace FishNet.Serializing
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public short ReadInt16()
+        public unsafe ushort ReadUInt16()
         {
-            return (short)ReadUInt16();
+            if (Remaining < 2)
+                ThrowEndOfStream();
+
+            ushort result;
+            fixed (byte* pByte = &_buffer[Position])
+                result = (ushort)((*pByte) | *(pByte + 1) << 8);
+
+            Position += 2;
+            return result;
         }
 
         /// <summary>
         /// Reads a uint16.
         /// </summary>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ushort ReadUInt16()
-        {
-            ushort value = 0;
-            value |= ReadByte();
-            value |= (ushort)(ReadByte() << 8);
-            return value;
-        }
+        /// <returns></returns>       
+        public short ReadInt16() => (short)ReadUInt16();
 
         /// <summary>
         /// Reads an int32.
         /// </summary>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int ReadInt32(AutoPackType packType = AutoPackType.Packed) => (int)ReadUInt32(packType);
+        /// <returns></returns>        
+        public unsafe uint ReadUInt32(AutoPackType packType = AutoPackType.Packed)
+        {
+            if (packType == AutoPackType.Packed)
+                return (uint)ReadPackedWhole();
+            if (Remaining < 4)
+                ThrowEndOfStream();
+
+            uint result;
+            fixed (byte* pByte = &_buffer[Position])
+                result = (uint)((*pByte) | *(pByte + 1) << 8 | *(pByte + 2) << 16 | *(pByte + 3) << 24);
+
+            Position += 4;
+            return result;
+        }
         /// <summary>
         /// Reads a uint32.
         /// </summary>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public uint ReadUInt32(AutoPackType packType = AutoPackType.Packed)
-        {
-            if (packType == AutoPackType.Unpacked)
-            {
-                if (Remaining < 4)
-                    ThrowEndOfStream();
-
-                uint value = 0;
-                value |= _buffer[Position++];
-                value |= (uint)(_buffer[Position++] << 8);
-                value |= (uint)(_buffer[Position++] << 16);
-                value |= (uint)(_buffer[Position++] << 24);
-                return value;
-            }
-            else
-            {
-                return (uint)ReadPackedWhole();
-            }
-        }
+        public int ReadInt32(AutoPackType packType = AutoPackType.Packed) => (int)ReadUInt32(packType);
 
         /// <summary>
         /// Reads an int64.
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long ReadInt64(AutoPackType packType = AutoPackType.Packed) => (long)ReadUInt64(packType);
+        public unsafe ulong ReadUInt64(AutoPackType packType = AutoPackType.Packed)
+        {
+            if (packType == AutoPackType.Packed)
+                return (ulong)ReadPackedWhole();
+            if (Remaining < 8)
+                ThrowEndOfStream();
+
+            ulong result;
+            fixed (byte* pByte = &_buffer[Position])
+            {
+                int p1 = (*pByte) | (*(pByte + 1) << 8) | (*(pByte + 2) << 16) | (*(pByte + 3) << 24);
+                int p2 = (*(pByte + 4)) | (*(pByte + 5) << 8) | (*(pByte + 6) << 16) | (*(pByte + 7) << 24);
+                result = ((uint)p1 | ((ulong)p2 << 32));
+            }
+
+            Position += 8;
+            return result;
+        }
         /// <summary>
         /// Reads a uint64.
         /// </summary>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ulong ReadUInt64(AutoPackType packType = AutoPackType.Packed)
-        {
-            if (packType == AutoPackType.Unpacked)
-            {
-                ulong value = 0;
-                value |= _buffer[Position++];
-                value |= (ulong)_buffer[Position++] << 8;
-                value |= (ulong)_buffer[Position++] << 16;
-                value |= (ulong)_buffer[Position++] << 24;
-                value |= (ulong)_buffer[Position++] << 32;
-                value |= (ulong)_buffer[Position++] << 40;
-                value |= (ulong)_buffer[Position++] << 48;
-                value |= (ulong)_buffer[Position++] << 56;
-                return value;
-            }
-            else
-            {
-                return ReadPackedWhole();
-            }
-        }
+        public long ReadInt64(AutoPackType packType = AutoPackType.Packed) => (long)ReadUInt64(packType);
 
         /// <summary>
         /// Reads a single.
@@ -752,55 +740,16 @@ namespace FishNet.Serializing
 
             PackRates pr = (PackRates)_buffer[Position++];
 
-            if (pr == PackRates.Positive1)
-            {
-                if (Remaining < 1)
-                    ThrowEndOfStream();
-
-                return _buffer[Position++];
-            }
-            else if (pr == PackRates.Positive2)
-            {
-                if (Remaining < 2)
-                    ThrowEndOfStream();
-
-                ushort value = 0;
-                value |= _buffer[Position++];
-                value |= (ushort)(_buffer[Position++] >> 8);
-                return value;
-            }
-            else if (pr == PackRates.Positive4)
-            {
-                if (Remaining < 4)
-                    ThrowEndOfStream();
-
-                uint value = 0;
-                value |= _buffer[Position++];
-                value |= (uint)(_buffer[Position++] << 8);
-                value |= (uint)(_buffer[Position++] << 16);
-                value |= (uint)(_buffer[Position++] << 24);
-                return value;
-            }
-            else if (pr == PackRates.Positive8)
-            {
-                if (Remaining < 8)
-                    ThrowEndOfStream();
-
-                ulong value = 0;
-                value |= _buffer[Position++];
-                value |= (ulong)_buffer[Position++] << 8;
-                value |= (ulong)_buffer[Position++] << 16;
-                value |= (ulong)_buffer[Position++] << 24;
-                value |= (ulong)_buffer[Position++] << 32;
-                value |= (ulong)_buffer[Position++] << 40;
-                value |= (ulong)_buffer[Position++] << 48;
-                value |= (ulong)_buffer[Position++] << 56;
-                return value;
-            }
+            if (pr == PackRates.OneByte)
+                return ReadByte();
+            else if (pr == PackRates.TwoBytes)
+                return ReadUInt16();
+            else if (pr == PackRates.FourBytes)
+                return ReadUInt32(AutoPackType.Unpacked);
+            else if (pr == PackRates.EightBytes)
+                return ReadUInt64(AutoPackType.Unpacked);
             else
-            {
                 throw new Exception($"Unhandled PackRate of {pr}.");
-            }
         }
         #endregion
 

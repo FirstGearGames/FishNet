@@ -725,7 +725,7 @@ namespace FishNet.Serializing
                 if (Position + 2 > _buffer.Length)
                     DoubleBuffer(2);
 
-                _buffer[Position++] = (byte)PackRates.Positive1;
+                _buffer[Position++] = (byte)PackRates.OneByte;
                 _buffer[Position++] = (byte)value;
                 Length = Math.Max(Length, Position);
             }
@@ -734,7 +734,7 @@ namespace FishNet.Serializing
                 if (Position + 3 > _buffer.Length)
                     DoubleBuffer(3);
 
-                _buffer[Position++] = (byte)PackRates.Positive2;
+                _buffer[Position++] = (byte)PackRates.TwoBytes;
                 _buffer[Position++] = (byte)value;
                 _buffer[Position++] = (byte)(value >> 8);
                 Length = Math.Max(Length, Position);
@@ -744,7 +744,7 @@ namespace FishNet.Serializing
                 if (Position + 5 > _buffer.Length)
                     DoubleBuffer(5);
 
-                _buffer[Position++] = (byte)PackRates.Positive4;
+                _buffer[Position++] = (byte)PackRates.FourBytes;
                 _buffer[Position++] = (byte)value;
                 _buffer[Position++] = (byte)(value >> 8);
                 _buffer[Position++] = (byte)(value >> 16);
@@ -756,7 +756,7 @@ namespace FishNet.Serializing
                 if (Position + 9 > _buffer.Length)
                     DoubleBuffer(9);
 
-                _buffer[Position++] = (byte)PackRates.Positive8;
+                _buffer[Position++] = (byte)PackRates.EightBytes;
                 _buffer[Position++] = (byte)value;
                 _buffer[Position++] = (byte)(value >> 8);
                 _buffer[Position++] = (byte)(value >> 16);

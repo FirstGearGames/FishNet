@@ -2,10 +2,10 @@
 {
     public enum PackRates : byte
     {
-        Positive1 = 1,
-        Positive2 = 3,
-        Positive4 = 5,
-        Positive8 = 7,
+        OneByte = 1,
+        TwoBytes = 2,
+        FourBytes = 3,
+        EightBytes = 4,
     } 
 
 }
