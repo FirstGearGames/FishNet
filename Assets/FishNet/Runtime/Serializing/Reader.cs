@@ -109,6 +109,18 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Skips a number of bytes in the reader.
+        /// </summary>
+        /// <param name="value"></param>
+        [CodegenExclude]
+        public void Skip(int value)
+        {
+            if (value < 1 || Remaining < value)
+                return;
+
+            Position += value;
+        }
+        /// <summary>
         /// Throws an EndOfStreamException.
         /// </summary>
         private void ThrowEndOfStream()
@@ -658,16 +670,75 @@ namespace FishNet.Serializing
             if (objectId == -1)
                 return null;
 
-            NetworkObject result;
-            if (_networkManager.ServerManager.Started)
-                _networkManager.ServerManager.Objects.Spawned.TryGetValue(objectId, out result);
-            else
+            NetworkObject result = null;
+            /* Try to get the object client side first if client
+             * is running. When acting as a host generally the object
+             * will be available in the server and client list
+             * but there can be occasions where the server side
+             * deinitializes the object, making it unavailable, while
+             * it is still available in the client side. Since FishNet doesn't
+             * use a fake host connection like some lesser solutions the client
+             * has to always be treated as it's own entity. */
+            if (_networkManager.ClientManager.Started)
                 _networkManager.ClientManager.Objects.Spawned.TryGetValue(objectId, out result);
-
-            if (result == null)
-                Debug.LogWarning($"NetworkObject not found for ObjectId {objectId}.");
+            //If not found on client and server is running then try server.
+            if (result == null && _networkManager.ServerManager.Started)
+                _networkManager.ServerManager.Objects.Spawned.TryGetValue(objectId, out result);
 
             return result;
+        }
+
+
+        /// <summary>
+        /// Reads a NetworkObject.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CodegenExclude]
+        public NetworkObject ReadNetworkObject(out int objectId)
+        {
+            objectId = ReadInt32();
+            if (objectId == -1)
+                return null;
+
+            NetworkObject result = null;
+            /* Try to get the object client side first if client
+             * is running. When acting as a host generally the object
+             * will be available in the server and client list
+             * but there can be occasions where the server side
+             * deinitializes the object, making it unavailable, while
+             * it is still available in the client side. Since FishNet doesn't
+             * use a fake host connection like some lesser solutions the client
+             * has to always be treated as it's own entity. */
+            if (_networkManager.ClientManager.Started)
+                _networkManager.ClientManager.Objects.Spawned.TryGetValue(objectId, out result);
+            //If not found on client and server is running then try server.
+            if (result == null && _networkManager.ServerManager.Started)
+                _networkManager.ServerManager.Objects.Spawned.TryGetValue(objectId, out result);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Reads a NetworkBehaviour.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CodegenExclude]
+        public NetworkBehaviour ReadNetworkBehaviour(out int objectId, out byte componentIndex)
+        {
+            NetworkObject nob = ReadNetworkObject(out objectId);
+            if (nob == null)
+            {
+                //Clear out the byte even if nob is null.
+                componentIndex = ReadByte();
+                return null;
+            }
+            else
+            {
+                componentIndex = ReadByte();
+                return nob.NetworkBehaviours[componentIndex];
+            }
         }
 
         /// <summary>
@@ -680,6 +751,8 @@ namespace FishNet.Serializing
             NetworkObject nob = ReadNetworkObject();
             if (nob == null)
             {
+                //Clear out the byte even if nob is null.
+                ReadByte();
                 return null;
             }
             else
@@ -738,15 +811,15 @@ namespace FishNet.Serializing
             if (Remaining < 1)
                 ThrowEndOfStream();
 
-            PackRates pr = (PackRates)_buffer[Position++];
+            PackRate pr = (PackRate)_buffer[Position++];
 
-            if (pr == PackRates.OneByte)
+            if (pr == PackRate.OneByte)
                 return ReadByte();
-            else if (pr == PackRates.TwoBytes)
+            else if (pr == PackRate.TwoBytes)
                 return ReadUInt16();
-            else if (pr == PackRates.FourBytes)
+            else if (pr == PackRate.FourBytes)
                 return ReadUInt32(AutoPackType.Unpacked);
-            else if (pr == PackRates.EightBytes)
+            else if (pr == PackRate.EightBytes)
                 return ReadUInt64(AutoPackType.Unpacked);
             else
                 throw new Exception($"Unhandled PackRate of {pr}.");

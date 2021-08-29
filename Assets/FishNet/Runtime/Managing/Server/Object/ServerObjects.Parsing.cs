@@ -3,6 +3,7 @@ using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Serializing;
 using UnityEngine;
+using System;
 
 namespace FishNet.Managing.Server.Object
 {
@@ -13,17 +14,30 @@ namespace FishNet.Managing.Server.Object
         /// Parses a ServerRpc.
         /// </summary>
         /// <param name="data"></param>
-        internal void ParseServerRpc(PooledReader reader, int senderClientId)
+        internal void ParseServerRpc(PooledReader reader, int senderClientId, int dataLength)
         {
             NetworkConnection conn;
             if (!NetworkManager.ServerManager.Clients.TryGetValue(senderClientId, out conn))
-                Debug.LogError($"NetworkConnection not found for connection {senderClientId}.");
+                Debug.LogWarning($"NetworkConnection not found for connection {senderClientId}.");
 
+            int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             if (nb != null)
+            {
                 nb.OnServerRpc(reader, conn);
+            }
             else
-                Debug.LogWarning($"NetworkBehaviour not found for ServerRpc.");
+            {
+                if (dataLength == -1)
+                {
+                    Debug.LogWarning($"NetworkBehaviour could not be found for ObserversRpc.");
+                }
+                else
+                {
+                    reader.Position = startPosition;
+                    reader.Skip(Math.Min(dataLength, reader.Remaining));
+                }
+            }
         }
     }
 

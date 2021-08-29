@@ -1,5 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Serializing;
+using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using System.Collections.Generic;
 using UnityEngine;
@@ -62,7 +63,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="count"></param>
         protected internal void SetRpcMethodCount(ushort count)
-        { 
+        {
             _rpcMethodCount = count;
         }
 
@@ -134,7 +135,7 @@ namespace FishNet.Object
         /// <param name="channel"></param>
         public void SendServerRpc(uint rpcHash, PooledWriter methodWriter, Channel channel)
         {
-            PooledWriter writer = CreateRpcHeader(rpcHash, methodWriter, PacketId.ServerRpc);
+            PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.ServerRpc);
             NetworkObject.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
             writer.Dispose();
         }
@@ -147,13 +148,7 @@ namespace FishNet.Object
         /// <param name="channel"></param>
         public void SendObserversRpc(uint rpcHash, PooledWriter methodWriter, Channel channel)
         {
-            PooledWriter writer = CreateRpcHeader(rpcHash, methodWriter, PacketId.ObserversRpc);
-
-            //If not using observers then send to all.
-            //if (!NetworkObject.UsingObservers)
-            //NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment());
-            ////Otherwise send to observers.
-            //else
+            PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.ObserversRpc);
             NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), NetworkObject.Observers);
 
             writer.Dispose();
@@ -193,7 +188,7 @@ namespace FishNet.Object
                 }
             }
 
-            PooledWriter writer = CreateRpcHeader(rpcHash, methodWriter, PacketId.TargetRpc);
+            PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.TargetRpc);
             NetworkObject.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target);
             writer.Dispose();
         }
@@ -204,11 +199,27 @@ namespace FishNet.Object
         /// <param name="writer"></param>
         /// <param name="rpcHash"></param>
         /// <param name="packetId"></param>
-        private PooledWriter CreateRpcHeader(uint rpcHash, PooledWriter methodWriter, PacketId packetId)
+        private PooledWriter CreateRpc(uint rpcHash, PooledWriter methodWriter, PacketId packetId)
         {
+            //Writer containing object data.
+            PooledWriter objectWriter = WriterPool.GetWriter();
+            objectWriter.WriteNetworkBehaviour(this);
+            //Writer containing full packet.    
             PooledWriter writer = WriterPool.GetWriter();
             writer.WriteByte((byte)packetId);
-            writer.WriteNetworkBehaviour(this);
+            //Length for object, hash, data.
+            int packetLengthAfterId = (objectWriter.Length + 4 + methodWriter.Length);
+            writer.WriteInt32(packetLengthAfterId);
+            //Write object information.
+            writer.WriteArraySegment(objectWriter.GetArraySegment());
+            //Hash.
+            writer.WriteUInt32(rpcHash, AutoPackType.Unpacked);
+            //Data.
+            writer.WriteArraySegment(methodWriter.GetArraySegment());
+
+            objectWriter.Dispose();
+            return writer;
+
 
             //           /* If more than 255 rpc methods then write a ushort,
             //* otherwise write a byte. */
@@ -216,10 +227,7 @@ namespace FishNet.Object
             //               writer.WriteUInt32(rpcHash);
             //           else
             //               writer.WriteByte((byte)rpcHash);
-            writer.WriteUInt32(rpcHash, AutoPackType.Unpacked);
 
-            writer.WriteArraySegment(methodWriter.GetArraySegment());
-            return writer;
         }
 
     }

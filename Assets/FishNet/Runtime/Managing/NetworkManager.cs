@@ -25,9 +25,17 @@ namespace FishNet.Managing
         /// </summary>
         public bool IsServer => ServerManager.Started;
         /// <summary>
+        /// True if only the server is active.
+        /// </summary>
+        public bool IsServerOnly => (ServerManager.Started && !ClientManager.Started);
+        /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
         public bool IsClient => ClientManager.Started;
+        /// <summary>
+        /// True if only the client is active and authenticated.
+        /// </summary>
+        public bool IsClientOnly => (!ServerManager.Started && ClientManager.Started);
         /// <summary>
         /// True if client and server are active.
         /// </summary>

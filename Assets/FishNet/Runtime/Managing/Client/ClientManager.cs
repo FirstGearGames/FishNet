@@ -105,7 +105,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Called after IterateIncoming has completed.
         /// </summary>
-        private void TransportManager_OnIterateIncomingEnd()
+        private void TransportManager_OnIterateIncomingEnd(bool server)
         {
             /* Should the last packet received be a spawn or despawn
              * then the cache won't yet be iterated because it only
@@ -114,7 +114,7 @@ namespace FishNet.Managing.Client
              * at the end of the incoming cycle. This isn't as clean as I'd
              * like but it does ensure there will be no missing network object
              * references on spawned objects. */
-            if (Started)
+            if (Started && !server)
                 Objects.IterateObjectCache();
         }
 
@@ -154,6 +154,17 @@ namespace FishNet.Managing.Client
                 {
                     PacketId packetId = (PacketId)reader.ReadByte();
                     bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
+
+                    /* Length of data. Only available if using unreliable. Unreliable packets
+                     * can arrive out of order which means object orientated messages such as RPCs may
+                     * arrive after the object for which they target has already been destroyed. When this happens
+                     * on lesser solutions they just dump the entire packet. However, since FishNet batches data.
+                     * it's very likely a packet will contain more than one packetId. With this mind, length is
+                     * sent as well so if any reason the data does have to be dumped it will only be dumped for
+                     * that single packetId  but not the rest. */
+                    int dataLength = (args.Channel == Channel.Reliable) ? -1 : reader.ReadInt32(AutoPackType.Packed);
+                    //if (args.Channel == Channel.Unreliable)
+                    //    Debug.Log(packetId + ",  " + dataLength);
                     //Is spawn or despawn; cache packet.
                     if (spawnOrDespawn)
                     {
@@ -173,11 +184,11 @@ namespace FishNet.Managing.Client
                         //Then process packet normally.
                         if (packetId == PacketId.ObserversRpc)
                         {
-                            Objects.ParseObserversRpc(reader);
+                            Objects.ParseObserversRpc(reader, dataLength);
                         }
                         else if (packetId == PacketId.TargetRpc)
                         {
-                            Objects.ParseTargetRpc(reader);
+                            Objects.ParseTargetRpc(reader, dataLength);
                         }
                         else if (packetId == PacketId.Broadcast)
                         {
@@ -185,11 +196,11 @@ namespace FishNet.Managing.Client
                         }
                         else if (packetId == PacketId.SyncVar)
                         {
-                            Objects.ParseSyncType(reader, false);
+                            Objects.ParseSyncType(reader, false, dataLength);
                         }
                         else if (packetId == PacketId.SyncObject)
                         {
-                            Objects.ParseSyncType(reader, true);
+                            Objects.ParseSyncType(reader, true, dataLength);
                         }
                         else if (packetId == PacketId.OwnershipChange)
                         {
@@ -205,7 +216,6 @@ namespace FishNet.Managing.Client
                             return;
                         }
                     }
-
                 }
 
                 /* Iterate cache when reader is emptied.

@@ -3,7 +3,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace FishNet.Utilities.Editing
+namespace FishNet.Utility.Editing
 {
 
     /// <summary>

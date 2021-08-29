@@ -1,5 +1,6 @@
 ﻿using FishNet.Object;
 using FishNet.Transporting;
+using FishNet.Utility;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -30,6 +31,13 @@ namespace FishNet.Managing.Object
         protected Dictionary<ulong, NetworkObject> SceneObjects = new Dictionary<ulong, NetworkObject>();
         #endregion
 
+        #region Private.
+        /// <summary>
+        /// Objects which need to be destroyed next tick.
+        /// </summary>
+        private Dictionary<int, NetworkObject> _pendingDestroy = new Dictionary<int, NetworkObject>();
+        #endregion
+
         public ManagedObjects()
         {
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
@@ -39,7 +47,6 @@ namespace FishNet.Managing.Object
         {
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
         }
-
 
 
         /// <summary>
@@ -68,6 +75,22 @@ namespace FishNet.Managing.Object
                 RemoveFromSceneObjects(nob);
         }
 
+
+        /// <summary>
+        /// Destroys NetworkObjects pending for destruction.
+        /// </summary>
+        internal void DestroyPending()
+        {
+            foreach (NetworkObject item in _pendingDestroy.Values)
+            {
+                if (item != null)
+                    MonoBehaviour.Destroy(item.gameObject);
+            }
+
+            _pendingDestroy.Clear();
+        }
+
+
         /// <summary>
         /// Despawns a NetworkObject.
         /// </summary>
@@ -82,58 +105,61 @@ namespace FishNet.Managing.Object
 
             nob.Deinitialize(asServer);
 
-            /* Only modify object state if asServer,
-             * or !asServer and not host. This is so clients, when acting as
-             * host, don't destroy objects they lost observation of. */
-            if (asServer || (!asServer && !NetworkManager.IsHost))
-            {
-                //Scene object.
-                if (nob.SceneObject)
-                {
-                    nob.gameObject.SetActive(false);
-                }
-                //Not a scene object, destroy normally.
-                else
-                {
-                    /* If being despawned same tick it was spawned run some checks
-                     * to throw warnings and proceed differently so the object is not
-                     * destroyed immediately. */
-                    if (NetworkManager.TimeManager.Tick == nob.SpawnedTick && asServer)
-                    {
-                        /* If definitely host then disable the object. Client side will
-                         * get rid of it. */
-                        if (NetworkManager.IsHost)
-                        {
-                            Debug.LogWarning($"Object {nob.gameObject.name} is being despawned the same tick as it was spawned. Since operation is being run as host the object will be disabled until the client can destroy it.");
-                            nob.gameObject.SetActive(false);
-                        }
-                        //Not host at this time but client connection isn't stopped, so it may be connecting.
-                        else if (NetworkManager.TransportManager.Transport.GetConnectionState(false) != LocalConnectionStates.Stopped)
-                        {
-                            Debug.LogWarning($"Object {nob.gameObject.name} is being despawned the same tick as it was spawned. Host isn't started but client connection is not stopped. The object must be destroyed since client host will not reliably get the spawn message. In result client overrides for the object may not be called.");
-                            MonoBehaviour.Destroy(nob.gameObject);
-                        }
-                        //No special conditions.
-                        else
-                        {
-                            MonoBehaviour.Destroy(nob.gameObject);
-                        }
-                    }
-                    /* Not the same tick as it was spawned which means
-                     * spawn message had definitely already gone out.
-                     * Destroy normally. */
-                    else
-                    {
-                        MonoBehaviour.Destroy(nob.gameObject);
-                    }
-                }
-            }
-
+            //Remove from spawned and scene objects.
             Spawned.Remove(nob.ObjectId);
             //Do the same with SceneObjects.
             if (nob.SceneObject)
                 RemoveFromSceneObjects(nob);
+
+            //If a scene object disable. This condition is true no matter what.
+            if (nob.SceneObject)
+            {
+                nob.gameObject.SetActive(false);
+            }
+            //If not scene object check if to destroy.
+            else
+            {
+                //If client or server only.
+                if (NetworkManager.IsClientOnly || NetworkManager.IsServerOnly)
+                {
+                    MonoBehaviour.Destroy(nob.gameObject);
+                }
+                //If here then is host.
+                else
+                {
+                    /* If as server then disable the object and add it
+                     * to PendingDestroy. The server will destroy the object
+                     * before iterating over next reads. This ensures the object
+                     * stays alive long enough for clients to process any
+                     * information for it. */
+                    if (asServer)
+                    {
+                        nob.gameObject.SetActive(false);
+                        _pendingDestroy[nob.ObjectId] = nob;
+                    }
+                }
+            }
+
+            ///* If being despawned same tick it was spawned run some checks
+            // * to throw warnings and proceed differently so the object is not
+            // * destroyed immediately. */
+            //if (NetworkManager.TimeManager.Tick == nob.SpawnedTick && asServer)
+            //{
+            //    /* If definitely host then disable the object. Client side will
+            //     * get rid of it. */
+            //    if (NetworkManager.IsHost)
+            //    {
+            //        Debug.LogWarning($"Object {nob.gameObject.name} is being despawned the same tick as it was spawned. Since operation is being run as host the object will be disabled until the client can destroy it.");
+            //        nob.gameObject.SetActive(false);
+            //    }
+            //    //Not host at this time but client connection isn't stopped, so it may be connecting.
+            //    else if (NetworkManager.TransportManager.Transport.GetConnectionState(false) != LocalConnectionStates.Stopped)
+            //    {
+            //        Debug.LogWarning($"Object {nob.gameObject.name} is being despawned the same tick as it was spawned. Host isn't started but client connection is not stopped. The object must be destroyed since client host will not reliably get the spawn message. In result client overrides for the object may not be called.");
+            //        MonoBehaviour.Destroy(nob.gameObject);
+            //    }
         }
+
         /// <summary>
         /// Despawns Spawned NetworkObjects. Scene objects will be disabled, others will be destroyed.
         /// </summary>
@@ -234,5 +260,6 @@ namespace FishNet.Managing.Object
         }
 
     }
+
 
 }

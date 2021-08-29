@@ -1,7 +1,7 @@
 ﻿
 using UnityEngine;
 
-namespace FishNet.Utilities.Editing
+namespace FishNet.Utility.Editing
 {
 
     /// <summary>

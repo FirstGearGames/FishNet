@@ -262,6 +262,15 @@ namespace FishNet.Object
                             {
                                 PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
                                 packetWriter.WriteByte((byte)packetId);
+
+                                //If unreliable
+                                if ((Channel)channel == Channel.Unreliable)
+                                {
+                                    //int packetLength = 
+                                    //This needs to use actual packet size.
+                                    packetWriter.WriteInt32(999999999);
+                                }
+
                                 packetWriter.WriteNetworkBehaviour(this);
                                 packetWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
 
@@ -283,10 +292,11 @@ namespace FishNet.Object
         }   
 
 
-        public bool SyncTypeEquals<T>(T a, T b)
-        {
-            return EqualityComparer<T>.Default.Equals(a, b);
-        }
+        //public bool SyncTypeEquals<T>(T a, T b)
+        //{
+        //    return EqualityComparer<T>.Default.Equals(a, b);
+        //}
+
         /// <summary>
         /// Resets all SyncVars for this NetworkBehaviour.
         /// </summary>

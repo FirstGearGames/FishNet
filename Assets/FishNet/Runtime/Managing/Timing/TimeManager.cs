@@ -159,6 +159,21 @@ namespace FishNet.Managing.Timing
             _stopwatch.Restart();
         }
 
+
+        /// <summary>
+        /// Adds network loops to gameObject.
+        /// </summary>
+        private void AddNetworkLoops()
+        {
+            //Writer.
+            if (!gameObject.TryGetComponent<NetworkWriterLoop>(out _))
+                gameObject.AddComponent<NetworkWriterLoop>();
+            //Reader.
+            if (!gameObject.TryGetComponent<NetworkReaderLoop>(out _))
+                gameObject.AddComponent<NetworkReaderLoop>();
+        }
+
+
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
@@ -273,18 +288,6 @@ namespace FishNet.Managing.Timing
             return (uint)Mathf.RoundToInt(time / (float)TickDelta);
         }
 
-        /// <summary>
-        /// Adds network loops to gameObject.
-        /// </summary>
-        private void AddNetworkLoops()
-        {
-            //Writer.
-            if (!gameObject.TryGetComponent<NetworkWriterLoop>(out _))
-                gameObject.AddComponent<NetworkWriterLoop>();
-            //Reader.
-            if (!gameObject.TryGetComponent<NetworkReaderLoop>(out _))
-                gameObject.AddComponent<NetworkReaderLoop>();
-        }
 
         /// <summary>
         /// Called when FixedUpdate ticks. This is called before any other script.

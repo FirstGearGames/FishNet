@@ -21,13 +21,13 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         internal event Action OnIterateOutgoingEnd;
         /// <summary>
-        /// Called before IterateIncoming has started.
+        /// Called before IterateIncoming has started. True for on server, false for on client.
         /// </summary>
-        internal event Action OnIterateIncomingStart;
+        internal event Action<bool> OnIterateIncomingStart;
         /// <summary>
-        /// Called after IterateIncoming has completed.
+        /// Called after IterateIncoming has completed. True for on server, false for on client.
         /// </summary>
-        internal event Action OnIterateIncomingEnd;
+        internal event Action<bool> OnIterateIncomingEnd;
         /// <summary>
         /// Transport for server and client.
         /// </summary>
@@ -288,9 +288,9 @@ namespace FishNet.Managing.Transporting
         /// <param name="server">True to process data received on the server.</param>
         public void IterateIncoming(bool server)
         {
-            OnIterateIncomingStart?.Invoke();
+            OnIterateIncomingStart?.Invoke(server);
             Transport.IterateIncoming(server);
-            OnIterateIncomingEnd?.Invoke();
+            OnIterateIncomingEnd?.Invoke(server);
         }
 
         /// <summary>

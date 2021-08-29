@@ -79,12 +79,22 @@ namespace FishNet.Managing.Server
             //Unsubscrive first incase already subscribed.
             SubscribeToTransport(false);
             SubscribeToTransport(true);
+            NetworkManager.TransportManager.OnIterateIncomingEnd += TransportManager_OnIterateIncomingEnd;
 
             if (_authenticator != null)
             {
                 _authenticator.FirstInitialize(manager);
                 _authenticator.OnAuthenticationResult += _authenticator_OnAuthenticationResult;
             }
+        }
+
+        /// <summary>
+        /// Called after IterateIncoming has completed. True for on server, false for on client.
+        /// </summary>
+        private void TransportManager_OnIterateIncomingEnd(bool server)
+        {
+            if (!server)
+                Objects.DestroyPending();
         }
 
         /// <summary>
@@ -228,6 +238,9 @@ namespace FishNet.Managing.Server
                     {
                         packetId = (PacketId)reader.ReadByte();
 
+                        ///<see cref="FishNet.Managing.Client.ClientManager.ParseReceived"/>
+                        int dataLength = (args.Channel == Channel.Reliable) ? -1 : reader.ReadInt32(AutoPackType.Packed);
+
                         NetworkConnection conn;
                         Clients.TryGetValue(args.ConnectionId, out conn);
                         /* Connection isn't available. This should never happen.
@@ -249,7 +262,7 @@ namespace FishNet.Managing.Server
 
                         if (packetId == PacketId.ServerRpc)
                         {
-                            Objects.ParseServerRpc(reader, args.ConnectionId);
+                            Objects.ParseServerRpc(reader, args.ConnectionId, dataLength);
                         }
                         else if (packetId == PacketId.Broadcast)
                         {

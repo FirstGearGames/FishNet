@@ -714,49 +714,58 @@ namespace FishNet.Serializing
 
         #region Packed writers.
         /// <summary>
+        /// Returns PackRate to use for value.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PackRate GetPackRate(ulong value)
+        {
+            if (value <= byte.MaxValue)
+                return PackRate.OneByte;
+            else if (value <= ushort.MaxValue)
+                return PackRate.TwoBytes;
+            else if (value <= uint.MaxValue)
+                return PackRate.FourBytes;
+            else
+                return PackRate.EightBytes;
+        }
+        /// <summary>
         /// Writes a packed whole number.
         /// </summary>
         /// <param name="value"></param>
         [CodegenExclude]
         public void WritePackedWhole(ulong value)
         {
-            if (value <= byte.MaxValue)
-            {
-                if (Position + 2 > _buffer.Length)
-                    DoubleBuffer(2);
+            PackRate pr = GetPackRate(value);
+            /* PackRate returns how many bytes data can fit into.
+             * So need to add one extra for the packRate byte, which specifies
+             * how many bytes data will use. */
+            int neededLength = ((byte)pr + 1);
+            if (Position + neededLength > _buffer.Length)
+                DoubleBuffer(neededLength);
+            //Add packrate.
+            _buffer[Position++] = (byte)pr;
 
-                _buffer[Position++] = (byte)PackRates.OneByte;
+            if (pr == PackRate.OneByte)
+            {                
                 _buffer[Position++] = (byte)value;
-                Length = Math.Max(Length, Position);
             }
             else if (value <= ushort.MaxValue)
             {
-                if (Position + 3 > _buffer.Length)
-                    DoubleBuffer(3);
-
-                _buffer[Position++] = (byte)PackRates.TwoBytes;
                 _buffer[Position++] = (byte)value;
                 _buffer[Position++] = (byte)(value >> 8);
-                Length = Math.Max(Length, Position);
             }
             else if (value <= uint.MaxValue)
             {
-                if (Position + 5 > _buffer.Length)
-                    DoubleBuffer(5);
-
-                _buffer[Position++] = (byte)PackRates.FourBytes;
                 _buffer[Position++] = (byte)value;
                 _buffer[Position++] = (byte)(value >> 8);
                 _buffer[Position++] = (byte)(value >> 16);
                 _buffer[Position++] = (byte)(value >> 24);
-                Length = Math.Max(Length, Position);
             }
             else
             {
-                if (Position + 9 > _buffer.Length)
-                    DoubleBuffer(9);
-
-                _buffer[Position++] = (byte)PackRates.EightBytes;
                 _buffer[Position++] = (byte)value;
                 _buffer[Position++] = (byte)(value >> 8);
                 _buffer[Position++] = (byte)(value >> 16);
@@ -765,8 +774,9 @@ namespace FishNet.Serializing
                 _buffer[Position++] = (byte)(value >> 40);
                 _buffer[Position++] = (byte)(value >> 48);
                 _buffer[Position++] = (byte)(value >> 56);
-                Length = Math.Max(Length, Position);
             }
+
+            Length = Math.Max(Length, Position);
         }
         #endregion
 

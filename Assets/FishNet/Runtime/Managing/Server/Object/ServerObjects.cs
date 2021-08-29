@@ -49,6 +49,8 @@ namespace FishNet.Managing.Server.Object
             base.NetworkManager = networkManager;
             InitializeObservers();
         }
+        
+
 
         #region Checking dirty SyncTypes.
         /// <summary>
@@ -149,7 +151,7 @@ namespace FishNet.Managing.Server.Object
         /// </summary>
         /// <returns></returns>
         protected override int GetNextNetworkObjectId()
-        {
+        {            
             //At max values.
             if (_nextNetworkObjectId == int.MaxValue)
             {
@@ -365,7 +367,6 @@ namespace FishNet.Managing.Server.Object
             //If owner is valid then populate owner writer as well.
             if (nob.OwnerIsValid)
             {
-
                 syncWriter.Reset();
                 ownerWriter.WriteBytes(commonWriter.GetBuffer(), 0, commonWriter.Length);
                 foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
@@ -426,12 +427,13 @@ namespace FishNet.Managing.Server.Object
             WriteDespawn(nob, ref everyoneWriter);
             
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
-
             foreach (NetworkConnection conn in nob.Observers)
             {
                 nob.InvokeOnServerDespawn(conn);
                 NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, despawnSegment, conn);
             }
+
+            everyoneWriter.Dispose();
         }
         /// <summary>
         /// Writes a despawn.
