@@ -135,7 +135,7 @@ namespace FishNet.Object
         /// <param name="channel"></param>
         public void SendServerRpc(uint rpcHash, PooledWriter methodWriter, Channel channel)
         {
-            PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.ServerRpc);
+            PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.ServerRpc, channel);
             NetworkObject.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
             writer.Dispose();
         }
@@ -148,7 +148,7 @@ namespace FishNet.Object
         /// <param name="channel"></param>
         public void SendObserversRpc(uint rpcHash, PooledWriter methodWriter, Channel channel)
         {
-            PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.ObserversRpc);
+            PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.ObserversRpc, channel);
             NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), NetworkObject.Observers);
 
             writer.Dispose();
@@ -188,7 +188,7 @@ namespace FishNet.Object
                 }
             }
 
-            PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.TargetRpc);
+            PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.TargetRpc, channel);
             NetworkObject.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target);
             writer.Dispose();
         }
@@ -199,7 +199,7 @@ namespace FishNet.Object
         /// <param name="writer"></param>
         /// <param name="rpcHash"></param>
         /// <param name="packetId"></param>
-        private PooledWriter CreateRpc(uint rpcHash, PooledWriter methodWriter, PacketId packetId)
+        private PooledWriter CreateRpc(uint rpcHash, PooledWriter methodWriter, PacketId packetId, Channel channel)
         {
             //Writer containing object data.
             PooledWriter objectWriter = WriterPool.GetWriter();
@@ -207,9 +207,15 @@ namespace FishNet.Object
             //Writer containing full packet.    
             PooledWriter writer = WriterPool.GetWriter();
             writer.WriteByte((byte)packetId);
-            //Length for object, hash, data.
-            int packetLengthAfterId = (objectWriter.Length + 4 + methodWriter.Length);
-            writer.WriteInt32(packetLengthAfterId);
+
+            //Only write length if unreliable.
+            if (channel == Channel.Unreliable)
+            {
+                //Length for object, hash, data.
+                int packetLengthAfterId = (objectWriter.Length + 4 + methodWriter.Length);
+                writer.WriteInt32(packetLengthAfterId);
+            }
+
             //Write object information.
             writer.WriteArraySegment(objectWriter.GetArraySegment());
             //Hash.
