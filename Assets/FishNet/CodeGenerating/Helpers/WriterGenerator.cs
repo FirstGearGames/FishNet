@@ -355,7 +355,7 @@ namespace FishNet.CodeGenerating.Helping
                     MethodAttributes.Static |
                     MethodAttributes.HideBySig);
 
-            CodegenSession.GeneralHelper.CreateParameter(writerMethodDef, CodegenSession.WriterHelper.PooledWriter_TypeRef, "pooledWriter");
+            CodegenSession.GeneralHelper.CreateParameter(writerMethodDef, CodegenSession.WriterHelper.Writer_TypeRef, "writer");
             CodegenSession.GeneralHelper.CreateParameter(writerMethodDef, objectTypeRef, "value");
             writerMethodDef.Body.InitLocals = true;
 

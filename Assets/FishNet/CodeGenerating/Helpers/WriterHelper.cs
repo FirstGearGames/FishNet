@@ -18,6 +18,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodReference WriterPool_GetWriter_MethodRef;
         private MethodReference Writer_WritePackedWhole_MethodRef;
         internal TypeReference PooledWriter_TypeRef;
+        internal TypeReference Writer_TypeRef;
         internal readonly Dictionary<TypeReference, MethodReference> _instancedWriterMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
         private readonly Dictionary<TypeReference, MethodReference> _staticWriterMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
         private HashSet<TypeReference> _autoPackedMethods = new HashSet<TypeReference>(new TypeReferenceComparer());
@@ -37,6 +38,7 @@ namespace FishNet.CodeGenerating.Helping
         internal bool ImportReferences()
         {
             PooledWriter_TypeRef = CodegenSession.Module.ImportReference(typeof(PooledWriter));
+            Writer_TypeRef = CodegenSession.Module.ImportReference(typeof(Writer));
             NetworkBehaviour_TypeRef = CodegenSession.Module.ImportReference(typeof(NetworkBehaviour));
 
             //WriterPool.GetWriter
@@ -160,9 +162,12 @@ namespace FishNet.CodeGenerating.Helping
             /* Only write statics. This will include extensions and generated. */
             foreach (KeyValuePair<TypeReference, MethodReference> item in _staticWriterMethods)
             {
-                CodegenSession.GenericWriterHelper.CreateWriteDelegate(item.Value);
-                modified = true;
-            } 
+                if (FishNetILPP.CODEGEN_THIS_NAMESPACE.Length == 0 || item.Key.FullName.Contains(FishNetILPP.CODEGEN_THIS_NAMESPACE))
+                {
+                    CodegenSession.GenericWriterHelper.CreateWriteDelegate(item.Value);
+                    modified = true;
+                }
+            }
 
             return modified;
         }
@@ -172,7 +177,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        internal bool HasSerializer(TypeReference typeRef,  bool createMissing)
+        internal bool HasSerializer(TypeReference typeRef, bool createMissing)
         {
             bool result = (GetInstancedWriteMethodReference(typeRef) != null) ||
                 (GetStaticWriteMethodReference(typeRef) != null);

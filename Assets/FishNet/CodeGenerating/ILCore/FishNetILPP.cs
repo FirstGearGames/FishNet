@@ -16,6 +16,11 @@ namespace FishNet.CodeGenerating.ILCore
     {
         #region Const.
         internal const string RUNTIME_ASSEMBLY_NAME = "FishNet.Runtime";
+        /// <summary>
+        /// If not empty codegen will only include types within this Namespace while iterating RUNTIME_ASSEMBLY_NAME>
+        /// </summary>
+        //internal const string CODEGEN_THIS_NAMESPACE = "FishNet.Managing.Scened";
+        internal const string CODEGEN_THIS_NAMESPACE = "";
         #endregion
 
         public override bool WillProcess(ICompiledAssembly compiledAssembly)
@@ -34,8 +39,11 @@ namespace FishNet.CodeGenerating.ILCore
              * intentionally to stop codegen from running on the runtime
              * fishnet assembly, but the option below is for debugging. I would
              * comment out this check if I wanted to compile fishnet runtime. */
-            if (compiledAssembly.Name == RUNTIME_ASSEMBLY_NAME)
-                return false;
+            if (CODEGEN_THIS_NAMESPACE.Length == 0)
+            {
+                if (compiledAssembly.Name == RUNTIME_ASSEMBLY_NAME)
+                    return false;
+            }
             bool referencesFishNet = FishNetILPP.IsFishNetAssembly(compiledAssembly) || compiledAssembly.References.Any(filePath => Path.GetFileNameWithoutExtension(filePath) == RUNTIME_ASSEMBLY_NAME);
             return referencesFishNet;
         }
@@ -198,7 +206,7 @@ namespace FishNet.CodeGenerating.ILCore
                 modified |= CodegenSession.QolAttributeProcessor.Process(td);
             }
 
-            
+
             return modified;
         }
 
@@ -247,7 +255,7 @@ namespace FishNet.CodeGenerating.ILCore
                 }
                 //Subtract entries removed from i since theyre now gone.
                 i -= entriesRemoved;
-            } 
+            }
 
             /* This needs to persist because it holds SyncHandler
              * references for each SyncType. Those

@@ -351,7 +351,7 @@ namespace FishNet.CodeGenerating.Helping
                     MethodAttributes.HideBySig,
                     objectTypeRef);
 
-            CodegenSession.GeneralHelper.CreateParameter(readerMethodDef, CodegenSession.ReaderHelper.PooledReader_TypeRef, "pooledReader");
+            CodegenSession.GeneralHelper.CreateParameter(readerMethodDef, CodegenSession.ReaderHelper.Reader_TypeRef, "reader");
             readerMethodDef.Body.InitLocals = true;
 
             return readerMethodDef;

@@ -16,6 +16,7 @@ namespace FishNet.CodeGenerating.Helping
     {
         #region Reflection references.
         internal TypeReference PooledReader_TypeRef;
+        internal TypeReference Reader_TypeRef;
         internal TypeReference NetworkConnection_TypeRef;
         internal MethodReference PooledReader_ReadNetworkBehaviour_MethodRef;
         private readonly Dictionary<TypeReference, MethodReference> _instancedReaderMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
@@ -37,6 +38,7 @@ namespace FishNet.CodeGenerating.Helping
         internal bool ImportReferences()
         {
             PooledReader_TypeRef = CodegenSession.Module.ImportReference(typeof(PooledReader));
+            Reader_TypeRef = CodegenSession.Module.ImportReference(typeof(Reader));
             NetworkConnection_TypeRef = CodegenSession.Module.ImportReference(typeof(NetworkConnection));
 
             Type pooledReaderType = typeof(PooledReader);
@@ -140,8 +142,11 @@ namespace FishNet.CodeGenerating.Helping
             /* Only write statics. This will include extensions and generated. */
             foreach (KeyValuePair<TypeReference, MethodReference> item in _staticReaderMethods)
             {
-                CodegenSession.GenericReaderHelper.CreateReadDelegate(item.Value);
-                modified = true;
+                if (FishNetILPP.CODEGEN_THIS_NAMESPACE.Length == 0 || item.Key.FullName.Contains(FishNetILPP.CODEGEN_THIS_NAMESPACE))
+                {
+                    CodegenSession.GenericReaderHelper.CreateReadDelegate(item.Value);
+                    modified = true;
+                }
             }
 
             return modified;
@@ -154,7 +159,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="typeRef"></param>
         /// <param name="createMissing"></param>
         /// <returns></returns>
-        internal bool HasDeserializer(TypeReference typeRef,  bool createMissing)
+        internal bool HasDeserializer(TypeReference typeRef, bool createMissing)
         {
             bool result = (GetInstancedReadMethodReference(typeRef) != null) ||
                 (GetStaticReadMethodReference(typeRef) != null);

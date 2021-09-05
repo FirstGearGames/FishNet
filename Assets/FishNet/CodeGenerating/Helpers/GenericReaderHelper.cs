@@ -6,6 +6,7 @@ using Mono.Cecil.Rocks;
 using System;
 using System.Collections.Generic;
 using Unity.CompilationPipeline.Common.Diagnostics;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -52,6 +53,7 @@ namespace FishNet.CodeGenerating.Helping
             _functionT3TypeRef = CodegenSession.Module.ImportReference(typeof(Func<,,>));
             _functionT2ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Func<,>).GetConstructors()[0]);
             _functionT3ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Func<,,>).GetConstructors()[0]);
+
             _autoPackTypeRef = CodegenSession.Module.ImportReference(typeof(AutoPackType));
 
             System.Reflection.PropertyInfo writePropertyInfo;
@@ -116,7 +118,7 @@ namespace FishNet.CodeGenerating.Helping
             //Generate for autopacktype.
             if (isAutoPacked)
             {
-                functionGenericInstance = _functionT3TypeRef.MakeGenericInstanceType(_readerTypeRef, dataTypeRef,_autoPackTypeRef);
+                functionGenericInstance = _functionT3TypeRef.MakeGenericInstanceType(_readerTypeRef,_autoPackTypeRef, dataTypeRef);
                 functionConstructorInstanceMethodRef = _functionT3ConstructorMethodRef.MakeHostInstanceGeneric(functionGenericInstance);
             }
             //Not autopacked.

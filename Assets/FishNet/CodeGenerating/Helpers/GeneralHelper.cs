@@ -72,7 +72,12 @@ namespace FishNet.CodeGenerating.Helping
                 foreach (CustomAttribute item in typeDef.CustomAttributes)
                 {
                     if (item.AttributeType.FullName == typeof(CodegenIncludeInternalAttribute).FullName)
-                        return false;
+                    {
+                        if (FishNetILPP.CODEGEN_THIS_NAMESPACE.Length > 0)
+                            return !typeDef.FullName.Contains(FishNetILPP.CODEGEN_THIS_NAMESPACE);
+                        else
+                            return false;
+                    }
                 }
 
                 return true;
@@ -80,6 +85,9 @@ namespace FishNet.CodeGenerating.Helping
             //Not FishNet assembly.
             else
             {
+                if (FishNetILPP.CODEGEN_THIS_NAMESPACE.Length > 0)
+                    return true;
+
                 foreach (CustomAttribute item in typeDef.CustomAttributes)
                 {
                     if (item.AttributeType.FullName == typeof(CodegenExcludeAttribute).FullName)
