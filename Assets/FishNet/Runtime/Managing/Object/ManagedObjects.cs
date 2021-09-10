@@ -34,6 +34,7 @@ namespace FishNet.Managing.Object
         #region Private.
         /// <summary>
         /// Objects which need to be destroyed next tick.
+        /// This is needed when running as host so host client will get any final messages for the object before they're destroyed.
         /// </summary>
         private Dictionary<int, NetworkObject> _pendingDestroy = new Dictionary<int, NetworkObject>();
         #endregion
