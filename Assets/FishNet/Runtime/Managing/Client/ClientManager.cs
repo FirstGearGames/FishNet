@@ -161,10 +161,11 @@ namespace FishNet.Managing.Client
                      * on lesser solutions they just dump the entire packet. However, since FishNet batches data.
                      * it's very likely a packet will contain more than one packetId. With this mind, length is
                      * sent as well so if any reason the data does have to be dumped it will only be dumped for
-                     * that single packetId  but not the rest. */
-                    int dataLength = (args.Channel == Channel.Reliable) ? -1 : reader.ReadInt32(AutoPackType.Packed);
-                    //if (args.Channel == Channel.Unreliable)
-                    //    Debug.Log(packetId + ",  " + dataLength);
+                     * that single packetId  but not the rest. Broadcasts don't need length either even if unreliable
+                     * because they are not object bound. */
+                    int dataLength = (args.Channel == Channel.Reliable || packetId == PacketId.Broadcast) ?
+                        -1 : reader.ReadInt32();
+
                     //Is spawn or despawn; cache packet.
                     if (spawnOrDespawn)
                     {

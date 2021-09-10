@@ -239,7 +239,8 @@ namespace FishNet.Managing.Server
                         packetId = (PacketId)reader.ReadByte();
 
                         ///<see cref="FishNet.Managing.Client.ClientManager.ParseReceived"/>
-                        int dataLength = (args.Channel == Channel.Reliable) ? -1 : reader.ReadInt32(AutoPackType.Packed);
+                        int dataLength = (args.Channel == Channel.Reliable || packetId == PacketId.Broadcast) ?
+                            -1 : reader.ReadInt32();
 
                         NetworkConnection conn;
                         Clients.TryGetValue(args.ConnectionId, out conn);

@@ -5,6 +5,7 @@ using UnityEngine;
 using FishNet.Broadcast;
 using FishNet.Object.Helping;
 using FishNet.Transporting;
+using FishNet.Serializing.Helping;
 
 namespace FishNet.Managing.Client
 {
@@ -153,10 +154,10 @@ namespace FishNet.Managing.Client
 
             using (PooledWriter writer = WriterPool.GetWriter())
             {
-                writer.WriteByte((byte)PacketId.Broadcast);
-                writer.WriteUInt16(typeof(T).FullName.GetStableHash16()); //muchlater codegen this to pass in hash. use technique similar to rpcs to limit byte/shorts.
-                writer.Write<T>(message);
-                NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
+                Broadcasts.WriteBroadcast<T>(writer, message, channel);
+                ArraySegment<byte> segment = writer.GetArraySegment();
+
+                NetworkManager.TransportManager.SendToServer((byte)channel, segment);
             }
         }
 

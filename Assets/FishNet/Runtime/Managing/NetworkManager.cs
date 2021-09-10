@@ -111,14 +111,23 @@ namespace FishNet.Managing
             SetRunInBackground();
             EmptyConnection = new NetworkConnection();
             FindTransportManager();
-            AddTimeManager();
-            TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
-            AddNetworkServerAndClient();
+            AddServerAndClientManagers();
+            AddTimeManager();            
             AddSceneManager();;
+            InitializeComponents();
+        }
+
+        /// <summary>
+        /// Initializes components. To be called after all components are added.
+        /// </summary>
+        private void InitializeComponents()
+        {
+            TimeManager.FirstInitialize(this);
+            TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
+            SceneManager.FirstInitialize(this);
             ServerManager.FirstInitialize(this);
             ClientManager.FirstInitialize(this);
         }
-
         /// <summary>
         /// Called when MonoBehaviours call LateUpdate.
         /// </summary>
@@ -199,9 +208,7 @@ namespace FishNet.Managing
             if (gameObject.TryGetComponent<TimeManager>(out TimeManager result))
                 TimeManager = result;
             else
-                TimeManager = gameObject.AddComponent<TimeManager>();
-
-            TimeManager.FirstInitialize(this);
+                TimeManager = gameObject.AddComponent<TimeManager>();            
         }
 
 
@@ -214,14 +221,12 @@ namespace FishNet.Managing
                 SceneManager = result;
             else
                 SceneManager = gameObject.AddComponent<SceneManager>();
-
-            SceneManager.FirstInitialize(this);
         }
 
         /// <summary>
         /// Adds and assigns NetworkServer and NetworkClient if they are not already setup.
         /// </summary>
-        private void AddNetworkServerAndClient()
+        private void AddServerAndClientManagers()
         {
             //Add ServerManager if missing.
             if (gameObject.TryGetComponent<ServerManager>(out ServerManager sm))
