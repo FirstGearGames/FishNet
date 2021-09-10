@@ -27,9 +27,9 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         public bool IsDirty { get; private set; } = false;
         /// <summary>
-        /// TimeManager to handle ticks.
+        /// NetworkManager this uses.
         /// </summary>
-        public TimeManager _timeManager = null;
+        public NetworkManager NetworkManager = null;
         /// <summary>
         /// NetworkBehaviour this SyncVar belongs to.
         /// </summary>
@@ -98,8 +98,8 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         public void PreInitialize(NetworkManager networkManager)
         {
-            _timeManager = networkManager.TimeManager;
-            _timeToTicks = _timeManager.TimeToTicks(Settings.SendTickRate);
+            NetworkManager = networkManager;
+            _timeToTicks = NetworkManager.TimeManager.TimeToTicks(Settings.SendTickRate);
         }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace FishNet.Object.Synchronizing.Internal
         public virtual void Write(PooledWriter writer, bool resetSyncTick = true)
         {
             if (resetSyncTick)
-                NextSyncTick = _timeManager.Tick +  _timeToTicks;
+                NextSyncTick = NetworkManager.TimeManager.Tick +  _timeToTicks;
 
             //writer.WriteByte((byte)SyncIndex);
             writer.WriteUInt32(SyncIndex, AutoPackType.Unpacked);

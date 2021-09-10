@@ -130,13 +130,13 @@ namespace FishNet.Object.Synchronizing
         /// <param name="next"></param>
         private void AddOperation(SyncListOperation operation, int index, T prev, T next)
         {
-            /* Only check this if NetworkBehaviour is set.
+            /* Only check this if NetworkManager is set.
              * It may not be set if results are being populated
-             * in Awake. */
-            if (base.NetworkBehaviour == null)
+             * before initialization. */
+            if (base.NetworkManager == null)
                 return;
 
-            if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
+            if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkManager.IsServer)
             {
                 Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
                 return;
@@ -215,7 +215,7 @@ namespace FishNet.Object.Synchronizing
             * This is because changes would have already been made on
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
-            bool asClientAndHost = (!asServer && base.NetworkBehaviour.IsServer);
+            bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
             IList<T> objects = (asClientAndHost) ? _clientHostObjects : _objects;
 
             int changes = (int)reader.ReadUInt32();
@@ -293,7 +293,7 @@ namespace FishNet.Object.Synchronizing
             _objects.Add(item);
             if (asServer)
             {
-                if (NetworkBehaviour == null)
+                if (base.NetworkManager == null)
                     _clientHostObjects.Add(item);
                 AddOperation(SyncListOperation.Add, _objects.Count - 1, default, item);
             }
@@ -320,7 +320,7 @@ namespace FishNet.Object.Synchronizing
             _objects.Clear();
             if (asServer)
             {
-                if (NetworkBehaviour == null)
+                if (base.NetworkManager == null)
                     _clientHostObjects.Clear();
                 AddOperation(SyncListOperation.Clear, -1, default, default);
             }
@@ -411,7 +411,7 @@ namespace FishNet.Object.Synchronizing
             _objects.Insert(index, item);
             if (asServer)
             {
-                if (NetworkBehaviour == null)
+                if (base.NetworkManager == null)
                     _clientHostObjects.Insert(index, item);
                 AddOperation(SyncListOperation.Insert, index, default, item);
             }
@@ -461,7 +461,7 @@ namespace FishNet.Object.Synchronizing
             _objects.RemoveAt(index);
             if (asServer)
             {
-                if (NetworkBehaviour == null)
+                if (base.NetworkManager == null)
                     _clientHostObjects.RemoveAt(index);
                 AddOperation(SyncListOperation.RemoveAt, index, oldItem, default);
             }
@@ -516,7 +516,7 @@ namespace FishNet.Object.Synchronizing
                 _objects[index] = value;
                 if (asServer)
                 {
-                    if (NetworkBehaviour == null)
+                    if (base.NetworkManager == null)
                         _clientHostObjects[index] = value;
                         AddOperation(SyncListOperation.Set, index, prev, value);
                 }

@@ -4,7 +4,7 @@
 
 “Software” means the software (including code in source or object format as applicable) of Fish-Net that accompanies this License.
 
-"FirstGearGames" means FirstGearGames LLC of North Carolina.
+"FirstGearGames" means Benjamin Berwick of FirstGearGames LLC, registered 2018, North Carolina.
 
 1. License Grant to the Software. FirstGearGames grants to you a worldwide, non-exclusive, no-charge, and royalty-free license to reproduce, modify, and use the Software for developed game, or other content with Software.
 

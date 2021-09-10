@@ -758,7 +758,15 @@ namespace FishNet.Serializing
             else
             {
                 byte componentIndex = ReadByte();
-                return nob.NetworkBehaviours[componentIndex];
+                if (componentIndex < 0 || componentIndex >= nob.NetworkBehaviours.Length)
+                {
+                    Debug.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name}. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
+                    return null;
+                }
+                else
+                {
+                    return nob.NetworkBehaviours[componentIndex];
+                }
             }
         }
 
