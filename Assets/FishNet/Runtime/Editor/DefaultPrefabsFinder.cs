@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using FishNet.Object;
 using FishNet.Managing.Object;
+using System.IO;
 
 namespace FishNet.Editing
 {
@@ -12,24 +13,24 @@ namespace FishNet.Editing
     {
         [System.NonSerialized]
         private static bool _initialized = false;
+        private static DefaultPrefabObjects _defaultPrefabs = null;
 
         static DefaultPrefabsFinder()
         {
             EditorApplication.update += InitializeOnce;
         }
 
-        private static DefaultPrefabObjects _defaultPrefabs = null;
 
         /// <summary>
         /// FInds and sets the default prefabs reference.
         /// </summary>
         internal static DefaultPrefabObjects GetDefaultPrefabsFile(out bool justPopulated)
         {
+            string[] guids;
+            string[] objectPaths;
+
             if (_defaultPrefabs == null)
             {
-                string[] guids;
-                string[] objectPaths;
-
                 guids = AssetDatabase.FindAssets("t:ScriptableObject", new string[] { "Assets" });
                 objectPaths = new string[guids.Length];
                 for (int i = 0; i < guids.Length; i++)
@@ -53,12 +54,39 @@ namespace FishNet.Editing
                 }
             }
 
-
             justPopulated = false;
+            //If not found then try to create file.
             if (_defaultPrefabs == null)
-                Debug.LogWarning($"DefaultPrefabObjects not found. Prefabs list will not be automatically populated.");
+            {
+                guids = AssetDatabase.FindAssets("t:asmdef", new string[] { "Assets" });
+                objectPaths = new string[guids.Length];
+                for (int i = 0; i < guids.Length; i++)
+                    objectPaths[i] = AssetDatabase.GUIDToAssetPath(guids[i]);
+
+                string fileName = "FishNet.Runtime.asmdef".ToLower();
+                /* Find all network managers which use Single prefab linking
+                 * as well all network object prefabs. */
+                foreach (string item in objectPaths)
+                {
+                    //Found directory to create object in.
+                    if (item.ToLower().Contains(fileName))
+                    {
+                        DefaultPrefabObjects dpo = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
+                        //Get save directory.
+                        string savePath = Path.GetDirectoryName(item);
+                        AssetDatabase.CreateAsset(dpo, Path.Combine(savePath, $"{nameof(DefaultPrefabObjects)}.asset"));
+                    }
+                }
+
+                //If still null.
+                if (_defaultPrefabs == null)
+                    Debug.LogWarning($"DefaultPrefabObjects not found. Prefabs list will not be automatically populated.");
+            }
             else
+            {
                 justPopulated = PopulateDefaultPrefabs();
+            }
+
 
             return _defaultPrefabs;
         }

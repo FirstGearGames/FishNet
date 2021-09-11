@@ -14,15 +14,15 @@ namespace FishNet.Serializing
     /// Used for write references to generic types.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    [CodegenIncludeInternal]
+   // [CodegenIncludeInternal]
     public static class GenericWriter<T>
     {
         public static Action<Writer, T> Write { get; set; }
         public static Action<Writer, T, AutoPackType> WriteAutoPack { get; set; }
     }
 
-    [CodegenIncludeInternal]
-    public partial class Writer
+    //[CodegenIncludeInternal]
+    public class Writer
     {
         #region Public.
         /// <summary>

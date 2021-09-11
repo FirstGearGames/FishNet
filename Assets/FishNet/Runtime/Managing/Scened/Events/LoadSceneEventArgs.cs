@@ -4,47 +4,47 @@ using UnityEngine.SceneManagement;
 namespace FishNet.Managing.Scened.Eventing
 {
 
-    public struct LoadSceneStartEventArgs
+    public struct SceneLoadStartEventArgs
     {
         /// <summary>
-        /// RawData used by the current scene action.
+        /// RawData used by this current scene action.
         /// </summary>
-        public readonly LoadSceneQueueData RawData;
+        public readonly LoadQueueData RawData;
 
-        public LoadSceneStartEventArgs(LoadSceneQueueData sqd)
+        public SceneLoadStartEventArgs(LoadQueueData lqd)
         {
-            RawData = sqd;
+            RawData = lqd;
         }
     }
 
 
 
-    public struct LoadScenePercentEventArgs
+    public struct SceneLoadPercentEventArgs
     {
         /// <summary>
-        /// RawData used by the current scene action.
+        /// RawData used by this current scene action.
         /// </summary>
-        public readonly LoadSceneQueueData RawData;
+        public readonly LoadQueueData RawData;
         /// <summary>
         /// Percentage of change completion. 1f is equal to 100 complete.
         /// </summary>
         public readonly float Percent;
 
-        public LoadScenePercentEventArgs(LoadSceneQueueData sqd, float percent)
+        public SceneLoadPercentEventArgs(LoadQueueData lqd, float percent)
         {
-            RawData = sqd;
+            RawData = lqd;
             Percent = percent;
         }
     }
 
 
 
-    public struct LoadSceneEndEventArgs
+    public struct SceneLoadEndEventArgs
     {
         /// <summary>
-        /// RawData used by the current scene action.
+        /// RawData used by this current scene action.
         /// </summary>
-        public readonly LoadSceneQueueData RawData;
+        public readonly LoadQueueData RawData;
         /// <summary>
         /// Scenes which were loaded.
         /// </summary>
@@ -54,9 +54,9 @@ namespace FishNet.Managing.Scened.Eventing
         /// </summary>
         public readonly string[] SkippedSceneNames;
 
-        public LoadSceneEndEventArgs(LoadSceneQueueData sqd, Scene[] loaded, string[] skipped)
+        public SceneLoadEndEventArgs(LoadQueueData lqd, Scene[] loaded, string[] skipped)
         {
-            RawData = sqd;
+            RawData = lqd;
             LoadedScenes = loaded;
             SkippedSceneNames = skipped;
         }

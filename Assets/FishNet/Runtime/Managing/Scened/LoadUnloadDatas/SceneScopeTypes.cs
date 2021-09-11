@@ -3,7 +3,7 @@
 
     public enum SceneScopeTypes : byte
     {
-        Networked = 0,
+        Global = 0,
         Connections = 1
     }
 

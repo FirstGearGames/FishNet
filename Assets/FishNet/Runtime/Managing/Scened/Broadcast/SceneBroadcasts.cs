@@ -8,28 +8,28 @@ namespace FishNet.Managing.Scened.Broadcast
     /// <summary>
     /// Sent to clients to load networked scenes.
     /// </summary>
-    [CodegenIncludeInternal] 
+    //[CodegenIncludeInternal]
     public struct LoadScenesBroadcast : IBroadcast
     {   
-        public LoadSceneQueueData SceneQueueData;
+        public LoadQueueData QueueData;
     }
            
     /// <summary>       
     /// Sent to clients to unload networked scenes.
     /// </summary>     
-    [CodegenIncludeInternal]
+   // [CodegenIncludeInternal]
     public struct UnloadScenesBroadcast : IBroadcast
     {
-        public UnloadSceneQueueData SceneQueueData;
+        public UnloadQueueData QueueData;
     }
        
     /// <summary> 
     /// Sent to server to indicate which scenes a client has loaded.
     /// </summary>
-    [CodegenIncludeInternal]
+    //[CodegenIncludeInternal]
     public struct ClientScenesLoadedBroadcast : IBroadcast
     {
-        public SceneReferenceData[] SceneDatas;
+        public SceneLookupData[] SceneLookupDatas;
     }
      
 }

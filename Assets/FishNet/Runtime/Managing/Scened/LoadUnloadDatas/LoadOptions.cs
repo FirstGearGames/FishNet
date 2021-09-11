@@ -15,11 +15,6 @@ namespace FishNet.Managing.Scened.Data
         [System.NonSerialized]
         public bool LoadOnlyUnloaded = true;
         /// <summary>
-        /// True to automatically remove player objects with FlexSceneCheckers which are not being moved to a new scene. This only applies when loading a single scene.
-        /// </summary>
-        [System.NonSerialized]
-        public bool RemovePlayerObjects = true;
-        /// <summary>
         /// LocalPhysics mode to use when loading this scene. Generally this will only be used when applying scene stacking. Only used by the server.
         /// https://docs.unity3d.com/ScriptReference/SceneManagement.LocalPhysicsMode.html
         /// </summary>

@@ -267,7 +267,7 @@ namespace FishNet.Object
                                 if ((Channel)channel == Channel.Unreliable)
                                 {
                                     //int packetLength = 
-                                    //This needs to use actual packet size.
+                                    //todo This needs to use actual packet size.
                                     packetWriter.WriteInt32(999999999);
                                 }
 

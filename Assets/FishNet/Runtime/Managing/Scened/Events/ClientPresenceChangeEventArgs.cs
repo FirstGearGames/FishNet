@@ -9,11 +9,11 @@ namespace FishNet.Managing.Scened.Eventing
         /// <summary>
         /// Scene on the server which the client's presence has changed.
         /// </summary>
-        public readonly Scene Scene;
+        public Scene Scene;
         /// <summary>
         /// Connection to client.
         /// </summary>
-        public readonly NetworkConnection Connection;
+        public NetworkConnection Connection;
         /// <summary>
         /// True if the client was added to the scene, false is removed.
         /// </summary>

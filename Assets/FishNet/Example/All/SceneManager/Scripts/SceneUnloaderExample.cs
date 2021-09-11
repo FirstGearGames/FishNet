@@ -16,7 +16,7 @@ namespace FirstGearGames.FlexSceneManager.Demos
         /// </summary>
         [Tooltip("Scenes to unload.")]
         [SerializeField]
-        private string[] _unloadScenes = null;
+        private string[] _scenes = new string[0];
         /// <summary>
         /// True to only unload for the connectioning causing the trigger.
         /// </summary>
@@ -68,22 +68,20 @@ namespace FirstGearGames.FlexSceneManager.Demos
             if (triggeringIdentity == null)
                 return;
 
-            AdditiveScenesData asd = new AdditiveScenesData(_unloadScenes);
+            UnloadOptions unloadOptions = new UnloadOptions()
+            {
+                Mode = (_unloadUnused) ? UnloadOptions.UnloadModes.UnloadUnused : UnloadOptions.UnloadModes.KeepUnused
+            };
+
+            SceneUnloadData sud = new SceneUnloadData(_scenes);
+            sud.Options = unloadOptions;
+
             //Unload only for the triggering connection.
             if (_connectionOnly)
-            {
-                UnloadOptions.UnloadModes mode = (_unloadUnused) ? UnloadOptions.UnloadModes.UnloadUnused : UnloadOptions.UnloadModes.KeepUnused;
-                UnloadOptions unloadOptions = new UnloadOptions
-                {
-                    Mode = mode
-                };
-                InstanceFinder.SceneManager.UnloadConnectionScenes(triggeringIdentity.Owner, asd, unloadOptions);
-            }
+                InstanceFinder.SceneManager.UnloadConnectionScenes(triggeringIdentity.Owner, sud);
             //Unload for all players.
             else
-            {
-                InstanceFinder.SceneManager.UnloadNetworkedScenes(asd);
-            }
+                InstanceFinder.SceneManager.UnloadGlobalScenes(sud);
         }
 
 

@@ -13,6 +13,14 @@ namespace FishNet.Connection
 
         #region Public.
         /// <summary>
+        /// Called after connection gains ownership of an object, and after the object has been added to Objects.
+        /// </summary>
+        public event Action<NetworkObject> OnObjectAdded;
+        /// <summary>
+        /// Called after connection loses ownership of an object, and after the object has been removed from Objects.
+        /// </summary>
+        public event Action<NetworkObject> OnObjectRemoved;
+        /// <summary>
         /// NetworkManager managing this class.
         /// </summary>
         public NetworkManager NetworkManager { get; private set; } = null;
@@ -177,6 +185,7 @@ namespace FishNet.Connection
         internal void AddObject(NetworkObject nob)
         {
             Objects.Add(nob);
+            OnObjectAdded?.Invoke(nob);
         }
 
         /// <summary>
@@ -186,6 +195,7 @@ namespace FishNet.Connection
         internal void RemoveObject(NetworkObject nob)
         {
             Objects.Remove(nob);
+            OnObjectRemoved?.Invoke(nob);
         }
 
         /// <summary>

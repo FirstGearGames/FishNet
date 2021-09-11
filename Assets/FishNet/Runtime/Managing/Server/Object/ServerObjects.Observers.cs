@@ -5,7 +5,6 @@ using FishNet.Observing;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
-using UnityEngine;
 using FishNet.Utility;
 
 namespace FishNet.Managing.Server.Object
@@ -206,7 +205,7 @@ namespace FishNet.Managing.Server.Object
         /// Rebuilds observers on all objects for a connection.
         /// </summary>
         /// <param name="connection"></param>
-        private void RebuildObservers(NetworkConnection connection)
+        internal void RebuildObservers(NetworkConnection connection)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             PooledWriter ownerWriter = WriterPool.GetWriter();
@@ -262,7 +261,6 @@ namespace FishNet.Managing.Server.Object
         }
 
 
-
         /// <summary>
         /// Rebuilds observers on all connections for a NetworkObject.
         /// </summary>
@@ -277,7 +275,7 @@ namespace FishNet.Managing.Server.Object
         /// </summary>
         /// <param name="networkObject">NetworkObject to rebuild on.</param>
         /// <param name="connections">Connections to rebuild for. If null networkObject will rebuild for all connections.</param>
-        internal void RebuildObservers(NetworkObject networkObject, List<NetworkConnection> connections)
+        internal void RebuildObservers(NetworkObject networkObject, NetworkConnection[] connections)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             PooledWriter ownerWriter = WriterPool.GetWriter();
@@ -310,8 +308,6 @@ namespace FishNet.Managing.Server.Object
                  * using OnClientAuthenticated which was occurring before networked objects were
                  * spawned for the authenticating client. Therefor PlayerSpawner was spawning an object
                  * immediately, then Objects.ClientAuthenticated was spawning it again for the player. */
-                //if (conn == networkObject.Owner)
-                    //continue;
 
                 everyoneWriter.Reset();
                 ownerWriter.Reset();

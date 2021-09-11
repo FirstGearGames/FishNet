@@ -15,15 +15,15 @@ namespace FishNet.Serializing
     /// Used for read references to generic types.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    [CodegenIncludeInternal]
+    //[CodegenIncludeInternal]
     public static class GenericReader<T>
     {
         public static Func<Reader, T> Read { internal get; set; }
         public static Func<Reader, AutoPackType, T> ReadAutoPack { internal get; set; }
     }
 
-    [CodegenIncludeInternal]
-    public partial class Reader
+    //[CodegenIncludeInternal]
+    public class Reader
     {
         #region Public.
         /// <summary>

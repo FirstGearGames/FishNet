@@ -7,7 +7,7 @@ namespace FishNet.Serializing
     /// <summary>
     /// NetworkWriter to be used with <see cref="WriterPool">NetworkWriterPool</see>
     /// </summary>
-    [CodegenIncludeInternal]
+    //[CodegenIncludeInternal]
     public sealed class PooledWriter : Writer, IDisposable
     {
         public void Dispose() => WriterPool.Recycle(this);
@@ -17,7 +17,7 @@ namespace FishNet.Serializing
     /// Pool of NetworkWriters
     /// <para>Use this pool instead of <see cref="Writer">NetworkWriter</see> to reduce memory allocation</para>
     /// </summary>
-    [CodegenIncludeInternal]
+    //[CodegenIncludeInternal]
     public static class WriterPool
     {
         #region Private.

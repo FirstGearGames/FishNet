@@ -15,12 +15,6 @@ namespace FirstGearGames.FlexSceneManager.Demos
     public class SceneLoaderExample : MonoBehaviour
     {
         /// <summary>
-        /// Single scene to load. Leave empty to not load a single scene.
-        /// </summary>
-        [Tooltip("Single scene to load. Leave empty to not load a single scene.")]
-        [SerializeField]
-        private string _singleScene = string.Empty;
-        /// <summary>
         /// True to move the triggering object.
         /// </summary>
         [Tooltip("True to move the triggering object.")]
@@ -33,11 +27,17 @@ namespace FirstGearGames.FlexSceneManager.Demos
         [SerializeField]
         private bool _moveAllObjects = false;
         /// <summary>
-        /// Additive scenes to load. Leave empty to not load additive scenes.
+        /// True to replace current scenes with new scenes. First scene loaded will become active scene.
         /// </summary>
-        [Tooltip("Additive scenes to load. Leave empty to not load additive scenes.")]
+        [Tooltip("True to replace current scenes with new scenes. First scene loaded will become active scene.")]
         [SerializeField]
-        private string[] _additiveScenes = null;
+        private bool _replaceScenes = false;
+        /// <summary>
+        /// Scenes to load.
+        /// </summary>
+        [Tooltip("Scenes to load.")]
+        [SerializeField]
+        private string[] _scenes = new string[0];
         /// <summary>
         /// True to only unload for the connectioning causing the trigger.
         /// </summary>
@@ -85,46 +85,38 @@ namespace FirstGearGames.FlexSceneManager.Demos
             if (triggeringIdentity == null)
                 return;
 
-            SingleSceneData ssd = null;
-            //If to load a single scene.
-            if (_singleScene != string.Empty)
+            //Which objects to move.
+            List<NetworkObject> movedObjects = new List<NetworkObject>();
+            if (_moveAllObjects)
             {
-                List<NetworkObject> movedObjects = new List<NetworkObject>();
-                if (_moveAllObjects)
+                foreach (NetworkConnection item in InstanceFinder.ServerManager.Clients.Values)
                 {
-                    foreach (NetworkConnection item in InstanceFinder.ServerManager.Clients.Values)
-                    {
-                        foreach (NetworkObject nob in item.Objects)
-                            movedObjects.Add(nob);                        
-                    }
+                    foreach (NetworkObject nob in item.Objects)
+                        movedObjects.Add(nob);
                 }
-                else if (_moveObject)
-                {
-                    movedObjects.Add(triggeringIdentity);
-                }
-
-                ssd = new SingleSceneData(_singleScene, movedObjects.ToArray());
             }
+            else if (_moveObject)
+            {
+                movedObjects.Add(triggeringIdentity);
+            }
+            //Load options.
+            LoadOptions loadOptions = new LoadOptions
+            {
+                AutomaticallyUnload = _automaticallyUnload,
+            };
 
-            //Additive.
-            AdditiveScenesData asd = null;
-            if (_additiveScenes != null && _additiveScenes.Length > 0)
-                asd = new AdditiveScenesData(_additiveScenes);
+            //Make scene data.
+            SceneLoadData sld = new SceneLoadData(_scenes);
+            sld.ReplaceScenes = _replaceScenes;
+            sld.Options = loadOptions;
+            sld.MovedNetworkObjects = movedObjects.ToArray();
 
             //Load for connection only.
             if (_connectionOnly)
-            {
-                LoadOptions loadOptions = new LoadOptions
-                {
-                    AutomaticallyUnload = _automaticallyUnload,
-                };
-                InstanceFinder.SceneManager.LoadConnectionScenes(triggeringIdentity.Owner, ssd, asd, loadOptions);
-            }
+                InstanceFinder.SceneManager.LoadConnectionScenes(triggeringIdentity.Owner, sld);
             //Load for all clients.
             else
-            {
-                InstanceFinder.SceneManager.LoadNetworkedScenes(ssd, asd);
-            }
+                InstanceFinder.SceneManager.LoadGlobalScenes(sld);
 
 
         }

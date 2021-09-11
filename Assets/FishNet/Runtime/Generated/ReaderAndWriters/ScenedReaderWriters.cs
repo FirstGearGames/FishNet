@@ -1,320 +1,421 @@
-﻿using FishNet.Managing.Scened.Broadcast;
+﻿// Decompiled with JetBrains decompiler
+// Type: FishNet.Runtime.ScenedReadersAndWriters
+// Assembly: FishNet.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+// MVID: 398967D9-11C0-455C-B750-DCE87EFCCBEC
+// Assembly location: D:DevelopmentPersonalFishNetsFishNet - DeveloperLibraryScriptAssembliesFishNet.Runtime.dll
+
+using FishNet.Managing.Scened.Broadcast;
 using FishNet.Managing.Scened.Data;
+using FishNet.Managing.Timing.Broadcast;
 using FishNet.Object;
 using FishNet.Serializing;
+using System;
 using System.Runtime.InteropServices;
+using UnityEngine;
 
 namespace FishNet.Runtime
 {
     [StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
-    public static class ScenedReaderWriters
+    public static class ScenedReadersAndWriters
     {
+
+
         public static void Write___FishNetu002EManagingu002EScenedu002EBroadcastu002ELoadScenesBroadcast(
-          this PooledWriter pooledWriter,
+          this Writer writer,
           LoadScenesBroadcast value)
         {
-            ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadSceneQueueData(pooledWriter, value.SceneQueueData);
+            ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadQueueData(writer, value.QueueData);
         }
 
-        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadSceneQueueData(
-          this PooledWriter pooledWriter,
-          LoadSceneQueueData value)
+        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadQueueData(
+          this Writer writer,
+          LoadQueueData value)
         {
             if (value == null)
             {
-                pooledWriter.WriteBoolean(true);
+                writer.WriteBoolean(true);
             }
             else
             {
-                pooledWriter.WriteBoolean(false);
-                ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESingleSceneData(pooledWriter, value.SingleScene);
-                ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002EAdditiveScenesData(pooledWriter, value.AdditiveScenes);
-                ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ENetworkedScenesData(pooledWriter, value.NetworkedScenes);
+                writer.WriteBoolean(false);
+                ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLoadData(writer, value.SceneLoadData);
+                ScenedReadersAndWriters.Write___Systemu002EStringu005Bu005D(writer, value.GlobalScenes);
             }
         }
 
-        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ESingleSceneData(
-          this PooledWriter pooledWriter,
-          SingleSceneData value)
+        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLoadData(
+          this Writer writer,
+          SceneLoadData value)
         {
             if (value == null)
             {
-                pooledWriter.WriteBoolean(true);
+                writer.WriteBoolean(true);
             }
             else
             {
-                pooledWriter.WriteBoolean(false);
-                ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceData(pooledWriter, value.SceneReferenceData);
-                ScenedReaderWriters.Write___FishNetu002EObjectu002ENetworkObjectu005Bu005D(pooledWriter, value.MovedNetworkObjects);
+                writer.WriteBoolean(false);
+                ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(writer, value.SceneLookupDatas);
+                ScenedReadersAndWriters.Write___FishNetu002EObjectu002ENetworkObjectu005Bu005D(writer, value.MovedNetworkObjects);
+                writer.WriteBoolean(value.ReplaceScenes);
+                ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadParams(writer, value.Params);
+                ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadOptions(writer, value.Options);
             }
         }
 
-        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceData(
-          this PooledWriter pooledWriter,
-          SceneReferenceData value)
-        {
-            if ((object)value == null)
-            {
-                pooledWriter.WriteBoolean(true);
-            }
-            else
-            {
-                pooledWriter.WriteBoolean(false);
-                pooledWriter.WriteInt32(value.Handle);
-                pooledWriter.WriteString(value.Name);
-            }
-        }
-
-        public static void Write___FishNetu002EObjectu002ENetworkObjectu005Bu005D(
-          this PooledWriter pooledWriter,
-          NetworkObject[] value)
-        {
-            if (value == null)
-            {
-                int num = -1;
-                pooledWriter.WritePackedWhole((ulong)(uint)num);
-            }
-            else
-            {
-                int length = value.Length;
-                pooledWriter.WritePackedWhole((ulong)(uint)length);
-                for (int index = 0; index < length; ++index)
-                    pooledWriter.WriteNetworkObject(value[index]);
-            }
-        }
-
-        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002EAdditiveScenesData(
-          this PooledWriter pooledWriter,
-          AdditiveScenesData value)
-        {
-            if (value == null)
-            {
-                pooledWriter.WriteBoolean(true);
-            }
-            else
-            {
-                pooledWriter.WriteBoolean(false);
-                ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceDatau005Bu005D(pooledWriter, value.SceneReferenceDatas);
-                ScenedReaderWriters.Write___FishNetu002EObjectu002ENetworkObjectu005Bu005D(pooledWriter, value.MovedNetworkObjects);
-            }
-        }
-
-        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceDatau005Bu005D(
-          this PooledWriter pooledWriter,
-          SceneReferenceData[] value)
-        {
-            if (value == null)
-            {
-                int num = -1;
-                pooledWriter.WritePackedWhole((ulong)(uint)num);
-            }
-            else
-            {
-                int length = value.Length;
-                pooledWriter.WritePackedWhole((ulong)(uint)length);
-                for (int index = 0; index < length; ++index)
-                    ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceData(pooledWriter, value[index]);
-            }
-        }
-
-        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ENetworkedScenesData(
-          this PooledWriter pooledWriter,
-          NetworkedScenesData value)
-        {
-            if (value == null)
-            {
-                pooledWriter.WriteBoolean(true);
-            }
-            else
-            {
-                pooledWriter.WriteBoolean(false);
-                pooledWriter.WriteString(value.Single);
-                ScenedReaderWriters.Write___Systemu002EStringu005Bu005D(pooledWriter, value.Additive);
-            }
-        }
-
-        public static void Write___Systemu002EStringu005Bu005D(
-          this PooledWriter pooledWriter,
-          string[] value)
-        {
-            if (value == null)
-            {
-                int num = -1;
-                pooledWriter.WritePackedWhole((ulong)(uint)num);
-            }
-            else
-            {
-                int length = value.Length;
-                pooledWriter.WritePackedWhole((ulong)(uint)length);
-                for (int index = 0; index < length; ++index)
-                    pooledWriter.WriteString(value[index]);
-            }
-        }
-
-        public static LoadScenesBroadcast Read___FishNetu002EManagingu002EScenedu002EBroadcastu002ELoadScenesBroadcast(
-          this PooledReader pooledReader)
-        {
-            return new LoadScenesBroadcast()
-            {
-                SceneQueueData = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadSceneQueueData(pooledReader)
-            };
-        }
-
-        public static LoadSceneQueueData Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadSceneQueueData(
-          this PooledReader pooledReader)
-        {
-            if (pooledReader.ReadBoolean())
-                return (LoadSceneQueueData)null;
-            return new LoadSceneQueueData()
-            {
-                SingleScene = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESingleSceneData(pooledReader),
-                AdditiveScenes = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002EAdditiveScenesData(pooledReader),
-                NetworkedScenes = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ENetworkedScenesData(pooledReader)
-            };
-        }
-
-        public static SingleSceneData Read___FishNetu002EManagingu002EScenedu002EDatau002ESingleSceneData(
-          this PooledReader pooledReader)
-        {
-            if (pooledReader.ReadBoolean())
-                return (SingleSceneData)null;
-            return new SingleSceneData()
-            {
-                SceneReferenceData = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceData(pooledReader),
-                MovedNetworkObjects = ScenedReaderWriters.Read___FishNetu002EObjectu002ENetworkObjectu005Bu005D(pooledReader)
-            };
-        }
-
-        public static SceneReferenceData Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceData(
-          this PooledReader pooledReader)
-        {
-            if (pooledReader.ReadBoolean())
-                return (SceneReferenceData)null;
-            return new SceneReferenceData()
-            {
-                Handle = pooledReader.ReadInt32(),
-                Name = pooledReader.ReadString()
-            };
-        }
-
-        public static NetworkObject[] Read___FishNetu002EObjectu002ENetworkObjectu005Bu005D(
-          this PooledReader pooledReader)
-        {
-            int length = (int)pooledReader.ReadPackedWhole();
-            if (length == -1)
-                return (NetworkObject[])null;
-            NetworkObject[] networkObjectArray = new NetworkObject[length];
-            for (int index = 0; index < length; ++index)
-                networkObjectArray[index] = pooledReader.ReadNetworkObject();
-            return networkObjectArray;
-        }
-
-        public static AdditiveScenesData Read___FishNetu002EManagingu002EScenedu002EDatau002EAdditiveScenesData(
-          this PooledReader pooledReader)
-        {
-            if (pooledReader.ReadBoolean())
-                return (AdditiveScenesData)null;
-            return new AdditiveScenesData()
-            {
-                SceneReferenceDatas = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceDatau005Bu005D(pooledReader),
-                MovedNetworkObjects = ScenedReaderWriters.Read___FishNetu002EObjectu002ENetworkObjectu005Bu005D(pooledReader)
-            };
-        }
-
-        public static SceneReferenceData[] Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceDatau005Bu005D(
-          this PooledReader pooledReader)
-        {
-            int length = (int)pooledReader.ReadPackedWhole();
-            if (length == -1)
-                return (SceneReferenceData[])null;
-            SceneReferenceData[] sceneReferenceDataArray = new SceneReferenceData[length];
-            for (int index = 0; index < length; ++index)
-                sceneReferenceDataArray[index] = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceData(pooledReader);
-            return sceneReferenceDataArray;
-        }
-
-        public static NetworkedScenesData Read___FishNetu002EManagingu002EScenedu002EDatau002ENetworkedScenesData(
-          this PooledReader pooledReader)
-        {
-            if (pooledReader.ReadBoolean())
-                return (NetworkedScenesData)null;
-            return new NetworkedScenesData()
-            {
-                Single = pooledReader.ReadString(),
-                Additive = ScenedReaderWriters.Read___Systemu002EStringu005Bu005D(pooledReader)
-            };
-        }
-
-        public static string[] Read___Systemu002EStringu005Bu005D(this PooledReader pooledReader)
-        {
-            int length = (int)pooledReader.ReadPackedWhole();
-            if (length == -1)
-                return (string[])null;
-            string[] strArray = new string[length];
-            for (int index = 0; index < length; ++index)
-                strArray[index] = pooledReader.ReadString();
-            return strArray;
-        }
-
-        public static void Write___FishNetu002EManagingu002EScenedu002EBroadcastu002EUnloadScenesBroadcast(
-          this PooledWriter pooledWriter,
-          UnloadScenesBroadcast value)
-        {
-            ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadSceneQueueData(pooledWriter, value.SceneQueueData);
-        }
-
-        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadSceneQueueData(
-          this PooledWriter pooledWriter,
-          UnloadSceneQueueData value)
-        {
-            if (value == null)
-            {
-                pooledWriter.WriteBoolean(true);
-            }
-            else
-            {
-                pooledWriter.WriteBoolean(false);
-                ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002EAdditiveScenesData(pooledWriter, value.AdditiveScenes);
-                ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ENetworkedScenesData(pooledWriter, value.NetworkedScenes);
-            }
-        }
-
-        public static UnloadScenesBroadcast Read___FishNetu002EManagingu002EScenedu002EBroadcastu002EUnloadScenesBroadcast(
-          this PooledReader pooledReader)
-        {
-            return new UnloadScenesBroadcast()
-            {
-                SceneQueueData = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadSceneQueueData(pooledReader)
-            };
-        }
-
-        public static UnloadSceneQueueData Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadSceneQueueData(
-          this PooledReader pooledReader)
-        {
-            if (pooledReader.ReadBoolean())
-                return (UnloadSceneQueueData)null;
-            return new UnloadSceneQueueData()
-            {
-                AdditiveScenes = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002EAdditiveScenesData(pooledReader),
-                NetworkedScenes = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ENetworkedScenesData(pooledReader)
-            };
-        }
-
-        public static void Write___FishNetu002EManagingu002EScenedu002EBroadcastu002EClientScenesLoadedBroadcast(
-          this PooledWriter pooledWriter,
-          ClientScenesLoadedBroadcast value)
-        {
-            ScenedReaderWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceDatau005Bu005D(pooledWriter, value.SceneDatas);
-        }
-
-        public static ClientScenesLoadedBroadcast Read___FishNetu002EManagingu002EScenedu002EBroadcastu002EClientScenesLoadedBroadcast(
-          this PooledReader pooledReader)
-        {
-            return new ClientScenesLoadedBroadcast()
-            {
-                SceneDatas = ScenedReaderWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneReferenceDatau005Bu005D(pooledReader)
-            };
-        }
-
+        public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(
+          this Writer writer,
+          SceneLookupData[] value)
+    {
+      if (value == null)
+      {
+        int num = -1;
+        writer.WritePackedWhole((ulong) (uint) num);
     }
+      else
+      {
+        int length = value.Length;
+    writer.WritePackedWhole((ulong) (uint) length);
+        for (int index = 0; index<length; ++index)
+          ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupData(writer, value[index]);
+}
+    }
+
+    public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupData(
+      this Writer writer,
+      SceneLookupData value)
+    {
+    if ((object)value == null)
+    {
+        writer.WriteBoolean(true);
+    }
+    else
+    {
+        writer.WriteBoolean(false);
+        writer.WriteInt32(value.Handle);
+        writer.WriteString(value.Name);
+    }
+}
+
+public static void Write___FishNetu002EObjectu002ENetworkObjectu005Bu005D(
+  this Writer writer,
+  NetworkObject[] value)
+    {
+    if (value == null)
+    {
+        int num = -1;
+        writer.WritePackedWhole((ulong)(uint)num);
+    }
+    else
+    {
+        int length = value.Length;
+        writer.WritePackedWhole((ulong)(uint)length);
+        for (int index = 0; index < length; ++index)
+            writer.WriteNetworkObject(value[index]);
+    }
+}
+
+public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadParams(
+  this Writer writer,
+  LoadParams value)
+    {
+    if (value == null)
+    {
+        writer.WriteBoolean(true);
+    }
+    else
+    {
+        writer.WriteBoolean(false);
+        writer.WriteBytesAndSize(value.ClientParams);
+    }
+}
+
+public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadOptions(
+  this Writer writer,
+  LoadOptions value)
+    {
+    if (value == null)
+        writer.WriteBoolean(true);
+    else
+        writer.WriteBoolean(false);
+}
+
+public static void Write___Systemu002EStringu005Bu005D(this Writer writer, string[] value)
+    {
+    if (value == null)
+    {
+        int num = -1;
+        writer.WritePackedWhole((ulong)(uint)num);
+    }
+    else
+    {
+        int length = value.Length;
+        writer.WritePackedWhole((ulong)(uint)length);
+        for (int index = 0; index < length; ++index)
+            writer.WriteString(value[index]);
+    }
+}
+
+public static LoadScenesBroadcast Read___FishNetu002EManagingu002EScenedu002EBroadcastu002ELoadScenesBroadcast(
+  this Reader reader)
+    {
+    return new LoadScenesBroadcast()
+    {
+        QueueData = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadQueueData(reader)
+    };
+}
+
+public static LoadQueueData Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadQueueData(
+  this Reader reader)
+    {
+    if (reader.ReadBoolean())
+        return (LoadQueueData)null;
+    return new LoadQueueData()
+    {
+        SceneLoadData = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLoadData(reader),
+        GlobalScenes = ScenedReadersAndWriters.Read___Systemu002EStringu005Bu005D(reader)
+    };
+}
+
+public static SceneLoadData Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLoadData(
+  this Reader reader)
+    {
+    if (reader.ReadBoolean())
+        return (SceneLoadData)null;
+    return new SceneLoadData()
+    {
+        SceneLookupDatas = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(reader),
+        MovedNetworkObjects = ScenedReadersAndWriters.Read___FishNetu002EObjectu002ENetworkObjectu005Bu005D(reader),
+        ReplaceScenes = reader.ReadBoolean(),
+        Params = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadParams(reader),
+        Options = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadOptions(reader)
+    };
+}
+
+public static SceneLookupData[] Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(
+  this Reader reader)
+    {
+    int length = (int)reader.ReadPackedWhole();
+    if (length == -1)
+        return (SceneLookupData[])null;
+    SceneLookupData[] sceneLookupDataArray = new SceneLookupData[length];
+    for (int index = 0; index < length; ++index)
+        sceneLookupDataArray[index] = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupData(reader);
+    return sceneLookupDataArray;
+}
+
+public static SceneLookupData Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupData(
+  this Reader reader)
+    {
+    if (reader.ReadBoolean())
+        return (SceneLookupData)null;
+    return new SceneLookupData()
+    {
+        Handle = reader.ReadInt32(),
+        Name = reader.ReadString()
+    };
+}
+
+public static NetworkObject[] Read___FishNetu002EObjectu002ENetworkObjectu005Bu005D(
+  this Reader reader)
+    {
+    int length = (int)reader.ReadPackedWhole();
+    if (length == -1)
+        return (NetworkObject[])null;
+    NetworkObject[] networkObjectArray = new NetworkObject[length];
+    for (int index = 0; index < length; ++index)
+        networkObjectArray[index] = reader.ReadNetworkObject();
+    return networkObjectArray;
+}
+
+public static LoadParams Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadParams(
+  this Reader reader)
+    {
+    if (reader.ReadBoolean())
+        return (LoadParams)null;
+    return new LoadParams()
+    {
+        ClientParams = reader.ReadBytesAndSizeAllocated()
+    };
+}
+
+public static LoadOptions Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadOptions(
+  this Reader reader)
+    {
+    return reader.ReadBoolean() ? (LoadOptions)null : new LoadOptions();
+}
+
+public static string[] Read___Systemu002EStringu005Bu005D(this Reader reader)
+    {
+    int length = (int)reader.ReadPackedWhole();
+    if (length == -1)
+        return (string[])null;
+    string[] strArray = new string[length];
+    for (int index = 0; index < length; ++index)
+        strArray[index] = reader.ReadString();
+    return strArray;
+}
+
+public static void Write___FishNetu002EManagingu002EScenedu002EBroadcastu002EUnloadScenesBroadcast(
+  this Writer writer,
+  UnloadScenesBroadcast value)
+    {
+    ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadQueueData(writer, value.QueueData);
+}
+
+public static void Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadQueueData(
+  this Writer writer,
+  UnloadQueueData value)
+    {
+    if (value == null)
+    {
+        writer.WriteBoolean(true);
+    }
+    else
+    {
+        writer.WriteBoolean(false);
+        ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneUnloadData(writer, value.SceneUnloadData);
+        ScenedReadersAndWriters.Write___Systemu002EStringu005Bu005D(writer, value.GlobalScenes);
+    }
+}
+
+public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneUnloadData(
+  this Writer writer,
+  SceneUnloadData value)
+    {
+    if (value == null)
+    {
+        writer.WriteBoolean(true);
+    }
+    else
+    {
+        writer.WriteBoolean(false);
+        ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(writer, value.SceneLookupDatas);
+        ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadParams(writer, value.Params);
+        ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadOptions(writer, value.Options);
+    }
+}
+
+public static void Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadParams(
+  this Writer writer,
+  UnloadParams value)
+    {
+    if (value == null)
+    {
+        writer.WriteBoolean(true);
+    }
+    else
+    {
+        writer.WriteBoolean(false);
+        writer.WriteBytesAndSize(value.ClientParams);
+    }
+}
+
+public static void Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadOptions(
+  this Writer writer,
+  UnloadOptions value)
+    {
+    if (value == null)
+        writer.WriteBoolean(true);
+    else
+        writer.WriteBoolean(false);
+}
+
+public static UnloadScenesBroadcast Read___FishNetu002EManagingu002EScenedu002EBroadcastu002EUnloadScenesBroadcast(
+      this Reader reader)
+    {
+      return new UnloadScenesBroadcast()
+      {
+        QueueData = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadQueueData(reader)
+      };
+    }
+
+    public static UnloadQueueData Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadQueueData(
+      this Reader reader)
+    {
+      if (reader.ReadBoolean())
+        return (UnloadQueueData) null;
+      return new UnloadQueueData()
+      {
+        SceneUnloadData = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneUnloadData(reader),
+        GlobalScenes = ScenedReadersAndWriters.Read___Systemu002EStringu005Bu005D(reader)
+      };
+    }
+
+    public static SceneUnloadData Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneUnloadData(
+      this Reader reader)
+    {
+      if (reader.ReadBoolean())
+        return (SceneUnloadData) null;
+      return new SceneUnloadData()
+      {
+        SceneLookupDatas = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(reader),
+        Params = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadParams(reader),
+        Options = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadOptions(reader)
+      };
+    }
+
+    public static UnloadParams Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadParams(
+      this Reader reader)
+    {
+      if (reader.ReadBoolean())
+        return (UnloadParams) null;
+      return new UnloadParams()
+      {
+        ClientParams = reader.ReadBytesAndSizeAllocated()
+      };
+    }
+
+    public static UnloadOptions Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadOptions(
+      this Reader reader)
+    {
+      return reader.ReadBoolean() ? (UnloadOptions) null : new UnloadOptions();
+    }
+
+    public static void Write___FishNetu002EManagingu002EScenedu002EBroadcastu002EClientScenesLoadedBroadcast(
+      this Writer writer,
+      ClientScenesLoadedBroadcast value)
+    {
+      ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(writer, value.SceneLookupDatas);
+    }
+
+    public static ClientScenesLoadedBroadcast Read___FishNetu002EManagingu002EScenedu002EBroadcastu002EClientScenesLoadedBroadcast(
+      this Reader reader)
+    {
+      return new ClientScenesLoadedBroadcast()
+      {
+        SceneLookupDatas = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(reader)
+      };
+    }
+
+    [RuntimeInitializeOnLoadMethod]
+    static void FirstInitialize()
+    {
+      GenericWriter<SceneLookupData>.Write = new Action<Writer, SceneLookupData>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupData);
+      GenericWriter<SceneLookupData[]>.Write = new Action<Writer, SceneLookupData[]>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D);
+      GenericWriter<LoadParams>.Write = new Action<Writer, LoadParams>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadParams);
+      GenericWriter<LoadOptions>.Write = new Action<Writer, LoadOptions>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadOptions);
+      GenericWriter<SceneLoadData>.Write = new Action<Writer, SceneLoadData>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLoadData);
+      GenericWriter<LoadQueueData>.Write = new Action<Writer, LoadQueueData>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadQueueData);
+      GenericWriter<LoadScenesBroadcast>.Write = new Action<Writer, LoadScenesBroadcast>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EBroadcastu002ELoadScenesBroadcast);
+      GenericWriter<UnloadParams>.Write = new Action<Writer, UnloadParams>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadParams);
+      GenericWriter<UnloadOptions>.Write = new Action<Writer, UnloadOptions>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadOptions);
+      GenericWriter<SceneUnloadData>.Write = new Action<Writer, SceneUnloadData>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneUnloadData);
+      GenericWriter<UnloadQueueData>.Write = new Action<Writer, UnloadQueueData>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadQueueData);
+      GenericWriter<UnloadScenesBroadcast>.Write = new Action<Writer, UnloadScenesBroadcast>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EBroadcastu002EUnloadScenesBroadcast);
+      GenericWriter<ClientScenesLoadedBroadcast>.Write = new Action<Writer, ClientScenesLoadedBroadcast>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EBroadcastu002EClientScenesLoadedBroadcast);
+      GenericReader<SceneLookupData>.Read = new Func<Reader, SceneLookupData>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupData);
+      GenericReader<SceneLookupData[]>.Read = new Func<Reader, SceneLookupData[]>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D);
+      GenericReader<LoadParams>.Read = new Func<Reader, LoadParams>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadParams);
+      GenericReader<LoadOptions>.Read = new Func<Reader, LoadOptions>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadOptions);
+      GenericReader<SceneLoadData>.Read = new Func<Reader, SceneLoadData>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLoadData);
+      GenericReader<LoadQueueData>.Read = new Func<Reader, LoadQueueData>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadQueueData);
+      GenericReader<LoadScenesBroadcast>.Read = new Func<Reader, LoadScenesBroadcast>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EBroadcastu002ELoadScenesBroadcast);
+      GenericReader<UnloadParams>.Read = new Func<Reader, UnloadParams>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadParams);
+      GenericReader<UnloadOptions>.Read = new Func<Reader, UnloadOptions>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadOptions);
+      GenericReader<SceneUnloadData>.Read = new Func<Reader, SceneUnloadData>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneUnloadData);
+      GenericReader<UnloadQueueData>.Read = new Func<Reader, UnloadQueueData>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002EUnloadQueueData);
+      GenericReader<UnloadScenesBroadcast>.Read = new Func<Reader, UnloadScenesBroadcast>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EBroadcastu002EUnloadScenesBroadcast);
+      GenericReader<ClientScenesLoadedBroadcast>.Read = new Func<Reader, ClientScenesLoadedBroadcast>(ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EBroadcastu002EClientScenesLoadedBroadcast);
+    }
+  }
 }

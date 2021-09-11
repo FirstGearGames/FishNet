@@ -49,7 +49,7 @@ namespace FishNet.Managing.Server.Object
             base.NetworkManager = networkManager;
             InitializeObservers();
         }
-        
+
 
 
         #region Checking dirty SyncTypes.
@@ -151,7 +151,7 @@ namespace FishNet.Managing.Server.Object
         /// </summary>
         /// <returns></returns>
         protected override int GetNextNetworkObjectId()
-        {            
+        {
             //At max values.
             if (_nextNetworkObjectId == int.MaxValue)
             {
@@ -199,7 +199,6 @@ namespace FishNet.Managing.Server.Object
                 SetupSceneObjects(SceneManager.GetSceneAt(i));
         }
 
-
         /// <summary>
         /// Setup NetworkObjects in a scene. Should only be called when server is active.
         /// </summary>
@@ -243,7 +242,6 @@ namespace FishNet.Managing.Server.Object
             }
         }
 
-
         /// <summary>
         /// Performs setup on a NetworkObject without synchronizing the actions to clients.
         /// </summary>
@@ -286,6 +284,11 @@ namespace FishNet.Managing.Server.Object
              * during initialization spawn messages will
              * be sent. */
             SetupWithoutSynchronization(networkObject, ownerConnection);
+
+            //If there is an owner then try to add them to the networkObjects scene.
+            if (ownerConnection != null && ownerConnection.IsValid)
+                base.NetworkManager.SceneManager.AddConnectionToScene(ownerConnection, networkObject.gameObject.scene);
+            //Also rebuild observers for the object so it spawns for others.
             RebuildObservers(networkObject);
         }
 
@@ -428,7 +431,7 @@ namespace FishNet.Managing.Server.Object
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             WriteDespawn(nob, ref everyoneWriter);
-            
+
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
             foreach (NetworkConnection conn in nob.Observers)
             {

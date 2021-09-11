@@ -3,6 +3,9 @@
 !/Assets/FishNet
 !.gitignore
 
+DefaultPrefabObjects.asset
+DefaultPrefabObjects.asset.meta
+
 Documentation
 /Library/
 /Packages/

@@ -192,7 +192,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5090726670223187118}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.34, z: 0}
+  m_LocalPosition: {x: 5, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 5090726669533971481}
@@ -213,7 +213,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _camera: {fileID: 5090726669533971462}
-  _moveRate: 4
+  _moveRate: 10
   _clientAuth: 1
 --- !u!54 &3514369712614123748
 Rigidbody:
@@ -258,6 +258,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _clientAuthoritative: 1
+  _synchronizeToOwner: 1
 --- !u!114 &611616139817875448
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -271,8 +272,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 7
-  _scenePathHash: 0
+  _prefabId: 5
+  _scenePathHash: 2916230299
   _sceneId: 0
   SceneTransformProperties:
     Position: {x: 0, y: 1.34, z: 0}

@@ -8,7 +8,7 @@ namespace FishNet.Serializing
     /// <summary>
     /// NetworkReader to be used with <see cref="ReaderPool">ReaderPool</see>
     /// </summary>
-    [CodegenIncludeInternal]
+    //[CodegenIncludeInternal]
     public sealed class PooledReader : Reader, IDisposable
     {
         internal PooledReader() { }
@@ -21,7 +21,7 @@ namespace FishNet.Serializing
     /// Pool of NetworkReaders
     /// <para>Use this pool instead of <see cref="Reader">NetworkReader</see> to reduce memory allocation</para>
     /// </summary>
-    [CodegenIncludeInternal]
+    //[CodegenIncludeInternal]
     public static class ReaderPool
     {
         #region Private.

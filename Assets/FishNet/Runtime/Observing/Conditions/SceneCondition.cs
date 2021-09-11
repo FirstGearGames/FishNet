@@ -1,7 +1,9 @@
 ﻿using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Observing;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing
 {
@@ -11,23 +13,16 @@ namespace FishNet.Managing
     {
         #region Serialized.
         /// <summary>
-        /// True to synchronize which scene the object was spawned in to clients. When true this object will be moved to the clients equivelant of the scene it was spawned in on the server.
+        /// True to synchronize which scene the object was spawned in to clients. When true this object will be moved to the clients equivelant of the scene it was spawned in on the server. This setting does not continously move this object to the same scene.
         /// </summary>
-        [Tooltip("True to synchronize which scene the object was spawned in to clients. When true this object will be moved to the clients equivelant of the scene it was spawned in on the server.")]
+        [Tooltip("True to synchronize which scene the object was spawned in to clients. When true this object will be moved to the clients equivelant of the scene it was spawned in on the server. This setting does not continously move this object to the same scene.")]
         [SerializeField]
         private bool _synchronizeScene = false;
-        /// <summary>
-        /// True to continuously update network visibility. False to only update on creation or when PerformCheck is called. You may want to use true if this object will move between scenes without using the network scene manager.
-        /// </summary>
-        [Tooltip("True to continuously update network visibility. False to only update on creation or when PerformCheck is called. You may want to use true if this object will move between scenes without using the network scene manager.")]
-        [SerializeField]
-        private bool _timed = false;
         #endregion
 
-        public void ConditionConstructor(bool synchronizeScene, bool timed)
+        public void ConditionConstructor(bool synchronizeScene)
         {
             _synchronizeScene = synchronizeScene;
-            _timed = timed;
         }
 
         /// <summary>
@@ -36,7 +31,34 @@ namespace FishNet.Managing
         /// <param name="connection"></param>
         public override bool ConditionMet(NetworkConnection connection)
         {
-            return connection.Scenes.Contains(NetworkObject.gameObject.scene);
+
+            
+            /* First try checking if the passed in connection has the same
+             * scene this object is in, in their Scenes. */
+            if (connection.Scenes.Contains(NetworkObject.gameObject.scene))
+            { 
+                return true;
+            }
+            else
+            {
+                /* If there is no owner then there is no reason to continue.
+                 * The object is owned by the server therefor will only
+                 * qualify for visibility with the scene it resides. */
+                if (!base.NetworkObject.OwnerIsValid)
+                    return false;
+
+                /* If here the object has a owner. If connection shares any
+                 * scenes with the owner then this object will be visibile. */
+                foreach (Scene s in base.NetworkObject.Owner.Scenes)
+                {
+                    //Scenes match.
+                    if (connection.Scenes.Contains(s))
+                        return true;
+                }
+
+                //Fall through, no matches.
+                return false;
+            }
         }
 
         /// <summary>
@@ -45,7 +67,7 @@ namespace FishNet.Managing
         /// <returns></returns>
         public override bool Timed()
         {
-            return _timed;
+            return false;
         }
 
 
@@ -56,7 +78,7 @@ namespace FishNet.Managing
         public override ObserverCondition Clone()
         {
             SceneCondition copy = ScriptableObject.CreateInstance<SceneCondition>();
-            copy.ConditionConstructor(_synchronizeScene, _timed);
+            copy.ConditionConstructor(_synchronizeScene);
             return copy;
         }
 
