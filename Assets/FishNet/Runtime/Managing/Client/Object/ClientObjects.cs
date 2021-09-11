@@ -175,7 +175,7 @@ namespace FishNet.Managing.Client.Object
                 nb.OnObserversRpc(reader);
             }
             else
-            {
+            {                
                 if (dataLength == -1)
                 { 
                     Debug.LogWarning($"NetworkBehaviour could not be found for ObserversRpc.");
@@ -250,7 +250,7 @@ namespace FishNet.Managing.Client.Object
             if (!base.NetworkManager.IsHost)
             {
                 NetworkConnection owner = new NetworkConnection(NetworkManager, ownerId);
-                nob.PreInitialize(NetworkManager, objectId, owner, false, base.NetworkManager.TimeManager.Tick);
+                nob.PreInitialize(NetworkManager, objectId, owner, false);
             }
 
             _objectCache.AddSpawn(nob, syncValues, NetworkManager);

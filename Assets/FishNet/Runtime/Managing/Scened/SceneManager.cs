@@ -1256,53 +1256,7 @@ namespace FishNet.Managing.Scened
                 else
                     OnClientPresenceChangeEnd?.Invoke(cpc);
             }
-        }
-
-        /// <summary>
-        /// Returns if a scene is loaded.
-        /// </summary>
-        /// <param name="sceneName"></param>
-        /// <returns></returns>
-        private bool IsSceneLoaded(string sceneName)
-        {
-            if (string.IsNullOrEmpty(sceneName))
-                return false;
-
-            for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
-            {
-                if (UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).name == sceneName)
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Returns a scene by handle.
-        /// </summary>
-        /// <param name="handle"></param>
-        /// <returns></returns>
-        public Scene GetSceneByHandle(int handle)
-        {
-            return GetSceneByHandleInternal(handle);
-        }
-        /// <summary>
-        /// Returns a scene by handle.
-        /// </summary>
-        /// <param name="handle"></param>
-        /// <returns></returns>
-        private Scene GetSceneByHandleInternal(int handle)
-        {
-            for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
-            {
-                Scene s = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
-                if (s.handle == handle)
-                    return s;
-            }
-
-            //Fall through, not found.
-            return new Scene();
-        }
+        }       
         #endregion
 
         #region GetScene.
@@ -1351,7 +1305,6 @@ namespace FishNet.Managing.Scened
             return new Scene();
         }
         #endregion
-
 
         /// <summary>
         /// Returns if GlobalScenes contains scene.

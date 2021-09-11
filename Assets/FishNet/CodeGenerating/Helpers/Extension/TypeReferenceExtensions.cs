@@ -24,6 +24,20 @@ namespace FishNet.CodeGenerating.Helping.Extension
             }
             return null;
         }
+        /// <summary>
+        /// Resolves the constructor with parameterCount for typeRef.
+        /// </summary>
+        /// <param name="typeRef"></param>
+        /// <returns></returns>
+        public static MethodDefinition ResolveParameterCountPublicConstructor(this TypeReference typeRef, int parameterCount)
+        {
+            foreach (MethodDefinition methodDef in typeRef.Resolve().Methods)
+            {
+                if (methodDef.IsConstructor && methodDef.Resolve().IsPublic && methodDef.Parameters.Count == parameterCount)
+                    return methodDef;
+            }
+            return null;
+        }
 
         /// <summary>
         /// Resolves the default constructor for typeRef.

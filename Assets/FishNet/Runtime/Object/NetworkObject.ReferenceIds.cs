@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System;
 using FishNet.Object.Helping;
+using System.Linq;
 #if UNITY_EDITOR
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -53,13 +54,14 @@ namespace FishNet.Object
         }
         #endregion
 
-        #region Private.
+#if UNITY_EDITOR
         /// <summary>
-        /// Contains NetworkObjects with their sceneIds are they are in their objects scene.
+        /// This is used to store NetworkObjects in the scene during edit time.
+        /// SceneIds are compared against this collection to ensure there are no duplicated.
         /// </summary>
         [SerializeField, HideInInspector]
-        private static readonly Dictionary<ulong, NetworkObject> _sceneIds = new Dictionary<ulong, NetworkObject>();
-        #endregion
+        private List<NetworkObject> _sceneNetworkObjects = new List<NetworkObject>();
+#endif
 
 #if UNITY_EDITOR
         /// <summary>
@@ -67,71 +69,73 @@ namespace FishNet.Object
         /// </summary>
         private void TryCreateSceneID()
         {
-            //If prefab or part of a prefab, not a scene object.
-            if (PrefabUtility.IsPartOfPrefabAsset(this) || IsEditingInPrefabMode())
-            {
-                /* //muchlater This likely has to be done on prefab too if user
-                 * applies changes to prefab after editing in scene. */
-                SceneId = 0;
-                return;
-            }
-            //Not in a scene, another prefab check.
-            if (!gameObject.scene.IsValid())
-            {
-                SceneId = 0;
-                return;
-            }
-            //Stored on disk, so is a prefab. Somehow prefabutility missed it.
-            if (EditorUtility.IsPersistent(this))
-            {
-                SceneId = 0;
-                return;
-            }
-
-            //Do not execute if playing.
             if (Application.isPlaying)
                 return;
             if (gameObject == null)
                 return;
 
-            System.Random rnd = new System.Random();
+            ulong startId = SceneId;
+            uint startPath = _scenePathHash;
 
-            uint scenePathHash = gameObject.scene.path.ToLower().GetStableHash32();
-            //Not a valid sceneId or is a duplicate. 
-            if (scenePathHash != _scenePathHash || SceneId == 0 || IsDuplicateSceneId(SceneId))
+            ulong sceneId = 0;
+            uint scenePathHash = 0;
+            //If prefab or part of a prefab, not a scene object.            
+            if (PrefabUtility.IsPartOfPrefabAsset(this) || IsEditingInPrefabMode() ||
+             //Not in a scene, another prefab check.
+             !gameObject.scene.IsValid() ||
+             //Stored on disk, so is a prefab. Somehow prefabutility missed it.
+             EditorUtility.IsPersistent(this))
             {
-                /* If a scene has not been opened since an id has been
-                 * generated then it will not be serialized in editor. The id
-                 * would be correct in build but not if running in editor. 
-                 * Should conditions be true where scene is building without
-                 * being opened then cancel build and request user to open and save
-                 * scene. */
-                if (BuildPipeline.isBuildingPlayer)
-                    throw new InvalidOperationException($"Scene {gameObject.scene.path} needs to be opened and resaved before building, because the scene object {gameObject.name} has no valid sceneId yet.");
-
-                ulong shiftedHash = (ulong)scenePathHash << 32;
-                ulong randomId = 0;
-                while (randomId == 0 || IsDuplicateSceneId(randomId))
+                //These are all failing conditions, don't do additional checks.
+            }
+            else
+            {
+                System.Random rnd = new System.Random();
+                scenePathHash = gameObject.scene.path.ToLower().GetStableHash32();
+                sceneId = SceneId;
+                //Not a valid sceneId or is a duplicate. 
+                if (scenePathHash != _scenePathHash || SceneId == 0 || IsDuplicateSceneId(SceneId))
                 {
-                    uint next = (uint)(rnd.Next(int.MinValue, int.MaxValue) + int.MaxValue);
-                    /* Since the collection is lost when a scene loads the it's possible to
-                    * have a sceneid from another scene. Because of this the scene path is
-                    * inserted into the sceneid. */
-                    randomId = (next & 0xFFFFFFFF) | shiftedHash;
+                    /* If a scene has not been opened since an id has been
+                     * generated then it will not be serialized in editor. The id
+                     * would be correct in build but not if running in editor. 
+                     * Should conditions be true where scene is building without
+                     * being opened then cancel build and request user to open and save
+                     * scene. */
+                    if (BuildPipeline.isBuildingPlayer)
+                        throw new InvalidOperationException($"Scene {gameObject.scene.path} needs to be opened and resaved before building, because the scene object {gameObject.name} has no valid sceneId yet.");
+
+                    ulong shiftedHash = (ulong)scenePathHash << 32;
+                    ulong randomId = 0;
+                    while (randomId == 0 || IsDuplicateSceneId(randomId))
+                    {
+                        uint next = (uint)(rnd.Next(int.MinValue, int.MaxValue) + int.MaxValue);
+                        /* Since the collection is lost when a scene loads the it's possible to
+                        * have a sceneid from another scene. Because of this the scene path is
+                        * inserted into the sceneid. */
+                        randomId = (next & 0xFFFFFFFF) | shiftedHash;
+                    }
+
+                    sceneId = randomId;
                 }
 
-                SceneId = randomId;
             }
 
-            //Set dirty so changes will be saved.
-            EditorUtility.SetDirty(this);
-            /* Add to sceneIds collection. This must be done
-             * even if a new sceneId was not generated because
-             * the collection information is lost when the
-             * scene is existed. Essentially, it gets repopulated
-             * when the scene is re-opened. */
-            _sceneIds[SceneId] = this;
-            _scenePathHash = scenePathHash;
+            bool idChanged = (sceneId != startId);
+            bool pathChanged = (startPath != scenePathHash);
+            //If either changed then dirty and set.
+            if (idChanged || pathChanged)
+            {
+                //Set dirty so changes will be saved.
+                EditorUtility.SetDirty(this);
+                /* Add to sceneIds collection. This must be done
+                 * even if a new sceneId was not generated because
+                 * the collection information is lost when the
+                 * scene is existed. Essentially, it gets repopulated
+                 * when the scene is re-opened. */
+                SceneId = sceneId;
+                _scenePathHash = scenePathHash; 
+            }
         }
 
         private bool IsEditingInPrefabMode()
@@ -144,8 +148,8 @@ namespace FishNet.Object
             else
             {
                 // If the GameObject is not persistent let's determine which stage we are in first because getting Prefab info depends on it
-                var mainStage = StageUtility.GetMainStageHandle();
-                var currentStage = StageUtility.GetStageHandle(gameObject);
+                StageHandle mainStage = StageUtility.GetMainStageHandle();
+                StageHandle currentStage = StageUtility.GetStageHandle(gameObject);
                 if (currentStage != mainStage)
                 {
                     var prefabStage = PrefabStageUtility.GetPrefabStage(gameObject);
@@ -165,11 +169,16 @@ namespace FishNet.Object
         /// <returns></returns>
         private bool IsDuplicateSceneId(ulong id)
         {
-            bool inSceneIds = _sceneIds.TryGetValue(id, out NetworkObject nob);
-            if (inSceneIds && nob != null && nob != this)
-                return true;
-            else
-                return false;
+            //Find all nobs in scene.
+            _sceneNetworkObjects = GameObject.FindObjectsOfType<NetworkObject>().ToList();
+            foreach (NetworkObject nob in _sceneNetworkObjects)
+            {
+                if (nob != null && nob != this && nob.SceneId == id)
+                    return true;
+            }
+
+            //If here all checks pass.
+            return false;
         }
 
         protected virtual void OnValidate()

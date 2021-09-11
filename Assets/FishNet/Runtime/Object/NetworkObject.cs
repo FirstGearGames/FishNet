@@ -48,10 +48,6 @@ namespace FishNet.Object
         /// NetworkManager for this object.
         /// </summary>
         public NetworkManager NetworkManager { get; private set; }
-        /// <summary>
-        /// Tick when this was spawned.
-        /// </summary>
-        internal uint SpawnedTick { get; private set; } = 0;
         #endregion
 
         private void Start()
@@ -112,13 +108,12 @@ namespace FishNet.Object
         /// PreInitializes this script.
         /// </summary>
         /// <param name="networkManager"></param>
-        internal void PreInitialize(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer, uint tick)
+        internal void PreInitialize(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
             Deinitializing = false;
             NetworkManager = networkManager;
             Owner = owner;
             ObjectId = objectId;
-            SpawnedTick = tick;
 
             //Add to connection objects if owner exist.
             if (owner != null)
@@ -132,7 +127,7 @@ namespace FishNet.Object
             if (asServer)
                 PreInitializeObservers();
 
-            if (NetworkBehaviours == null)
+            if (NetworkBehaviours == null || NetworkBehaviours.Length == 0)
             {
                 NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>();
                 if (NetworkBehaviours.Length > byte.MaxValue)
@@ -289,7 +284,7 @@ namespace FishNet.Object
 
         private void OnDrawGizmosSelected()
         {
-            SerializeSceneTransformProperties();
+            SerializeSceneTransformProperties();  
         }
 
         /// <summary>

@@ -58,10 +58,9 @@ namespace FishNet.CodeGenerating.Processing
 
             if (modified)
             {
-                bool constructorCreated;
-                MethodDefinition constructorMethodDef = CodegenSession.GeneralHelper.GetOrCreateConstructor(typeDef, out constructorCreated, false);
-
+                MethodDefinition constructorMethodDef = CodegenSession.GeneralHelper.GetOrCreateConstructor(typeDef, out _, false);
                 ILProcessor constructorProcesser = constructorMethodDef.Body.GetILProcessor();
+                
                 //NetworkObject.Create_____Delegate.
                 foreach ((RpcType rpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, int methodHash) in delegateMethodDefs)
                     CodegenSession.ObjectHelper.CreateRpcDelegate(constructorProcesser, originalMethodDef, readerMethodDef, rpcType, methodHash);
@@ -367,7 +366,7 @@ namespace FishNet.CodeGenerating.Processing
                     Instruction retInst = CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdProcessor, LoggingType.Off, true, true);
                     //Create variables that take from reader. They arent used but reader must still be flushed of content for this packet.
                     createdProcessor.InsertBefore(retInst, allReadInsts);
-                    
+
                     createdProcessor.Add(allReadInsts);
                 }
                 else

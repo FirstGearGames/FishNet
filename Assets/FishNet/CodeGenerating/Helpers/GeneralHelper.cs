@@ -140,7 +140,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates the RuntimeInitializeOnLoadMethod attribute for a method.
         /// </summary>
-        internal void CreateRuntimeInitializeOnLoadMethodAttribute(MethodDefinition methodDef)
+        internal void CreateRuntimeInitializeOnLoadMethodAttribute(MethodDefinition methodDef, string loadType = "")
         {
             TypeReference attTypeRef = GetTypeReference(typeof(RuntimeInitializeOnLoadMethodAttribute));
             foreach (CustomAttribute item in methodDef.CustomAttributes)
@@ -150,9 +150,26 @@ namespace FishNet.CodeGenerating.Helping
                     return;
             }
 
-            MethodDefinition constructorMethodDef = attTypeRef.ResolveDefaultPublicConstructor();
+            int parameterRequirement = (loadType.Length == 0) ? 0 : 1;
+            MethodDefinition constructorMethodDef = attTypeRef.ResolveParameterCountPublicConstructor(parameterRequirement);
             MethodReference constructorMethodRef = CodegenSession.Module.ImportReference(constructorMethodDef);
             CustomAttribute ca = new CustomAttribute(constructorMethodRef);
+            /* If load type isn't null then it
+             * has to be passed in as the first argument. */
+            if (loadType.Length > 0)
+            {
+                Type t = typeof(RuntimeInitializeLoadType);
+                foreach (UnityEngine.RuntimeInitializeLoadType value in t.GetEnumValues())
+                {
+                    if (loadType == value.ToString())
+                    {
+                        TypeReference tr = CodegenSession.Module.ImportReference(t);
+                        CustomAttributeArgument arg = new CustomAttributeArgument(tr, value);
+                        ca.ConstructorArguments.Add(arg);
+                    }
+                }
+            }
+
             methodDef.CustomAttributes.Add(ca);
         }
 

@@ -98,7 +98,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Collection to use for spawnable objects.
         /// </summary>
-        public PrefabObjects SpawnablePrefabs => _spawnablePrefabs;
+        public PrefabObjects SpawnablePrefabs { get => _spawnablePrefabs; set => _spawnablePrefabs = value; }
         #endregion
 
         protected virtual void Awake()
@@ -106,7 +106,7 @@ namespace FishNet.Managing
             if (WillBeDestroyed())
                 return;
 
-            _spawnablePrefabs.InitializePrefabRange(0);
+            SpawnablePrefabs.InitializePrefabRange(0);
             SetDontDestroyOnLoad();
             SetRunInBackground();
             EmptyConnection = new NetworkConnection();
@@ -239,22 +239,24 @@ namespace FishNet.Managing
 
 
         #region Editor.
-#if UNITY_EDITOR
+//#if UNITY_EDITOR
         private void OnValidate()
         { 
             FindTransportManager();
+            if (SpawnablePrefabs == null)
+                Reset();
         }
         protected virtual void Reset()
         {
-            if (_spawnablePrefabs == null)
+            if (SpawnablePrefabs == null)
             {
-                _spawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);
+                SpawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);
                 //If found.
-                if (_spawnablePrefabs != null)
+                if (SpawnablePrefabs != null)
                     Debug.Log($"NetworkManager on {gameObject.name} is using the default prefabs collection.");
             }
         }
-#endif
+//#endif
         #endregion
 
     }

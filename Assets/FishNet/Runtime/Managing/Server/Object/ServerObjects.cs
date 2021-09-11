@@ -50,8 +50,6 @@ namespace FishNet.Managing.Server.Object
             InitializeObservers();
         }
 
-
-
         #region Checking dirty SyncTypes.
         /// <summary>
         /// Iterates NetworkBehaviours with dirty SyncTypes.
@@ -249,7 +247,7 @@ namespace FishNet.Managing.Server.Object
         private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null)
         {
             int objectId = GetNextNetworkObjectId();
-            nob.PreInitialize(NetworkManager, objectId, ownerConnection, true, base.NetworkManager.TimeManager.Tick);
+            nob.PreInitialize(NetworkManager, objectId, ownerConnection, true);
             base.AddToSpawned(nob);
             nob.gameObject.SetActive(true);
             nob.Initialize(true);
@@ -452,10 +450,6 @@ namespace FishNet.Managing.Server.Object
         }
     }
     #endregion
-
-
-
-
 
 
 

@@ -6,6 +6,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
 using FishNet.Utility;
+using UnityEngine;
 
 namespace FishNet.Managing.Server.Object
 {
