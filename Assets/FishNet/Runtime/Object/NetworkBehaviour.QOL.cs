@@ -72,16 +72,6 @@ namespace FishNet.Object
         /// <summary>
         /// Spawns an object over the network.
         /// </summary>
-        /// <param name="networkObject"></param>
-        public void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection = null)
-        {
-            if (IsNetworkObjectNull(true))
-                return;
-            NetworkObject.Spawn(networkObject, ownerConnection);
-        }
-        /// <summary>
-        /// Spawns an object over the network.
-        /// </summary>
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
         {
             if (IsNetworkObjectNull(true))

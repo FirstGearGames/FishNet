@@ -56,16 +56,6 @@ namespace FishNet.Object
         /// <summary>
         /// Spawns an object over the network. Only call from the server.
         /// </summary>
-        /// <param name="networkObject"></param>
-        public void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection = null)
-        {
-            if (!CanSpawnOrDespawn(true))
-                return;
-            NetworkManager.ServerManager.Spawn(networkObject, ownerConnection);
-        }
-        /// <summary>
-        /// Spawns an object over the network. Only call from the server.
-        /// </summary>
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
         {
             if (!CanSpawnOrDespawn(true))

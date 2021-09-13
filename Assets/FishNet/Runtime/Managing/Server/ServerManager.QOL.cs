@@ -9,14 +9,6 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Spawns an object over the network. Only call from the server.
         /// </summary>
-        /// <param name="networkObject"></param>
-        public void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection = null)
-        {
-            Objects.Spawn(networkObject, ownerConnection);
-        }
-        /// <summary>
-        /// Spawns an object over the network. Only call from the server.
-        /// </summary>
         /// <param name="go"></param>
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
         {
@@ -27,7 +19,7 @@ namespace FishNet.Managing.Server
             }
 
             NetworkObject nob = go.GetComponent<NetworkObject>();
-            Spawn(nob, ownerConnection);
+            Objects.Spawn(nob, ownerConnection);
         }
 
         /// <summary>
