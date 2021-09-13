@@ -239,7 +239,7 @@ namespace FishNet.Managing
 
 
         #region Editor.
-//#if UNITY_EDITOR
+#if UNITY_EDITOR
         private void OnValidate()
         { 
             FindTransportManager();
@@ -256,7 +256,7 @@ namespace FishNet.Managing
                     Debug.Log($"NetworkManager on {gameObject.name} is using the default prefabs collection.");
             }
         }
-//#endif
+#endif
         #endregion
 
     }
