@@ -15,7 +15,8 @@ namespace FishNet.Managing.Timing.Editing
 
         private SerializedProperty _useClientSidePrediction;
         private SerializedProperty _maximumBufferedInputs;
-        private SerializedProperty _simulationSyncInterval;
+        private SerializedProperty _targetBufferedInputs;
+        private SerializedProperty _aggressiveTiming;
 
         protected virtual void OnEnable()
         {
@@ -24,7 +25,8 @@ namespace FishNet.Managing.Timing.Editing
 
             _useClientSidePrediction = serializedObject.FindProperty("_useClientSidePrediction");
             _maximumBufferedInputs = serializedObject.FindProperty("_maximumBufferedInputs");
-            _simulationSyncInterval = serializedObject.FindProperty("_simulationSyncInterval");
+            _targetBufferedInputs = serializedObject.FindProperty("_targetBufferedInputs");
+            _aggressiveTiming = serializedObject.FindProperty("_aggressiveTiming");
         }
 
         public override void OnInspectorGUI()
@@ -51,7 +53,8 @@ namespace FishNet.Managing.Timing.Editing
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_maximumBufferedInputs, new GUIContent("Maximum Buffered Inputs", "Maximum number of excessive input sent from client before entries are dropped. Client is expected to send roughly one input per server tick."));
-                EditorGUILayout.PropertyField(_simulationSyncInterval, new GUIContent("Simulation Sync Interval", "How many ticks to wait between each step change. Lower this value for more precise tick synchronization between client and server at the cost of more bandwidth."));
+                EditorGUILayout.PropertyField(_targetBufferedInputs, new GUIContent("Target Buffered Inputs", "Number of inputs server prefers to have buffered from clients."));
+                //EditorGUILayout.PropertyField(_aggressiveTiming, new GUIContent("Aggressive Timing", "True to enable more accurate tick synchronization between client and server at the cost of bandwidth."));
                 EditorGUI.indentLevel--;
             }
             EditorGUI.indentLevel--;

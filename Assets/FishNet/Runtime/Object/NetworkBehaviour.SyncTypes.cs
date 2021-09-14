@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-    
+
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Types.
@@ -170,8 +170,21 @@ namespace FishNet.Object
         /// Writers dirty SyncTypes if their write tick has been met.
         /// </summary>
         /// <returns>True if there are no pending dirty sync types.</returns>
-        internal bool WriteDirtySyncTypes(bool isSyncObject)
+        internal bool WriteDirtySyncTypes(bool isSyncObject, bool ignoreInterval = false)
         {
+            /* Can occur when a synctype is queued after
+             * the object is marked for destruction. This should not
+             * happen under most conditions since synctypes will be
+             * pushed through when despawn is called. */
+            if (!IsSpawned)
+            {
+                Dictionary<uint, SyncBase> c1 = (isSyncObject) ? _syncObjects : _syncVars;
+                foreach (SyncBase sb in c1.Values)
+                    sb.ResetDirty();
+
+                return true;
+            }
+
             /* If there is nothing dirty then return true, indicating no more
              * pending dirty checks. */
             if (isSyncObject && (!_syncObjectDirty || _syncObjects.Count == 0))
@@ -195,7 +208,7 @@ namespace FishNet.Object
                     continue;
 
                 dirtyFound = true;
-                if (sb.WriteTimeMet(tick))
+                if (ignoreInterval || sb.WriteTimeMet(tick))
                 {
                     //If writers still need to be reset.
                     if (!writersReset)
@@ -289,7 +302,7 @@ namespace FishNet.Object
             /* Fall through. If here then sync types are still pending
              * being written or were just written this frame. */
             return false;
-        }   
+        }
 
 
         //public bool SyncTypeEquals<T>(T a, T b)

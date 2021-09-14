@@ -7,6 +7,4 @@ namespace FishNet.Managing.Timing.Broadcast
         public sbyte Step;
     }
 
-    public struct BufferIncreaseBroadcast : IBroadcast { }
-
 }

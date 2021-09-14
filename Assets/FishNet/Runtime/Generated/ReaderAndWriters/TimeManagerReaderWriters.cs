@@ -20,13 +20,6 @@ namespace FishNet.Runtime
             };
         }
 
-        public static void Write___BufferIncreaseBroadcast(this PooledWriter writer, BufferIncreaseBroadcast value) { }
-
-        public static BufferIncreaseBroadcast Read___BufferIncreaseBroadcast(this PooledReader reader)
-        {
-            return new BufferIncreaseBroadcast();
-        }
-
 
     }
 }

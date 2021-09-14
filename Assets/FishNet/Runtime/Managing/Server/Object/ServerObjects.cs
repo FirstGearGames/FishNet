@@ -416,6 +416,7 @@ namespace FishNet.Managing.Server.Object
         {
             if (nob != null && nob.ObjectId != -1)
             {
+                nob.WriteDirtySyncTypes();
                 WriteDespawnAndSend(nob);
                 CacheObjectId(nob);
             }

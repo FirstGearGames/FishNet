@@ -135,6 +135,9 @@ namespace FishNet.Object
         /// <param name="channel"></param>
         public void SendServerRpc(uint rpcHash, PooledWriter methodWriter, Channel channel)
         {
+            if (!IsSpawnedWithWarning())
+                return;
+
             PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.ServerRpc, channel);
             NetworkObject.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
             writer.Dispose();
@@ -148,6 +151,9 @@ namespace FishNet.Object
         /// <param name="channel"></param>
         public void SendObserversRpc(uint rpcHash, PooledWriter methodWriter, Channel channel)
         {
+            if (!IsSpawnedWithWarning())
+                return;
+
             PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.ObserversRpc, channel);
             NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), NetworkObject.Observers);
 
@@ -164,6 +170,9 @@ namespace FishNet.Object
         /// <param name="target"></param>
         public void SendTargetRpc(uint rpcHash, PooledWriter methodWriter, Channel channel, NetworkConnection target)
         {
+            if (!IsSpawnedWithWarning())
+                return;
+
             /* These checks could be codegened in to save a very very small amount of performance
              * by performing them before the serializer is written, but the odds of these failing
              * are very low and I'd rather keep the complexity out of codegen. */
@@ -193,6 +202,20 @@ namespace FishNet.Object
             writer.Dispose();
         }
 
+        
+        /// <summary>
+        /// Returns if spawned and throws a warning if not.
+        /// </summary>
+        /// <returns></returns>
+        private bool IsSpawnedWithWarning()
+        {
+            bool result = this.IsSpawned;
+            if (!result)
+                Debug.LogWarning($"Action cannot be completed as object {gameObject.name} is not spawned.");
+
+            return result;
+        }
+        
         /// <summary>
         /// Creates a PooledWriter and writes the header for a rpc.
         /// </summary>
