@@ -382,7 +382,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Holds client authoritative updates received to send to other clients.
         /// </summary>
-        private ClientAuthoritativeUpdate _clientAuthoritativeUpdates;
+        private ClientAuthoritativeUpdate _clientAuthoritativeUpdates = null;
         #endregion
 
         #region Const.

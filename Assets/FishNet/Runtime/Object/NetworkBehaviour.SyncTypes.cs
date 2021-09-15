@@ -127,6 +127,8 @@ namespace FishNet.Object
 
             foreach (SyncBase sb in _syncVars.Values)
                 sb.PreInitialize(networkObject.NetworkManager);
+            foreach (SyncBase sb in _syncObjects.Values)
+                sb.PreInitialize(networkObject.NetworkManager);
         }
 
 

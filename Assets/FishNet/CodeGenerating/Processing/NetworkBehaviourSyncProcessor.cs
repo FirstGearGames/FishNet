@@ -8,6 +8,7 @@ using FishNet.Transporting;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -176,7 +177,7 @@ namespace FishNet.CodeGenerating.Processing
                 return;
             }
 
-            bool result = InitializeSyncDictionary(syncTypeCount, typeDef, originalFieldDef, keyMonoType,valueMonoType, syncAttribute);
+            bool result = InitializeSyncDictionary(syncTypeCount, typeDef, originalFieldDef, keyMonoType, valueMonoType, syncAttribute);
             if (result)
                 allProcessedSyncs.Add((SyncType.Dictionary, null));
         }
@@ -586,7 +587,7 @@ namespace FishNet.CodeGenerating.Processing
 
             /* Initialize with attribute settings. */
             injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
-             processor= injectionMethodDef.Body.GetILProcessor();
+            processor = injectionMethodDef.Body.GetILProcessor();
             //
             System.Reflection.MethodInfo initializeInstanceMethodInfo = typedSyncClassType.GetMethod(INITIALIZEINSTANCE_METHOD_NAME);
             MethodReference initializeInstanceMethodRef = CodegenSession.Module.ImportReference(initializeInstanceMethodInfo);
@@ -733,7 +734,7 @@ namespace FishNet.CodeGenerating.Processing
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
             instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
             instructions.Add(processor.Create(OpCodes.Callvirt, CodegenSession.SyncHandlerGenerator.SyncBase_SetSyncIndex_MethodRef));
-    
+
             processor.InsertFirst(instructions);
         }
 
@@ -797,7 +798,15 @@ namespace FishNet.CodeGenerating.Processing
 
                     ProcessGetField(methodDef, i, resolvedOpField, processedLookup);
                 }
+                /* Load address, reference field. */
+                else if (inst.OpCode == OpCodes.Ldflda && inst.Operand is FieldReference opFieldlda)
+                {
+                    FieldReference resolvedOpField = opFieldlda.Resolve();
+                    if (resolvedOpField == null)
+                        resolvedOpField = opFieldlda.DeclaringType.Resolve().GetField(opFieldlda.Name);
 
+                    ProcessAddressField(methodDef, i, resolvedOpField, processedLookup);
+                }
                 /* Setting a field. (Setter) */
                 else if (inst.OpCode == OpCodes.Stfld && inst.Operand is FieldReference opFieldst)
                 {
@@ -808,15 +817,6 @@ namespace FishNet.CodeGenerating.Processing
                     ProcessSetField(methodDef, i, resolvedOpField, processedLookup);
                 }
 
-                /* Load address, reference field. */
-                else if (inst.OpCode == OpCodes.Ldflda && inst.Operand is FieldReference opFieldlda)
-                {
-                    FieldReference resolvedOpField = opFieldlda.Resolve();
-                    if (resolvedOpField == null)
-                        resolvedOpField = opFieldlda.DeclaringType.Resolve().GetField(opFieldlda.Name);
-
-                    ProcessAddressField(methodDef, i, resolvedOpField, processedLookup);
-                }
 
             }
         }
@@ -938,6 +938,33 @@ namespace FishNet.CodeGenerating.Processing
 
                     processor.Remove(inst);
                     processor.Remove(nextInstr);
+                }
+            }
+            /* Next instruction isn't initializing an object. Check if user
+             * might be trying to call a method with ref/out of a synctype. */
+            else
+            {
+                for (int i = (instructionIndex + 1); i < methodDef.Body.Instructions.Count; i++)
+                {
+                    inst = methodDef.Body.Instructions[i];
+                    /* Setting something. This is okay, and
+                     * is handled elsewhere. */
+                    if (inst.OpCode == OpCodes.Stfld || inst.OpCode == OpCodes.Stloc)
+                        return;
+                    /* Calling something, this would suggest a ref/out keyword. */
+                    if (inst.OpCode == OpCodes.Call || inst.opcode == OpCodes.Callvirt)
+                    {
+                        //If was a replaced field.
+                        if (processedLookup.TryGetValue(resolvedOpField, out List<ProcessedSync> psLst))
+                        {
+                            ProcessedSync ps = GetProcessedSync(resolvedOpField, psLst);
+                            if (ps == null)
+                                return;
+
+                            CodegenSession.Diagnostics.AddWarning($"SyncType variable '{ps.OriginalFieldReference.Name}' within method '{methodDef.Name}' in class '{methodDef.DeclaringType.Name}' may be calling another method using the ref or out keyword. This is currently not supported. If this message is a mistake please file a bug report.");
+                            return;
+                        }
+                    }
                 }
             }
         }
