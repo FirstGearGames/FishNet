@@ -24,7 +24,8 @@ public class NetworkHudCanvases : MonoBehaviour
         if (AutoStart)
         {
             OnClick_Server();
-            OnClick_Client();
+            if (!Application.isBatchMode)
+                OnClick_Client();
         }
     }
     private void Update()
@@ -46,16 +47,23 @@ public class NetworkHudCanvases : MonoBehaviour
 
     public void OnClick_Server()
     {
-        if (_networkManager.ServerManager.Started)
+        if (_networkManager.IsServer)
+        {
+            //Stop client as well.
+            if (_networkManager.IsClient)
+                _networkManager.TransportManager.Transport.StopConnection(false);
             _networkManager.TransportManager.Transport.StopConnection(true);
+        }
         else
+        {
             _networkManager.TransportManager.Transport.StartConnection(true);
+        }
     }
 
 
     public void OnClick_Client()
     {
-        if (_networkManager.ClientManager.Started)
+        if (_networkManager.IsClient)
             _networkManager.TransportManager.Transport.StopConnection(false);
         else
             _networkManager.TransportManager.Transport.StartConnection(false);

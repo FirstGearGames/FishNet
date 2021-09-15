@@ -73,6 +73,9 @@ namespace FishNet.Component.Transforming
 
         private void MoveToTarget()
         {
+            //Not client authoritative, is owner, and don't sync to owner.
+            if (!_clientAuthoritative && base.IsOwner && !_synchronizeToOwner)
+                return;
             //Owner, client controls movement.
             if (_clientAuthoritative && base.IsOwner)
                 return;

@@ -66,6 +66,12 @@ namespace FishNet.Managing.Server
         /// True to share current owner of objects with all clients. False to hide owner of objects from everyone but owner.
         /// </summary>
         internal bool ShareOwners => _shareOwners;
+        /// <summary>
+        /// True to automatically start the server connection when running as headless.
+        /// </summary>
+        [Tooltip("True to automatically start the server connection when running as headless.")]
+        [SerializeField]
+        private bool _startOnHeadless = true;
         #endregion
 
         /// <summary>
@@ -87,6 +93,9 @@ namespace FishNet.Managing.Server
                 _authenticator.FirstInitialize(manager);
                 _authenticator.OnAuthenticationResult += _authenticator_OnAuthenticationResult;
             }
+
+            if (_startOnHeadless && Application.isBatchMode)
+                NetworkManager.TransportManager.Transport.StartConnection(true);
         }
 
         /// <summary>
