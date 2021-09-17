@@ -260,7 +260,8 @@ namespace FishNet.CodeGenerating.ILCore
             /* This needs to persist because it holds SyncHandler
              * references for each SyncType. Those
              * SyncHandlers are re-used if there are multiple SyncTypes
-             * using the same Type. */
+             * using the same Type. It's also used to replace references
+             * to syncvars with the respected accessors. */
             List<(SyncType, ProcessedSync)> allProcessedSyncs = new List<(SyncType, ProcessedSync)>();
             HashSet<string> allProcessedCallbacks = new HashSet<string>();
             List<TypeDefinition> processedClasses = new List<TypeDefinition>();
@@ -275,6 +276,10 @@ namespace FishNet.CodeGenerating.ILCore
                 //modified |= CodegenSession.NetworkBehaviourProcessor.Process(typeDef, ref allRpcCount, allProcessedSyncs, allProcessedCallbacks);
                 CodegenSession.NetworkBehaviourProcessor.Process(typeDef, ref allRpcCount, allProcessedSyncs, allProcessedCallbacks);
             }
+
+            //Run through the typeDefs again to replace syncvar calls.
+            foreach (TypeDefinition typeDef in networkBehaviourTypeDefs)
+                CodegenSession.NetworkBehaviourSyncProcessor.ReplaceGetSets(typeDef, allProcessedSyncs);
 
             return modified;
         }

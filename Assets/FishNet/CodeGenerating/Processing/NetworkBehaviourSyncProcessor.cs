@@ -40,7 +40,6 @@ namespace FishNet.CodeGenerating.Processing
         internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs)
         {
             bool modified = false;
-
             _createdSyncTypeMethodDefinitions.Clear();
             _lastReadInstruction = null;
 
@@ -64,11 +63,18 @@ namespace FishNet.CodeGenerating.Processing
                 modified = true;
             }
 
-            if (modified)
-            {
-                List<MethodDefinition> modifiableMethods = GetModifiableMethods(typeDef);
-                ReplaceGetSets(modifiableMethods, allProcessedSyncs);
-            }
+            return modified; 
+        }
+
+        /// <summary>
+        /// Replaces GetSets for methods which may use a SyncType.
+        /// </summary>
+        internal bool ReplaceGetSets(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs)
+        {
+            bool modified = false;
+
+            List<MethodDefinition> modifiableMethods = GetModifiableMethods(typeDef);
+            modified |= ReplaceGetSets(modifiableMethods, allProcessedSyncs);
 
             return modified;
         }
@@ -743,7 +749,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="modifiableMethods"></param>
         /// <param name="processedSyncs"></param>
-        internal void ReplaceGetSets(List<MethodDefinition> modifiableMethods, List<(SyncType, ProcessedSync)> processedSyncs)
+        internal bool ReplaceGetSets(List<MethodDefinition> modifiableMethods, List<(SyncType, ProcessedSync)> processedSyncs)
         {
             //Build processed syncs into dictionary for quicker loookups.
             Dictionary<FieldReference, List<ProcessedSync>> processedLookup = new Dictionary<FieldReference, List<ProcessedSync>>();
@@ -762,8 +768,11 @@ namespace FishNet.CodeGenerating.Processing
                 result.Add(ps);
             }
 
+            bool modified = false;
             foreach (MethodDefinition methodDef in modifiableMethods)
-                ReplaceGetSet(methodDef, processedLookup);
+                modified |= ReplaceGetSet(methodDef, processedLookup);
+
+            return modified;
         }
 
         /// <summary>
@@ -771,20 +780,21 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="methodDef"></param>
         /// <param name="processedLookup"></param>
-        private void ReplaceGetSet(MethodDefinition methodDef, Dictionary<FieldReference, List<ProcessedSync>> processedLookup)
+        private bool ReplaceGetSet(MethodDefinition methodDef, Dictionary<FieldReference, List<ProcessedSync>> processedLookup)
         {
             if (methodDef == null)
             {
                 CodegenSession.LogError($"An object expecting value was null. Please try saving your script again.");
-                return;
+                return false;
             }
             if (methodDef.IsAbstract)
-                return;
+                return false;
             if (_createdSyncTypeMethodDefinitions.Contains(methodDef))
-                return;
+                return false;
             if (methodDef.Name == NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME)
-                return;
+                return false;
 
+            bool modified = false;
             for (int i = 0; i < methodDef.Body.Instructions.Count; i++)
             {
                 Instruction inst = methodDef.Body.Instructions[i];
@@ -796,7 +806,7 @@ namespace FishNet.CodeGenerating.Processing
                     if (resolvedOpField == null)
                         resolvedOpField = opFieldld.DeclaringType.Resolve().GetField(opFieldld.Name);
 
-                    ProcessGetField(methodDef, i, resolvedOpField, processedLookup);
+                    modified |= ProcessGetField(methodDef, i, resolvedOpField, processedLookup);
                 }
                 /* Load address, reference field. */
                 else if (inst.OpCode == OpCodes.Ldflda && inst.Operand is FieldReference opFieldlda)
@@ -805,7 +815,7 @@ namespace FishNet.CodeGenerating.Processing
                     if (resolvedOpField == null)
                         resolvedOpField = opFieldlda.DeclaringType.Resolve().GetField(opFieldlda.Name);
 
-                    ProcessAddressField(methodDef, i, resolvedOpField, processedLookup);
+                    modified |= ProcessAddressField(methodDef, i, resolvedOpField, processedLookup);
                 }
                 /* Setting a field. (Setter) */
                 else if (inst.OpCode == OpCodes.Stfld && inst.Operand is FieldReference opFieldst)
@@ -814,11 +824,12 @@ namespace FishNet.CodeGenerating.Processing
                     if (resolvedOpField == null)
                         resolvedOpField = opFieldst.DeclaringType.Resolve().GetField(opFieldst.Name);
 
-                    ProcessSetField(methodDef, i, resolvedOpField, processedLookup);
+                    modified |= ProcessSetField(methodDef, i, resolvedOpField, processedLookup);
                 }
 
-
             }
+
+            return modified;
         }
 
         /// <summary>
@@ -828,7 +839,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="instructionIndex"></param>
         /// <param name="resolvedOpField"></param>
         /// <param name="processedLookup"></param>
-        private void ProcessGetField(MethodDefinition methodDef, int instructionIndex, FieldReference resolvedOpField, Dictionary<FieldReference, List<ProcessedSync>> processedLookup)
+        private bool ProcessGetField(MethodDefinition methodDef, int instructionIndex, FieldReference resolvedOpField, Dictionary<FieldReference, List<ProcessedSync>> processedLookup)
         {
             Instruction inst = methodDef.Body.Instructions[instructionIndex];
 
@@ -837,7 +848,10 @@ namespace FishNet.CodeGenerating.Processing
             {
                 ProcessedSync ps = GetProcessedSync(resolvedOpField, psLst);
                 if (ps == null)
-                    return;
+                    return false;
+                //Don't modify the accessor method.
+                if (ps.GetMethodReference.Resolve() == methodDef)
+                    return false;
 
                 //Generic type.
                 if (resolvedOpField.DeclaringType.IsGenericInstance || resolvedOpField.DeclaringType.HasGenericParameters)
@@ -853,6 +867,12 @@ namespace FishNet.CodeGenerating.Processing
                     inst.OpCode = OpCodes.Call;
                     inst.Operand = ps.GetMethodReference;
                 }
+
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -864,7 +884,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="instructionIndex"></param>
         /// <param name="resolvedOpField"></param>
         /// <param name="processedLookup"></param>
-        private void ProcessSetField(MethodDefinition methodDef, int instructionIndex, FieldReference resolvedOpField, Dictionary<FieldReference, List<ProcessedSync>> processedLookup)
+        private bool ProcessSetField(MethodDefinition methodDef, int instructionIndex, FieldReference resolvedOpField, Dictionary<FieldReference, List<ProcessedSync>> processedLookup)
         {
             //return;
             Instruction inst = methodDef.Body.Instructions[instructionIndex];
@@ -873,7 +893,10 @@ namespace FishNet.CodeGenerating.Processing
             {
                 ProcessedSync ps = GetProcessedSync(resolvedOpField, psLst);
                 if (ps == null)
-                    return;
+                    return false;
+                //Don't modify the accessor method.
+                if (ps.SetMethodReference.Resolve() == methodDef)
+                    return false;
 
                 ILProcessor processor = methodDef.Body.GetILProcessor();
                 //Generic type.
@@ -898,6 +921,12 @@ namespace FishNet.CodeGenerating.Processing
                     inst.OpCode = OpCodes.Call;
                     inst.Operand = ps.SetMethodReference;
                 }
+
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -908,65 +937,78 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="instructionIndex"></param>
         /// <param name="resolvedOpField"></param>
         /// <param name="processedLookup"></param>
-        private void ProcessAddressField(MethodDefinition methodDef, int instructionIndex, FieldReference resolvedOpField, Dictionary<FieldReference, List<ProcessedSync>> processedLookup)
+        private bool ProcessAddressField(MethodDefinition methodDef, int instructionIndex, FieldReference resolvedOpField, Dictionary<FieldReference, List<ProcessedSync>> processedLookup)
         {
             Instruction inst = methodDef.Body.Instructions[instructionIndex];
             //Check if next instruction is Initobj, which would be setting a new instance.
             Instruction nextInstr = inst.Next;
-            if (nextInstr.OpCode == OpCodes.Initobj)
+            if (nextInstr.OpCode != OpCodes.Initobj)
+                return false;
+
+            //If was a replaced field.
+            if (processedLookup.TryGetValue(resolvedOpField, out List<ProcessedSync> psLst))
             {
-                //If was a replaced field.
-                if (processedLookup.TryGetValue(resolvedOpField, out List<ProcessedSync> psLst))
-                {
-                    ProcessedSync ps = GetProcessedSync(resolvedOpField, psLst);
-                    if (ps == null)
-                        return;
+                ProcessedSync ps = GetProcessedSync(resolvedOpField, psLst);
+                if (ps == null)
+                    return false;
+                //Don't modify the accessor method.
+                if (ps.GetMethodReference.Resolve() == methodDef || ps.SetMethodReference.Resolve() == methodDef)
+                    return false;
 
-                    ILProcessor processor = methodDef.Body.GetILProcessor();
+                ILProcessor processor = methodDef.Body.GetILProcessor();
 
-                    VariableDefinition tmpVariableDef = CodegenSession.GeneralHelper.CreateVariable(methodDef, resolvedOpField.FieldType);
-                    processor.InsertBefore(inst, processor.Create(OpCodes.Ldloca, tmpVariableDef));
-                    processor.InsertBefore(inst, processor.Create(OpCodes.Initobj, resolvedOpField.FieldType));
-                    processor.InsertBefore(inst, processor.Create(OpCodes.Ldloc, tmpVariableDef));
-                    Instruction newInstr = processor.Create(OpCodes.Call, ps.SetMethodReference);
-                    processor.InsertBefore(inst, newInstr);
+                VariableDefinition tmpVariableDef = CodegenSession.GeneralHelper.CreateVariable(methodDef, resolvedOpField.FieldType);
+                processor.InsertBefore(inst, processor.Create(OpCodes.Ldloca, tmpVariableDef));
+                processor.InsertBefore(inst, processor.Create(OpCodes.Initobj, resolvedOpField.FieldType));
+                processor.InsertBefore(inst, processor.Create(OpCodes.Ldloc, tmpVariableDef));
+                Instruction newInstr = processor.Create(OpCodes.Call, ps.SetMethodReference);
+                processor.InsertBefore(inst, newInstr);
 
-                    /* Pass in true for as server.
-                     * The instruction index is 3 past ld. */
-                    Instruction boolTrueInst = processor.Create(OpCodes.Ldc_I4_1);
-                    methodDef.Body.Instructions.Insert(instructionIndex + 3, boolTrueInst);
+                /* Pass in true for as server.
+                 * The instruction index is 3 past ld. */
+                Instruction boolTrueInst = processor.Create(OpCodes.Ldc_I4_1);
+                methodDef.Body.Instructions.Insert(instructionIndex + 3, boolTrueInst);
 
-                    processor.Remove(inst);
-                    processor.Remove(nextInstr);
-                }
+                processor.Remove(inst);
+                processor.Remove(nextInstr);
+
+                return true;
             }
-            /* Next instruction isn't initializing an object. Check if user
-             * might be trying to call a method with ref/out of a synctype. */
             else
             {
-                for (int i = (instructionIndex + 1); i < methodDef.Body.Instructions.Count; i++)
-                {
-                    inst = methodDef.Body.Instructions[i];
-                    /* Setting something. This is okay, and
-                     * is handled elsewhere. */
-                    if (inst.OpCode == OpCodes.Stfld || inst.OpCode == OpCodes.Stloc)
-                        return;
-                    /* Calling something, this would suggest a ref/out keyword. */
-                    if (inst.OpCode == OpCodes.Call || inst.opcode == OpCodes.Callvirt)
-                    {
-                        //If was a replaced field.
-                        if (processedLookup.TryGetValue(resolvedOpField, out List<ProcessedSync> psLst))
-                        {
-                            ProcessedSync ps = GetProcessedSync(resolvedOpField, psLst);
-                            if (ps == null)
-                                return;
-
-                            CodegenSession.Diagnostics.AddWarning($"SyncType variable '{ps.OriginalFieldReference.Name}' within method '{methodDef.Name}' in class '{methodDef.DeclaringType.Name}' may be calling another method using the ref or out keyword. This is currently not supported. If this message is a mistake please file a bug report.");
-                            return;
-                        }
-                    }
-                }
+                return false;
             }
+
+            ///* Next instruction isn't initializing an object. Check if user
+            // * might be trying to call a method with ref/out of a synctype. */
+            //else
+            //{
+            //    /* There's many aspects where this might trigger the warning even
+            //     * if the sync type isn't being passed in using ref/out. For now
+            //     * keep this commented, might revisit it later. */
+            //    //for (int i = (instructionIndex + 1); i < methodDef.Body.Instructions.Count; i++)
+            //    //{
+            //    //    inst = methodDef.Body.Instructions[i];
+            //    //    /* Setting something. This is okay, and
+            //    //     * is handled elsewhere. */
+            //    //    if (inst.OpCode == OpCodes.Stfld || inst.OpCode == OpCodes.Stloc)
+            //    //        return;
+            //    //    /* Calling something, this would suggest a ref/out keyword. */
+            //    //    if (inst.OpCode == OpCodes.Call || inst.opcode == OpCodes.Callvirt)
+            //    //    {
+            //    //        //If was a replaced field.
+            //    //        if (processedLookup.TryGetValue(resolvedOpField, out List<ProcessedSync> psLst))
+            //    //        {
+            //    //            ProcessedSync ps = GetProcessedSync(resolvedOpField, psLst);
+            //    //            if (ps == null)
+            //    //                return;
+
+            //    //            CodegenSession.Diagnostics.AddWarning($"SyncType variable '{ps.OriginalFieldReference.Name}' within method '{methodDef.Name}' in class '{methodDef.DeclaringType.Name}' may be calling another method using the ref or out keyword. This is currently not supported. If this message is a mistake please file a bug report.");
+            //    //            return;
+            //    //        }
+            //    //    }
+            //    //}
+            //}
         }
 
         /// <summary>

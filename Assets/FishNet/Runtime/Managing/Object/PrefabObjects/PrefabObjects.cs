@@ -6,6 +6,7 @@ namespace FishNet.Managing.Object
 {
     public abstract class PrefabObjects : ScriptableObject 
     {
+        public abstract void Clear();
         public abstract int GetObjectCount();
         public abstract NetworkObject GetObject(bool asServer, int id);
         public abstract void RemoveNull();

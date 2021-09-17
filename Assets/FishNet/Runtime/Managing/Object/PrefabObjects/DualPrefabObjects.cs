@@ -11,11 +11,14 @@ namespace FishNet.Managing.Object
         [SerializeField]
         private List<DualPrefab> _prefabs = new List<DualPrefab>();
 
+        public override void Clear()
+        {
+            _prefabs.Clear();
+        }
         public override int GetObjectCount()
         {
             return _prefabs.Count;
         }
-
 
         public override NetworkObject GetObject(bool asServer, int id)
         {
