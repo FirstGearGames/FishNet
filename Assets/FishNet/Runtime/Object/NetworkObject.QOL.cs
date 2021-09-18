@@ -44,6 +44,10 @@ namespace FishNet.Object
         /// Returns if this object is spawned.
         /// </summary>
         public bool IsSpawned => (!Deinitializing && ObjectId >= 0);
+        /// <summary>
+        /// Returns the local connection for the client calling this method.
+        /// </summary>
+        internal NetworkConnection LocalConnection => (NetworkManager == null) ? new NetworkConnection() : NetworkManager.ClientManager.Connection;
         #endregion
 
         /// <summary>

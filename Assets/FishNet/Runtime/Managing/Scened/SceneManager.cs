@@ -135,7 +135,7 @@ namespace FishNet.Managing.Scened
             //No need to unregister since managers are on the same object.
             _clientManager.RegisterBroadcast<LoadScenesBroadcast>(OnLoadScenes);
             _clientManager.RegisterBroadcast<UnloadScenesBroadcast>(OnUnloadScenes);
-            _serverManager.RegisterBroadcast<ClientScenesLoadedBroadcast>(OnClientScenesLoaded);
+            _serverManager.RegisterBroadcast<ClientScenesLoadedBroadcast>(OnClientLoadedScenes);
         }
 
         /// <summary>
@@ -215,7 +215,6 @@ namespace FishNet.Managing.Scened
         }
         #endregion
 
-
         #region Player disconnect.
         /// <summary>
         /// Received when a player disconnects from the server.
@@ -262,7 +261,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name="conn"></param>
         /// <param name="msg"></param>
-        private void OnClientScenesLoaded(NetworkConnection conn, ClientScenesLoadedBroadcast msg)
+        private void OnClientLoadedScenes(NetworkConnection conn, ClientScenesLoadedBroadcast msg)
         {
             foreach (SceneLookupData item in msg.SceneLookupDatas)
             {
@@ -539,24 +538,6 @@ namespace FishNet.Managing.Scened
                 }
             }
 
-            /* Resetting SceneConnections. */
-            //If as server and replacing scenes.
-            if (asServer && replaceScenes)
-            {
-                //If global then remove all connections from all scenes.
-                if (data.ScopeType == SceneScopeTypes.Global)
-                {
-                    Scene[] scenes = SceneConnections.Keys.ToArray();
-                    foreach (Scene s in scenes)
-                        RemoveAllConnectionsFromScene(s);
-                }
-                //Connections.
-                else if (data.ScopeType == SceneScopeTypes.Connections)
-                {
-                    RemoveConnectionsFromNonGlobalScenes(data.Connections);
-                }
-            }
-
             /* Move identities
              * to holder scene to preserve them. 
              * Required if a single scene is specified. Cannot rely on
@@ -577,6 +558,28 @@ namespace FishNet.Managing.Scened
                  * on them. This was required for Mirror but shouldn't be for FishNet.
                  * Code removed. */
             }
+
+            /* Resetting SceneConnections. */
+            /* If server and replacing scenes.
+             * It's important to run this AFTER moving MovedNetworkObjects
+             * so that they are no longer in the scenes they are leaving. Otherwise
+             * the scene condition would pick them up as still in the leaving scene. */
+            if (asServer && replaceScenes)
+            {
+                //If global then remove all connections from all scenes.
+                if (data.ScopeType == SceneScopeTypes.Global)
+                {
+                    Scene[] scenes = SceneConnections.Keys.ToArray();
+                    foreach (Scene s in scenes)
+                        RemoveAllConnectionsFromScene(s);
+                }
+                //Connections.
+                else if (data.ScopeType == SceneScopeTypes.Connections)
+                {
+                    RemoveConnectionsFromNonGlobalScenes(data.Connections);
+                }
+            }
+
 
             /* Scene unloading if replacing scenes.
              * 
@@ -740,7 +743,7 @@ namespace FishNet.Managing.Scened
             }
 
             /* Set active scene. */
-            if (replaceScenes)
+            if (replaceScenes && loadedScenes.Count > 0)
             {
                 /* Set active scene.
                 * If networked, since all clients will be changing.
@@ -789,13 +792,7 @@ namespace FishNet.Managing.Scened
                     SceneLookupDatas = data.SceneLoadData.SceneLookupDatas
                 };
                 _clientManager.Broadcast(msg);
-            }//fix bug
-            /* start host.
-             * connection second client.
-             * disconnect host client.
-             * -- second client sees host client disabled instead of destroyed.
-             * probably because of pendingdestruction, destroy or whatever
-             * its called for hosts destruction fix. ManagedObjects? */
+            }
 
             InvokeOnSceneLoadEnd(data, requestedLoadScenes, loadedScenes);
         }
@@ -1072,6 +1069,11 @@ namespace FishNet.Managing.Scened
                 InvokeClientPresenceChange(scene, arrayConn, true, true);
                 RebuildObservers(arrayConn.ToArray());
                 InvokeClientPresenceChange(scene, arrayConn, true, false);
+
+                /* Also need to rebuild all networkobjects
+                * for connection so other players can
+                * see them. */
+                RebuildObservers(conn.Objects.ToArray());
             }
         }
 
@@ -1120,6 +1122,12 @@ namespace FishNet.Managing.Scened
 
             foreach (Scene s in removedScenes)
                 SceneConnections.Remove(s);
+
+            /* Also rebuild observers for objects owned by connection.
+             * This ensures other connections will lose visibility if
+             * they no longer share a scene. */
+            foreach (NetworkConnection c in conns)
+                RebuildObservers(c.Objects.ToArray());
         }
 
 
@@ -1158,6 +1166,12 @@ namespace FishNet.Managing.Scened
                 RebuildObservers(connectionsRemovedArray);
                 InvokeClientPresenceChange(scene, connectionsRemovedArray, false, false);
             }
+
+            /* Also rebuild observers for objects owned by connection.
+            * This ensures other connections will lose visibility if
+            * they no longer share a scene. */
+            foreach (NetworkConnection c in conns)
+                RebuildObservers(c.Objects.ToArray());
         }
 
         /// <summary>
@@ -1187,6 +1201,12 @@ namespace FishNet.Managing.Scened
                 RebuildObservers(connectionsRemoved);
                 InvokeClientPresenceChange(scene, connectionsRemoved, false, false);
             }
+
+            /* Also rebuild observers for objects owned by connection.
+             * This ensures other connections will lose visibility if
+             * they no longer share a scene. */
+            foreach (NetworkConnection c in connectionsRemoved)
+                RebuildObservers(c.Objects.ToArray());
         }
 
         #region Can Load/Unload Scene.
@@ -1225,17 +1245,29 @@ namespace FishNet.Managing.Scened
 
         #region Helpers.
         /// <summary>
-        /// Rebuilds all NetworkObjects in scene for connection.
+        /// Rebuilds observers for networkObjects.
+        /// </summary>
+        /// <param name="networkObjects"></param>
+        private void RebuildObservers(NetworkObject[] networkObjects)
+        {
+            foreach (NetworkObject nob in networkObjects)
+            {
+                if (nob != null && nob.IsSpawned)
+                    _serverManager.Objects.RebuildObservers(nob);
+            }
+        }
+        /// <summary>
+        /// Rebuilds all NetworkObjects for connection.
         /// </summary>
         internal void RebuildObservers(NetworkConnection connection)
         {
             RebuildObservers(new NetworkConnection[] { connection });
         }
         /// <summary>
-        /// Rebuilds all NetworkObjects in scene for connections.
+        /// Rebuilds all NetworkObjects for connections.
         /// </summary>
         internal void RebuildObservers(NetworkConnection[] connections)
-        {                
+        {
             foreach (NetworkConnection c in connections)
                 _serverManager.Objects.RebuildObservers(c);
         }
@@ -1256,7 +1288,7 @@ namespace FishNet.Managing.Scened
                 else
                     OnClientPresenceChangeEnd?.Invoke(cpc);
             }
-        }       
+        }
         #endregion
 
         #region GetScene.
@@ -1396,6 +1428,7 @@ namespace FishNet.Managing.Scened
 
             return _movedObjectsScene;
         }
+
         #region Sanity checks.
         /// <summary>
         /// Returns if a SceneLoadData is valid.

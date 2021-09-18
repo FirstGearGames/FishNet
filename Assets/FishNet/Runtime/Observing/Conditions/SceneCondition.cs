@@ -31,24 +31,13 @@ namespace FishNet.Managing
         /// <param name="connection"></param>
         public override bool ConditionMet(NetworkConnection connection)
         {
-
-            
-            /* First try checking if the passed in connection has the same
-             * scene this object is in, in their Scenes. */
-            if (connection.Scenes.Contains(NetworkObject.gameObject.scene))
-            { 
-                return true;
-            }
-            else
+            /* If this objects connection is valid then check if
+             * connection and this objects owner shares any scenes.
+             * Don't check if the object resides in the same scene
+             * because thats not reliable as server might be moving
+             * objects. */
+            if (base.NetworkObject.OwnerIsValid)
             {
-                /* If there is no owner then there is no reason to continue.
-                 * The object is owned by the server therefor will only
-                 * qualify for visibility with the scene it resides. */
-                if (!base.NetworkObject.OwnerIsValid)
-                    return false;
-
-                /* If here the object has a owner. If connection shares any
-                 * scenes with the owner then this object will be visibile. */
                 foreach (Scene s in base.NetworkObject.Owner.Scenes)
                 {
                     //Scenes match.
@@ -56,8 +45,14 @@ namespace FishNet.Managing
                         return true;
                 }
 
-                //Fall through, no matches.
+                //Fall through, no scenes shared.
                 return false;
+            }
+            else
+            {
+                /* When there is no owner only then is the gameobject
+                 * scene checked. That's the only way to know at this point. */
+                return connection.Scenes.Contains(base.NetworkObject.gameObject.scene);
             }
         }
 

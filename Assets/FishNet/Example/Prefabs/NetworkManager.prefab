@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 7443408887813606063}
   - component: {fileID: 7443408887813606048}
   - component: {fileID: 7443408887813606060}
-  - component: {fileID: 213044454}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -51,7 +50,7 @@ MonoBehaviour:
   _runInBackground: 1
   _dontDestroyOnLoad: 1
   _allowMultiple: 0
-  _spawnablePrefabs: {fileID: 11400000, guid: 87841bc59b2ee1140b51c008f714da48, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: 318d7226e6239bb49814cb7fb789f8d0, type: 2}
 --- !u!114 &7443408887813606063
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99,28 +98,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 211a9f6ec51ddc14f908f5acc0cd0423, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _playerPrefab: {fileID: 6084595864463812153, guid: 50edde37aaa7df04d801671f79d5cc4f,
-    type: 3}
+  _playerPrefab: {fileID: 0}
   _spawns: []
---- !u!114 &213044454
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408887813606051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  TickDelta: 0
-  _automaticPhysics: 1
-  _tickRate: 60
-  _useClientSidePrediction: 1
-  _maximumBufferedInputs: 20
-  _targetBufferedInputs: 3
-  _aggressiveTiming: 0
 --- !u!1001 &2130063410
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -236,7 +215,7 @@ PrefabInstance:
     - target: {fileID: 4393252310969058994, guid: 0570b6f7f713dc44a90463654bbcd8d0,
         type: 3}
       propertyPath: AutoStart
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4393252310969058995, guid: 0570b6f7f713dc44a90463654bbcd8d0,
         type: 3}

@@ -115,15 +115,6 @@ namespace FishNet.Object
             Owner = owner;
             ObjectId = objectId;
 
-            //Add to connection objects if owner exist.
-            if (owner != null)
-            {
-                owner.AddObject(this);
-                //See if I can just call GiveOwnership instead. Will need to check ownership callback events to make sure they dont call twice and call in order. //todo
-                if (asServer)
-                    NetworkManager.SceneManager.AddConnectionToScene(owner, gameObject.scene);
-            }
-
             if (asServer)
                 PreInitializeObservers();
 
@@ -140,6 +131,16 @@ namespace FishNet.Object
                         NetworkBehaviours[i].PreInitialize(this, (byte)i);
                 }
             }
+
+            //Add to connection objects if owner exist.
+            if (owner != null)
+            {
+                owner.AddObject(this);
+                //See if I can just call GiveOwnership instead. Will need to check ownership callback events to make sure they dont call twice and call in order. //todo
+                if (asServer)
+                    NetworkManager.SceneManager.AddConnectionToScene(owner, gameObject.scene);
+            }
+
         }
 
         /// <summary>

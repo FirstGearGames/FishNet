@@ -57,6 +57,14 @@ namespace FirstGearGames.FlexSceneManager.Demos
         [SerializeField]
         private bool _onTriggerEnter = true;
 
+        /// <summary>
+        /// Used to prevent excessive triggering when two clients are loaded and server is separate.
+        /// Client may enter trigger intentionally then when moved to a new scene will re-enter trigger
+        /// since original scene will still be loaded on server due to another client being in it.
+        /// This scenario is extremely unlikely in production but keep it in mind.
+        /// </summary>
+        private Dictionary<NetworkConnection, float> _triggeredTimes = new Dictionary<NetworkConnection, float>();
+
 
         [Server]
         private void OnTriggerEnter(Collider other)
@@ -84,6 +92,15 @@ namespace FirstGearGames.FlexSceneManager.Demos
             //NetworkObject isn't necessarily needed but to ensure its the player only run if found.
             if (triggeringIdentity == null)
                 return;
+
+            /* Dont let trigger hit twice by same connection too frequently
+             * See _triggeredTimes field for more info. */
+            if (_triggeredTimes.TryGetValue(triggeringIdentity.Owner, out float time))
+            {
+                if (Time.time - time < 0.5f)
+                    return;
+            }
+            _triggeredTimes[triggeringIdentity.Owner] = Time.time;
 
             //Which objects to move.
             List<NetworkObject> movedObjects = new List<NetworkObject>();

@@ -384,9 +384,8 @@ namespace FishNet.CodeGenerating.Processing
                 createdProcessor.Add(allReadInsts);
 
                 createdProcessor.Emit(OpCodes.Ldarg_0); //this.
-                //Pass in owner as connection. //todo this should actually be clients connection.
                 createdProcessor.Emit(OpCodes.Ldarg_0); //this.
-                createdProcessor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_Owner_MethodRef);
+                createdProcessor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_LocalConnection_MethodRef);
                 //Add each read variable as an argument.
                 foreach (VariableDefinition vd in readVariableDefs)
                     createdProcessor.Emit(OpCodes.Ldloc, vd);

@@ -20,7 +20,7 @@ namespace FishNet.CodeGenerating.Helping
         #region Reflection references.
         internal string NetworkBehaviour_FullName;
         internal string IBroadcast_FullName;
-        internal string SyncList_FullName;
+        internal string SyncList_FullName;        
         private MethodReference NetworkBehaviour_CreateServerRpcDelegate_MethodRef;
         private MethodReference NetworkBehaviour_CreateObserversRpcDelegate_MethodRef;
         private MethodReference NetworkBehaviour_CreateTargetRpcDelegate_MethodRef;
@@ -37,6 +37,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodReference NetworkBehaviour_IsOwner_MethodRef;
         private MethodReference NetworkBehaviour_CompareOwner_MethodRef;
         private MethodReference NetworkBehaviour_OwnerIsValid_MethodRef;
+        internal MethodReference NetworkBehaviour_LocalConnection_MethodRef;
         internal MethodReference NetworkBehaviour_Owner_MethodRef;
         internal MethodReference NetworkBehaviour_ReadSyncVar_MethodRef;
         internal MethodReference NetworkBehaviour_UsingOnStartServerInternal_MethodRef;
@@ -138,8 +139,8 @@ namespace FishNet.CodeGenerating.Helping
                     NetworkBehaviour_SetRpcMethodCountInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
-            foreach (PropertyInfo propertyInfo in networkBehaviourType.GetProperties())
-            { 
+            foreach (PropertyInfo propertyInfo in networkBehaviourType.GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
+            {
                 //Server/Client states.
                 if (propertyInfo.Name == nameof(NetworkBehaviour.IsClient))
                     NetworkBehaviour_IsClient_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
@@ -152,6 +153,8 @@ namespace FishNet.CodeGenerating.Helping
                 //Owner.
                 else if (propertyInfo.Name == nameof(NetworkBehaviour.Owner))
                     NetworkBehaviour_Owner_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
+                else if (propertyInfo.Name == nameof(NetworkBehaviour.LocalConnection))
+                    NetworkBehaviour_LocalConnection_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
                 else if (propertyInfo.Name == nameof(NetworkBehaviour.OwnerIsValid))
                     NetworkBehaviour_OwnerIsValid_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
             }
