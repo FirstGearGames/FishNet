@@ -47,7 +47,7 @@ namespace FishNet.Object
         /// <summary>
         /// Returns the local connection for the client calling this method.
         /// </summary>
-        internal NetworkConnection LocalConnection => (NetworkManager == null) ? new NetworkConnection() : NetworkManager.ClientManager.Connection;
+        public NetworkConnection LocalConnection => (NetworkManager == null) ? new NetworkConnection() : NetworkManager.ClientManager.Connection;
         #endregion
 
         /// <summary>
