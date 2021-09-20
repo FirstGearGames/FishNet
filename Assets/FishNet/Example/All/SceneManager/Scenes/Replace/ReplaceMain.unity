@@ -151,7 +151,7 @@ Transform:
   - {fileID: 825925885}
   - {fileID: 1406093440}
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &705507993
 GameObject:
@@ -389,7 +389,7 @@ Transform:
   - {fileID: 705507995}
   - {fileID: 2114768053}
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1406093434
 GameObject:
@@ -951,7 +951,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ServerButton: {fileID: 4393252309797147440}
   ClientButton: {fileID: 4393252310115591856}
-  AutoStart: 0
+  AutoStart: 1
 --- !u!1 &4393252310656699275
 GameObject:
   m_ObjectHideFlags: 0
@@ -1024,7 +1024,7 @@ RectTransform:
   m_Children:
   - {fileID: 4393252309797147443}
   - {fileID: 4393252310115591859}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 7443408887680269496}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1148,19 +1148,6 @@ MonoBehaviour:
   _playerPrefab: {fileID: 611616139817875448, guid: bf5f023b4017a5e41a9815ec5745df3d,
     type: 3}
   _spawns: []
---- !u!114 &7443408887680269494
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408887680269498}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 34e4a322dca349547989b14021da4e23, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Transport: {fileID: 7443408887680269497}
 --- !u!4 &7443408887680269496
 Transform:
   m_ObjectHideFlags: 0
@@ -1171,32 +1158,11 @@ Transform:
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
+  m_Children:
+  - {fileID: 4393252310656699286}
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7443408887680269497
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408887680269498}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3c80e921bdad5d4d97c14dc2e3a0805, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _channels:
-  - ChannelType: 1
-    MaximumTransmissionUnit: 1200
-  - ChannelType: 2
-    MaximumTransmissionUnit: 1200
-  _serverBindsAll: 1
-  _serverBindAddress: localhost
-  _port: 7770
-  _maximumPeerQuantity: 4095
-  _clientAddress: localhost
 --- !u!1 &7443408887680269498
 GameObject:
   m_ObjectHideFlags: 0
@@ -1207,8 +1173,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7443408887680269496}
   - component: {fileID: 7443408887680269499}
-  - component: {fileID: 7443408887680269494}
-  - component: {fileID: 7443408887680269497}
   - component: {fileID: 7443408887680269493}
   m_Layer: 0
   m_Name: 'NetworkManager '
@@ -1232,4 +1196,4 @@ MonoBehaviour:
   _runInBackground: 1
   _dontDestroyOnLoad: 1
   _allowMultiple: 0
-  _spawnablePrefabs: {fileID: 11400000, guid: c54f607d0f143f9499d9fdd9ce0e2392, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: 87841bc59b2ee1140b51c008f714da48, type: 2}

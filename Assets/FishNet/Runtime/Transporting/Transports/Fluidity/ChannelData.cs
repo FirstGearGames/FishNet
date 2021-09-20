@@ -4,15 +4,15 @@
     [System.Serializable]
     public struct ChannelData
     {
-        public ChannelTypes ChannelType;
+        public ChannelType ChannelType;
         public int MaximumTransmissionUnit;
 
-        public ChannelData(ChannelTypes channelType)
+        public ChannelData(ChannelType channelType)
         {
             ChannelType = channelType;
             MaximumTransmissionUnit = 1200;
         }
-        public ChannelData(ChannelTypes channelType, int maximumTransmissionUnit)
+        public ChannelData(ChannelType channelType, int maximumTransmissionUnit)
         {
             ChannelType = channelType;
             MaximumTransmissionUnit = maximumTransmissionUnit;

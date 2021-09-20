@@ -83,11 +83,11 @@ namespace FishNet.Managing.Timing
         [SerializeField]
         private ushort _tickRate = 500;
         /// <summary>
-        /// True to enable support for client side prediction. Leaving this false when CSP is not needed will save a small amount of bandwidth and CPU.
+        /// While true the server will ask clients to adjust simulation rate as needed.
         /// </summary>
-        [Tooltip("True to enable support for client side prediction. Leaving this false when CSP is not needed will save a small amount of bandwidth and CPU.")]
+        [Tooltip("While true the server will ask clients to adjust simulation rate as needed.")]
         [SerializeField]
-        private bool _useClientSidePrediction = false;
+        private bool _correctTiming = false;
         /// <summary>
         /// 
         /// </summary>
@@ -230,7 +230,7 @@ namespace FishNet.Managing.Timing
 #endif
             }
 
-            if (_useClientSidePrediction)
+            if (_correctTiming)
             {
                 _clientTimingRange = new double[]
                 {
@@ -277,7 +277,7 @@ namespace FishNet.Managing.Timing
                 OnPostTick?.Invoke(Tick);
                 _elapsedTime -= timePerSimulation;
 
-                if (_useClientSidePrediction)
+                if (_correctTiming)
                     SendStepChanges();
 
                 Tick++;

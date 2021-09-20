@@ -110,10 +110,10 @@ namespace FishNet.Managing
             SetDontDestroyOnLoad();
             SetRunInBackground();
             EmptyConnection = new NetworkConnection();
-            FindTransportManager();
+            AddransportManager();
             AddServerAndClientManagers();
-            AddTimeManager();            
-            AddSceneManager();;
+            AddTimeManager();
+            AddSceneManager(); ;
             InitializeComponents();
         }
 
@@ -152,7 +152,7 @@ namespace FishNet.Managing
             TransportManager.IterateOutgoing(false);
         }
 
-        
+
         /// <summary>
         /// Returns if this NetworkManager can exist.
         /// </summary>
@@ -192,12 +192,14 @@ namespace FishNet.Managing
         }
 
         /// <summary>
-        /// Finds TransportManager on this object.
+        /// Adds TransportManager.
         /// </summary>
-        private void FindTransportManager()
+        private void AddransportManager()
         {
-            if (TransportManager == null)
-                TransportManager = GetComponent<TransportManager>();
+            if (gameObject.TryGetComponent<TransportManager>(out TransportManager result))
+                TransportManager = result;
+            else
+                TransportManager = gameObject.AddComponent<TransportManager>();
         }
 
         /// <summary>
@@ -208,7 +210,7 @@ namespace FishNet.Managing
             if (gameObject.TryGetComponent<TimeManager>(out TimeManager result))
                 TimeManager = result;
             else
-                TimeManager = gameObject.AddComponent<TimeManager>();            
+                TimeManager = gameObject.AddComponent<TimeManager>();
         }
 
 
@@ -241,8 +243,7 @@ namespace FishNet.Managing
         #region Editor.
 #if UNITY_EDITOR
         private void OnValidate()
-        { 
-            FindTransportManager();
+        {
             if (SpawnablePrefabs == null)
                 Reset();
         }

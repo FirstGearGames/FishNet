@@ -10,6 +10,7 @@ namespace FishNet.Observing
     /// Can use multiple observer conditions to grant a connection awareness of this object.
     /// Timed checks will continue to run even when an object is disabled, unless it's deinitialized. 
     /// </summary>
+    [DisallowMultipleComponent]
     public class NetworkObserver : NetworkBehaviour
     {
         #region Serialized.

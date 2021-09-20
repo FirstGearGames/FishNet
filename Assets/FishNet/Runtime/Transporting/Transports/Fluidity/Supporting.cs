@@ -4,7 +4,7 @@ using ENet;
 namespace Fluidity
 {
     [Serializable]
-    public enum ChannelTypes : byte
+    public enum ChannelType : byte
     {
         Reliable = PacketFlags.Reliable,   
         Unreliable = PacketFlags.Unsequenced

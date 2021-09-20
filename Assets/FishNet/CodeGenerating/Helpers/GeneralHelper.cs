@@ -17,7 +17,7 @@ namespace FishNet.CodeGenerating.Helping
         #region Reflection references.
         internal MethodReference Debug_LogWarning_MethodRef;
         internal MethodReference Debug_LogError_MethodRef;
-        private MethodReference EqualityComparer_Default_MethodRef;
+        internal MethodReference Comparers_EqualityCompare_MethodRef;
         internal MethodReference IsServer_MethodRef = null;
         internal MethodReference IsClient_MethodRef = null;
         internal MethodReference NetworkObject_Deinitializing_MethodRef = null;
@@ -34,7 +34,7 @@ namespace FishNet.CodeGenerating.Helping
             Single_FullName = typeof(float).FullName;
 
             Type comparers = typeof(Comparers);
-            EqualityComparer_Default_MethodRef = CodegenSession.Module.ImportReference<Comparers>(x => Comparers.EqualityCompare<object>(default, default));
+            Comparers_EqualityCompare_MethodRef = CodegenSession.Module.ImportReference<Comparers>(x => Comparers.EqualityCompare<object>(default, default));
 
             Type debugType = typeof(UnityEngine.Debug);
             foreach (System.Reflection.MethodInfo methodInfo in debugType.GetMethods())
@@ -129,7 +129,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                result = new GenericInstanceMethod(EqualityComparer_Default_MethodRef.GetElementMethod());
+                result = new GenericInstanceMethod(Comparers_EqualityCompare_MethodRef.GetElementMethod());
                 result.GenericArguments.Add(GetTypeReference(type));
                 _equalityComparerMethodReferences.Add(type, result);
             }

@@ -401,21 +401,21 @@ namespace FishNet.Managing.Scened
         /// <param name="sceneLoadData">Data about which scenes to load.</param>
         public void LoadGlobalScenes(SceneLoadData sceneLoadData)
         {
-            LoadGlobalScenesInternal(sceneLoadData, true);
+            LoadGlobalScenesInternal(sceneLoadData, _globalScenes, true);
         }
         /// <summary>
         /// Adds to load scene queue.
         /// </summary>
         /// <param name="sceneLoadData"></param>
         /// <param name="asServer"></param>
-        private void LoadGlobalScenesInternal(SceneLoadData sceneLoadData, bool asServer)
+        private void LoadGlobalScenesInternal(SceneLoadData sceneLoadData, string[] globalScenes,  bool asServer)
         {
             if (!CanExecute(asServer, true))
                 return;
             if (SceneDataInvalid(sceneLoadData, true))
                 return;
 
-            LoadQueueData lqd = new LoadQueueData(SceneScopeTypes.Global, new NetworkConnection[0], sceneLoadData, _globalScenes, asServer);
+            LoadQueueData lqd = new LoadQueueData(SceneScopeTypes.Global, new NetworkConnection[0], sceneLoadData, globalScenes, asServer);
             QueueOperation(lqd);
         }
 
@@ -515,6 +515,8 @@ namespace FishNet.Managing.Scened
                     Array.Resize(ref _globalScenes, _globalScenes.Length + names.Length);
                     Array.Copy(names, 0, _globalScenes, index, names.Length);
                 }
+
+                data.GlobalScenes = _globalScenes;
             }
 
 
@@ -807,7 +809,7 @@ namespace FishNet.Managing.Scened
         {
             LoadQueueData qd = msg.QueueData;
             if (qd.ScopeType == SceneScopeTypes.Global)
-                LoadGlobalScenesInternal(msg.QueueData.SceneLoadData, false);
+                LoadGlobalScenesInternal(qd.SceneLoadData, qd.GlobalScenes, false);
             else
                 LoadConnectionScenesInternal(new NetworkConnection[0], qd.SceneLoadData, qd.GlobalScenes, false);
         }
@@ -1241,7 +1243,6 @@ namespace FishNet.Managing.Scened
             return true;
         }
         #endregion
-
 
         #region Helpers.
         /// <summary>

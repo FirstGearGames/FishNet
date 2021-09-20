@@ -66,11 +66,10 @@ namespace FishNet.Managing.Transporting
         private void Awake()
         {
             _networkManager = GetComponent<NetworkManager>();
+            /* If transport isn't specified then add default
+             * transport. */
             if (Transport == null)
-            {
-                Debug.LogError("Transport is not set.");
-                return;
-            }
+                Transport = gameObject.AddComponent<Fluidity.Fluidity>();            
 
             InitializeOutgoingSplits();
             InitializeToServerBundles();

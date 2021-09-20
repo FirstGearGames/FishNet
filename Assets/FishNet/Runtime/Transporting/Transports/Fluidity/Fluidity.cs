@@ -80,6 +80,16 @@ namespace Fluidity
         {
             if (!ENet.Library.Initialize())
                 Debug.LogError("Failed to initialize ENet library.");
+            /* If channels are missing then add them. This 
+             * can occur if component is added at runtime. */
+            if (_channels == null)
+            {
+                _channels = new ChannelData[2]
+                {
+                    new ChannelData(ChannelType.Reliable, 1200),
+                    new ChannelData(ChannelType.Unreliable, 1200)
+                };
+            }
             //Set largest MTU. Used to create a buffer.
             for (int i = 0; i < _channels.Length; i++)
                 _largestMTU = Mathf.Max(_largestMTU, _channels[i].MaximumTransmissionUnit);
@@ -406,8 +416,8 @@ namespace Fluidity
             if (_channels == null || _channels.Length < 2)
                 _channels = new ChannelData[2];
             //Set to defaults.
-            _channels[0] = new ChannelData(ChannelTypes.Reliable, 1200);
-            _channels[1] = new ChannelData(ChannelTypes.Unreliable, 1200);
+            _channels[0] = new ChannelData(ChannelType.Reliable, 1200);
+            _channels[1] = new ChannelData(ChannelType.Unreliable, 1200);
         }  
 #endif
         #endregion

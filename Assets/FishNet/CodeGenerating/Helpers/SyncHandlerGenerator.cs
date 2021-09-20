@@ -10,7 +10,6 @@ using Mono.Cecil.Cil;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Unity.CompilationPipeline.Common.Diagnostics;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -19,7 +18,7 @@ namespace FishNet.CodeGenerating.Helping
         #region Relfection references.
         internal Dictionary<TypeDefinition, CreatedSyncType> CreatedSyncTypes = new Dictionary<TypeDefinition, CreatedSyncType>(new TypeDefinitionComparer());
         private TypeReference SyncBase_TypeRef;
-        private MethodReference _typedComparerMethodRef;
+        private FieldReference SyncBase_NetworkBehaviour_FieldRef;
         internal MethodReference SyncBase_SetSyncIndex_MethodRef;
         #endregion
 
@@ -46,7 +45,11 @@ namespace FishNet.CodeGenerating.Helping
                 if (methodInfo.Name == nameof(SyncBase.SetSyncIndex))
                     SyncBase_SetSyncIndex_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
-
+            foreach (FieldInfo fieldInfo in syncBaseType.GetFields())
+            {
+                if (fieldInfo.Name == nameof(SyncBase.NetworkBehaviour))
+                    SyncBase_NetworkBehaviour_FieldRef = CodegenSession.Module.ImportReference(fieldInfo);
+            }
             return true;
         }
 
@@ -86,7 +89,7 @@ namespace FishNet.CodeGenerating.Helping
                      * but it becomes lost on next pass. */
                     TypeDefinition syncBaseTypeDef = SyncBase_TypeRef.Resolve();
                     MethodDefinition tmpMd;
-                    
+
                     tmpMd = syncClassTypeDef.GetMethod("GetValue");
                     syncHandlerGetValueMethodRef = CodegenSession.Module.ImportReference(tmpMd);
 
@@ -117,14 +120,6 @@ namespace FishNet.CodeGenerating.Helping
                     return null;
 
                 CodegenSession.Module.ImportReference(dataTypeRef.Resolve());
-                MethodInfo comparerGenericMethodInfo = typeof(Comparers).GetMethod(nameof(Comparers.EqualityCompare));
-                CodegenSession.Module.ImportReference(comparerGenericMethodInfo);
-                syncClassTypeDef.module.ImportReference(comparerGenericMethodInfo);
-                //Get method for Comparer.EqualityCompare<Type>
-                MethodInfo genericEqualityComparer = comparerGenericMethodInfo.MakeGenericMethod(dataMonoType);
-                _typedComparerMethodRef = CodegenSession.Module.ImportReference(genericEqualityComparer);
-                syncClassTypeDef.module.ImportReference(comparerGenericMethodInfo);
-
                 TypeDefinition syncBaseTypeDef = SyncBase_TypeRef.Resolve();
                 /* Required references. */
 
@@ -620,41 +615,37 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates a ret if compared value is unchanged from current.
         /// </summary>
         private void CreateRetIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef) //fix
-        {
-            //Instruction endIfInst = processor.Create(OpCodes.Nop);
-            ////If (Comparer.EqualityCompare(_value, _initialValue)) return;
-            //processor.Emit(OpCodes.Ldarg_0);
-            //processor.Emit(OpCodes.Ldfld, valueFieldDef.MakeHostGenericIfNeeded());
+        {            
+            Instruction endIfInst = processor.Create(OpCodes.Nop);
 
-            //TypeReference originalType = null;
-            ////If comparing against another field.
-            //if (nextValueDef is FieldDefinition fd)
-            //{
-            //    originalType = fd.FieldType;
-            //    processor.Emit(OpCodes.Ldarg_0);
-            //    processor.Emit(OpCodes.Ldfld, fd);
-            //}
-            ////If comparing against a parameter.
-            //else if (nextValueDef is ParameterDefinition pd)
-            //{
-            //    originalType = pd.ParameterType;
-            //    processor.Emit(OpCodes.Ldarg, pd);
-            //}
+            TypeReference originalType = null;
+            //If comparing against another field.
+            if (nextValueDef is FieldDefinition fd)
+            {
+                originalType = fd.FieldType;
+                processor.Emit(OpCodes.Ldarg_0);
+                processor.Emit(OpCodes.Ldfld, fd.MakeHostGenericIfNeeded());
+            }
+            //If comparing against a parameter.
+            else if (nextValueDef is ParameterDefinition pd)
+            {
+                originalType = pd.ParameterType;
+                processor.Emit(OpCodes.Ldarg, pd);
+            }
 
+            // new value to set
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Append(processor.Create(OpCodes.Ldfld, valueFieldDef));
 
-            ////MethodReference syncVarEqual = CodegenSession.Module.ImportReference<NetworkBehaviour>(nb => nb.SyncTypeEquals<object>(default, default));
-            ////var syncVarEqualGm = new GenericInstanceMethod(syncVarEqual.GetElementMethod());
-            ////syncVarEqualGm.GenericArguments.Add(originalType);
-            ////processor.Emit(OpCodes.Call, syncVarEqualGm);
-
-            //processor.Emit(OpCodes.Call, _typedComparerMethodRef);
-
-            //processor.Emit(OpCodes.Brfalse, endIfInst);
-            //processor.Emit(OpCodes.Ret);
-            //processor.Append(endIfInst);
+            MethodReference comparerMethodRef = CodegenSession.GeneralHelper.Comparers_EqualityCompare_MethodRef;
+            GenericInstanceMethod syncVarEqualGm = new GenericInstanceMethod(comparerMethodRef.GetElementMethod());
+            syncVarEqualGm.GenericArguments.Add(originalType);
+            processor.Emit(OpCodes.Call, syncVarEqualGm);
+            processor.Emit(OpCodes.Brfalse, endIfInst);
+            processor.Emit(OpCodes.Ret);
+            processor.Append(endIfInst);
         }
-
-
+   
         /// <summary>
         /// Creates a call to the base NetworkBehaviour.
         /// </summary>

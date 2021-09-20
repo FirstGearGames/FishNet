@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using FishNet.Constants;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 [assembly: InternalsVisibleTo(Constants.CODEGEN_ASSEMBLY_NAME)]
