@@ -22,7 +22,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         public bool Started { get; private set; } = false;
         /// <summary>
-        /// NetworkConnection client is using to send data to the server.
+        /// NetworkConnection the local client is using to send data to the server.
         /// </summary>
         public NetworkConnection Connection = null;
         /// <summary>

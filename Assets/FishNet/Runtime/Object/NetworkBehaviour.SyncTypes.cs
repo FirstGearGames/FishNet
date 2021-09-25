@@ -47,6 +47,7 @@ namespace FishNet.Object
         }
         #endregion
 
+        #region Private.
         /// <summary>
         /// Writers for syncvars. A writer will exist for every ReadPermission type.
         /// </summary>
@@ -67,6 +68,7 @@ namespace FishNet.Object
         /// True if at least one syncObject is dirty.
         /// </summary>
         private bool _syncObjectDirty = false;
+        #endregion
 
         /// <summary>
         /// Registers a SyncType.
@@ -84,32 +86,21 @@ namespace FishNet.Object
         /// Sets a SyncVar as dirty.
         /// </summary>
         /// <param name="isSyncObject">True if dirtying a syncObject.</param>
-        /// <returns>True if successfully dirtied syncType.</returns>
+        /// <returns>True if able to dirty SyncType.</returns>
         internal bool DirtySyncType(bool isSyncObject)
         {
-            //No reason to serialize data if no clients exist.
-            if (NetworkObject.NetworkManager.ServerManager.Clients.Count == 0)
+            if (NetworkObject.Observers.Count == 0)
                 return false;
 
-            /* Already dirtied checks. I could skip this and use a hashset
-             * on the NetworkManager.Server to avoid adding duplicates
-             * but adding to and iterating a HashSet is slightly slower
-             * than a list. When it comes to scaling a simple bool check
-             * vs iterating slower collections will likely perform better. */
+            bool alreadyDirtied = (isSyncObject) ? _syncObjectDirty : _syncVarDirty;
             if (isSyncObject)
-            {
-                if (_syncObjectDirty)
-                    return false;
                 _syncObjectDirty = true;
-            }
             else
-            {
-                if (_syncVarDirty)
-                    return false;
                 _syncVarDirty = true;
-            }
 
-            NetworkObject.NetworkManager.ServerManager.Objects.SetDirtySyncType(this, isSyncObject);
+            if (!alreadyDirtied)
+                NetworkObject.NetworkManager.ServerManager.Objects.SetDirtySyncType(this, isSyncObject);
+
             return true;
         }
 
@@ -306,11 +297,6 @@ namespace FishNet.Object
             return false;
         }
 
-
-        //public bool SyncTypeEquals<T>(T a, T b)
-        //{
-        //    return EqualityComparer<T>.Default.Equals(a, b);
-        //}
 
         /// <summary>
         /// Resets all SyncVars for this NetworkBehaviour.

@@ -42,7 +42,7 @@ namespace Fluidity
         [Tooltip("Maximum number of players which may be connected at once.")]
         [Range(1, 4095)]
         [SerializeField]
-        private ushort _maximumPeerQuantity = 4095;
+        private ushort _maximumClients = 4095;
 
         [Header("Client")]
         /// <summary>
@@ -104,6 +104,15 @@ namespace Fluidity
 
         #region ConnectionStates.
         /// <summary>
+        /// Gets the address of a remote connection Id.
+        /// </summary>
+        /// <param name="connectionId"></param>
+        /// <returns></returns>
+        public override string GetConnectionAddress(int connectionId)
+        {
+            return _server.GetConnectionAddress(connectionId);
+        }
+        /// <summary>
         /// Called when a connection state changes for the local client.
         /// </summary>
         public override event Action<ClientConnectionStateArgs> OnClientConnectionState;
@@ -130,11 +139,10 @@ namespace Fluidity
         /// Gets the current ConnectionState of a remote client on the server.
         /// </summary>
         /// <param name="connectionId">ConnectionId to get ConnectionState for.</param>
-        public override LocalConnectionStates GetConnectionState(int connectionId)
+        public override RemoteConnectionStates GetConnectionState(int connectionId)
         {
             return _server.GetConnectionState(connectionId);
         }
-
         /// <summary>
         /// Handles a ConnectionStateArgs for the local client.
         /// </summary>
@@ -268,33 +276,33 @@ namespace Fluidity
         /// Starts the local server or client using configured settings.
         /// </summary>
         /// <param name="server">True to start server.</param>
-        public override void StartConnection(bool server)
+        public override bool StartConnection(bool server)
         {           
             if (server)
-                StartServer();
+                return StartServer();
             else
-                StartClient(_clientAddress);
+                return StartClient(_clientAddress);
         }
 
         /// <summary>
         /// Starts the local client.
         /// </summary>
         /// <param name="address">Address to connect to.</param>
-        public override void StartConnection(string address)
+        public override bool StartConnection(string address)
         {
-            StartClient(address);
+            return StartClient(address);
         }
 
         /// <summary>
         /// Stops the local server or client.
         /// </summary>
         /// <param name="server">True to stop server.</param>
-        public override void StopConnection(bool server)
+        public override bool StopConnection(bool server)
         {
             if (server)
-                StopServer();
+                return StopServer();
             else
-                StopClient();
+                return StopClient();
         }
 
         /// <summary>
@@ -302,9 +310,9 @@ namespace Fluidity
         /// </summary>
         /// <param name="connectionId">ConnectionId of the client to disconnect.</param>
         /// <param name="immediately">True to abrutly stp the client socket without waiting socket thread.</param>
-        public override void StopConnection(int connectionId, bool immediately)
+        public override bool StopConnection(int connectionId, bool immediately)
         {
-            StopClient(connectionId, immediately);
+            return StopClient(connectionId, immediately);
         }
 
         /// <summary>
@@ -321,37 +329,37 @@ namespace Fluidity
         /// <summary>
         /// Starts server.
         /// </summary>
-        private void StartServer()
+        private bool StartServer()
         {
             _server.Initialize(this, _channels);
             string bindAddress = (_serverBindsAll) ? GlobalConstants.BIND_ALL : _serverBindAddress;
-            _server.StartConnection(bindAddress, _port, _maximumPeerQuantity, (byte)_channels.Length, POLL_TIMEOUT);
+            return _server.StartConnection(bindAddress, _port, _maximumClients, (byte)_channels.Length, POLL_TIMEOUT);
         }
 
         /// <summary>
         /// Stops server.
         /// </summary>
-        private void StopServer()
+        private bool StopServer()
         {
-            _server.StopConnection();
+            return _server.StopConnection();
         }
 
         /// <summary>
         /// Starts the client.
         /// </summary>
         /// <param name="address"></param>
-        private void StartClient(string address)
+        private bool StartClient(string address)
         {
             _client.Initialize(this, _channels);
-            _client.StartConnection(address, _port, (byte)_channels.Length, POLL_TIMEOUT);
+            return _client.StartConnection(address, _port, (byte)_channels.Length, POLL_TIMEOUT);
         }
 
         /// <summary>
         /// Stops the client.
         /// </summary>
-        private void StopClient()
+        private bool StopClient()
         {
-            _client.StopConnection();
+            return _client.StopConnection();
         }
 
         /// <summary>
@@ -359,9 +367,9 @@ namespace Fluidity
         /// </summary>
         /// <param name="connectionId"></param>
         /// <param name="immediately">True to abrutly stp the client socket without waiting socket thread.</param>
-        private void StopClient(int connectionId, bool immediately)
+        private bool StopClient(int connectionId, bool immediately)
         {
-            _server.StopConnection(connectionId, immediately);
+            return _server.StopConnection(connectionId, immediately);
         }
         #endregion
         #endregion
@@ -418,7 +426,8 @@ namespace Fluidity
             //Set to defaults.
             _channels[0] = new ChannelData(ChannelType.Reliable, 1200);
             _channels[1] = new ChannelData(ChannelType.Unreliable, 1200);
-        }  
+        }
+
 #endif
         #endregion
 

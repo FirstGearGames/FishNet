@@ -142,14 +142,15 @@ namespace FishNet.Object.Synchronizing
                 return;
             }
 
+            if (!base.Dirty())
+                return;
+
             ChangeData change = new ChangeData(operation, index, next);
             _changed.Add(change);
 
             _valuesChanged = true;
             bool asServer = true;
             OnChange?.Invoke(operation, index, prev, next, asServer);
-
-            base.Dirty();
         }
 
         /// <summary>
@@ -187,7 +188,7 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
-        /// Writers all values if not initial values.
+        /// Writes all values if not initial values.
         /// </summary>
         /// <param name="writer"></param>
         public override void WriteIfChanged(PooledWriter writer)

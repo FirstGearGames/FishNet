@@ -105,18 +105,20 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Dirties this Sync and the NetworkBehaviour.
         /// </summary>
-        public void Dirty()
+        public bool Dirty()
         {
             /* Reset channel even if already dirty.
              * This is because the value might have changed
              * which will reset the eventual consistency state. */
             _currentChannel = Settings.Channel;
 
-            if (IsDirty)
-                return;
+            /* Once dirty don't undirty until it's
+             * processed. This ensures that data
+             * is flushed. */
+            bool canDirty = NetworkBehaviour.DirtySyncType(IsSyncObject);
+            IsDirty |= canDirty;
 
-            if (NetworkBehaviour.DirtySyncType(IsSyncObject))
-                IsDirty = true;
+            return canDirty;
         }
 
         /// <summary>

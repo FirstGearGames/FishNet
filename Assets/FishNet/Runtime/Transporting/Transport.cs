@@ -21,8 +21,14 @@ namespace FishNet.Transporting
             Shutdown();
         }
         #endregion
-        
+
         #region ConnectionStates.
+        /// <summary>
+        /// Gets the address of a remote connection Id.
+        /// </summary>
+        /// <param name="connectionId"></param>
+        /// <returns></returns>
+        public abstract string GetConnectionAddress(int connectionId);
         /// <summary>
         /// Called when a connection state changes for the local client.
         /// </summary>
@@ -59,7 +65,7 @@ namespace FishNet.Transporting
         /// Gets the current ConnectionState of a client connected to the server. Can only be called on the server.
         /// </summary>
         /// <param name="connectionId">ConnectionId to get ConnectionState for.</param>
-        public abstract LocalConnectionStates GetConnectionState(int connectionId);
+        public abstract RemoteConnectionStates GetConnectionState(int connectionId);
         #endregion
 
         #region Sending.
@@ -137,23 +143,23 @@ namespace FishNet.Transporting
         /// Starts the local server or client using configured settings.
         /// </summary>
         /// <param name="server">True to start server.</param>
-        public abstract void StartConnection(bool server);
+        public abstract bool StartConnection(bool server);
         /// <summary>
         /// Starts the local client.
         /// </summary>
         /// <param name="address">Address to connect to.</param>
-        public abstract void StartConnection(string address);
+        public abstract bool StartConnection(string address);
         /// <summary>
         /// Stops the local server or client.
         /// </summary>
         /// <param name="server">True to stop server.</param>
-        public abstract void StopConnection(bool server);
+        public abstract bool StopConnection(bool server);
         /// <summary>
         /// Stops a remote client from the server, disconnecting the client.
         /// </summary>
         /// <param name="connectionId">ConnectionId of the client to disconnect.</param>
         /// <param name="immediately">True to abrutly stp the client socket without waiting socket thread.</param>
-        public abstract void StopConnection(int connectionId, bool immediately);
+        public abstract bool StopConnection(int connectionId, bool immediately);
         /// <summary>
         /// Stops both client and server.
         /// </summary>

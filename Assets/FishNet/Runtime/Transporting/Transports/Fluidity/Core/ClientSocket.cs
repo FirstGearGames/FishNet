@@ -6,42 +6,12 @@ using FishNet.Transporting;
 
 namespace Fluidity.Client
 {
-    public class ClientSocket
+    public class ClientSocket : CommonSocket
     {
         ~ClientSocket()
         {
             _stopThread = true;
         }
-
-        #region Public.
-        /// <summary>
-        /// Current ConnectionState.
-        /// </summary>
-        private LocalConnectionStates _connectionState = LocalConnectionStates.Stopped;
-        /// <summary>
-        /// Returns the current ConnectionState.
-        /// </summary>
-        /// <returns></returns>
-        public LocalConnectionStates GetConnectionState()
-        {
-            return _connectionState;
-        }
-        /// <summary>
-        /// Sets a new connection state.
-        /// </summary>
-        /// <param name="connectionState"></param>
-        private void SetLocalConnectionState(LocalConnectionStates connectionState)
-        {
-            //If state hasn't changed.
-            if (connectionState == _connectionState)
-                return;
-
-            _connectionState = connectionState;
-            _transport?.HandleClientConnectionState(
-                new ClientConnectionStateArgs(connectionState)
-                );
-        }
-        #endregion
 
         #region Private.
         #region Configuration.
@@ -104,19 +74,15 @@ namespace Fluidity.Client
         /// Thread used for socket.
         /// </summary>
         private Thread _thread;
-        /// <summary>
-        /// Transport this belongs to.
-        /// </summary>
-        private Transport _transport;
         #endregion
 
         /// <summary>
         /// Initializes this for use.
         /// </summary>
         /// <param name="t"></param>
-        public void Initialize(Transport t, ChannelData[] channelData)
+        internal void Initialize(Transport t, ChannelData[] channelData)
         {
-            _transport = t;
+            base.Transport = t;
 
             //Set maximum MTU for each channel, and create byte buffer.
             int largestMtu = 0;
@@ -136,12 +102,12 @@ namespace Fluidity.Client
         /// <param name="port"></param>
         /// <param name="channelsCount"></param>
         /// <param name="pollTime"></param>
-        public void StartConnection(string address, ushort port, byte channelsCount, int pollTime)
+        internal bool StartConnection(string address, ushort port, byte channelsCount, int pollTime)
         {
-            if (GetConnectionState() != LocalConnectionStates.Stopped || (_thread != null && _thread.IsAlive))
-                return;
+            if (base.GetConnectionState() != LocalConnectionStates.Stopped || (_thread != null && _thread.IsAlive))
+                return false;
 
-            SetLocalConnectionState(LocalConnectionStates.Starting);
+            base.SetLocalConnectionState(LocalConnectionStates.Starting);
 
             //Assign properties.
             _port = port;
@@ -154,19 +120,21 @@ namespace Fluidity.Client
             _stopThread = false;
             _thread = new Thread(ThreadSocket);
             _thread.Start();
+            return true;
         }
 
 
         /// <summary>
         /// Stops the local socket.
         /// </summary>
-        public void StopConnection()
+        internal bool StopConnection()
         {
-            if (GetConnectionState() == LocalConnectionStates.Stopped || GetConnectionState() == LocalConnectionStates.Stopping)
-                return;
+            if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
+                return false;
 
-            SetLocalConnectionState(LocalConnectionStates.Stopping);
+            base.SetLocalConnectionState(LocalConnectionStates.Stopping);
             _stopThread = true;
+            return true;
         }
 
         /// <summary>
@@ -301,7 +269,7 @@ namespace Fluidity.Client
         /// <summary>
         /// Allows for Outgoing queue to be iterated.
         /// </summary>
-        public void IterateOutgoing()
+        internal void IterateOutgoing()
         {
             _dequeueOutgoing = true;
         }
@@ -310,16 +278,16 @@ namespace Fluidity.Client
         /// Iterates the Incoming queue.
         /// </summary>
         /// <param name="transport"></param>
-        public void IterateIncoming()
+        internal void IterateIncoming()
         {
             /* Run local connection states first so we can begin
             * to read for data at the start of the frame, as that's
             * where incoming is read. */
             while (_localConnectionStates.TryDequeue(out LocalConnectionStates state))
-                SetLocalConnectionState(state);
+                base.SetLocalConnectionState(state);
 
             //Stopped or trying to stop.
-            if (GetConnectionState() == LocalConnectionStates.Stopped || GetConnectionState() == LocalConnectionStates.Stopping)
+            if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
                 return;
 
             /* Commands. */
@@ -330,13 +298,13 @@ namespace Fluidity.Client
             while (_connectionEvents.TryDequeue(out ConnectionEvent connectionEvent))
             {
                 if (connectionEvent.Connected)
-                    SetLocalConnectionState(LocalConnectionStates.Started);
+                    base.SetLocalConnectionState(LocalConnectionStates.Started);
                 else
-                    SetLocalConnectionState(LocalConnectionStates.Stopped);
+                    base.SetLocalConnectionState(LocalConnectionStates.Stopped);
             }
 
             /* Incoming. */
-            bool started = (GetConnectionState() == LocalConnectionStates.Started);
+            bool started = (base.GetConnectionState() == LocalConnectionStates.Started);
             ClientReceivedDataArgs dataArgs = new ClientReceivedDataArgs();
             while (_incoming.TryDequeue(out IncomingPacket incoming))
             {
@@ -349,10 +317,7 @@ namespace Fluidity.Client
                     //Tell generic transport to handle packet.
                     dataArgs.Data = data;
                     dataArgs.Channel = (Channel)incoming.Channel;
-                    _transport.HandleClientReceivedDataArgs(dataArgs);
-                    //_transport.HandleClientReceivedDataArgs(
-                        //new ClientReceivedDataArgs(data, (Channel)incoming.Channel)
-                        //);
+                    base.Transport.HandleClientReceivedDataArgs(dataArgs);
                 }
                 incoming.Packet.Dispose();
             }
@@ -364,13 +329,13 @@ namespace Fluidity.Client
         /// <param name="connectionId">Client to send packet to. Use -1 to send to all clients.</param>
         /// <param name="channelId"></param>
         /// <param name="segment"></param>
-        public void SendToServer(byte channelId, ArraySegment<byte> segment, ChannelData[] channels)
+        internal void SendToServer(byte channelId, ArraySegment<byte> segment, ChannelData[] channels)
         {
             //Out of bounds for channels.
             if (channelId < 0 || channelId >= channels.Length)
                 return;
             //Not started, cannot send.
-            if (GetConnectionState() != LocalConnectionStates.Started)
+            if (base.GetConnectionState() != LocalConnectionStates.Started)
                 return;
 
             Packet enetPacket = default;

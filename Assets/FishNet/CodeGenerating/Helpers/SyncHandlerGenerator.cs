@@ -28,7 +28,10 @@ namespace FishNet.CodeGenerating.Helping
             Mono.Cecil.TypeAttributes.AutoClass);
         private const string SYNCSTUB_CLASS_PREFIX = "SyncHandler";
         #endregion
-
+        /* //todo add and test the dirty boolean changes
+         * eg... instead of base.Dirty()
+         * do if (!base.Dirty()) return false;
+         * See synclist for more info. */
 
         /// <summary>
         /// Imports references needed by this helper.
@@ -614,7 +617,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates a ret if compared value is unchanged from current.
         /// </summary>
-        private void CreateRetIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef) //fix
+        private void CreateRetIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef)
         {            
             Instruction endIfInst = processor.Create(OpCodes.Nop);
 

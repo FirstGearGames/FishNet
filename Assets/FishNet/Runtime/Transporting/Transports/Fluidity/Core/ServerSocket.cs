@@ -7,7 +7,7 @@ using FishNet.Transporting;
 
 namespace Fluidity.Server
 {
-    public class ServerSocket
+    public class ServerSocket : CommonSocket
     {
         ~ServerSocket()
         {
@@ -16,43 +16,16 @@ namespace Fluidity.Server
 
         #region Public.
         /// <summary>
-        /// Current ConnectionState.
-        /// </summary>
-        private LocalConnectionStates _connectionState = LocalConnectionStates.Stopped;
-        /// <summary>
-        /// Returns the current ConnectionState.
-        /// </summary>
-        /// <returns></returns>
-        public LocalConnectionStates GetConnectionState()
-        {
-            return _connectionState;
-        }
-        /// <summary>
         /// Gets the current ConnectionState of a remote client on the server.
         /// </summary>
         /// <param name="connectionId">ConnectionId to get ConnectionState for.</param>
-        public LocalConnectionStates GetConnectionState(int connectionId)
+        internal RemoteConnectionStates GetConnectionState(int connectionId)
         {
             //Remote clients can only have Started or Stopped states since we cannot know in between.
             if (_connectedClients.Contains(connectionId))
-                return LocalConnectionStates.Started;
+                return RemoteConnectionStates.Started;
             else
-                return LocalConnectionStates.Stopped;
-        }
-        /// <summary>
-        /// Sets a new connection state.
-        /// </summary>
-        /// <param name="connectionState"></param>
-        private void SetLocalConnectionState(LocalConnectionStates connectionState, int connectionId)
-        {
-            //If state hasn't changed.
-            if (connectionState == _connectionState)
-                return;
-
-            _connectionState = connectionState;
-            _transport.HandleServerConnectionState(
-                new ServerConnectionStateArgs(connectionState)
-                );
+                return RemoteConnectionStates.Stopped;
         }
         #endregion
 
@@ -130,10 +103,6 @@ namespace Fluidity.Server
         /// </summary>
         private Thread _thread;
         /// <summary>
-        /// Transport this belongs to.
-        /// </summary>
-        private Transport _transport;
-        /// <summary>
         /// Ids to disconnect next iteration. This is to solve an enet but where data doesn't send because enet disconnects the connection too quickly even when using DisconnectLater.
         /// </summary>
         private List<int> _disconnectsNextIteration = new List<int>();
@@ -143,9 +112,9 @@ namespace Fluidity.Server
         /// Initializes this for use.
         /// </summary>
         /// <param name="t"></param>
-        public void Initialize(Transport t, ChannelData[] channelData)
+        internal void Initialize(Transport t, ChannelData[] channelData)
         {
-            _transport = t;
+            base.Transport = t;
 
             //Set maximum MTU for each channel, and create byte buffer.
             int largestMtu = 0;
@@ -158,6 +127,16 @@ namespace Fluidity.Server
             _incomingBuffer = new byte[largestMtu];
         }
 
+        /// <summary>
+        /// Gets the address of a remote connection Id.
+        /// </summary>
+        /// <param name="connectionId"></param>
+        /// <returns>Returns string.empty if Id is not found.</returns>
+        internal string GetConnectionAddress(int connectionId)
+        {
+            Peer p = _peers[connectionId];
+            return (p.IsSet) ? p.IP : string.Empty;
+        }
 
         /// <summary>
         /// Starts the server.
@@ -167,12 +146,12 @@ namespace Fluidity.Server
         /// <param name="maximumPeers"></param>
         /// <param name="channelsCount"></param>
         /// <param name="pollTime"></param>
-        public void StartConnection(string address, ushort port, int maximumPeers, byte channelsCount, int pollTime)
+        internal bool StartConnection(string address, ushort port, int maximumPeers, byte channelsCount, int pollTime)
         {
-            if (GetConnectionState() != LocalConnectionStates.Stopped || (_thread != null && _thread.IsAlive))
-                return;
+            if (base.GetConnectionState() != LocalConnectionStates.Stopped || (_thread != null && _thread.IsAlive))
+                return false;
 
-            SetLocalConnectionState(LocalConnectionStates.Starting, -1);
+            base.SetLocalConnectionState(LocalConnectionStates.Starting);
 
             //Assign properties.
             _address = address;
@@ -188,35 +167,37 @@ namespace Fluidity.Server
             _stopThread = false;
             _thread = new Thread(ThreadedSocket);
             _thread.Start();
+            return true;
         }
 
         /// <summary>
         /// Stops the local socket.
         /// </summary>
-        public void StopConnection()
+        internal bool StopConnection()
         {
-            if (GetConnectionState() == LocalConnectionStates.Stopped || GetConnectionState() == LocalConnectionStates.Stopping)
-                return;
+            if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
+                return false;
 
-            SetLocalConnectionState(LocalConnectionStates.Stopping, -1);
+            base.SetLocalConnectionState(LocalConnectionStates.Stopping);
             _stopThread = true;
+            return true;
         }
 
         /// <summary>
         /// Stops a remote client disconnecting the client from the server.
         /// </summary>
         /// <param name="connectionId">ConnectionId of the client to disconnect.</param>
-        public void StopConnection(int connectionId, bool immediately)
+        internal bool StopConnection(int connectionId, bool immediately)
         {
             if (!_peers[connectionId].IsSet)
-                return;
+                return false;
 
             //Don't disconnect immediately, wait until next command iteration.
             if (!immediately)
             {
 
-                if (GetConnectionState() == LocalConnectionStates.Stopped)
-                    return;
+                if (base.GetConnectionState() == LocalConnectionStates.Stopped)
+                    return false;
 
                 CommandPacket command = new CommandPacket
                 {
@@ -232,13 +213,18 @@ namespace Fluidity.Server
                 try
                 {
                     if (connectionId < 0)
-                        return;
+                        return false;
 
                     _peers[connectionId].DisconnectLater(10);
-                    _transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, connectionId));
+                    base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, connectionId));
                 }
-                catch { }
+                catch
+                {
+                    return false;
+                }
             }
+
+            return true;
         }
 
         /// <summary>
@@ -454,7 +440,7 @@ namespace Fluidity.Server
         /// <summary>
         /// Allows for Outgoing queue to be iterated.
         /// </summary>
-        public void IterateOutgoing()
+        internal void IterateOutgoing()
         {
             _dequeueOutgoing = true;
         }
@@ -463,16 +449,16 @@ namespace Fluidity.Server
         /// Iterates the Incoming queue.
         /// </summary>
         /// <param name="transport"></param>
-        public void IterateIncoming()
+        internal void IterateIncoming()
         {
             /* Run local connection states first so we can begin
              * to read for data at the start of the frame, as that's
              * where incoming is read. */
             while (_localConnectionStates.TryDequeue(out LocalConnectionStates state))
-                SetLocalConnectionState(state, -1);
+                base.SetLocalConnectionState(state);
 
             //Not yet started.
-            if (GetConnectionState() != LocalConnectionStates.Started)
+            if (base.GetConnectionState() != LocalConnectionStates.Started)
                 return;
 
             //Handle connection and disconnection events.
@@ -486,12 +472,12 @@ namespace Fluidity.Server
                 if (connectionEvent.Connected)
                 {
                     _connectedClients.Add(connectionEvent.ConnectionId);
-                    _transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Started, connectionEvent.ConnectionId));
+                    base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Started, connectionEvent.ConnectionId));
                 }
                 else
                 {
                     _connectedClients.Remove(connectionEvent.ConnectionId);
-                    _transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, connectionEvent.ConnectionId));
+                    base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, connectionEvent.ConnectionId));
                 }
             }
 
@@ -513,7 +499,7 @@ namespace Fluidity.Server
                 dataArgs.Data = data;
                 dataArgs.Channel = (Channel)incoming.Channel;
                 dataArgs.ConnectionId = (int)incoming.ConnectionId;
-                _transport.HandleServerReceivedDataArgs(dataArgs);
+                base.Transport.HandleServerReceivedDataArgs(dataArgs);
                 //Cleanup enet packet.
                 incoming.Packet.Dispose();
             }
@@ -526,13 +512,13 @@ namespace Fluidity.Server
         /// <param name="connectionId">Client to send packet to. Use -1 to send to all clients.</param>
         /// <param name="channelId"></param>
         /// <param name="segment"></param>
-        public void SendToClient(byte channelId, ArraySegment<byte> segment, ChannelData[] channels, int connectionId)
+        internal void SendToClient(byte channelId, ArraySegment<byte> segment, ChannelData[] channels, int connectionId)
         {
             //Out of bounds for channels.
             if (channelId < 0 || channelId >= channels.Length)
                 return;
             //Server isn't active.
-            if (GetConnectionState() != LocalConnectionStates.Started)
+            if (base.GetConnectionState() != LocalConnectionStates.Started)
                 return;
 
             Packet enetPacket = default;

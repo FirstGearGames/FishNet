@@ -6,7 +6,8 @@
         Unset,
         Variable,
         List,
-        Dictionary
+        Dictionary,
+        Custom
     }
 
 }
