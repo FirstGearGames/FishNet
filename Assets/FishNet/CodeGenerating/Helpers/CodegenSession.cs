@@ -33,8 +33,6 @@ namespace FishNet.CodeGenerating.Helping
         [System.ThreadStatic]
         internal static SyncHandlerGenerator SyncHandlerGenerator;
         [System.ThreadStatic]
-        internal static SyncVarGenerator SyncVarGenerator;
-        [System.ThreadStatic]
         internal static TransportHelper TransportHelper;
         [System.ThreadStatic]
         internal static WriterGenerator WriterGenerator;
@@ -105,7 +103,6 @@ namespace FishNet.CodeGenerating.Helping
             ReaderGenerator = new ReaderGenerator();
             ReaderHelper = new ReaderHelper();
             SyncHandlerGenerator = new SyncHandlerGenerator();
-            SyncVarGenerator = new SyncVarGenerator();
             TransportHelper = new TransportHelper();
             WriterGenerator = new WriterGenerator();
             WriterHelper = new WriterHelper();
@@ -134,8 +131,6 @@ namespace FishNet.CodeGenerating.Helping
             if (!ReaderHelper.ImportReferences())
                 return false;
             if (!SyncHandlerGenerator.ImportReferences())
-                return false;
-            if (!SyncVarGenerator.ImportReferences())
                 return false;
             if (!TransportHelper.ImportReferences())
                 return false;

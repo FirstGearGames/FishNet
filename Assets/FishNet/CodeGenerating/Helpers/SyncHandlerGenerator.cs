@@ -322,6 +322,7 @@ namespace FishNet.CodeGenerating.Helping
             //Dirty.
             processor.Emit(OpCodes.Ldarg_0); //base.
             processor.Emit(OpCodes.Call, baseDirtyMethodRef);
+            processor.Emit(OpCodes.Pop);
             processor.Emit(OpCodes.Br, endMethodTrueInst);
 
             /* !AsServer condition. (setting as client)*/
