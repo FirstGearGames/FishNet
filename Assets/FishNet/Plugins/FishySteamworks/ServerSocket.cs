@@ -120,10 +120,7 @@ namespace FishySteamworks.Server
         internal bool StopConnection()
         {
             if (base.GetConnectionState() == LocalConnectionStates.Stopped)
-            {
-                Debug.LogError("Server is not running.");
                 return false;
-            }
 
             base.SetLocalConnectionState(LocalConnectionStates.Stopping);
             SteamNetworkingSockets.CloseListenSocket(_socket);

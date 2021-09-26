@@ -146,8 +146,8 @@ namespace FishySteamworks.Client
         {
             if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
                 return false;
-            SetLocalConnectionState(LocalConnectionStates.Stopping);
-            
+
+            SetLocalConnectionState(LocalConnectionStates.Stopping);            
             //Manually abort thread to close it down quicker.
             if (_timeoutThread.IsAlive)
                 _timeoutThread.Abort();

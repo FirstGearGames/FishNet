@@ -76,7 +76,7 @@ namespace Fluidity
         #endregion
 
         #region Initialization and unity.
-        protected override void Awake()
+        public override void Initialize()
         {
             if (!ENet.Library.Initialize())
                 Debug.LogError("Failed to initialize ENet library.");
@@ -94,10 +94,11 @@ namespace Fluidity
             for (int i = 0; i < _channels.Length; i++)
                 _largestMTU = Mathf.Max(_largestMTU, _channels[i].MaximumTransmissionUnit);
 
-            base.Awake();
+            base.Initialize();
         }
         protected void OnDestroy()
         {
+            Shutdown();
             ENet.Library.Deinitialize();
         }
         #endregion

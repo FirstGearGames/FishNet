@@ -8,18 +8,10 @@ namespace FishNet.Transporting
     {
 
         #region Initialization and unity.
-        protected virtual void Awake()
-        {
-            Application.quitting += Application_Quitting;
-        }
-
         /// <summary>
-        /// Called when application quits.
+        /// Initializes the transport. Use this instead of Awake.
         /// </summary>
-        protected virtual void Application_Quitting()
-        {
-            Shutdown();
-        }
+        public virtual void Initialize() { }
         #endregion
 
         #region ConnectionStates.

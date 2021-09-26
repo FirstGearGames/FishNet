@@ -6,7 +6,7 @@ using System.IO;
 using UnityEngine;
 
 namespace FishySteamworks
-{    
+{
     public class FishySteamworks : Transport
     {
         #region Public.
@@ -82,13 +82,14 @@ namespace FishySteamworks
         private const float GET_ID_INTERVAL = 1f;
         #endregion
 
-        protected override void Awake()
+        public override void Initialize()
         {
-            base.Awake();
             CreateChannelData();
             WriteSteamAppId();
             _client.Initialize(this);
             _server.Initialize(this);
+
+            base.Initialize();
         }
 
 
@@ -250,6 +251,9 @@ namespace FishySteamworks
         /// <param name="server">True to process data received on the server.</param>
         public override void IterateIncoming(bool server)
         {
+            if (!SteamManager.Initialized)
+                return;
+
             if (server)
                 _server.IterateIncoming();
             else
@@ -262,6 +266,9 @@ namespace FishySteamworks
         /// <param name="server">True to process data received on the server.</param>
         public override void IterateOutgoing(bool server)
         {
+            if (!SteamManager.Initialized)
+                return;
+
             if (server)
                 _server.IterateOutgoing();
             else
