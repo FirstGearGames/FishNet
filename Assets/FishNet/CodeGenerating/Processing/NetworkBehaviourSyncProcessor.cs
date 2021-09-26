@@ -111,8 +111,8 @@ namespace FishNet.CodeGenerating.Processing
                     else if (fieldDef.FieldType.Name == typeof(SyncDictionary<,>).Name)
                         return SyncType.Dictionary;
                     //Custom types must also implement ICustomSync.
-                    else if (fieldDef.FieldType.Resolve().ImplementsInterface<ICustomSync>())
-                        return SyncType.Custom;
+                    //else if (fieldDef.FieldType.Resolve().ImplementsInterface<ICustomSync>())
+                    //    return SyncType.Custom;
                 }
             }
 
