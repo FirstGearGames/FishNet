@@ -107,7 +107,7 @@ namespace Fluidity.Client
             if (base.GetConnectionState() != LocalConnectionStates.Stopped || (_thread != null && _thread.IsAlive))
                 return false;
 
-            base.SetLocalConnectionState(LocalConnectionStates.Starting);
+            base.SetLocalConnectionState(LocalConnectionStates.Starting, false);
 
             //Assign properties.
             _port = port;
@@ -132,7 +132,7 @@ namespace Fluidity.Client
             if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
                 return false;
 
-            base.SetLocalConnectionState(LocalConnectionStates.Stopping);
+            base.SetLocalConnectionState(LocalConnectionStates.Stopping, false);
             _stopThread = true;
             return true;
         }
@@ -284,7 +284,7 @@ namespace Fluidity.Client
             * to read for data at the start of the frame, as that's
             * where incoming is read. */
             while (_localConnectionStates.TryDequeue(out LocalConnectionStates state))
-                base.SetLocalConnectionState(state);
+                base.SetLocalConnectionState(state, false);
 
             //Stopped or trying to stop.
             if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
@@ -298,9 +298,9 @@ namespace Fluidity.Client
             while (_connectionEvents.TryDequeue(out ConnectionEvent connectionEvent))
             {
                 if (connectionEvent.Connected)
-                    base.SetLocalConnectionState(LocalConnectionStates.Started);
+                    base.SetLocalConnectionState(LocalConnectionStates.Started, false);
                 else
-                    base.SetLocalConnectionState(LocalConnectionStates.Stopped);
+                    base.SetLocalConnectionState(LocalConnectionStates.Stopped, false);
             }
 
             /* Incoming. */

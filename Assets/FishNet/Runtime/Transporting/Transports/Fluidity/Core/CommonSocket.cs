@@ -23,16 +23,17 @@ namespace Fluidity
         /// Sets a new connection state.
         /// </summary>
         /// <param name="connectionState"></param>
-        protected void SetLocalConnectionState(LocalConnectionStates connectionState)
+        protected void SetLocalConnectionState(LocalConnectionStates connectionState, bool asServer)
         {
             //If state hasn't changed.
             if (connectionState == _connectionState)
                 return;
 
             _connectionState = connectionState;
-            Transport.HandleClientConnectionState(
-                new ClientConnectionStateArgs(connectionState)
-                );
+            if (asServer)
+                Transport.HandleServerConnectionState(new ServerConnectionStateArgs(connectionState));
+            else
+                Transport.HandleClientConnectionState(new ClientConnectionStateArgs(connectionState));
         }
         #endregion
 

@@ -151,7 +151,7 @@ namespace Fluidity.Server
             if (base.GetConnectionState() != LocalConnectionStates.Stopped || (_thread != null && _thread.IsAlive))
                 return false;
 
-            base.SetLocalConnectionState(LocalConnectionStates.Starting);
+            base.SetLocalConnectionState(LocalConnectionStates.Starting, true);
 
             //Assign properties.
             _address = address;
@@ -178,7 +178,7 @@ namespace Fluidity.Server
             if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
                 return false;
 
-            base.SetLocalConnectionState(LocalConnectionStates.Stopping);
+            base.SetLocalConnectionState(LocalConnectionStates.Stopping, true);
             _stopThread = true;
             return true;
         }
@@ -455,7 +455,7 @@ namespace Fluidity.Server
              * to read for data at the start of the frame, as that's
              * where incoming is read. */
             while (_localConnectionStates.TryDequeue(out LocalConnectionStates state))
-                base.SetLocalConnectionState(state);
+                base.SetLocalConnectionState(state, true);
 
             //Not yet started.
             if (base.GetConnectionState() != LocalConnectionStates.Started)
