@@ -39,7 +39,6 @@ namespace FishySteamworks.Client
         private const float CONNECT_TIMEOUT_DURATION = 8000;
         #endregion
 
-
         /// <summary>
         /// Initializes this for use.
         /// </summary>
@@ -77,17 +76,6 @@ namespace FishySteamworks.Client
         /// <param name="pollTime"></param>
         internal bool StartConnection(string address, ushort port, bool peerToPeer)
         {
-            if (!SteamManager.Initialized)
-            {
-                Debug.LogError("SteamWorks not initialized");
-                return false;
-            }
-            if (GetConnectionState() != LocalConnectionStates.Stopped || (_timeoutThread != null || _timeoutThread.IsAlive))
-            {
-                Debug.LogError($"Client is already started.");
-                return false;
-            }
-
             //If address is required then make sure it can be parsed.
             byte[] ip = (!peerToPeer) ? base.GetIPBytes(address) : null;
             if (!peerToPeer && ip == null)
@@ -147,7 +135,7 @@ namespace FishySteamworks.Client
             if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
                 return false;
 
-            SetLocalConnectionState(LocalConnectionStates.Stopping);            
+            SetLocalConnectionState(LocalConnectionStates.Stopping);
             //Manually abort thread to close it down quicker.
             if (_timeoutThread.IsAlive)
                 _timeoutThread.Abort();
@@ -171,6 +159,9 @@ namespace FishySteamworks.Client
         /// </summary>
         internal void IterateIncoming()
         {
+            if (base.GetConnectionState() != LocalConnectionStates.Started)
+                return;
+
             int messageCount = SteamNetworkingSockets.ReceiveMessagesOnConnection(_socket, base.MessagePointers, MAX_MESSAGES);
             if (messageCount > 0)
             {

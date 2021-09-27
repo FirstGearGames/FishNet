@@ -1,3 +1,6 @@
+WARNING: THIS READ ME MAY BE OUT OF DATE. I'VE STOPPED UPDATING IT AS ANY UPDATES
+ARE BEING ADDED TO THE DOCUMENTATION (Link will come soon).
+
 
 This read me is going to be a bit rough. I don't want to delay the testing anymore than we have to, and much of this may change, therefor I'm not going to prettify it for now.
 Keep in mind some components are testing placeholders. If you find a component that looks awful and has no commenting, you definitely found one. These will be replaced on release. For anything else please use #fishnet-bugs and #discussion, #content-suggestions, ect.

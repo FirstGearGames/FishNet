@@ -79,7 +79,7 @@ namespace FishNet.CodeGenerating.Helping
         internal static void LogError(string msg)
         {
 #if UNITY_2020_1_OR_NEWER
-            Diagnostics.AddWarning(msg);
+            Diagnostics.AddError(msg);
 #else
             Debug.LogError(msg);
 #endif

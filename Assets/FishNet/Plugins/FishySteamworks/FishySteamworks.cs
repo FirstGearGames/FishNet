@@ -69,10 +69,6 @@ namespace FishySteamworks
         /// Server for the transport.
         /// </summary>
         private Server.ServerSocket _server = new Server.ServerSocket();
-        /// <summary>
-        /// Next time SteamId can be fetched.
-        /// </summary>
-        private float _nextGetIdTime = -1f;
         #endregion
 
         #region Const.
@@ -92,20 +88,9 @@ namespace FishySteamworks
             base.Initialize();
         }
 
-
-        private void OnEnable()
-        {
-            _nextGetIdTime = Time.unscaledTime + GET_ID_INTERVAL;
-        }
-
         private void OnDestroy()
         {
             Shutdown();
-        }
-
-        private void Update()
-        {
-            TrySetLocalUserSteamId();
         }
 
         #region Setup.
@@ -151,28 +136,36 @@ namespace FishySteamworks
         }
 
         /// <summary>
-        /// Tries to set LocalSteamId.
+        /// Tries to initialize steam network access.
         /// </summary>
-        private void TrySetLocalUserSteamId()
+        private void InitializeRelayNetworkAccess()
         {
-            if (LocalUserSteamID != 0)
-                return;
-            if (_nextGetIdTime == -1 || Time.unscaledTime < _nextGetIdTime)
-                return;
-
-            _nextGetIdTime = Time.unscaledTime + GET_ID_INTERVAL;
-            SetUserSteamID();
+#if UNITY_SERVER
+            SteamGameServerNetworkingUtils.InitRelayNetworkAccess();
+#else
+            SteamNetworkingUtils.InitRelayNetworkAccess();
+            if (IsNetworkAccessAvailable())
+                LocalUserSteamID = SteamUser.GetSteamID().m_SteamID;
+#endif
         }
 
         /// <summary>
-        /// Sets LocalUserSteamId if available.
+        /// Returns if network access is available.
         /// </summary>
-        private void SetUserSteamID()
+        public bool IsNetworkAccessAvailable()
         {
-            if (SteamManager.Initialized)
+            try
             {
-                SteamNetworkingUtils.InitRelayNetworkAccess();
-                LocalUserSteamID = SteamUser.GetSteamID().m_SteamID;
+#if UNITY_SERVER
+                InteropHelp.TestIfAvailableGameServer();
+#else
+                InteropHelp.TestIfAvailableClient();
+#endif
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
         #endregion
@@ -251,9 +244,6 @@ namespace FishySteamworks
         /// <param name="server">True to process data received on the server.</param>
         public override void IterateIncoming(bool server)
         {
-            if (!SteamManager.Initialized)
-                return;
-
             if (server)
                 _server.IterateIncoming();
             else
@@ -266,9 +256,6 @@ namespace FishySteamworks
         /// <param name="server">True to process data received on the server.</param>
         public override void IterateOutgoing(bool server)
         {
-            if (!SteamManager.Initialized)
-                return;
-
             if (server)
                 _server.IterateOutgoing();
             else
@@ -413,9 +400,10 @@ namespace FishySteamworks
         /// <returns>True if there were no blocks. A true response does not promise a socket will or has connected.</returns>
         private bool StartServer()
         {
-            if (!SteamManager.Initialized)
+            InitializeRelayNetworkAccess();
+            if (!IsNetworkAccessAvailable())
             {
-                Debug.LogError("SteamWorks not initialized. Client could not be started.");
+                Debug.LogError("Server network access is not available.");
                 return false;
             }
             if (_client.GetConnectionState() != LocalConnectionStates.Stopped)
@@ -423,6 +411,7 @@ namespace FishySteamworks
                 Debug.LogError("Server cannot run while client is running.");
                 return false;
             }
+            _server.ResetInvalidSocket();
             if (_server.GetConnectionState() != LocalConnectionStates.Stopped)
             {
                 Debug.LogError("Server is already running.");
@@ -448,9 +437,10 @@ namespace FishySteamworks
         /// <returns>True if there were no blocks. A true response does not promise a socket will or has connected.</returns>
         private bool StartClient(string address)
         {
-            if (!SteamManager.Initialized)
+            InitializeRelayNetworkAccess();
+            if (!IsNetworkAccessAvailable())
             {
-                Debug.LogError("SteamWorks not initialized. Client could not be started.");
+                Debug.LogError("Client network access is not available.");
                 return false;
             }
             if (_server.GetConnectionState() != LocalConnectionStates.Stopped)
@@ -464,7 +454,7 @@ namespace FishySteamworks
                 return false;
             }
 
-            SetUserSteamID();
+            //SetUserSteamID();
             _client.StartConnection(address, _port, _peerToPeer);
             return true;
         }

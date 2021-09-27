@@ -123,7 +123,7 @@ namespace FishNet.CodeGenerating.Processing
                 //Check fields for attribute.
                 foreach (FieldDefinition fd in typeDef.Fields)
                 {
-                    if (CodegenSession.NetworkBehaviourSyncProcessor.GetSyncType(fd) != SyncType.Unset)
+                    if (CodegenSession.NetworkBehaviourSyncProcessor.GetSyncType(fd, out _) != SyncType.Unset)
                     {
                         CodegenSession.LogError($"{typeDef.FullName} has one or more SyncType attributes but does not inherit from NetworkBehaviour.");
                         error = true;

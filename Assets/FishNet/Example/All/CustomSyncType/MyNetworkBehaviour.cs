@@ -8,6 +8,7 @@ public class MyNetworkBehaviour : NetworkBehaviour
     /// <summary>
     /// Using my custom SyncType for Structy.
     /// </summary>
+    [SyncObject]
     private readonly StructySync _structy = new StructySync();
 
     private void Awake()

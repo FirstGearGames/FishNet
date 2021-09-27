@@ -74,7 +74,6 @@ namespace FishNet.CodeGenerating.Helping
         {
             return (attributeFullName == SyncVarAttribute_FullName);
         }
-
         /// <summary>
         /// Returns if attribute if a SyncObjectAttribute.
         /// </summary>

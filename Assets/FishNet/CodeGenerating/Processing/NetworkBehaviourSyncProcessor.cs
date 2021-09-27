@@ -49,20 +49,21 @@ namespace FishNet.CodeGenerating.Processing
             for (int i = 0; i < typeDef.Fields.Count; i++)
             {
                 FieldDefinition fieldDef = typeDef.Fields[i];
-                SyncType st = GetSyncType(fieldDef);
+                CustomAttribute syncAttribute;
+                SyncType st = GetSyncType(fieldDef, out syncAttribute);
 
                 //Not a sync type field.
                 if (st == SyncType.Unset)
                     continue;
 
                 if (st == SyncType.Variable)
-                    TryCreateSyncVar(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef);
+                    TryCreateSyncVar(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef, syncAttribute);
                 else if (st == SyncType.List)
-                    TryCreateSyncList(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef);
+                    TryCreateSyncList(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef, syncAttribute);
                 else if (st == SyncType.Dictionary)
-                    TryCreateSyncDictionary(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef);
+                    TryCreateSyncDictionary(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef, syncAttribute);
                 else if (st == SyncType.Custom)
-                    TryCreateCustom(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef);
+                    TryCreateCustom(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef, syncAttribute);
 
                 modified = true;
             }
@@ -89,34 +90,70 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="fieldDef"></param>
         /// <param name="diagnostics"></param>
         /// <returns></returns>
-        internal SyncType GetSyncType(FieldDefinition fieldDef)
+        internal SyncType GetSyncType(FieldDefinition fieldDef, out CustomAttribute syncAttribute)
         {
-            //Check for syncvar first. It doesn't require ISyncType.
-            CustomAttribute syncAttribute = GetSyncVarAttribute(fieldDef);
-            if (syncAttribute != null)
-            {
-                return SyncType.Variable;
-            }
-            else if (fieldDef.Name.StartsWith(SYNCHANDLER_PREFIX))
-            {
+            syncAttribute = null;
+            if (fieldDef.Name.StartsWith(SYNCHANDLER_PREFIX))
                 return SyncType.Unset;
-            }
-            //Not a syncvar, check for interface.
-            else
+
+            bool syncObject;
+            syncAttribute = GetSyncTypeAttribute(fieldDef, out syncObject);
+            /* If if attribute is null the code must progress
+             * to throw errors when user creates a sync type
+             * without using the attribute. */
+
+            //Exit early if attribute is known and not a sync object.
+            if (syncAttribute != null && !syncObject)
             {
-                if (fieldDef.FieldType.Resolve().ImplementsInterface<ISyncType>())
+                //Make sure syncvar attribute isnt on a sync object.
+                if (GetObjectSyncType(syncAttribute) != SyncType.Unset)
                 {
-                    if (fieldDef.FieldType.Name == typeof(SyncList<>).Name)
-                        return SyncType.List;
-                    else if (fieldDef.FieldType.Name == typeof(SyncDictionary<,>).Name)
-                        return SyncType.Dictionary;
-                    //Custom types must also implement ICustomSync.
-                    else if (fieldDef.FieldType.Resolve().ImplementsInterface<ICustomSync>())
-                        return SyncType.Custom;
+                    CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} uses a [SyncVar] attribute but should be using [SyncObject]."); 
+                    return SyncType.Unset;
+                }
+                else
+                    return SyncType.Variable;
+            }
+
+            /* If here could be syncObject
+             * or attribute might be null. */
+            if (fieldDef.FieldType.Resolve().ImplementsInterface<ISyncType>())
+            {
+                return GetObjectSyncType(syncAttribute);
+            }
+
+            SyncType GetObjectSyncType(CustomAttribute syncAttribute)
+            {
+                //If attribute is null then throw error.
+                if (syncAttribute == null)
+                {
+                    CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} is a SyncType but [SyncObject] attribute was not found.");
+                    return SyncType.Unset;
+                }
+
+                if (fieldDef.FieldType.Name == typeof(SyncList<>).Name)
+                {
+                    return SyncType.List;
+                }
+                else if (fieldDef.FieldType.Name == typeof(SyncDictionary<,>).Name)
+                {
+                    return SyncType.Dictionary;
+                }
+                //Custom types must also implement ICustomSync.
+                else if (fieldDef.FieldType.Resolve().ImplementsInterface<ICustomSync>())
+                {
+                    return SyncType.Custom;
+                }
+                else
+                {
+                    return SyncType.Unset;
                 }
             }
 
             //Fall through.
+            if (syncAttribute != null)
+                CodegenSession.LogError($"SyncObject attribute found on {fieldDef.Name} within {fieldDef.DeclaringType.Name} but type {fieldDef.FieldType.Name} does not inherit from SyncBase, or if a custom type does not implement ICustomSync.");
+
             return SyncType.Unset;
         }
 
@@ -130,19 +167,8 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="typeDef"></param>
         /// <param name="fieldDef"></param>
         /// <param name="diagnostics"></param>
-        private void TryCreateCustom(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef)
+        private void TryCreateCustom(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncAttribute)
         {
-            if (!originalFieldDef.Attributes.HasFlag(FieldAttributes.InitOnly) || originalFieldDef.Attributes.HasFlag(FieldAttributes.Static))
-            {
-                CodegenSession.LogError($"Custom SyncObject {originalFieldDef.FullName} cannot be static and must be readonly.");
-                return;
-            }
-
-            bool error;
-            CustomAttribute syncAttribute = GetSyncObjectAttribute(originalFieldDef, out error);
-            if (error)
-                return;
-
             TypeReference dataTypeRef = originalFieldDef.FieldType;
             //CodegenSession.Module.ImportReference(dataTypeRef);
             System.Type monoType = dataTypeRef.GetMonoType();
@@ -187,19 +213,8 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="typeDef"></param>
         /// <param name="fieldDef"></param>
         /// <param name="diagnostics"></param>
-        private void TryCreateSyncList(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef)
+        private void TryCreateSyncList(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncAttribute)
         {
-            if (!originalFieldDef.Attributes.HasFlag(FieldAttributes.InitOnly) || originalFieldDef.Attributes.HasFlag(FieldAttributes.Static))
-            {
-                CodegenSession.LogError($"SyncList {originalFieldDef.FullName} cannot be static and must be readonly.");
-                return;
-            }
-
-            bool error;
-            CustomAttribute syncAttribute = GetSyncObjectAttribute(originalFieldDef, out error);
-            if (error)
-                return;
-
             //Make sure type can be serialized.
             GenericInstanceType tmpGenerinstanceType = originalFieldDef.FieldType as GenericInstanceType;
             //this returns the correct data type, eg SyncList<int> would return int.
@@ -227,13 +242,8 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="typeDef"></param>
         /// <param name="fieldDef"></param>
         /// <param name="diagnostics"></param>
-        private void TryCreateSyncDictionary(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef)
+        private void TryCreateSyncDictionary(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncAttribute)
         {
-            bool error;
-            CustomAttribute syncAttribute = GetSyncObjectAttribute(originalFieldDef, out error);
-            if (error)
-                return;
-
             //Make sure type can be serialized.
             GenericInstanceType tmpGenerinstanceType = originalFieldDef.FieldType as GenericInstanceType;
             //this returns the correct data type, eg SyncList<int> would return int.
@@ -271,12 +281,12 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="syncTypeCount"></param>
         /// <param name="typeDef"></param>
         /// <param name="diagnostics"></param>
-        private void TryCreateSyncVar(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition fieldDef)
+        private void TryCreateSyncVar(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition fieldDef, CustomAttribute syncAttribute)
         {
-            CustomAttribute syncAttribute = GetSyncVarAttribute(fieldDef);
-            if (syncAttribute == null)
+            bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(fieldDef.FieldType, true);
+            if (!canSerialize)
             {
-                CodegenSession.LogError($"Tried to create SyncVar for {fieldDef.FullName} but syncAttribute is null.");
+                CodegenSession.LogError($"SyncVar {fieldDef.FullName} field type {fieldDef.FieldType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
                 return;
             }
 
@@ -296,97 +306,51 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="fieldDef"></param>
         /// <returns></returns>
-        private CustomAttribute GetSyncObjectAttribute(FieldDefinition fieldDef, out bool error)
-        {
-            CustomAttribute foundAttribute = null;
-            //Becomes true if an error occurred during this process.
-            error = false;
-
-            foreach (CustomAttribute customAttribute in fieldDef.CustomAttributes)
-            {
-                if (!CodegenSession.AttributeHelper.IsSyncObjectAttribute(customAttribute.AttributeType.FullName))
-                    continue;
-
-                //A syncvar attribute already exist.
-                if (foundAttribute != null)
-                {
-                    CodegenSession.LogError($"{fieldDef.Name} cannot have multiple SyncObject attributes.");
-                    error = true;
-                }
-                //Static.
-                if (fieldDef.IsStatic)
-                {
-                    CodegenSession.LogError($"{fieldDef.Name} SyncObject cannot be static.");
-                    error = true;
-                }
-                //Generic.
-                if (fieldDef.FieldType.IsGenericParameter)
-                {
-                    CodegenSession.LogError($"{fieldDef.Name} SyncObject cannot be be generic.");
-                    error = true;
-                }
-
-                //If all checks passed.
-                if (!error)
-                    foundAttribute = customAttribute;
-            }
-
-            //If an error occurred then reset results.
-            if (error)
-                foundAttribute = null;
-
-            return foundAttribute;
-        }
-
-
-        /// <summary>
-        /// Returns the syncvar attribute on a method, if one exist. Otherwise returns null.
-        /// </summary>
-        /// <param name="fieldDef"></param>
-        /// <returns></returns>
-        private CustomAttribute GetSyncVarAttribute(FieldDefinition fieldDef)
+        private CustomAttribute GetSyncTypeAttribute(FieldDefinition fieldDef, out bool syncObject)
         {
             CustomAttribute foundAttribute = null;
             //Becomes true if an error occurred during this process.
             bool error = false;
+            syncObject = false;
 
             foreach (CustomAttribute customAttribute in fieldDef.CustomAttributes)
             {
-                if (!CodegenSession.AttributeHelper.IsSyncVarAttribute(customAttribute.AttributeType.FullName))
+                if (CodegenSession.AttributeHelper.IsSyncVarAttribute(customAttribute.AttributeType.FullName))
+                    syncObject = false;
+                else if (CodegenSession.AttributeHelper.IsSyncObjectAttribute(customAttribute.AttributeType.FullName))
+                    syncObject = true;
+                else
                     continue;
 
                 //A syncvar attribute already exist.
                 if (foundAttribute != null)
                 {
-                    CodegenSession.LogError($"{fieldDef.Name} cannot have multiple SyncVar attributes.");
+                    CodegenSession.LogError($"{fieldDef.Name} cannot have multiple SyncType attributes.");
                     error = true;
                 }
                 //Static.
                 if (fieldDef.IsStatic)
                 {
-                    CodegenSession.LogError($"{fieldDef.Name} SyncVar cannot be static.");
+                    CodegenSession.LogError($"{fieldDef.Name} SyncType cannot be static.");
                     error = true;
                 }
                 //Generic.
                 if (fieldDef.FieldType.IsGenericParameter)
                 {
-                    CodegenSession.LogError($"{fieldDef.Name} SyncVar cannot be be generic.");
+                    CodegenSession.LogError($"{fieldDef.Name} SyncType cannot be be generic.");
                     error = true;
                 }
+                //SyncObject readonly check.
+                if (syncObject && !fieldDef.Attributes.HasFlag(FieldAttributes.InitOnly))
+                {
+                    CodegenSession.LogError($"{fieldDef.Name} SyncObject must be readonly.");
+                    error = true;
+                }
+
 
                 //If all checks passed.
                 if (!error)
                     foundAttribute = customAttribute;
-            }
-
-            if (foundAttribute != null)
-            {
-                bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(fieldDef.FieldType, true);
-                if (!canSerialize)
-                {
-                    CodegenSession.LogError($"SyncVar {fieldDef.FullName} field type {fieldDef.FieldType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
-                    error = true;
-                }
             }
 
             //If an error occurred then reset results.

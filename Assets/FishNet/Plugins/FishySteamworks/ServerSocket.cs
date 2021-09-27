@@ -66,27 +66,22 @@ namespace FishySteamworks.Server
         }
 
         /// <summary>
+        /// Resets the socket if invalid.
+        /// </summary>
+        internal void ResetInvalidSocket()
+        {
+            /* Force connection state to stopped if listener is invalid.
+            * Not sure if steam may change this internally so better
+            * safe than sorry and check before trying to connect
+            * rather than being stuck in the incorrect state. */
+            if (_socket == HSteamListenSocket.Invalid)
+                base.SetLocalConnectionState(LocalConnectionStates.Stopped);
+        }
+        /// <summary>
         /// Starts the server.
         /// </summary>
         internal void StartConnection(string address, ushort port, int maxClients, bool peerToPeer)
         {
-            if (!SteamManager.Initialized)
-            {
-                Debug.LogError("SteamWorks not initialized.");
-                return;
-            }
-            /* Force connection state to stopped if listener is invalid.
-             * Not sure if steam may change this internally so better
-             * safe than sorry and check before trying to connect
-             * rather than being stuck in the incorrect state. */
-            if (_socket == HSteamListenSocket.Invalid)
-                base.SetLocalConnectionState(LocalConnectionStates.Stopped);
-            if (base.GetConnectionState() != LocalConnectionStates.Stopped)
-            {
-                Debug.LogError("Server is already started.");
-                return;
-            }
-
             base.PeerToPeer = peerToPeer;
 
             //If address is required then make sure it can be parsed.
@@ -221,6 +216,9 @@ namespace FishySteamworks.Server
         /// </summary>
         internal void IterateOutgoing()
         {
+            if (base.GetConnectionState() != LocalConnectionStates.Started)
+                return;
+
             foreach (HSteamNetConnection conn in _steamConnections.FirstTypes)
                 SteamNetworkingSockets.FlushMessagesOnConnection(conn);
         }
