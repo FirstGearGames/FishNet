@@ -80,18 +80,18 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Number of objects in the collection.
         /// </summary>
-        public int Count => _objects.Count;
+        public int Count => _collection.Count;
         #endregion
 
         #region Private.        
         /// <summary>
         /// Collection of objects.
         /// </summary>
-        private readonly IList<T> _objects = new List<T>();
+        private readonly IList<T> _collection = new List<T>();
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
-        private readonly IList<T> _clientHostObjects = new List<T>();
+        private readonly IList<T> _clientHostCollection = new List<T>();
         /// <summary>
         /// Comparer to see if entries change when calling public methods.
         /// </summary>
@@ -114,11 +114,23 @@ namespace FishNet.Object.Synchronizing
             this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
         }
 
-        public SyncList(IList<T> objects, IEqualityComparer<T> comparer = null)
+        public SyncList(IList<T> collection, IEqualityComparer<T> comparer = null)
         {
             this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
-            this._objects = objects;
-            this._clientHostObjects = objects;
+            this._collection = collection;
+            this._clientHostCollection = collection;
+        }
+
+        /// <summary>
+        /// Gets the collection being used within this SyncList.
+        /// </summary>
+        /// <param name="asServer">True if returning the server value, false if client value. The values will only differ when running as host. While asServer is true the most current values on server will be returned, and while false the latest values received by client will be returned.</param>
+        /// <returns></returns>
+        public List<T> GetCollection(bool asServer)
+        {
+            bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
+            IList<T> collection = (asClientAndHost) ? _clientHostCollection : _collection;
+            return (collection as List<T>);
         }
 
         /// <summary>
@@ -197,11 +209,11 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             base.Write(writer, false);
-            writer.WriteUInt32((uint)_objects.Count);
-            for (int i = 0; i < _objects.Count; i++)
+            writer.WriteUInt32((uint)_collection.Count);
+            for (int i = 0; i < _collection.Count; i++)
             {
                 writer.WriteByte((byte)SyncListOperation.Add);
-                writer.Write(_objects[i]);
+                writer.Write(_collection[i]);
             }
         }
 
@@ -217,7 +229,7 @@ namespace FishNet.Object.Synchronizing
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
             bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
-            IList<T> objects = (asClientAndHost) ? _clientHostObjects : _objects;
+            IList<T> collection = (asClientAndHost) ? _clientHostCollection : _collection;
 
             int changes = (int)reader.ReadUInt32();
             for (int i = 0; i < changes; i++)
@@ -231,35 +243,35 @@ namespace FishNet.Object.Synchronizing
                 if (operation == SyncListOperation.Add)
                 {
                     next = reader.Read<T>();
-                    index = objects.Count;
-                    objects.Add(next);
+                    index = collection.Count;
+                    collection.Add(next);
                 }
                 //Clear.
                 else if (operation == SyncListOperation.Clear)
                 {
-                    objects.Clear();
+                    collection.Clear();
                 }
                 //Insert.
                 else if (operation == SyncListOperation.Insert)
                 {
                     index = (int)reader.ReadUInt32();
                     next = reader.Read<T>();
-                    objects.Insert(index, next);
+                    collection.Insert(index, next);
                 }
                 //RemoveAt.
                 else if (operation == SyncListOperation.RemoveAt)
                 {
                     index = (int)reader.ReadUInt32();
-                    prev = objects[index];
-                    objects.RemoveAt(index);
+                    prev = collection[index];
+                    collection.RemoveAt(index);
                 }
                 //Set
                 else if (operation == SyncListOperation.Set)
                 {
                     index = (int)reader.ReadUInt32();
                     next = reader.Read<T>();
-                    prev = objects[index];
-                    objects[index] = next;
+                    prev = collection[index];
+                    collection[index] = next;
                 }
 
 
@@ -278,7 +290,7 @@ namespace FishNet.Object.Synchronizing
         {
             base.Reset();
             _changed.Clear();
-            _clientHostObjects.Clear();
+            _clientHostCollection.Clear();
         }
 
         /// <summary>
@@ -291,12 +303,12 @@ namespace FishNet.Object.Synchronizing
         }
         private void Add(T item, bool asServer)
         {
-            _objects.Add(item);
+            _collection.Add(item);
             if (asServer)
             {
                 if (base.NetworkManager == null)
-                    _clientHostObjects.Add(item);
-                AddOperation(SyncListOperation.Add, _objects.Count - 1, default, item);
+                    _clientHostCollection.Add(item);
+                AddOperation(SyncListOperation.Add, _collection.Count - 1, default, item);
             }
         }
         /// <summary>
@@ -318,11 +330,11 @@ namespace FishNet.Object.Synchronizing
         }
         private void Clear(bool asServer)
         {
-            _objects.Clear();
+            _collection.Clear();
             if (asServer)
             {
                 if (base.NetworkManager == null)
-                    _clientHostObjects.Clear();
+                    _clientHostCollection.Clear();
                 AddOperation(SyncListOperation.Clear, -1, default, default);
             }
         }
@@ -344,7 +356,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="index"></param>
         public void CopyTo(T[] array, int index)
         {
-            _objects.CopyTo(array, index);
+            _collection.CopyTo(array, index);
         }
 
         /// <summary>
@@ -354,8 +366,8 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public int IndexOf(T item)
         {
-            for (int i = 0; i < _objects.Count; ++i)
-                if (_comparer.Equals(item, _objects[i]))
+            for (int i = 0; i < _collection.Count; ++i)
+                if (_comparer.Equals(item, _collection[i]))
                     return i;
             return -1;
         }
@@ -367,8 +379,8 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public int FindIndex(Predicate<T> match)
         {
-            for (int i = 0; i < _objects.Count; ++i)
-                if (match(_objects[i]))
+            for (int i = 0; i < _collection.Count; ++i)
+                if (match(_collection[i]))
                     return i;
             return -1;
         }
@@ -381,7 +393,7 @@ namespace FishNet.Object.Synchronizing
         public T Find(Predicate<T> match)
         {
             int i = FindIndex(match);
-            return (i != -1) ? _objects[i] : default;
+            return (i != -1) ? _collection[i] : default;
         }
 
         /// <summary>
@@ -392,9 +404,9 @@ namespace FishNet.Object.Synchronizing
         public List<T> FindAll(Predicate<T> match)
         {
             List<T> results = new List<T>();
-            for (int i = 0; i < _objects.Count; ++i)
-                if (match(_objects[i]))
-                    results.Add(_objects[i]);
+            for (int i = 0; i < _collection.Count; ++i)
+                if (match(_collection[i]))
+                    results.Add(_collection[i]);
             return results;
         }
 
@@ -409,11 +421,11 @@ namespace FishNet.Object.Synchronizing
         }
         private void Insert(int index, T item, bool asServer)
         {
-            _objects.Insert(index, item);
+            _collection.Insert(index, item);
             if (asServer)
             {
                 if (base.NetworkManager == null)
-                    _clientHostObjects.Insert(index, item);
+                    _clientHostCollection.Insert(index, item);
                 AddOperation(SyncListOperation.Insert, index, default, item);
             }
         }
@@ -458,12 +470,12 @@ namespace FishNet.Object.Synchronizing
         }
         private void RemoveAt(int index, bool asServer)
         {
-            T oldItem = _objects[index];
-            _objects.RemoveAt(index);
+            T oldItem = _collection[index];
+            _collection.RemoveAt(index);
             if (asServer)
             {
                 if (base.NetworkManager == null)
-                    _clientHostObjects.RemoveAt(index);
+                    _clientHostCollection.RemoveAt(index);
                 AddOperation(SyncListOperation.RemoveAt, index, oldItem, default);
             }
         }
@@ -476,9 +488,9 @@ namespace FishNet.Object.Synchronizing
         public int RemoveAll(Predicate<T> match)
         {
             List<T> toRemove = new List<T>();
-            for (int i = 0; i < _objects.Count; ++i)
-                if (match(_objects[i]))
-                    toRemove.Add(_objects[i]);
+            for (int i = 0; i < _collection.Count; ++i)
+                if (match(_collection[i]))
+                    toRemove.Add(_collection[i]);
 
             foreach (T entry in toRemove)
             {
@@ -495,7 +507,7 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public T this[int i]
         {
-            get => _objects[i];
+            get => _collection[i];
             set => Set(i, value, true, true);
         }
 
@@ -510,15 +522,15 @@ namespace FishNet.Object.Synchronizing
         }
         private void Set(int index, T value, bool asServer, bool force)
         {
-            bool sameValue = (!force && !_comparer.Equals(_objects[index], value));
+            bool sameValue = (!force && !_comparer.Equals(_collection[index], value));
             if (!sameValue)
             {
-                T prev = _objects[index];
-                _objects[index] = value;
+                T prev = _collection[index];
+                _collection[index] = value;
                 if (asServer)
                 {
                     if (base.NetworkManager == null)
-                        _clientHostObjects[index] = value;
+                        _clientHostCollection[index] = value;
                         AddOperation(SyncListOperation.Set, index, prev, value);
                 }
             }

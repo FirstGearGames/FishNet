@@ -111,8 +111,8 @@ namespace FishNet.CodeGenerating.Processing
                     else if (fieldDef.FieldType.Name == typeof(SyncDictionary<,>).Name)
                         return SyncType.Dictionary;
                     //Custom types must also implement ICustomSync.
-                    //else if (fieldDef.FieldType.Resolve().ImplementsInterface<ICustomSync>())
-                    //    return SyncType.Custom;
+                    else if (fieldDef.FieldType.Resolve().ImplementsInterface<ICustomSync>())
+                        return SyncType.Custom;
                 }
             }
 
@@ -657,12 +657,6 @@ namespace FishNet.CodeGenerating.Processing
             ILProcessor processor;
             List<Instruction> instructions = new List<Instruction>();
 
-            //This import shouldn't be needed but cecil is stingy so rather be safe than sorry.
-            CodegenSession.Module.ImportReference(monoType);
-            //Get Type for SyncList of dataTypeRef. eg SyncList<int>.
-            System.Type typedSyncClassType = originalFieldDef.GetType();
-            CodegenSession.Module.ImportReference(typedSyncClassType);
-
             /* Set sync index. */
             System.Reflection.MethodInfo setSyncIndexMethodInfo = monoType.GetMethod(SETSYNCINDEX_METHOD_NAME);
             MethodReference setSyncIndexMethodRef = CodegenSession.Module.ImportReference(setSyncIndexMethodInfo);
@@ -1034,8 +1028,22 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="processedLookup"></param>
         private bool ProcessSetField(MethodDefinition methodDef, int instructionIndex, FieldReference resolvedOpField, Dictionary<FieldReference, List<ProcessedSync>> processedLookup)
         {
-            //return;
             Instruction inst = methodDef.Body.Instructions[instructionIndex];
+
+            //Find any instructions that are jmp/breaking to the one we are modifying.            
+            HashSet<Instruction> brInstructions = new HashSet<Instruction>();
+            foreach (Instruction item in methodDef.Body.Instructions)
+            {
+                bool canJmp = (item.OpCode == OpCodes.Br || item.OpCode == OpCodes.Brfalse || item.OpCode == OpCodes.Brfalse_S || item.OpCode == OpCodes.Brtrue || item.OpCode == OpCodes.Brtrue_S || item.OpCode == OpCodes.Br_S);
+                if (!canJmp)
+                    continue;
+                if (item.Operand == null)
+                    continue;
+
+                if (item.Operand is Instruction jmpInst && jmpInst == inst)
+                    brInstructions.Add(item);
+            }
+
             //If was a replaced field.
             if (processedLookup.TryGetValue(resolvedOpField, out List<ProcessedSync> psLst))
             {
@@ -1068,6 +1076,21 @@ namespace FishNet.CodeGenerating.Processing
 
                     inst.OpCode = OpCodes.Call;
                     inst.Operand = ps.SetMethodReference;
+                }
+
+                /* If any instructions are still pointing
+                 * to modified value then they need to be
+                 * redirected to the instruction right above it.
+                 * This is because the boolTrueInst, to indicate
+                 * value is being set as server. */
+                foreach (Instruction item in brInstructions)
+                {
+                    if (item.Operand is Instruction jmpInst && jmpInst == inst)
+                    {
+                        //Use the same index that was passed in, which is now one before modified instruction.
+                        Instruction newInst = methodDef.Body.Instructions[instructionIndex];
+                        item.Operand = newInst;
+                    }
                 }
 
                 return true;
