@@ -126,15 +126,15 @@ namespace FishySteamworks
             {
                 byte[] arr = segment.Array;
                 Array.Resize(ref arr, arr.Length + 1);
-                segment = new ArraySegment<byte>(arr, segment.Offset, segment.Count + 1);
+                arr[arr.Length - 1] = channelId;
             }
             //If large enough just increase the segment and set the channel byte.
             else
             {
-                segment.Array[segment.Offset + segment.Count + 1] = channelId;
-                //Make a new segment so count is right.
-                segment = new ArraySegment<byte>(segment.Array, segment.Offset, segment.Count + 1);
+                segment.Array[segment.Offset + segment.Count] = channelId;
             }
+            //Make a new segment so count is right.
+            segment = new ArraySegment<byte>(segment.Array, segment.Offset, segment.Count + 1);
 
             GCHandle pinnedArray = GCHandle.Alloc(segment.Array, GCHandleType.Pinned);
             IntPtr pData = pinnedArray.AddrOfPinnedObject() + segment.Offset;
