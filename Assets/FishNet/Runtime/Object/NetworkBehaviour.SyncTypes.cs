@@ -282,7 +282,7 @@ namespace FishNet.Object
 
                                 //If sending to observers.
                                 if (_syncTypeWriters[i].ReadPermission == ReadPermission.Observers)
-                                    NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, packetWriter.GetArraySegment(), this);
+                                    NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, packetWriter.GetArraySegment(), NetworkObject.Observers);
                                 //Sending only to owner.
                                 else
                                     NetworkObject.NetworkManager.TransportManager.SendToClient(channel, packetWriter.GetArraySegment(), NetworkObject.Owner);

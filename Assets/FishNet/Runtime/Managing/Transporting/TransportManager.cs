@@ -154,12 +154,8 @@ namespace FishNet.Managing.Transporting
         /// <param name="splitLargeIntoReliable">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
         internal void SendToClients(byte channelId, ArraySegment<byte> segment, NetworkObject networkObject, bool splitLargeIntoReliable = true)
         {
-            //if (networkObject.NetworkObserver == null)
-            //SendToClients(channelId, segment, splitLargeIntoReliable);
-            //else
             SendToClients(channelId, segment, networkObject.Observers, splitLargeIntoReliable);
         }
-
 
         /// <summary>
         /// Sends data to all clients.
