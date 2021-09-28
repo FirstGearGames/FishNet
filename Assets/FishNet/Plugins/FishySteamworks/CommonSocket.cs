@@ -140,7 +140,11 @@ namespace FishySteamworks
             IntPtr pData = pinnedArray.AddrOfPinnedObject() + segment.Offset;
 
             int sendFlag = (channelId == (byte)Channel.Unreliable) ? Constants.k_nSteamNetworkingSend_Unreliable : Constants.k_nSteamNetworkingSend_Reliable;
+#if UNITY_SERVER
+            EResult result = SteamGameServerNetworkingSockets.SendMessageToConnection(steamConnection, pData, (uint)segment.Count, sendFlag, out long _);
+#else
             EResult result = SteamNetworkingSockets.SendMessageToConnection(steamConnection, pData, (uint)segment.Count, sendFlag, out long _);
+#endif
             if (result != EResult.k_EResultOK)
             {
                 Debug.LogWarning($"Send issue: {result}");

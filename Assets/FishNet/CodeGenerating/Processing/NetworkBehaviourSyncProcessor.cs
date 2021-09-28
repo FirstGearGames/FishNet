@@ -122,10 +122,10 @@ namespace FishNet.CodeGenerating.Processing
                 return GetObjectSyncType(syncAttribute);
             }
 
-            SyncType GetObjectSyncType(CustomAttribute syncAttribute)
+            SyncType GetObjectSyncType(CustomAttribute sa)
             {
                 //If attribute is null then throw error.
-                if (syncAttribute == null)
+                if (sa == null)
                 {
                     CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} is a SyncType but [SyncObject] attribute was not found.");
                     return SyncType.Unset;

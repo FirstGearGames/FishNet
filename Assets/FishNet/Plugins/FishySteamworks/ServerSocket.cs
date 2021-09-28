@@ -97,7 +97,11 @@ namespace FishySteamworks.Server
 
             if (base.PeerToPeer)
             {
+#if UNITY_SERVER
+                _socket = SteamGameServerNetworkingSockets.CreateListenSocketP2P(0, options.Length, options);
+#else
                 _socket = SteamNetworkingSockets.CreateListenSocketP2P(0, options.Length, options);
+#endif
             }
             else
             {
@@ -105,7 +109,11 @@ namespace FishySteamworks.Server
                 addr.Clear();
                 if (ip != null)
                     addr.SetIPv6(ip, port);
+#if UNITY_SERVER
+                _socket = SteamGameServerNetworkingSockets.CreateListenSocketIP(ref addr, 0, options);
+#else
                 _socket = SteamNetworkingSockets.CreateListenSocketIP(ref addr, 0, options);
+#endif
             }
         }
 
@@ -118,7 +126,11 @@ namespace FishySteamworks.Server
                 return false;
 
             base.SetLocalConnectionState(LocalConnectionStates.Stopping);
+#if UNITY_SERVER
+            SteamGameServerNetworkingSockets.CloseListenSocket(_socket);
+#else
             SteamNetworkingSockets.CloseListenSocket(_socket);
+#endif
             if (_onRemoteConnectionStateCallback != null)
             {
                 _onRemoteConnectionStateCallback.Dispose();
@@ -153,7 +165,11 @@ namespace FishySteamworks.Server
         /// <param name="socket"></param>
         private bool StopConnection(int connectionId, HSteamNetConnection socket)
         {
+#if UNITY_SERVER
+            SteamGameServerNetworkingSockets.CloseConnection(socket, 0, string.Empty, false);
+#else
             SteamNetworkingSockets.CloseConnection(socket, 0, string.Empty, false);
+#endif
             _steamConnections.Remove(connectionId);
             _steamIds.Remove(connectionId);
             Debug.Log($"Client with ConnectionID {connectionId} disconnected.");
@@ -174,13 +190,20 @@ namespace FishySteamworks.Server
                 if (_steamConnections.Count >= _maxClients)
                 {
                     Debug.Log($"Incoming connection {clientSteamID} would exceed max connection count. Rejecting.");
+#if UNITY_SERVER
+                    SteamGameServerNetworkingSockets.CloseConnection(args.m_hConn, 0, "Max Connection Count", false);
+#else
                     SteamNetworkingSockets.CloseConnection(args.m_hConn, 0, "Max Connection Count", false);
+#endif
                     return;
                 }
 
-                EResult res;
-
-                if ((res = SteamNetworkingSockets.AcceptConnection(args.m_hConn)) == EResult.k_EResultOK)
+#if UNITY_SERVER
+                EResult res = SteamGameServerNetworkingSockets.AcceptConnection(args.m_hConn);
+#else
+                EResult res = SteamNetworkingSockets.AcceptConnection(args.m_hConn);
+#endif
+                if (res == EResult.k_EResultOK)
                 {
                     Debug.Log($"Accepting connection {clientSteamID}");
                 }
@@ -220,7 +243,13 @@ namespace FishySteamworks.Server
                 return;
 
             foreach (HSteamNetConnection conn in _steamConnections.FirstTypes)
+            {
+#if UNITY_SERVER
+                SteamGameServerNetworkingSockets.FlushMessagesOnConnection(conn);
+#else
                 SteamNetworkingSockets.FlushMessagesOnConnection(conn);
+#endif
+            }
         }
 
         /// <summary>
@@ -238,7 +267,12 @@ namespace FishySteamworks.Server
                 HSteamNetConnection steamNetConn = item.Key;
                 int connectionId = item.Value;
 
-                int messageCount = SteamNetworkingSockets.ReceiveMessagesOnConnection(steamNetConn, base.MessagePointers, MAX_MESSAGES);
+                int messageCount;
+#if UNITY_SERVER
+                messageCount = SteamGameServerNetworkingSockets.ReceiveMessagesOnConnection(steamNetConn, base.MessagePointers, MAX_MESSAGES);
+#else
+                messageCount = SteamNetworkingSockets.ReceiveMessagesOnConnection(steamNetConn, base.MessagePointers, MAX_MESSAGES);
+#endif
                 if (messageCount > 0)
                 {
                     for (int i = 0; i < messageCount; i++)
