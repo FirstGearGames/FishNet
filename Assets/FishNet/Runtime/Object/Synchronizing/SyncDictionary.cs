@@ -115,10 +115,17 @@ namespace FishNet.Object.Synchronizing
                 return;
             }
 
+            /* Set as changed even if cannot dirty.
+            * Dirty is only set when there are observers,
+            * but even if there are not observers
+            * values must be marked as changed so when
+            * there are observers, new values are sent. */
+            _valuesChanged = true;
+            if (!base.Dirty())
+                return;
+
             ChangeData change = new ChangeData(operation, key, value);
             _changed.Add(change);
-
-            _valuesChanged = true;
             bool asServer = true;
             OnChange?.Invoke(operation, key, value, asServer);
 

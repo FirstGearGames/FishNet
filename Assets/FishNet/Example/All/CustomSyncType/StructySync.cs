@@ -115,16 +115,22 @@ namespace FishNet.Example.CustomSyncObject
                 return;
             }
 
+            /* Set as changed even if cannot dirty.
+            * Dirty is only set when there are observers,
+            * but even if there are not observers
+            * values must be marked as changed so when
+            * there are observers, new values are sent. */
+            _valuesChanged = true;
             /* Only continue if can dirty. While you could still continue
-             * even if unable to dirty, this means that write won't be called
+             * even if unable to dirty, this means that changes won't be flushed
              * until dirty is possible, resulting in the _changed collection
-             * building up. There's no reason to cache changes since late joiners
+             * building up. An object cannot dirty if there are no observers.
+             * There's no reason to cache changes since late joiners
              * will get the full value, unless you explicitly change that behavior in
              * your custom sync. */
             if (!base.Dirty())
                 return;
 
-            _valuesChanged = true;
             //Data can currently only be set from server, so this is always asServer.
             bool asServer = true;
             //Add to changed.

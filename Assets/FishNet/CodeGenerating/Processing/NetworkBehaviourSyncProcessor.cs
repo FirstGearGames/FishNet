@@ -603,7 +603,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="attribute"></param>
         /// <param name="diagnostics"></param>
         internal bool InitializeCustom(int syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, System.Type monoType, CustomAttribute attribute)
-        {
+        { 
             float sendRate = 0.1f;
             WritePermission writePermissions = WritePermission.ServerOnly;
             ReadPermission readPermissions = ReadPermission.Observers;
@@ -686,7 +686,7 @@ namespace FishNet.CodeGenerating.Processing
             MethodDefinition injectionMethodDef;
             ILProcessor processor;
             List<Instruction> instructions = new List<Instruction>();
-
+ 
             //This import shouldn't be needed but cecil is stingy so rather be safe than sorry.
             CodegenSession.Module.ImportReference(monoType);
             //Get Type for SyncList of dataTypeRef. eg SyncList<int>.
