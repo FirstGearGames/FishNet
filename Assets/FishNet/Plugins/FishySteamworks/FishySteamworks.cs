@@ -314,6 +314,22 @@ namespace FishySteamworks
 
         #region Configuration.
         /// <summary>
+        /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
+        /// </summary>
+        /// <returns></returns>
+        public override int GetMaximumClients()
+        {
+            return _server.GetMaximumClients();
+        }
+        /// <summary>
+        /// Sets maximum number of clients allowed to connect to the server. If applied at runtime and clients exceed this value existing clients will stay connected but new clients may not connect.
+        /// </summary>
+        /// <param name="value"></param>
+        public override void SetMaximumClients(int value)
+        {
+            _server.SetMaximumClients(value);
+        }
+        /// <summary>
         /// Sets which address the client will connect to.
         /// </summary>
         /// <param name="address"></param>
@@ -418,8 +434,7 @@ namespace FishySteamworks
                 return false;
             }
 
-            _server.StartConnection(_serverBindAddress, _port, _maximumClients, _peerToPeer);
-            return true;
+            return _server.StartConnection(_serverBindAddress, _port, _maximumClients, _peerToPeer);
         }
 
         /// <summary>

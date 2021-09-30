@@ -65,8 +65,8 @@ namespace FishNet.Object
         /// <summary>
         /// Called on the server after ownership has changed.
         /// </summary>
-        /// <param name="currentOwner">Current owner of this object.</param>
-        public virtual void OnOwnershipServer(NetworkConnection currentOwner) { }
+        /// <param name="newOwner">Current owner of this object.</param>
+        public virtual void OnOwnershipServer(NetworkConnection newOwner) { }
         private void NetworkObject_OnOwnershipServer(NetworkConnection currentOwner) { OnOwnershipServer(currentOwner); }
         protected internal void UsingOnOwnershipServerInternal() { _usingOnOwnershipServer = true; }
         /// <summary>

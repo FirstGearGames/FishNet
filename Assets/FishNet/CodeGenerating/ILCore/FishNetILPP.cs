@@ -279,7 +279,15 @@ namespace FishNet.CodeGenerating.ILCore
 
             //Run through the typeDefs again to replace syncvar calls.
             foreach (TypeDefinition typeDef in networkBehaviourTypeDefs)
-                CodegenSession.NetworkBehaviourSyncProcessor.ReplaceGetSets(typeDef, allProcessedSyncs);
+            {
+                //Add to processed.
+                TypeDefinition copyTypeDef = typeDef;
+                do
+                {
+                    CodegenSession.NetworkBehaviourSyncProcessor.ReplaceGetSets(copyTypeDef, allProcessedSyncs);
+                    copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
+                } while (copyTypeDef != null);
+            }
 
             return modified;
         }

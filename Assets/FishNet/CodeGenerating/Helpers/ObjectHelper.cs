@@ -21,9 +21,9 @@ namespace FishNet.CodeGenerating.Helping
         internal string NetworkBehaviour_FullName;
         internal string IBroadcast_FullName;
         internal string SyncList_FullName;        
-        private MethodReference NetworkBehaviour_CreateServerRpcDelegate_MethodRef;
-        private MethodReference NetworkBehaviour_CreateObserversRpcDelegate_MethodRef;
-        private MethodReference NetworkBehaviour_CreateTargetRpcDelegate_MethodRef;
+        private MethodReference NetworkBehaviour_RegisterServerRpc_MethodRef;
+        private MethodReference NetworkBehaviour_RegisterObserversRpc_MethodRef;
+        private MethodReference NetworkBehaviour_RegisterTargetRpc_MethodRef;
         private MethodReference Networkbehaviour_ServerRpcDelegateDelegateConstructor_MethodRef;
         private MethodReference Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef;
         private MethodReference NetworkBehaviour_SendServerRpc_MethodRef;
@@ -54,6 +54,7 @@ namespace FishNet.CodeGenerating.Helping
 
         #region Const.
         internal const string AWAKE_METHOD_NAME = "Awake";
+        internal const string BUFFERED_RPC_PROPERTY_NAME = "BufferLast";
         #endregion
 
         internal bool ImportReferences()
@@ -100,12 +101,12 @@ namespace FishNet.CodeGenerating.Helping
             foreach (MethodInfo methodInfo in networkBehaviourType.GetMethods((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
                 //CreateDelegates.
-                if (methodInfo.Name == nameof(NetworkBehaviour.CreateServerRpcDelegate))
-                    NetworkBehaviour_CreateServerRpcDelegate_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.CreateObserversRpcDelegate))
-                    NetworkBehaviour_CreateObserversRpcDelegate_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.CreateTargetRpcDelegate))
-                    NetworkBehaviour_CreateTargetRpcDelegate_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                if (methodInfo.Name == nameof(NetworkBehaviour.RegisterServerRpc))
+                    NetworkBehaviour_RegisterServerRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(NetworkBehaviour.RegisterObserversRpc))
+                    NetworkBehaviour_RegisterObserversRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(NetworkBehaviour.RegisterTargetRpc))
+                    NetworkBehaviour_RegisterTargetRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 //SendRpcs.
                 else if (methodInfo.Name == nameof(NetworkBehaviour.SendServerRpc))
                     NetworkBehaviour_SendServerRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
@@ -180,8 +181,11 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="originalMethodDef"></param>
         /// <param name="readerMethodDef"></param>
         /// <param name="rpcType"></param>
-        internal void CreateRpcDelegate(ILProcessor processor, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, RpcType rpcType, int allRpcCount)
+        internal void CreateRpcDelegate(MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, RpcType rpcType, int allRpcCount, CustomAttribute rpcAttribute)
         {
+            MethodDefinition methodDef = originalMethodDef.DeclaringType.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
+            ILProcessor processor = methodDef.Body.GetILProcessor();
+
             List<Instruction> insts = new List<Instruction>();
             insts.Add(processor.Create(OpCodes.Ldarg_0));
 
@@ -196,19 +200,22 @@ namespace FishNet.CodeGenerating.Helping
             if (rpcType == RpcType.Server)
             {
                 insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ServerRpcDelegateDelegateConstructor_MethodRef));
-                insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_CreateServerRpcDelegate_MethodRef));
+                insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_RegisterServerRpc_MethodRef));
             }
             //Observers.
             else if (rpcType == RpcType.Observers)
             {
+                bool bufferLast = rpcAttribute.GetField("BufferLast", false);
+                int buffered = (bufferLast) ? 1 : 0;
                 insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef));
-                insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_CreateObserversRpcDelegate_MethodRef));
+                insts.Add(processor.Create(OpCodes.Ldc_I4, buffered));
+                insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_RegisterObserversRpc_MethodRef));
             }
             //Target
             else if (rpcType == RpcType.Target)
             {
                 insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef));
-                insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_CreateTargetRpcDelegate_MethodRef));
+                insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_RegisterTargetRpc_MethodRef));
             }
 
             /* Has to be done last. This allows the NetworkBehaviour to
@@ -233,9 +240,13 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="writerVariableDef"></param>
         /// <param name="channel"></param>
-        internal void CreateSendObserversRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
+        internal void CreateSendObserversRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, CustomAttribute rpcAttribute)
         {
             CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
+            //Also add if buffered.
+            bool bufferLast = rpcAttribute.GetField(BUFFERED_RPC_PROPERTY_NAME, false);
+            int buffered = (bufferLast) ? 1 : 0;
+            processor.Emit(OpCodes.Ldc_I4, buffered);
             //Call NetworkBehaviour.
             processor.Emit(OpCodes.Call, NetworkBehaviour_SendObserversRpc_MethodRef);
         }

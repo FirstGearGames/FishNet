@@ -102,7 +102,7 @@ namespace FishNet.Managing.Server.Object
                         {
                             everyoneWriter.Reset();
                             ownerWriter.Reset();
-                            WriteSpawn(nob, ref everyoneWriter, ref ownerWriter);
+                            WriteSpawn(nob, conn, ref everyoneWriter, ref ownerWriter);
                             CacheObserverChange(nob, ref cacheIndex);
                         }
                         else if (osc == ObserverStateChange.Removed)
@@ -132,7 +132,7 @@ namespace FishNet.Managing.Server.Object
 
                     //Invoke spawn callbacks on nobs.
                     for (int i = 0; i < cacheIndex; i++)
-                        _observerChangeObjectsCache[i].InvokeOnServerSpawn(conn);
+                        _observerChangeObjectsCache[i].InvokePostOnServerStart(conn);
                 }
             }
 
@@ -223,7 +223,7 @@ namespace FishNet.Managing.Server.Object
                     {
                         everyoneWriter.Reset();
                         ownerWriter.Reset();
-                        WriteSpawn(nob, ref everyoneWriter, ref ownerWriter);
+                        WriteSpawn(nob, connection, ref everyoneWriter, ref ownerWriter);
                         CacheObserverChange(nob, ref observerCacheIndex);
                     }
                     else if (osc == ObserverStateChange.Removed)
@@ -258,7 +258,7 @@ namespace FishNet.Managing.Server.Object
 
             //Invoke spawn callbacks on nobs.
             for (int i = 0; i < observerCacheIndex; i++)
-                _observerChangeObjectsCache[i].InvokeOnServerSpawn(connection);
+                _observerChangeObjectsCache[i].InvokePostOnServerStart(connection);
         }
 
 
@@ -315,7 +315,7 @@ namespace FishNet.Managing.Server.Object
                 //If observer state changed then write changes.
                 ObserverStateChange osc = networkObject.RebuildObservers(conn);
                 if (osc == ObserverStateChange.Added)
-                    WriteSpawn(networkObject, ref everyoneWriter, ref ownerWriter);
+                    WriteSpawn(networkObject, conn, ref everyoneWriter, ref ownerWriter);
                 else if (osc == ObserverStateChange.Removed)
                     WriteDespawn(networkObject, ref everyoneWriter);
                 else
@@ -335,7 +335,7 @@ namespace FishNet.Managing.Server.Object
 
                     //If a spawn is being sent.
                     if (osc == ObserverStateChange.Added)
-                        networkObject.InvokeOnServerSpawn(conn);
+                        networkObject.InvokePostOnServerStart(conn);
                 }
 
             }

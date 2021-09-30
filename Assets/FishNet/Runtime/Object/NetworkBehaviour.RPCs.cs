@@ -28,14 +28,41 @@ namespace FishNet.Object
         /// Number of total RPC methods for scripts in the same inheritance tree for this instance.
         /// </summary>
         private ushort _rpcMethodCount = 0;
+        /// <summary>
+        /// RPCs buffered for new clients.
+        /// </summary>
+        private Dictionary<uint, (PooledWriter, Channel)> _bufferedRpcs = new Dictionary<uint, (PooledWriter, Channel)>();
+        /// <summary>
+        /// True if a buffered rpc has been registered.
+        /// </summary>
+        private bool _usesBufferedRpcs = false;
         #endregion
+
+        /// <summary>
+        /// Preinitializes RPCs.
+        /// </summary>
+        /// <param name="networkObject"></param>
+        private void PreInitializeRpcs(NetworkObject networkObject)
+        {
+            if (_usesBufferedRpcs)
+                networkObject.OnSendBufferedRpcs += NetworkObject_OnSendBufferedRpcs;
+        }
+
+        /// <summary>
+        /// Called when buffered RPCs should be sent.
+        /// </summary>
+        private void NetworkObject_OnSendBufferedRpcs(NetworkConnection conn)
+        {
+            foreach ((PooledWriter writer, Channel ch) in _bufferedRpcs.Values)
+                NetworkObject.NetworkManager.TransportManager.SendToClient((byte)ch, writer.GetArraySegment(), conn);
+        }
 
         /// <summary>
         /// Registers a RPC method.
         /// </summary>
         /// <param name="rpcHash"></param>
         /// <param name="del"></param>
-        protected internal void CreateServerRpcDelegate(uint rpcHash, ServerRpcDelegate del)
+        protected internal void RegisterServerRpc(uint rpcHash, ServerRpcDelegate del)
         {
             _serverRpcDelegates[rpcHash] = del;
         }
@@ -44,16 +71,17 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="rpcHash"></param>
         /// <param name="del"></param>
-        protected internal void CreateObserversRpcDelegate(uint rpcHash, ClientRpcDelegate del)
+        protected internal void RegisterObserversRpc(uint rpcHash, ClientRpcDelegate del, bool buffered)
         {
             _observersRpcDelegates[rpcHash] = del;
+            _usesBufferedRpcs |= buffered;
         }
         /// <summary>
         /// Registers a RPC method.
         /// </summary>
         /// <param name="rpcHash"></param>
         /// <param name="del"></param>
-        protected internal void CreateTargetRpcDelegate(uint rpcHash, ClientRpcDelegate del)
+        protected internal void RegisterTargetRpc(uint rpcHash, ClientRpcDelegate del)
         {
             _targetRpcDelegates[rpcHash] = del;
         }
@@ -65,6 +93,16 @@ namespace FishNet.Object
         protected internal void SetRpcMethodCount(ushort count)
         {
             _rpcMethodCount = count;
+        }
+
+        /// <summary>
+        /// Clears all buffered RPCs for this NetworkBehaviour.
+        /// </summary>
+        public void ClearBuffedRpcs()
+        {
+            foreach ((PooledWriter writer, Channel _) in _bufferedRpcs.Values)
+                writer.Dispose();
+            _bufferedRpcs.Clear();
         }
 
         /// <summary>
@@ -149,7 +187,7 @@ namespace FishNet.Object
         /// <param name="rpcHash"></param>
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
-        public void SendObserversRpc(uint rpcHash, PooledWriter methodWriter, Channel channel)
+        public void SendObserversRpc(uint rpcHash, PooledWriter methodWriter, Channel channel, bool buffered)
         {
             if (!IsSpawnedWithWarning())
                 return;
@@ -157,7 +195,21 @@ namespace FishNet.Object
             PooledWriter writer = CreateRpc(rpcHash, methodWriter, PacketId.ObserversRpc, channel);
             NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), NetworkObject.Observers);
 
-            writer.Dispose();
+            /* If buffered then dispose of any already buffered
+             * writers and replace with new one. Writers should
+             * automatically dispose when references are lost
+             * anyway but better safe than sorry. */
+            if (buffered)
+            {
+                if (_bufferedRpcs.TryGetValue(rpcHash, out (PooledWriter pw, Channel ch) result))
+                    result.pw.Dispose();
+                _bufferedRpcs[rpcHash] = (writer, channel);
+            }
+            //If not buffered then dispose immediately.
+            else
+            {
+                writer.Dispose();
+            }
         }
 
         /// <summary>
@@ -202,7 +254,7 @@ namespace FishNet.Object
             writer.Dispose();
         }
 
-        
+
         /// <summary>
         /// Returns if spawned and throws a warning if not.
         /// </summary>
@@ -215,7 +267,7 @@ namespace FishNet.Object
 
             return result;
         }
-        
+
         /// <summary>
         /// Creates a PooledWriter and writes the header for a rpc.
         /// </summary>

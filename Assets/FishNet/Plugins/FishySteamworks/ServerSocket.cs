@@ -36,7 +36,7 @@ namespace FishySteamworks.Server
         /// <summary>
         /// Maximum number of remote connections.
         /// </summary>
-        private int _maxClients;
+        private int _maximumClients;
         /// <summary>
         /// Next Id to use for a connection.
         /// </summary>
@@ -75,12 +75,12 @@ namespace FishySteamworks.Server
             * safe than sorry and check before trying to connect
             * rather than being stuck in the incorrect state. */
             if (_socket == HSteamListenSocket.Invalid)
-                base.SetLocalConnectionState(LocalConnectionStates.Stopped);
+                base.SetConnectionState(LocalConnectionStates.Stopped);
         }
         /// <summary>
         /// Starts the server.
         /// </summary>
-        internal void StartConnection(string address, ushort port, int maxClients, bool peerToPeer)
+        internal bool StartConnection(string address, ushort port, int maximumClients, bool peerToPeer)
         {
             base.PeerToPeer = peerToPeer;
 
@@ -88,11 +88,11 @@ namespace FishySteamworks.Server
             byte[] ip = (!peerToPeer) ? base.GetIPBytes(address) : null;
 
             base.PeerToPeer = peerToPeer;
-            _maxClients = maxClients;
+            SetMaximumClients(maximumClients);
             _nextConnectionId = 1;
             _cachedConnectionIds.Clear();
 
-            base.SetLocalConnectionState(LocalConnectionStates.Starting);
+            base.SetConnectionState(LocalConnectionStates.Starting);
             SteamNetworkingConfigValue_t[] options = new SteamNetworkingConfigValue_t[] { };
 
             if (base.PeerToPeer)
@@ -115,6 +115,8 @@ namespace FishySteamworks.Server
                 _socket = SteamNetworkingSockets.CreateListenSocketIP(ref addr, 0, options);
 #endif
             }
+
+            return true;
         }
 
         /// <summary>
@@ -125,7 +127,7 @@ namespace FishySteamworks.Server
             if (base.GetConnectionState() == LocalConnectionStates.Stopped)
                 return false;
 
-            base.SetLocalConnectionState(LocalConnectionStates.Stopping);
+            base.SetConnectionState(LocalConnectionStates.Stopping);
 #if UNITY_SERVER
             SteamGameServerNetworkingSockets.CloseListenSocket(_socket);
 #else
@@ -137,7 +139,7 @@ namespace FishySteamworks.Server
                 _onRemoteConnectionStateCallback = null;
             }
             _socket = HSteamListenSocket.Invalid;
-            base.SetLocalConnectionState(LocalConnectionStates.Stopped);
+            base.SetConnectionState(LocalConnectionStates.Stopped);
 
             return true;
         }
@@ -187,7 +189,7 @@ namespace FishySteamworks.Server
             ulong clientSteamID = args.m_info.m_identityRemote.GetSteamID64();
             if (args.m_info.m_eState == ESteamNetworkingConnectionState.k_ESteamNetworkingConnectionState_Connecting)
             {
-                if (_steamConnections.Count >= _maxClients)
+                if (_steamConnections.Count >= _maximumClients)
                 {
                     Debug.Log($"Incoming connection {clientSteamID} would exceed max connection count. Rejecting.");
 #if UNITY_SERVER
@@ -335,6 +337,19 @@ namespace FishySteamworks.Server
             }
         }
 
+
+        /// <summary>
+        /// Sets maximum number of clients allowed to connect to the server. If applied at runtime and clients exceed this value existing clients will stay connected but new clients may not connect.
+        /// </summary>
+        /// <param name="value"></param>
+        internal void SetMaximumClients(int value)
+        {
+            _maximumClients = value;
+        }
+        internal int GetMaximumClients()
+        {
+            return _maximumClients;
+        }
     }
 }
 #endif // !DISABLESTEAMWORKS

@@ -276,6 +276,11 @@ namespace FishNet.Managing.Server.Object
                 Debug.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
                 return;
             }
+            if (ownerConnection != null && ownerConnection.IsValid && !ownerConnection.LoadedStartScenes)
+            {
+                Debug.LogError($"{networkObject.name} cannot be spawned because the owner has not yet loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+                return;
+            }
 
             /* Setup locally without sending to clients.
              * When observers are built for the network object
@@ -294,9 +299,10 @@ namespace FishNet.Managing.Server.Object
         /// Writes a spawn into writers.
         /// </summary>
         /// <param name="nob"></param>
+        /// <param name="connection">Connection spawn is being written for.</param>
         /// <param name="everyoneWriter"></param>
         /// <param name="ownerWriter"></param>
-        private void WriteSpawn(NetworkObject nob, ref PooledWriter everyoneWriter, ref PooledWriter ownerWriter)
+        private void WriteSpawn(NetworkObject nob, NetworkConnection connection, ref PooledWriter everyoneWriter, ref PooledWriter ownerWriter)
         {
             /* Using a number of writers to prevent rebuilding the
              * packets excessively for values that are owner only
@@ -317,7 +323,7 @@ namespace FishNet.Managing.Server.Object
             PooledWriter commonWriter = WriterPool.GetWriter();
             commonWriter.WriteByte((byte)PacketId.ObjectSpawn);
             commonWriter.WriteInt32((ushort)nob.ObjectId);
-            if (base.NetworkManager.ServerManager.ShareOwners)
+            if (base.NetworkManager.ServerManager.ShareOwners || connection == nob.Owner)
                 commonWriter.WriteInt32(nob.OwnerId);
             else
                 commonWriter.WriteInt32(-1);

@@ -25,7 +25,7 @@ namespace FishNet.CodeGenerating.Processing
             bool modified = false;
 
             //Logic method definitions.
-            List<(RpcType, MethodDefinition, MethodDefinition, int)> delegateMethodDefs = new List<(RpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, int methodHash)>();
+            List<(RpcType, MethodDefinition, MethodDefinition, int, CustomAttribute)> delegateMethodDefs = new List<(RpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, int methodHash, CustomAttribute rpcAttribute)>();
             MethodDefinition[] startingMethodDefs = typeDef.Methods.ToArray();
             foreach (MethodDefinition methodDef in startingMethodDefs)
             {
@@ -51,19 +51,16 @@ namespace FishNet.CodeGenerating.Processing
                 if (writerMethodDef != null && readerMethodDef != null && logicMethodDef != null)
                 {
                     modified = true;
-                    delegateMethodDefs.Add((rpcType, methodDef, readerMethodDef, allRpcCount));
+                    delegateMethodDefs.Add((rpcType, methodDef, readerMethodDef, allRpcCount, rpcAttribute));
                     allRpcCount++;
                 }
             }
 
             if (modified)
             {
-                MethodDefinition constructorMethodDef = CodegenSession.GeneralHelper.GetOrCreateConstructor(typeDef, out _, false);
-                ILProcessor constructorProcesser = constructorMethodDef.Body.GetILProcessor();
-                
                 //NetworkObject.Create_____Delegate.
-                foreach ((RpcType rpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, int methodHash) in delegateMethodDefs)
-                    CodegenSession.ObjectHelper.CreateRpcDelegate(constructorProcesser, originalMethodDef, readerMethodDef, rpcType, methodHash);
+                foreach ((RpcType rpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, int methodHash, CustomAttribute rpcAttribute) in delegateMethodDefs)
+                    CodegenSession.ObjectHelper.CreateRpcDelegate(originalMethodDef, readerMethodDef, rpcType, methodHash, rpcAttribute);
 
                 modified = true;
             }
@@ -260,7 +257,7 @@ namespace FishNet.CodeGenerating.Processing
             if (rpcType == RpcType.Server)
                 CodegenSession.ObjectHelper.CreateSendServerRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef);
             else if (rpcType == RpcType.Observers)
-                CodegenSession.ObjectHelper.CreateSendObserversRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef);
+                CodegenSession.ObjectHelper.CreateSendObserversRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, rpcAttribute);
             else if (rpcType == RpcType.Target)
                 CodegenSession.ObjectHelper.CreateSendTargetRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, originalMethodDef.Parameters[0]);
             //Dispose of writer.

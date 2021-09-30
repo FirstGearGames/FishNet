@@ -22,6 +22,10 @@ namespace FishNet.Object
         /// <param name="owner">Current owner of this object.</param>
         internal event Action<NetworkConnection> OnOwnershipServer;
         /// <summary>
+        /// Called when buffered RPCs should be sent.
+        /// </summary>
+        internal event Action<NetworkConnection> OnSendBufferedRpcs;
+        /// <summary>
         /// Called on the server after a spawn message for this object has been sent to clients.
         /// Useful for sending remote calls or actions to clients.
         /// </summary>
@@ -68,15 +72,32 @@ namespace FishNet.Object
             }
         }
 
-
         /// <summary>
-        /// Called on the server after it sends a spawn message to a client.
+        /// Invokes events to be called after OnServerStart.
+        /// This is made one method to save instruction calls.
         /// </summary>
-        /// <param name="conn">Connection spawn was sent to.</param>
-        internal void InvokeOnServerSpawn(NetworkConnection conn)
+        /// <param name=""></param>
+        internal void InvokePostOnServerStart(NetworkConnection conn)
         {
+            OnSendBufferedRpcs?.Invoke(conn);
             OnSpawnServer?.Invoke(conn);
         }
+        ///// <summary>
+        ///// Sends buffered RPCs to conn.
+        ///// </summary>
+        ///// <param name="conn"></param>
+        //internal void InvokeOnSendBufferedRpcs(NetworkConnection conn)
+        //{
+        //    OnSendBufferedRpcs?.Invoke(conn);
+        //}
+        ///// <summary>
+        ///// Called on the server after it sends a spawn message to a client.
+        ///// </summary>
+        ///// <param name="conn">Connection spawn was sent to.</param>
+        //internal void InvokeOnServerSpawn(NetworkConnection conn)
+        //{
+        //    OnSpawnServer?.Invoke(conn);
+        //}
         /// <summary>
         /// Called on the server before it sends a despawn message to a client.
         /// </summary>

@@ -45,28 +45,28 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Number of objects in the collection.
         /// </summary>
-        public int Count => Objects.Count;
+        public int Count => Collection.Count;
         /// <summary>
         /// Keys within the collection.
         /// </summary>
-        public ICollection<TKey> Keys => Objects.Keys;
-        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Objects.Keys;
+        public ICollection<TKey> Keys => Collection.Keys;
+        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Collection.Keys;
         /// <summary>
         /// Values within the collection.
         /// </summary>
-        public ICollection<TValue> Values => Objects.Values;
-        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Objects.Values;
+        public ICollection<TValue> Values => Collection.Values;
+        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Collection.Values;
         #endregion
 
         #region Protected.
         /// <summary>
         /// Collection of objects.
         /// </summary>
-        protected readonly IDictionary<TKey, TValue> Objects;
+        protected readonly IDictionary<TKey, TValue> Collection;
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
-        protected readonly IDictionary<TKey, TValue> ClientHostObjects;
+        protected readonly IDictionary<TKey, TValue> ClientHostCollection;
         #endregion
 
         #region Private.
@@ -83,9 +83,22 @@ namespace FishNet.Object.Synchronizing
 
         public SyncIDictionary(IDictionary<TKey, TValue> objects)
         {
-            this.Objects = objects;
-            this.ClientHostObjects = objects;
+            this.Collection = objects;
+            this.ClientHostCollection = objects;
         }
+
+        /// <summary>
+        /// Gets the collection being used within this SyncList.
+        /// </summary>
+        /// <param name="asServer">True if returning the server value, false if client value. The values will only differ when running as host. While asServer is true the most current values on server will be returned, and while false the latest values received by client will be returned.</param>
+        /// <returns></returns>
+        public Dictionary<TKey, TValue> GetCollection(bool asServer)
+        {
+            bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
+            IDictionary<TKey, TValue> collection = (asClientAndHost) ? ClientHostCollection : Collection;
+            return (collection as Dictionary<TKey, TValue>);
+        }
+
 
         /// <summary>
         /// Adds an operation and invokes locally.
@@ -156,8 +169,8 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             base.Write(writer, false);
-            writer.WriteUInt32((uint)Objects.Count);
-            foreach (KeyValuePair<TKey, TValue> item in Objects)
+            writer.WriteUInt32((uint)Collection.Count);
+            foreach (KeyValuePair<TKey, TValue> item in Collection)
             {
                 writer.WriteByte((byte)SyncDictionaryOperation.Add);
                 writer.Write(item.Key);
@@ -178,7 +191,7 @@ namespace FishNet.Object.Synchronizing
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
             bool asClientAndHost = (!asServer && base.NetworkBehaviour.IsServer);
-            IDictionary<TKey, TValue> objects = (asClientAndHost) ? ClientHostObjects : Objects;
+            IDictionary<TKey, TValue> objects = (asClientAndHost) ? ClientHostCollection : Collection;
 
             int changes = (int)reader.ReadUInt32();
             for (int i = 0; i < changes; i++)
@@ -224,7 +237,7 @@ namespace FishNet.Object.Synchronizing
         {
             base.Reset();
             _changed.Clear();
-            ClientHostObjects.Clear();
+            ClientHostCollection.Clear();
         }
 
 
@@ -246,7 +259,7 @@ namespace FishNet.Object.Synchronizing
         }
         private void Add(TKey key, TValue value, bool asServer)
         {
-            Objects.Add(key, value);
+            Collection.Add(key, value);
             if (asServer)
                 AddOperation(SyncDictionaryOperation.Add, key, value);
         }
@@ -260,7 +273,7 @@ namespace FishNet.Object.Synchronizing
         }
         private void Clear(bool asServer)
         {
-            Objects.Clear();
+            Collection.Clear();
             if (asServer)
                 AddOperation(SyncDictionaryOperation.Clear, default, default);
         }
@@ -273,7 +286,7 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public bool ContainsKey(TKey key)
         {
-            return Objects.ContainsKey(key);
+            return Collection.ContainsKey(key);
         }
         /// <summary>
         /// Returns if item exist.
@@ -306,7 +319,7 @@ namespace FishNet.Object.Synchronizing
             }
 
             int i = offset;
-            foreach (KeyValuePair<TKey, TValue> item in Objects)
+            foreach (KeyValuePair<TKey, TValue> item in Collection)
             {
                 array[i] = item;
                 i++;
@@ -321,7 +334,7 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public bool Remove(TKey key)
         {
-            if (Objects.Remove(key))
+            if (Collection.Remove(key))
             {
                 AddOperation(SyncDictionaryOperation.Remove, key, default);
                 return true;
@@ -349,7 +362,7 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public bool TryGetValue(TKey key, out TValue value)
         {
-            return Objects.TryGetValue(key, out value);
+            return Collection.TryGetValue(key, out value);
         }
 
         /// <summary>
@@ -359,10 +372,10 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public TValue this[TKey key]
         {
-            get => Objects[key];
+            get => Collection[key];
             set
             {
-                Objects[key] = value;
+                Collection[key] = value;
                 AddOperation(SyncDictionaryOperation.Set, key, value);
             }
         }
@@ -370,9 +383,9 @@ namespace FishNet.Object.Synchronizing
 
 
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => Objects.GetEnumerator();
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => Collection.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => Objects.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => Collection.GetEnumerator();
 
     }
 
@@ -380,9 +393,9 @@ namespace FishNet.Object.Synchronizing
     {
         public SyncDictionary() : base(new Dictionary<TKey, TValue>()) { }
         public SyncDictionary(IEqualityComparer<TKey> eq) : base(new Dictionary<TKey, TValue>(eq)) { }
-        public new Dictionary<TKey, TValue>.ValueCollection Values => ((Dictionary<TKey, TValue>)Objects).Values;
-        public new Dictionary<TKey, TValue>.KeyCollection Keys => ((Dictionary<TKey, TValue>)Objects).Keys;
-        public new Dictionary<TKey, TValue>.Enumerator GetEnumerator() => ((Dictionary<TKey, TValue>)Objects).GetEnumerator();
+        public new Dictionary<TKey, TValue>.ValueCollection Values => ((Dictionary<TKey, TValue>)Collection).Values;
+        public new Dictionary<TKey, TValue>.KeyCollection Keys => ((Dictionary<TKey, TValue>)Collection).Keys;
+        public new Dictionary<TKey, TValue>.Enumerator GetEnumerator() => ((Dictionary<TKey, TValue>)Collection).GetEnumerator();
 
     }
 }

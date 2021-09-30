@@ -316,8 +316,8 @@ namespace FishNet.Managing.Server
             connection.ConnectionAuthenticated();
             SendConnectionId(connection);
 
-            NetworkManager.SceneManager.OnClientAuthenticated(connection);
             OnAuthenticationResult?.Invoke(connection, true);
+            NetworkManager.SceneManager.OnClientAuthenticated(connection);
         }
 
     }

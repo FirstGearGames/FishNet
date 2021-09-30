@@ -114,6 +114,23 @@ namespace FishNet.Transporting
 
         #region Configuration.
         /// <summary>
+        /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
+        /// </summary>
+        /// <returns></returns>
+        public virtual int GetMaximumClients()
+        {
+            Debug.LogWarning($"The current transport does not support this feature.");
+            return -1;
+        }
+        /// <summary>
+        /// Sets the maximum number of clients allowed to connect to the server. If applied at runtime and clients exceed this value existing clients will stay connected but new clients may not connect.
+        /// </summary>
+        /// <param name="value"></param>
+        public virtual void SetMaximumClients(int value)
+        {
+            Debug.LogWarning($"The current transport does not support this feature.");
+        }
+        /// <summary>
         /// Sets which address the client will connect to.
         /// </summary>
         /// <param name="address"></param>

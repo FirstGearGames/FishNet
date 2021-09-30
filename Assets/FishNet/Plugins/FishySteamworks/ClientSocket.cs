@@ -81,7 +81,7 @@ namespace FishySteamworks.Client
             if (!peerToPeer && ip == null)
                 return false;
 
-            SetLocalConnectionState(LocalConnectionStates.Starting);
+            SetConnectionState(LocalConnectionStates.Starting);
 
             _connectTimeout = Time.unscaledTime + CONNECT_TIMEOUT_DURATION;
             _timeoutThread = new Thread(CheckTimeout);
@@ -114,7 +114,7 @@ namespace FishySteamworks.Client
         {
             if (args.m_info.m_eState == ESteamNetworkingConnectionState.k_ESteamNetworkingConnectionState_Connected)
             {
-                SetLocalConnectionState(LocalConnectionStates.Started);
+                SetConnectionState(LocalConnectionStates.Started);
             }
             else if (args.m_info.m_eState == ESteamNetworkingConnectionState.k_ESteamNetworkingConnectionState_ClosedByPeer || args.m_info.m_eState == ESteamNetworkingConnectionState.k_ESteamNetworkingConnectionState_ProblemDetectedLocally)
             {
@@ -135,7 +135,7 @@ namespace FishySteamworks.Client
             if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
                 return false;
 
-            SetLocalConnectionState(LocalConnectionStates.Stopping);
+            SetConnectionState(LocalConnectionStates.Stopping);
             //Manually abort thread to close it down quicker.
             if (_timeoutThread.IsAlive)
                 _timeoutThread.Abort();
@@ -149,7 +149,7 @@ namespace FishySteamworks.Client
 
             SteamNetworkingSockets.CloseConnection(_socket, 0, string.Empty, false);
             _socket.m_HSteamNetConnection = 0;
-            SetLocalConnectionState(LocalConnectionStates.Stopped);
+            SetConnectionState(LocalConnectionStates.Stopped);
 
             return true;
         }

@@ -13,6 +13,10 @@ namespace FishNet.Connection
 
         #region Public.
         /// <summary>
+        /// Called after this connection has loaded start scenes.
+        /// </summary>
+        public event Action OnLoadedStartScenes;
+        /// <summary>
         /// Called after connection gains ownership of an object, and after the object has been added to Objects.
         /// </summary>
         public event Action<NetworkObject> OnObjectAdded;
@@ -24,6 +28,10 @@ namespace FishNet.Connection
         /// NetworkManager managing this class.
         /// </summary>
         public NetworkManager NetworkManager { get; private set; } = null;
+        /// <summary>
+        /// True if connection has loaded start scenes.
+        /// </summary>
+        public bool LoadedStartScenes { get; private set; } = false;
         /// <summary>
         /// True if this connection is authenticated.
         /// </summary>
@@ -55,13 +63,6 @@ namespace FishNet.Connection
         /// True if being disconnected.
         /// </summary>
         internal bool Disconnecting { get; private set; } = false;
-        #endregion
-
-        #region Private.
-        /// <summary>
-        /// True if connection has loaded start scenes.
-        /// </summary>
-        private bool _loadedStartScenes = false;
         #endregion
 
         #region Comparers.
@@ -127,7 +128,7 @@ namespace FishNet.Connection
             Objects.Clear();
             Authenticated = false;
             NetworkManager = null;
-            _loadedStartScenes = false;
+            LoadedStartScenes = false;
             UnsetDisconnecting();
             Scenes.Clear();
         }
@@ -164,8 +165,9 @@ namespace FishNet.Connection
         internal bool SetLoadedStartScenes()
         {
             //Result becomes true if not yet loaded start scenes.
-            bool result = (_loadedStartScenes) ? false : true;
-            _loadedStartScenes = true;
+            bool result = (LoadedStartScenes) ? false : true;
+            LoadedStartScenes = true;
+            OnLoadedStartScenes?.Invoke();
 
             return result;
         }

@@ -23,7 +23,7 @@ namespace Fluidity
         /// Sets a new connection state.
         /// </summary>
         /// <param name="connectionState"></param>
-        protected void SetLocalConnectionState(LocalConnectionStates connectionState, bool asServer)
+        protected void SetConnectionState(LocalConnectionStates connectionState, bool asServer)
         {
             //If state hasn't changed.
             if (connectionState == _connectionState)

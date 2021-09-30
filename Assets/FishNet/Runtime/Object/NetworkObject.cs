@@ -134,13 +134,11 @@ namespace FishNet.Object
 
             //Add to connection objects if owner exist.
             if (owner != null)
-            {
                 owner.AddObject(this);
-                //See if I can just call GiveOwnership instead. Will need to check ownership callback events to make sure they dont call twice and call in order. //todo
-                if (asServer)
-                    NetworkManager.SceneManager.AddConnectionToScene(owner, gameObject.scene);
-            }
-
+            //    //See if I can just call GiveOwnership instead. Will need to check ownership callback events to make sure they dont call twice and call in order. //todo
+            //    if (asServer)
+            //        NetworkManager.SceneManager.AddConnectionToScene(owner, gameObject.scene);
+            //}
         }
 
         /// <summary>
@@ -188,10 +186,15 @@ namespace FishNet.Object
                 Debug.LogWarning($"Ownership cannot be given for object {gameObject.name}. Only server may give ownership.");
                 return;
             }
-
             //If the same owner don't bother sending a message, just ignore request.
             if (newOwner == Owner)
                 return;
+
+            if (newOwner != null && newOwner.IsValid && !newOwner.LoadedStartScenes)
+            {
+                Debug.LogError($"Ownership cannot be transfered to ClientId {newOwner.ClientId} because they have not yet loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+                return;
+            }
 
             NetworkConnection prevOwner = Owner;
             Owner = newOwner;
@@ -285,7 +288,7 @@ namespace FishNet.Object
 
         private void OnDrawGizmosSelected()
         {
-            SerializeSceneTransformProperties();  
+            SerializeSceneTransformProperties();
         }
 
         /// <summary>

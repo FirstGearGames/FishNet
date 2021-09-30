@@ -29,7 +29,7 @@ namespace FishySteamworks
         /// Sets a new connection state.
         /// </summary>
         /// <param name="connectionState"></param>
-        protected void SetLocalConnectionState(LocalConnectionStates connectionState)
+        protected void SetConnectionState(LocalConnectionStates connectionState)
         {
             //If state hasn't changed.
             if (connectionState == _connectionState)

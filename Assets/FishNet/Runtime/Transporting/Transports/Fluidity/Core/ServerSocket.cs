@@ -40,9 +40,9 @@ namespace Fluidity.Server
         /// </summary>
         private ushort _port = 0;
         /// <summary>
-        /// Maximum number of allowed peers.
+        /// Maximum number of allowed clients.
         /// </summary>
-        private int _maximumPeers = 0;
+        private int _maximumClients = 0;
         /// <summary>
         /// Number of configured channels.
         /// </summary>
@@ -143,26 +143,25 @@ namespace Fluidity.Server
         /// </summary>
         /// <param name="address"></param>
         /// <param name="port"></param>
-        /// <param name="maximumPeers"></param>
+        /// <param name="maximumClients"></param>
         /// <param name="channelsCount"></param>
         /// <param name="pollTime"></param>
-        internal bool StartConnection(string address, ushort port, int maximumPeers, byte channelsCount, int pollTime)
+        internal bool StartConnection(string address, ushort port, int maximumClients, byte channelsCount, int pollTime)
         {
             if (base.GetConnectionState() != LocalConnectionStates.Stopped || (_thread != null && _thread.IsAlive))
                 return false;
 
-            base.SetLocalConnectionState(LocalConnectionStates.Starting, true);
+            base.SetConnectionState(LocalConnectionStates.Starting, true);
 
             //Assign properties.
             _address = address;
             _pollTime = port;
             _port = port;
-            _maximumPeers = maximumPeers;
+            _maximumClients = maximumClients;
             _channelsCount = channelsCount;
             _pollTime = pollTime;
-
             ResetValues();
-            _peers = new Peer[_maximumPeers];
+            _peers = new Peer[_maximumClients];
 
             _stopThread = false;
             _thread = new Thread(ThreadedSocket);
@@ -178,7 +177,7 @@ namespace Fluidity.Server
             if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
                 return false;
 
-            base.SetLocalConnectionState(LocalConnectionStates.Stopping, true);
+            base.SetConnectionState(LocalConnectionStates.Stopping, true);
             _stopThread = true;
             return true;
         }
@@ -258,7 +257,7 @@ namespace Fluidity.Server
             using (socket = new Host())
             {
                 // Create the server object.
-                socket.Create(address, _maximumPeers, _channelsCount);
+                socket.Create(address, _maximumClients, _channelsCount);
                 _localConnectionStates.Enqueue(LocalConnectionStates.Started);
 
                 //Loop long as the server is running.
@@ -455,7 +454,7 @@ namespace Fluidity.Server
              * to read for data at the start of the frame, as that's
              * where incoming is read. */
             while (_localConnectionStates.TryDequeue(out LocalConnectionStates state))
-                base.SetLocalConnectionState(state, true);
+                base.SetConnectionState(state, true);
 
             //Not yet started.
             if (base.GetConnectionState() != LocalConnectionStates.Started)
@@ -535,6 +534,13 @@ namespace Fluidity.Server
             _outgoing.Enqueue(outgoing);
         }
 
-
+        /// <summary>
+        /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
+        /// </summary>
+        /// <returns></returns>
+        internal int GetMaximumClients()
+        {
+            return _maximumClients;
+        }
     }
 }

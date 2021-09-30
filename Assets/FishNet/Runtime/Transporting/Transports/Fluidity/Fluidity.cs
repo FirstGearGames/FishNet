@@ -42,7 +42,7 @@ namespace Fluidity
         [Tooltip("Maximum number of players which may be connected at once.")]
         [Range(1, 4095)]
         [SerializeField]
-        private ushort _maximumClients = 4095;
+        private int _maximumClients = 4095;
 
         [Header("Client")]
         /// <summary>
@@ -246,6 +246,25 @@ namespace Fluidity
         #endregion
 
         #region Configuration.
+        /// <summary>
+        /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
+        /// </summary>
+        /// <returns></returns>
+        public override int GetMaximumClients()
+        {
+            return _server.GetMaximumClients();
+        }
+        /// <summary>
+        /// Sets maximum number of clients allowed to connect to the server. If applied at runtime and clients exceed this value existing clients will stay connected but new clients may not connect.
+        /// </summary>
+        /// <param name="value"></param>
+        public override void SetMaximumClients(int value)
+        {
+            if (_server.GetConnectionState() != LocalConnectionStates.Stopped)
+                Debug.LogWarning($"Cannot set maximum clients when server is running.");
+            else
+                _maximumClients = value;
+        }
         /// <summary>
         /// Sets which address the client will connect to.
         /// </summary>

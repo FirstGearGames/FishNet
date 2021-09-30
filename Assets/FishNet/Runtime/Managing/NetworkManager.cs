@@ -11,6 +11,7 @@ using FishNet.Managing.Object;
 using UnityEngine;
 using FishNet.Managing.Scened;
 using FishNet.Authenticating;
+using FishNet.Object;
 
 namespace FishNet.Managing
 {
@@ -105,6 +106,8 @@ namespace FishNet.Managing
         {
             if (WillBeDestroyed())
                 return;
+            if (TryGetComponent<NetworkObject>(out _))
+                Debug.LogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
 
             SpawnablePrefabs.InitializePrefabRange(0);
             SetDontDestroyOnLoad();

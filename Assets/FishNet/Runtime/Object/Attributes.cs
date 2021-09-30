@@ -28,6 +28,11 @@ namespace FishNet.Object
         /// True to also send data to the owner of object.
         /// </summary>
         public bool IncludeOwner = true;
+        /// <summary>
+        /// True to buffer the last value and send it to new players when the object is spawned for them.
+        /// RPC will be sent on the same channel as the original RPC, and immediately before the OnSpawnServer override.
+        /// </summary>
+        public bool BufferLast = false;
     }
 
     /// <summary>
