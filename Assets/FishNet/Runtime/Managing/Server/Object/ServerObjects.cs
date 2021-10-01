@@ -277,10 +277,7 @@ namespace FishNet.Managing.Server.Object
                 return;
             }
             if (ownerConnection != null && ownerConnection.IsValid && !ownerConnection.LoadedStartScenes)
-            {
-                Debug.LogError($"{networkObject.name} cannot be spawned because the owner has not yet loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
-                return;
-            }
+                Debug.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
 
             /* Setup locally without sending to clients.
              * When observers are built for the network object

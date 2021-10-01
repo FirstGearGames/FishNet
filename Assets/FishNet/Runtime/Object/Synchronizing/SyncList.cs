@@ -174,9 +174,9 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="writer"></param>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        public override void Write(PooledWriter writer, bool resetSyncTick = true)
+        public override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
-            base.Write(writer, resetSyncTick);
+            base.WriteDelta(writer, resetSyncTick);
             writer.WriteUInt32((uint)_changed.Count);
 
             for (int i = 0; i < _changed.Count; i++)
@@ -207,12 +207,12 @@ namespace FishNet.Object.Synchronizing
         /// Writes all values if not initial values.
         /// </summary>
         /// <param name="writer"></param>
-        public override void WriteIfChanged(PooledWriter writer)
+        public override void WriteFull(PooledWriter writer)
         {
             if (!_valuesChanged)
                 return;
 
-            base.Write(writer, false);
+            base.WriteDelta(writer, false);
             writer.WriteUInt32((uint)_collection.Count);
             for (int i = 0; i < _collection.Count; i++)
             {

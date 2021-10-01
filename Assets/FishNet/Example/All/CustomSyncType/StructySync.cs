@@ -27,7 +27,6 @@ namespace FishNet.Example.CustomSyncObject
     /// </summary>
     public class StructySync : SyncBase, ICustomSync
     {
-
         #region Types.
         /// <summary>
         /// Information about how the struct has changed.
@@ -145,9 +144,9 @@ namespace FishNet.Example.CustomSyncObject
         /// </summary>
         /// <param name="writer"></param>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        public override void Write(PooledWriter writer, bool resetSyncTick = true)
+        public override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
-            base.Write(writer, resetSyncTick);
+            base.WriteDelta(writer, resetSyncTick);
             writer.WriteUInt32((uint)_changed.Count);
 
             for (int i = 0; i < _changed.Count; i++)
@@ -173,12 +172,12 @@ namespace FishNet.Example.CustomSyncObject
         /// Writes all values if not initial values.
         /// </summary>
         /// <param name="writer"></param>
-        public override void WriteIfChanged(PooledWriter writer)
+        public override void WriteFull(PooledWriter writer)
         {
             if (!_valuesChanged)
                 return;
 
-            base.Write(writer, false);
+            base.WriteDelta(writer, false);
             //Write one change.
             writer.WriteInt32(1);
             //Write if changed is from the server, so always use the server _value.           

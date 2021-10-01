@@ -711,13 +711,36 @@ namespace FishNet.Managing.Scened
                     _manualUnloadScenes.Add(s);
             }
             /* Move identities to first scene. */
-            if (!asHost && loadedScenes.Count > 0)
+            if (!asHost)
             {
-                Scene s = GetMovedObjectsScene();
-                s.GetRootGameObjects(_movingObjects);
+                Scene firstValidScene = default;
+                //Find the first valid scene to move objects to.
+                foreach (SceneLookupData sld in data.SceneLoadData.SceneLookupDatas)
+                {
+                    firstValidScene = sld.GetScene(out _);
+                    if (!string.IsNullOrEmpty(firstValidScene.name))
+                        break;
+                }
+                /* If firstValidScene is empty then try using
+                 * the first loaded scene. Although, it should never be
+                 * possible for the firstValidScene to be empty. */
+                if (string.IsNullOrEmpty(firstValidScene.name) && loadedScenes.Count > 0)
+                    firstValidScene = loadedScenes[0];
 
-                foreach (GameObject go in _movingObjects)
-                    UnitySceneManager.MoveGameObjectToScene(go, loadedScenes[0]);
+                //If firstValidScene is still invalid then throw.
+                if (string.IsNullOrEmpty(firstValidScene.name))
+                {
+                    Debug.LogError($"Unable to move objects to a new scene because new scene lookup has failed.");
+                }
+                //Move objects.
+                else
+                {
+                    Scene s = GetMovedObjectsScene();
+                    s.GetRootGameObjects(_movingObjects);
+
+                    foreach (GameObject go in _movingObjects)
+                        UnitySceneManager.MoveGameObjectToScene(go, firstValidScene);
+                }
             }
 
             //Activate loaded scenes.

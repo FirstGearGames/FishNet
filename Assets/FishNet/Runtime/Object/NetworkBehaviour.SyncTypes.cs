@@ -240,7 +240,7 @@ namespace FishNet.Object
                     if (writer == null)
                         Debug.LogError($"Writer couldn't be found for permissions {sb.Settings.ReadPermission} on channel {channel}.");
                     else
-                        sb.Write(writer);
+                        sb.WriteDelta(writer);
                 }
             }
 
@@ -334,7 +334,7 @@ namespace FishNet.Object
                                 continue;
                         }
 
-                        sb.WriteIfChanged(syncTypeWriter);
+                        sb.WriteFull(syncTypeWriter);
                     }
 
                     writer.WriteBytesAndSize(syncTypeWriter.GetBuffer(), 0, syncTypeWriter.Length);

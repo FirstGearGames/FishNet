@@ -108,7 +108,7 @@ namespace FishNet.CodeGenerating.Processing
                 //Make sure syncvar attribute isnt on a sync object.
                 if (GetObjectSyncType(syncAttribute) != SyncType.Unset)
                 {
-                    CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} uses a [SyncVar] attribute but should be using [SyncObject]."); 
+                    CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} uses a [SyncVar] attribute but should be using [SyncObject].");
                     return SyncType.Unset;
                 }
                 else
@@ -180,14 +180,24 @@ namespace FishNet.CodeGenerating.Processing
 
             bool canSerialize = false;
             TypeReference serializedDataTypeRef = null;
-            foreach (Instruction item in instructions)
+            /* If the user is returning null then
+             * they are indicating a custom serializer does not
+             * have to be implemented. */
+            if (instructions.Count == 2 && instructions[0].OpCode == OpCodes.Ldnull && instructions[1].OpCode == OpCodes.Ret)
             {
-                //This token references the type.
-                if (item.OpCode == OpCodes.Ldtoken && item.Operand is TypeDefinition td)
+                canSerialize = true;
+            }
+            //If not returning null then make a serializer for return type.
+            else
+            {
+                foreach (Instruction item in instructions)
                 {
-                    serializedDataTypeRef = CodegenSession.Module.ImportReference(td);
-                    canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(serializedDataTypeRef, true);
-                    break;
+                    //This token references the type.
+                    if (item.OpCode == OpCodes.Ldtoken && item.Operand is TypeDefinition td)
+                    {
+                        serializedDataTypeRef = CodegenSession.Module.ImportReference(td);
+                        canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(serializedDataTypeRef, true);
+                    }
                 }
             }
 
@@ -603,7 +613,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="attribute"></param>
         /// <param name="diagnostics"></param>
         internal bool InitializeCustom(int syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, System.Type monoType, CustomAttribute attribute)
-        { 
+        {
             float sendRate = 0.1f;
             WritePermission writePermissions = WritePermission.ServerOnly;
             ReadPermission readPermissions = ReadPermission.Observers;
@@ -686,7 +696,7 @@ namespace FishNet.CodeGenerating.Processing
             MethodDefinition injectionMethodDef;
             ILProcessor processor;
             List<Instruction> instructions = new List<Instruction>();
- 
+
             //This import shouldn't be needed but cecil is stingy so rather be safe than sorry.
             CodegenSession.Module.ImportReference(monoType);
             //Get Type for SyncList of dataTypeRef. eg SyncList<int>.

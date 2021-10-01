@@ -1,9 +1,7 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
-using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
-using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -129,7 +127,8 @@ namespace FishNet.CodeGenerating.Helping
                 //Methods.
                 MethodReference baseReadMethodRef = null;
                 MethodReference baseResetMethodRef = null;
-                MethodReference baseWriteMethodRef = null;
+                MethodReference baseWriteDeltaMethodRef = null;
+                MethodReference baseWriteFullMethodRef = null;
                 MethodReference baseDirtyMethodRef = null;
                 MethodReference baseInitializeInstanceMethodRef = null;
                 foreach (MethodDefinition methodDef in syncBaseTypeDef.Methods)
@@ -138,8 +137,10 @@ namespace FishNet.CodeGenerating.Helping
                         baseReadMethodRef = CodegenSession.Module.ImportReference(methodDef);
                     else if (methodDef.Name == nameof(SyncBase.Reset))
                         baseResetMethodRef = CodegenSession.Module.ImportReference(methodDef);
-                    else if (methodDef.Name == nameof(SyncBase.Write))
-                        baseWriteMethodRef = CodegenSession.Module.ImportReference(methodDef);
+                    else if (methodDef.Name == nameof(SyncBase.WriteDelta))
+                        baseWriteDeltaMethodRef = CodegenSession.Module.ImportReference(methodDef);
+                    else if (methodDef.Name == nameof(SyncBase.WriteFull)) 
+                        baseWriteFullMethodRef = CodegenSession.Module.ImportReference(methodDef);
                     else if (methodDef.Name == nameof(SyncBase.Dirty))
                         baseDirtyMethodRef = CodegenSession.Module.ImportReference(methodDef);
                     else if (methodDef.Name == nameof(SyncBase.InitializeInstance))
@@ -175,10 +176,10 @@ namespace FishNet.CodeGenerating.Helping
                 tmpMd = CreateReadMethodDefinition(syncClassTypeDef, syncHandlerSetValueMethodRef, baseReadMethodRef, dataTypeRef);
                 syncHandlerReadMethodRef = CodegenSession.Module.ImportReference(tmpMd);
 
-                tmpMd = CreateWriteMethodDefinition(syncClassTypeDef, valueFieldDef, baseWriteMethodRef, dataTypeRef);
+                tmpMd = CreateWriteDeltaMethodDefinition(syncClassTypeDef, valueFieldDef, baseWriteDeltaMethodRef, dataTypeRef);
                 MethodReference writeMethodRef = CodegenSession.Module.ImportReference(tmpMd);
 
-                CreateWriteIfChangedMethodDefinition(syncClassTypeDef, writeMethodRef, valueFieldDef, initializeValueFieldDef);
+                CreateWriteFullMethodDefinition(syncClassTypeDef, writeMethodRef, valueFieldDef, initializeValueFieldDef, baseWriteFullMethodRef);
 
                 tmpMd = CreateGetValueMethodDefinition(syncClassTypeDef, valueFieldDef, dataTypeRef);
                 syncHandlerGetValueMethodRef = CodegenSession.Module.ImportReference(tmpMd);
@@ -429,9 +430,9 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="createdClassTypeDef"></param>
         /// <param name="dataTypeRef"></param>
-        private MethodDefinition CreateWriteMethodDefinition(TypeDefinition createdClassTypeDef, FieldDefinition valueFieldDef, MethodReference baseWriteMethodDef, TypeReference dataTypeRef)
+        private MethodDefinition CreateWriteDeltaMethodDefinition(TypeDefinition createdClassTypeDef, FieldDefinition valueFieldDef, MethodReference baseWriteMethodRef, TypeReference dataTypeRef)
         {
-            MethodDefinition createdMethodDef = new MethodDefinition("Write",
+            MethodDefinition createdMethodDef = new MethodDefinition(baseWriteMethodRef.Name,
                 (Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig | Mono.Cecil.MethodAttributes.Virtual),
                 CodegenSession.Module.TypeSystem.Void);
             createdClassTypeDef.Methods.Add(createdMethodDef);
@@ -444,7 +445,6 @@ namespace FishNet.CodeGenerating.Helping
 
             ILProcessor processor = createdMethodDef.Body.GetILProcessor();
             createdMethodDef.Body.InitLocals = true;
-            MethodReference baseWriteMethodRef = CodegenSession.Module.ImportReference(baseWriteMethodDef);
 
             //base.Write(writer, bool);
             processor.Emit(OpCodes.Ldarg_0);
@@ -477,9 +477,9 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="createdClassTypeDef"></param>
         /// <param name="syncTypeRef"></param>
-        private void CreateWriteIfChangedMethodDefinition(TypeDefinition createdClassTypeDef, MethodReference writeMethodRef, FieldDefinition valueFieldDef, FieldDefinition initialValueFieldDef)
+        private void CreateWriteFullMethodDefinition(TypeDefinition createdClassTypeDef, MethodReference writeMethodRef, FieldDefinition valueFieldDef, FieldDefinition initialValueFieldDef, MethodReference baseWriteMethodRef)
         {
-            MethodDefinition createdMethodDef = new MethodDefinition("WriteIfChanged",
+            MethodDefinition createdMethodDef = new MethodDefinition(baseWriteMethodRef.Name,
                 (Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig | Mono.Cecil.MethodAttributes.Virtual),
                 CodegenSession.Module.TypeSystem.Void);
             createdClassTypeDef.Methods.Add(createdMethodDef);

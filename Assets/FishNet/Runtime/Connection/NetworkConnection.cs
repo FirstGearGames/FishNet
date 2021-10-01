@@ -15,7 +15,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Called after this connection has loaded start scenes.
         /// </summary>
-        public event Action OnLoadedStartScenes;
+        public event Action<NetworkConnection> OnLoadedStartScenes;
         /// <summary>
         /// Called after connection gains ownership of an object, and after the object has been added to Objects.
         /// </summary>
@@ -167,7 +167,7 @@ namespace FishNet.Connection
             //Result becomes true if not yet loaded start scenes.
             bool result = (LoadedStartScenes) ? false : true;
             LoadedStartScenes = true;
-            OnLoadedStartScenes?.Invoke();
+            OnLoadedStartScenes?.Invoke(this);
 
             return result;
         }

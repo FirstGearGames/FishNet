@@ -27,12 +27,12 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         /// <param name="writer"></param>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        void Write(PooledWriter writer, bool resetSyncTick = true);
+        void WriteDelta(PooledWriter writer, bool resetSyncTick = true);
         /// <summary>
         /// Writers all values if not initial values.
         /// </summary>
         /// <param name="writer"></param>
-        void WriteIfChanged(PooledWriter writer);
+        void WriteFull(PooledWriter writer);
         /// <summary>
         /// Sets current values.
         /// </summary>

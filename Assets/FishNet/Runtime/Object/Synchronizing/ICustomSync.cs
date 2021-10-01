@@ -1,6 +1,4 @@
-﻿using FishNet.Managing;
-using FishNet.Serializing;
-
+﻿
 namespace FishNet.Object.Synchronizing
 {
     /// <summary>

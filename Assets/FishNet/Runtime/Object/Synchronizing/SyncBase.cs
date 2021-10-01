@@ -152,7 +152,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         /// <param name="writer"></param>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        public virtual void Write(PooledWriter writer, bool resetSyncTick = true)
+        public virtual void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             if (resetSyncTick)
                 NextSyncTick = NetworkManager.TimeManager.Tick +  _timeToTicks;
@@ -164,7 +164,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Writes current value if not initialized value.
         /// </summary>
         /// <param name="writer"></param>
-        public virtual void WriteIfChanged(PooledWriter writer) { }
+        public virtual void WriteFull(PooledWriter writer) { }
         /// <summary>
         /// Sets current value.
         /// </summary>
