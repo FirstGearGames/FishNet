@@ -1,7 +1,5 @@
 ﻿using FishNet.Connection;
-using FishNet.Object;
 using FishNet.Observing;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -29,8 +27,10 @@ namespace FishNet.Managing
         /// Returns if the object which this condition resides should be visible to connection.
         /// </summary>
         /// <param name="connection"></param>
-        public override bool ConditionMet(NetworkConnection connection)
+        /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
+        public override bool ConditionMet(NetworkConnection connection, out bool notProcessed)
         {
+            notProcessed = false;
             /* If this objects connection is valid then check if
              * connection and this objects owner shares any scenes.
              * Don't check if the object resides in the same scene

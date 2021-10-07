@@ -1,5 +1,6 @@
 ﻿using FishNet.Broadcast;
 using FishNet.Connection;
+using FishNet.Managing.Logging;
 using FishNet.Transporting;
 using UnityEngine;
 
@@ -80,19 +81,28 @@ namespace FishNet.Object
             {
                 canExecute = false;
                 if (warn)
-                    Debug.LogWarning($"Cannot despawn {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
+                {
+                    if (NetworkManager.CanLog(LoggingType.Warning))
+                        Debug.LogWarning($"Cannot despawn {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
+                }
             }
             else if (!IsServer)
             {
                 canExecute = false;
                 if (warn)
-                    Debug.LogWarning($"Cannot spawn or despawn {gameObject.name}, server is not active.");
+                {
+                    if (NetworkManager.CanLog(LoggingType.Warning))
+                        Debug.LogWarning($"Cannot spawn or despawn {gameObject.name}, server is not active.");
+                }
             }
             else if (Deinitializing)
             {
                 canExecute = false;
                 if (warn)
-                    Debug.LogWarning($"Cannot despawn {gameObject.name}, it is already deinitializing.");
+                {
+                    if (NetworkManager.CanLog(LoggingType.Warning))
+                        Debug.LogWarning($"Cannot despawn {gameObject.name}, it is already deinitializing.");
+                }
             }
 
             return canExecute;
@@ -110,7 +120,8 @@ namespace FishNet.Object
         {
             if (NetworkManager == null)
             {
-                Debug.LogWarning($"Cannot send broadcast from {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot send broadcast from {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
                 return;
             }
 

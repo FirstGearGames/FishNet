@@ -1,6 +1,7 @@
 ﻿using FishNet.Authenticating;
 using FishNet.Connection;
 using FishNet.Managing;
+using FishNet.Managing.Logging;
 using FishNet.Transporting;
 using System;
 using UnityEngine;
@@ -52,7 +53,7 @@ namespace FishNet.Example.Authenticating
             * example the client tries to authenticate soon as they connect. */
             if (args.ConnectionState != LocalConnectionStates.Started)
                 return;
-            
+
             PasswordBroadcast pb = new PasswordBroadcast()
             {
                 Password = _password
@@ -98,7 +99,8 @@ namespace FishNet.Example.Authenticating
         private void OnResponseBroadcast(ResponseBroadcast rb)
         {
             string result = (rb.Passed) ? "Authentication complete." : "Authenitcation failed.";
-            Debug.Log(result);
+            if (NetworkManager.CanLog(LoggingType.Common))
+                Debug.Log(result);
         }
     }
 

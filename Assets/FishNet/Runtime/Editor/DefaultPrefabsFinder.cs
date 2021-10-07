@@ -11,8 +11,14 @@ namespace FishNet.Editing
     [InitializeOnLoad]
     internal static class DefaultPrefabsFinder
     {
+        /// <summary>
+        /// True if initialized.
+        /// </summary>
         [System.NonSerialized]
         private static bool _initialized = false;
+        /// <summary>
+        /// Found default prefabs.
+        /// </summary>
         private static DefaultPrefabObjects _defaultPrefabs = null;
 
         static DefaultPrefabsFinder()

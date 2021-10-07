@@ -8,7 +8,6 @@ using FishNet.Transporting;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System.Collections.Generic;
-using UnityEngine;
 using Mono.Collections.Generic;
 
 namespace FishNet.CodeGenerating.Processing
@@ -288,10 +287,10 @@ namespace FishNet.CodeGenerating.Processing
         /// Tries to create a SyncVar.
         /// </summary>
         /// <param name="moduleDef"></param>
-        /// <param name="syncTypeCount"></param>
+        /// <param name="syncCount"></param>
         /// <param name="typeDef"></param>
         /// <param name="diagnostics"></param>
-        private void TryCreateSyncVar(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition fieldDef, CustomAttribute syncAttribute)
+        private void TryCreateSyncVar(int syncCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition fieldDef, CustomAttribute syncAttribute)
         {
             bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(fieldDef.FieldType, true);
             if (!canSerialize)
@@ -302,7 +301,7 @@ namespace FishNet.CodeGenerating.Processing
 
             MethodReference accessorSetValueMethodRef;
             MethodReference accessorGetValueMethodRef;
-            bool created = CreateSyncVar(syncTypeCount, typeDef, fieldDef, syncAttribute, out accessorSetValueMethodRef, out accessorGetValueMethodRef);
+            bool created = CreateSyncVar(syncCount, typeDef, fieldDef, syncAttribute, out accessorSetValueMethodRef, out accessorGetValueMethodRef);
             if (created)
             {
                 FieldReference originalFieldRef = CodegenSession.Module.ImportReference(fieldDef);
@@ -376,7 +375,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="originalFieldDef"></param>
         /// <param name="syncTypeAttribute"></param>
         /// <returns></returns>
-        private bool CreateSyncVar(int syncTypeCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncTypeAttribute, out MethodReference accessorSetValueMethodRef, out MethodReference accessorGetValueMethodRef)
+        private bool CreateSyncVar(int syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncTypeAttribute, out MethodReference accessorSetValueMethodRef, out MethodReference accessorGetValueMethodRef)
         {
             accessorGetValueMethodRef = null;
             accessorSetValueMethodRef = null;
@@ -400,9 +399,9 @@ namespace FishNet.CodeGenerating.Processing
                     _createdSyncTypeMethodDefinitions.Add(accessorSetValueMethodRef.Resolve());
                 }
 
-                InitializeSyncHandler(syncTypeCount, createdSyncHandlerFieldDef, typeDef, originalFieldDef, syncTypeAttribute);
+                InitializeSyncHandler(syncCount, createdSyncHandlerFieldDef, typeDef, originalFieldDef, syncTypeAttribute);
 
-                MethodDefinition syncHandlerReadMethodDef = CreateSyncHandlerRead(typeDef, syncTypeCount, originalFieldDef, createdSyncHandlerFieldDef, accessorSetValueMethodRef);
+                MethodDefinition syncHandlerReadMethodDef = CreateSyncHandlerRead(typeDef, syncCount, originalFieldDef, createdSyncHandlerFieldDef, accessorSetValueMethodRef);
                 if (syncHandlerReadMethodDef != null)
                     _createdSyncTypeMethodDefinitions.Add(syncHandlerReadMethodDef);
 
@@ -656,7 +655,8 @@ namespace FishNet.CodeGenerating.Processing
             injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
             processor = injectionMethodDef.Body.GetILProcessor();
             //
-            uint hash = originalFieldDef.FullName.GetStableHash32();
+            uint hash = (uint)syncCount;
+            //uint hash = originalFieldDef.FullName.GetStableHash32();
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
@@ -728,7 +728,8 @@ namespace FishNet.CodeGenerating.Processing
             injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
             processor = injectionMethodDef.Body.GetILProcessor();
             //
-            uint hash = originalFieldDef.FullName.GetStableHash32();
+            uint hash = (uint)syncCount;
+            //uint hash = originalFieldDef.FullName.GetStableHash32();
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
@@ -793,7 +794,8 @@ namespace FishNet.CodeGenerating.Processing
             instructions.Add(processor.Create(OpCodes.Call, initializeInstanceMethodRef));
 
             //Set NetworkBehaviour and SyncIndex to use.
-            uint hash = originalFieldDef.FullName.GetStableHash32();
+            uint hash = (uint)syncCount;
+            //uint hash = originalFieldDef.FullName.GetStableHash32();
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
@@ -849,7 +851,8 @@ namespace FishNet.CodeGenerating.Processing
             instructions.Add(processor.Create(OpCodes.Newobj, syncHandlerConstructorMethodRef));
             instructions.Add(processor.Create(OpCodes.Stfld, createdFieldDef));
 
-            uint hash = originalFieldDef.FullName.GetStableHash32();
+            uint hash = (uint)syncCount;
+            //uint hash = originalFieldDef.FullName.GetStableHash32();
             //Set NB and SyncIndex to SyncHandler.
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, createdFieldDef));
@@ -1215,7 +1218,8 @@ namespace FishNet.CodeGenerating.Processing
             Instruction nextLastReadInstruction = processor.Create(OpCodes.Ldarg, indexParameterDef);
             processor.InsertBefore(jmpGoalInst, nextLastReadInstruction);
 
-            uint hash = originalFieldDef.FullName.GetStableHash32();
+            uint hash = (uint)syncIndex;
+            //uint hash = originalFieldDef.FullName.GetStableHash32();
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4, (int)hash));
             //processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4, syncIndex));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Bne_Un, jmpGoalInst));

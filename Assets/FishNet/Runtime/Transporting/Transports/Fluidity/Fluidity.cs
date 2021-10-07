@@ -1,6 +1,8 @@
 using UnityEngine;
 using System;
 using FishNet.Transporting;
+using FishNet.Managing;
+using FishNet.Managing.Logging;
 
 namespace Fluidity
 {
@@ -76,10 +78,15 @@ namespace Fluidity
         #endregion
 
         #region Initialization and unity.
-        public override void Initialize()
+        public override void Initialize(NetworkManager networkManager)
         {
+            base.Initialize(networkManager);
+
             if (!ENet.Library.Initialize())
-                Debug.LogError("Failed to initialize ENet library.");
+            {
+                if (base.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError("Failed to initialize ENet library.");
+            }
             /* If channels are missing then add them. This 
              * can occur if component is added at runtime. */
             if (_channels == null)
@@ -94,7 +101,7 @@ namespace Fluidity
             for (int i = 0; i < _channels.Length; i++)
                 _largestMTU = Mathf.Max(_largestMTU, _channels[i].MaximumTransmissionUnit);
 
-            base.Initialize();
+            base.Initialize(networkManager);
         }
         protected void OnDestroy()
         {
@@ -261,9 +268,14 @@ namespace Fluidity
         public override void SetMaximumClients(int value)
         {
             if (_server.GetConnectionState() != LocalConnectionStates.Stopped)
-                Debug.LogWarning($"Cannot set maximum clients when server is running.");
+            {
+                if (base.NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot set maximum clients when server is running.");
+            }
             else
+            {
                 _maximumClients = value;
+            }
         }
         /// <summary>
         /// Sets which address the client will connect to.
@@ -297,7 +309,7 @@ namespace Fluidity
         /// </summary>
         /// <param name="server">True to start server.</param>
         public override bool StartConnection(bool server)
-        {           
+        {
             if (server)
                 return StartServer();
             else
@@ -427,7 +439,8 @@ namespace Fluidity
         {
             if (channel >= _channels.Length)
             {
-                Debug.LogError($"Channel {channel} is out of bounds.");
+                if (base.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Channel {channel} is out of bounds.");
                 return 0;
             }
 

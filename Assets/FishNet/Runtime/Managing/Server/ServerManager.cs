@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using FishNet.Authenticating;
+using FishNet.Managing.Transporting;
 
 namespace FishNet.Managing.Server
 {
@@ -72,6 +73,24 @@ namespace FishNet.Managing.Server
         [Tooltip("True to automatically start the server connection when running as headless.")]
         [SerializeField]
         private bool _startOnHeadless = true;
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //[Tooltip("Number of splits a message can arrive in from clients. This may occur when the client sends large amounts of data in one packet. Having this value too high increases risk of an allocation attack.")]
+        //[Range(0, ushort.MaxValue)]
+        //[SerializeField]
+        //private ushort _maximumSplitMessages = 0;
+        ///// <summary>
+        ///// Number of splits a message can arrive in from clients. This may occur when the client sends large amounts of data in one packet. Having this value too high increases risk of an allocation attack.
+        ///// </summary>
+        //internal uint MaximumSplitMessages => _maximumSplitMessages;
+        #endregion
+
+        #region Private.
+        /// <summary>
+        /// Used to read splits.
+        /// </summary>
+        private SplitReader _splitReader = new SplitReader();
         #endregion
 
         /// <summary>
@@ -101,9 +120,10 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Called when a client loads initial scenes after connecting.
         /// </summary>
-        private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn)
+        private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn, bool asServer)
         {
-            Objects.RebuildObservers(conn);
+            if (asServer)
+                Objects.RebuildObservers(conn);
         }
 
         /// <summary>
@@ -165,9 +185,15 @@ namespace FishNet.Managing.Server
                 Clients.Clear();
 
             if (args.ConnectionState == LocalConnectionStates.Started)
-                Debug.Log("Server started."); //tmp.
+            {
+                if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                    Debug.Log("Server has been started.");
+            }
             else if (args.ConnectionState == LocalConnectionStates.Stopped)
-                Debug.Log("Server stopped."); //tmp.
+            {
+                if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                    Debug.Log("Server has been stopped.");
+            }
 
             OnServerConnectionState?.Invoke(args);
         }
@@ -183,7 +209,8 @@ namespace FishNet.Managing.Server
                 //If started then add to authenticated clients.
                 if (args.ConnectionState == RemoteConnectionStates.Started)
                 {
-                    Debug.Log($"Remote connection started for Id {args.ConnectionId}."); //tmp.
+                    if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                        Debug.Log($"Remote connection started for Id {args.ConnectionId}.");
                     NetworkConnection conn = new NetworkConnection(NetworkManager, args.ConnectionId);
                     Clients.Add(args.ConnectionId, conn);
 
@@ -207,7 +234,8 @@ namespace FishNet.Managing.Server
                         Objects.ClientDisconnected(conn);
                         conn.Reset();
 
-                        Debug.Log($"Remote connection stopped for Id {args.ConnectionId}."); //tmp.
+                        if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                            Debug.Log($"Remote connection stopped for Id {args.ConnectionId}.");
                     }
                 }
             }
@@ -222,7 +250,7 @@ namespace FishNet.Managing.Server
             using (PooledWriter writer = WriterPool.GetWriter())
             {
                 writer.WriteByte((byte)PacketId.ConnectionId);
-                writer.WriteInt32(conn.ClientId);
+                writer.WriteInt16((short)conn.ClientId);
                 NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), conn);
             }
         }
@@ -252,19 +280,68 @@ namespace FishNet.Managing.Server
             {
                 using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager))
                 {
+
+                    /* This is a special condition where a message may arrive split.
+                    * When this occurs buffer each packet until all packets are
+                    * received. */
+                    if (segment.Array[0] == (byte)PacketId.Split)
+                    {
+                        /* Various conditions that will kick a client immediately.
+                         * Splits are not allowed, or split size indicator is larger than maximum allowed. */
+                        bool kickClient = false;
+                        //if (MaximumSplitMessages == 0)
+                        //{
+                        //    kickClient = true;
+                        //}
+                        //else
+                        //{
+                        //    ushort expected;
+                        //    _splitReader.ReadHeader(reader, true, out _, out expected);
+                        //    if (expected > MaximumSplitMessages)
+                        //        kickClient = true;
+                        //}
+                        
+                        /* Client did not pass checks.
+                         * There are other ways to exploit the checks such
+                         * as sending the same packet multiple times. This would
+                         * result in the server trying to add onto the split
+                         * over and over. However, once the server receives expected
+                         * amount of splits it will process the data, and if
+                         * the data is malformed client gets kicked anyway. */
+                        if (kickClient)
+                        {
+                            NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                            return;
+                        }
+
+                        ArraySegment<byte> result =
+                            _splitReader.Write(reader,
+                            NetworkManager.TransportManager.Transport.GetMTU((byte)args.Channel)
+                            );
+
+                        /* If there is no data in result then the split isn't fully received.
+                         * Since splits arrive in reliable order exit method and wait for next
+                         * packet. Once all packets are received the data will be processed. */
+                        if (result.Count == 0)
+                            return;
+                        //Split has been read in full.
+                        else
+                            reader.Initialize(result, NetworkManager);
+                    }
+
+
                     while (reader.Remaining > 0)
                     {
                         packetId = (PacketId)reader.ReadByte();
-
                         ///<see cref="FishNet.Managing.Client.ClientManager.ParseReceived"/>
                         int dataLength = (args.Channel == Channel.Reliable || packetId == PacketId.Broadcast) ?
-                            -1 : reader.ReadInt32();
+                            -1 : reader.ReadInt16();
 
                         NetworkConnection conn;
-                        Clients.TryGetValue(args.ConnectionId, out conn);
+
                         /* Connection isn't available. This should never happen.
                          * Force an immediate disconnect. */
-                        if (conn == null)
+                        if (!Clients.TryGetValue(args.ConnectionId, out conn))
                         {
                             NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
                             return;
@@ -281,7 +358,7 @@ namespace FishNet.Managing.Server
 
                         if (packetId == PacketId.ServerRpc)
                         {
-                            Objects.ParseServerRpc(reader, args.ConnectionId, dataLength);
+                            Objects.ParseServerRpc(reader, args.ConnectionId, dataLength, args.Channel);
                         }
                         else if (packetId == PacketId.Broadcast)
                         {
@@ -289,16 +366,18 @@ namespace FishNet.Managing.Server
                         }
                         else
                         {
-                            Debug.LogError($"Unhandled PacketId of {(byte)packetId}. Remaining data has been purged.");
+                            if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                                Debug.LogError($"Server received an unhandled PacketId of {(byte)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
                             return;
                         }
                     }
                 }
             }
-            //catch (Exception e)
-            //{
-            //    Debug.LogError($"Error parsing data. PacketId {packetId}. {e.Message}.");
-            //}
+            catch (Exception e)
+            {
+                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Message: {e.Message}.");
+            }
             finally { }
 
         }

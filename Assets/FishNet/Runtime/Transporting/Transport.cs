@@ -1,4 +1,6 @@
-﻿using System;
+﻿using FishNet.Managing;
+using FishNet.Managing.Logging;
+using System;
 using UnityEngine;
 
 namespace FishNet.Transporting
@@ -6,12 +8,21 @@ namespace FishNet.Transporting
 
     public abstract class Transport : MonoBehaviour
     {
+        #region Private.
+        /// <summary>
+        /// NetworkManager for this transport.
+        /// </summary>
+        public NetworkManager NetworkManager { get; private set; }
+        #endregion
 
         #region Initialization and unity.
         /// <summary>
         /// Initializes the transport. Use this instead of Awake.
         /// </summary>
-        public virtual void Initialize() { }
+        public virtual void Initialize(NetworkManager networkManager) 
+        {
+            NetworkManager = networkManager;
+        }
         #endregion
 
         #region ConnectionStates.
@@ -119,7 +130,9 @@ namespace FishNet.Transporting
         /// <returns></returns>
         public virtual int GetMaximumClients()
         {
-            Debug.LogWarning($"The current transport does not support this feature.");
+            bool canLog = (NetworkManager == null) ? NetworkManager.StaticCanLog(LoggingType.Warning) : NetworkManager.CanLog(LoggingType.Warning);
+            if (canLog)
+                Debug.LogWarning($"The current transport does not support this feature.");
             return -1;
         }
         /// <summary>
@@ -128,7 +141,9 @@ namespace FishNet.Transporting
         /// <param name="value"></param>
         public virtual void SetMaximumClients(int value)
         {
-            Debug.LogWarning($"The current transport does not support this feature.");
+            bool canLog = (NetworkManager == null) ? NetworkManager.StaticCanLog(LoggingType.Warning) : NetworkManager.CanLog(LoggingType.Warning);
+            if (canLog)
+                Debug.LogWarning($"The current transport does not support this feature.");
         }
         /// <summary>
         /// Sets which address the client will connect to.

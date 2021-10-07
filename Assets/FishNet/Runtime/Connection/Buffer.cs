@@ -1,4 +1,6 @@
-﻿using FishNet.Utility;
+﻿using FishNet.Managing;
+using FishNet.Managing.Logging;
+using FishNet.Utility;
 using System;
 using System.Collections.Generic;
 
@@ -31,10 +33,18 @@ namespace FishNet.Connection
         /// Number of bytes to reserve at the beginning of each buffer.
         /// </summary>
         private int _reserve = 0;
+        /// <summary>
+        /// NetworkManager this is for.
+        /// </summary>
+        private NetworkManager _networkManager;
 
-
-        internal PacketBundle(int mtu, int reserve = 0)
+        internal PacketBundle(NetworkManager manager)
         {
+            _networkManager = manager;
+        }
+        internal PacketBundle(NetworkManager manager, int mtu, int reserve = 0)
+        {
+            _networkManager = manager;
             Reset(mtu, reserve);
         }
 
@@ -86,7 +96,8 @@ namespace FishNet.Connection
              * split packets that exceed MTU into reliable ordered. */
             if (segment.Count > _maximumTransportUnit)
             {
-                UnityEngine.Debug.LogError($"Segment is length of {segment.Count} while MTU is {_maximumTransportUnit}. Packet was not split properly and will not be sent.");
+                if (_networkManager.CanLog(LoggingType.Error))
+                    UnityEngine.Debug.LogError($"Segment is length of {segment.Count} while MTU is {_maximumTransportUnit}. Packet was not split properly and will not be sent.");
                 return;
             }
 
@@ -127,12 +138,14 @@ namespace FishNet.Connection
         {
             if (index >= _buffers.Count || index < 0)
             {
-                UnityEngine.Debug.LogError($"Index of {index} is out of bounds. There are {_buffers.Count} available.");
+                if (_networkManager.CanLog(LoggingType.Error))
+                    UnityEngine.Debug.LogError($"Index of {index} is out of bounds. There are {_buffers.Count} available.");
                 return null;
             }
             if (index > _bufferIndex)
             {
-                UnityEngine.Debug.LogError($"Index of {index} exceeds the number of written buffers. There are {WrittenBuffers} written buffers.");
+                if (_networkManager.CanLog(LoggingType.Error))
+                    UnityEngine.Debug.LogError($"Index of {index} exceeds the number of written buffers. There are {WrittenBuffers} written buffers.");
                 return null;
             }
 

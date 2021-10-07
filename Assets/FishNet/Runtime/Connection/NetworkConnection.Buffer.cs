@@ -1,5 +1,6 @@
 ﻿using FishNet.Broadcast;
 using FishNet.Managing;
+using FishNet.Managing.Logging;
 using FishNet.Transporting;
 using System;
 using System.Collections.Generic;
@@ -33,7 +34,7 @@ namespace FishNet.Connection
             for (byte i = 0; i < channels; i++)
             {
                 int mtu = NetworkManager.TransportManager.Transport.GetMTU(i);
-                _toClientBundles.Add(new PacketBundle(mtu));
+                _toClientBundles.Add(new PacketBundle(NetworkManager, mtu));
             }
         }
 
@@ -47,9 +48,14 @@ namespace FishNet.Connection
         public void Broadcast<T>(T message, bool requireAuthenticated = true,  Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!IsValid)
-                Debug.LogError($"Connection is not valid, cannot send broadcast.");
+            {
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Connection is not valid, cannot send broadcast.");
+            }
             else
-                InstanceFinder.ServerManager.Broadcast<T>(this, message, requireAuthenticated,channel);
+            { 
+                InstanceFinder.ServerManager.Broadcast<T>(this, message, requireAuthenticated, channel);
+            }
         }
 
         /// <summary>

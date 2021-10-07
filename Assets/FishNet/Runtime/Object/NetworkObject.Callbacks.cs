@@ -7,51 +7,6 @@ namespace FishNet.Object
     public partial class NetworkObject : MonoBehaviour
     {
         /// <summary>
-        /// Called on the server after initializing this object.
-        /// SyncTypes modified before or during this method will be sent to clients in the spawn message.
-        /// </summary>
-        internal event Action OnStartServer;
-        /// <summary>
-        /// Called on the server before deinitializing this object.
-        /// Useful for tidying object of network related task, including the ability to send RPCs before the object is despawned on clients.
-        /// </summary>
-        internal event Action OnStopServer;
-        /// <summary>
-        /// Called on the server after ownership has changed.
-        /// </summary>
-        /// <param name="owner">Current owner of this object.</param>
-        internal event Action<NetworkConnection> OnOwnershipServer;
-        /// <summary>
-        /// Called when buffered RPCs should be sent.
-        /// </summary>
-        internal event Action<NetworkConnection> OnSendBufferedRpcs;
-        /// <summary>
-        /// Called on the server after a spawn message for this object has been sent to clients.
-        /// Useful for sending remote calls or actions to clients.
-        /// </summary>
-        internal event Action<NetworkConnection> OnSpawnServer;
-        /// <summary>
-        /// Called on the server before a despawn message for this object has been sent to clients.
-        /// Useful for sending remote calls or actions to clients.
-        /// </summary>
-        internal event Action<NetworkConnection> OnDespawnServer;
-        /// <summary>
-        /// Called on the client after initializing this object.
-        /// </summary>
-        /// <param name="isOwner">True if the owner of this object.</param>
-        internal event Action<bool> OnStartClient;
-        /// <summary>
-        /// Called on the client before deinitializing this object.
-        /// </summary>
-        /// <param name="isOwner">True if the owner of this object.</param>
-        internal event Action<bool> OnStopClient;
-        /// <summary>
-        /// Called on the client after gaining or losing ownership.
-        /// </summary>
-        /// <param name="newOwner">Current owner of this object.</param>
-        internal event Action<NetworkConnection> OnOwnershipClient;
-
-        /// <summary>
         /// Called after all data is synchronized with this NetworkObject.
         /// </summary>
         private void InitializeCallbacks(bool asServer)
@@ -59,16 +14,26 @@ namespace FishNet.Object
             //As server.
             if (asServer)
             {
-                OnStartServer?.Invoke();
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].OnStartServer();
+
                 if (OwnerIsValid)
-                    OnOwnershipServer?.Invoke(Owner);
+                {
+                    for (int i = 0; i < NetworkBehaviours.Length; i++)
+                        NetworkBehaviours[i].OnOwnershipServer(Owner);
+                }
             }
             //As client.
             else
             {
-                OnStartClient?.Invoke(IsOwner);
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].OnStartClient(IsOwner);
+
                 if (IsOwner)
-                    OnOwnershipClient?.Invoke(Owner);
+                {
+                    for (int i = 0; i < NetworkBehaviours.Length; i++)
+                        NetworkBehaviours[i].OnOwnershipClient(Owner);
+                }
             }
         }
 
@@ -79,32 +44,21 @@ namespace FishNet.Object
         /// <param name=""></param>
         internal void InvokePostOnServerStart(NetworkConnection conn)
         {
-            OnSendBufferedRpcs?.Invoke(conn);
-            OnSpawnServer?.Invoke(conn);
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].OnSendBufferedRpcs(conn);
+
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].OnSpawnServer(conn);
         }
-        ///// <summary>
-        ///// Sends buffered RPCs to conn.
-        ///// </summary>
-        ///// <param name="conn"></param>
-        //internal void InvokeOnSendBufferedRpcs(NetworkConnection conn)
-        //{
-        //    OnSendBufferedRpcs?.Invoke(conn);
-        //}
-        ///// <summary>
-        ///// Called on the server after it sends a spawn message to a client.
-        ///// </summary>
-        ///// <param name="conn">Connection spawn was sent to.</param>
-        //internal void InvokeOnServerSpawn(NetworkConnection conn)
-        //{
-        //    OnSpawnServer?.Invoke(conn);
-        //}
+
         /// <summary>
         /// Called on the server before it sends a despawn message to a client.
         /// </summary>
         /// <param name="conn">Connection spawn was sent to.</param>
         internal void InvokeOnServerDespawn(NetworkConnection conn)
         {
-            OnDespawnServer?.Invoke(conn);
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].OnDespawnServer(conn);
         }
 
         /// <summary>
@@ -114,9 +68,15 @@ namespace FishNet.Object
         private void InvokeStopCallbacks(bool asServer)
         {
             if (asServer)
-                OnStopServer?.Invoke();
+            {
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].OnStopServer();
+            }
             else
-                OnStopClient?.Invoke(IsOwner);
+            {
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].OnStopClient(IsOwner);
+            }
         }
 
         /// <summary>
@@ -126,9 +86,15 @@ namespace FishNet.Object
         private void InvokeOwnership(NetworkConnection newOwner, bool asServer)
         {
             if (asServer)
-                OnOwnershipServer?.Invoke(newOwner);
+            {
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].OnOwnershipServer(newOwner);
+            }
             else
-                OnOwnershipClient?.Invoke(newOwner);
+            {
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].OnOwnershipClient(newOwner);
+            }
         }
     }
 

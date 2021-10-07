@@ -1,3 +1,4 @@
+using FishNet.Managing.Logging;
 using FishNet.Object;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,7 +25,8 @@ namespace FishNet.Managing.Object
         {
             if (id < 0 || id >= _prefabs.Count)
             {
-                Debug.LogError($"PrefabId {id} is out of range.");
+                if (NetworkManager.StaticCanLog(LoggingType.Error))
+                    Debug.LogError($"PrefabId {id} is out of range.");
                 return null;
             }
             else
@@ -33,8 +35,11 @@ namespace FishNet.Managing.Object
                 NetworkObject nob = (asServer) ? dp.Server : dp.Client;
                 if (nob == null)
                 {
-                    string lookupSide = (asServer) ? "server" : "client";
-                    Debug.LogError($"Prefab for {lookupSide} on id {id} is null ");
+                    if (NetworkManager.StaticCanLog(LoggingType.Error))
+                    {
+                        string lookupSide = (asServer) ? "server" : "client";
+                        Debug.LogError($"Prefab for {lookupSide} on id {id} is null ");
+                    }
                 }
 
                 return nob;
@@ -109,17 +114,20 @@ namespace FishNet.Managing.Object
         #region Unused.
         public override void AddObject(NetworkObject networkObject, bool checkForDuplicates = false)
         {
-            Debug.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
+            if (NetworkManager.StaticCanLog(LoggingType.Error))
+                Debug.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
         }
 
         public override void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false)
         {
-            Debug.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
+            if (NetworkManager.StaticCanLog(LoggingType.Error))
+                Debug.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
         }
 
         public override void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false)
         {
-            Debug.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
+            if (NetworkManager.StaticCanLog(LoggingType.Error))
+                Debug.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
         }
         #endregion
     }

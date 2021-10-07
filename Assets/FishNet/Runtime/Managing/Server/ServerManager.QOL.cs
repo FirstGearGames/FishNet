@@ -14,7 +14,8 @@ namespace FishNet.Managing.Server
         {
             if (go == null)
             {
-                Debug.LogError($"GameObject cannot be spawned because it is null.");
+                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"GameObject cannot be spawned because it is null.");
                 return;
             }
 
@@ -30,7 +31,8 @@ namespace FishNet.Managing.Server
         {
             if (go == null)
             {
-                Debug.LogError($"GameObject cannot be despawned because it is null.");
+                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"GameObject cannot be despawned because it is null.");
                 return;
             }
 

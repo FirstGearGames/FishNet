@@ -1,4 +1,5 @@
 ﻿using FishNet.Connection;
+using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -71,7 +72,7 @@ namespace FishNet.Managing.Transporting
             if (Transport == null && !gameObject.TryGetComponent<Transport>(out Transport))
                 Transport = gameObject.AddComponent<Fluidity.Fluidity>();
 
-            Transport.Initialize();
+            Transport.Initialize(_networkManager);
             InitializeOutgoingSplits();
             InitializeToServerBundles();
         }
@@ -81,7 +82,7 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         private void InitializeOutgoingSplits()
         {
-            _outgoingSplit = new PacketBundle(Transport.GetMTU((byte)Channel.Reliable));
+            _outgoingSplit = new PacketBundle(_networkManager, Transport.GetMTU((byte)Channel.Reliable));
         }
 
         /// <summary>
@@ -93,7 +94,7 @@ namespace FishNet.Managing.Transporting
             for (byte i = 0; i < channels; i++)
             {
                 int mtu = Transport.GetMTU(i);
-                _toServerBundles.Add(new PacketBundle(mtu));
+                _toServerBundles.Add(new PacketBundle(_networkManager, mtu));
             }
         }
 
@@ -239,7 +240,6 @@ namespace FishNet.Managing.Transporting
             while (segmentPosition < segment.Count)
             {
                 int writeCount = Math.Min((segment.Count - segmentPosition), maximumSegment);
-                //Debug.Log(segment.Count + ", write count " + writeCount);
                 _outgoingSplit.Write(new ArraySegment<byte>(segment.Array, segmentPosition, writeCount));
                 segmentPosition += writeCount;
             }
@@ -260,7 +260,8 @@ namespace FishNet.Managing.Transporting
                 //Sanity check, to ensure I don't make mistakes.
                 if (headerWriter.Length != reserve)
                 {
-                    Debug.LogError($"Writer is of length {headerWriter.Length} when it's expected to be {reserve}. Data will be corrupted; split has failed.");
+                    if (_networkManager.CanLog(LoggingType.Error))
+                        Debug.LogError($"Writer is of length {headerWriter.Length} when it's expected to be {reserve}. Data will be corrupted; split has failed.");
                     return false;
                 }
 

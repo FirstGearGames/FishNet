@@ -26,7 +26,8 @@ namespace FishNet.Observing
         /// Returns if the object which this condition resides should be visible to connection.
         /// </summary>
         /// <param name="connection"></param>
-        public abstract bool ConditionMet(NetworkConnection connection);
+        /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
+        public abstract bool ConditionMet(NetworkConnection connection, out bool notProcessed);
         /// <summary>
         /// True if the condition requires regular updates.
         /// </summary>

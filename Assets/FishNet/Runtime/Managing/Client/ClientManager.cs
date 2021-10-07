@@ -87,10 +87,14 @@ namespace FishNet.Managing.Client
             Objects.OnClientConnectionState(args);
             //Clear connection after so objects can update using current Connection value.
             if (!Started)
+            {
                 Connection = null;
+            }
             else
-                Debug.Log("Client connected to server."); //tmp.
-
+            {
+                if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                    Debug.Log($"Local client is connected to the server.");
+            }
             OnClientConnectionState?.Invoke(args);
         }
 
@@ -133,7 +137,7 @@ namespace FishNet.Managing.Client
                 /* This is a special condition where a message may arrive split.
                  * When this occurs buffer each packet until all packets are
                  * received. */
-                if ((PacketId)reader.PeekByte() == PacketId.Split)
+                if (segment.Array[0] == (byte)PacketId.Split)
                 {
                     ArraySegment<byte> result =
                         _splitReader.Write(reader,
@@ -164,7 +168,7 @@ namespace FishNet.Managing.Client
                      * that single packetId  but not the rest. Broadcasts don't need length either even if unreliable
                      * because they are not object bound. */
                     int dataLength = (args.Channel == Channel.Reliable || packetId == PacketId.Broadcast) ?
-                        -1 : reader.ReadInt32();
+                        -1 : reader.ReadInt16();
 
                     //Is spawn or despawn; cache packet.
                     if (spawnOrDespawn)
@@ -185,11 +189,11 @@ namespace FishNet.Managing.Client
                         //Then process packet normally.
                         if (packetId == PacketId.ObserversRpc)
                         {
-                            Objects.ParseObserversRpc(reader, dataLength);
+                            Objects.ParseObserversRpc(reader, dataLength, args.Channel);
                         }
                         else if (packetId == PacketId.TargetRpc)
                         {
-                            Objects.ParseTargetRpc(reader, dataLength);
+                            Objects.ParseTargetRpc(reader, dataLength, args.Channel);
                         }
                         else if (packetId == PacketId.Broadcast)
                         {
@@ -213,7 +217,8 @@ namespace FishNet.Managing.Client
                         }
                         else
                         {
-                            Debug.LogError($"Unhandled PacketId of {(byte)packetId}. Remaining data has been purged.");
+                            if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                                Debug.LogError($"Client received an unhandled PacketId of {(byte)packetId}. Remaining data has been purged.");
                             return;
                         }
                     }
@@ -235,8 +240,29 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         private void ParseConnectionId(PooledReader reader)
         {
-            int connectionId = reader.ReadInt32();
-            Connection = new NetworkConnection(NetworkManager, connectionId);
+            int connectionId = reader.ReadInt16();
+            //If only a client then make a new connection.
+            if (!NetworkManager.IsServer)
+            {
+                Connection = new NetworkConnection(NetworkManager, connectionId);
+            }
+            /* If also the server then use the servers connection
+             * for the connectionId. This is to resolve host problems
+             * where LocalConnection for client differs from the server Connection
+             * reference, which results in different ield values. */
+            else
+            {
+                if (NetworkManager.ServerManager.Clients.TryGetValue(connectionId, out NetworkConnection conn))
+                {
+                    Connection = conn;
+                }
+                else
+                {
+                    if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                        Debug.LogError($"Unable to lookup LocalConnection for {connectionId} as host.");
+                    Connection = new NetworkConnection(NetworkManager, connectionId);
+                }
+            }
         }
 
     }

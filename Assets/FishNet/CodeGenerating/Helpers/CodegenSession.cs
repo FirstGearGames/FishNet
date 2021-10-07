@@ -41,8 +41,6 @@ namespace FishNet.CodeGenerating.Helping
         [System.ThreadStatic]
         internal static CustomSerializerProcessor CustomSerializerProcessor;
         [System.ThreadStatic]
-        internal static NetworkBehaviourCallbackProcessor NetworkBehaviourCallbackProcessor;
-        [System.ThreadStatic]
         internal static NetworkBehaviourProcessor NetworkBehaviourProcessor;
         [System.ThreadStatic]
         internal static QolAttributeProcessor QolAttributeProcessor;
@@ -108,7 +106,6 @@ namespace FishNet.CodeGenerating.Helping
             WriterHelper = new WriterHelper();
 
             CustomSerializerProcessor = new CustomSerializerProcessor();
-            NetworkBehaviourCallbackProcessor = new NetworkBehaviourCallbackProcessor();
             NetworkBehaviourProcessor = new NetworkBehaviourProcessor();
             QolAttributeProcessor = new QolAttributeProcessor();
             NetworkBehaviourRpcProcessor = new NetworkBehaviourRpcProcessor();

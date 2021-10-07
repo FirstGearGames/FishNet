@@ -1,4 +1,5 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
@@ -139,7 +140,7 @@ namespace FishNet.CodeGenerating.Helping
                         baseResetMethodRef = CodegenSession.Module.ImportReference(methodDef);
                     else if (methodDef.Name == nameof(SyncBase.WriteDelta))
                         baseWriteDeltaMethodRef = CodegenSession.Module.ImportReference(methodDef);
-                    else if (methodDef.Name == nameof(SyncBase.WriteFull)) 
+                    else if (methodDef.Name == nameof(SyncBase.WriteFull))
                         baseWriteFullMethodRef = CodegenSession.Module.ImportReference(methodDef);
                     else if (methodDef.Name == nameof(SyncBase.Dirty))
                         baseDirtyMethodRef = CodegenSession.Module.ImportReference(methodDef);
@@ -310,7 +311,9 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Ldloc, isServerVariableDef);
             processor.Emit(OpCodes.Brtrue_S, serverCanProcessLogicInst);
             //Debug and exit if server isn't active.
-            CodegenSession.GeneralHelper.CreateDebugWarning(processor, $"Sync value cannot be set when server is not active.");
+            CodegenSession.GeneralHelper.CreateDebugWithCanLog(
+                processor, "Sync value cannot be set when server is not active.", LoggingType.Warning, true, true
+                );
             CodegenSession.GeneralHelper.CreateRetBoolean(processor, false);
             //Server logic.
             processor.Append(serverCanProcessLogicInst);
@@ -334,7 +337,9 @@ namespace FishNet.CodeGenerating.Helping
             Instruction clientCanProcessLogicInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Brtrue_S, clientCanProcessLogicInst);
             //Debug and exit if client isn't active.
-            CodegenSession.GeneralHelper.CreateDebugWarning(processor, $"Sync value cannot be set when client is not active.");
+            CodegenSession.GeneralHelper.CreateDebugWithCanLog(
+                processor, "Sync value cannot be set when client is not active.", LoggingType.Warning, true, true
+                );
             CodegenSession.GeneralHelper.CreateRetBoolean(processor, false);
             //Client logic.
             processor.Append(clientCanProcessLogicInst);
@@ -619,7 +624,7 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates a ret if compared value is unchanged from current.
         /// </summary>
         private void CreateRetIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef)
-        {            
+        {
             Instruction endIfInst = processor.Create(OpCodes.Nop);
 
             TypeReference originalType = null;
@@ -649,7 +654,7 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Ret);
             processor.Append(endIfInst);
         }
-   
+
         /// <summary>
         /// Creates a call to the base NetworkBehaviour.
         /// </summary>

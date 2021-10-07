@@ -157,8 +157,7 @@ namespace FishNet.Object.Synchronizing.Internal
             if (resetSyncTick)
                 NextSyncTick = NetworkManager.TimeManager.Tick +  _timeToTicks;
 
-            //writer.WriteByte((byte)SyncIndex);
-            writer.WriteUInt32(SyncIndex, AutoPackType.Unpacked);
+            writer.WriteByte((byte)SyncIndex);
         }
         /// <summary>
         /// Writes current value if not initialized value.

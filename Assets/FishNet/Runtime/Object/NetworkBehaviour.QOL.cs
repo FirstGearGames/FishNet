@@ -1,6 +1,7 @@
 ﻿using FishNet.Managing;
 using FishNet.Connection;
 using UnityEngine;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Object
 {
@@ -12,7 +13,7 @@ namespace FishNet.Object
         /// </summary>
         public bool Deinitializing => (NetworkObject == null) ? true : NetworkObject.Deinitializing;
         /// <summary>
-        /// NetworkManager for this object.
+        /// NetworkManager for this object. The NetworkManager is a link to all things related to the network.
         /// </summary>
         public NetworkManager NetworkManager => (NetworkObject == null) ? null : NetworkObject.NetworkManager;
         /// <summary>
@@ -91,7 +92,10 @@ namespace FishNet.Object
         {
             bool isNull = (NetworkObject == null);
             if (isNull && warn)
-                Debug.LogWarning($"NetworkObject is null. This can occur if this object is not spawned, or initialized yet.");
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"NetworkObject is null. This can occur if this object is not spawned, or initialized yet.");
+            }
 
             return isNull;
         }

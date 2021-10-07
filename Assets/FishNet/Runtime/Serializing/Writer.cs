@@ -1,4 +1,6 @@
 using FishNet.Connection;
+using FishNet.Managing;
+using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
@@ -623,7 +625,7 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
-        /// Writes a GameObject.
+        /// Writes a GameObject. GameObject must be spawned over the network already.
         /// </summary>
         /// <param name="go"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -651,16 +653,17 @@ namespace FishNet.Serializing
         {
             if (nob == null)
             {
-                WriteInt32(-1);
+                WriteInt16(-1);
             }
             else if (!nob.IsSpawned)
             {
-                WriteInt32(-1);
-                Debug.LogWarning($"NetworkObject on GameObject {nob.name} is not spawned.");
+                WriteInt16(-1);
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning($"NetworkObject on GameObject {nob.name} is not spawned. Only objects spawned by the server can be written over the network.");
             }
             else
             {
-                WriteInt32(nob.ObjectId);
+                WriteInt16((short)nob.ObjectId);
             }
         }
 
@@ -675,13 +678,15 @@ namespace FishNet.Serializing
              * written since currently they cannot be modified at runtime. */
             if (nb == null)
             {
-                Debug.LogWarning($"NetworkBehaviour is null.");
-                WriteInt32(-1);
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning($"NetworkBehaviour is null.");
+                WriteNetworkObject(null);
             }
             else if (!nb.IsSpawned)
             {
-                Debug.LogWarning($"NetworkObject on GameObject {nb.name} is not spawned.");
-                WriteInt32(-1);
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning($"NetworkObject on GameObject {nb.name} is not spawned.");
+                WriteNetworkObject(null);
             }
             else
             {
@@ -707,10 +712,8 @@ namespace FishNet.Serializing
         public void WriteNetworkConnection(NetworkConnection connection)
         {
             int value = (connection == null) ? -1 : connection.ClientId;
-            //Always pack this, it should never cost more bandwidth packed.
-            WritePackedWhole((uint)value);
+            WriteInt16((short)value);
         }
-
 
         #region Packed writers.
         /// <summary>
@@ -749,7 +752,7 @@ namespace FishNet.Serializing
             _buffer[Position++] = (byte)pr;
 
             if (pr == PackRate.OneByte)
-            {                
+            {
                 _buffer[Position++] = (byte)value;
             }
             else if (value <= ushort.MaxValue)
@@ -792,17 +795,27 @@ namespace FishNet.Serializing
             {
                 Action<Writer, T, AutoPackType> del = GenericWriter<T>.WriteAutoPack;
                 if (del == null)
-                    Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                {
+                    if (NetworkManager.StaticCanLog(LoggingType.Error))
+                        Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                }
                 else
+                {
                     del.Invoke(this, value, packType);
+                }
             }
             else
             {
-                Action<Writer, T> del =  GenericWriter<T>.Write;
+                Action<Writer, T> del = GenericWriter<T>.Write;
                 if (del == null)
-                    Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                {
+                    if (NetworkManager.StaticCanLog(LoggingType.Error))
+                        Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                }
                 else
+                {
                     del.Invoke(this, value);
+                }
             }
         }
 

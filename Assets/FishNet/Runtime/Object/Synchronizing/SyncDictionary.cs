@@ -1,4 +1,5 @@
-﻿using FishNet.Object.Synchronizing.Internal;
+﻿using FishNet.Managing.Logging;
+using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using JetBrains.Annotations;
 using System.Collections;
@@ -111,7 +112,8 @@ namespace FishNet.Object.Synchronizing
         {
             if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
                 return;
             }
 
@@ -314,14 +316,16 @@ namespace FishNet.Object.Synchronizing
         {
             if (offset <= -1 || offset >= array.Length)
             {
-                Debug.LogError($"Index is out of range.");
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Index is out of range.");
                 return;
             }
 
             int remaining = array.Length - offset;
             if (remaining < Count)
             {
-                Debug.LogError($"Array is not large enough to copy data. Array is of length {array.Length}, index is {offset}, and number of values to be copied is {Count.ToString()}.");
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Array is not large enough to copy data. Array is of length {array.Length}, index is {offset}, and number of values to be copied is {Count.ToString()}.");
                 return;
             }
 

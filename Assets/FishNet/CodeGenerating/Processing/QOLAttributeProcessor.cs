@@ -1,5 +1,6 @@
 ﻿using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Managing.Logging;
 using FishNet.Object;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -122,14 +123,14 @@ namespace FishNet.CodeGenerating.Processing
                 bool requireOwnership = qolAttribute.GetField("RequireOwnership", false);
                 //If (!base.IsOwner);
                 if (requireOwnership)
-                    CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(processor, logging, false, true);
+                    CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(processor, logging, true, true);
 
                 CodegenSession.ObjectHelper.CreateIsClientCheck(processor, methodDef, logging, inheritsNetworkBehaviour, true);
             }
             else if (qolType == QolAttributeType.Server)
             {
                 LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Off);
-                CodegenSession.ObjectHelper.CreateIsServerCheck(processor, methodDef, logging, inheritsNetworkBehaviour, true);
+                CodegenSession.ObjectHelper.CreateIsServerCheck(processor, methodDef, logging, !inheritsNetworkBehaviour, true);
             }
         }
 

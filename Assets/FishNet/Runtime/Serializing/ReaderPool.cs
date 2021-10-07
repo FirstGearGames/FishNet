@@ -11,7 +11,6 @@ namespace FishNet.Serializing
     //[CodegenIncludeInternal]
     public sealed class PooledReader : Reader, IDisposable
     {
-        internal PooledReader() { }
         internal PooledReader(byte[] bytes, NetworkManager networkManager) : base(bytes, networkManager) { }
         internal PooledReader(ArraySegment<byte> segment, NetworkManager networkManager) : base(segment, networkManager) { }
         public void Dispose() => ReaderPool.Recycle(this);
@@ -45,8 +44,17 @@ namespace FishNet.Serializing
         /// </summary>
         public static PooledReader GetReader(ArraySegment<byte> segment, NetworkManager networkManager)
         {
-            PooledReader result = (_pool.Count > 0) ? _pool.Pop() : new PooledReader();
-            result.Initialize(segment, networkManager);
+            PooledReader result;
+            if (_pool.Count > 0)
+            {
+                result = _pool.Pop();
+                result.Initialize(segment, networkManager);
+            }
+            else
+            {
+                result = new PooledReader(segment, networkManager);
+            }
+
             return result;
         }
 

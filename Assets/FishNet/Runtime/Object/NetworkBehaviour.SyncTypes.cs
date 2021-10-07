@@ -1,4 +1,5 @@
-﻿using FishNet.Object.Synchronizing;
+﻿using FishNet.Managing.Logging;
+using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -133,21 +134,30 @@ namespace FishNet.Object
             SyncBase sb;
             while (reader.Position - readerStart < length)
             {
-                //byte index = reader.ReadByte();
-                uint index = reader.ReadUInt32(AutoPackType.Unpacked);
+                byte index = reader.ReadByte();
                 if (isSyncObject)
                 {
                     if (_syncObjects.TryGetValue(index, out sb))
+                    {
                         sb.Read(reader);
+                    }
                     else
-                        Debug.LogError($"SyncObject not found for index {index} on {transform.name}.");
+                    {
+                        if (NetworkManager.CanLog(LoggingType.Warning))
+                            Debug.LogWarning($"SyncObject not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
+                    }
                 }
                 else
                 {
                     if (_syncVars.ContainsKey(index))
+                    {
                         ReadSyncVar(reader, index);
+                    }
                     else
-                        Debug.LogError($"SyncVar not found for index {index} on {transform.name}.");
+                    {
+                        if (NetworkManager.CanLog(LoggingType.Warning))
+                            Debug.LogWarning($"SyncVar not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
+                    }
                 }
             }
         }
@@ -238,9 +248,14 @@ namespace FishNet.Object
 
                     int beforeWrite = writer.Length;
                     if (writer == null)
-                        Debug.LogError($"Writer couldn't be found for permissions {sb.Settings.ReadPermission} on channel {channel}.");
+                    {
+                        if (NetworkManager.CanLog(LoggingType.Error))
+                            Debug.LogError($"Writer couldn't be found for permissions {sb.Settings.ReadPermission} on channel {channel}.");
+                    }
                     else
+                    {
                         sb.WriteDelta(writer);
+                    }
                 }
             }
 
@@ -264,28 +279,33 @@ namespace FishNet.Object
                         //If there is data to send.
                         if (channelWriter.Length > 0)
                         {
-                            using (PooledWriter packetWriter = WriterPool.GetWriter())
+                            using (PooledWriter headerWriter = WriterPool.GetWriter())
                             {
                                 PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
-                                packetWriter.WriteByte((byte)packetId);
+                                headerWriter.WriteByte((byte)packetId);
 
-                                //If unreliable
+                                PooledWriter dataWriter = WriterPool.GetWriter();
+                                dataWriter.WriteNetworkBehaviour(this);
+                                dataWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
+
+                                //If unreliable write packet length.
                                 if ((Channel)channel == Channel.Unreliable)
                                 {
-                                    //int packetLength = 
-                                    //todo This needs to use actual packet size.
-                                    packetWriter.WriteInt32(999999999);
+                                    if (dataWriter.Length > short.MaxValue)
+                                        headerWriter.WriteInt16(-2);
+                                    else
+                                        headerWriter.WriteInt16((short)dataWriter.Length);
                                 }
-
-                                packetWriter.WriteNetworkBehaviour(this);
-                                packetWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
+                                //Attach data onto packetWriter.
+                                headerWriter.WriteArraySegment(dataWriter.GetArraySegment());
+                                dataWriter.Dispose();
 
                                 //If sending to observers.
                                 if (_syncTypeWriters[i].ReadPermission == ReadPermission.Observers)
-                                    NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, packetWriter.GetArraySegment(), NetworkObject.Observers);
+                                    NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, headerWriter.GetArraySegment(), NetworkObject.Observers);
                                 //Sending only to owner.
                                 else
-                                    NetworkObject.NetworkManager.TransportManager.SendToClient(channel, packetWriter.GetArraySegment(), NetworkObject.Owner);
+                                    NetworkObject.NetworkManager.TransportManager.SendToClient(channel, headerWriter.GetArraySegment(), NetworkObject.Owner);
                             }
                         }
                     }

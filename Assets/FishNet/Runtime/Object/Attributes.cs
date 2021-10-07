@@ -1,4 +1,5 @@
-﻿using FishNet.Transporting;
+﻿using FishNet.Managing.Logging;
+using FishNet.Transporting;
 using System;
 using UnityEngine;
 
@@ -70,14 +71,6 @@ namespace FishNet.Object
         /// </summary>
         public bool RequireOwnership = false;
     }
-
-    public enum LoggingType
-    {
-        Off,
-        Warn,
-        Error
-    }
-
 }
 
 

@@ -1,5 +1,6 @@
 using FishNet.Connection;
 using FishNet.Managing;
+using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
@@ -63,7 +64,6 @@ namespace FishNet.Serializing
         private readonly UTF8Encoding _encoding = new UTF8Encoding(false, true);
         #endregion
 
-        public Reader() { }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Reader(byte[] bytes, NetworkManager networkManager)
         {
@@ -121,11 +121,12 @@ namespace FishNet.Serializing
             Position += value;
         }
         /// <summary>
-        /// Throws an EndOfStreamException.
+        /// Creates a debug print for end of stream.
         /// </summary>
-        private void ThrowEndOfStream()
+        private void LogEndOfStream()
         {
-            throw new EndOfStreamException("Read length is out of range.");
+            if (_networkManager.CanLog(LoggingType.Error))
+                Debug.LogError("Read length is out of range.");
         }
         /// <summary>
         /// Returns the buffer as an ArraySegment.
@@ -163,23 +164,10 @@ namespace FishNet.Serializing
         public void BlockCopy(ref byte[] target, int targetOffset, int count)
         {
             if (Remaining < count)
-                ThrowEndOfStream();
+                LogEndOfStream();
 
             Buffer.BlockCopy(_buffer, Position, target, targetOffset, count);
             Position += count;
-        }
-
-        /// <summary>
-        /// Peeks a byte at the current position.
-        /// </summary>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte PeekByte()
-        {
-            if (Remaining < 1)
-                ThrowEndOfStream();
-
-            return _buffer[Position];
         }
 
         /// <summary>
@@ -190,7 +178,7 @@ namespace FishNet.Serializing
         public byte ReadByte()
         {
             if (Remaining < 1)
-                ThrowEndOfStream();
+                LogEndOfStream();
 
             byte r = _buffer[Position];
             Position += 1;
@@ -224,7 +212,7 @@ namespace FishNet.Serializing
         public ArraySegment<byte> ReadArraySegment(int count)
         {
             if (Remaining < count)
-                ThrowEndOfStream();
+                LogEndOfStream();
 
             ArraySegment<byte> result = new ArraySegment<byte>(_buffer, Position, count);
             Position += count;
@@ -267,7 +255,7 @@ namespace FishNet.Serializing
         public unsafe ushort ReadUInt16()
         {
             if (Remaining < 2)
-                ThrowEndOfStream();
+                LogEndOfStream();
 
             ushort result;
             fixed (byte* pByte = &_buffer[Position])
@@ -292,7 +280,7 @@ namespace FishNet.Serializing
             if (packType == AutoPackType.Packed)
                 return (uint)ReadPackedWhole();
             if (Remaining < 4)
-                ThrowEndOfStream();
+                LogEndOfStream();
 
             uint result;
             fixed (byte* pByte = &_buffer[Position])
@@ -317,7 +305,7 @@ namespace FishNet.Serializing
             if (packType == AutoPackType.Packed)
                 return (ulong)ReadPackedWhole();
             if (Remaining < 8)
-                ThrowEndOfStream();
+                LogEndOfStream();
 
             ulong result;
             fixed (byte* pByte = &_buffer[Position])
@@ -395,7 +383,8 @@ namespace FishNet.Serializing
             else if (size == 0)
                 return string.Empty;
 
-            CheckAllocationAttack(size);
+            if (!CheckAllocationAttack(size))
+                return string.Empty;
             ArraySegment<byte> data = ReadArraySegment(size);
             return _encoding.GetString(data.Array, data.Offset, data.Count);
         }
@@ -666,7 +655,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject ReadNetworkObject()
         {
-            int objectId = ReadInt32();
+            int objectId = ReadInt16();
             if (objectId == -1)
                 return null;
 
@@ -697,7 +686,7 @@ namespace FishNet.Serializing
         [CodegenExclude]
         public NetworkObject ReadNetworkObject(out int objectId)
         {
-            objectId = ReadInt32();
+            objectId = ReadInt16();
             if (objectId == -1)
                 return null;
 
@@ -760,7 +749,8 @@ namespace FishNet.Serializing
                 byte componentIndex = ReadByte();
                 if (componentIndex < 0 || componentIndex >= nob.NetworkBehaviours.Length)
                 {
-                    Debug.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name}. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
+                    if (_networkManager.CanLog(LoggingType.Error))
+                        Debug.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name}. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
                     return null;
                 }
                 else
@@ -786,26 +776,65 @@ namespace FishNet.Serializing
         /// <param name="conn"></param>
         public NetworkConnection ReadNetworkConnection()
         {
-            int value = (int)ReadPackedWhole();
+            int value = ReadInt16();
             if (value == -1)
-                return null;
+            {
+                return _networkManager.EmptyConnection;
+            }
             else
-                return new NetworkConnection(_networkManager, value);
+            {
+                //Prefer server.
+                if (_networkManager.IsServer)
+                {
+                    if (_networkManager.ServerManager.Clients.TryGetValue((int)value, out NetworkConnection result))
+                    {
+                        return result;
+                    }
+                    else
+                    {
+                        if (_networkManager.CanLog(LoggingType.Warning))
+                            Debug.LogWarning($"Unable to find connection for read Id {value}. An empty connection will be returned.");
+                        return _networkManager.EmptyConnection;
+                    }
+                }
+                //Try client side, will only be able to fetch against local connection.
+                else
+                {
+                    //If value is self then return self.
+                    if (value == _networkManager.ClientManager.Connection.ClientId)
+                        return _networkManager.ClientManager.Connection;
+                    //Otherwise return a new connection.
+                    else
+                        return new NetworkConnection(_networkManager, (int)value);
+                }
+
+            }
         }
 
         /// <summary>
         /// Checks if the size could possibly be an allocation attack.
         /// </summary>
         /// <param name="size"></param>
-        private void CheckAllocationAttack(int size)
+        private bool CheckAllocationAttack(int size)
         {
             /* Possible attacks. Impossible size, or size indicates
             * more elements in collection or more bytes needed
             * than what bytes are available. */
             if (size < -1)
-                throw new DataMisalignedException($"Size of {size} is invalid.");
+            {
+                if (_networkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Size of {size} is invalid.");
+                return false;
+            }
             if (size > Remaining)
-                throw new EndOfStreamException($"Read size of {size} is larger than remaining data of {Remaining}.");
+            {
+                if (_networkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Read size of {size} is larger than remaining data of {Remaining}.");
+                return false;
+            }
+
+            //Checks pass.
+            return true;
         }
 
 
@@ -817,20 +846,32 @@ namespace FishNet.Serializing
         public ulong ReadPackedWhole()
         {
             if (Remaining < 1)
-                ThrowEndOfStream();
+                LogEndOfStream();
 
             PackRate pr = (PackRate)_buffer[Position++];
 
             if (pr == PackRate.OneByte)
+            {
                 return ReadByte();
+            }
             else if (pr == PackRate.TwoBytes)
+            {
                 return ReadUInt16();
+            }
             else if (pr == PackRate.FourBytes)
+            {
                 return ReadUInt32(AutoPackType.Unpacked);
+            }
             else if (pr == PackRate.EightBytes)
+            {
                 return ReadUInt64(AutoPackType.Unpacked);
+            }
             else
-                throw new Exception($"Unhandled PackRate of {pr}.");
+            {
+                if (_networkManager.CanLog(LoggingType.Error))
+                    Debug.Log($"Unhandled PackRate of {pr}.");
+                return 0;
+            }
         }
         #endregion
 
@@ -847,7 +888,8 @@ namespace FishNet.Serializing
                 Func<Reader, AutoPackType, T> del = GenericReader<T>.ReadAutoPack;
                 if (del == null)
                 {
-                    Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    if (_networkManager.CanLog(LoggingType.Error))
+                        Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
                     return default;
                 }
                 else
@@ -860,7 +902,8 @@ namespace FishNet.Serializing
                 Func<Reader, T> del = GenericReader<T>.Read;
                 if (del == null)
                 {
-                    Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    if (_networkManager.CanLog(LoggingType.Error))
+                        Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
                     return default;
                 }
                 else

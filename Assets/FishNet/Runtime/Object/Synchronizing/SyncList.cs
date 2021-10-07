@@ -1,4 +1,5 @@
-﻿using FishNet.Object.Synchronizing.Internal;
+﻿using FishNet.Managing.Logging;
+using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System;
 using System.Collections;
@@ -150,7 +151,8 @@ namespace FishNet.Object.Synchronizing
 
             if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkManager.IsServer)
             {
-                Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
                 return;
             }
 

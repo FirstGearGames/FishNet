@@ -13,9 +13,9 @@ namespace FishNet.Connection
 
         #region Public.
         /// <summary>
-        /// Called after this connection has loaded start scenes.
+        /// Called after this connection has loaded start scenes. Boolean will be true if asServer.
         /// </summary>
-        public event Action<NetworkConnection> OnLoadedStartScenes;
+        public event Action<NetworkConnection, bool> OnLoadedStartScenes;
         /// <summary>
         /// Called after connection gains ownership of an object, and after the object has been added to Objects.
         /// </summary>
@@ -31,7 +31,15 @@ namespace FishNet.Connection
         /// <summary>
         /// True if connection has loaded start scenes.
         /// </summary>
-        public bool LoadedStartScenes { get; private set; } = false;
+        public bool LoadedStartScenes => (_loadedStartScenesAsServer || _loadedStartScenesAsClient);
+        /// <summary>
+        /// True if loaded start scenes as server.
+        /// </summary>
+        private bool _loadedStartScenesAsServer;
+        /// <summary>
+        /// True if loaded start scenes as client.
+        /// </summary>
+        private bool _loadedStartScenesAsClient;
         /// <summary>
         /// True if this connection is authenticated.
         /// </summary>
@@ -103,7 +111,7 @@ namespace FishNet.Connection
 
         public NetworkConnection() { }
         public NetworkConnection(NetworkManager manager, int clientId)
-        {
+        {            
             Initialize(manager, clientId);
         }
 
@@ -128,7 +136,8 @@ namespace FishNet.Connection
             Objects.Clear();
             Authenticated = false;
             NetworkManager = null;
-            LoadedStartScenes = false;
+            _loadedStartScenesAsClient = false;
+            _loadedStartScenesAsServer = false;
             UnsetDisconnecting();
             Scenes.Clear();
         }
@@ -162,12 +171,17 @@ namespace FishNet.Connection
         /// Returns if just loaded start scenes and sets them as loaded if not.
         /// </summary>
         /// <returns></returns>
-        internal bool SetLoadedStartScenes()
+        internal bool SetLoadedStartScenes(bool asServer)
         {
+            bool loadedToCheck = (asServer) ? _loadedStartScenesAsServer : _loadedStartScenesAsClient;
             //Result becomes true if not yet loaded start scenes.
-            bool result = (LoadedStartScenes) ? false : true;
-            LoadedStartScenes = true;
-            OnLoadedStartScenes?.Invoke(this);
+            bool result = !loadedToCheck;
+            if (asServer)
+                _loadedStartScenesAsServer = true;
+            else
+                _loadedStartScenesAsClient = true;
+
+            OnLoadedStartScenes?.Invoke(this, asServer);
 
             return result;
         }

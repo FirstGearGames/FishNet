@@ -150,25 +150,27 @@ namespace FishNet.Managing.Server.Object
         /// <returns></returns>
         protected override int GetNextNetworkObjectId()
         {
-            //At max values.
-            if (_nextNetworkObjectId == int.MaxValue)
+            //Favor the cache first.
+            if (_objectIdCache.Count > 0)
             {
-                if (_objectIdCache.Count == 0)
+                return _objectIdCache.Dequeue();
+            }
+            //None cached.
+            else
+            {
+                //Either something went wrong or user actually managed to spawn ~32K networked objects.
+                if (_nextNetworkObjectId > short.MaxValue)
                 {
-                    Debug.LogError($"No more available ObjectIds. How the heck did you manage to have {int.MaxValue} objects spawned at once?");
+                    if (base.NetworkManager.CanLog(Logging.LoggingType.Error))
+                        Debug.LogError($"No more available ObjectIds. How the heck did you manage to have {short.MaxValue} objects spawned at once?");
                     return -1;
                 }
                 else
                 {
-                    return _objectIdCache.Dequeue();
+                    int value = _nextNetworkObjectId;
+                    _nextNetworkObjectId++;
+                    return value;
                 }
-            }
-            //Not at max value yet.
-            else
-            {
-                int value = _nextNetworkObjectId;
-                _nextNetworkObjectId++;
-                return value;
             }
         }
         #endregion
@@ -205,7 +207,8 @@ namespace FishNet.Managing.Server.Object
         {
             if (!NetworkManager.ServerManager.Started)
             {
-                Debug.LogWarning($"Cannot setup scene objects while server is not active.");
+                if (base.NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"Cannot setup scene objects while server is not active.");
                 return;
             }
 
@@ -263,21 +266,33 @@ namespace FishNet.Managing.Server.Object
         {
             if (!NetworkManager.ServerManager.Started)
             {
-                Debug.Log("Cannot spawn object because the server is not active.");
+                if (base.NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning("Cannot spawn object because the server is not active.");
                 return;
             }
             if (networkObject == null)
             {
-                Debug.LogError($"Specified networkObject is null.");
+                if (base.NetworkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"Specified networkObject is null.");
                 return;
             }
             if (!networkObject.gameObject.scene.IsValid())
             {
-                Debug.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
+                if (base.NetworkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
                 return;
             }
             if (ownerConnection != null && ownerConnection.IsValid && !ownerConnection.LoadedStartScenes)
-                Debug.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+            {
+                if (base.NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+            }
+            if (networkObject.IsSpawned)
+            {
+                if (base.NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"{networkObject.name} is already spawned.");
+                return;
+            }
 
             /* Setup locally without sending to clients.
              * When observers are built for the network object
@@ -319,11 +334,11 @@ namespace FishNet.Managing.Server.Object
              * result in significantly more iterations. */
             PooledWriter commonWriter = WriterPool.GetWriter();
             commonWriter.WriteByte((byte)PacketId.ObjectSpawn);
-            commonWriter.WriteInt32((ushort)nob.ObjectId);
+            commonWriter.WriteNetworkObject(nob);
             if (base.NetworkManager.ServerManager.ShareOwners || connection == nob.Owner)
-                commonWriter.WriteInt32(nob.OwnerId);
+                commonWriter.WriteInt16((short)nob.OwnerId);
             else
-                commonWriter.WriteInt32(-1);
+                commonWriter.WriteInt16(-1);
 
             /* Write if a scene object or not, and also
              * store sceneObjectId if is a scene object. */
@@ -450,7 +465,7 @@ namespace FishNet.Managing.Server.Object
         private void WriteDespawn(NetworkObject nob, ref PooledWriter everyoneWriter)
         {
             everyoneWriter.WriteByte((byte)PacketId.ObjectDespawn);
-            everyoneWriter.WriteInt32(nob.ObjectId);
+            everyoneWriter.WriteNetworkObject(nob);
         }
     }
     #endregion

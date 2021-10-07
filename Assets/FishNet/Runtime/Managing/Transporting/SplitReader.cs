@@ -1,5 +1,6 @@
 ﻿using FishNet.Serializing;
 using System;
+using UnityEngine;
 
 namespace FishNet.Managing.Transporting
 {
@@ -10,7 +11,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Tick split is for.
         /// </summary>
-        private uint _tick;
+        private uint _tick = uint.MaxValue;
         /// <summary>
         /// Buffer for all split packets.
         /// </summary>
@@ -28,7 +29,7 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         private int _position = 0;
         #endregion
-
+      
         /// <summary>
         /// Writes to buffer.
         /// </summary>
@@ -37,13 +38,9 @@ namespace FishNet.Managing.Transporting
         /// <returns></returns>
         internal ArraySegment<byte> Write(PooledReader reader, int mtu)
         {
-            //Skip past packetId for split.
-            reader.ReadByte();
-            /* Get tick and split and expected
-             * split messages. This is included in every
-             * split message. */
-            uint tick = reader.ReadUInt32(AutoPackType.Unpacked);
-            ushort expected = reader.ReadUInt16();
+            uint tick;
+            ushort expected;
+            ReadHeader(reader, false, out tick, out expected);
 
             /* If tick is difference than stored tick
              * then this is a new split. Reset everything. */
@@ -85,6 +82,24 @@ namespace FishNet.Managing.Transporting
                 return new ArraySegment<byte>();
         }
 
+        /// <summary>
+        /// Readers header data of split packet.
+        /// </summary>
+        /// <param name="reader"></param>
+        internal void ReadHeader(PooledReader reader, bool resetReaderPosition, out uint tick, out ushort expected)
+        {
+            int startPosition = reader.Position;
+            //Skip past packetId for split.
+            reader.ReadByte();
+            /* Get tick and split and expected
+             * split messages. This is included in every
+             * split message. */
+            tick = reader.ReadUInt32(AutoPackType.Unpacked);
+            expected = reader.ReadUInt16();
+
+            if (resetReaderPosition)
+                reader.Position = startPosition;
+        }
     }
 
 

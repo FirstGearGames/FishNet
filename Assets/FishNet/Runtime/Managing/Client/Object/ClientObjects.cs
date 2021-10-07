@@ -126,9 +126,14 @@ namespace FishNet.Managing.Client.Object
             NetworkObject nob = reader.ReadNetworkObject();
             NetworkConnection newOwner = reader.ReadNetworkConnection();
             if (nob != null)
+            {
                 nob.GiveOwnership(newOwner, false);
+            }
             else
-                Debug.LogWarning($"NetworkBehaviour could not be found when trying to parse OwnershipChange packet.");
+            {
+                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"NetworkBehaviour could not be found when trying to parse OwnershipChange packet.");
+            }
         }
 
         /// <summary>
@@ -141,9 +146,10 @@ namespace FishNet.Managing.Client.Object
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             if (nb != null)
             {
-                /* Length isn't used with syncobjects but it's
-                * still written. This will be changed in the future.
-                * For now read and discard if a syncobject. */
+                /* Length of data to be read.
+                 * This must be known since multiple packet
+                 * types can arrive in one message, and since synctype
+                 * lengths may vary. */
                 int length = reader.ReadInt32();
                 if (length > 0)
                     nb.OnSyncType(reader, length, isSyncObject);
@@ -152,7 +158,8 @@ namespace FishNet.Managing.Client.Object
             {
                 if (dataLength == -1)
                 {
-                    Debug.LogWarning($"NetworkBehaviour could not be found for SyncType.");
+                    if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                        Debug.LogWarning($"NetworkBehaviour could not be found for SyncType.");
                 }
                 else
                 {
@@ -166,51 +173,27 @@ namespace FishNet.Managing.Client.Object
         /// Parses an ObserversRpc.
         /// </summary>
         /// <param name="reader"></param>
-        internal void ParseObserversRpc(PooledReader reader, int dataLength)
+        internal void ParseObserversRpc(PooledReader reader, int dataLength, Channel channel)
         {
             int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             if (nb != null)
-            {
-                nb.OnObserversRpc(reader);
-            }
+                nb.OnObserversRpc(reader, channel);
             else
-            {                
-                if (dataLength == -1)
-                { 
-                    Debug.LogWarning($"NetworkBehaviour could not be found for ObserversRpc.");
-                }
-                else
-                {
-                    reader.Position = startPosition;
-                    reader.Skip(Math.Min(dataLength, reader.Remaining));
-                }
-            }
+                SkipDataLength(PacketId.ObserversRpc, reader, startPosition, dataLength);
         }
         /// <summary>
         /// Parses a TargetRpc.
         /// </summary>
         /// <param name="reader"></param>
-        internal void ParseTargetRpc(PooledReader reader, int dataLength)
+        internal void ParseTargetRpc(PooledReader reader, int dataLength, Channel channel)
         {
             int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             if (nb != null)
-            {
-                nb.OnTargetRpc(reader);
-            }
+                nb.OnTargetRpc(reader, channel);
             else
-            {
-                if (dataLength == -1)
-                {
-                    Debug.LogWarning($"NetworkBehaviour could not be found for TargetRpc.");
-                }
-                else
-                {
-                    reader.Position = startPosition;
-                    reader.Skip(Math.Min(dataLength, reader.Remaining));
-                }
-            }
+                SkipDataLength(PacketId.TargetRpc, reader, startPosition, dataLength);
         }
 
 
@@ -220,8 +203,8 @@ namespace FishNet.Managing.Client.Object
         /// <param name="reader"></param>
         internal void CacheSpawn(PooledReader reader)
         {
-            int objectId = reader.ReadInt32();
-            int ownerId = reader.ReadInt32();
+            int objectId = reader.ReadInt16();
+            int ownerId = reader.ReadInt16();
             bool sceneObject = reader.ReadBoolean();
 
             NetworkObject nob;
@@ -240,7 +223,10 @@ namespace FishNet.Managing.Client.Object
             {
                 //Only error if client only.
                 if (!NetworkManager.IsHost)
-                    Debug.LogError($"Spawn object could not be found or created for Id {objectId}; scene object: {sceneObject}.");
+                {
+                    if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                        Debug.LogError($"Spawn object could not be found or created for Id {objectId}; scene object: {sceneObject}.");
+                }
 
                 return;
             }
@@ -263,7 +249,7 @@ namespace FishNet.Managing.Client.Object
         /// <param name="reader"></param>
         internal void CacheDespawn(PooledReader reader)
         {
-            int objectId = reader.ReadInt32();
+            int objectId = reader.ReadInt16();
             if (base.Spawned.TryGetValue(objectId, out NetworkObject nob))
                 _objectCache.AddDespawn(nob);
         }
@@ -315,7 +301,8 @@ namespace FishNet.Managing.Client.Object
             //Not found in despawned. Shouldn't ever happen.
             else
             {
-                Debug.LogError($"SceneId of {sceneId} not found in SceneObjects.");
+                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"SceneId of {sceneId} not found in SceneObjects.");
                 return null;
             }
         }
@@ -337,7 +324,8 @@ namespace FishNet.Managing.Client.Object
 
             if (prefabId == -1)
             {
-                Debug.LogError($"Spawned object has an invalid prefabId. Make sure all objects which are being spawned over the network are within SpawnableObjects on the NetworkManager.");
+                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"Spawned object has an invalid prefabId. Make sure all objects which are being spawned over the network are within SpawnableObjects on the NetworkManager.");
             }
             else
             {

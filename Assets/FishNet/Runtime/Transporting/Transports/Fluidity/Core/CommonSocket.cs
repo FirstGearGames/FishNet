@@ -1,4 +1,5 @@
-﻿using FishNet.Transporting;
+﻿using FishNet.Managing;
+using FishNet.Transporting;
 
 namespace Fluidity
 {

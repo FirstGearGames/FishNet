@@ -12,14 +12,14 @@ using UnityEngine;
 using FishNet.Managing.Scened;
 using FishNet.Authenticating;
 using FishNet.Object;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Managing
 {
     //Set execution order to make sure this fires Awake first.
     [DefaultExecutionOrder(short.MinValue)]
-    public class NetworkManager : MonoBehaviour
+    public partial class NetworkManager : MonoBehaviour
     {
-
         #region Public.
         /// <summary>
         /// True if server is active.
@@ -90,24 +90,19 @@ namespace FishNet.Managing
         [Tooltip("True to allow multiple NetworkManagers. When false any copies will be destroyed.")]
         [SerializeField]
         private bool _allowMultiple = false;
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("Collection to use for spawnable objects.")]
-        [SerializeField]
-        private PrefabObjects _spawnablePrefabs = null;
-        /// <summary>
-        /// Collection to use for spawnable objects.
-        /// </summary>
-        public PrefabObjects SpawnablePrefabs { get => _spawnablePrefabs; set => _spawnablePrefabs = value; }
         #endregion
 
         protected virtual void Awake()
         {
+            InitializeLogging();
+
             if (WillBeDestroyed())
                 return;
             if (TryGetComponent<NetworkObject>(out _))
-                Debug.LogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
+            {
+                if (CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
+            }
 
             SpawnablePrefabs.InitializePrefabRange(0);
             SetDontDestroyOnLoad();
@@ -170,7 +165,8 @@ namespace FishNet.Managing
             bool destroyThis = (InstanceFinder.NetworkManager != this);
             if (destroyThis)
             {
-                Debug.Log($"NetworkManager on object {gameObject.name} is a duplicate and will be destroyed. If you wish to have multiple NetworkManagers enable 'Allow Multiple'.");
+                if (CanLog(Logging.LoggingType.Common))
+                    Debug.Log($"NetworkManager on object {gameObject.name} is a duplicate and will be destroyed. If you wish to have multiple NetworkManagers enable 'Allow Multiple'.");
                 Destroy(gameObject);
             }
 
@@ -257,7 +253,10 @@ namespace FishNet.Managing
                 SpawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);
                 //If found.
                 if (SpawnablePrefabs != null)
-                    Debug.Log($"NetworkManager on {gameObject.name} is using the default prefabs collection.");
+                {
+                    if (CanLog(Logging.LoggingType.Common))
+                        Debug.Log($"NetworkManager on {gameObject.name} is using the default prefabs collection.");
+                }
             }
         }
 #endif

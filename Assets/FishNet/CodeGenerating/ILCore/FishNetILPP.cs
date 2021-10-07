@@ -257,11 +257,10 @@ namespace FishNet.CodeGenerating.ILCore
                 i -= entriesRemoved;
             }
 
-            /* This needs to persist because it holds SyncHandler
-             * references for each SyncType. Those
-             * SyncHandlers are re-used if there are multiple SyncTypes
-             * using the same Type. It's also used to replace references
-             * to syncvars with the respected accessors. */
+            /* This holds all sync types created, synclist, dictionary, var
+             * and so on. This data is used after all syncvars are made so
+             * other methods can look for references to created synctypes and
+             * replace accessors accordingly. */
             List<(SyncType, ProcessedSync)> allProcessedSyncs = new List<(SyncType, ProcessedSync)>();
             HashSet<string> allProcessedCallbacks = new HashSet<string>();
             List<TypeDefinition> processedClasses = new List<TypeDefinition>();
@@ -270,11 +269,12 @@ namespace FishNet.CodeGenerating.ILCore
             {
                 CodegenSession.Module.ImportReference(typeDef);
                 //RPCs are per networkbehaviour + hierarchy and need to be reset.
-                int allRpcCount = 0;
-                //Callbacks are per networkbehaviour + hierarchy as well.
-                allProcessedCallbacks.Clear();
-                //modified |= CodegenSession.NetworkBehaviourProcessor.Process(typeDef, ref allRpcCount, allProcessedSyncs, allProcessedCallbacks);
-                CodegenSession.NetworkBehaviourProcessor.Process(typeDef, ref allRpcCount, allProcessedSyncs, allProcessedCallbacks);
+                uint allRpcCount = 0;
+                //Synctypes processed for this nb and it's inherited classes.
+                List<(SyncType, ProcessedSync)> processedSyncs = new List<(SyncType, ProcessedSync)>();
+                CodegenSession.NetworkBehaviourProcessor.Process(typeDef, ref allRpcCount, processedSyncs);
+                //Add to all processed.
+                allProcessedSyncs.AddRange(processedSyncs);
             }
 
             //Run through the typeDefs again to replace syncvar calls.

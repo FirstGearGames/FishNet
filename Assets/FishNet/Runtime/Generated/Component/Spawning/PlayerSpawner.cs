@@ -76,8 +76,10 @@ namespace FishNet.Component.Spawning
         /// <summary>
         /// Called when a client loads initial scenes after connecting.
         /// </summary>
-        private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn)
+        private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn, bool asServer)
         {
+            if (!asServer)
+                return;
             if (_playerPrefab == null)
             {
                 Debug.LogWarning($"Player prefab is empty and cannot be spawned for connection {conn.ClientId}.");

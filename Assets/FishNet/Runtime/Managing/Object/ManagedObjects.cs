@@ -1,6 +1,7 @@
 ﻿using FishNet.Object;
+using FishNet.Serializing;
 using FishNet.Transporting;
-using FishNet.Utility;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -100,7 +101,8 @@ namespace FishNet.Managing.Object
         {
             if (nob == null)
             {
-                Debug.Log($"Cannot despawn a null NetworkObject.");
+                if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                    Debug.Log($"Cannot despawn a null NetworkObject.");
                 return;
             }
 
@@ -222,7 +224,10 @@ namespace FishNet.Managing.Object
         {
             NetworkObject r;
             if (!Spawned.TryGetValue(objectId, out r))
-                Debug.LogError($"Spawned NetworkObject not found for ObjectId {objectId}.");
+            {
+                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"Spawned NetworkObject not found for ObjectId {objectId}.");
+            }
 
             return r;
         }
@@ -242,11 +247,44 @@ namespace FishNet.Managing.Object
             //Component index is out of range.
             if (nob.NetworkBehaviours.Length <= componentIndex)
             {
-                Debug.LogError($"Spawned Component index of {componentIndex} is out of range for ObjectId {objectId}.");
+                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"Spawned Component index of {componentIndex} is out of range for ObjectId {objectId}.");
                 return null;
             }
 
             return nob.NetworkBehaviours[componentIndex];
+        }
+
+        /// <summary>
+        /// Tries to skip data length for a packet.
+        /// </summary>
+        /// <param name="packetId"></param>
+        /// <param name="reader"></param>
+        /// <param name="dataLength"></param>
+        protected void SkipDataLength(PacketId packetId, PooledReader reader, int startPosition, int dataLength)
+        {
+            /* -1 means length wasn't set, which would suggest a reliable packet.
+            * Object should never be missing for reliable packets since spawns
+            * and despawns are reliable in order. */
+            if (dataLength == -1)
+            {
+                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"NetworkBehaviour could not be found for {packetId}.");
+            }
+            /* If length is known then is unreliable packet. It's possible
+             * this packetId arrived before or after the object was spawned/destroyed.
+             * Skip past the data for this packet and use rest in reader. */
+            else if (dataLength > 0)
+            {
+                reader.Position = startPosition;
+                reader.Skip(Math.Min(dataLength, reader.Remaining));
+            }
+            /* -2 indicates the length is very long. Don't even try saving
+             * the packet, user shouldn't be sending this much data over unreliable. */
+            else if (dataLength == -2)
+            {
+                reader.Skip(reader.Remaining);
+            }
         }
 
     }

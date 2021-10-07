@@ -25,9 +25,9 @@ namespace FishNet.CodeGenerating.Processing
         private MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
         #endregion 
 
-        internal bool Process(TypeDefinition typeDef, ref int allRpcCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, HashSet<string> allProcessedCallbacks)
+        internal bool Process(TypeDefinition typeDef, ref uint allRpcCount, List<(SyncType, ProcessedSync)> allProcessedSyncs)
         {
-            bool modified = false; 
+            bool modified = false;
 
             TypeDefinition copyTypeDef = typeDef;
             TypeDefinition firstTypeDef = typeDef;
@@ -46,7 +46,7 @@ namespace FishNet.CodeGenerating.Processing
             {
                 /* Class was already processed. Since child most is processed first
                  * this can occur if a class is inherited by multiple types. If a class
-                 * has already then processed then there is no reason to scale up the hierarchy
+                 * has already been processed then there is no reason to scale up the hierarchy
                  * because it would have already been done. */
                 if (HasClassBeenProcessed(copyTypeDef))
                     break;
@@ -64,11 +64,18 @@ namespace FishNet.CodeGenerating.Processing
                  * can use it. */
                 CreateNetworkInitializeMethods(copyTypeDef);
                 modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref allRpcCount);
-                modified |= CodegenSession.NetworkBehaviourCallbackProcessor.Process(firstTypeDef, copyTypeDef, allProcessedCallbacks);
                 modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(copyTypeDef, allProcessedSyncs);
-                
+
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
             } while (copyTypeDef != null);
+
+            int maxAllowSyncTypes = 256;
+            if (allProcessedSyncs.Count > maxAllowSyncTypes)
+            {
+                CodegenSession.LogError($"Found {allProcessedSyncs.Count} SyncTypes within {firstTypeDef.FullName}. The maximum number of allowed SyncTypes within type and inherited types is {maxAllowSyncTypes}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
+                return false;
+            }
+
 
             /* If here then all inerited classes for firstTypeDef have
              * been processed. */
@@ -352,42 +359,6 @@ namespace FishNet.CodeGenerating.Processing
 
             processor.InsertFirst(instructions);
         }
-
-
-
-        /// <summary>
-        /// Creates a call to NetworkBehaviour to register RPC count.
-        /// </summary>
-        internal void CreateRegisterRpcCount(TypeDefinition typeDef, int allRpcCount) //fix
-        {
-            //if (HasClassBeenProcessed(typeDef))
-            //    return;
-
-            //MethodDefinition methodDef = typeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
-
-            ////Insert at the beginning to ensure user code doesn't return out of it.
-            //ILProcessor processor = methodDef.Body.GetILProcessor();
-
-            //List<Instruction> instructions = new List<Instruction>();
-            //instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            //instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)allRpcCount));
-            //instructions.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SetRpcMethodCountInternal_MethodRef));
-
-
-            ////SetGivenName debug.
-            ////System.Type networkBehaviourType = typeof(NetworkBehaviour);
-            ////TypeReference trr = typeDef.module.ImportReference(networkBehaviourType);
-            ////MethodDefinition mrd = trr.Resolve().GetMethod("SetGivenName");
-            ////MethodReference mrr = typeDef.module.ImportReference(mrd);
-            ////instructions.Add(processor.Create(OpCodes.Ldarg_0));
-            ////instructions.Add(processor.Create(OpCodes.Ldstr, typeDef.Name));
-            ////instructions.Add(processor.Create(OpCodes.Call, mrr));
-
-
-            //processor.InsertFirst(instructions);
-        }
-
-
 
 
     }

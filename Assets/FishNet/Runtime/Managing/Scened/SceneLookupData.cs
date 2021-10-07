@@ -1,5 +1,4 @@
-﻿
-using FishNet.Serializing.Helping;
+﻿using FishNet.Managing.Logging;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -190,7 +189,10 @@ namespace FishNet.Managing.Scened.Data
             }
 
             if (invalidFound)
-                Debug.LogWarning(INVALID_SCENE);
+            {
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning(INVALID_SCENE);
+            }
             return result.ToArray();
         }
         /// <summary>
@@ -214,7 +216,10 @@ namespace FishNet.Managing.Scened.Data
             }
 
             if (invalidFound)
-                Debug.LogWarning(INVALID_SCENE);
+            {
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning(INVALID_SCENE);
+            }
             return result.ToArray();
         }
         /// <summary>
@@ -238,7 +243,10 @@ namespace FishNet.Managing.Scened.Data
             }
 
             if (invalidFound)
-                Debug.LogWarning(INVALID_SCENE);
+            {
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning(INVALID_SCENE);
+            }
             return result.ToArray();
         }
         #endregion
@@ -253,7 +261,8 @@ namespace FishNet.Managing.Scened.Data
 
             if (Handle == 0 && string.IsNullOrEmpty(Name))
             {
-                Debug.LogWarning("Scene handle and name is unset; scene cannot be returned.");
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning("Scene handle and name is unset; scene cannot be returned.");
                 return default;
             }
 

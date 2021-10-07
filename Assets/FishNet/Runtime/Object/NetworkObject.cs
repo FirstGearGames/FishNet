@@ -3,6 +3,7 @@ using FishNet.Connection;
 using UnityEngine;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Managing.Logging;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -123,7 +124,8 @@ namespace FishNet.Object
                 NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>();
                 if (NetworkBehaviours.Length > byte.MaxValue)
                 {
-                    Debug.LogError($"Currently only 256 NetworkBehaviour scripts per object are allowed. Object {gameObject.name} will not initialized.");
+                    if (NetworkManager.CanLog(LoggingType.Error))
+                        Debug.LogError($"Currently only 256 NetworkBehaviour scripts per object are allowed. Object {gameObject.name} will not initialized.");
                 }
                 else
                 {
@@ -135,10 +137,6 @@ namespace FishNet.Object
             //Add to connection objects if owner exist.
             if (owner != null)
                 owner.AddObject(this);
-            //    //See if I can just call GiveOwnership instead. Will need to check ownership callback events to make sure they dont call twice and call in order. //todo
-            //    if (asServer)
-            //        NetworkManager.SceneManager.AddConnectionToScene(owner, gameObject.scene);
-            //}
         }
 
         /// <summary>
@@ -183,7 +181,8 @@ namespace FishNet.Object
         {
             if (asServer && !NetworkManager.IsServer)
             {
-                Debug.LogWarning($"Ownership cannot be given for object {gameObject.name}. Only server may give ownership.");
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Ownership cannot be given for object {gameObject.name}. Only server may give ownership.");
                 return;
             }
             //If the same owner don't bother sending a message, just ignore request.
@@ -191,7 +190,10 @@ namespace FishNet.Object
                 return;
 
             if (newOwner != null && newOwner.IsValid && !newOwner.LoadedStartScenes)
-                Debug.LogWarning($"Ownership has been transfered to ClientId {newOwner.ClientId} but this is not recommended until after they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Ownership has been transfered to ClientId {newOwner.ClientId} but this is not recommended until after they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+            }
 
             NetworkConnection prevOwner = Owner;
             Owner = newOwner;

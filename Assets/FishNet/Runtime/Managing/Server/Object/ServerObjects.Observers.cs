@@ -296,19 +296,6 @@ namespace FishNet.Managing.Server.Object
             for (int i = 0; i < _networkConnectionListCache.Written; i++)
             {
                 NetworkConnection conn = _networkConnectionListCache.Collection[i];
-                /* If connection is nobs owner then skip it. Owner will always
-                 * have visibility of the object and they will be given
-                 * visibility when they gain ownership. By checking here
-                 * as well it would cause an object spawn to be sent twice.
-                 * This is a bug because the visibility should be unchanged when giving
-                 * ownership, assuming conditions are met here. Need to look into that. 
-                 *
-                 * This code has been commented out because the issue was resolved by moving the
-                 * OnClientAuthenticated event after Objects.ClientAuthenticated.
-                 * The reason it was creating problems is because the PlayerSpawner demo was spawning
-                 * using OnClientAuthenticated which was occurring before networked objects were
-                 * spawned for the authenticating client. Therefor PlayerSpawner was spawning an object
-                 * immediately, then Objects.ClientAuthenticated was spawning it again for the player. */
 
                 everyoneWriter.Reset();
                 ownerWriter.Reset();

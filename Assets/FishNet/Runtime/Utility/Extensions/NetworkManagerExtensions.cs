@@ -5,6 +5,7 @@ using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using UnityEngine;
+using FishNet.Managing.Logging;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -29,7 +30,10 @@ namespace FishNet
                     if (managers.Length > 0)
                     {
                         if (managers.Length > 1)
-                            Debug.LogWarning($"Multiple NetworkManagers found, the first result will be returned. If you only wish to have one NetworkManager then uncheck 'Allow Multiple' within your NetworkManagers.");
+                        {
+                            if (managers[0].CanLog(LoggingType.Warning))
+                                Debug.LogWarning($"Multiple NetworkManagers found, the first result will be returned. If you only wish to have one NetworkManager then uncheck 'Allow Multiple' within your NetworkManagers.");
+                        }
 
                         _networkManager = managers[0];
                     }
@@ -43,7 +47,7 @@ namespace FishNet
 #if UNITY_EDITOR
                         if (!EditorApplication.isPlayingOrWillChangePlaymode && EditorApplication.isPlaying)
                             return null;
-#endif
+#endif                        
                         Debug.LogError($"NetworkManager not found in any open scenes.");
                     }
                 }

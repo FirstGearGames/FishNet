@@ -1,6 +1,7 @@
 ﻿using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Observing;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Component.Observing
@@ -19,19 +20,62 @@ namespace FishNet.Component.Observing
         /// Maximum distance a client must be within this object to see it.
         /// </summary>
         public float MaximumDistance { get => _maximumDistance; set => _maximumDistance = value; }
-
+        /// <summary>
+        /// How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. Use a value other than 0f to activate.
+        /// </summary>
+        [Tooltip("How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. Use a value other than 0f to enable.")]
+        [Range(0f, 60f)]
+        [SerializeField]
+        private float _updateFrequency = 0f;
         #endregion
-        public void ConditionConstructor(float maximumDistance)
+
+        #region Private.
+        /// <summary>
+        /// Tracks when connections may be updated for this object.
+        /// </summary>
+        private Dictionary<NetworkConnection, float> _timedUpdates = new Dictionary<NetworkConnection, float>();
+        #endregion
+
+        public void ConditionConstructor(float maximumDistance, float updateFrequency)
         {
             MaximumDistance = maximumDistance;
+            _updateFrequency = updateFrequency;
         }
 
         /// <summary>
         /// Returns if the object which this condition resides should be visible to connection.
         /// </summary>
         /// <param name="connection"></param>
-        public override bool ConditionMet(NetworkConnection connection)
+        /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
+        public override bool ConditionMet(NetworkConnection connection, out bool notProcessed)
         {
+            if (_updateFrequency > 0f)
+            {
+                float nextAllowedUpdate;
+                float currentTime = Time.time;
+                if (!_timedUpdates.TryGetValue(connection, out nextAllowedUpdate))
+                {
+                    _timedUpdates[connection] = (currentTime + _updateFrequency);
+                }
+                else
+                {
+                    //Not enough time to process again.
+                    if (currentTime < nextAllowedUpdate)
+                    {
+                        notProcessed = true;
+                        //The return does not really matter since notProcessed is returned.
+                        return false;
+                    }
+                    //Can process again.
+                    else
+                    { 
+                        _timedUpdates[connection] = (currentTime + _updateFrequency);
+                    }
+                }
+            }
+            //If here then checks are being processed.
+            notProcessed = false;
+
             float sqrMaximumDistance = (MaximumDistance * MaximumDistance);
             Vector3 thisPosition = NetworkObject.transform.position;
             foreach (NetworkObject nob in connection.Objects)
@@ -61,7 +105,7 @@ namespace FishNet.Component.Observing
         public override ObserverCondition Clone()
         {
             DistanceCondition copy = ScriptableObject.CreateInstance<DistanceCondition>();
-            copy.ConditionConstructor(MaximumDistance);
+            copy.ConditionConstructor(MaximumDistance, _updateFrequency);
             return copy;
         }
     }

@@ -20,9 +20,9 @@ namespace FishNet.Managing.Scened
     {
         #region Public.
         /// <summary>
-        /// Called when a client loads initial scenes after connecting.
+        /// Called when a client loads initial scenes after connecting. Boolean will be true if asServer.
         /// </summary>
-        public event Action<NetworkConnection> OnClientLoadedStartScenes;
+        public event Action<NetworkConnection, bool> OnClientLoadedStartScenes;
         /// <summary>
         /// Dispatched when a scene change queue has begun. This will only call if a scene has succesfully begun to load or unload. The queue may process any number of scene events. For example: if a scene is told to unload while a load is still in progress, then the unload will be placed in the queue.
         /// </summary>
@@ -179,10 +179,10 @@ namespace FishNet.Managing.Scened
         /// Invokes OnClientLoadedStartScenes if connection just loaded start scenes.
         /// </summary>
         /// <param name="connection"></param>
-        private void TryInvokeLoadedStartScenes(NetworkConnection connection)
+        private void TryInvokeLoadedStartScenes(NetworkConnection connection, bool asServer)
         {
-            if (connection.SetLoadedStartScenes())
-                OnClientLoadedStartScenes?.Invoke(connection);
+            if (connection.SetLoadedStartScenes(asServer))
+                OnClientLoadedStartScenes?.Invoke(connection, asServer);
         }
 
         /// <summary>
@@ -194,7 +194,13 @@ namespace FishNet.Managing.Scened
             //No global scenes to load.
             if (_globalScenes.Length == 0)
             {
-                TryInvokeLoadedStartScenes(connection);
+                /* Send an empty broadcast to the client.
+                 * This is so client can know when they've loaded
+                 * start scenes as well. */
+                LoadScenesBroadcast msg = new LoadScenesBroadcast() { QueueData = null };
+                connection.Broadcast(msg, true);
+
+                TryInvokeLoadedStartScenes(connection, true);
             }
             else
             {
@@ -270,7 +276,7 @@ namespace FishNet.Managing.Scened
                     AddConnectionToScene(conn, s);
             }
 
-            TryInvokeLoadedStartScenes(conn);
+            TryInvokeLoadedStartScenes(conn, true);
         }
         #endregion
 
@@ -481,7 +487,8 @@ namespace FishNet.Managing.Scened
 
             if (data.SceneLoadData.SceneLookupDatas.Length == 0)
             {
-                Debug.LogWarning($"No scenes specified to load.");
+                if (_networkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"No scenes specified to load.");
                 yield break;
             }
 
@@ -730,7 +737,8 @@ namespace FishNet.Managing.Scened
                 //If firstValidScene is still invalid then throw.
                 if (string.IsNullOrEmpty(firstValidScene.name))
                 {
-                    Debug.LogError($"Unable to move objects to a new scene because new scene lookup has failed.");
+                    if (_networkManager.CanLog(Logging.LoggingType.Error))
+                        Debug.LogError($"Unable to move objects to a new scene because new scene lookup has failed.");
                 }
                 //Move objects.
                 else
@@ -830,6 +838,13 @@ namespace FishNet.Managing.Scened
         /// <param name="msg"></param>
         private void OnLoadScenes(LoadScenesBroadcast msg)
         {
+            //Null data is sent by the server when there are no start scenes to load.
+            if (msg.QueueData == null)
+            {
+                TryInvokeLoadedStartScenes(_clientManager.Connection, false);
+                return;
+            }
+
             LoadQueueData qd = msg.QueueData;
             if (qd.ScopeType == SceneScopeTypes.Global)
                 LoadGlobalScenesInternal(qd.SceneLoadData, qd.GlobalScenes, false);
@@ -940,7 +955,8 @@ namespace FishNet.Managing.Scened
              * the unload should continue. */
             if (scenes.Length == 0 && !asHost)
             {
-                Debug.Log($"No scenes were found to unload.");
+                if (_networkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"No scenes were found to unload.");
                 yield break;
             }
 
@@ -1464,7 +1480,10 @@ namespace FishNet.Managing.Scened
         {
             bool result = data.DataInvalid();
             if (result && error)
-                Debug.LogError(INVALID_SCENELOADDATA);
+            {
+                if (_networkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError(INVALID_SCENELOADDATA);
+            }
 
             return result;
         }
@@ -1478,7 +1497,10 @@ namespace FishNet.Managing.Scened
         {
             bool result = data.DataInvalid();
             if (result && error)
-                Debug.LogError(INVALID_SCENEUNLOADDATA);
+            {
+                if (_networkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError(INVALID_SCENEUNLOADDATA);
+            }
 
             return result;
         }
@@ -1504,13 +1526,19 @@ namespace FishNet.Managing.Scened
             {
                 result = _networkManager.IsServer;
                 if (!result && warn)
-                    Debug.LogWarning($"Method cannot be called as the server is not active.");
+                {
+                    if (_networkManager.CanLog(Logging.LoggingType.Warning))
+                        Debug.LogWarning($"Method cannot be called as the server is not active.");
+                }
             }
             else
             {
                 result = _networkManager.IsClient;
                 if (!result && warn)
-                    Debug.LogWarning($"Method cannot be called as the client is not active.");
+                {
+                    if (_networkManager.CanLog(Logging.LoggingType.Warning))
+                        Debug.LogWarning($"Method cannot be called as the client is not active.");
+                }
             }
 
             return result;

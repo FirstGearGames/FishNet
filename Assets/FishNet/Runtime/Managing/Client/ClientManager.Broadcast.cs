@@ -132,7 +132,8 @@ namespace FishNet.Managing.Client
             }
             else
             {
-                Debug.LogError($"Broadcast not found for key {key}.");
+                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"Broadcast not found for key {key}.");
             }
         }
 
@@ -148,7 +149,8 @@ namespace FishNet.Managing.Client
             //Check local connection state.
             if (!Started)
             {
-                Debug.LogError($"Cannot send broadcast to server because client is not active.");
+                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    Debug.LogWarning($"Cannot send broadcast to server because client is not active.");
                 return;
             }
 

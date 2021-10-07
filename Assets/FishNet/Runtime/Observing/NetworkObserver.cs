@@ -1,4 +1,5 @@
 ﻿using FishNet.Connection;
+using FishNet.Managing.Logging;
 using FishNet.Object;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -95,7 +96,8 @@ namespace FishNet.Observing
             //No observers specified 
             if (!observerFound)
             {
-                Debug.LogWarning($"NetworkObserver exist on {gameObject.name} but there are no observer conditions. This script has been removed.");
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"NetworkObserver exist on {gameObject.name} but there are no observer conditions. This script has been removed.");
                 Destroy(this);
                 return;
             }
@@ -127,7 +129,10 @@ namespace FishNet.Observing
                      * from loop and return removed. If one observer has
                      * removed then there's no reason to iterate
                      * the rest. */
-                    bool conditionMet = condition.ConditionMet(connection);
+                    bool conditionMet = condition.ConditionMet(connection, out bool notProcessed);
+                    if (notProcessed)
+                        conditionMet = currentlyAdded;                       
+
                     //Condition not met.
                     if (!conditionMet)
                     {

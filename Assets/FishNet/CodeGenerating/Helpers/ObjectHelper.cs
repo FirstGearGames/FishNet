@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using FishNet.Managing.Logging;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -20,7 +21,7 @@ namespace FishNet.CodeGenerating.Helping
         #region Reflection references.
         internal string NetworkBehaviour_FullName;
         internal string IBroadcast_FullName;
-        internal string SyncList_FullName;        
+        internal string SyncList_FullName;
         private MethodReference NetworkBehaviour_RegisterServerRpc_MethodRef;
         private MethodReference NetworkBehaviour_RegisterObserversRpc_MethodRef;
         private MethodReference NetworkBehaviour_RegisterTargetRpc_MethodRef;
@@ -40,15 +41,6 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference NetworkBehaviour_LocalConnection_MethodRef;
         internal MethodReference NetworkBehaviour_Owner_MethodRef;
         internal MethodReference NetworkBehaviour_ReadSyncVar_MethodRef;
-        internal MethodReference NetworkBehaviour_UsingOnStartServerInternal_MethodRef;
-        internal MethodReference NetworkBehaviour_UsingOnStopServerInternal_MethodRef;
-        internal MethodReference NetworkBehaviour_UsingOnOwnershipServerInternal_MethodRef;
-        internal MethodReference NetworkBehaviour_UsingOnSpawnServerInternal_MethodRef;
-        internal MethodReference NetworkBehaviour_UsingOnDespawnServerInternal_MethodRef;
-        internal MethodReference NetworkBehaviour_UsingOnStartClientInternal_MethodRef;
-        internal MethodReference NetworkBehaviour_UsingOnStopClientInternal_MethodRef;
-        internal MethodReference NetworkBehaviour_UsingOnOwnershipClientInternal_MethodRef;
-        internal MethodReference NetworkBehaviour_SetRpcMethodCountInternal_MethodRef;
         internal MethodReference Dictionary_Add_UShort_SyncBase_MethodRef;
         #endregion
 
@@ -114,30 +106,11 @@ namespace FishNet.CodeGenerating.Helping
                     NetworkBehaviour_SendObserversRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(NetworkBehaviour.SendTargetRpc))
                     NetworkBehaviour_SendTargetRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                //NetworkObject/NetworkBehaviour Callbacks.
-                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnStartServerInternal))
-                    NetworkBehaviour_UsingOnStartServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnStopServerInternal))
-                    NetworkBehaviour_UsingOnStopServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnOwnershipServerInternal))
-                    NetworkBehaviour_UsingOnOwnershipServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnSpawnServerInternal))
-                    NetworkBehaviour_UsingOnSpawnServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnDespawnServerInternal))
-                    NetworkBehaviour_UsingOnDespawnServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnStartClientInternal))
-                    NetworkBehaviour_UsingOnStartClientInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnStopClientInternal))
-                    NetworkBehaviour_UsingOnStopClientInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo); 
-                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnOwnershipClientInternal))
-                    NetworkBehaviour_UsingOnOwnershipClientInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 //Misc.
                 else if (methodInfo.Name == nameof(NetworkBehaviour.CompareOwner))
                     NetworkBehaviour_CompareOwner_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(NetworkBehaviour.ReadSyncVar))
                     NetworkBehaviour_ReadSyncVar_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.SetRpcMethodCount))
-                    NetworkBehaviour_SetRpcMethodCountInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
             foreach (PropertyInfo propertyInfo in networkBehaviourType.GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
@@ -181,7 +154,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="originalMethodDef"></param>
         /// <param name="readerMethodDef"></param>
         /// <param name="rpcType"></param>
-        internal void CreateRpcDelegate(MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, RpcType rpcType, int allRpcCount, CustomAttribute rpcAttribute)
+        internal void CreateRpcDelegate(MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, RpcType rpcType, uint methodHash, CustomAttribute rpcAttribute)
         {
             MethodDefinition methodDef = originalMethodDef.DeclaringType.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = methodDef.Body.GetILProcessor();
@@ -189,9 +162,8 @@ namespace FishNet.CodeGenerating.Helping
             List<Instruction> insts = new List<Instruction>();
             insts.Add(processor.Create(OpCodes.Ldarg_0));
 
-            uint methodHash = originalMethodDef.FullName.GetStableHash32();
+            //uint methodHash = originalMethodDef.FullName.GetStableHash32();
             insts.Add(processor.Create(OpCodes.Ldc_I4, (int)methodHash));
-            //processor.Emit(OpCodes.Ldc_I4, allRpcCount);
 
             /* Create delegate and call NetworkBehaviour method. */
             insts.Add(processor.Create(OpCodes.Ldnull));
@@ -205,10 +177,7 @@ namespace FishNet.CodeGenerating.Helping
             //Observers.
             else if (rpcType == RpcType.Observers)
             {
-                bool bufferLast = rpcAttribute.GetField("BufferLast", false);
-                int buffered = (bufferLast) ? 1 : 0;
                 insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef));
-                insts.Add(processor.Create(OpCodes.Ldc_I4, buffered));
                 insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_RegisterObserversRpc_MethodRef));
             }
             //Target
@@ -254,11 +223,11 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates a call to SendTargetRpc on NetworkBehaviour.
         /// </summary>
         /// <param name="writerVariableDef"></param>
-        internal void CreateSendTargetRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, ParameterDefinition connectionParameterDef)
+        internal void CreateSendTargetRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, ParameterDefinition targetConnectionParameterDef)
         {
             CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
-            //Reference to NetworkConnection.
-            processor.Emit(OpCodes.Ldarg, connectionParameterDef);
+            //Reference to NetworkConnection that RPC is going to.
+            processor.Emit(OpCodes.Ldarg, targetConnectionParameterDef);
             //Call NetworkBehaviour.
             processor.Emit(OpCodes.Call, NetworkBehaviour_SendTargetRpc_MethodRef);
         }
@@ -301,17 +270,16 @@ namespace FishNet.CodeGenerating.Helping
                 instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
             else
                 instructions.Add(processor.Create(OpCodes.Brfalse, endIf));
-            //If warning then also append warning text.
+            //If logging is not disabled.
             if (loggingType != LoggingType.Off)
             {
                 string msg = (retIfOwner) ?
                     "Cannot complete action because you are the owner of this object." :
                     "Cannot complete action because you are not the owner of this object.";
 
-                if (loggingType == LoggingType.Warn)
-                    instructions.AddRange(CodegenSession.GeneralHelper.CreateDebugWarningInstructions(processor, msg));
-                else
-                    instructions.AddRange(CodegenSession.GeneralHelper.CreateDebugErrorInstructions(processor, msg));
+                instructions.AddRange(
+                    CodegenSession.GeneralHelper.CreateDebugWithCanLogInstructions(processor, msg, loggingType, false, true)
+                    );
             }
             //Return block.
             Instruction retInst = processor.Create(OpCodes.Ret);
@@ -364,7 +332,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="retInstruction"></param>
         /// <param name="warn"></param>
-        internal void CreateIsClientCheck(ILProcessor processor, MethodDefinition methodDef, LoggingType loggingType, bool useObject, bool insertFirst)
+        internal void CreateIsClientCheck(ILProcessor processor, MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst)
         {
             /* This is placed after the if check.
              * Should the if check pass then code
@@ -373,7 +341,7 @@ namespace FishNet.CodeGenerating.Helping
 
             List<Instruction> instructions = new List<Instruction>();
             //Checking against the NetworkObject.
-            if (useObject)
+            if (!useStatic)
             {
                 instructions.Add(processor.Create(OpCodes.Ldarg_0)); //argument: this
                 //If (!base.IsClient)
@@ -387,9 +355,12 @@ namespace FishNet.CodeGenerating.Helping
             instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
             //If warning then also append warning text.
             if (loggingType != LoggingType.Off)
+            {
+                string msg = "Cannot complete action because client is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component.";
                 instructions.AddRange(
-                    CodegenSession.GeneralHelper.CreateDebugWarningInstructions(processor, "Cannot complete action because client is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component.")
+                    CodegenSession.GeneralHelper.CreateDebugWithCanLogInstructions(processor, msg, loggingType, useStatic, true)
                     );
+            }
             //Add return.
             instructions.AddRange(CreateReturnDefault(processor, methodDef));
             //After if statement, jumped to when successful check.
@@ -412,7 +383,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="warn"></param>
-        internal void CreateIsServerCheck(ILProcessor processor, MethodDefinition methodDef, LoggingType loggingType, bool useObject, bool insertFirst)
+        internal void CreateIsServerCheck(ILProcessor processor, MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst)
         {
             /* This is placed after the if check.
             * Should the if check pass then code
@@ -420,7 +391,7 @@ namespace FishNet.CodeGenerating.Helping
             Instruction endIf = processor.Create(OpCodes.Nop);
 
             List<Instruction> instructions = new List<Instruction>();
-            if (useObject)
+            if (!useStatic)
             {
                 instructions.Add(processor.Create(OpCodes.Ldarg_0)); //argument: this
                 //If (!base.IsServer)
@@ -434,9 +405,12 @@ namespace FishNet.CodeGenerating.Helping
             instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
             //If warning then also append warning text.
             if (loggingType != LoggingType.Off)
+            {
+                string msg = "Cannot complete action because server is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component.";
                 instructions.AddRange(
-                    CodegenSession.GeneralHelper.CreateDebugWarningInstructions(processor, "Cannot complete action because server is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component.")
+                    CodegenSession.GeneralHelper.CreateDebugWithCanLogInstructions(processor,msg,loggingType, useStatic, true)
                     );
+            }
             //Add return.
             instructions.AddRange(CreateReturnDefault(processor, methodDef));
             //After if statement, jumped to when successful check.

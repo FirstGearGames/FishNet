@@ -1,6 +1,0 @@
-1.1.0
-	- Made changes to function with Heathen Engineering - Steamworks v2: Foundation
-		https://assetstore.unity.com/packages/tools/integration/steamworks-v2-foundation-186949
-
-1.0.0
-	- Initial release.

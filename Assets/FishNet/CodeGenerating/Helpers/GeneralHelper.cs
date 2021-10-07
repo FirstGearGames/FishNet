@@ -1,5 +1,8 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.ILCore;
+using FishNet.Managing;
+using FishNet.Managing.Logging;
+using FishNet.Object;
 using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
@@ -7,7 +10,6 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System;
 using System.Collections.Generic;
-using Unity.CompilationPipeline.Common.Diagnostics;
 using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
@@ -15,8 +17,16 @@ namespace FishNet.CodeGenerating.Helping
     internal class GeneralHelper
     {
         #region Reflection references.
-        internal MethodReference Debug_LogWarning_MethodRef;
-        internal MethodReference Debug_LogError_MethodRef;
+        private MethodReference InstanceFinder_NetworkManager_MethodRef;
+        private MethodReference NetworkBehaviour_CanLog_MethodRef;
+        private MethodReference NetworkManager_CanLog_MethodRef;
+        private MethodReference NetworkBehaviour_NetworkManager_MethodRef;
+        private MethodReference NetworkManager_LogCommon_MethodRef;
+        private MethodReference NetworkManager_LogWarning_MethodRef;
+        private MethodReference NetworkManager_LogError_MethodRef;
+        private MethodReference Debug_LogCommon_MethodRef;
+        private MethodReference Debug_LogWarning_MethodRef;
+        private MethodReference Debug_LogError_MethodRef;
         internal MethodReference Comparers_EqualityCompare_MethodRef;
         internal MethodReference IsServer_MethodRef = null;
         internal MethodReference IsClient_MethodRef = null;
@@ -36,6 +46,39 @@ namespace FishNet.CodeGenerating.Helping
             Type comparers = typeof(Comparers);
             Comparers_EqualityCompare_MethodRef = CodegenSession.Module.ImportReference<Comparers>(x => Comparers.EqualityCompare<object>(default, default));
 
+            //Networkbehaviour.
+            Type networkBehaviourType = typeof(NetworkBehaviour);
+            foreach (System.Reflection.MethodInfo methodInfo in networkBehaviourType.GetMethods())
+            {
+                if (methodInfo.Name == nameof(NetworkBehaviour.CanLog))
+                    NetworkBehaviour_CanLog_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+            }
+            foreach (System.Reflection.PropertyInfo propertyInfo in networkBehaviourType.GetProperties())
+            {
+                if (propertyInfo.Name == nameof(NetworkBehaviour.NetworkManager))
+                    NetworkBehaviour_NetworkManager_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
+            }
+
+            //Instancefinder.
+            Type instanceFinderType = typeof(InstanceFinder);
+            System.Reflection.PropertyInfo getNetworkManagerPropertyInfo = instanceFinderType.GetProperty(nameof(InstanceFinder.NetworkManager));
+            InstanceFinder_NetworkManager_MethodRef = CodegenSession.Module.ImportReference(getNetworkManagerPropertyInfo.GetMethod);
+
+            //NetworkManager debug logs.
+            Type networkManagerType = typeof(NetworkManager);
+            foreach (System.Reflection.MethodInfo methodInfo in networkManagerType.GetMethods())
+            {
+                if (methodInfo.Name == nameof(NetworkManager.Log))
+                    NetworkManager_LogCommon_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(NetworkManager.LogWarning))
+                    NetworkManager_LogWarning_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(NetworkManager.LogError))
+                    NetworkManager_LogError_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(NetworkManager.CanLog))
+                    NetworkManager_CanLog_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+            }
+
+            //Unity debug logs.
             Type debugType = typeof(UnityEngine.Debug);
             foreach (System.Reflection.MethodInfo methodInfo in debugType.GetMethods())
             {
@@ -43,6 +86,8 @@ namespace FishNet.CodeGenerating.Helping
                     Debug_LogWarning_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(Debug.LogError) && methodInfo.GetParameters().Length == 1)
                     Debug_LogError_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(Debug.Log) && methodInfo.GetParameters().Length == 1)
+                    Debug_LogCommon_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
             Type codegenHelper = typeof(CodegenHelper);
@@ -361,49 +406,118 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Ret);
         }
 
-
+        #region Debug logging.
         /// <summary>
-        /// Creates a debug error appends the instructions.
+        /// Creates a debug print if NetworkManager.CanLog is true.
         /// </summary>
         /// <param name="processor"></param>
-        internal void CreateDebugError(ILProcessor processor, string message)
-        {
-            processor.Emit(OpCodes.Ldstr, message);
-            processor.Emit(OpCodes.Call, Debug_LogError_MethodRef);
-        }
-        /// <summary>
-        /// Creates a debug error and returns the starting instruction.
-        /// </summary>
-        /// <param name="processor"></param>
-        internal List<Instruction> CreateDebugErrorInstructions(ILProcessor processor, string message)
+        /// <param name="loggingType"></param>
+        /// <param name="useStatic">True to use InstanceFinder, false to use base.</param>
+        /// <returns></returns>
+        internal List<Instruction> CreateDebugWithCanLogInstructions(ILProcessor processor, string message, LoggingType loggingType, bool useStatic, bool useNetworkManagerLog)
         {
             List<Instruction> instructions = new List<Instruction>();
-            instructions.Add(processor.Create(OpCodes.Ldstr, message));
-            instructions.Add(processor.Create(OpCodes.Call, Debug_LogError_MethodRef));
+            if (loggingType == LoggingType.Off)
+                return instructions;
+
+            List<Instruction> debugPrint = CreateDebugInstructions(processor, message, loggingType, useNetworkManagerLog);
+            //Couldn't make debug print.
+            if (debugPrint.Count == 0)
+                return instructions;
+
+
+            //If null skip..
+            Instruction skipDebugInst = processor.Create(OpCodes.Nop);
+            VariableDefinition nmVariableDef = CreateVariable(processor.Body.Method, typeof(NetworkManager));
+            //Using InstanceFinder(static).
+            if (useStatic)
+            {
+                //Store nm refrence.
+                instructions.Add(processor.Create(OpCodes.Call, InstanceFinder_NetworkManager_MethodRef));
+                instructions.Add(processor.Create(OpCodes.Stloc, nmVariableDef));
+            }
+            //Using networkBehaviour.
+            else
+            {
+                //Store nm reference.
+                instructions.Add(processor.Create(OpCodes.Ldarg_0));
+                instructions.Add(processor.Create(OpCodes.Call, NetworkBehaviour_NetworkManager_MethodRef));
+                instructions.Add(processor.Create(OpCodes.Stloc, nmVariableDef));
+            }
+
+            //null check nm reference.
+            instructions.Add(processor.Create(OpCodes.Ldloc, nmVariableDef));
+            instructions.Add(processor.Create(OpCodes.Brfalse_S, skipDebugInst));
+
+            //Only need to call CanLog if not using networkmanager logging.
+            if (!useNetworkManagerLog)
+            {
+                //Call canlog.
+                instructions.Add(processor.Create(OpCodes.Ldarg_0));
+                instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)loggingType));
+                instructions.Add(processor.Create(OpCodes.Call, NetworkBehaviour_CanLog_MethodRef));
+                instructions.Add(processor.Create(OpCodes.Brfalse_S, skipDebugInst));
+            }
+
+            instructions.Add(processor.Create(OpCodes.Ldloc, nmVariableDef));
+            instructions.AddRange(debugPrint);
+            instructions.Add(skipDebugInst);
+
             return instructions;
         }
 
         /// <summary>
-        /// Creates a debug warning and returns the starting instruction.
+        /// Creates a debug print if NetworkManager.CanLog is true.
         /// </summary>
         /// <param name="processor"></param>
-        internal List<Instruction> CreateDebugWarningInstructions(ILProcessor processor, string message)
+        /// <param name="loggingType"></param>
+        /// <param name="useStatic">True to use InstanceFinder, false to use base.</param>
+        /// <returns></returns>
+        internal void CreateDebugWithCanLog(ILProcessor processor, string message, LoggingType loggingType, bool useStatic, bool useNetworkManagerLog)
+        {
+            List<Instruction> instructions = CreateDebugWithCanLogInstructions(processor, message, loggingType, useStatic, useNetworkManagerLog);
+            if (instructions.Count == 0)
+                return;
+
+            processor.Add(instructions);
+        }
+        /// <summary>
+        /// Creates a debug and returns instructions.
+        /// </summary>
+        /// <param name="processor"></param>
+        private List<Instruction> CreateDebugInstructions(ILProcessor processor, string message, LoggingType loggingType, bool useNetworkManagerLog)
         {
             List<Instruction> instructions = new List<Instruction>();
+            if (loggingType == LoggingType.Off)
+                return instructions;
+
             instructions.Add(processor.Create(OpCodes.Ldstr, message));
-            instructions.Add(processor.Create(OpCodes.Call, Debug_LogWarning_MethodRef));
+
+            MethodReference methodRef;
+            if (loggingType == LoggingType.Common)
+                methodRef = (useNetworkManagerLog) ? NetworkManager_LogCommon_MethodRef : Debug_LogCommon_MethodRef;
+            else if (loggingType == LoggingType.Warning)
+                methodRef = (useNetworkManagerLog) ? NetworkManager_LogWarning_MethodRef : Debug_LogWarning_MethodRef;
+            else
+                methodRef = (useNetworkManagerLog) ? NetworkManager_LogError_MethodRef : Debug_LogError_MethodRef;
+
+            instructions.Add(processor.Create(OpCodes.Call, methodRef));
+
             return instructions;
         }
         /// <summary>
-        /// Creates a debug warning appends the instructions.
+        /// Creates a debug.
         /// </summary>
         /// <param name="processor"></param>
-        internal void CreateDebugWarning(ILProcessor processor, string message)
+        internal void CreateDebug(ILProcessor processor, string message, LoggingType loggingType, bool useNetworkManagerLog)
         {
-            processor.Emit(OpCodes.Ldstr, message);
-            processor.Emit(OpCodes.Call, Debug_LogWarning_MethodRef);
-        }
+            List<Instruction> instructions = CreateDebugInstructions(processor, message, loggingType, useNetworkManagerLog);
+            if (instructions.Count == 0)
+                return;
 
+            processor.Add(instructions);
+        }
+        #endregion
 
         #region CreateVariable / CreateParameter.
         /// <summary>
@@ -412,10 +526,10 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="parameterTypeRef"></param>
         /// <returns></returns>
-        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeDefinition parameterTypeDef, string name = "", ParameterAttributes attributes = ParameterAttributes.None)
+        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeDefinition parameterTypeDef, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
         {
             TypeReference typeRef = methodDef.Module.ImportReference(parameterTypeDef);
-            return CreateParameter(methodDef, typeRef, name, attributes);
+            return CreateParameter(methodDef, typeRef, name, attributes, index);
         }
         /// <summary>
         /// Creates a parameter within methodDef and returns it's ParameterDefinition.
@@ -423,10 +537,13 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="parameterTypeRef"></param>
         /// <returns></returns>
-        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeReference parameterTypeRef, string name = "", ParameterAttributes attributes = ParameterAttributes.None)
+        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeReference parameterTypeRef, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
         {
             ParameterDefinition parameterDef = new ParameterDefinition(name, attributes, parameterTypeRef);
-            methodDef.Parameters.Add(parameterDef);
+            if (index == -1)
+                methodDef.Parameters.Add(parameterDef);
+            else
+                methodDef.Parameters.Insert(index, parameterDef);
             return parameterDef;
         }
         /// <summary>
@@ -435,9 +552,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="parameterTypeRef"></param>
         /// <returns></returns>
-        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, Type parameterType, string name = "", ParameterAttributes attributes = ParameterAttributes.None)
+        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, Type parameterType, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
         {
-            return CreateParameter(methodDef, GetTypeReference(parameterType), name, attributes);
+            return CreateParameter(methodDef, GetTypeReference(parameterType), name, attributes, index);
         }
         /// <summary>
         /// Creates a variable type within the body and returns it's VariableDef.

@@ -39,8 +39,6 @@ namespace FishNet.Object
             NetworkObject = networkObject;
             ComponentIndex = componentIndex;
             PreInitializeSyncTypes(networkObject);
-            PreInitializeCallbacks(networkObject);
-            PreInitializeRpcs(networkObject);
         }
 
 
