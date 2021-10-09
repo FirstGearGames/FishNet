@@ -93,7 +93,10 @@ namespace FishNet.Managing.Logging
             if (!_initialized)
             {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                Debug.LogError("CanLog called before being initialized.");
+                if (Application.isPlaying)
+                    Debug.LogError("CanLog called before being initialized.");
+                else
+                    return true;
 #endif
                 return false; 
             }

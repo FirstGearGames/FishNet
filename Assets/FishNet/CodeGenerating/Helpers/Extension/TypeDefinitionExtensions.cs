@@ -93,9 +93,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <typeparam name="T"></typeparam>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static bool IsDerivedFrom<T>(this TypeDefinition typeDef)
+        internal static bool InheritsFrom<T>(this TypeDefinition typeDef)
         {
-            return IsDerivedFrom(typeDef, typeof(T));
+            return InheritsFrom(typeDef, typeof(T));
         }
 
         /// <summary>
@@ -104,24 +104,21 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="typeDef"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        internal static bool IsDerivedFrom(this TypeDefinition typeDef, Type type)
+        internal static bool InheritsFrom(this TypeDefinition typeDef, Type type)
         {
-
             if (!typeDef.IsClass)
                 return false;
 
-            // are ANY parent classes of baseClass?
-            TypeReference parent = typeDef.BaseType;
+            TypeDefinition copyTd = typeDef;
+            while (copyTd.BaseType != null)
+            {
+                if (copyTd.BaseType.IsType(type))
+                    return true;
 
-            if (parent == null)
-                return false;
+                copyTd = GetNextBaseClass(copyTd);
+            } 
 
-            if (parent.Is(type))
-                return true;
-
-            if (parent.CanBeResolved())
-                return IsDerivedFrom(parent.Resolve(), type);
-
+            //Fall through.
             return false;
         }
 

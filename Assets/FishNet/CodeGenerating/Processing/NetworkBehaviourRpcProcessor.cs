@@ -23,7 +23,7 @@ namespace FishNet.CodeGenerating.Processing
         private const string INCLUDE_OWNER_TEXT = "IncludeOwner";
         #endregion
 
-        internal bool Process(TypeDefinition typeDef, ref uint allRpcCount)
+        internal bool Process(TypeDefinition typeDef, uint rpcStartCount)
         {
             bool modified = false;
 
@@ -49,13 +49,13 @@ namespace FishNet.CodeGenerating.Processing
 
                 //Create methods for users method.
                 MethodDefinition writerMethodDef, readerMethodDef, logicMethodDef;
-                CreateRpcMethods(typeDef, methodDef, rpcAttribute, rpcType, allRpcCount, out writerMethodDef, out readerMethodDef, out logicMethodDef);
+                CreateRpcMethods(typeDef, methodDef, rpcAttribute, rpcType, rpcStartCount, out writerMethodDef, out readerMethodDef, out logicMethodDef);
 
                 if (writerMethodDef != null && readerMethodDef != null && logicMethodDef != null)
                 {
                     modified = true;
-                    delegateMethodDefs.Add((rpcType, methodDef, readerMethodDef, allRpcCount, rpcAttribute));
-                    allRpcCount++;
+                    delegateMethodDefs.Add((rpcType, methodDef, readerMethodDef, rpcStartCount, rpcAttribute));
+                    rpcStartCount++;
                 }
             }
 
@@ -70,6 +70,31 @@ namespace FishNet.CodeGenerating.Processing
 
             return modified;
         }
+
+        /// <summary>
+        /// Gets number of RPCs by checking for RPC attributes. This does not perform error checking.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <returns></returns>
+        internal uint GetRpcCount(TypeDefinition typeDef)
+        {
+            uint count = 0;
+            foreach (MethodDefinition methodDef in typeDef.Methods)
+            {
+                foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
+                {
+                    RpcType rpcType = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute.AttributeType.FullName);
+                    if (rpcType != RpcType.None)
+                    {
+                        count++;
+                        break;
+                    }
+                }
+            }
+
+            return count;
+        }
+       
 
         /// <summary>
         /// Returns the RPC attribute on a method, if one exist. Otherwise returns null.
@@ -198,14 +223,27 @@ namespace FishNet.CodeGenerating.Processing
         /// <returns></returns>
         private MethodDefinition CreateRpcWriterMethod(TypeDefinition typeDef, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, CustomAttribute rpcAttribute, RpcType rpcType, uint allRpcCount)
         {
-            //Create the method body.
-            MethodDefinition createdMethodDef = new MethodDefinition(
-                $"{WRITER_PREFIX}{originalMethodDef.Name}",
-                MethodAttributes.Private,
-                originalMethodDef.Module.TypeSystem.Void);
-            typeDef.Methods.Add(createdMethodDef);
-
-            createdMethodDef.Body.InitLocals = true;
+            string methodName = $"{WRITER_PREFIX}{originalMethodDef.Name}";
+            /* If method already exist then clear it. This
+             * can occur when a method needs to be rebuilt due to
+             * inheritence, and renumbering the RPC method names. */
+            MethodDefinition createdMethodDef = typeDef.GetMethod(methodName);
+            //If found.
+            if (createdMethodDef != null)
+            {
+                createdMethodDef.Parameters.Clear();
+                createdMethodDef.Body.Instructions.Clear();
+            }
+            //Doesn't exist, create it.
+            else
+            {
+                //Create the method body.
+                createdMethodDef = new MethodDefinition(methodName,
+                    MethodAttributes.Private,
+                    originalMethodDef.Module.TypeSystem.Void);
+                typeDef.Methods.Add(createdMethodDef);
+                createdMethodDef.Body.InitLocals = true;
+            }
 
             if (rpcType == RpcType.Server)
                 return CreateServerRpcWriterMethod(typeDef, originalMethodDef, createdMethodDef, rpcAttribute, allRpcCount, serializedParameters);
@@ -379,9 +417,19 @@ namespace FishNet.CodeGenerating.Processing
         /// <returns></returns>
         private MethodDefinition CreateRpcReaderMethod(TypeDefinition typeDef, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, MethodDefinition logicMethodDef, CustomAttribute rpcAttribute, RpcType rpcType)
         {
+            string methodName = $"{READER_PREFIX}{originalMethodDef.Name}";
+            /* If method already exist then just return it. This
+             * can occur when a method needs to be rebuilt due to
+             * inheritence, and renumbering the RPC method names. 
+             * The reader method however does not need to be rewritten. */
+            MethodDefinition createdMethodDef = typeDef.GetMethod(methodName);
+            //If found.
+            if (createdMethodDef != null)
+                return createdMethodDef;
+
             //Create the method body.
-            MethodDefinition createdMethodDef = new MethodDefinition(
-                $"{READER_PREFIX}{originalMethodDef.Name}",
+            createdMethodDef = new MethodDefinition(
+                methodName,
                 MethodAttributes.Private,
                 originalMethodDef.Module.TypeSystem.Void);
             typeDef.Methods.Add(createdMethodDef);
@@ -641,7 +689,7 @@ namespace FishNet.CodeGenerating.Processing
             if (requireOwnership)
                 CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdProcessor, LoggingType.Warning, false, true);
             //If (!base.IsClient)
-            CodegenSession.ObjectHelper.CreateIsClientCheck(createdProcessor, methodDef, LoggingType.Warning,false, true);
+            CodegenSession.ObjectHelper.CreateIsClientCheck(createdProcessor, methodDef, LoggingType.Warning, false, true);
         }
 
         /// <summary>
@@ -678,9 +726,19 @@ namespace FishNet.CodeGenerating.Processing
         /// <returns></returns>
         private MethodDefinition CreateRpcLogicMethod(TypeDefinition typeDef, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, RpcType rpcType)
         {
+            string methodName = $"{LOGIC_PREFIX}{originalMethodDef.Name}";
+            /* If method already exist then just return it. This
+             * can occur when a method needs to be rebuilt due to
+             * inheritence, and renumbering the RPC method names. 
+             * The logic method however does not need to be rewritten. */
+            MethodDefinition createdMethodDef = typeDef.GetMethod(methodName);
+            //If found.
+            if (createdMethodDef != null)
+                return createdMethodDef;
+
             //Create the method body.
-            MethodDefinition createdMethodDef = new MethodDefinition(
-                $"{LOGIC_PREFIX}{originalMethodDef.Name}", originalMethodDef.Attributes, originalMethodDef.ReturnType);
+            createdMethodDef = new MethodDefinition(
+            methodName, originalMethodDef.Attributes, originalMethodDef.ReturnType);
             typeDef.Methods.Add(createdMethodDef);
 
             createdMethodDef.Body.InitLocals = true;

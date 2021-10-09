@@ -196,7 +196,7 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             int parameterRequirement = (loadType.Length == 0) ? 0 : 1;
-            MethodDefinition constructorMethodDef = attTypeRef.ResolveParameterCountPublicConstructor(parameterRequirement);
+            MethodDefinition constructorMethodDef = attTypeRef.GetConstructor(parameterRequirement);
             MethodReference constructorMethodRef = CodegenSession.Module.ImportReference(constructorMethodDef);
             CustomAttribute ca = new CustomAttribute(constructorMethodRef);
             /* If load type isn't null then it
@@ -596,7 +596,7 @@ namespace FishNet.CodeGenerating.Helping
                 processor.Emit(OpCodes.Ldloca, variableDef);
                 processor.Emit(OpCodes.Initobj, type);
             }
-            else if (typeDef.IsDerivedFrom<UnityEngine.ScriptableObject>())
+            else if (typeDef.InheritsFrom<UnityEngine.ScriptableObject>())
             {
                 MethodReference createScriptableObjectInstance = processor.Body.Method.Module.ImportReference(() => UnityEngine.ScriptableObject.CreateInstance<UnityEngine.ScriptableObject>());
                 GenericInstanceMethod genericInstanceMethod = new GenericInstanceMethod(createScriptableObjectInstance.GetElementMethod());
@@ -606,7 +606,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                MethodDefinition constructorMethodDef = type.ResolveDefaultPublicConstructor();
+                MethodDefinition constructorMethodDef = type.GetConstructor();
                 if (constructorMethodDef == null)
                 {
                     CodegenSession.LogError($"{type.Name} can't be deserialized because a default constructor could not be found. Create a default constructor or a custom serializer/deserializer.");

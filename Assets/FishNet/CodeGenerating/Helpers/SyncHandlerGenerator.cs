@@ -116,11 +116,6 @@ namespace FishNet.CodeGenerating.Helping
             //If was created then it must be completed with fields, methods, ect.
             else
             {
-                /* Create comparer method reference for type. */
-                Type dataMonoType = dataTypeRef.GetMonoType();
-                if (dataMonoType == null)
-                    return null;
-
                 CodegenSession.Module.ImportReference(dataTypeRef.Resolve());
                 TypeDefinition syncBaseTypeDef = SyncBase_TypeRef.Resolve();
                 /* Required references. */

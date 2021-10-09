@@ -3,6 +3,7 @@ using FishNet.CodeGenerating.Helping.Extension;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -16,19 +17,29 @@ namespace FishNet.CodeGenerating.Processing
         /// Methods modified or iterated during weaving.
         /// </summary>
         internal List<MethodDefinition> ModifiedMethodDefinitions = new List<MethodDefinition>();
-        private List<TypeDefinition> _processedClasses = new List<TypeDefinition>();
+        /// <summary>
+        /// Classes which have been processed for all NetworkBehaviour features.
+        /// </summary>
+        private HashSet<TypeDefinition> _processedClasses = new HashSet<TypeDefinition>();
+        /// <summary>
+        /// Classes which have had Early NetworkInitialize methods called.
+        /// </summary>
+        private HashSet<TypeDefinition> _earlyNetworkInitializedClasses = new HashSet<TypeDefinition>();
+        /// <summary>
+        /// Classes which have had Late NetworkInitialize methods called.
+        /// </summary>
+        private HashSet<TypeDefinition> _lateNetworkInitializedClasses = new HashSet<TypeDefinition>();
         #endregion
 
         #region Const.
         internal const string NETWORKINITIALIZE_EARLY_INTERNAL_NAME = "NetworkInitialize_Early___Internal";
         internal const string NETWORKINITIALIZE_LATE_INTERNAL_NAME = "NetworkInitialize_Late___Internal";
         private MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
-        #endregion 
+        #endregion
 
-        internal bool Process(TypeDefinition typeDef, ref uint allRpcCount, List<(SyncType, ProcessedSync)> allProcessedSyncs)
+        internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, Dictionary<TypeDefinition, uint> childSyncTypeCounts, Dictionary<TypeDefinition, uint> childRpcCounts)
         {
             bool modified = false;
-
             TypeDefinition copyTypeDef = typeDef;
             TypeDefinition firstTypeDef = typeDef;
             /* Make awake methods for all inherited classes
@@ -63,8 +74,15 @@ namespace FishNet.CodeGenerating.Processing
                 /* Create NetworkInitialize before-hand so the other procesors
                  * can use it. */
                 CreateNetworkInitializeMethods(copyTypeDef);
-                modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref allRpcCount);
-                modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(copyTypeDef, allProcessedSyncs);
+                /* RPCs. */
+                uint rpcStartCount;
+                childRpcCounts.TryGetValue(copyTypeDef, out rpcStartCount);
+                modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, rpcStartCount);
+                /* SyncTypes. */
+                uint syncTypeStartCount;
+                childSyncTypeCounts.TryGetValue(copyTypeDef, out syncTypeStartCount);
+                modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(copyTypeDef, allProcessedSyncs, syncTypeStartCount);
+                _processedClasses.Add(copyTypeDef);
 
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
             } while (copyTypeDef != null);
@@ -76,22 +94,14 @@ namespace FishNet.CodeGenerating.Processing
                 return false;
             }
 
-
             /* If here then all inerited classes for firstTypeDef have
              * been processed. */
             CallNetworkInitializeFromAwake(firstTypeDef, true);
             CallNetworkInitializeFromAwake(firstTypeDef, false);
 
-            //Add to processed.
-            copyTypeDef = firstTypeDef;
-            do
-            {
-                _processedClasses.Add(copyTypeDef);
-                copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
-            } while (copyTypeDef != null);
-
             return modified;
         }
+
 
         /// <summary>
         /// Returns if a class has been processed.
@@ -220,7 +230,8 @@ namespace FishNet.CodeGenerating.Processing
             TypeDefinition copyTypeDef = startTypeDef;
             do
             {
-                if (!_processedClasses.Contains(copyTypeDef))
+                HashSet<TypeDefinition> processed = (callEarly) ? _earlyNetworkInitializedClasses : _lateNetworkInitializedClasses;
+                if (!processed.Contains(copyTypeDef))
                 {
                     string methodName = (callEarly) ? NETWORKINITIALIZE_EARLY_INTERNAL_NAME :
                         NETWORKINITIALIZE_LATE_INTERNAL_NAME;
@@ -238,6 +249,8 @@ namespace FishNet.CodeGenerating.Processing
                         processor.InsertFirst(insts);
                     else
                         processor.InsertBeforeReturns(insts);
+
+                    processed.Add(copyTypeDef);
                 }
 
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);

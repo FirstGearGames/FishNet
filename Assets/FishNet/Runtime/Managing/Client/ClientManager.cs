@@ -158,7 +158,6 @@ namespace FishNet.Managing.Client
                 {
                     PacketId packetId = (PacketId)reader.ReadByte();
                     bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
-
                     /* Length of data. Only available if using unreliable. Unreliable packets
                      * can arrive out of order which means object orientated messages such as RPCs may
                      * arrive after the object for which they target has already been destroyed. When this happens

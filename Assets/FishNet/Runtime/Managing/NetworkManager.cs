@@ -7,12 +7,10 @@ using FishNet.Managing.Client;
 using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
-using FishNet.Managing.Object;
 using UnityEngine;
 using FishNet.Managing.Scened;
 using FishNet.Authenticating;
 using FishNet.Object;
-using FishNet.Managing.Logging;
 
 namespace FishNet.Managing
 {
@@ -91,7 +89,6 @@ namespace FishNet.Managing
         [SerializeField]
         private bool _allowMultiple = false;
         #endregion
-
         protected virtual void Awake()
         {
             InitializeLogging();

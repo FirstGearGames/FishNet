@@ -11,25 +11,86 @@ namespace FishNet.CodeGenerating.Helping.Extension
     internal static class TypeReferenceExtensions
     {
         /// <summary>
-        /// Resolves the default constructor for typeRef.
+        /// Gets the first public constructor with no parameters.
         /// </summary>
-        /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static MethodDefinition ResolveDefaultPublicConstructor(this TypeReference typeRef)
+        public static MethodDefinition GetConstructor(this TypeReference typeRef)
         {
             foreach (MethodDefinition methodDef in typeRef.Resolve().Methods)
             {
                 if (methodDef.IsConstructor && methodDef.Resolve().IsPublic && methodDef.Parameters.Count == 0)
                     return methodDef;
             }
+
             return null;
         }
+
+        /// <summary>
+        /// Gets constructor which has arguments.
+        /// </summary>
+        /// <param name="typeRef"></param>
+        /// <returns></returns>
+        public static MethodDefinition GetConstructor(this TypeReference typeRef, Type[] arguments)
+        {
+            Type[] argsCopy = (arguments == null) ? new Type[0] : arguments;
+            foreach (MethodDefinition methodDef in typeRef.Resolve().Methods)
+            {
+                if (methodDef.IsConstructor && methodDef.Resolve().IsPublic && methodDef.Parameters.Count == argsCopy.Length)
+                {
+                    bool match = true;
+                    for (int i = 0; i < argsCopy.Length; i++)
+                    {
+                        if (methodDef.Parameters[0].ParameterType.FullName != argsCopy[i].FullName)
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+
+                    if (match)
+                        return methodDef;
+                }
+            }
+            return null;
+        }
+
+
+        /// <summary>
+        /// Gets constructor which has arguments.
+        /// </summary>
+        /// <param name="typeRef"></param>
+        /// <returns></returns>
+        public static MethodDefinition GetConstructor(this TypeReference typeRef, TypeReference[] arguments)
+        {
+            TypeReference[] argsCopy = (arguments == null) ? new TypeReference[0] : arguments;
+            foreach (MethodDefinition methodDef in typeRef.Resolve().Methods)
+            {
+                if (methodDef.IsConstructor && methodDef.Resolve().IsPublic && methodDef.Parameters.Count == argsCopy.Length)
+                {
+                    bool match = true;
+                    for (int i = 0; i < argsCopy.Length; i++)
+                    {
+                        if (methodDef.Parameters[0].ParameterType.FullName != argsCopy[i].FullName)
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+
+                    if (match)
+                        return methodDef;
+                }
+            }
+            return null;
+        }
+
+
         /// <summary>
         /// Resolves the constructor with parameterCount for typeRef.
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static MethodDefinition ResolveParameterCountPublicConstructor(this TypeReference typeRef, int parameterCount)
+        public static MethodDefinition GetConstructor(this TypeReference typeRef, int parameterCount)
         {
             foreach (MethodDefinition methodDef in typeRef.Resolve().Methods)
             {
@@ -37,86 +98,6 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     return methodDef;
             }
             return null;
-        }
-
-        /// <summary>
-        /// Resolves the default constructor for typeRef.
-        /// </summary>
-        /// <param name="typeRef"></param>
-        /// <returns></returns>
-        public static MethodDefinition ResolveFirstPublicConstructor(this TypeReference typeRef)
-        {
-            foreach (MethodDefinition methodDef in typeRef.Resolve().Methods)
-            {
-                if (methodDef.IsConstructor && methodDef.Resolve().IsPublic)
-                    return methodDef;
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Gets mono Type from typeRef.
-        /// </summary>
-        /// <param name="typeRef"></param>
-        /// <returns></returns>
-        private static Type GetMonoTypeInTypeRefAsm(this TypeReference typeRef)
-        {
-            if (typeRef == null)
-            {
-                CodegenSession.LogError("TypeRef is null.");
-                return null;
-            }
-
-            Type result = null;
-            try
-            {
-                result = Type.GetType(typeRef.FullName + ", " + typeRef.Resolve().Module.Assembly.FullName);
-            }
-            catch { }
-            finally
-            {
-                if (result == null)
-                    CodegenSession.LogWarning($"Unable to get Type for {typeRef.FullName}. If you are importing or exporting asset bundles or addressables you may ignore this warning. Additional warnings of this type for assembly {typeRef.Resolve().Module.Assembly.Name.Name} will be ignored.", true);
-            }
-
-            return result;
-        }
-        /// <summary>
-        /// Gets mono Type from typeRef.
-        /// </summary>
-        /// <param name="typeRef"></param>
-        /// <returns></returns>
-        public static Type GetMonoType(this TypeReference typeRef)
-        {
-            if (typeRef == null)
-            {
-                CodegenSession.LogError("TypeRef is null.");
-                return null;
-            }
-
-            Type result = null;
-            try
-            {
-                result = Type.GetType(typeRef.GetReflectionName(), true);
-            }
-            catch { }
-            finally
-            {
-                if (result == null)
-                    result = GetMonoTypeInTypeRefAsm(typeRef);
-            }
-
-            return result;
-        }
-
-        private static string GetReflectionName(this TypeReference type)
-        {
-            if (type.IsGenericInstance)
-            {
-                var genericInstance = (GenericInstanceType)type;
-                return string.Format("{0}.{1}[{2}]", genericInstance.Namespace, type.Name, String.Join(",", genericInstance.GenericArguments.Select(p => p.GetReflectionName()).ToArray()));
-            }
-            return type.FullName;
         }
 
         /// <summary>

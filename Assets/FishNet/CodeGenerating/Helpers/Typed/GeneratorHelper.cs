@@ -82,7 +82,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 return SerializerType.List;
             }
-            else if (objectTypeDef.IsDerivedFrom<NetworkBehaviour>())
+            else if (objectTypeDef.InheritsFrom<NetworkBehaviour>())
             {
                 return SerializerType.NetworkBehaviour;
             }
@@ -120,7 +120,7 @@ namespace FishNet.CodeGenerating.Helping
                 return false;
             }
             //Component.
-            if (objectTypeDef.IsDerivedFrom<UnityEngine.Component>())
+            if (objectTypeDef.InheritsFrom<UnityEngine.Component>())
             {
                 CodegenSession.LogError(errorText);
                 return false;

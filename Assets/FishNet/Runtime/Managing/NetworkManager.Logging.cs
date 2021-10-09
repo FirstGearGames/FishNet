@@ -56,7 +56,10 @@ namespace FishNet.Managing
         /// <returns></returns>
         public bool CanLog(LoggingType loggingType)
         {
-            return _logging.CanLog(loggingType);
+            if (_logging == null)
+                return true;
+            else
+                return _logging.CanLog(loggingType);
         }
 
         /// <summary>
