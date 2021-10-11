@@ -13,47 +13,47 @@ namespace FishNet.Object
         /// </summary>
         public bool Deinitializing => (NetworkObject == null) ? true : NetworkObject.Deinitializing;
         /// <summary>
-        /// NetworkManager for this object. The NetworkManager is a link to all things related to the network.
+        /// NetworkManager for this object.
         /// </summary>
         public NetworkManager NetworkManager => (NetworkObject == null) ? null : NetworkObject.NetworkManager;
         /// <summary>
-        /// True if acting as a client.
+        /// True if the client is active and authenticated.
         /// </summary>
         public bool IsClient => (NetworkObject == null) ? false : NetworkObject.IsClient;
         /// <summary>
-        /// True if client only.
+        /// True if only the client is active, and authenticated.
         /// </summary>
         public bool IsClientOnly => (NetworkObject == null) ? false : (!NetworkObject.IsServer && NetworkObject.IsClient);
         /// <summary>
-        /// True if acting as the server.
+        /// True if server is active.
         /// </summary>
         public bool IsServer => (NetworkObject == null) ? false : NetworkObject.IsServer;
         /// <summary>
-        /// True if server only.
+        /// True if only the server is active.
         /// </summary>
         public bool IsServerOnly => (NetworkObject == null) ? false : (NetworkObject.IsServer && !NetworkObject.IsClient);
         /// <summary>
-        /// True if acting as a client and the server.
+        /// True if client and server are active.
         /// </summary>
         public bool IsHost => (NetworkObject == null) ? false : (NetworkObject.IsServer && NetworkObject.IsClient);
         /// <summary>
-        /// True if the owner of this object. Only contains value on clients.
+        /// True if the local client is the owner of this object.
         /// </summary>
         public bool IsOwner => (NetworkObject == null) ? false : NetworkObject.IsOwner;
         /// <summary>
-        /// Owner of this object. Will be null if there is no owner. Owner is only visible to all players.
+        /// Owner of this object.
         /// </summary>
         public NetworkConnection Owner => (NetworkObject == null) ? null : NetworkObject.Owner;
         /// <summary>
-        /// True if the owner is a valid connection.
+        /// True if there is an owner.
         /// </summary>
         public bool OwnerIsValid => (NetworkObject == null) ? false : NetworkObject.OwnerIsValid;
         /// <summary>
-        /// ClientId for this NetworkObject owner. Only visible to server.
+        /// ClientId for this NetworkObject owner.
         /// </summary>
         public int OwnerId => (NetworkObject == null) ? -1 : NetworkObject.OwnerId;
         /// <summary>
-        /// Returns the local connection for the client calling this method.
+        /// The local connection of the client calling this method.
         /// </summary>
         public NetworkConnection LocalConnection => (NetworkObject == null) ? new NetworkConnection() : NetworkObject.LocalConnection;
         /// <summary>
@@ -67,7 +67,7 @@ namespace FishNet.Object
             return (NetworkObject.Owner == connection);
         }
         /// <summary>
-        /// Despawns this NetworkObject. If server despawn will also occur on clients.
+        /// Despawns this NetworkObject. Can only be called on the server.
         /// </summary>
         public void Despawn()
         {
@@ -75,8 +75,10 @@ namespace FishNet.Object
                 NetworkObject.Despawn();                
         }
         /// <summary>
-        /// Spawns an object over the network.
+        /// Spawns an object over the network. Can only be called on the server.
         /// </summary>
+        /// <param name="go">GameObject instance to spawn.</param>
+        /// <param name="ownerConnection">Connection to give ownership to.</param>
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
         {
             if (IsNetworkObjectNull(true))

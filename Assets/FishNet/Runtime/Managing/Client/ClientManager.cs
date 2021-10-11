@@ -8,13 +8,15 @@ using UnityEngine;
 
 namespace FishNet.Managing.Client
 {
-
+    /// <summary>
+    /// A container for local client data and actions.
+    /// </summary>
     [DisallowMultipleComponent]
     public partial class ClientManager
     {
         #region Public.
         /// <summary>
-        /// Called after local clients connections state changes. This is performed after the state change has been handled internally.
+        /// Called after local client's connection state changes.
         /// </summary>
         public event Action<ClientConnectionStateArgs> OnClientConnectionState;
         /// <summary>
@@ -26,7 +28,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         public NetworkConnection Connection = null;
         /// <summary>
-        /// ObjectHandler for client objects.
+        /// Handling and information for objects known to the local client.
         /// </summary>
         public ClientObjects Objects { get; private set; } = null;
         /// <summary>

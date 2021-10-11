@@ -1,5 +1,4 @@
 ﻿using FishNet.CodeGenerating.Helping;
-using FishNet.Object.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
@@ -14,15 +13,19 @@ namespace FishNet.CodeGenerating.Processing
 {
     internal class NetworkBehaviourSyncProcessor
     {
-        #region Misc.
+        #region Private.
         /// <summary>
         /// Last instruction to read a sync type.
         /// </summary>
         private Instruction _lastReadInstruction = null;
         /// <summary>
-        /// Objects created during this process. Used primarily to skip changing references within objects.
+        /// Sync objects, such as get and set, created during this process. Used to skip modifying created methods.
         /// </summary>
         private List<object> _createdSyncTypeMethodDefinitions = new List<object>();
+        /// <summary>
+        /// ReadSyncVar methods which have had their base call already made.
+        /// </summary>
+        private HashSet<MethodDefinition> _baseCalledReadSyncVars = new HashSet<MethodDefinition>();
         #endregion
 
         #region Const.
@@ -1217,6 +1220,59 @@ namespace FishNet.CodeGenerating.Processing
         }
 
         /// <summary>
+        /// Calls ReadSyncVar going up the hierarchy.
+        /// </summary>
+        /// <param name="firstTypeDef"></param>
+        internal void CallBaseReadSyncVar(TypeDefinition firstTypeDef)
+        {
+            //TypeDef which needs to make the base call.
+            MethodDefinition callerMd = null;
+            TypeDefinition copyTd = firstTypeDef;
+            do
+            {
+                MethodDefinition readMd;
+
+                readMd = copyTd.GetMethod(CodegenSession.ObjectHelper.NetworkBehaviour_ReadSyncVar_MethodRef.Name);
+                if (readMd != null)
+                    callerMd = readMd;
+
+                /* If baseType exist and it's not networkbehaviour
+                 * look into calling the ReadSyncVar method. */
+                if (copyTd.BaseType != null && copyTd.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
+                {
+                    readMd = copyTd.BaseType.Resolve().GetMethod(CodegenSession.ObjectHelper.NetworkBehaviour_ReadSyncVar_MethodRef.Name);
+                    //Not all classes will have syncvars to read.
+                    if (!_baseCalledReadSyncVars.Contains(callerMd) && readMd != null && callerMd != null)
+                    {
+                        MethodReference baseReadMr = CodegenSession.Module.ImportReference(readMd);
+                        ILProcessor processor = callerMd.Body.GetILProcessor();
+                        /* Calls base.ReadSyncVar and if result is true
+                         * then exit methods. This is because a true return means the base
+                         * was able to process the syncvar. */
+                        List<Instruction> baseCallInsts = new List<Instruction>();
+                        Instruction skipBaseReturn = processor.Create(OpCodes.Nop);
+                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_0));
+                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_1));
+                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_2));
+                        baseCallInsts.Add(processor.Create(OpCodes.Call, baseReadMr));
+                        baseCallInsts.Add(processor.Create(OpCodes.Brfalse_S, skipBaseReturn));
+                        baseCallInsts.Add(processor.Create(OpCodes.Ldc_I4_1));
+                        baseCallInsts.Add(processor.Create(OpCodes.Ret));
+                        baseCallInsts.Add(skipBaseReturn);
+                        processor.InsertFirst(baseCallInsts);
+
+                        _baseCalledReadSyncVars.Add(callerMd);
+                    }
+                }
+
+                copyTd = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTd);
+
+            } while (copyTd != null);
+
+
+        }
+
+        /// <summary>
         /// Creates a call to a SyncHandler.Read and sets value locally.
         /// </summary>
         /// <param name="typeDef"></param>
@@ -1235,12 +1291,15 @@ namespace FishNet.CodeGenerating.Processing
                 readSyncMethodDef = new MethodDefinition(CodegenSession.ObjectHelper.NetworkBehaviour_ReadSyncVar_MethodRef.Name,
                 (MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.Virtual),
                     typeDef.Module.TypeSystem.Void);
+                readSyncMethodDef.ReturnType = CodegenSession.GeneralHelper.GetTypeReference(typeof(bool));
 
                 CodegenSession.GeneralHelper.CreateParameter(readSyncMethodDef, typeof(PooledReader));
                 CodegenSession.GeneralHelper.CreateParameter(readSyncMethodDef, typeof(uint));
                 readSyncMethodDef.Body.InitLocals = true;
 
                 processor = readSyncMethodDef.Body.GetILProcessor();
+                //Return false as fall through.
+                processor.Emit(OpCodes.Ldc_I4_0);
                 processor.Emit(OpCodes.Ret);
 
                 typeDef.Methods.Add(readSyncMethodDef);
@@ -1267,9 +1326,10 @@ namespace FishNet.CodeGenerating.Processing
 
             /* If there was a previously made read then set jmp goal to the first
              * condition for it. Otherwise set it to the last instruction, which would
-             * be a ret. */
+             * be a ret. Keep in mind if ret has a value we must go back 2 index
+             * rather than one. */
             jmpGoalInst = (_lastReadInstruction != null) ? _lastReadInstruction :
-                readSyncMethodDef.Body.Instructions[readSyncMethodDef.Body.Instructions.Count - 1];
+                readSyncMethodDef.Body.Instructions[readSyncMethodDef.Body.Instructions.Count - 2];
 
             //Check index first. if (index != syncIndex) return
             Instruction nextLastReadInstruction = processor.Create(OpCodes.Ldarg, indexParameterDef);
@@ -1294,7 +1354,8 @@ namespace FishNet.CodeGenerating.Processing
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldloc, nextValueVariableDef));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_0));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Call, accessorSetMethodRef));
-
+            //Return true when able to process.
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_1));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ret));
 
             _lastReadInstruction = nextLastReadInstruction;

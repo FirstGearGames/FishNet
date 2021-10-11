@@ -25,17 +25,13 @@ namespace FishNet.Object
         /// <returns></returns>
         public bool SceneObject => (SceneId > 0);
         /// <summary>
-        /// Owner of this object. Will be null if there is no owner. Owner is only visible to server.
-        /// </summary>
-        public NetworkConnection Owner { get; private set; } = null;
-        /// <summary>
-        /// Unique Id for this NetworkObject. This does not represent the object owner. See Connection for owner information.
+        /// Unique Id for this NetworkObject. This does not represent the object owner.
         /// </summary>
         public int ObjectId { get; private set; }
         /// <summary>
         /// True if this NetworkObject is deinitializing. Will also be true until Initialize is called. May be false until the object is cleaned up if object is destroyed without using Despawn.
         /// </summary>
-        public bool Deinitializing { get; private set; } = true;
+        internal bool Deinitializing { get; private set; } = true;
         /// <summary>
         /// NetworkBehaviours within the root and children of this object.
         /// </summary>
@@ -113,7 +109,7 @@ namespace FishNet.Object
         {
             Deinitializing = false;
             NetworkManager = networkManager;
-            Owner = owner;
+            SetOwner(owner);
             ObjectId = objectId;
 
             if (asServer)
@@ -196,7 +192,7 @@ namespace FishNet.Object
             }
 
             NetworkConnection prevOwner = Owner;
-            Owner = newOwner;
+            SetOwner(newOwner);
             //After changing owners invoke callbacks.
             InvokeOwnership(Owner, asServer);
 
@@ -243,10 +239,27 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Sets the owner of this object.
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <param name="allowNull"></param>
+        private void SetOwner(NetworkConnection owner, bool allowNull = false)
+        {
+            if (!allowNull && owner == null)
+            {
+                NetworkManager nm = InstanceFinder.NetworkManager;
+                if (nm != null)
+                    owner = nm.EmptyConnection;
+            }
+
+            Owner = owner;
+        }
+
+        /// <summary>
         /// Returns if this NetworkObject is a scene object, and has changed.
         /// </summary>
         /// <returns></returns>
-        public ChangedTransformProperties GetChangedSceneTransformProperties()
+        internal ChangedTransformProperties GetChangedSceneTransformProperties()
         {
             ChangedTransformProperties ctp = ChangedTransformProperties.Unset;
             if (transform.position != SceneTransformProperties.Position)

@@ -5,7 +5,9 @@ using UnityEngine;
 
 namespace FishNet.Authenticating
 {
-
+    /// <summary>
+    /// When inherited from this can be used to create a custom authentication process before clients may communicate with the server.
+    /// </summary>
     public abstract class Authenticator : MonoBehaviour
     {
         #region Protected.

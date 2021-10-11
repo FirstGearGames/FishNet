@@ -1,8 +1,6 @@
 ﻿using FishNet.Managing;
-using FishNet.Managing.Timing;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using UnityEngine;
 
 namespace FishNet.Object.Synchronizing.Internal
 {
@@ -142,7 +140,11 @@ namespace FishNet.Object.Synchronizing.Internal
                 IsDirty = false;
             }
         }
-
+        /// <summary>
+        /// True if dirty and enough time has passed to write changes.
+        /// </summary>
+        /// <param name="tick"></param>
+        /// <returns></returns>
         internal bool WriteTimeMet(uint tick)
         {
             return (IsDirty && tick >= NextSyncTick);

@@ -1,12 +1,10 @@
 namespace FishNet.Object.Synchronizing
 {
     /// <summary>
-    /// Permission type.
+    /// Which clients or server may write updates.
     /// </summary>
     public enum WritePermission
     {
-        Observers,
-        ServerOnly,
-        OwnerOnly
+        ServerOnly
     }
 }

@@ -1,5 +1,8 @@
 ﻿namespace FishNet.Managing.Logging
 {
+    /// <summary>
+    /// Type of logging being filtered.
+    /// </summary>
     public enum LoggingType : byte
     {
         /// <summary>

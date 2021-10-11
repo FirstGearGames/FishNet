@@ -6,6 +6,9 @@ using UnityEngine;
 namespace FishNet.Transporting
 {
 
+    /// <summary>
+    /// Processes connection states, and data sent to and from a socket.
+    /// </summary>
     public abstract class Transport : MonoBehaviour
     {
         #region Private.
@@ -29,7 +32,7 @@ namespace FishNet.Transporting
         /// <summary>
         /// Gets the address of a remote connection Id.
         /// </summary>
-        /// <param name="connectionId"></param>
+        /// <param name="connectionId">Connectionid to get the address for.</param>
         /// <returns></returns>
         public abstract string GetConnectionAddress(int connectionId);
         /// <summary>
@@ -47,17 +50,17 @@ namespace FishNet.Transporting
         /// <summary>
         /// Handles a ConnectionStateArgs for the local client.
         /// </summary>
-        /// <param name="connectionStateArgs"></param>
+        /// <param name="connectionStateArgs">Data being handled.</param>
         public abstract void HandleClientConnectionState(ClientConnectionStateArgs connectionStateArgs);
         /// <summary>
         /// Handles a ConnectionStateArgs for the local server.
         /// </summary>
-        /// <param name="connectionStateArgs"></param>
+        /// <param name="connectionStateArgs">Data being handled.</param>
         public abstract void HandleServerConnectionState(ServerConnectionStateArgs connectionStateArgs);
         /// <summary>
         /// Handles a ConnectionStateArgs for a remote client.
         /// </summary>
-        /// <param name="connectionStateArgs"></param>
+        /// <param name="connectionStateArgs">Data being handled.</param>
         public abstract void HandleRemoteConnectionState(RemoteConnectionStateArgs connectionStateArgs);
         /// <summary>
         /// Gets the current local ConnectionState.
@@ -75,16 +78,14 @@ namespace FishNet.Transporting
         /// <summary>
         /// Sends to the server.
         /// </summary>
-        /// <param name="toServer">True if sending to the server.</param>        
         /// <param name="channelId">Channel to use.</param>
-        /// /// <param name="segment">Data to send.</param>
-        /// <param name="connectionId">ConnectionId to send to. When sending to clients can be used to specify which connection to send to.</param>
+        /// <param name="segment">Data to send.</param>
         public abstract void SendToServer(byte channelId, ArraySegment<byte> segment);
         /// <summary>
         /// Sends to a client.
         /// </summary>
         /// <param name="channelId">Channel to use.</param>
-        /// /// <param name="segment">Data to send.</param>
+        /// <param name="segment">Data to send.</param>
         /// <param name="connectionId">ConnectionId to send to. When sending to clients can be used to specify which connection to send to.</param>
         public abstract void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId);
         #endregion
@@ -97,7 +98,7 @@ namespace FishNet.Transporting
         /// <summary>
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
-        /// <param name="receivedDataArgs"></param>
+        /// <param name="receivedDataArgs">Data being handled.</param>
         public abstract void HandleClientReceivedDataArgs(ClientReceivedDataArgs receivedDataArgs);
         /// <summary>
         /// Called when the server receives data.
@@ -106,7 +107,7 @@ namespace FishNet.Transporting
         /// <summary>
         /// Handles a ServerReceivedDataArgs.
         /// </summary>
-        /// <param name="receivedDataArgs"></param> //muchlater convert events to a loop to read directly from transport.
+        /// <param name="receivedDataArgs">Data being handled.</param>
         public abstract void HandleServerReceivedDataArgs(ServerReceivedDataArgs receivedDataArgs);
         #endregion
 
@@ -127,7 +128,7 @@ namespace FishNet.Transporting
         /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Maximum clients transport allows.</returns>
         public virtual int GetMaximumClients()
         {
             bool canLog = (NetworkManager == null) ? NetworkManager.StaticCanLog(LoggingType.Warning) : NetworkManager.CanLog(LoggingType.Warning);
@@ -138,7 +139,7 @@ namespace FishNet.Transporting
         /// <summary>
         /// Sets the maximum number of clients allowed to connect to the server. If applied at runtime and clients exceed this value existing clients will stay connected but new clients may not connect.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="value">Maximum clients to allow.</param>
         public virtual void SetMaximumClients(int value)
         {
             bool canLog = (NetworkManager == null) ? NetworkManager.StaticCanLog(LoggingType.Warning) : NetworkManager.CanLog(LoggingType.Warning);
@@ -148,17 +149,17 @@ namespace FishNet.Transporting
         /// <summary>
         /// Sets which address the client will connect to.
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name="address">Address client will connect to.</param>
         public abstract void SetClientAddress(string address);
         /// <summary>
         /// Sets which address the server will bind to.
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name="address">Address server will bind to.</param>
         public abstract void SetServerBindAddress(string address);
         /// <summary>
         /// Sets which port to use.
         /// </summary>
-        /// <param name="port"></param>
+        /// <param name="port">Port to use.</param>
         public abstract void SetPort(ushort port);
         #endregion
 
@@ -192,24 +193,25 @@ namespace FishNet.Transporting
 
         #region Channels.
         /// <summary>
-        /// Returns how many channels the transport is using.
+        /// Returns how many channels the transport supports.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Number of channels.</returns>
         public abstract byte GetChannelCount();
         /// <summary>
         /// Returns which channel to use by default for reliable.
         /// </summary>
+        /// <returns>Channel as byte.</returns>
         public abstract byte GetDefaultReliableChannel();
         /// <summary>
         /// Returns which channel to use by default for unreliable.
         /// </summary>
+        /// <returns>Channel as byte.</returns>
         public abstract byte GetDefaultUnreliableChannel();
         /// <summary>
-        /// Gets the MTU for a channel. This should take header size into consideration.
-        /// For example, if MTU is 1200 and a packet header for this channel is 10 in size, this method should return 1190.
+        /// Gets the MTU for a channel.
         /// </summary>
-        /// <param name="channel"></param>
-        /// <returns></returns>
+        /// <param name="channel">Channel to get MTU for.</param>
+        /// <returns>MTU of channel.</returns>
         public abstract int GetMTU(byte channel);
         #endregion
 

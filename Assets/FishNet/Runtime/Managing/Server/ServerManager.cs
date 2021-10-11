@@ -10,16 +10,19 @@ using FishNet.Managing.Transporting;
 
 namespace FishNet.Managing.Server
 {
+    /// <summary>
+    /// A container for server data and actions.
+    /// </summary>
     [DisallowMultipleComponent]
     public partial class ServerManager : MonoBehaviour
     {
         #region Public.
         /// <summary>
-        /// Called after local server connection state changes. This is performed after the state change has been handled internally.
+        /// Called after local the server connection state changes.
         /// </summary>
         public event Action<ServerConnectionStateArgs> OnServerConnectionState;
         /// <summary>
-        /// Called when authenitcator has concluded a result for a connection. Boolean is true if authentication passed, false if failed.
+        /// Called when authenticator has concluded a result for a connection. Boolean is true if authentication passed, false if failed.
         /// </summary>
         public event Action<NetworkConnection, bool> OnAuthenticationResult;
         /// <summary>
@@ -31,7 +34,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         public bool Started { get; private set; } = false;
         /// <summary>
-        /// ObjectHandler for server objects.
+        /// Handling and information for objects on the server.
         /// </summary>
         public ServerObjects Objects { get; private set; } = null;
         /// <summary>

@@ -1,14 +1,12 @@
 using FishNet.Managing;
-using FishNet.Serializing.Helping;
 using System;
 using System.Collections.Generic;
 
 namespace FishNet.Serializing
 {
     /// <summary>
-    /// NetworkReader to be used with <see cref="ReaderPool">ReaderPool</see>
+    /// Reader which is reused to save on garbage collection and performance.
     /// </summary>
-    //[CodegenIncludeInternal]
     public sealed class PooledReader : Reader, IDisposable
     {
         internal PooledReader(byte[] bytes, NetworkManager networkManager) : base(bytes, networkManager) { }
@@ -17,10 +15,8 @@ namespace FishNet.Serializing
     }
 
     /// <summary>
-    /// Pool of NetworkReaders
-    /// <para>Use this pool instead of <see cref="Reader">NetworkReader</see> to reduce memory allocation</para>
+    /// Collection of PooledReader. Stores and gets PooledReader.
     /// </summary>
-    //[CodegenIncludeInternal]
     public static class ReaderPool
     {
         #region Private.

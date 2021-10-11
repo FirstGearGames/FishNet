@@ -1,4 +1,5 @@
-﻿using FishNet.Managing.Logging;
+﻿using FishNet.Documenting;
+using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
@@ -131,13 +132,12 @@ namespace FishNet.Object
         internal void OnSyncType(PooledReader reader, int length, bool isSyncObject)
         {
             int readerStart = reader.Position;
-            SyncBase sb;
             while (reader.Position - readerStart < length)
             {
                 byte index = reader.ReadByte();
                 if (isSyncObject)
                 {
-                    if (_syncObjects.TryGetValue(index, out sb))
+                    if (_syncObjects.TryGetValue(index, out SyncBase sb))
                     {
                         sb.Read(reader);
                     }
@@ -167,7 +167,8 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="index"></param>
-        internal virtual void ReadSyncVar(PooledReader reader, uint index) { }
+        [APIExclude]
+        internal virtual bool ReadSyncVar(PooledReader reader, uint index) { return false; }
 
         /// <summary>
         /// Writers dirty SyncTypes if their write tick has been met.

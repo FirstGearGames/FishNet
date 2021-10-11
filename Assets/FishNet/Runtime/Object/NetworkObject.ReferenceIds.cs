@@ -47,7 +47,7 @@ namespace FishNet.Object
         /// <summary>
         /// Id for this scene object.
         /// </summary>
-        public ulong SceneId
+        internal ulong SceneId
         {
             get => _sceneId;
             private set => _sceneId = value;

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace FishNet.Managing.Transporting
 {
 
-    public class SplitReader
+    internal class SplitReader
     {
         #region Private.
         /// <summary>

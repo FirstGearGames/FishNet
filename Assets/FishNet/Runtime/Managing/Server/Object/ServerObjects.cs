@@ -7,10 +7,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using FishNet.Utility;
+using FishNet.Utility.Performance;
 
 namespace FishNet.Managing.Server.Object
 {
+    /// <summary>
+    /// Handles objects and information about objects for the server. See ManagedObjects for inherited options.
+    /// </summary>
     public partial class ServerObjects : ManagedObjects
     {
         #region Public.
@@ -44,7 +47,7 @@ namespace FishNet.Managing.Server.Object
         private List<NetworkBehaviour> _dirtySyncObjectBehaviours = new List<NetworkBehaviour>(20);
         #endregion
 
-        public ServerObjects(NetworkManager networkManager)
+        internal ServerObjects(NetworkManager networkManager)
         {
             base.NetworkManager = networkManager;
             InitializeObservers();
@@ -148,7 +151,7 @@ namespace FishNet.Managing.Server.Object
         /// Gets the next ObjectId to use for NetworkObjects.
         /// </summary>
         /// <returns></returns>
-        protected override int GetNextNetworkObjectId()
+        protected internal override int GetNextNetworkObjectId()
         {
             //Favor the cache first.
             if (_objectIdCache.Count > 0)
@@ -181,7 +184,7 @@ namespace FishNet.Managing.Server.Object
         /// </summary>
         /// <param name="s"></param>
         /// <param name="arg1"></param>
-        protected override void SceneManager_sceneLoaded(Scene s, LoadSceneMode arg1)
+        protected internal override void SceneManager_sceneLoaded(Scene s, LoadSceneMode arg1)
         {
             base.SceneManager_sceneLoaded(s, arg1);
 
@@ -193,7 +196,7 @@ namespace FishNet.Managing.Server.Object
         /// <summary>
         /// Setup all NetworkObjects in scenes. Should only be called when server is active.
         /// </summary>
-        protected void SetupSceneObjects()
+        protected internal void SetupSceneObjects()
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
                 SetupSceneObjects(SceneManager.GetSceneAt(i));

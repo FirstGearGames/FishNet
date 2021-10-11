@@ -13,6 +13,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using FishNet.Managing.Logging;
+using FishNet.Object.Delegating;
 
 namespace FishNet.CodeGenerating.Helping
 {

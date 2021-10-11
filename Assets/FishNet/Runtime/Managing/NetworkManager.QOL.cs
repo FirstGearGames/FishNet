@@ -21,7 +21,7 @@ namespace FishNet.Managing
 
 
         /// <summary>
-        /// Returns the index within SpawnablePrefabs for prefab.
+        /// Gets the index a prefab uses. Can be used in conjuction with GetPrefab.
         /// </summary>
         /// <param name="prefab"></param>
         /// <param name="asServer">True if to get from the server collection.</param>
@@ -41,7 +41,7 @@ namespace FishNet.Managing
         }
 
         /// <summary>
-        /// Gets the NetworkObject prefab for index.
+        /// Gets the NetworkObject prefab for index. Can be used in conjuction with GetPrefabIndex.
         /// </summary>
         /// <param name="asServer">True if to get from the server collection.</param>
         /// <param name="index"></param>

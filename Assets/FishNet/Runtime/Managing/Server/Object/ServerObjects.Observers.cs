@@ -5,8 +5,7 @@ using FishNet.Observing;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
-using FishNet.Utility;
-using UnityEngine;
+using FishNet.Utility.Performance;
 
 namespace FishNet.Managing.Server.Object
 {
@@ -142,18 +141,18 @@ namespace FishNet.Managing.Server.Object
         }
 
         /// <summary>
-        /// Adds networkObserver to be updated regularly.
+        /// Indicates that a networkObserver component should be updated regularly. This is done automatically.
         /// </summary>
-        /// <param name="networkObject"></param>
+        /// <param name="networkObject">NetworkObject to be updated.</param>
         public void AddTimedNetworkObserver(NetworkObject networkObject)
         {
             _timedNetworkObservers.Add(networkObject);
         }
 
         /// <summary>
-        /// Removes networkObserver from being updated regularly.
+        /// Indicates that a networkObserver component no longer needs to be updated regularly. This is done automatically.
         /// </summary>
-        /// <param name="networkObject"></param>
+        /// <param name="networkObject">NetworkObject to be updated.</param>
         public void RemoveTimedNetworkObserver(NetworkObject networkObject)
         {
             _timedNetworkObservers.Remove(networkObject);

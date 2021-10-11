@@ -1,12 +1,13 @@
+using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace FishNet.Managing.Object
 {
 
+    [APIExclude]
     [CreateAssetMenu(fileName = "New SinglePrefabObjects", menuName = "FishNet/Spawnable Prefabs/Single Prefab Objects")]
     public class SinglePrefabObjects : PrefabObjects
     {

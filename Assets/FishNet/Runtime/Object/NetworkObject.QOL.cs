@@ -10,19 +10,19 @@ namespace FishNet.Object
     {
         #region Public.
         /// <summary>
-        /// True if the client is running and authenticated.
+        /// True if the client is active and authenticated.
         /// </summary>
         public bool IsClient => NetworkManager.IsClient;
         /// <summary>
-        /// True if client only.
+        /// True if only the client is active, and authenticated.
         /// </summary>
         public bool IsClientOnly => (!IsServer && IsClient);
         /// <summary>
-        /// True if the server is running.
+        /// True if server is active.
         /// </summary>
         public bool IsServer => NetworkManager.IsServer;
         /// <summary>
-        /// True if server only.
+        /// True if only the server is active.
         /// </summary>
         public bool IsServerOnly => (IsServer && !IsClient);
         /// <summary>
@@ -30,23 +30,27 @@ namespace FishNet.Object
         /// </summary>
         public bool IsHost => (IsServer && IsClient);
         /// <summary>
-        /// True if the owner of this object. Only contains value on clients.
+        /// True if the local client is the owner of this object.
         /// </summary>
         public bool IsOwner => (NetworkManager == null || !OwnerIsValid || !IsClient) ? false : (NetworkManager.ClientManager.Connection == Owner);
-        /// <summary> 
-        /// True if the owner is a valid connection.
+        /// <summary>
+        /// Owner of this object.
+        /// </summary>
+        public NetworkConnection Owner { get; private set; } = null;
+        /// <summary>
+        /// True if there is an owner.
         /// </summary>
         public bool OwnerIsValid => (Owner == null) ? false : (Owner.IsValid);
         /// <summary>
-        /// ClientId for this NetworkObject owner. Only visible to server.
+        /// ClientId for this NetworkObject owner.
         /// </summary>
         public int OwnerId => (!OwnerIsValid) ? -1 : Owner.ClientId;
         /// <summary>
-        /// Returns if this object is spawned.
+        /// True if the object is initialized for the network.
         /// </summary>
         public bool IsSpawned => (!Deinitializing && ObjectId >= 0);
         /// <summary>
-        /// Returns the local connection for the client calling this method.
+        /// The local connection of the client calling this method.
         /// </summary>
         public NetworkConnection LocalConnection => (NetworkManager == null) ? new NetworkConnection() : NetworkManager.ClientManager.Connection;
         #endregion
@@ -108,25 +112,6 @@ namespace FishNet.Object
             return canExecute;
         }
 
-        /// <summary>
-        /// Sends a Broadcast to observers for this NetworkObject.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="networkObject"></param>
-        /// <param name="message"></param>
-        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
-        /// <param name="channel"></param>
-        public void Broadcast<T>(T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
-        {
-            if (NetworkManager == null)
-            {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot send broadcast from {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
-                return;
-            }
-
-            NetworkManager.ServerManager.Broadcast(Observers, message, requireAuthenticated, channel);
-        }
     }
 
 }

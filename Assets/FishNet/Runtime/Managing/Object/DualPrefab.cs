@@ -1,14 +1,11 @@
 using FishNet.Object;
 
-namespace FishNet.Managing
+namespace FishNet.Managing.Object
 {
 
-    public enum PrefabLinkingType
-    {
-        Single = 1,
-        Dual = 2
-    }
-
+    /// <summary>
+    /// When using dual prefabs, defines which prefab to spawn for server, and which for clients.
+    /// </summary>
     [System.Serializable]
     public struct DualPrefab
     {

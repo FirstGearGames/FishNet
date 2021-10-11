@@ -22,8 +22,9 @@ namespace FishNet.Object
         public virtual void OnOwnershipServer(NetworkConnection newOwner) { }
         /// <summary>
         /// Called on the server after a spawn message for this object has been sent to clients.
-        /// Useful for sending remote calls or actions to clients .
+        /// Useful for sending remote calls or data to clients.
         /// </summary>
+        /// <param name="connection">Connection the object is being spawned for.</param>
         public virtual void OnSpawnServer(NetworkConnection connection) { }
         /// <summary>
         /// Called on the server before a despawn message for this object has been sent to clients.

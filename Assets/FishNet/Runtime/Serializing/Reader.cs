@@ -1,29 +1,35 @@
 using FishNet.Connection;
+using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
+using FishNet.Utility.Constant;
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
+
+[assembly: InternalsVisibleTo(Constants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
 {
     /// <summary>
     /// Used for read references to generic types.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    //[CodegenIncludeInternal]
+    [APIExclude]
     public static class GenericReader<T>
     {
         public static Func<Reader, T> Read { internal get; set; }
         public static Func<Reader, AutoPackType, T> ReadAutoPack { internal get; set; }
     }
 
-    //[CodegenIncludeInternal]
+    /// <summary>
+    /// Reads data from a buffer.
+    /// </summary>
     public class Reader
     {
         #region Public.

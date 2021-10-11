@@ -1,13 +1,13 @@
-﻿using FishNet.Managing;
+﻿using FishNet.Documenting;
+using FishNet.Managing;
 using FishNet.Managing.Logging;
-using FishNet.Utility;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 
 namespace FishNet.Connection
 {
-
-    public class PacketBundle
+    internal class PacketBundle
     {
         /// <summary>
         /// Next index to write data to for the current bufferIndex.

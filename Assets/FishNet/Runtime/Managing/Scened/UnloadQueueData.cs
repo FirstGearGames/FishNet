@@ -1,13 +1,14 @@
 ﻿using FishNet.Connection;
-using FishNet.Managing.Scened.Data;
-using FishNet.Serializing.Helping;
-using System.Collections.Generic;
-using System.Linq;
+using FishNet.Utility.Constant;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo(Constants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Managing.Scened.Data
 {
 
-    //[CodegenIncludeInternal]
+    /// <summary>
+    /// Data generated when unloading a scene.
+    /// </summary>
     public class UnloadQueueData
     {
         /// <summary>
@@ -34,15 +35,8 @@ namespace FishNet.Managing.Scened.Data
         [System.NonSerialized]
         public readonly bool AsServer;
 
-
-
-        public UnloadQueueData() { }
-        /// <summary>
-        /// Creates a SceneQueueData.
-        /// </summary>
-        /// /// <param name="singleScene"></param>
-        /// <param name="additiveScenes"></param>
-        public UnloadQueueData(SceneScopeTypes scopeType, NetworkConnection[] conns, SceneUnloadData sceneUnloadData ,string[] globalScenes, bool asServer)
+        internal UnloadQueueData() { }
+        internal UnloadQueueData(SceneScopeTypes scopeType, NetworkConnection[] conns, SceneUnloadData sceneUnloadData ,string[] globalScenes, bool asServer)
         {
             ScopeType = scopeType;
             Connections = conns;

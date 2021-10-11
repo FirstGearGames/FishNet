@@ -11,10 +11,13 @@ using UnityEngine;
 using FishNet.Managing.Scened;
 using FishNet.Authenticating;
 using FishNet.Object;
+using FishNet.Documenting;
 
 namespace FishNet.Managing
 {
-    //Set execution order to make sure this fires Awake first.
+    /// <summary>
+    /// Acts as a container for all things related to your networking session.
+    /// </summary>
     [DefaultExecutionOrder(short.MinValue)]
     public partial class NetworkManager : MonoBehaviour
     {
@@ -32,7 +35,7 @@ namespace FishNet.Managing
         /// </summary>
         public bool IsClient => ClientManager.Started;
         /// <summary>
-        /// True if only the client is active and authenticated.
+        /// True if only the client is active, and authenticated.
         /// </summary>
         public bool IsClientOnly => (!ServerManager.Started && ClientManager.Started);
         /// <summary>
@@ -40,11 +43,11 @@ namespace FishNet.Managing
         /// </summary>
         public bool IsHost => (ServerManager.Started && ClientManager.Started);
         /// <summary>
-        /// NetworkServer for this NetworkManager.
+        /// ServerManager for this NetworkManager.
         /// </summary>
         public ServerManager ServerManager { get; private set; } = null;
         /// <summary>
-        /// NetworkClient for this NetworkManager.
+        /// ClientManager for this NetworkManager.
         /// </summary>
         public ClientManager ClientManager { get; private set; } = null;
         /// <summary>
@@ -64,8 +67,9 @@ namespace FishNet.Managing
         /// </summary>
         public Authenticator Authenticator { get; private set; } = null;
         /// <summary>
-        /// An empty connection. Passed around when a connection cannot be found to prevent object creation per not found case.
+        /// An empty connection reference. Used when a connection cannot be found to prevent object creation.
         /// </summary>
+        [APIExclude]
         public NetworkConnection EmptyConnection { get; private set; } = new NetworkConnection();
         #endregion
 
@@ -105,7 +109,7 @@ namespace FishNet.Managing
             SetDontDestroyOnLoad();
             SetRunInBackground();
             EmptyConnection = new NetworkConnection();
-            AddransportManager();
+            AddTransportManager();
             AddServerAndClientManagers();
             AddTimeManager();
             AddSceneManager(); ;
@@ -190,7 +194,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Adds TransportManager.
         /// </summary>
-        private void AddransportManager()
+        private void AddTransportManager()
         {
             if (gameObject.TryGetComponent<TransportManager>(out TransportManager result))
                 TransportManager = result;

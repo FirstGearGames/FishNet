@@ -5,7 +5,7 @@ namespace FishNet.Transporting
 {
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(short.MaxValue)]
-    public class NetworkWriterLoop : MonoBehaviour
+    internal class NetworkWriterLoop : MonoBehaviour
     {
         #region Private.
         /// <summary>

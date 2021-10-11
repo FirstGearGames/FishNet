@@ -1,11 +1,13 @@
-﻿using FishNet.Constants;
+﻿using FishNet.Utility.Constant;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
 [assembly: InternalsVisibleTo(Constants.CODEGEN_ASSEMBLY_NAME)]
 namespace FishNet.Object
 {
-
+    /// <summary>
+    /// Scripts which inherit from NetworkBehaviour can be used to gain insight of, and perform actions on the network.
+    /// </summary>
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Debug //debug
@@ -15,10 +17,9 @@ namespace FishNet.Object
         #endregion
 
         /// <summary>
-        /// Returns if this NetworkBehaviour is spawned.
+        /// True if this NetworkBehaviour is initialized for the network.
         /// </summary>
         public bool IsSpawned => (NetworkObject != null && NetworkObject.IsSpawned);
-
         /// <summary>
         /// ComponentIndex for this NetworkBehaviour.
         /// </summary>
@@ -34,7 +35,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="networkObject"></param>
         /// <param name="componentIndex"></param>
-        public void PreInitialize(NetworkObject networkObject, byte componentIndex)
+        internal void PreInitialize(NetworkObject networkObject, byte componentIndex)
         {
             NetworkObject = networkObject;
             ComponentIndex = componentIndex;

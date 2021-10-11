@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using FishNet.Managing.Logging;
+using FishNet.Documenting;
 
 namespace FishNet.Managing
 {
@@ -40,6 +41,7 @@ namespace FishNet.Managing
         /// </summary>
         /// <param name="loggingType"></param>
         /// <returns></returns>
+        [APIExclude]
         public static bool StaticCanLog(LoggingType loggingType)
         {
             NetworkManager nm = InstanceFinder.NetworkManager;
@@ -52,7 +54,7 @@ namespace FishNet.Managing
         /// <summary>
         /// True if can log for loggingType.
         /// </summary>
-        /// <param name="loggingType"></param>
+        /// <param name="loggingType">Type of logging being filtered.</param>
         /// <returns></returns>
         public bool CanLog(LoggingType loggingType)
         {

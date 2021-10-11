@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace FishNet.Utility
+namespace FishNet.Utility.Performance
 {
 
-    public static class ByteArrayPool
+    internal static class ByteArrayPool
     {
         /// <summary>
         /// Current buffers.

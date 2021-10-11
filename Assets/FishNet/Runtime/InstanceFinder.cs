@@ -13,6 +13,9 @@ using UnityEditor;
 namespace FishNet
 {
 
+    /// <summary>
+    /// Used to globally get information from the first found instance of NetworkManager.
+    /// </summary>
     public static class InstanceFinder
     {
 

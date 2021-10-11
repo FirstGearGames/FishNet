@@ -3,6 +3,9 @@ using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Scened.Eventing
 {
+    /// <summary>
+    /// Data container about a scene presence change for a client.
+    /// </summary>
     public struct ClientPresenceChangeEventArgs
     {
 
@@ -19,7 +22,7 @@ namespace FishNet.Managing.Scened.Eventing
         /// </summary>
         public bool Added;
 
-        public ClientPresenceChangeEventArgs(Scene scene, NetworkConnection conn, bool added)
+        internal ClientPresenceChangeEventArgs(Scene scene, NetworkConnection conn, bool added)
         {
             Scene = scene;
             Connection = conn;

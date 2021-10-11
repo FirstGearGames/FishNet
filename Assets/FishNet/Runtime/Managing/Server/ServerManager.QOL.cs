@@ -7,9 +7,10 @@ namespace FishNet.Managing.Server
     public partial class ServerManager : MonoBehaviour
     {
         /// <summary>
-        /// Spawns an object over the network. Only call from the server.
+        /// Spawns an object over the network. Can only be called on the server.
         /// </summary>
-        /// <param name="go"></param>
+        /// <param name="go">GameObject instance to spawn.</param>
+        /// <param name="ownerConnection">Connection to give ownership to.</param>
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
         {
             if (go == null)
@@ -24,9 +25,9 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Despawns an object over the network. Only call from the server.
+        /// Despawns an object over the network. Can only be called on the server.
         /// </summary>
-        /// <param name="go"></param>
+        /// <param name="go">GameObject instance to despawn.</param>
         public void Despawn(GameObject go)
         {
             if (go == null)
@@ -41,9 +42,9 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Despawns an object over the network. Only call from the server.
+        /// Despawns an object over the network. Can only be called on the server.
         /// </summary>
-        /// <param name="networkObject"></param>
+        /// <param name="networkObject">NetworkObject instance to despawn.</param>
         public void Despawn(NetworkObject networkObject)
         {
             Objects.Despawn(networkObject, true);

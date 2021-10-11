@@ -3,34 +3,39 @@
 namespace FishNet.Managing.Scened.Eventing
 {
 
-
+    /// <summary>
+    /// Data container about a scene unload start.
+    /// </summary>
     public struct SceneUnloadStartEventArgs
     {
         /// <summary>
-        /// RawData used by the current scene action.
+        /// Queue data used by the current scene action.
         /// </summary>
-        public readonly UnloadQueueData RawData;
+        public readonly UnloadQueueData QueueData;
 
-        public SceneUnloadStartEventArgs(UnloadQueueData sqd)
+        internal SceneUnloadStartEventArgs(UnloadQueueData sqd)
         {
-            RawData = sqd;
+            QueueData = sqd;
         }
     }
 
+    /// <summary>
+    /// Data container about a scene unload end.
+    /// </summary>
     public struct SceneUnloadEndEventArgs
     {
         /// <summary>
-        /// RawData used by the current scene action.
+        /// Queue data used by the current scene action.
         /// </summary>
-        public readonly UnloadQueueData RawData;
+        public readonly UnloadQueueData QueueData;
         /// <summary>
         /// Handles of scenes which were successfully unloaded.
         /// </summary>
         public int[] UnloadedSceneHandles;
 
-        public SceneUnloadEndEventArgs(UnloadQueueData sqd, int[] unloadedHandles)
+        internal SceneUnloadEndEventArgs(UnloadQueueData sqd, int[] unloadedHandles)
         {
-            RawData = sqd;
+            QueueData = sqd;
             UnloadedSceneHandles = unloadedHandles;
         }
     }

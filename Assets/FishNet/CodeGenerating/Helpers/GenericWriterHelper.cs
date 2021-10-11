@@ -1,5 +1,4 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
-using FishNet.CodeGenerating.ILCore;
 using FishNet.Serializing;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -7,9 +6,7 @@ using Mono.Cecil.Rocks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.CompilationPipeline.Common.Diagnostics;
 using UnityEngine;
-using UnityEngine.Scripting;
 
 namespace FishNet.CodeGenerating.Helping
 {

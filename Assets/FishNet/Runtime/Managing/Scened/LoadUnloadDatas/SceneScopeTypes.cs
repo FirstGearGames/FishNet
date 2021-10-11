@@ -1,9 +1,17 @@
 ﻿namespace FishNet.Managing.Scened.Data
 {
-
+    /// <summary>
+    /// Type of scopes for a scene load or unload.
+    /// </summary>
     public enum SceneScopeTypes : byte
     {
+        /// <summary>
+        /// Scene action occured for all clients.
+        /// </summary>
         Global = 0,
+        /// <summary>
+        /// Scene action occurred for specified clients.
+        /// </summary>
         Connections = 1
     }
 

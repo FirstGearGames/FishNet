@@ -320,7 +320,7 @@ public static void Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadOp
         writer.WriteBoolean(false);
 }
 
-public static UnloadScenesBroadcast Read___FishNetu002EManagingu002EScenedu002EBroadcastu002EUnloadScenesBroadcast(
+    public static UnloadScenesBroadcast Read___FishNetu002EManagingu002EScenedu002EBroadcastu002EUnloadScenesBroadcast(
       this Reader reader)
     {
       return new UnloadScenesBroadcast()

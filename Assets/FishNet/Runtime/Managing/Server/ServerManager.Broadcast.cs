@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using FishNet.Broadcast;
-using FishNet.Object.Helping;
 using FishNet.Broadcast.Helping;
 using FishNet.Transporting;
 using FishNet.Object;
@@ -34,7 +33,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Registers a method to call when a Broadcast arrives.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">Type of broadcast being registered.</typeparam>
         /// <param name="handler">Method to call.</param>
         /// <param name="requireAuthentication">True if the client must be authenticated for the method to call.</param>
         public void RegisterBroadcast<T>(Action<NetworkConnection, T> handler, bool requireAuthentication = true) where T : struct, IBroadcast
@@ -68,7 +67,8 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Unregisters a method call from a Broadcast type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">Type of broadcast being unregistered.</typeparam>
+        /// <param name="handler">Method to unregister.</param>
         public void UnregisterBroadcast<T>(Action<NetworkConnection, T> handler) where T : struct, IBroadcast
         {
             ushort key = BroadcastHelper.GetKey<T>();
@@ -152,13 +152,13 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Sends a Broadcast to connection.
+        /// Sends a broadcast to a connection.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="connection"></param>
-        /// <param name="message"></param>
-        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
-        /// <param name="channel"></param>
+        /// <typeparam name="T">Type of broadcast to send.</typeparam>
+        /// <param name="connection">Connection to send to.</param>
+        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name="requireAuthenticated">True if the client must be authenticated for this broadcast to send.</param>
+        /// <param name="channel">Channel to send on,</param>
         public void Broadcast<T>(NetworkConnection connection, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!Started)
@@ -184,13 +184,13 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Sends a Broadcast to connections.
+        /// Sends a broadcast to connections.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="connections"></param>
-        /// <param name="message"></param>
-        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
-        /// <param name="channel"></param>
+        /// <typeparam name="T">Type of broadcast to send.</typeparam>
+        /// <param name="connections">Connections to send to.</param>
+        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name="requireAuthenticated">True if the clients must be authenticated for this broadcast to send.</param>
+        /// <param name="channel">Channel to send on,</param>
         public void Broadcast<T>(HashSet<NetworkConnection> connections, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!Started)
@@ -224,13 +224,13 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Sends a Broadcast to observers for networkObject.
+        /// Sends a broadcast to observers.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="networkObject"></param>
-        /// <param name="message"></param>
-        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
-        /// <param name="channel"></param>
+        /// <typeparam name="T">Type of broadcast to send.</typeparam>
+        /// <param name="networkObject">NetworkObject to use Observers from.</param>
+        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name="requireAuthenticated">True if the clients must be authenticated for this broadcast to send.</param>
+        /// <param name="channel">Channel to send on,</param>
         public void Broadcast<T>(NetworkObject networkObject, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (networkObject == null)
@@ -247,10 +247,10 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Sends a broadcast to all clients.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="message"></param>
-        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
-        /// <param name="channel"></param>
+        /// <typeparam name="T">Type of broadcast to send.</typeparam>
+        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name="requireAuthenticated">True if the clients must be authenticated for this broadcast to send.</param>
+        /// <param name="channel">Channel to send on,</param>
         public void Broadcast<T>(T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!Started)

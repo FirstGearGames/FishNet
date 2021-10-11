@@ -5,16 +5,14 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-    public class RpcAttribute : Attribute { }
-
     /// <summary>
     /// ServerRpc methods will send messages to the server.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class ServerRpcAttribute : RpcAttribute
+    public class ServerRpcAttribute : Attribute
     {
         /// <summary>
-        /// Whether or not the ServerRpc should only be run if executed by the owner of the object
+        /// True to only allow the owning client to call this RPC.
         /// </summary>
         public bool RequireOwnership = true;
     }
@@ -23,7 +21,7 @@ namespace FishNet.Object
     /// ObserversRpc methods will send messages to all observers.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class ObserversRpcAttribute : RpcAttribute
+    public class ObserversRpcAttribute : Attribute
     {
         /// <summary>
         /// True to also send data to the owner of object.
@@ -40,7 +38,7 @@ namespace FishNet.Object
     /// TargetRpc methods will send messages to a single client.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class TargetRpcAttribute : RpcAttribute { }
+    public class TargetRpcAttribute : Attribute { }
 
     /// <summary>
     /// Prevents a method from running if server is not active.
@@ -50,24 +48,23 @@ namespace FishNet.Object
     public class ServerAttribute : Attribute
     {
         /// <summary>
-        /// Type of using to use when IsServer check fails.
+        /// Type of logging to use when the IsServer check fails.
         /// </summary>
         public LoggingType Logging = LoggingType.Off;
     }
 
     /// <summary>
     /// Prevents this method from running if client is not active.
-    /// <para>Can only be used inside a NetworkBehaviour</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class ClientAttribute : Attribute
     {
         /// <summary>
-        /// Type of using to use when IsClient check fails.
+        /// Type of logging to use when the IsClient check fails.
         /// </summary>
         public LoggingType Logging = LoggingType.Off;
         /// <summary>
-        /// Whether or not the ServerRpc should only be run if executed by the owner of the object
+        /// True to only allow a client to run the method if they are owner of the object.
         /// </summary>
         public bool RequireOwnership = false;
     }
@@ -75,11 +72,11 @@ namespace FishNet.Object
 
 
 namespace FishNet.Object.Synchronizing
-{ 
+{
 
     /// <summary>
-    /// SyncObjects are used to synchronize collections from the server to all clients automatically.
-    /// <para>Value must be changed on server, not directly by clients.
+    /// Synchronizes collections or objects from the server to clients. Can be used with custom SyncObjects.
+    /// Value must be changed on server.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public class SyncObjectAttribute : PropertyAttribute
@@ -95,8 +92,8 @@ namespace FishNet.Object.Synchronizing
     }
 
     /// <summary>
-    /// SyncVars are used to synchronize a variable from the server to all clients automatically.
-    /// <para>Value must be changed on server, not directly by clients. Hook parameter allows you to define a client-side method to be invoked when the client gets an update from the server.</para>
+    /// Synchronizes a variable from server to clients automatically.
+    /// Value must be changed on server.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public class SyncVarAttribute : PropertyAttribute
@@ -114,7 +111,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public Channel Channel;
         ///<summary>
-        ///A function that should be called on the client when the value changes.
+        /// Method which will be called on the server and clients when the value changes.
         ///</summary>
         public string OnChange;
     }

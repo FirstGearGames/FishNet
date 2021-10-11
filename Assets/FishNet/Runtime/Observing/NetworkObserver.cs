@@ -8,8 +8,7 @@ using UnityEngine;
 namespace FishNet.Observing
 {
     /// <summary>
-    /// Can use multiple observer conditions to grant a connection awareness of this object.
-    /// Timed checks will continue to run even when an object is disabled, unless it's deinitialized. 
+    /// Controls which clients can see and get messages for an object.
     /// </summary>
     [DisallowMultipleComponent]
     public class NetworkObserver : NetworkBehaviour
@@ -18,11 +17,11 @@ namespace FishNet.Observing
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Conditions connections must met to be added as an observer.")]
+        [Tooltip("Conditions connections must met to be added as an observer. Multiple conditions may be used.")]
         [SerializeField]
         private List<ObserverCondition> _observerConditions = new List<ObserverCondition>();
         /// <summary>
-        /// Conditions connections must met to be added as an observer.
+        /// Conditions connections must met to be added as an observer. Multiple conditions may be used.
         /// </summary>
         public List<ObserverCondition> ObserverConditions => _observerConditions;
         #endregion
@@ -150,7 +149,7 @@ namespace FishNet.Observing
         }
 
         /// <summary>
-        /// Registers timed conditions.
+        /// Registers timed observer conditions.
         /// </summary>
         private void RegisterTimedConditions()
         {

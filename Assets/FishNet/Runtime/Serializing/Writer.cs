@@ -1,29 +1,33 @@
 using FishNet.Connection;
+using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
+using FishNet.Utility.Constant;
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
+[assembly: InternalsVisibleTo(Constants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
 {
     /// <summary>
     /// Used for write references to generic types.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-   // [CodegenIncludeInternal]
+    [APIExclude]
     public static class GenericWriter<T>
     {
         public static Action<Writer, T> Write { get; set; }
         public static Action<Writer, T, AutoPackType> WriteAutoPack { get; set; }
     }
 
-    //[CodegenIncludeInternal]
+    /// <summary>
+    /// Writes data to a buffer.
+    /// </summary>
     public class Writer
     {
         #region Public.

@@ -21,13 +21,14 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Returns the next ObjectId to use.
         /// </summary>
-        protected virtual int GetNextNetworkObjectId() { return -1; }
+        protected internal virtual int GetNextNetworkObjectId() { return -1; }
         /// <summary>
         /// NetworkManager handling this.
         /// </summary>
         protected NetworkManager NetworkManager = null;
         /// <summary>
-        /// Objects in currently running scenes. These objects can be active or inactive.
+        /// Objects in currently loaded scenes. These objects can be active or inactive.
+        /// Key is the objectId while value is the object. Key is not the same as NetworkObject.ObjectId.
         /// </summary>
         protected Dictionary<ulong, NetworkObject> SceneObjects = new Dictionary<ulong, NetworkObject>();
         #endregion
@@ -72,7 +73,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         /// <param name="s"></param>
         /// <param name="arg1"></param>
-        protected virtual void SceneManager_sceneLoaded(Scene s, LoadSceneMode arg1) { }
+        protected internal virtual void SceneManager_sceneLoaded(Scene s, LoadSceneMode arg1) { }
 
         /// <summary>
         /// Called when a NetworkObject runs Deactivate.
@@ -201,7 +202,7 @@ namespace FishNet.Managing.Object
         /// Adds a NetworkObject to SceneObjects.
         /// </summary>
         /// <param name="nob"></param>
-        protected void AddToSceneObjects(NetworkObject nob)
+        protected internal void AddToSceneObjects(NetworkObject nob)
         {
             SceneObjects[nob.SceneId] = nob;
         }
@@ -210,7 +211,7 @@ namespace FishNet.Managing.Object
         /// Removes a NetworkObject from SceneObjects.
         /// </summary>
         /// <param name="nob"></param>
-        protected void RemoveFromSceneObjects(NetworkObject nob)
+        protected internal void RemoveFromSceneObjects(NetworkObject nob)
         {
             SceneObjects.Remove(nob.SceneId);
         }
@@ -220,7 +221,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         /// <param name="objectId"></param>
         /// <returns></returns>
-        protected NetworkObject GetSpawnedNetworkObject(int objectId)
+        protected internal NetworkObject GetSpawnedNetworkObject(int objectId)
         {
             NetworkObject r;
             if (!Spawned.TryGetValue(objectId, out r))
@@ -233,35 +234,12 @@ namespace FishNet.Managing.Object
         }
 
         /// <summary>
-        /// Finds a NetworkBehaviour within Spawned.
-        /// </summary>
-        /// <param name="objectId"></param>
-        /// <param name="componentIndex"></param>
-        /// <returns></returns>
-        protected NetworkBehaviour GetSpawnedNetworkBehaviour(int objectId, byte componentIndex)
-        {
-            NetworkObject nob = GetSpawnedNetworkObject(objectId);
-            if (nob == null)
-                return null;
-
-            //Component index is out of range.
-            if (nob.NetworkBehaviours.Length <= componentIndex)
-            {
-                if (NetworkManager.CanLog(Logging.LoggingType.Error))
-                    Debug.LogError($"Spawned Component index of {componentIndex} is out of range for ObjectId {objectId}.");
-                return null;
-            }
-
-            return nob.NetworkBehaviours[componentIndex];
-        }
-
-        /// <summary>
         /// Tries to skip data length for a packet.
         /// </summary>
         /// <param name="packetId"></param>
         /// <param name="reader"></param>
         /// <param name="dataLength"></param>
-        protected void SkipDataLength(PacketId packetId, PooledReader reader, int startPosition, int dataLength)
+        protected internal void SkipDataLength(PacketId packetId, PooledReader reader, int startPosition, int dataLength)
         {
             /* -1 means length wasn't set, which would suggest a reliable packet.
             * Object should never be missing for reliable packets since spawns

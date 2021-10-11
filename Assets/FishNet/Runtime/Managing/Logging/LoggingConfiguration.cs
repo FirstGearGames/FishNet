@@ -1,9 +1,13 @@
-﻿using System;
+﻿using FishNet.Documenting;
+using System;
 using UnityEngine;
 
 namespace FishNet.Managing.Logging
 {
 
+    /// <summary>
+    /// Configuration ScriptableObject specifying which data to log. Used in conjuction with NetworkManager.
+    /// </summary>
     [CreateAssetMenu(fileName = "New LoggingConfiguration", menuName = "FishNet/Logging/Logging Configuration")]
     public class LoggingConfiguration : ScriptableObject
     {
@@ -52,6 +56,7 @@ namespace FishNet.Managing.Logging
         private LoggingType _highestLoggingType = LoggingType.Off;
         #endregion
 
+        [APIExclude]
         public void LoggingConstructor(bool loggingEnabled, LoggingType development, LoggingType gui, LoggingType headless)
         {
             _loggingEnabled = loggingEnabled;
@@ -81,9 +86,9 @@ namespace FishNet.Managing.Logging
         }
 
         /// <summary>
-        /// Returns true if logging is possible.
+        /// True if can log for loggingType.
         /// </summary>
-        /// <param name="loggingType"></param>
+        /// <param name="loggingType">Type of logging being filtered.</param>
         /// <returns></returns>
         public bool CanLog(LoggingType loggingType)
         {

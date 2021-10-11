@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace FishNet.Utility
+namespace FishNet.Utility.Performance
 {
     /// <summary>
     /// Creates a reusable cache of T which auto expands.

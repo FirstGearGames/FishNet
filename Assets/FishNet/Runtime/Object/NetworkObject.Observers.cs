@@ -13,14 +13,13 @@ namespace FishNet.Object
         /// Called when this NetworkObject losses all observers or gains observers while previously having none.
         /// </summary>
         public event Action<NetworkObject> OnObserversActive;
-        //public bool UsingObservers => (NetworkObserver != null);
         /// <summary>
         /// NetworkObserver on this object. May be null if not using observers.
         /// </summary>
         [HideInInspector]
         public NetworkObserver NetworkObserver = null;
         /// <summary>
-        /// Clients which can get messages from this NetworkObject.
+        /// Clients which can see and get messages from this NetworkObject.
         /// </summary>
         public HashSet<NetworkConnection> Observers = new HashSet<NetworkConnection>();
         #endregion

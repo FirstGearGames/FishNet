@@ -1,5 +1,8 @@
 ﻿namespace FishNet.Managing.Scened.Data
 {
+    /// <summary>
+    /// Additional user-crafted data which can be included in scene unload callbacks.
+    /// </summary>
     public class UnloadParams
     {
         /// <summary>

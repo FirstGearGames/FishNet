@@ -1,15 +1,18 @@
 using FishNet.Connection;
-using FishNet.Managing;
+using FishNet.Documenting;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using System;
-using System.IO;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Serializing
 {
+    /// <summary>
+    /// Extensions to Read methods. Used by Read<T>.
+    /// Internal use.
+    /// </summary>
+    [APIExclude]
     public static class ReaderExtensions
     {
 

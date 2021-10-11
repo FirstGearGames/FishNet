@@ -3,10 +3,9 @@ using UnityEngine;
 
 namespace FishNet.Transporting
 {
-
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(short.MinValue)]
-    public class NetworkReaderLoop : MonoBehaviour
+    internal class NetworkReaderLoop : MonoBehaviour
     {
         #region Private.
         /// <summary>

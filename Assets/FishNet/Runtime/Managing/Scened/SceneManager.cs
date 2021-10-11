@@ -16,6 +16,9 @@ using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 
 namespace FishNet.Managing.Scened
 {
+    /// <summary>
+    /// Handles loading, unloading, and scene visibility for clients.
+    /// </summary>
     public class SceneManager : MonoBehaviour
     {
         #region Public.
@@ -24,39 +27,39 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public event Action<NetworkConnection, bool> OnClientLoadedStartScenes;
         /// <summary>
-        /// Dispatched when a scene change queue has begun. This will only call if a scene has succesfully begun to load or unload. The queue may process any number of scene events. For example: if a scene is told to unload while a load is still in progress, then the unload will be placed in the queue.
+        /// Called when a scene change queue has begun. This will only call if a scene has succesfully begun to load or unload. The queue may process any number of scene events. For example: if a scene is told to unload while a load is still in progress, then the unload will be placed in the queue.
         /// </summary>
         public event Action OnQueueStart;
         /// <summary>
-        /// Dispatched when the scene queue is emptied.
+        /// Called when the scene queue is emptied.
         /// </summary>
         public event Action OnQueueEnd;
         /// <summary>
-        /// Dispatched when a scene load starts.
+        /// Called when a scene load starts.
         /// </summary>
         public event Action<SceneLoadStartEventArgs> OnLoadStart;
         /// <summary>
-        /// Dispatched when completion percentage changes while loading a scene. Value is between 0f and 1f, while 1f is 100% done. Can be used for custom progress bars when loading scenes.
+        /// Called when completion percentage changes while loading a scene. Value is between 0f and 1f, while 1f is 100% done. Can be used for custom progress bars when loading scenes.
         /// </summary>
         public event Action<SceneLoadPercentEventArgs> OnLoadPercentChange;
         /// <summary>
-        /// Dispatched when a scene load ends.
+        /// Called when a scene load ends.
         /// </summary>
         public event Action<SceneLoadEndEventArgs> OnLoadEnd;
         /// <summary>
-        /// Dispatched when a scene load starts.
+        /// Called when a scene unload starts.
         /// </summary>
         public event Action<SceneUnloadStartEventArgs> OnUnloadStart;
         /// <summary>
-        /// Dispatched when a scene load ends.
+        /// Called when a scene unload ends.
         /// </summary>
         public event Action<SceneUnloadEndEventArgs> OnUnloadEnd;
         /// <summary>
-        /// Dispatched before the server rebuilds observers when the clients presence changes for a scene.
+        /// Called when a client presence changes within a scene, before the server rebuilds observers.
         /// </summary>
         public event Action<ClientPresenceChangeEventArgs> OnClientPresenceChangeStart;
         /// <summary>
-        /// Dispatched after the server rebuilds observers when the clients presence changes for a scene.
+        /// Called when a client presence changes within a scene, after the server rebuilds observers.
         /// </summary>
         public event Action<ClientPresenceChangeEventArgs> OnClientPresenceChangeEnd;
         #endregion
@@ -87,7 +90,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private List<object> _queuedOperations = new List<object>();
         /// <summary>
-        /// Scenes which connections are registered as existing.
+        /// Connections within each scene.
         /// </summary>
         public Dictionary<Scene, HashSet<NetworkConnection>> SceneConnections { get; private set; } = new Dictionary<Scene, HashSet<NetworkConnection>>();
         /// <summary>
@@ -855,10 +858,9 @@ namespace FishNet.Managing.Scened
 
         #region UnloadScenes.
         /// <summary>
-        /// Unloads additive scenes on the server and for all clients.
+        /// Unloads scenes on the server and for all clients.
         /// </summary>
-        /// <param name="additiveScenes">Scenes to unload by string lookup.</param>
-        /// <param name="unloadParams">Unload parameters which may be read from events during unload.
+        /// <param name="sceneUnloadData">Data about which scenes to unload.</param>
         public void UnloadGlobalScenes(SceneUnloadData sceneUnloadData)
         {
             if (!CanExecute(true, true))
@@ -884,9 +886,7 @@ namespace FishNet.Managing.Scened
         /// Unloads scenes on server and tells a connection to unload them as well. Other connections will not unload this scene.
         /// </summary>
         /// <param name="connection">Connection to unload scenes for.</param>
-        /// <param name="additiveScenes">Scenes to unload by string lookup.</param>
-        /// <param name="unloadOptions">Additional unload options for this action.</param>
-        /// /// <param name="unloadParams">Unload parameters which may be read from events during unload.</param>
+        /// <param name="sceneUnloadData">Data about which scenes to unload.</param>
         public void UnloadConnectionScenes(NetworkConnection connection, SceneUnloadData sceneUnloadData)
         {
             UnloadConnectionScenes(new NetworkConnection[] { connection }, sceneUnloadData);
@@ -895,8 +895,7 @@ namespace FishNet.Managing.Scened
         /// Unloads scenes on server and tells connections to unload them as well. Other connections will not unload this scene.
         /// </summary>
         /// <param name="connections">Connections to unload scenes for.</param>
-        /// <param name="additiveScenes">Scenes to unload by string lookup.</param>
-        /// <param name="unloadParams">Unload parameters which may be read from events during unload.</param>
+        /// <param name="sceneUnloadData">Data about which scenes to unload.</param>
         public void UnloadConnectionScenes(NetworkConnection[] connections, SceneUnloadData sceneUnloadData)
         {
             UnloadConnectionScenesInternal(connections, sceneUnloadData, _globalScenes, true);
@@ -905,9 +904,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Unloads scenes on server without telling any connections to unload them.
         /// </summary>
-        /// <param name="additiveScenes">Scenes to unload by scene references.</param>
-        /// <param name="unloadOptions">Additional unload options for this action.</param>
-        /// <param name="unloadParams">Unload parameters which may be read from events during unload.</param>
+        /// <param name="sceneUnloadData">Data about which scenes to unload.</param>
         public void UnloadConnectionScenes(SceneUnloadData sceneUnloadData)
         {
             UnloadConnectionScenesInternal(new NetworkConnection[0], sceneUnloadData, _globalScenes, true);
@@ -993,7 +990,7 @@ namespace FishNet.Managing.Scened
             {
                 /* If asServer and KeepUnused then clear all unloadables.
                  * The clients will still unload the scenes. */
-                if (asServer && data.SceneUnloadData.Options.Mode == UnloadOptions.UnloadModes.KeepUnused)
+                if (asServer && data.SceneUnloadData.Options.Mode == UnloadOptions.ServerUnloadModes.KeepUnused)
                     unloadableScenes.Clear();
                 /* Check to remove global scenes unloadableScenes.
                  * This will need to be done if scenes are being unloaded
@@ -1002,7 +999,7 @@ namespace FishNet.Managing.Scened
                 if (data.ScopeType == SceneScopeTypes.Connections)
                     RemoveGlobalScenes(unloadableScenes);
                 //If set to unload unused only.
-                if (data.SceneUnloadData.Options.Mode == UnloadOptions.UnloadModes.UnloadUnused)
+                if (data.SceneUnloadData.Options.Mode == UnloadOptions.ServerUnloadModes.UnloadUnused)
                     RemoveOccupiedScenes(unloadableScenes);
             }
 
@@ -1268,7 +1265,7 @@ namespace FishNet.Managing.Scened
                 if (!qd.AsServer)
                     return false;
                 //If can only load scenes which aren't loaded yet and scene is already loaded.
-                if (qd.SceneLoadData.Options.LoadOnlyUnloaded)
+                if (qd.SceneLoadData.Options.DisallowStacking)
                     return false;
                 /* Found by handle, this means the user is trying to specify
                  * exactly which scene to load into. When a handle is specified

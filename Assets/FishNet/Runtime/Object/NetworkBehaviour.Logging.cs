@@ -10,7 +10,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if can log for loggingType.
         /// </summary>
-        /// <param name="loggingType"></param>
+        /// <param name="loggingType">Type of logging being filtered.</param>
         /// <returns></returns>
         public bool CanLog(LoggingType loggingType)
         {

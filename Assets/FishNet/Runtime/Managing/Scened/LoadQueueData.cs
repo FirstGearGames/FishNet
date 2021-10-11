@@ -1,14 +1,15 @@
 ﻿using FishNet.Connection;
-using FishNet.Serializing.Helping;
+using FishNet.Utility.Constant;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo(Constants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Managing.Scened.Data
 {
 
 
     /// <summary>
-    /// Used to load a scene for a targeted connection.
+    /// Data generated when loading a scene.
     /// </summary>
-   //[CodegenIncludeInternal]
     public class LoadQueueData
     {
         /// <summary>
@@ -35,15 +36,8 @@ namespace FishNet.Managing.Scened.Data
         [System.NonSerialized]
         public readonly bool AsServer;
 
-        public LoadQueueData() { }
-
-        /// <summary>
-        /// Creates a SceneQueueData.
-        /// </summary>
-        /// /// <param name="singleScene"></param>
-        /// <param name="additiveScenes"></param>
-        /// <param name="loadOnlyUnloaded"></param>
-        public LoadQueueData(SceneScopeTypes scopeType, NetworkConnection[] conns, SceneLoadData sceneLoadData, string[] globalScenes, bool asServer)
+        internal LoadQueueData() { }
+        internal LoadQueueData(SceneScopeTypes scopeType, NetworkConnection[] conns, SceneLoadData sceneLoadData, string[] globalScenes, bool asServer)
         {
             ScopeType = scopeType;
             Connections = conns;

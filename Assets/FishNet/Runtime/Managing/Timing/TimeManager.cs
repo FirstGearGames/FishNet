@@ -7,6 +7,9 @@ using UnityEngine;
 
 namespace FishNet.Managing.Timing
 {
+    /// <summary>
+    /// Provides data and actions for network time and tick based systems.
+    /// </summary>
     [DisallowMultipleComponent]
     public class TimeManager : MonoBehaviour
     {
@@ -184,8 +187,8 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Sets number of inputs buffered for a connection. Will use whichever is higher between current value and bufferedCount.
         /// </summary>
-        /// <param name="connection"></param>
-        /// <param name="bufferedCount"></param>
+        /// <param name="connection">Connection to set bufferCount for.</param>
+        /// <param name="bufferedCount">Number of buffered inputs.</param>
         public void SetBuffered(NetworkConnection connection, byte bufferedCount)
         {
             //Connection found.
@@ -243,30 +246,20 @@ namespace FishNet.Managing.Timing
             }
         }
 
-        long _lastE;
         /// <summary>
         /// Increases the based on simulation rate.
         /// </summary>
         private void IncreaseTick()
         {
             double timePerSimulation = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
-            long thisMs = _stopwatch.ElapsedMilliseconds;
-            long frameMs = thisMs - _lastE;
-            _lastE = thisMs;
+            long frameMs = _stopwatch.ElapsedMilliseconds;
 
             _elapsedTime += frameMs / 1000d;
-            //_stopwatch.Restart();
+            _stopwatch.Restart();
 
             while (_elapsedTime >= timePerSimulation)
             {
                 OnPreTick?.Invoke(Tick);
-
-                /* Iterate incoming before invoking OnTick.
-                 * OnTick should be used by users to create
-                 * logic based on read data. */
-                //_networkManager.TransportManager.IterateIncoming(true);
-                //_networkManager.TransportManager.IterateIncoming(false);
-
                 OnTick?.Invoke(Tick);
                 if (!_automaticPhysics)
                 {
@@ -301,9 +294,9 @@ namespace FishNet.Managing.Timing
         }
 
         /// <summary>
-        /// Converts uint ticks to time.
+        /// Converts a number ticks to time.
         /// </summary>
-        /// <param name="ticks"></param>
+        /// <param name="ticks">Ticks to convert.</param>
         /// <returns></returns>
         public float TicksToTime(uint ticks)
         {
@@ -311,9 +304,9 @@ namespace FishNet.Managing.Timing
             return (float)(timePerSimulation * ticks);
         }
         /// <summary>
-        /// Converts float time to ticks.
+        /// Converts time to ticks.
         /// </summary>
-        /// <param name="time"></param>
+        /// <param name="time">Time to convert.</param>
         /// <returns></returns>
         public uint TimeToTicks(float time)
         {

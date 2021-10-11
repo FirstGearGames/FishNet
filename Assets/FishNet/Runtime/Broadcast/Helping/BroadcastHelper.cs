@@ -2,7 +2,7 @@
 
 namespace FishNet.Broadcast.Helping
 {
-    public static class BroadcastHelper
+    internal static class BroadcastHelper
     {
         /// <summary>
         /// Gets the key for a broadcast type.

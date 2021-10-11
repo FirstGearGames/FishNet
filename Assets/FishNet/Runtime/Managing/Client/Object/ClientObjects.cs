@@ -6,9 +6,13 @@ using FishNet.Transporting;
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using FishNet.Documenting;
 
 namespace FishNet.Managing.Client.Object
 {
+    /// <summary>
+    /// Handles objects and information about objects for the local client. See ManagedObjects for inherited options.
+    /// </summary>
     public class ClientObjects : ManagedObjects
     {
 
@@ -77,7 +81,8 @@ namespace FishNet.Managing.Client.Object
         /// </summary>
         /// <param name="s"></param>
         /// <param name="arg1"></param>
-        protected override void SceneManager_sceneLoaded(Scene s, LoadSceneMode arg1)
+        [APIExclude]
+        protected internal override void SceneManager_sceneLoaded(Scene s, LoadSceneMode arg1)
         {
             base.SceneManager_sceneLoaded(s, arg1);
 
@@ -235,6 +240,7 @@ namespace FishNet.Managing.Client.Object
              * other reference creating functions. */
             if (!base.NetworkManager.IsHost)
             {
+                //todo use networkconnection cache.
                 NetworkConnection owner = new NetworkConnection(NetworkManager, ownerId);
                 nob.PreInitialize(NetworkManager, objectId, owner, false);
             }

@@ -3,48 +3,54 @@ using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Scened.Eventing
 {
-
+    /// <summary>
+    /// Data container about a scene load start.
+    /// </summary>
     public struct SceneLoadStartEventArgs
     {
         /// <summary>
-        /// RawData used by this current scene action.
+        /// Queue data used by the current scene action.
         /// </summary>
-        public readonly LoadQueueData RawData;
+        public readonly LoadQueueData QueueData;
 
-        public SceneLoadStartEventArgs(LoadQueueData lqd)
+        internal SceneLoadStartEventArgs(LoadQueueData lqd)
         {
-            RawData = lqd;
+            QueueData = lqd;
         }
     }
 
 
-
+    /// <summary>
+    /// Data container about a scene load percent change.
+    /// </summary>
     public struct SceneLoadPercentEventArgs
     {
         /// <summary>
-        /// RawData used by this current scene action.
+        /// Queue data used by the current scene action.
         /// </summary>
-        public readonly LoadQueueData RawData;
+        public readonly LoadQueueData QueueData;
         /// <summary>
         /// Percentage of change completion. 1f is equal to 100 complete.
         /// </summary>
         public readonly float Percent;
 
-        public SceneLoadPercentEventArgs(LoadQueueData lqd, float percent)
+        internal SceneLoadPercentEventArgs(LoadQueueData lqd, float percent)
         {
-            RawData = lqd;
+            QueueData = lqd;
             Percent = percent;
         }
     }
 
 
-
+    /// <summary>
+    /// Data container about a scene load end.
+    /// </summary>
     public struct SceneLoadEndEventArgs
     {
         /// <summary>
-        /// RawData used by this current scene action.
+        /// Queue data used by the current scene action.
         /// </summary>
-        public readonly LoadQueueData RawData;
+        public readonly LoadQueueData QueueData;
         /// <summary>
         /// Scenes which were loaded.
         /// </summary>
@@ -54,9 +60,9 @@ namespace FishNet.Managing.Scened.Eventing
         /// </summary>
         public readonly string[] SkippedSceneNames;
 
-        public SceneLoadEndEventArgs(LoadQueueData lqd, Scene[] loaded, string[] skipped)
+        internal SceneLoadEndEventArgs(LoadQueueData lqd, Scene[] loaded, string[] skipped)
         {
-            RawData = lqd;
+            QueueData = lqd;
             LoadedScenes = loaded;
             SkippedSceneNames = skipped;
         }

@@ -30,7 +30,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Registers a method to call when a Broadcast arrives.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">Type of broadcast being registered.</typeparam>
         /// <param name="handler">Method to call.</param>
         public void RegisterBroadcast<T>(Action<T> handler) where T : struct, IBroadcast
         {
@@ -63,7 +63,8 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Unregisters a method call from a Broadcast type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">Type of broadcast being unregistered.</typeparam>
+        /// <param name="handler">Method to unregister.</param>
         public void UnregisterBroadcast<T>(Action<T> handler) where T : struct, IBroadcast
         {
             ushort key = typeof(T).FullName.GetStableHash16();
@@ -141,9 +142,9 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Sends a Broadcast to the server.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="message"></param>
-        /// <param name="channel"></param>
+        /// <typeparam name="T">Type of broadcast to send.</typeparam>
+        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name="channel">Channel to send on,</param>
         public void Broadcast<T>(T message, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             //Check local connection state.

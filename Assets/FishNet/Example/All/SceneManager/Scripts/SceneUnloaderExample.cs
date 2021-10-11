@@ -70,7 +70,7 @@ namespace FirstGearGames.FlexSceneManager.Demos
 
             UnloadOptions unloadOptions = new UnloadOptions()
             {
-                Mode = (_unloadUnused) ? UnloadOptions.UnloadModes.UnloadUnused : UnloadOptions.UnloadModes.KeepUnused
+                Mode = (_unloadUnused) ? UnloadOptions.ServerUnloadModes.UnloadUnused : UnloadOptions.ServerUnloadModes.KeepUnused
             };
 
             SceneUnloadData sud = new SceneUnloadData(_scenes);

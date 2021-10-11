@@ -1,5 +1,7 @@
 ﻿using FishNet.Connection;
+using FishNet.Documenting;
 using FishNet.Managing.Logging;
+using FishNet.Object.Delegating;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
@@ -50,9 +52,11 @@ namespace FishNet.Object
 
         /// <summary>
         /// Registers a RPC method.
+        /// Internal use.
         /// </summary>
         /// <param name="rpcHash"></param>
         /// <param name="del"></param>
+        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void RegisterServerRpc(uint rpcHash, ServerRpcDelegate del)
         {
@@ -61,9 +65,11 @@ namespace FishNet.Object
         }
         /// <summary>
         /// Registers a RPC method.
+        /// Internal use.
         /// </summary>
         /// <param name="rpcHash"></param>
         /// <param name="del"></param>
+        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void RegisterObserversRpc(uint rpcHash, ClientRpcDelegate del)
         {
@@ -72,9 +78,11 @@ namespace FishNet.Object
         }
         /// <summary>
         /// Registers a RPC method.
+        /// Internal use.
         /// </summary>
         /// <param name="rpcHash"></param>
         /// <param name="del"></param>
+        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void RegisterTargetRpc(uint rpcHash, ClientRpcDelegate del)
         {
@@ -192,6 +200,7 @@ namespace FishNet.Object
         /// <param name="rpcHash"></param>
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
+        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SendServerRpc(uint rpcHash, PooledWriter methodWriter, Channel channel)
         {
@@ -209,6 +218,7 @@ namespace FishNet.Object
         /// <param name="rpcHash"></param>
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
+        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SendObserversRpc(uint rpcHash, PooledWriter methodWriter, Channel channel, bool buffered)
         {
@@ -243,6 +253,7 @@ namespace FishNet.Object
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
         /// <param name="target"></param>
+        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SendTargetRpc(uint rpcHash, PooledWriter methodWriter, Channel channel, NetworkConnection target)
         {

@@ -1,5 +1,8 @@
 ﻿namespace FishNet.Managing.Scened.Data
 {
+    /// <summary>
+    /// Additional user-crafted data which can be included in scene load callbacks.
+    /// </summary>
     public class LoadParams
     {
         /// <summary>

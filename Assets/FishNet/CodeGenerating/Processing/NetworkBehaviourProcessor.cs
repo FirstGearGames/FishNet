@@ -3,7 +3,6 @@ using FishNet.CodeGenerating.Helping.Extension;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -98,6 +97,7 @@ namespace FishNet.CodeGenerating.Processing
              * been processed. */
             CallNetworkInitializeFromAwake(firstTypeDef, true);
             CallNetworkInitializeFromAwake(firstTypeDef, false);
+            CodegenSession.NetworkBehaviourSyncProcessor.CallBaseReadSyncVar(firstTypeDef);
 
             return modified;
         }

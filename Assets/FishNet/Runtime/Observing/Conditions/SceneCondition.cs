@@ -3,24 +3,27 @@ using FishNet.Observing;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace FishNet.Managing
+namespace FishNet.Component.Observing
 {
 
+    /// <summary>
+    /// When this observer condition is placed on an object, a client must be within the same scene to view the object.
+    /// </summary>
     [CreateAssetMenu(menuName = "FishNet/Observers/Scene Condition", fileName = "New Scene Condition")]
     public class SceneCondition : ObserverCondition
     {
         #region Serialized.
-        /// <summary>
-        /// True to synchronize which scene the object was spawned in to clients. When true this object will be moved to the clients equivelant of the scene it was spawned in on the server. This setting does not continously move this object to the same scene.
-        /// </summary>
-        [Tooltip("True to synchronize which scene the object was spawned in to clients. When true this object will be moved to the clients equivelant of the scene it was spawned in on the server. This setting does not continously move this object to the same scene.")]
-        [SerializeField]
-        private bool _synchronizeScene = false;
+        ///// <summary>
+        ///// True to synchronize which scene the object was spawned in to clients. When true this object will be moved to the clients equivelant of the scene it was spawned in on the server. This setting does not continously move this object to the same scene.
+        ///// </summary>
+        //[Tooltip("True to synchronize which scene the object was spawned in to clients. When true this object will be moved to the clients equivelant of the scene it was spawned in on the server. This setting does not continously move this object to the same scene.")]
+        //[SerializeField]
+        //private bool _synchronizeScene = false;
         #endregion
 
-        public void ConditionConstructor(bool synchronizeScene)
+        public void ConditionConstructor()
         {
-            _synchronizeScene = synchronizeScene;
+            //_synchronizeScene = synchronizeScene;
         }
 
         /// <summary>
@@ -73,7 +76,8 @@ namespace FishNet.Managing
         public override ObserverCondition Clone()
         {
             SceneCondition copy = ScriptableObject.CreateInstance<SceneCondition>();
-            copy.ConditionConstructor(_synchronizeScene);
+            //copy.ConditionConstructor(_synchronizeScene);
+            copy.ConditionConstructor();
             return copy;
         }
 

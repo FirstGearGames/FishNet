@@ -1,3 +1,4 @@
+using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ namespace FishNet.Managing.Object
 {
 
     [CreateAssetMenu(fileName = "New DualPrefabObjects", menuName = "FishNet/Spawnable Prefabs/Dual Prefab Objects")]
+    [APIExclude]
     public class DualPrefabObjects : PrefabObjects
     {
         [SerializeField]

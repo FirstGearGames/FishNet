@@ -10,6 +10,9 @@ using UnityEngine;
 namespace FishNet.Managing.Transporting
 {
 
+    /// <summary>
+    /// Communicates with the Transport to send and receive data.
+    /// </summary>
     public class TransportManager : MonoBehaviour
     {
         #region Public.
@@ -30,9 +33,9 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         internal event Action<bool> OnIterateIncomingEnd;
         /// <summary>
-        /// Transport for server and client.
+        /// The current Transport being used.
         /// </summary>
-        [Tooltip("Transport for server and client.")]
+        [Tooltip("The current Transport being used.")]
         public Transport Transport;
         #endregion
 
@@ -55,14 +58,6 @@ namespace FishNet.Managing.Transporting
         private PacketBundle _outgoingSplit = null;
         #endregion
 
-        /// <summary>
-        /// Sets a connection from server to client dirty.
-        /// </summary>
-        /// <param name="conn"></param>
-        internal void ServerDirty(NetworkConnection conn)
-        {
-            _dirtyToClients.Add(conn);
-        }
 
         private void Awake()
         {
@@ -75,6 +70,15 @@ namespace FishNet.Managing.Transporting
             Transport.Initialize(_networkManager);
             InitializeOutgoingSplits();
             InitializeToServerBundles();
+        }
+
+        /// <summary>
+        /// Sets a connection from server to client dirty.
+        /// </summary>
+        /// <param name="conn"></param>
+        internal void ServerDirty(NetworkConnection conn)
+        {
+            _dirtyToClients.Add(conn);
         }
 
         /// <summary>
@@ -283,7 +287,7 @@ namespace FishNet.Managing.Transporting
         /// Processes data received by the socket.
         /// </summary>
         /// <param name="server">True to process data received on the server.</param>
-        public void IterateIncoming(bool server)
+        internal void IterateIncoming(bool server)
         {
             OnIterateIncomingStart?.Invoke(server);
             Transport.IterateIncoming(server);
@@ -294,7 +298,7 @@ namespace FishNet.Managing.Transporting
         /// Processes data to be sent by the socket.
         /// </summary>
         /// <param name="server">True to process data received on the server.</param>
-        public void IterateOutgoing(bool server)
+        internal void IterateOutgoing(bool server)
         {
             OnIterateOutgoingStart?.Invoke();
             int channelCount = Transport.GetChannelCount();

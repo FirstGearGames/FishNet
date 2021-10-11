@@ -1,10 +1,9 @@
 using FishNet.Connection;
+using FishNet.Documenting;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using System;
-using System.Runtime.CompilerServices;
-using System.Text;
 using UnityEngine;
 
 namespace FishNet.Serializing
@@ -12,7 +11,9 @@ namespace FishNet.Serializing
 
     /// <summary>
     /// Extensions to Write methods. Used by Write<T>.
+    /// Internal use.
     /// </summary>
+    [APIExclude]
     public static class WriterExtensions
     {
 

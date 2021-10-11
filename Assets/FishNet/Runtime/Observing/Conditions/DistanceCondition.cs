@@ -6,6 +6,9 @@ using UnityEngine;
 
 namespace FishNet.Component.Observing
 {
+    /// <summary>
+    /// When this observer condition is placed on an object, a client must be within the specified distance to view the object.
+    /// </summary>
     [CreateAssetMenu(menuName = "FishNet/Observers/Distance Condition", fileName = "New Distance Condition")]
     public class DistanceCondition : ObserverCondition
     {
@@ -21,12 +24,16 @@ namespace FishNet.Component.Observing
         /// </summary>
         public float MaximumDistance { get => _maximumDistance; set => _maximumDistance = value; }
         /// <summary>
-        /// How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. Use a value other than 0f to activate.
+        /// 
         /// </summary>
         [Tooltip("How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. Use a value other than 0f to enable.")]
         [Range(0f, 60f)]
         [SerializeField]
         private float _updateFrequency = 0f;
+        /// <summary>
+        /// How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. Use a value other than 0f to activate.
+        /// </summary>
+        public float UpdateFrequency { get => _updateFrequency; set => _updateFrequency = value; }
         #endregion
 
         #region Private.

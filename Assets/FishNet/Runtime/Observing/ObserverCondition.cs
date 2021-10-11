@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace FishNet.Observing
 {
+    /// <summary>
+    /// Condition a connection must meet to be added as an observer.
+    /// This class can be inherited from for custom conditions.
+    /// </summary>
     public abstract class ObserverCondition : ScriptableObject
     {
         #region Public.

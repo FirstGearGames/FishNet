@@ -5,7 +5,10 @@ using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Scened.Data
 {
-    public static class SceneLookupDataExtensions
+    /// <summary>
+    /// Extensions for SceneLookupData.
+    /// </summary>
+    internal static class SceneLookupDataExtensions
     {
         /// <summary>
         /// Returns Names from SceneLookupData.
@@ -22,6 +25,9 @@ namespace FishNet.Managing.Scened.Data
         }
     }
 
+    /// <summary>
+    /// Data container for looking up, loading, or unloading a scene.
+    /// </summary>
     public class SceneLookupData
     {
         /// <summary>
@@ -40,17 +46,31 @@ namespace FishNet.Managing.Scened.Data
         private const string INVALID_SCENE = "One or more scene information entries contain invalid data and have been skipped.";
         #endregion
 
+        /// <summary>
+        /// 
+        /// </summary>
         public SceneLookupData() { }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="scene">Scene to generate from.</param>
         public SceneLookupData(Scene scene)
         {
             Handle = scene.handle;
             Name = scene.name;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name">Scene name to generate from.</param>
         public SceneLookupData(string name)
         {
             Name = name;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="handle">Scene handle to generate from.</param>
         public SceneLookupData(int handle)
         {
             Handle = handle;
@@ -135,43 +155,43 @@ namespace FishNet.Managing.Scened.Data
         /// <summary>
         /// Returns a new SceneLookupData.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name="scene">Scene to create from.</param>
         /// <returns></returns>
         public static SceneLookupData CreateData(Scene scene) => new SceneLookupData(scene);
         /// <summary>
         /// Returns a new SceneLookupData.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name="scene">Scene name to create from.</param>
         /// <returns></returns>
         public static SceneLookupData CreateData(string name) => new SceneLookupData(name);
         /// <summary>
         /// Returns a new SceneLookupData.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name="scene">Scene handle to create from.</param>
         /// <returns></returns>
         public static SceneLookupData CreateData(int handle) => new SceneLookupData(handle);
         /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name="scenes">Scenes to create from.</param>
         /// <returns></returns>
-        public static SceneLookupData[] CreateData(List<Scene> scene) => CreateData(scene.ToArray());
+        public static SceneLookupData[] CreateData(List<Scene> scenes) => CreateData(scenes.ToArray());
         /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name="names">Scene names to create from.</param>
         /// <returns></returns>
-        public static SceneLookupData[] CreateData(List<string> name) => CreateData(name.ToArray());
+        public static SceneLookupData[] CreateData(List<string> names) => CreateData(names.ToArray());
         /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name="handles">Scene handles to create from.</param>
         /// <returns></returns>
-        public static SceneLookupData[] CreateData(List<int> handle) => CreateData(handle.ToArray());
+        public static SceneLookupData[] CreateData(List<int> handles) => CreateData(handles.ToArray());
         /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
-        /// <param name="scenes"></param>
+        /// <param name="scenes">Scenes to create from.</param>
         /// <returns></returns>
         public static SceneLookupData[] CreateData(Scene[] scenes)
         {
@@ -198,7 +218,7 @@ namespace FishNet.Managing.Scened.Data
         /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name="names">Scene names to create from.</param>
         /// <returns></returns>
         public static SceneLookupData[] CreateData(string[] names)
         {
@@ -225,7 +245,7 @@ namespace FishNet.Managing.Scened.Data
         /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name="handles">Scene handles to create from.</param>
         /// <returns></returns>
         public static SceneLookupData[] CreateData(int[] handles)
         {
@@ -255,6 +275,7 @@ namespace FishNet.Managing.Scened.Data
         /// Returns the first scene found using Handle or Name, preferring Handle.
         /// </summary>
         /// <returns></returns>
+        /// <param name="foundByHandle">True if scene was found by handle. Handle is always checked first.</param>
         public Scene GetScene(out bool foundByHandle)
         {
             foundByHandle = false;

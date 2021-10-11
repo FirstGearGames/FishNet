@@ -2,6 +2,9 @@
 
 namespace FishNet.Transporting
 {
+    /// <summary>
+    /// Container about data received on the server.
+    /// </summary>
     public struct ServerReceivedDataArgs
     {
         /// <summary>
@@ -17,6 +20,12 @@ namespace FishNet.Transporting
         /// </summary>
         public int ConnectionId;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="data">Data received.</param>
+        /// <param name="channel">Channel data came on.</param>
+        /// <param name="connectionId">ConnectionId which sent the data.</param>
         public ServerReceivedDataArgs(ArraySegment<byte> data, Channel channel, int connectionId)
         {
             Data = data;
@@ -26,6 +35,9 @@ namespace FishNet.Transporting
     }
 
 
+    /// <summary>
+    /// Container about data received on the local client.
+    /// </summary>
     public struct ClientReceivedDataArgs
     {
         /// <summary>
@@ -37,6 +49,11 @@ namespace FishNet.Transporting
         /// </summary>
         public Channel Channel;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="data">Data received.</param>
+        /// <param name="channel">Channel data came on.</param>
         public ClientReceivedDataArgs(ArraySegment<byte> data, Channel channel)
         {
             Data = data;
@@ -46,7 +63,9 @@ namespace FishNet.Transporting
 
 
 
-
+    /// <summary>
+    /// Container about a connection state change for a client.
+    /// </summary>
     public struct RemoteConnectionStateArgs
     {
         /// <summary>
@@ -58,6 +77,12 @@ namespace FishNet.Transporting
         /// </summary>
         public int ConnectionId;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connectionState">New connection state.</param>
+        /// <param name="connectionId">ConnectionId which state is changing for.</param>
+
         public RemoteConnectionStateArgs(RemoteConnectionStates connectionState, int connectionId)
         {
             ConnectionState = connectionState;
@@ -65,7 +90,9 @@ namespace FishNet.Transporting
         }
     }
 
-
+    /// <summary>
+    /// Container about a connection state change for the server.
+    /// </summary>
     public struct ServerConnectionStateArgs
     {
         /// <summary>
@@ -73,12 +100,19 @@ namespace FishNet.Transporting
         /// </summary>
         public LocalConnectionStates ConnectionState;
 
+        /// <summary>
+        /// New connection state.
+        /// </summary>
+        /// <param name="connectionState"></param>
         public ServerConnectionStateArgs(LocalConnectionStates connectionState)
         {
             ConnectionState = connectionState;
         }
     }
 
+    /// <summary>
+    /// Container about a connection state change for the local client.
+    /// </summary>
     public struct ClientConnectionStateArgs
     {
         /// <summary>
@@ -86,6 +120,10 @@ namespace FishNet.Transporting
         /// </summary>
         public LocalConnectionStates ConnectionState;
 
+        /// <summary>
+        /// New connection state.
+        /// </summary>
+        /// <param name="connectionState"></param>
         public ClientConnectionStateArgs(LocalConnectionStates connectionState)
         {
             ConnectionState = connectionState;

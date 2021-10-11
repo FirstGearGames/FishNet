@@ -2,8 +2,11 @@
 
 namespace FishNet.Object
 {
+    /// <summary>
+    /// Properties which have changed on a transform.
+    /// </summary>
     [System.Flags]
-    public enum ChangedTransformProperties : byte
+    internal enum ChangedTransformProperties : byte
     {
         Unset = 0,
         Position = 2,
@@ -11,7 +14,7 @@ namespace FishNet.Object
         LocalScale = 8
     }
 
-    public static partial class Enums
+    internal static partial class Enums
     {
         /// <summary>
         /// Returns if whole contains part.
