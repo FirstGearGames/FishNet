@@ -35,11 +35,11 @@ namespace FishNet.Managing.Client.Object
         /// <param name="args"></param>
         internal void OnClientConnectionState(ClientConnectionStateArgs args)
         {
+            /* If new state is not started then reset
+             * environment. */
             if (args.ConnectionState != LocalConnectionStates.Started)
             {
-                //Reset cache.
                 _objectCache.Reset();
-
                 base.DespawnSpawnedWithoutSynchronization(false);
                 /* Clear spawned and scene objects as they will be rebuilt.
                  * Spawned would have already be cleared if DespawnSpawned
@@ -47,6 +47,7 @@ namespace FishNet.Managing.Client.Object
                 base.Spawned.Clear();
                 base.SceneObjects.Clear();
             }
+            //If started then despawn scene objects and wait for spawn messages.
             else
             {
                 DespawnSceneObjects();

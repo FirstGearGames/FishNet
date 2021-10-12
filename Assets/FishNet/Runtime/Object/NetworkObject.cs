@@ -175,23 +175,32 @@ namespace FishNet.Object
         /// <param name="newOwner"></param>
         internal void GiveOwnership(NetworkConnection newOwner, bool asServer)
         {
-            if (asServer && !NetworkManager.IsServer)
+            /* Additional asServer checks. */
+            if (asServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Ownership cannot be given for object {gameObject.name}. Only server may give ownership.");
-                return;
-            }
-            //If the same owner don't bother sending a message, just ignore request.
-            if (newOwner == Owner)
-                return;
+                if (!NetworkManager.IsServer)
+                {
+                    if (NetworkManager.CanLog(LoggingType.Warning))
+                        Debug.LogWarning($"Ownership cannot be given for object {gameObject.name}. Only server may give ownership.");
+                    return;
+                }
 
-            if (newOwner != null && newOwner.IsValid && !newOwner.LoadedStartScenes)
-            {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Ownership has been transfered to ClientId {newOwner.ClientId} but this is not recommended until after they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+                //If the same owner don't bother sending a message, just ignore request.
+                if (newOwner == Owner && asServer)
+                    return;
+
+                if (newOwner != null && newOwner.IsValid && !newOwner.LoadedStartScenes)
+                {
+                    if (NetworkManager.CanLog(LoggingType.Warning))
+                        Debug.LogWarning($"Ownership has been transfered to ClientId {newOwner.ClientId} but this is not recommended until after they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+                }
             }
 
-            NetworkConnection prevOwner = Owner;
+            /* If owner is null or not valid
+             * then set prevOwner to null.
+             * Otherwise set prevOwner to Owner. */
+            NetworkConnection prevOwner = (Owner == null || !Owner.IsValid) ? null : Owner;
+
             SetOwner(newOwner);
             //After changing owners invoke callbacks.
             InvokeOwnership(Owner, asServer);

@@ -175,7 +175,6 @@ namespace FishNet.Managing.Object
                 return;
 
             nob.Deinitialize(asServer);
-
             /* Only run if asServer, or not 
              * asServer and server isn't running. This
              * prevents objects from affecting the server

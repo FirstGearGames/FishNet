@@ -335,11 +335,15 @@ namespace FishNet.Managing.Transporting
                         }
                     }
 
+                    /* A disconnection can be queued which will
+                     * run through the outgoing process from server.
+                     * This is done so users can send data to the client
+                     * then disconnect them after, while ensuring they
+                     * get the data. */
                     if (conn.Disconnecting)
-                    {
                         Transport.StopConnection(conn.ClientId, false);
-                        conn.UnsetDisconnecting();
-                    }
+                    //    conn.UnsetDisconnecting();
+                    //}
                     conn.ResetServerDirty();
                 }
 

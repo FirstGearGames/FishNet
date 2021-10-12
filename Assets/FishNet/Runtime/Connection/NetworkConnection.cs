@@ -50,7 +50,7 @@ namespace FishNet.Connection
         /// <summary>
         /// True if this connection is valid. An invalid connection indicates no client is set for this reference.
         /// </summary>
-        public bool IsValid => (ClientId >= 0);
+        public bool IsValid => (ClientId >= 0 && !Disconnecting);
         /// <summary>
         /// Unique Id for this connection.
         /// </summary>
@@ -71,9 +71,9 @@ namespace FishNet.Connection
 
         #region Internal.
         /// <summary>
-        /// True if being disconnected. Only available to server.
+        /// True if this connection is being disconnected. Only available to server.
         /// </summary>
-        internal bool Disconnecting { get; private set; } = false;
+        public bool Disconnecting { get; private set; } = false;
         #endregion
 
         #region Comparers.
@@ -141,10 +141,17 @@ namespace FishNet.Connection
             NetworkManager = null;
             _loadedStartScenesAsClient = false;
             _loadedStartScenesAsServer = false;
-            UnsetDisconnecting();
+            SetDisconnecting(false);
             Scenes.Clear();
         }
 
+        /// <summary>
+        /// Sets Disconnecting boolean for this connection.
+        /// </summary>
+        internal void SetDisconnecting(bool value)
+        {
+            Disconnecting = value;
+        }
 
         /// <summary>
         /// Disconnects this connection.
@@ -152,22 +159,13 @@ namespace FishNet.Connection
         /// <param name="immediately">True to disconnect immediately. False to send any pending data first.</param>
         public void Disconnect(bool immediately)
         {
+            SetDisconnecting(true);
+            //If immediately then force disconnect through transport.
             if (immediately)
-            {
                 NetworkManager.TransportManager.Transport.StopConnection(ClientId, true);
-            }
+            //Otherwise mark dirty so server will push out any pending information, and then disconnect.
             else
-            {
-                Disconnecting = true;
                 ServerDirty();
-            }
-        }
-        /// <summary>
-        /// Unsets Disconnecting property.
-        /// </summary>
-        internal void UnsetDisconnecting()
-        {
-            Disconnecting = false;
         }
 
         /// <summary>

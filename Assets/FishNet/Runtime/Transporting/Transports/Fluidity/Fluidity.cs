@@ -68,6 +68,10 @@ namespace Fluidity
         /// Largest MTU of available channels.
         /// </summary>
         private int _largestMTU = 0;
+        /// <summary>
+        /// Number of Fluidity components initialized.
+        /// </summary>
+        private static uint _fluidityInitializedCount = 0;
         #endregion
 
         #region Const.
@@ -82,11 +86,19 @@ namespace Fluidity
         {
             base.Initialize(networkManager);
 
-            if (!ENet.Library.Initialize())
+            if (_fluidityInitializedCount == 0)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError("Failed to initialize ENet library.");
+                if (!ENet.Library.Initialize())
+                {
+                    if (base.NetworkManager.CanLog(LoggingType.Error))
+                    {
+                        Debug.LogError("Failed to initialize ENet library.");
+                        return;
+                    }
+                }
             }
+            _fluidityInitializedCount++;
+
             /* If channels are missing then add them. This 
              * can occur if component is added at runtime. */
             if (_channels == null)
@@ -103,10 +115,16 @@ namespace Fluidity
 
             base.Initialize(networkManager);
         }
+
         protected void OnDestroy()
         {
             Shutdown();
-            ENet.Library.Deinitialize();
+            if (_fluidityInitializedCount > 0)
+            {
+                _fluidityInitializedCount--;
+                if (_fluidityInitializedCount == 0)
+                    ENet.Library.Deinitialize();
+            }
         }
         #endregion
 

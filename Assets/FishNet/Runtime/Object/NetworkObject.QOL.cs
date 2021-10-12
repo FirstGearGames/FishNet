@@ -1,7 +1,6 @@
 ﻿using FishNet.Broadcast;
 using FishNet.Connection;
 using FishNet.Managing.Logging;
-using FishNet.Transporting;
 using UnityEngine;
 
 namespace FishNet.Object

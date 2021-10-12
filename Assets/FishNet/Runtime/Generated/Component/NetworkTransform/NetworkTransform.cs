@@ -8,7 +8,10 @@ namespace FishNet.Component.Transforming
     /// Janky NetworkTransform. This is only for testing and will be replaced prior to release.
     /// </summary>   
     public class NetworkTransform : NetworkBehaviour
-    { 
+    {
+        [Tooltip("How far the transform must travel in a single update to cause a teleport rather than smoothing. Use 0f to disable this feature.")]
+        [SerializeField]
+        private float _teleportThreshold = 0f;
         [SerializeField]
         private bool _clientAuthoritative = true;
         [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
@@ -187,6 +190,14 @@ namespace FishNet.Component.Transforming
             float distance;
             float divisor = UPDATE_RATE + INTERPOLATION;
             distance = Vector3.Distance(transform.position, pos);
+
+            //If distance teleports assume rest do.
+            if (_teleportThreshold > 0 && distance >= _teleportThreshold)
+            {
+                SetInstantRates();
+                return;
+            }
+
             _positionRate = distance / divisor;
             distance = Quaternion.Angle(transform.rotation, rot);
             _rotationRate = distance / divisor;

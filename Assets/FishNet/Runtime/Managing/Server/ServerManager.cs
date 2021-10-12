@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using FishNet.Authenticating;
 using FishNet.Managing.Transporting;
-
+  
 namespace FishNet.Managing.Server
 {
     /// <summary>
@@ -231,8 +231,8 @@ namespace FishNet.Managing.Server
                      * them up from server. */
                     if (Clients.TryGetValue(args.ConnectionId, out NetworkConnection conn))
                     {
+                        conn.SetDisconnecting(true);
                         OnRemoteConnectionState?.Invoke(conn, args);
-
                         Clients.Remove(args.ConnectionId);
                         Objects.ClientDisconnected(conn);
                         conn.Reset();

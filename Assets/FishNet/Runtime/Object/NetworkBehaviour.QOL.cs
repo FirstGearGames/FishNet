@@ -72,7 +72,7 @@ namespace FishNet.Object
         public void Despawn()
         {
             if (!IsNetworkObjectNull(true))
-                NetworkObject.Despawn();                
+                NetworkObject.Despawn();
         }
         /// <summary>
         /// Spawns an object over the network. Can only be called on the server.

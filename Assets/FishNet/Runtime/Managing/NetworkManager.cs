@@ -108,7 +108,6 @@ namespace FishNet.Managing
             SpawnablePrefabs.InitializePrefabRange(0);
             SetDontDestroyOnLoad();
             SetRunInBackground();
-            EmptyConnection = new NetworkConnection();
             AddTransportManager();
             AddServerAndClientManagers();
             AddTimeManager();

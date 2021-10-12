@@ -85,18 +85,19 @@ namespace FishNet.Managing.Client
         /// <param name="args"></param>
         private void Transport_OnClientConnectionState(ClientConnectionStateArgs args)
         {
-            Started = (args.ConnectionState == LocalConnectionStates.Started);
             Objects.OnClientConnectionState(args);
+            Started = (args.ConnectionState == LocalConnectionStates.Started);
+            bool stopped = (args.ConnectionState == LocalConnectionStates.Stopped);
+
             //Clear connection after so objects can update using current Connection value.
             if (!Started)
-            {
                 Connection = null;
-            }
-            else
-            {
-                if (NetworkManager.CanLog(Logging.LoggingType.Common))
-                    Debug.Log($"Local client is connected to the server.");
-            }
+
+            if (Started && NetworkManager.CanLog(Logging.LoggingType.Common))
+                Debug.Log($"Local client is connected to the server.");
+            else if (stopped && NetworkManager.CanLog(Logging.LoggingType.Common))
+                Debug.Log($"Local client is disconnected from the server.");
+
             OnClientConnectionState?.Invoke(args);
         }
 

@@ -1,4 +1,5 @@
 ﻿using FishNet.Connection;
+using FishNet.Managing.Logging;
 using FishNet.Observing;
 using System;
 using System.Collections.Generic;
@@ -56,6 +57,13 @@ namespace FishNet.Object
         /// <returns>True if added to Observers.</returns>
         internal ObserverStateChange RebuildObservers(NetworkConnection connection)
         {
+            if (!connection.IsValid)
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"An invalid connection was used when rebuilding observers.");
+                return ObserverStateChange.Unchanged;
+            }
+
             int startCount = Observers.Count;
             //Not using observer system, this object is seen by everything.
             if (NetworkObserver == null)
