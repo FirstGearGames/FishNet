@@ -1,11 +1,11 @@
 ﻿using FishNet;
 using FishNet.Connection;
-using FishNet.Managing.Scened.Data;
 using FishNet.Object;
+using FishNet.Managing.Scened;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace FirstGearGames.FlexSceneManager.Demos
+namespace FishNet.Example.Scened
 {
 
     /// <summary>

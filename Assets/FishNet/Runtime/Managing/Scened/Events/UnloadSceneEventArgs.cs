@@ -1,6 +1,4 @@
-﻿using FishNet.Managing.Scened.Data;
-
-namespace FishNet.Managing.Scened.Eventing
+﻿namespace FishNet.Managing.Scened
 {
 
     /// <summary>

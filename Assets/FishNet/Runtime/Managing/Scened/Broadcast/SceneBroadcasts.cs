@@ -1,9 +1,7 @@
-﻿using FishNet.Managing.Scened.Data;
+﻿using FishNet.Documenting;
 using FishNet.Broadcast;
-using FishNet.Serializing.Helping;
-using FishNet.Documenting;
 
-namespace FishNet.Managing.Scened.Broadcast
+namespace FishNet.Managing.Scened
 {
 
     /// <summary>

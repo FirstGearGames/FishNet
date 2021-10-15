@@ -6,7 +6,7 @@ using UnityEngine;
 using System;
 using FishNet.Transporting;
 
-namespace FishNet.Managing.Server.Object
+namespace FishNet.Managing.Server
 {
     public partial class ServerObjects : ManagedObjects
     {

@@ -1,7 +1,7 @@
 ﻿using FishNet.Connection;
 using UnityEngine.SceneManagement;
 
-namespace FishNet.Managing.Scened.Eventing
+namespace FishNet.Managing.Scened
 {
     /// <summary>
     /// Data container about a scene presence change for a client.

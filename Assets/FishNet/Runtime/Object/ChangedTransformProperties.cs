@@ -1,11 +1,11 @@
-﻿using UnityEngine;
+﻿using FishNet.Documenting;
 
 namespace FishNet.Object
 {
     /// <summary>
     /// Properties which have changed on a transform.
     /// </summary>
-    [System.Flags]
+    [System.Flags][APIExclude]
     internal enum ChangedTransformProperties : byte
     {
         Unset = 0,
@@ -14,6 +14,7 @@ namespace FishNet.Object
         LocalScale = 8
     }
 
+    [APIExclude]
     internal static partial class Enums
     {
         /// <summary>

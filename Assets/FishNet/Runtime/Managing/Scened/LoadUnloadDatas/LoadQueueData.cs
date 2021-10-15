@@ -3,28 +3,29 @@ using FishNet.Utility.Constant;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo(Constants.GENERATED_ASSEMBLY_NAME)]
-namespace FishNet.Managing.Scened.Data
+namespace FishNet.Managing.Scened
 {
 
+
     /// <summary>
-    /// Data generated when unloading a scene.
+    /// Data generated when loading a scene.
     /// </summary>
-    public class UnloadQueueData
+    public class LoadQueueData
     {
         /// <summary>
         /// Clients which receive this SceneQueueData. If Networked, all clients do. If Connections, only the specified Connections do.
         /// </summary>
         [System.NonSerialized]
-        public readonly SceneScopeTypes ScopeType;
+        public SceneScopeTypes ScopeType;
         /// <summary>
-        /// Connections to unload scenes for. Only valid on the server and when ScopeType is Connections.
+        /// Connections to load scenes for. Only valid on the server and when ScopeType is Connections.
         /// </summary>
         [System.NonSerialized]
-        public NetworkConnection[] Connections;
+        public NetworkConnection[] Connections = new NetworkConnection[0];
         /// <summary>
         /// SceneLoadData to use.
         /// </summary>
-        public SceneUnloadData SceneUnloadData = null;
+        public SceneLoadData SceneLoadData = null;
         /// <summary>
         /// Current global scenes.
         /// </summary>
@@ -35,19 +36,16 @@ namespace FishNet.Managing.Scened.Data
         [System.NonSerialized]
         public readonly bool AsServer;
 
-        internal UnloadQueueData() { }
-        internal UnloadQueueData(SceneScopeTypes scopeType, NetworkConnection[] conns, SceneUnloadData sceneUnloadData ,string[] globalScenes, bool asServer)
+        internal LoadQueueData() { }
+        internal LoadQueueData(SceneScopeTypes scopeType, NetworkConnection[] conns, SceneLoadData sceneLoadData, string[] globalScenes, bool asServer)
         {
             ScopeType = scopeType;
             Connections = conns;
-            SceneUnloadData = sceneUnloadData;
+            SceneLoadData = sceneLoadData;
             GlobalScenes = globalScenes;
             AsServer = asServer;
         }
-
-      
     }
-
 
 
 }

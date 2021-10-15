@@ -7,6 +7,13 @@ namespace FishNet.Managing.Transporting
 
     internal class SplitReader
     {
+        #region Public.
+        /// <summary>
+        /// Current write position of the buffer.
+        /// </summary>
+        public int Position = 0;
+        #endregion
+
         #region Private.
         /// <summary>
         /// Tick split is for.
@@ -21,13 +28,9 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         private ushort _expected;
         /// <summary>
-        /// Called number of splits.
+        /// Number of splits received so far.
         /// </summary>
         private ushort _received;
-        /// <summary>
-        /// Write position of split.
-        /// </summary>
-        private int _position = 0;
         #endregion
       
         /// <summary>
@@ -46,7 +49,7 @@ namespace FishNet.Managing.Transporting
              * then this is a new split. Reset everything. */
             if (_tick != tick)
             {
-                _position = 0;
+                Position = 0;
                 _received = 0;
                 _tick = tick;
                 _expected = expected;
@@ -67,16 +70,16 @@ namespace FishNet.Managing.Transporting
             if (remaining > 0)
             {
                 ArraySegment<byte> readerBuffer = reader.GetArraySegmentBuffer();
-                Buffer.BlockCopy(readerBuffer.Array, reader.Position + readerBuffer.Offset, _buffer, _position, remaining);
+                Buffer.BlockCopy(readerBuffer.Array, reader.Position + readerBuffer.Offset, _buffer, Position, remaining);
             }
 
             //Increase position and received.
-            _position += remaining;
+            Position += remaining;
             _received += 1;
 
             //If received all expected then return a new array segment with buffer.
             if (_received == _expected)
-                return new ArraySegment<byte>(_buffer, 0, _position);
+                return new ArraySegment<byte>(_buffer, 0, Position);
             //Have not received all, return empty array segment.
             else
                 return new ArraySegment<byte>();

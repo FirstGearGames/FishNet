@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace FishNet.Managing.Scened.Data
+namespace FishNet.Managing.Scened
 {
     /// <summary>
     /// Extensions for SceneLookupData.

@@ -101,6 +101,21 @@ namespace FishNet.Object
 
             return isNull;
         }
+        /// <summary>
+        /// Removes ownership from all clients.
+        /// </summary>
+        public void RemoveOwnership()
+        {
+            NetworkObject?.GiveOwnership(null, true);
+        }
+        /// <summary>
+        /// Gives ownership to newOwner.
+        /// </summary>
+        /// <param name="newOwner"></param>
+        public void GiveOwnership(NetworkConnection newOwner)
+        {
+            NetworkObject?.GiveOwnership(newOwner, true);
+        }
     }
 
 

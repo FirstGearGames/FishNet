@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
-namespace FishNet.Managing.Scened.Data
+namespace FishNet.Managing.Scened
 {
     /// <summary>
     /// Data about which scenes to load.

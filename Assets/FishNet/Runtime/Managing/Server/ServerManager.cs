@@ -1,5 +1,4 @@
-﻿using FishNet.Managing.Server.Object;
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System;
@@ -7,7 +6,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using FishNet.Authenticating;
 using FishNet.Managing.Transporting;
-  
+using FishNet.Managing.Logging;
+
 namespace FishNet.Managing.Server
 {
     /// <summary>
@@ -76,17 +76,19 @@ namespace FishNet.Managing.Server
         [Tooltip("True to automatically start the server connection when running as headless.")]
         [SerializeField]
         private bool _startOnHeadless = true;
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        //[Tooltip("Number of splits a message can arrive in from clients. This may occur when the client sends large amounts of data in one packet. Having this value too high increases risk of an allocation attack.")]
-        //[Range(0, ushort.MaxValue)]
-        //[SerializeField]
-        //private ushort _maximumSplitMessages = 0;
-        ///// <summary>
-        ///// Number of splits a message can arrive in from clients. This may occur when the client sends large amounts of data in one packet. Having this value too high increases risk of an allocation attack.
-        ///// </summary>
-        //internal uint MaximumSplitMessages => _maximumSplitMessages;
+        /// <summary>
+        /// True if to automatically kick clients which send packets larger than the transport MTU.
+        /// </summary>
+        [Tooltip("True if to automatically kick clients which send packets larger than the transport MTU.")]
+        [SerializeField]
+        private bool _limitClientMTU = true;
+        /// <summary>
+        /// Maximum amount of data a client may send. Use 0 for unlimited, otherwise specify an ammount. This is only applicable when LimitClientMTU is disabled; otherwise, clients are kicked immediately should they exceed MTU.
+        /// </summary>
+        [Tooltip("Maximum amount of data a client may send. Use 0 for unlimited, otherwise specify an ammount. This is only applicable when LimitClientMTU is disabled; otherwise, clients are kicked immediately should they exceed MTU.")]
+        //[Range(0, int.MaxValue)]
+        [SerializeField]
+        private int _maximumClientMTU = 0;
         #endregion
 
         #region Private.
@@ -114,6 +116,19 @@ namespace FishNet.Managing.Server
             {
                 _authenticator.FirstInitialize(manager);
                 _authenticator.OnAuthenticationResult += _authenticator_OnAuthenticationResult;
+            }
+
+            //If not limiting client MTU.
+            if (!_limitClientMTU)
+            {
+                //If max value is less than reliable limit.
+                int reliableMTU = NetworkManager.TransportManager.Transport.GetMTU((byte)Channel.Reliable);
+                if (_maximumClientMTU > 0 && _maximumClientMTU <= reliableMTU)
+                {
+                    _maximumClientMTU = (reliableMTU * 2);
+                    if (NetworkManager.CanLog(LoggingType.Error))
+                        Debug.LogError($"Maximum Client MTU of {_maximumClientMTU} is set lower than the Maximum Reliable MTU of {reliableMTU} for the transport. Maximum Client MTU has been changed to {_maximumClientMTU}.");
+                }
             }
 
             if (_startOnHeadless && Application.isBatchMode)
@@ -283,7 +298,6 @@ namespace FishNet.Managing.Server
             {
                 using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager))
                 {
-
                     /* This is a special condition where a message may arrive split.
                     * When this occurs buffer each packet until all packets are
                     * received. */
@@ -292,18 +306,49 @@ namespace FishNet.Managing.Server
                         /* Various conditions that will kick a client immediately.
                          * Splits are not allowed, or split size indicator is larger than maximum allowed. */
                         bool kickClient = false;
-                        //if (MaximumSplitMessages == 0)
-                        //{
-                        //    kickClient = true;
-                        //}
-                        //else
-                        //{
-                        //    ushort expected;
-                        //    _splitReader.ReadHeader(reader, true, out _, out expected);
-                        //    if (expected > MaximumSplitMessages)
-                        //        kickClient = true;
-                        //}
-                        
+                        //Clients are limited to MTU size.
+                        if (_limitClientMTU)
+                        {
+                            kickClient = true;
+                        }
+                        //Clients may exceed MTU to some value.
+                        else
+                        {
+                            //If a maximum is set.
+                            if (_maximumClientMTU > 0)
+                            {
+                                /* A quick check can be performed to see if
+                                 * this packet + already written will exceed maximum client mtu.
+                                 * If it does not, then read the expected splits
+                                 * to see if those may exceed mtu. 
+                                 * 
+                                 * The goal is to kick quick as possible when
+                                 * the client is sending too much data. If expected splits
+                                 * will definitely exceed data then kick, or if next incoming
+                                 * data would also exceed, kick.*/
+                                if (_splitReader.Position + args.Data.Count > _maximumClientMTU)
+                                {
+                                    kickClient = true;
+                                }
+                                else
+                                {
+                                    //How many splits would be too many.
+                                    int mtu = NetworkManager.TransportManager.Transport.GetMTU((byte)Channel.Reliable);
+                                    /* A split will always be in at least 2 segments
+                                     * so use a minimum of 2 segments when calculating
+                                     * how many splits are allowed. This is here should the user
+                                     * set maximumClientMTU to less than the MTU at runtime. */
+                                    uint maxAllowedSplits = (uint)Math.Max(Mathf.CeilToInt(_maximumClientMTU / mtu), 2);
+
+                                    ushort expected;
+                                    _splitReader.ReadHeader(reader, true, out _, out expected);
+                                    if (expected > maxAllowedSplits)
+                                        kickClient = true;
+                                }
+                            }
+
+                        }
+
                         /* Client did not pass checks.
                          * There are other ways to exploit the checks such
                          * as sending the same packet multiple times. This would
@@ -402,6 +447,13 @@ namespace FishNet.Managing.Server
             NetworkManager.SceneManager.OnClientAuthenticated(connection);
         }
 
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            _maximumClientMTU = Mathf.Clamp(_maximumClientMTU, 0, int.MaxValue);
+        }
+#endif
     }
 
 

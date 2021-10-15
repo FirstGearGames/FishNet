@@ -1,5 +1,5 @@
 ﻿
-namespace FishNet.Managing.Scened.Data
+namespace FishNet.Managing.Scened
 {
     /// <summary>
     /// Settings to apply when loading a scene.

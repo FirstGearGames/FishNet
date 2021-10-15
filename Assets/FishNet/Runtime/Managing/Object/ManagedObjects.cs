@@ -1,6 +1,7 @@
 ﻿using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -39,6 +40,18 @@ namespace FishNet.Managing.Object
         /// This is needed when running as host so host client will get any final messages for the object before they're destroyed.
         /// </summary>
         private Dictionary<int, NetworkObject> _pendingDestroy = new Dictionary<int, NetworkObject>();
+        /// <summary>
+        /// List for NetworkObjects.
+        /// </summary>
+        private List<NetworkObject> _networkObjectList = new List<NetworkObject>();
+        /// <summary>
+        /// ListCache for NetworkObjects.
+        /// </summary>
+        private ListCache<NetworkObject> _networkObjectCache = new ListCache<NetworkObject>();
+        /// <summary>
+        /// Used for performance gains when getting objects.
+        /// </summary>
+        private List<GameObject> _gameObjectList = new List<GameObject>();
         #endregion
 
         /// <summary>
@@ -66,7 +79,29 @@ namespace FishNet.Managing.Object
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
         }
 
+        /// <summary>
+        /// Gets all NetworkObjects in a scene.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        protected List<NetworkObject> GetSceneNetworkObjects(Scene s, out int count)
+        {
+            _networkObjectCache.Reset();
 
+            //Iterate all root objects for the scene.
+            s.GetRootGameObjects(_gameObjectList);            
+            for (int i = 0; i < _gameObjectList.Count; i++)
+            { 
+                /* Get NetworkObjects within children of each
+                 * root object then add them to the cache. */
+                _gameObjectList[i].GetComponentsInChildren<NetworkObject>(true, _networkObjectList);
+                _networkObjectCache.AddValues(_networkObjectList);
+            }
+
+            count = _networkObjectCache.Written;
+            return _networkObjectCache.Collection;
+        }
 
         /// <summary>
         /// Called when a scene is loaded.

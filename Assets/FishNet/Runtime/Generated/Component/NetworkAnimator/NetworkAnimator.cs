@@ -7,7 +7,7 @@ using UnityEngine;
 
 
 namespace FishNet.Component.Animating
-{    
+{
 
     public class NetworkAnimator : NetworkBehaviour
     {
@@ -209,14 +209,14 @@ namespace FishNet.Component.Animating
                 Hash = controllerParameter.nameHash;
             }
         }
-        #endregion  
-        
+        #endregion
+
         #region Serialized.
         /// <summary>
         /// The animator component to synchronize.
         /// </summary>
         [Tooltip("The animator component to synchronize.")]
-        [SerializeField] 
+        [SerializeField]
         private Animator _animator;
         /// <summary>
         /// The animator component to synchronize.
@@ -841,10 +841,15 @@ namespace FishNet.Component.Animating
 
             //Nothing to update.
             if (_writer.Position == 0)
+            {
+                updatedBytes = default;
                 return false;
-
-            updatedBytes = _writer.GetArraySegment();
-            return true;
+            }
+            else
+            {
+                updatedBytes = _writer.GetArraySegment();
+                return true;
+            }
         }
 
         /// <summary>
@@ -968,7 +973,7 @@ namespace FishNet.Component.Animating
             {
                 Debug.LogWarning("An error occurred while applying updates. This may occur when malformed data is sent or when you change the animator or controller but not on all connections.");
             }
-        }  
+        }
 
         /// <summary>
         /// Outputs the current state and time for a layer. Returns true if stateHash is not 0.
@@ -1263,7 +1268,7 @@ namespace FishNet.Component.Animating
         /// <param name="data"></param>
         private void ServerDataReceived(ref ArraySegment<byte> data)
         {
-            if (!_isActive)   
+            if (!_isActive)
                 return;
             //If also server, client host, then do nothing. Animations already ran on server.
             if (base.IsServer)
@@ -1293,7 +1298,7 @@ namespace FishNet.Component.Animating
                 SetAnimator(GetComponent<Animator>());
         }
 #endif
-#endregion
+        #endregion
 
     }
 }

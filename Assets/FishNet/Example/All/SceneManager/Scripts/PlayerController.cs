@@ -2,7 +2,7 @@
 using FishNet.Object;
 using UnityEngine;
 
-namespace FirstGearGames.FlexSceneManager.Demos
+namespace FishNet.Example.Scened
 {
 
 

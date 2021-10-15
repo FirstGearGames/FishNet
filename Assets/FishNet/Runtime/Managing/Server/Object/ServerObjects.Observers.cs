@@ -7,7 +7,7 @@ using FishNet.Transporting;
 using System.Collections.Generic;
 using FishNet.Utility.Performance;
 
-namespace FishNet.Managing.Server.Object
+namespace FishNet.Managing.Server
 {
     public partial class ServerObjects : ManagedObjects
     {

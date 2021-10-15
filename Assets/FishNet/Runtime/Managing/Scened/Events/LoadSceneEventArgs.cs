@@ -1,7 +1,6 @@
-﻿using FishNet.Managing.Scened.Data;
-using UnityEngine.SceneManagement;
+﻿using UnityEngine.SceneManagement;
 
-namespace FishNet.Managing.Scened.Eventing
+namespace FishNet.Managing.Scened
 {
     /// <summary>
     /// Data container about a scene load start.

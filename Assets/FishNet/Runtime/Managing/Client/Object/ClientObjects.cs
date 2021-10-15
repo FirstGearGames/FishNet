@@ -7,8 +7,9 @@ using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using FishNet.Documenting;
+using System.Collections.Generic;
 
-namespace FishNet.Managing.Client.Object
+namespace FishNet.Managing.Client
 {
     /// <summary>
     /// Handles objects and information about objects for the local client. See ManagedObjects for inherited options.
@@ -50,32 +51,10 @@ namespace FishNet.Managing.Client.Object
             //If started then despawn scene objects and wait for spawn messages.
             else
             {
-                DespawnSceneObjects();
+                RegisterAndDespawnSceneObjects();
             }
         }
 
-        /// <summary>
-        /// Despans all NetworkObjects in a scene if they are scene objects.
-        /// </summary>
-        private void DespawnSceneObjects()
-        {
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                foreach (GameObject go in SceneManager.GetSceneAt(i).GetRootGameObjects())
-                {
-                    if (go.TryGetComponent(out NetworkObject nob))
-                    {
-                        if (nob.SceneObject)
-                        {
-                            base.AddToSceneObjects(nob);
-                            //Only run if not also server, as this already ran on server.
-                            if (!base.NetworkManager.IsHost)
-                                nob.gameObject.SetActive(false);
-                        }
-                    }
-                }
-            }
-        }
 
         /// <summary>
         /// Called when a scene is loaded.
@@ -89,39 +68,41 @@ namespace FishNet.Managing.Client.Object
 
             if (!base.NetworkManager.IsClient)
                 return;
-
             /* When a scene first loads for a client it should disable
              * all network objects in that scene. The server will send
              * spawn messages once it's aware client has loaded the scene. */
-            foreach (GameObject go in s.GetRootGameObjects())
+            RegisterAndDespawnSceneObjects(s);
+        }
+
+        /// <summary>
+        /// Registers NetworkObjects in all scenes and despawns them.
+        /// </summary>
+        private void RegisterAndDespawnSceneObjects()
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+                RegisterAndDespawnSceneObjects(SceneManager.GetSceneAt(i));
+        }
+
+        /// <summary>
+        /// Adds NetworkObjects within s to SceneObjects, and despawns them.
+        /// </summary>
+        /// <param name="s"></param>
+        private void RegisterAndDespawnSceneObjects(Scene s)
+        {
+            int nobCount;
+            List<NetworkObject> networkObjects = base.GetSceneNetworkObjects(s, out nobCount);
+
+            foreach (NetworkObject nob in networkObjects)
             {
-                NetworkObject nob;
-                if (go.TryGetComponent(out nob))
+                if (nob.SceneObject)
                 {
-                    if (nob.SceneObject)
-                    {
-                        base.AddToSceneObjects(nob);
-                        //Only run if not also server, as this already ran on server.
-                        if (!base.NetworkManager.IsHost)
-                            nob.gameObject.SetActive(false);
-                    }
-                }
-                foreach (Transform t in go.transform)
-                {
-                    if (go.TryGetComponent(out nob))
-                    {
-                        if (nob.SceneObject)
-                        {
-                            base.AddToSceneObjects(nob);
-                            //Only run if not also server, as this already ran on server.
-                            if (!base.NetworkManager.IsHost)
-                                nob.gameObject.SetActive(false);
-                        }
-                    }
+                    base.AddToSceneObjects(nob);
+                    //Only run if not also server, as this already ran on server.
+                    if (!base.NetworkManager.IsServer)
+                        nob.gameObject.SetActive(false);
                 }
             }
         }
-
 
         /// <summary>
         /// Parses an OwnershipChange packet.

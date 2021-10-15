@@ -1,5 +1,4 @@
-﻿using FishNet.Managing.Scened.Broadcast;
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Object;
 using System;
 using System.Collections;
@@ -7,8 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using FishNet.Managing.Scened.Data;
-using FishNet.Managing.Scened.Eventing;
 using FishNet.Managing.Server;
 using FishNet.Managing.Client;
 using FishNet.Transporting;

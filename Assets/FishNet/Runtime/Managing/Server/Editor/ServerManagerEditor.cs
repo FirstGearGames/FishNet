@@ -2,32 +2,30 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace FishNet.Managing.Timing.Editing
+namespace FishNet.Managing.Server.Editing
 {
 
 
-    [CustomEditor(typeof(TimeManager), true)]
+    [CustomEditor(typeof(ServerManager), true)]
     [CanEditMultipleObjects]
-    public class TimeManagerEditor : Editor
+    public class ServerManagerEditor : Editor
     {
-        private SerializedProperty _correctTiming;
+        private SerializedProperty _limitClientMTU;
 
         protected virtual void OnEnable()
         {
-            _correctTiming = serializedObject.FindProperty("_correctTiming");
+            _limitClientMTU = serializedObject.FindProperty("_limitClientMTU");
         }
 
         public override void OnInspectorGUI()
         {
-
             serializedObject.Update();
 
-           
             SerializedProperty p = serializedObject.GetIterator();
             do
             {
                 if (p.name == "Base")
-                { 
+                {
                     continue;
                 }
                 //Script reference.
@@ -37,12 +35,10 @@ namespace FishNet.Managing.Timing.Editing
                     EditorGUILayout.PropertyField(p);
                     GUI.enabled = true;
                 }
-                //CSP related.
-                else if (p.name == "_maximumBufferedInputs" ||
-                    p.name == "_targetBufferedInputs" ||
-                    p.name == "_aggressiveTiming")
+                //If belongs to limit client mtu.
+                else if (p.name == "_maximumClientMTU")
                 {
-                    if (_correctTiming.boolValue)
+                    if (!_limitClientMTU.boolValue)
                     {
                         EditorGUI.indentLevel++;
                         EditorGUILayout.PropertyField(p);

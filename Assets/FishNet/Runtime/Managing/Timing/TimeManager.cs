@@ -109,7 +109,7 @@ namespace FishNet.Managing.Timing
         [Tooltip("Number of inputs server prefers to have buffered from clients.")]
         [Range(1, 255)]
         [SerializeField]
-        private byte _targetBufferedInputs = 3;
+        private byte _targetBufferedInputs = 2;
         /// <summary>
         /// True to enable more accurate tick synchronization between client and server at the cost of bandwidth.
         /// </summary>
@@ -371,7 +371,7 @@ namespace FishNet.Managing.Timing
                     ctd.SendTicksRemaining = (byte)Math.Min((_tickRate / 7), 255);
 
                 /* If value is 1 or less then increase
-                 * clients send rate. Ideally there will be two in queue
+                 * clients send rate. Ideally there will be two+ in queue
                  * before processing; this is where the - 2 comes from.
                  * 1 in queue would result in -1 step, where 0 in queue
                  * would result in -2 step. Lesser steps speed up client

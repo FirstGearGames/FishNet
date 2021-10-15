@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using FishNet.Utility.Performance;
 
-namespace FishNet.Managing.Server.Object
+namespace FishNet.Managing.Server
 {
     /// <summary>
     /// Handles objects and information about objects for the server. See ManagedObjects for inherited options.
@@ -208,40 +208,21 @@ namespace FishNet.Managing.Server.Object
         /// <param name="s"></param>
         private void SetupSceneObjects(Scene s)
         {
-            if (!NetworkManager.ServerManager.Started)
-            {
-                if (base.NetworkManager.CanLog(Logging.LoggingType.Warning))
-                    Debug.LogWarning($"Cannot setup scene objects while server is not active.");
-                return;
-            }
+            int nobCount;
+            List<NetworkObject> networkObjects = base.GetSceneNetworkObjects(s, out nobCount);
 
-            //Iterate root objects, and down their hierarchy.
-            foreach (GameObject go in s.GetRootGameObjects())
+            foreach (NetworkObject  nob in networkObjects)
             {
-                //Root object first.
-                CheckSetupObject(go);
-                //Objects children.
-                foreach (Transform t in go.transform)
-                    CheckSetupObject(t.gameObject);
-            }
-
-            void CheckSetupObject(GameObject go)
-            {
-                NetworkObject nob;
-                //If has a NetworkObject component.
-                if (go.TryGetComponent(out nob))
+                //Only setup if a scene object and not initialzied.
+                if (nob.SceneObject && nob.Deinitializing)
                 {
-                    //Only setup if a scene object and not initialzied.
-                    if (nob.SceneObject && nob.Deinitializing)
-                    {
-                        base.AddToSceneObjects(nob);
-                        /* If was active in the editor (before hitting play), or currently active
-                         * then PreInitialize without synchronizing to clients. There is no reason
-                         * to synchronize to clients because the scene just loaded on server,
-                         * which means clients are not yet in the scene. */
-                        if (nob.ActiveDuringEdit || nob.gameObject.activeInHierarchy)
-                            SetupWithoutSynchronization(nob);
-                    }
+                    base.AddToSceneObjects(nob);
+                    /* If was active in the editor (before hitting play), or currently active
+                     * then PreInitialize without synchronizing to clients. There is no reason
+                     * to synchronize to clients because the scene just loaded on server,
+                     * which means clients are not yet in the scene. */
+                    if (nob.ActiveDuringEdit || nob.gameObject.activeInHierarchy)
+                        SetupWithoutSynchronization(nob);
                 }
             }
         }

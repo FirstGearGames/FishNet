@@ -1,5 +1,4 @@
-﻿using FishNet.Managing.Client.Object;
-using FishNet.Managing.Transporting;
+﻿using FishNet.Managing.Transporting;
 using FishNet.Connection;
 using FishNet.Serializing;
 using FishNet.Transporting;

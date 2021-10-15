@@ -4,7 +4,7 @@ using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 
-namespace FishNet.Managing.Client.Object
+namespace FishNet.Managing.Client
 {
 
     /// <summary>
