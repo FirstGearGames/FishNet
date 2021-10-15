@@ -211,8 +211,9 @@ namespace FishNet.Managing.Server
             int nobCount;
             List<NetworkObject> networkObjects = base.GetSceneNetworkObjects(s, out nobCount);
 
-            foreach (NetworkObject  nob in networkObjects)
+            for (int i = 0; i < nobCount; i++)
             {
+                NetworkObject nob = networkObjects[i];
                 //Only setup if a scene object and not initialzied.
                 if (nob.SceneObject && nob.Deinitializing)
                 {

@@ -86,7 +86,7 @@ namespace FishNet.Managing.Server
         /// Maximum amount of data a client may send. Use 0 for unlimited, otherwise specify an ammount. This is only applicable when LimitClientMTU is disabled; otherwise, clients are kicked immediately should they exceed MTU.
         /// </summary>
         [Tooltip("Maximum amount of data a client may send. Use 0 for unlimited, otherwise specify an ammount. This is only applicable when LimitClientMTU is disabled; otherwise, clients are kicked immediately should they exceed MTU.")]
-        //[Range(0, int.MaxValue)]
+        //[Range(0, int.MaxValue)] //The range attribute is broken via Unity. It shows negative values when using int or higher as max value.
         [SerializeField]
         private int _maximumClientMTU = 0;
         #endregion

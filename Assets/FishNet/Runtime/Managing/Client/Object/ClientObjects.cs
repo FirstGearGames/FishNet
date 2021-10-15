@@ -92,8 +92,9 @@ namespace FishNet.Managing.Client
             int nobCount;
             List<NetworkObject> networkObjects = base.GetSceneNetworkObjects(s, out nobCount);
 
-            foreach (NetworkObject nob in networkObjects)
+            for (int i = 0; i < nobCount; i++)
             {
+                NetworkObject nob = networkObjects[i];
                 if (nob.SceneObject)
                 {
                     base.AddToSceneObjects(nob);

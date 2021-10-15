@@ -90,13 +90,14 @@ namespace FishNet.Managing.Object
             _networkObjectCache.Reset();
 
             //Iterate all root objects for the scene.
-            s.GetRootGameObjects(_gameObjectList);            
+            s.GetRootGameObjects(_gameObjectList);
             for (int i = 0; i < _gameObjectList.Count; i++)
-            { 
+            {
                 /* Get NetworkObjects within children of each
                  * root object then add them to the cache. */
                 _gameObjectList[i].GetComponentsInChildren<NetworkObject>(true, _networkObjectList);
-                _networkObjectCache.AddValues(_networkObjectList);
+                if (_networkObjectList != null)
+                    _networkObjectCache.AddValues(_networkObjectList);
             }
 
             count = _networkObjectCache.Written;
