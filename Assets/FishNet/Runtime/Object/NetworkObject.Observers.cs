@@ -57,10 +57,20 @@ namespace FishNet.Object
         /// <returns>True if added to Observers.</returns>
         internal ObserverStateChange RebuildObservers(NetworkConnection connection)
         {
+            //If not a valid connection.
             if (!connection.IsValid)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"An invalid connection was used when rebuilding observers.");
+                return ObserverStateChange.Unchanged;
+            }
+            //Valid not not active.
+            else if (!connection.IsActive)
+            {
+                /* Just remove from observers since connection isn't active
+                 * and return unchanged because nothing should process
+                 * given the connection isnt active. */
+                Observers.Remove(connection);
                 return ObserverStateChange.Unchanged;
             }
 

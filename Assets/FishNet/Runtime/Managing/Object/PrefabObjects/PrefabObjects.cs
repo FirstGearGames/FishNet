@@ -1,9 +1,12 @@
+using FishNet.Documenting;
 using FishNet.Object;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Managing.Object
 {
+    //document
+    [APIExclude]
     public abstract class PrefabObjects : ScriptableObject 
     {
         public abstract void Clear();

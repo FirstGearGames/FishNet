@@ -223,8 +223,11 @@ namespace FishNet.Managing.Client
              * other reference creating functions. */
             if (!base.NetworkManager.IsHost)
             {
-                //todo use networkconnection cache.
-                NetworkConnection owner = new NetworkConnection(NetworkManager, ownerId);
+                //If local client is owner then use localconnection reference.
+                NetworkConnection localConnection = base.NetworkManager.ClientManager.Connection;
+                NetworkConnection owner = (ownerId == localConnection.ClientId) ?
+                    localConnection : new NetworkConnection(NetworkManager, ownerId);
+
                 nob.PreInitialize(NetworkManager, objectId, owner, false);
             }
 

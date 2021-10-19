@@ -45,7 +45,7 @@ namespace FishNet.Connection
         /// <param name="channel">Channel to send on,</param>
         public void Broadcast<T>(T message, bool requireAuthenticated = true,  Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
-            if (!IsValid)
+            if (!IsActive)
             {
                 if (NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Connection is not valid, cannot send broadcast.");
@@ -67,7 +67,7 @@ namespace FishNet.Connection
             //Cannot send data when disconnecting.
             if (Disconnecting)
                 return;
-            if (!IsValid)
+            if (!IsActive)
                 throw new ArgumentException($"NetworkConnection is not valid.");
             if (channel >= _toClientBundles.Count)
                 throw new ArgumentException($"Channel {channel} is out of bounds.");

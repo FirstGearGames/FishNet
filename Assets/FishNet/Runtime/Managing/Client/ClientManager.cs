@@ -48,6 +48,7 @@ namespace FishNet.Managing.Client
         {
             NetworkManager = manager;
             Objects = new ClientObjects(manager);
+            Connection = NetworkManager.EmptyConnection;
             /* Unsubscribe before subscribing.
              * Shouldn't be but better safe than sorry. */
             SubscribeToEvents(false);
@@ -90,13 +91,14 @@ namespace FishNet.Managing.Client
 
             //Clear connection after so objects can update using current Connection value.
             if (!Started)
-                Connection = null;
+                Connection = NetworkManager.EmptyConnection;
 
             if (Started && NetworkManager.CanLog(Logging.LoggingType.Common))
                 Debug.Log($"Local client is connected to the server.");
             else if (stopped && NetworkManager.CanLog(Logging.LoggingType.Common))
                 Debug.Log($"Local client is disconnected from the server.");
 
+            NetworkManager.ServerManager.UpdateFramerate();
             OnClientConnectionState?.Invoke(args);
         }
 
@@ -212,9 +214,9 @@ namespace FishNet.Managing.Client
                         {
                             Objects.ParseOwnershipChange(reader);
                         }
-                        else if (packetId == PacketId.ConnectionId)
+                        else if (packetId == PacketId.Authenticated)
                         {
-                            ParseConnectionId(reader);
+                            ParseAuthenticated(reader);
                         }
                         else
                         {
@@ -239,7 +241,7 @@ namespace FishNet.Managing.Client
         /// Parses a received connectionId. This is received before client receives connection state change.
         /// </summary>
         /// <param name="reader"></param>
-        private void ParseConnectionId(PooledReader reader)
+        private void ParseAuthenticated(PooledReader reader)
         {
             int connectionId = reader.ReadInt16();
             //If only a client then make a new connection.
@@ -264,6 +266,9 @@ namespace FishNet.Managing.Client
                     Connection = new NetworkConnection(NetworkManager, connectionId);
                 }
             }
+
+            //Mark as authenticated.
+            Connection.ConnectionAuthenticated();
         }
 
     }

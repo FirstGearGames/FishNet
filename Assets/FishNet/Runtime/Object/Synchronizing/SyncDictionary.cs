@@ -42,6 +42,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="key">Key being modified.</param>
         /// <param name="value">Value of operation.</param>
         /// <param name="asServer">True if callback is on the server side. False is on the client side.</param>
+        [APIExclude]
         public delegate void SyncDictionaryChanged(SyncDictionaryOperation op, TKey key, TValue value, bool asServer);
         /// <summary>
         /// Called when the SyncDictionary changes.
@@ -55,6 +56,7 @@ namespace FishNet.Object.Synchronizing
         /// Keys within the collection.
         /// </summary>
         public ICollection<TKey> Keys => Collection.Keys;
+        [APIExclude]
         IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Collection.Keys;
         /// <summary>
         /// Values within the collection.
@@ -424,6 +426,7 @@ namespace FishNet.Object.Synchronizing
 
     }
 
+    [APIExclude]
     public class SyncDictionary<TKey, TValue> : SyncIDictionary<TKey, TValue>
     {
         [APIExclude]

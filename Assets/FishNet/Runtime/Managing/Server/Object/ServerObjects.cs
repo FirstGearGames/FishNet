@@ -19,7 +19,6 @@ namespace FishNet.Managing.Server
         #region Public.
         /// <summary>
         /// Called right before client objects are destroyed when a client disconnects.
-        /// Clearing Objects for NetworkConnection will prevent them from being destroyed.
         /// </summary>
         public event Action<NetworkConnection> OnPreDestroyClientObjects;
         #endregion
@@ -121,6 +120,9 @@ namespace FishNet.Managing.Server
 
             OnPreDestroyClientObjects?.Invoke(connection);
 
+            /* A cache is made because the Objects
+             * collection would end up modified during
+             * iteration from removing ownership and despawning. */
             _disconnectedClientObjectsCache.Reset();
             foreach (NetworkObject nob in connection.Objects)
                 _disconnectedClientObjectsCache.AddValue(nob);
@@ -267,7 +269,7 @@ namespace FishNet.Managing.Server
                     Debug.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
                 return;
             }
-            if (ownerConnection != null && ownerConnection.IsValid && !ownerConnection.LoadedStartScenes)
+            if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes)
             {
                 if (base.NetworkManager.CanLog(Logging.LoggingType.Warning))
                     Debug.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
@@ -286,7 +288,7 @@ namespace FishNet.Managing.Server
             SetupWithoutSynchronization(networkObject, ownerConnection);
 
             //If there is an owner then try to add them to the networkObjects scene.
-            if (ownerConnection != null && ownerConnection.IsValid)
+            if (ownerConnection != null && ownerConnection.IsActive)
                 base.NetworkManager.SceneManager.AddConnectionToScene(ownerConnection, networkObject.gameObject.scene);
             //Also rebuild observers for the object so it spawns for others.
             RebuildObservers(networkObject);
@@ -391,7 +393,6 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Despawns an object over the network.
         /// </summary>
-        /// <param name="nob"></param>
         internal override void Despawn(NetworkObject nob, bool asServer)
         {
             if (nob.CanSpawnOrDespawn(true))

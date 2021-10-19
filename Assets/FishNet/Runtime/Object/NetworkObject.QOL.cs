@@ -39,7 +39,11 @@ namespace FishNet.Object
         /// <summary>
         /// True if there is an owner.
         /// </summary>
-        public bool OwnerIsValid => (Owner == null) ? false : (Owner.IsValid);
+        public bool OwnerIsValid => (Owner == null) ? false : Owner.IsValid;
+        /// <summary>
+        /// True if there is an owner and their connect is active. This will return false if there is no owner, or if the connection is disconnecting.
+        /// </summary>
+        public bool OwnerIsActive => (Owner == null) ? false : Owner.IsActive;
         /// <summary>
         /// ClientId for this NetworkObject owner.
         /// </summary>
@@ -57,9 +61,10 @@ namespace FishNet.Object
         /// <summary>
         /// Despawns this NetworkObject. Only call from the server.
         /// </summary>
+        /// <param name="destroyInstantiated">True to also destroy the object if it was instantiated. False will only disable the object.</param>
         public void Despawn()
         {
-            NetworkManager.ServerManager.Despawn(this);
+            NetworkManager.ServerManager.Despawn(gameObject);
         }
         /// <summary>
         /// Spawns an object over the network. Only call from the server.

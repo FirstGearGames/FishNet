@@ -4,6 +4,7 @@
 // MVID: 398967D9-11C0-455C-B750-DCE87EFCCBEC
 // Assembly location: D:DevelopmentPersonalFishNetsFishNet - DeveloperLibraryScriptAssembliesFishNet.Runtime.dll
 
+using FishNet.Documenting;
 using FishNet.Managing.Scened;
 using FishNet.Object;
 using FishNet.Serializing;
@@ -13,6 +14,7 @@ using UnityEngine;
 
 namespace FishNet.Runtime
 {
+    [APIExclude]
     [StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
     public static class ScenedReadersAndWriters
     {

@@ -1,7 +1,9 @@
 ﻿
+using FishNet.Documenting;
+
 namespace FishNet.Object.Synchronizing
 {
-
+    [APIExclude]
     public enum SyncDictionaryOperation : byte
     {
         /// <summary>

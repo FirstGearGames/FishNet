@@ -133,7 +133,6 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Despawns a NetworkObject.
         /// </summary>
-        /// <param name="nob"></param>
         internal virtual void Despawn(NetworkObject nob, bool asServer)
         {
             if (nob == null)
@@ -189,6 +188,7 @@ namespace FishNet.Managing.Object
             if (nob.SceneObject)
                 RemoveFromSceneObjects(nob);
         }
+
         /// <summary>
         /// Despawns Spawned NetworkObjects. Scene objects will be disabled, others will be destroyed.
         /// </summary>

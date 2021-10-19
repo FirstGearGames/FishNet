@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace FishNet.Managing.Object
 {
-
+    //document
     [APIExclude]
     [CreateAssetMenu(fileName = "New SinglePrefabObjects", menuName = "FishNet/Spawnable Prefabs/Single Prefab Objects")]
     public class SinglePrefabObjects : PrefabObjects

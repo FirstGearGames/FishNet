@@ -7,8 +7,9 @@ using UnityEngine;
 namespace FishNet.Managing.Object
 {
 
-    [CreateAssetMenu(fileName = "New DualPrefabObjects", menuName = "FishNet/Spawnable Prefabs/Dual Prefab Objects")]
+    //document
     [APIExclude]
+    [CreateAssetMenu(fileName = "New DualPrefabObjects", menuName = "FishNet/Spawnable Prefabs/Dual Prefab Objects")]
     public class DualPrefabObjects : PrefabObjects
     {
         [SerializeField]

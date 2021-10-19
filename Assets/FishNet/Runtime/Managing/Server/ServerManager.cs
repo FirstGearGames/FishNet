@@ -61,6 +61,13 @@ namespace FishNet.Managing.Server
         /// </summary>
         public Authenticator Authenticator { get => _authenticator; set => _authenticator = value; }
         /// <summary>
+        /// Maximum frame rate the server may run at. This value is ignored as host.
+        /// </summary>
+        [Tooltip("Maximum frame rate the server may run at. This value is ignored as host.")]
+        [Range(1, MAXIMUM_FRAMERATE)]
+        [SerializeField]
+        private ushort _frameRate = MAXIMUM_FRAMERATE;
+        /// <summary>
         /// 
         /// </summary>
         [Tooltip("True to share current owner of objects with all clients. False to hide owner of objects from everyone but owner.")]
@@ -96,6 +103,13 @@ namespace FishNet.Managing.Server
         /// Used to read splits.
         /// </summary>
         private SplitReader _splitReader = new SplitReader();
+        #endregion
+
+        #region Const.
+        /// <summary>
+        /// Maximum framerate allowed.
+        /// </summary>
+        private const ushort MAXIMUM_FRAMERATE = 9999;
         #endregion
 
         /// <summary>
@@ -213,7 +227,38 @@ namespace FishNet.Managing.Server
                     Debug.Log("Server has been stopped.");
             }
 
+            UpdateFramerate();
             OnServerConnectionState?.Invoke(args);
+        }
+
+        /// <summary>
+        /// Updates frame rate based on state of server and client.
+        /// </summary>
+        internal void UpdateFramerate()
+        {
+            bool clientStarted = NetworkManager.ClientManager.Started;
+            bool serverStarted = Started;
+
+            if (clientStarted)
+            {
+                Application.targetFrameRate = MAXIMUM_FRAMERATE;
+            }
+            else if (serverStarted)
+            {
+                ushort tickRate = NetworkManager.TimeManager.TickRate;
+                if (_frameRate < tickRate)
+                {
+                    if (NetworkManager.CanLog(LoggingType.Warning))
+                        Debug.LogWarning($"Server frame rate was set to {_frameRate} while tick rate is set to {tickRate}. Server frame rate must be a minimum of tick rate. Frame rate has been increased to tick rate.");
+                    _frameRate = tickRate;
+                }
+
+                Application.targetFrameRate = _frameRate;
+            }
+            else
+            { 
+                Application.targetFrameRate = MAXIMUM_FRAMERATE;
+            }
         }
 
         /// <summary>
@@ -263,11 +308,11 @@ namespace FishNet.Managing.Server
         /// Sends client their connectionId.
         /// </summary>
         /// <param name="connectionid"></param>
-        private void SendConnectionId(NetworkConnection conn)
+        private void SendAuthenticated(NetworkConnection conn)
         {
             using (PooledWriter writer = WriterPool.GetWriter())
             {
-                writer.WriteByte((byte)PacketId.ConnectionId);
+                writer.WriteByte((byte)PacketId.Authenticated);
                 writer.WriteInt16((short)conn.ClientId);
                 NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), conn);
             }
@@ -441,7 +486,7 @@ namespace FishNet.Managing.Server
             * by the ServerManager. This packet is very simple and can be built
             * on the spot. */
             connection.ConnectionAuthenticated();
-            SendConnectionId(connection);
+            SendAuthenticated(connection);
 
             OnAuthenticationResult?.Invoke(connection, true);
             NetworkManager.SceneManager.OnClientAuthenticated(connection);

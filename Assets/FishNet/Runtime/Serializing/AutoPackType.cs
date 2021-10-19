@@ -6,11 +6,11 @@ namespace FishNet.Serializing
     public enum AutoPackType
     {
         /// <summary>
-        /// Data will not be packed. Can be used to save a small amount of bandwidth if it's known the value is too large to be packed.
+        /// Data will not be packed. Can be used to save a small amount of bandwidth if the datas known the value is too large to be packed.
         /// </summary>
         Unpacked = 0,
         /// <summary>
-        /// Data will be packed.
+        /// Data will be packed when possible.
         /// </summary>
         Packed = 1
     }

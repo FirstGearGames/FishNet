@@ -1,4 +1,5 @@
-﻿using FishNet.Managing.Logging;
+﻿using FishNet.Documenting;
+using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System;
@@ -32,6 +33,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Custom enumerator to prevent garbage collection.
         /// </summary>
+        [APIExclude]
         public struct Enumerator : IEnumerator<T>
         {
             public T Current { get; private set; }
@@ -65,6 +67,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Implementation from List<T>. Not used.
         /// </summary>
+        [APIExclude]
         public bool IsReadOnly => false;
         /// <summary>
         /// Delegate signature for when SyncList changes.
@@ -73,6 +76,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="index"></param>
         /// <param name="oldItem"></param>
         /// <param name="newItem"></param>
+        [APIExclude]
         public delegate void SyncListChanged(SyncListOperation op, int index, T oldItem, T newItem, bool asServer);
         /// <summary>
         /// Called when the SyncList changes.
@@ -108,13 +112,14 @@ namespace FishNet.Object.Synchronizing
         private bool _valuesChanged = false;
         #endregion
 
+        [APIExclude]
         public SyncList() : this(EqualityComparer<T>.Default) { }
-
+        [APIExclude]
         public SyncList(IEqualityComparer<T> comparer)
         {
             this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
         }
-
+        [APIExclude]
         public SyncList(IList<T> collection, IEqualityComparer<T> comparer = null)
         {
             this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
@@ -546,7 +551,9 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <returns></returns>
         public Enumerator GetEnumerator() => new Enumerator(this);
+        [APIExclude]
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
+        [APIExclude]
         IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
     }

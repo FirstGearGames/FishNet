@@ -47,7 +47,12 @@ namespace FishNet.Object
         /// <summary>
         /// True if there is an owner.
         /// </summary>
+        /// </summary>
         public bool OwnerIsValid => (NetworkObject == null) ? false : NetworkObject.OwnerIsValid;
+        /// <summary>
+        /// True if there is an owner and their connect is active. This will return false if there is no owner, or if the connection is disconnecting.
+        /// </summary>
+        public bool OwnerIsActive => (NetworkObject == null) ? false : NetworkObject.OwnerIsActive;
         /// <summary>
         /// ClientId for this NetworkObject owner.
         /// </summary>

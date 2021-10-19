@@ -1197,7 +1197,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2c95dfde7d73b54dbbdc23155d35d36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _logging: {fileID: 0}
+  _spawnablePrefabs: {fileID: 11400000, guid: 318d7226e6239bb49814cb7fb789f8d0, type: 2}
   _runInBackground: 1
   _dontDestroyOnLoad: 1
   _allowMultiple: 0
-  _spawnablePrefabs: {fileID: 11400000, guid: 87841bc59b2ee1140b51c008f714da48, type: 2}

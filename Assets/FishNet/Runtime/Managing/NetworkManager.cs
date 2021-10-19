@@ -29,19 +29,19 @@ namespace FishNet.Managing
         /// <summary>
         /// True if only the server is active.
         /// </summary>
-        public bool IsServerOnly => (ServerManager.Started && !ClientManager.Started);
+        public bool IsServerOnly => (IsServer && !IsClient);
         /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
-        public bool IsClient => ClientManager.Started;
+        public bool IsClient => (ClientManager.Started && ClientManager.Connection.Authenticated);
         /// <summary>
         /// True if only the client is active, and authenticated.
         /// </summary>
-        public bool IsClientOnly => (!ServerManager.Started && ClientManager.Started);
+        public bool IsClientOnly => (!IsServer && IsClient);
         /// <summary>
         /// True if client and server are active.
         /// </summary>
-        public bool IsHost => (ServerManager.Started && ClientManager.Started);
+        public bool IsHost => (IsServer && IsClient);
         /// <summary>
         /// ServerManager for this NetworkManager.
         /// </summary>
@@ -93,6 +93,7 @@ namespace FishNet.Managing
         [SerializeField]
         private bool _allowMultiple = false;
         #endregion
+
         protected virtual void Awake()
         {
             InitializeLogging();
@@ -143,11 +144,6 @@ namespace FishNet.Managing
              * only be read on ticks to maintain accurate
              * processing timings. */
             ServerManager.Objects.CheckDirtySyncTypes();
-            /* Call these methods from here rather than
-             * the transport manager so sync types
-             * can be processed first. */
-            TransportManager.IterateOutgoing(true);
-            TransportManager.IterateOutgoing(false);
         }
 
 

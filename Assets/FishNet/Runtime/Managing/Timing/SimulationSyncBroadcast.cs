@@ -2,8 +2,10 @@
 
 namespace FishNet.Managing.Timing.Broadcast
 {
-    public struct StepChangeBroadcast : IBroadcast
+    public struct AddBufferedBroadcast : IBroadcast { }
+    public struct TimingAdjustmentBroadcast : IBroadcast
     {
+        public uint Tick;
         public sbyte Step;
     }
 

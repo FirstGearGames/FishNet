@@ -155,6 +155,17 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Disables this object and resets network values.
+        /// </summary>
+        internal void DisableNetworkObject()
+        {
+            SetOwner(null, false);
+            ObjectId = -1;
+            Observers.Clear();
+            NetworkManager = null;
+        }
+
+        /// <summary>
         /// Removes ownership from all clients.
         /// </summary>
         public void RemoveOwnership()
@@ -189,19 +200,31 @@ namespace FishNet.Object
                 if (newOwner == Owner && asServer)
                     return;
 
-                if (newOwner != null && newOwner.IsValid && !newOwner.LoadedStartScenes)
+                if (newOwner != null && newOwner.IsActive && !newOwner.LoadedStartScenes)
                 {
                     if (NetworkManager.CanLog(LoggingType.Warning))
                         Debug.LogWarning($"Ownership has been transfered to ClientId {newOwner.ClientId} but this is not recommended until after they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
                 }
             }
 
-            /* If owner is null or not valid
-             * then set prevOwner to null.
-             * Otherwise set prevOwner to Owner. */
-            NetworkConnection prevOwner = (Owner == null || !Owner.IsValid) ? null : Owner;
+            bool activeNewOwner = (newOwner != null && newOwner.IsActive);
+            NetworkConnection prevOwner = Owner;
+            bool activePrevOwner = (prevOwner != null && prevOwner.IsActive);
+            bool validPrevOwner = (prevOwner != null && prevOwner.IsValid);
 
             SetOwner(newOwner);
+            /* Only modify objects if asServer or not
+             * host. When host, server would
+             * have already modified objects
+             * collection so there is no need
+             * for client to as well. */
+            if (asServer || !NetworkManager.IsHost)
+            {
+                if (activeNewOwner)
+                    newOwner.AddObject(this);
+                if (validPrevOwner)
+                    prevOwner.RemoveObject(this);
+            }
             //After changing owners invoke callbacks.
             InvokeOwnership(Owner, asServer);
 
@@ -209,9 +232,8 @@ namespace FishNet.Object
             if (asServer)
             {
                 //Rebuild for new owner first so they get change messages.
-                if (newOwner != null && newOwner.IsValid)
+                if (activeNewOwner)
                 {
-                    newOwner.AddObject(this);
                     NetworkManager.SceneManager.AddConnectionToScene(newOwner, gameObject.scene);
                     RebuildObservers(newOwner);
                 }
@@ -229,22 +251,16 @@ namespace FishNet.Object
                     //Only sending to old / new.
                     else
                     {
-                        if (prevOwner != null)
+                        if (activePrevOwner)
                             NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), prevOwner);
-                        if (newOwner != null)
+                        if (activeNewOwner)
                             NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), newOwner);
                     }
                 }
 
-                //Rebuild for old owner last so they also get change messages.
-                if (prevOwner != null)
-                {
-                    prevOwner.RemoveObject(this);
+                if (prevOwner.IsActive)
                     RebuildObservers(prevOwner);
-                }
-
             }
-
         }
 
         /// <summary>

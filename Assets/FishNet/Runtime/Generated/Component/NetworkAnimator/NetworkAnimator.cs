@@ -1,4 +1,5 @@
 using FishNet.Connection;
+using FishNet.Documenting;
 using FishNet.Object;
 using FishNet.Serializing;
 using System;
@@ -52,7 +53,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Animator updates received from clients when using Client Authoritative.
         /// </summary>
-        public class ClientAuthoritativeUpdate
+        private class ClientAuthoritativeUpdate
         {
             /// <summary>
             /// 
@@ -413,6 +414,7 @@ namespace FishNet.Component.Animating
             FirstInitialize();
         }
 
+        [APIExclude]
         public override void OnSpawnServer(NetworkConnection connection)
         {
             base.OnSpawnServer(connection);
@@ -420,6 +422,7 @@ namespace FishNet.Component.Animating
                 TargetAnimatorUpdated(connection, updatedBytes);
         }
 
+        [APIExclude]
         public override void OnStartServer()
         {
             base.OnStartServer();
@@ -996,6 +999,16 @@ namespace FishNet.Component.Animating
             normalizedTime = st.normalizedTime;
 
             return (stateHash != 0);
+        }
+
+        /// <summary>
+        /// Forces values to send next update regardless of time remaining.
+        /// Can be useful if you have a short lasting parameter that you want to ensure goes through.
+        /// </summary>
+        public void ForceSend()
+        {
+            _nextClientSendTime = 0f;
+            _nextServerSendTime = 0f;
         }
 
         #region Play.

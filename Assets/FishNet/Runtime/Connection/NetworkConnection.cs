@@ -1,4 +1,5 @@
-﻿using FishNet.Managing;
+﻿using FishNet.Documenting;
+using FishNet.Managing;
 using FishNet.Object;
 using System;
 using System.Collections.Generic;
@@ -48,9 +49,13 @@ namespace FishNet.Connection
         /// </summary>
         public bool Authenticated { get; private set; } = false;
         /// <summary>
+        /// True if this connection IsValid and not Disconnecting.
+        /// </summary>
+        public bool IsActive => (ClientId >= 0 && !Disconnecting);
+        /// <summary>
         /// True if this connection is valid. An invalid connection indicates no client is set for this reference.
         /// </summary>
-        public bool IsValid => (ClientId >= 0 && !Disconnecting);
+        public bool IsValid => (ClientId >= 0);
         /// <summary>
         /// Unique Id for this connection.
         /// </summary>
@@ -98,7 +103,7 @@ namespace FishNet.Connection
             return base.GetHashCode();
         }
         public static bool operator ==(NetworkConnection a, NetworkConnection b)
-        {   
+        {
             if (a is null && b is null)
                 return true;
             if (a is null && !(b is null))
@@ -112,9 +117,11 @@ namespace FishNet.Connection
         }
         #endregion
 
+        [APIExclude]
         public NetworkConnection() { }
+        [APIExclude]
         public NetworkConnection(NetworkManager manager, int clientId)
-        {            
+        {
             Initialize(manager, clientId);
         }
 
