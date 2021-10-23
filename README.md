@@ -7,6 +7,10 @@ Discord: https://discord.gg/NqzSEqR
 
 Trello: https://trello.com/b/taAfXWKP/fishnet-fish-networking
 
+# Addons
+
+FishySteamworks, a Steamworks transport: https://github.com/FirstGearGames/FishySteamworks/
+
 Donation Options:
 
   https://www.gofundme.com/f/fishnet
