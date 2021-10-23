@@ -11,7 +11,7 @@ Trello: https://trello.com/b/taAfXWKP/fishnet-fish-networking
 
 FishySteamworks, a Steamworks transport: https://github.com/FirstGearGames/FishySteamworks/
 
-# Donation Options:
+# Donation Options
 
   https://www.gofundme.com/f/fishnet
   
