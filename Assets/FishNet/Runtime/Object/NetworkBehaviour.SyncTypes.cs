@@ -283,10 +283,13 @@ namespace FishNet.Object
                             using (PooledWriter headerWriter = WriterPool.GetWriter())
                             {
                                 PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
-                                headerWriter.WriteByte((byte)packetId);
+                                headerWriter.WriteUInt16((ushort)packetId);
 
                                 PooledWriter dataWriter = WriterPool.GetWriter();
-                                dataWriter.WriteNetworkBehaviour(this);
+                                dataWriter.WriteNetworkBehaviour(this); 
+                                /* //clean try and clean this up similar to rpc changes
+                                // with unreliable lengths and what not. */
+
                                 dataWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
 
                                 //If unreliable write packet length.

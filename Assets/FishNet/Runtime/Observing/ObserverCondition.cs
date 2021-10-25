@@ -22,7 +22,7 @@ namespace FishNet.Observing
         /// Initializes this script for use.
         /// </summary>
         /// <param name="networkObject"></param>
-        public virtual void FirstInitialize(NetworkObject networkObject)
+        public virtual void InitializeOnce(NetworkObject networkObject)
         {
             NetworkObject = networkObject;
         }

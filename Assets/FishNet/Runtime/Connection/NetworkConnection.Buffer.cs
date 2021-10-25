@@ -68,9 +68,17 @@ namespace FishNet.Connection
             if (Disconnecting)
                 return;
             if (!IsActive)
-                throw new ArgumentException($"NetworkConnection is not valid.");
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Data cannot be sent to connection {ClientId} because it is not active.");
+                return;
+            }
             if (channel >= _toClientBundles.Count)
-                throw new ArgumentException($"Channel {channel} is out of bounds.");
+            {
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Channel {channel} is out of bounds.");
+                return;
+            }
 
             _toClientBundles[channel].Write(segment);
             ServerDirty();

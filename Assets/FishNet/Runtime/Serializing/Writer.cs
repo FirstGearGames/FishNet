@@ -108,6 +108,18 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Inserts value at index within the buffer.
+        /// This method does not perform sanity checks.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="index"></param>
+        [CodegenExclude]
+        public void FastInsertByte(byte value, int index)
+        {
+            _buffer[index] = value;
+        }
+
+        /// <summary>
         /// Writes a byte.
         /// </summary>
         /// <param name="value"></param>
@@ -831,7 +843,7 @@ namespace FishNet.Serializing
         /// <returns></returns>
         internal static bool IsDefaultAutoPack<T>(out AutoPackType packType)
         {
-            //todo bench this against using a hash lookup.
+            //performance bench this against using a hash lookup.
             System.Type type = typeof(T);
             if ((type == typeof(int) || type == typeof(uint) ||
                 type == typeof(long) || type == typeof(ulong)) ||

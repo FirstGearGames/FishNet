@@ -81,7 +81,7 @@ namespace FishNet.Observing
                      * once in the scene. Double edged sword of using scriptable
                      * objects for conditions. */
                     ObserverConditions[i] = ObserverConditions[i].Clone();
-                    ObserverConditions[i].FirstInitialize(_networkObject);
+                    ObserverConditions[i].InitializeOnce(_networkObject);
                     //If timed also register as containing timed conditions.
                     if (ObserverConditions[i].Timed())
                         _hasTimedConditions = true;

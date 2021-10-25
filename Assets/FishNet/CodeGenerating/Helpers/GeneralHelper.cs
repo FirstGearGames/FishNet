@@ -233,7 +233,7 @@ namespace FishNet.CodeGenerating.Helping
         }
 
         /// <summary>
-        /// Gets the FirstInitialize method in typeDef or creates the method should it not exist.
+        /// Gets the InitializeOnce method in typeDef or creates the method should it not exist.
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>

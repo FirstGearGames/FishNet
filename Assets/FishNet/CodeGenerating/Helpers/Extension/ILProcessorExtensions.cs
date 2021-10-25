@@ -27,13 +27,13 @@ namespace FishNet.CodeGenerating.Helping.Extension
         public static void InsertLast(this ILProcessor processor, List<Instruction> instructions)
         {
             bool retRemoved = false;
-            int startingCount = processor.Body.instructions.Count;
+            int startingCount = processor.Body.Instructions.Count;
             //Remove ret if it exist and add it back in later.
             if (startingCount > 0)
             {
-                if (processor.Body.instructions[startingCount - 1].OpCode == OpCodes.Ret)
+                if (processor.Body.Instructions[startingCount - 1].OpCode == OpCodes.Ret)
                 {
-                    processor.Body.instructions.RemoveAt(startingCount - 1);
+                    processor.Body.Instructions.RemoveAt(startingCount - 1);
                     retRemoved = true;
                 }
             }
@@ -53,7 +53,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="instructions"></param>
         public static void InsertBefore(this ILProcessor processor,Instruction target, List<Instruction> instructions)
         {
-            int index = processor.Body.instructions.IndexOf(target);
+            int index = processor.Body.Instructions.IndexOf(target);
             for (int i = 0; i < instructions.Count; i++)
                 processor.Body.Instructions.Insert(index + i, instructions[i]);
         }

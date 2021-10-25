@@ -8,26 +8,28 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using FishNet.Documenting;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using FishNet.Managing.Utility;
 
 namespace FishNet.Managing.Client
 {
     /// <summary>
     /// Handles objects and information about objects for the local client. See ManagedObjects for inherited options.
     /// </summary>
-    public class ClientObjects : ManagedObjects
+    public partial class ClientObjects : ManagedObjects
     {
 
         #region Private.
         /// <summary>
         /// NetworkObjects which are cached to be spawned or despawned.
         /// </summary>
-        private NetworkObjectCache _objectCache = null;
+        private ClientObjectCache _objectCache = null;
         #endregion
 
         internal ClientObjects(NetworkManager networkManager)
         {
             base.NetworkManager = networkManager;
-            _objectCache = new NetworkObjectCache(networkManager);
+            _objectCache = new ClientObjectCache(this);
         }
 
         /// <summary>
@@ -106,6 +108,16 @@ namespace FishNet.Managing.Client
         }
 
         /// <summary>
+        /// Called when a NetworkObject runs Deactivate.
+        /// </summary>
+        /// <param name="nob"></param>
+        internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob)
+        {
+            nob.RemoveClientRpcLinkIndexes();
+            base.NetworkObjectUnexpectedlyDestroyed(nob);
+        }
+
+        /// <summary>
         /// Parses an OwnershipChange packet.
         /// </summary>
         /// <param name="reader"></param>
@@ -128,8 +140,13 @@ namespace FishNet.Managing.Client
         /// Parses a received syncVar.
         /// </summary>
         /// <param name="reader"></param>
-        internal void ParseSyncType(PooledReader reader, bool isSyncObject, int dataLength)
+        internal void ParseSyncType(PooledReader reader, bool isSyncObject, Channel channel)
         {
+            //cleanup this is unique to synctypes where length comes first.
+            //this will change once I tidy up synctypes.
+            PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
+            int dataLength = Packets.GetPacketLength(packetId, reader, channel);
+
             int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             if (nb != null)
@@ -157,33 +174,34 @@ namespace FishNet.Managing.Client
             }
         }
 
+
         /// <summary>
         /// Parses an ObserversRpc.
         /// </summary>
         /// <param name="reader"></param>
-        internal void ParseObserversRpc(PooledReader reader, int dataLength, Channel channel)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ParseObserversRpc(PooledReader reader, Channel channel)
         {
-            int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
+            int dataLength = Packets.GetPacketLength(PacketId.ObserversRpc, reader, channel);
             if (nb != null)
-                nb.OnObserversRpc(reader, channel);
+                nb.OnObserversRpc(null, reader, channel);
             else
-                SkipDataLength(PacketId.ObserversRpc, reader, startPosition, dataLength);
+                SkipDataLength(PacketId.ObserversRpc, reader, dataLength);
         }
         /// <summary>
         /// Parses a TargetRpc.
         /// </summary>
         /// <param name="reader"></param>
-        internal void ParseTargetRpc(PooledReader reader, int dataLength, Channel channel)
+        internal void ParseTargetRpc(PooledReader reader, Channel channel)
         {
-            int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
+            int dataLength = Packets.GetPacketLength(PacketId.TargetRpc, reader, channel);
             if (nb != null)
-                nb.OnTargetRpc(reader, channel);
+                nb.OnTargetRpc(null, reader, channel);
             else
-                SkipDataLength(PacketId.TargetRpc, reader, startPosition, dataLength);
+                SkipDataLength(PacketId.TargetRpc, reader, dataLength);
         }
-
 
         /// <summary>
         /// Caches a received spawn to be processed after all spawns and despawns are received for the tick.
@@ -201,6 +219,7 @@ namespace FishNet.Managing.Client
             else
                 nob = ReadSpawnedObject(reader, objectId);
 
+            ArraySegment<byte> rpcLinks = reader.ReadArraySegmentAndSize();
             ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
 
             /*If nob is null then exit method. Since ClientObjects gets nob from
@@ -231,7 +250,7 @@ namespace FishNet.Managing.Client
                 nob.PreInitialize(NetworkManager, objectId, owner, false);
             }
 
-            _objectCache.AddSpawn(nob, syncValues, NetworkManager);
+            _objectCache.AddSpawn(nob, rpcLinks, syncValues, NetworkManager);
             base.AddToSpawned(nob);
         }
 
@@ -265,7 +284,6 @@ namespace FishNet.Managing.Client
         private NetworkObject ReadSceneObject(PooledReader reader, bool setProperties)
         {
             ulong sceneId = reader.ReadUInt64(AutoPackType.Unpacked);
-
             NetworkObject nob;
             base.SceneObjects.TryGetValue(sceneId, out nob);
             //If found in scene objects.

@@ -56,7 +56,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Iterates NetworkBehaviours with dirty SyncTypes.
         /// </summary>
-        internal void CheckDirtySyncTypes()
+        internal void WriteDirtySyncTypes()
         {
             /* Tells networkbehaviours to check their
              * dirty synctypes. */
@@ -319,73 +319,86 @@ namespace FishNet.Managing.Server
              * for every connection it's going to and filling a single
              * writer with values based on if owner or not. This would
              * result in significantly more iterations. */
-            PooledWriter commonWriter = WriterPool.GetWriter();
-            commonWriter.WriteByte((byte)PacketId.ObjectSpawn);
-            commonWriter.WriteNetworkObject(nob);
+            PooledWriter headerWriter = WriterPool.GetWriter();
+            headerWriter.WriteUInt16((ushort)PacketId.ObjectSpawn);
+            headerWriter.WriteNetworkObject(nob);
             if (base.NetworkManager.ServerManager.ShareOwners || connection == nob.Owner)
-                commonWriter.WriteInt16((short)nob.OwnerId);
+                headerWriter.WriteInt16((short)nob.OwnerId);
             else
-                commonWriter.WriteInt16(-1);
+                headerWriter.WriteInt16(-1);
 
             /* Write if a scene object or not, and also
              * store sceneObjectId if is a scene object. */
             bool sceneObject = nob.SceneObject;
-            commonWriter.WriteBoolean(sceneObject);
+            headerWriter.WriteBoolean(sceneObject);
             /* Writing a scene object. */
             if (sceneObject)
             {
                 //Write Guid.
-                commonWriter.WriteUInt64(nob.SceneId, AutoPackType.Unpacked);
+                headerWriter.WriteUInt64(nob.SceneId, AutoPackType.Unpacked);
                 //Write changed properties.
                 ChangedTransformProperties ctp = nob.GetChangedSceneTransformProperties();
-                commonWriter.WriteByte((byte)ctp);
+                headerWriter.WriteByte((byte)ctp);
                 //If properties have changed.
                 if (ctp != ChangedTransformProperties.Unset)
                 {
                     //Write any changed properties.
                     if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Position))
-                        commonWriter.WriteVector3(nob.transform.position);
+                        headerWriter.WriteVector3(nob.transform.position);
                     if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Rotation))
-                        commonWriter.WriteQuaternion(nob.transform.rotation);
+                        headerWriter.WriteQuaternion(nob.transform.rotation);
                     if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalScale))
-                        commonWriter.WriteVector3(nob.transform.localScale);
+                        headerWriter.WriteVector3(nob.transform.localScale);
                 }
             }
             /* Writing a spawned object. */
             else
             {
-                commonWriter.WriteInt16(nob.PrefabId);
+                headerWriter.WriteInt16(nob.PrefabId);
                 /* //muchlater Write only properties that are different
                  * from the prefab. Odds are position will be changed,
                  * and possibly rotation, but not too likely scale. */
-                commonWriter.WriteVector3(nob.transform.position);
-                commonWriter.WriteQuaternion(nob.transform.rotation);
-                commonWriter.WriteVector3(nob.transform.localScale);
+                headerWriter.WriteVector3(nob.transform.position);
+                headerWriter.WriteQuaternion(nob.transform.rotation);
+                headerWriter.WriteVector3(nob.transform.localScale);
             }
 
+            //Write headers first.
+            everyoneWriter.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
+            if (nob.OwnerIsValid)
+                ownerWriter.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
+
             /* Used to write latest data which must be sent to
-             * clients, such as syncVars. */
-            PooledWriter syncWriter = WriterPool.GetWriter();
-
-            //Populate everyone first.
-            everyoneWriter.WriteBytes(commonWriter.GetBuffer(), 0, commonWriter.Length);
+             * clients, such as SyncTypes and RpcLinks. */
+            PooledWriter tempWriter = WriterPool.GetWriter();
+            //Send RpcLinks first.
             foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                nb.WriteSyncTypesForSpawn(syncWriter, false);
-            everyoneWriter.WriteBytesAndSize(syncWriter.GetBuffer(), 0, syncWriter.Length);
+                nb.WriteRpcLinks(tempWriter);
+            //Add to everyone/owner.
+            everyoneWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
+            if (nob.OwnerIsValid)
+                ownerWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
 
+            //Add most recent sync type values.
+            /* SyncTypes have to be populated for owner and everyone.
+            * The data may be unique for owner if synctypes are set
+            * to only go to owner. */
+            tempWriter.Reset();
+            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                nb.WriteSyncTypesForSpawn(tempWriter, false);
+            everyoneWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
             //If owner is valid then populate owner writer as well.
             if (nob.OwnerIsValid)
             {
-                syncWriter.Reset();
-                ownerWriter.WriteBytes(commonWriter.GetBuffer(), 0, commonWriter.Length);
+                tempWriter.Reset();
                 foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                    nb.WriteSyncTypesForSpawn(syncWriter, true);
-                ownerWriter.WriteBytesAndSize(syncWriter.GetBuffer(), 0, syncWriter.Length);
+                    nb.WriteSyncTypesForSpawn(tempWriter, true);
+                ownerWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
             }
 
             //Dispose of writers created in this method.
-            commonWriter.Dispose();
-            syncWriter.Dispose();
+            headerWriter.Dispose();
+            tempWriter.Dispose();
         }
         #endregion
 
@@ -450,7 +463,7 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         private void WriteDespawn(NetworkObject nob, ref PooledWriter everyoneWriter)
         {
-            everyoneWriter.WriteByte((byte)PacketId.ObjectDespawn);
+            everyoneWriter.WriteUInt16((ushort)PacketId.ObjectDespawn);
             everyoneWriter.WriteNetworkObject(nob);
         }
     }

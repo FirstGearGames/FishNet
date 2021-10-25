@@ -34,11 +34,14 @@ namespace FishNet.Example.Scened
             float hor = Input.GetAxisRaw("Horizontal");
             float ver = Input.GetAxisRaw("Vertical");
 
-            /* If ground cannot boe found for 20 units then bump up 3 units. 
+            /* If ground cannot be found for 20 units then bump up 3 units. 
              * This is just to keep player on ground if they fall through
              * when changing scenes.             */
-            if (!Physics.Linecast(transform.position + new Vector3(0f, 0.3f, 0f), transform.position - (Vector3.one * 20f)))
-                transform.position += new Vector3(0f, 3f, 0f);
+            if (_clientAuth || (!_clientAuth && base.IsServer))
+            {
+                if (!Physics.Linecast(transform.position + new Vector3(0f, 0.3f, 0f), transform.position - (Vector3.one * 20f)))
+                    transform.position += new Vector3(0f, 3f, 0f);
+            }
 
             if (_clientAuth)
                 Move(hor, ver);

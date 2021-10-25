@@ -69,7 +69,7 @@ namespace FishNet.Managing.Logging
         /// Initializes script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void FirstInitialize()
+        internal void InitializeOnce()
         {
             byte currentHighest = (byte)LoggingType.Off;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

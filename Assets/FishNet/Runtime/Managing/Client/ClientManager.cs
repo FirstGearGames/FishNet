@@ -4,6 +4,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using System;
 using UnityEngine;
+using FishNet.Object;
 
 namespace FishNet.Managing.Client
 {
@@ -44,11 +45,12 @@ namespace FishNet.Managing.Client
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void FirstInitialize(NetworkManager manager)
+        internal void InitializeOnce(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ClientObjects(manager);
             Connection = NetworkManager.EmptyConnection;
+            InitializeOnceRpcLinks();
             /* Unsubscribe before subscribing.
              * Shouldn't be but better safe than sorry. */
             SubscribeToEvents(false);
@@ -141,7 +143,7 @@ namespace FishNet.Managing.Client
                 /* This is a special condition where a message may arrive split.
                  * When this occurs buffer each packet until all packets are
                  * received. */
-                if (segment.Array[0] == (byte)PacketId.Split)
+                if (reader.PeekUInt16() == (ushort)PacketId.Split)
                 {
                     ArraySegment<byte> result =
                         _splitReader.Write(reader,
@@ -160,7 +162,7 @@ namespace FishNet.Managing.Client
 
                 while (reader.Remaining > 0)
                 {
-                    PacketId packetId = (PacketId)reader.ReadByte();
+                    PacketId packetId = (PacketId)reader.ReadUInt16();
                     bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
                     /* Length of data. Only available if using unreliable. Unreliable packets
                      * can arrive out of order which means object orientated messages such as RPCs may
@@ -170,8 +172,6 @@ namespace FishNet.Managing.Client
                      * sent as well so if any reason the data does have to be dumped it will only be dumped for
                      * that single packetId  but not the rest. Broadcasts don't need length either even if unreliable
                      * because they are not object bound. */
-                    int dataLength = (args.Channel == Channel.Reliable || packetId == PacketId.Broadcast) ?
-                        -1 : reader.ReadInt16();
 
                     //Is spawn or despawn; cache packet.
                     if (spawnOrDespawn)
@@ -192,11 +192,11 @@ namespace FishNet.Managing.Client
                         //Then process packet normally.
                         if (packetId == PacketId.ObserversRpc)
                         {
-                            Objects.ParseObserversRpc(reader, dataLength, args.Channel);
+                            Objects.ParseObserversRpc(reader, args.Channel);
                         }
                         else if (packetId == PacketId.TargetRpc)
                         {
-                            Objects.ParseTargetRpc(reader, dataLength, args.Channel);
+                            Objects.ParseTargetRpc(reader, args.Channel);
                         }
                         else if (packetId == PacketId.Broadcast)
                         {
@@ -204,11 +204,11 @@ namespace FishNet.Managing.Client
                         }
                         else if (packetId == PacketId.SyncVar)
                         {
-                            Objects.ParseSyncType(reader, false, dataLength);
+                            Objects.ParseSyncType(reader, false, args.Channel);
                         }
                         else if (packetId == PacketId.SyncObject)
                         {
-                            Objects.ParseSyncType(reader, true, dataLength);
+                            Objects.ParseSyncType(reader, true, args.Channel);
                         }
                         else if (packetId == PacketId.OwnershipChange)
                         {
@@ -218,10 +218,14 @@ namespace FishNet.Managing.Client
                         {
                             ParseAuthenticated(reader);
                         }
+                        else if ((ushort)packetId >= _startingLinkIndex)
+                        {
+                            Objects.ParseRpcLink(reader, (ushort)packetId, args.Channel);
+                        }
                         else
                         {
                             if (NetworkManager.CanLog(Logging.LoggingType.Error))
-                                Debug.LogError($"Client received an unhandled PacketId of {(byte)packetId}. Remaining data has been purged.");
+                                Debug.LogError($"Client received an unhandled PacketId of {(ushort)packetId}. Remaining data has been purged.");
                             return;
                         }
                     }

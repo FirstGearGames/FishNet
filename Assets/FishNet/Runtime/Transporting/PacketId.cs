@@ -7,7 +7,7 @@ namespace FishNet.Transporting
     /// PacketIds to indicate the type of packet which is being sent or arriving.
     /// </summary>
     [APIExclude]
-    public enum PacketId : byte
+    public enum PacketId : ushort
     {
         Unset = 0,
         Authenticated = 1,
@@ -21,7 +21,8 @@ namespace FishNet.Transporting
         TargetRpc = 10,
         OwnershipChange = 11,
         Broadcast = 12,
-        SyncObject = 13
+        SyncObject = 13,
+        TransformUpdate = 14
     }
 
 }

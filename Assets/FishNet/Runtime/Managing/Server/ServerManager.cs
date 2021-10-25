@@ -7,6 +7,13 @@ using UnityEngine;
 using FishNet.Authenticating;
 using FishNet.Managing.Transporting;
 using FishNet.Managing.Logging;
+/// <summary>
+/// Returns written data length for packet.
+/// </summary>
+/// <param name="packetId"></param>
+/// <param name="reader"></param>
+/// <param name="channel"></param>
+/// <returns></returns>i
 
 namespace FishNet.Managing.Server
 {
@@ -116,10 +123,11 @@ namespace FishNet.Managing.Server
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void FirstInitialize(NetworkManager manager)
+        internal void InitializeOnce(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ServerObjects(manager);
+            InitializeRpcLinks();
             //Unsubscrive first incase already subscribed.
             SubscribeToTransport(false);
             SubscribeToTransport(true);
@@ -128,7 +136,7 @@ namespace FishNet.Managing.Server
 
             if (_authenticator != null)
             {
-                _authenticator.FirstInitialize(manager);
+                _authenticator.InitializeOnce(manager);
                 _authenticator.OnAuthenticationResult += _authenticator_OnAuthenticationResult;
             }
 
@@ -312,7 +320,7 @@ namespace FishNet.Managing.Server
         {
             using (PooledWriter writer = WriterPool.GetWriter())
             {
-                writer.WriteByte((byte)PacketId.Authenticated);
+                writer.WriteUInt16((ushort)PacketId.Authenticated);
                 writer.WriteInt16((short)conn.ClientId);
                 NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), conn);
             }
@@ -346,7 +354,7 @@ namespace FishNet.Managing.Server
                     /* This is a special condition where a message may arrive split.
                     * When this occurs buffer each packet until all packets are
                     * received. */
-                    if (segment.Array[0] == (byte)PacketId.Split)
+                    if (reader.PeekUInt16() == (ushort)PacketId.Split)
                     {
                         /* Various conditions that will kick a client immediately.
                          * Splits are not allowed, or split size indicator is larger than maximum allowed. */
@@ -425,11 +433,7 @@ namespace FishNet.Managing.Server
 
                     while (reader.Remaining > 0)
                     {
-                        packetId = (PacketId)reader.ReadByte();
-                        ///<see cref="FishNet.Managing.Client.ClientManager.ParseReceived"/>
-                        int dataLength = (args.Channel == Channel.Reliable || packetId == PacketId.Broadcast) ?
-                            -1 : reader.ReadInt16();
-
+                        packetId = (PacketId)reader.ReadUInt16();
                         NetworkConnection conn;
 
                         /* Connection isn't available. This should never happen.
@@ -451,7 +455,7 @@ namespace FishNet.Managing.Server
 
                         if (packetId == PacketId.ServerRpc)
                         {
-                            Objects.ParseServerRpc(reader, args.ConnectionId, dataLength, args.Channel);
+                            Objects.ParseServerRpc(reader, args.ConnectionId, args.Channel);
                         }
                         else if (packetId == PacketId.Broadcast)
                         {
@@ -460,7 +464,7 @@ namespace FishNet.Managing.Server
                         else
                         {
                             if (NetworkManager.CanLog(Logging.LoggingType.Error))
-                                Debug.LogError($"Server received an unhandled PacketId of {(byte)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
+                                Debug.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
                             return;
                         }
                     }

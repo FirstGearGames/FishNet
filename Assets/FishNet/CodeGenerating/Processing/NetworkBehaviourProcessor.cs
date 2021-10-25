@@ -176,7 +176,7 @@ namespace FishNet.CodeGenerating.Processing
 
                 bool alreadyHasBaseCall = false;
                 //Check if already calls baseAwake.
-                foreach (var item in copyAwakeMethodDef.Body.instructions)
+                foreach (var item in copyAwakeMethodDef.Body.Instructions)
                 {
 
                     //If a call or call virt. Although, callvirt should never occur.

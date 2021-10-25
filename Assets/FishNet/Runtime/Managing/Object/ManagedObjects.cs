@@ -184,9 +184,6 @@ namespace FishNet.Managing.Object
             }
 
             Spawned.Remove(nob.ObjectId);
-            //Do the same with SceneObjects.
-            if (nob.SceneObject)
-                RemoveFromSceneObjects(nob);
         }
 
         /// <summary>
@@ -274,27 +271,34 @@ namespace FishNet.Managing.Object
         /// <param name="packetId"></param>
         /// <param name="reader"></param>
         /// <param name="dataLength"></param>
-        protected internal void SkipDataLength(PacketId packetId, PooledReader reader, int startPosition, int dataLength)
+        protected internal void SkipDataLength(PacketId packetId, PooledReader reader, int dataLength)
         {
             /* -1 means length wasn't set, which would suggest a reliable packet.
             * Object should never be missing for reliable packets since spawns
             * and despawns are reliable in order. */
-            if (dataLength == -1)
+            if (dataLength == (int)UnreliablePacketLength.ReliableOrBroadcast)
             {
+                /* Default logging for server is errors only. Use error on client and warning
+                 * on servers to reduce chances of allocation attacks. */
+#if DEVELOPMENT_BUILD || UNITY_EDITOR || !UNITY_SERVER
+                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    Debug.LogError($"NetworkBehaviour could not be found for {packetId}.");
+#else
                 if (NetworkManager.CanLog(Logging.LoggingType.Warning))
                     Debug.LogWarning($"NetworkBehaviour could not be found for {packetId}.");
+#endif
             }
             /* If length is known then is unreliable packet. It's possible
              * this packetId arrived before or after the object was spawned/destroyed.
-             * Skip past the data for this packet and use rest in reader. */
-            else if (dataLength > 0)
+             * Skip past the data for this packet and use rest in reader. With non-linked
+             * RPCs length is sent before object information. */
+            else if (dataLength >= 0)
             {
-                reader.Position = startPosition;
                 reader.Skip(Math.Min(dataLength, reader.Remaining));
             }
             /* -2 indicates the length is very long. Don't even try saving
              * the packet, user shouldn't be sending this much data over unreliable. */
-            else if (dataLength == -2)
+            else if (dataLength == (int)UnreliablePacketLength.PurgeRemaiming)
             {
                 reader.Skip(reader.Remaining);
             }

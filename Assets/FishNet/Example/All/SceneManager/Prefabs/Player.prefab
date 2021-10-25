@@ -257,6 +257,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _compressSmall: 1
+  _teleportThreshold: 0
   _clientAuthoritative: 1
   _synchronizeToOwner: 1
 --- !u!114 &611616139817875448
@@ -272,7 +274,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 4
+  _prefabId: 0
   _scenePathHash: 0
   _sceneId: 0
   _sceneNetworkObjects: []

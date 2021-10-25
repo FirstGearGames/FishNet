@@ -113,19 +113,19 @@ namespace Fluidity.Server
         /// Initializes this for use.
         /// </summary>
         /// <param name="t"></param>
-        internal void Initialize(Transport t, ChannelData[] channelData)
+        internal void Initialize(Transport t, int reliableMTU, int unreliableMTU)
         {
             base.Transport = t;
 
             //Set maximum MTU for each channel, and create byte buffer.
-            int largestMtu = 0;
-            _mtus = new int[channelData.Length];
-            for (int i = 0; i < channelData.Length; i++)
+            _mtus = new int[2]
             {
-                _mtus[i] = channelData[i].MaximumTransmissionUnit;
-                largestMtu = Math.Max(largestMtu, _mtus[i]);
-            }
-            _incomingBuffer = new byte[largestMtu];
+                reliableMTU,
+                unreliableMTU
+            };
+
+            int largestMTU = Math.Max(reliableMTU, unreliableMTU);
+            _incomingBuffer = new byte[largestMTU];
         }
 
         /// <summary>
@@ -512,17 +512,14 @@ namespace Fluidity.Server
         /// <param name="connectionId">Client to send packet to. Use -1 to send to all clients.</param>
         /// <param name="channelId"></param>
         /// <param name="segment"></param>
-        internal void SendToClient(byte channelId, ArraySegment<byte> segment, ChannelData[] channels, int connectionId)
+        internal void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId)
         {
-            //Out of bounds for channels.
-            if (channelId < 0 || channelId >= channels.Length)
-                return;
             //Server isn't active.
             if (base.GetConnectionState() != LocalConnectionStates.Started)
                 return;
 
             Packet enetPacket = default;
-            PacketFlags flags = (PacketFlags)channels[channelId].ChannelType;
+            PacketFlags flags = (channelId == 0) ? PacketFlags.Reliable : PacketFlags.Unsequenced;
             // Create the packet. //why is count + offset the length?
             enetPacket.Create(segment.Array, segment.Offset, segment.Offset + segment.Count, flags);
 

@@ -27,7 +27,7 @@ namespace FishNet.CodeGenerating.Helping
             Mono.Cecil.TypeAttributes.AutoClass);
         private const string SYNCSTUB_CLASS_PREFIX = "SyncHandler";
         #endregion
-        /* //todo add and test the dirty boolean changes
+        /* //feature add and test the dirty boolean changes
          * eg... instead of base.Dirty()
          * do if (!base.Dirty()) return false;
          * See synclist for more info. */

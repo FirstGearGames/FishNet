@@ -36,8 +36,8 @@ namespace FishNet.CodeGenerating.Helping
         #endregion
 
         #region Const.
-        internal const string FIRSTINITIALIZE_METHOD_NAME = "FirstInitialize";
-        internal const MethodAttributes FIRSTINITIALIZE_METHOD_ATTRIBUTES = MethodAttributes.Static;
+        internal const string INITIALIZEONCE_METHOD_NAME = "InitializeOnce";
+        internal const MethodAttributes INITIALIZEONCE_METHOD_ATTRIBUTES = MethodAttributes.Static;
         #endregion
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace FishNet.CodeGenerating.Helping
             _generatedReaderWriterClassTypeDef.Methods.Add(createdMethodDef);
 
             TypeReference extensionAttributeTypeRef = CodegenSession.Module.ImportReference(typeof(System.Runtime.CompilerServices.ExtensionAttribute));
-            MethodDefinition constructor = extensionAttributeTypeRef.Resolve().GetConstructors().First();
+            MethodDefinition constructor = extensionAttributeTypeRef.GetConstructor();
 
             MethodReference extensionAttributeConstructorMethodRef = CodegenSession.Module.ImportReference(constructor);
             CustomAttribute extensionCustomAttribute = new CustomAttribute(extensionAttributeConstructorMethodRef);
@@ -129,7 +129,7 @@ namespace FishNet.CodeGenerating.Helping
              * and also add it to methods if were created. */
             if (_generatedReaderWriterOnLoadMethodDef == null)
             {
-                _generatedReaderWriterOnLoadMethodDef = CodegenSession.GeneralHelper.GetOrCreateMethod(_generatedReaderWriterClassTypeDef, out created, FIRSTINITIALIZE_METHOD_ATTRIBUTES, FIRSTINITIALIZE_METHOD_NAME, CodegenSession.Module.TypeSystem.Void);
+                _generatedReaderWriterOnLoadMethodDef = CodegenSession.GeneralHelper.GetOrCreateMethod(_generatedReaderWriterClassTypeDef, out created, INITIALIZEONCE_METHOD_ATTRIBUTES, INITIALIZEONCE_METHOD_NAME, CodegenSession.Module.TypeSystem.Void);
                 if (created)
                     CodegenSession.GeneralHelper.CreateRuntimeInitializeOnLoadMethodAttribute(_generatedReaderWriterOnLoadMethodDef);
             }

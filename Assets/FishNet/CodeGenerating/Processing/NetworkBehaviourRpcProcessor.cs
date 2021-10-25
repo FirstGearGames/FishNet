@@ -32,6 +32,12 @@ namespace FishNet.CodeGenerating.Processing
             MethodDefinition[] startingMethodDefs = typeDef.Methods.ToArray();
             foreach (MethodDefinition methodDef in startingMethodDefs)
             {
+                if (rpcStartCount >= ushort.MaxValue)
+                {
+                    CodegenSession.LogError($"{typeDef.FullName} and inherited types exceed {ushort.MaxValue} RPC methods. Only {ushort.MaxValue} RPC methods are supported per inheritance hierarchy.");
+                    return false;
+                }
+
                 RpcType rpcType;
                 CustomAttribute rpcAttribute = GetRpcAttribute(methodDef, out rpcType);
                 if (rpcAttribute == null)

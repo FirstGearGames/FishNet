@@ -388,7 +388,7 @@ public static void Write___FishNetu002EManagingu002EScenedu002EDatau002EUnloadOp
     }
 
     [RuntimeInitializeOnLoadMethod]
-    static void FirstInitialize()
+    static void InitializeOnce()
     {
       GenericWriter<SceneLookupData>.Write = new Action<Writer, SceneLookupData>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupData);
       GenericWriter<SceneLookupData[]>.Write = new Action<Writer, SceneLookupData[]>(ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D);

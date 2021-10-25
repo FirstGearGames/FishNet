@@ -6,6 +6,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
 using FishNet.Utility.Performance;
+using UnityEngine;
 
 namespace FishNet.Managing.Server
 {
@@ -234,7 +235,7 @@ namespace FishNet.Managing.Server
                     {
                         continue;
                     }
-                    /* Only use ownerWriter if an add, and if owner. Owner //todo see if rebuild timed and this can be joined or reuse methods.
+                    /* Only use ownerWriter if an add, and if owner. Owner //cleanup see if rebuild timed and this can be joined or reuse methods.
                      * doesn't matter if not being added because no owner specific
                      * information would be included. */
                     PooledWriter writerToUse = (osc == ObserverStateChange.Added && nob.Owner == connection) ?

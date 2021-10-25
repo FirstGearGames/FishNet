@@ -58,6 +58,28 @@ namespace FishNet.Managing.Transporting
         private PacketBundle _outgoingSplit = null;
         #endregion
 
+        #region Consts.
+        /// <summary>
+        /// Number of bytes sent for PacketId.
+        /// </summary>
+        public const byte PACKET_ID_BYTES = 2;
+        /// <summary>
+        /// Number of bytes sent for ObjectId.
+        /// </summary>
+        public const byte OBJECT_ID_BYTES = 2;
+        /// <summary>
+        /// Number of bytes sent for ComponentIndex.
+        /// </summary>
+        public const byte COMPONENT_INDEX_BYTES = 1;
+        /// <summary>
+        /// Number of bytes sent to indicate split count.
+        /// </summary>
+        public const byte SPLIT_COUNT_BYTES = 2;
+        /// <summary>
+        /// Number of bytes sent for Tick.
+        /// </summary>
+        public const byte TICK_BYTES = 4;
+        #endregion
 
         private void Awake()
         {
@@ -231,11 +253,8 @@ namespace FishNet.Managing.Transporting
             * I reserve bytes because I need to insert this
             * data after the buffer is built. I cannot do it before
             * because specifically the buffer count is not
-            * known until all the data is built. 
-            * 1 for the packet id.
-            * 4 for the tick.
-            * 2 for the buffer count. */
-            int reserve = 7;
+            * known until all the data is built.  */
+            int reserve = (PACKET_ID_BYTES + TICK_BYTES + SPLIT_COUNT_BYTES);
             _outgoingSplit.Reset(mtu, reserve);
             //Position to read from for passed in segment.
             int segmentPosition = 0;
@@ -258,7 +277,7 @@ namespace FishNet.Managing.Transporting
                 * Intentionally not packed because spawn message count
                 * is unknown and tick will likely exceed packing
                 * fairly quickly into the game. */
-                headerWriter.WriteByte((byte)PacketId.Split);
+                headerWriter.WriteUInt16((ushort)PacketId.Split);
                 headerWriter.WriteUInt32(_networkManager.TimeManager.Tick, AutoPackType.Unpacked);
                 headerWriter.WriteUInt16(bufferCount);
                 //Sanity check, to ensure I don't make mistakes.
@@ -305,6 +324,9 @@ namespace FishNet.Managing.Transporting
             /* If sending from the server. */
             if (server)
             {
+                //Write any dirty syncTypes.
+                _networkManager.ServerManager.Objects.WriteDirtySyncTypes();
+
                 long sentBytes = 0;
                 uint sentPackets = 0;
                 //Run through all dirty connections to send data to.
@@ -342,11 +364,12 @@ namespace FishNet.Managing.Transporting
                      * get the data. */
                     if (conn.Disconnecting)
                         Transport.StopConnection(conn.ClientId, false);
-                    //    conn.UnsetDisconnecting();
-                    //}
+
                     conn.ResetServerDirty();
                 }
 
+                //if (sentBytes > 0 && _networkManager.ServerManager.Objects.Spawned.Count > 1)
+                    //Debug.Log($"Sent {sentBytes} bytes. Avg {sentBytes / (_networkManager.ServerManager.Objects.Spawned.Count - 1)} per object.");
                 _dirtyToClients.Clear();
             }
             /* If sending from the client. */

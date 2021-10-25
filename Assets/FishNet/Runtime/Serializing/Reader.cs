@@ -115,6 +115,19 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Returns a ushort without advancing the reader.
+        /// </summary>
+        /// <returns></returns>
+        [CodegenExclude]
+        public ushort PeekUInt16()
+        {
+            int currentPosition = Position;
+            ushort result = ReadUInt16();
+            Position = currentPosition;
+            return result;
+        }
+
+        /// <summary>
         /// Skips a number of bytes in the reader.
         /// </summary>
         /// <param name="value"></param>

@@ -28,7 +28,7 @@ namespace FishNet.Authenticating
         /// Initializes this script for use.
         /// </summary>
         /// <param name="networkManager"></param>
-        public virtual void FirstInitialize(NetworkManager networkManager) 
+        public virtual void InitializeOnce(NetworkManager networkManager) 
         {
             NetworkManager = networkManager;
         }

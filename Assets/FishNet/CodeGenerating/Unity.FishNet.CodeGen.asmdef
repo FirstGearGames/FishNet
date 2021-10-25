@@ -1,7 +1,8 @@
 {
-    "name": "Unity.FishNet.CodeGen",
+    "name": "Unity.FishNet.Codegen",
     "references": [
-        "GUID:7c88a4a7926ee5145ad2dfa06f454c67"
+        "GUID:7c88a4a7926ee5145ad2dfa06f454c67",
+        "GUID:23311a592bb0c5640b641143d87bf5b7"
     ],
     "includePlatforms": [
         "Editor"

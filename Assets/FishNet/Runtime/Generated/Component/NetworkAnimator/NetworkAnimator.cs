@@ -411,7 +411,7 @@ namespace FishNet.Component.Animating
 
         private void Awake()
         {
-            FirstInitialize();
+            InitializeOnce();
         }
 
         [APIExclude]
@@ -457,7 +457,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        private void FirstInitialize()
+        private void InitializeOnce()
         {
             if (_animator == null)
                 _animator = GetComponent<Animator>();
@@ -535,7 +535,7 @@ namespace FishNet.Component.Animating
                 return;
 
             _animator = animator;
-            FirstInitialize();
+            InitializeOnce();
             _lastAnimator = animator;
         }
 
@@ -550,7 +550,7 @@ namespace FishNet.Component.Animating
                 return;
 
             _animator.runtimeAnimatorController = controller;
-            FirstInitialize();
+            InitializeOnce();
             _lastController = controller;
         }
 

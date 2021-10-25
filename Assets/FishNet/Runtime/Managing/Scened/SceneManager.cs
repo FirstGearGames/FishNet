@@ -151,7 +151,7 @@ namespace FishNet.Managing.Scened
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void FirstInitialize(NetworkManager manager)
+        internal void InitializeOnce(NetworkManager manager)
         {
             _networkManager = manager;
         }

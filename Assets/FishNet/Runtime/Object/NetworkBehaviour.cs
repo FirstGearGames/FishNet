@@ -40,6 +40,7 @@ namespace FishNet.Object
             NetworkObject = networkObject;
             ComponentIndex = componentIndex;
             PreInitializeSyncTypes(networkObject);
+            PreInitializeRpcLinks();
         }
 
 

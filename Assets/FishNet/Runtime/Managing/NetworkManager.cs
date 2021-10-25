@@ -121,11 +121,11 @@ namespace FishNet.Managing
         /// </summary>
         private void InitializeComponents()
         {
-            TimeManager.FirstInitialize(this);
+            TimeManager.InitializeOnce(this);
             TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
-            SceneManager.FirstInitialize(this);
-            ServerManager.FirstInitialize(this);
-            ClientManager.FirstInitialize(this);
+            SceneManager.InitializeOnce(this);
+            ServerManager.InitializeOnce(this);
+            ClientManager.InitializeOnce(this);
         }
         /// <summary>
         /// Called when MonoBehaviours call LateUpdate.
@@ -137,13 +137,6 @@ namespace FishNet.Managing
             * in awake. Rather than try to fix or care why Unity
             * does this just set it in LateUpdate(or Update). */
             SetRunInBackground();
-
-            /* Iterate outgoing fast as possible. It's the users
-             * responsibility to use the tick events if they
-             * wish to only send data on ticks. Data will however
-             * only be read on ticks to maintain accurate
-             * processing timings. */
-            ServerManager.Objects.CheckDirtySyncTypes();
         }
 
 
@@ -233,7 +226,6 @@ namespace FishNet.Managing
 
             ClientManager = new ClientManager();
         }
-
 
         #region Editor.
 #if UNITY_EDITOR

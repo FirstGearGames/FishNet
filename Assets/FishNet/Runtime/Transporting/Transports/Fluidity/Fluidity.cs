@@ -3,6 +3,7 @@ using System;
 using FishNet.Transporting;
 using FishNet.Managing;
 using FishNet.Managing.Logging;
+using System.Runtime.CompilerServices;
 
 namespace Fluidity
 {
@@ -13,11 +14,17 @@ namespace Fluidity
         #region Serialized.
         [Header("Channels")]
         /// <summary>
-        /// Transport channels to use.
+        /// Maximum transmission unit for the reliable channel.
         /// </summary>
-        [Tooltip("Transport channels to use.")]
+        [Tooltip("Maximum transmission unit for the reliable channel.")]
         [SerializeField]
-        private ChannelData[] _channels;
+        private int _reliableMTU = 1200;
+        /// <summary>
+        /// Maximum transmission unit for the unreliable channel.
+        /// </summary>
+        [Tooltip("Maximum transmission unit for the unreliable channel.")]
+        [SerializeField]
+        private int _unreliableMTU = 1200;
 
         [Header("Server")]
         /// <summary>
@@ -99,19 +106,8 @@ namespace Fluidity
             }
             _fluidityInitializedCount++;
 
-            /* If channels are missing then add them. This 
-             * can occur if component is added at runtime. */
-            if (_channels == null)
-            {
-                _channels = new ChannelData[2]
-                {
-                    new ChannelData(ChannelType.Reliable, 1200),
-                    new ChannelData(ChannelType.Unreliable, 1200)
-                };
-            }
             //Set largest MTU. Used to create a buffer.
-            for (int i = 0; i < _channels.Length; i++)
-                _largestMTU = Mathf.Max(_largestMTU, _channels[i].MaximumTransmissionUnit);
+            _largestMTU = Mathf.Max(_reliableMTU, _unreliableMTU);
 
             base.Initialize(networkManager);
         }
@@ -253,10 +249,12 @@ namespace Fluidity
         /// Sends to the server or all clients.
         /// </summary>
         /// <param name="channelId">Channel to use.</param>
-        /// /// <param name="segment">Data to send.</param>
+        /// <param name="segment">Data to send.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void SendToServer(byte channelId, ArraySegment<byte> segment)
         {
-            _client.SendToServer(channelId, segment, _channels);
+            SanitizeChannel(ref channelId);
+            _client.SendToServer(channelId, segment);
         }
         /// <summary>
         /// Sends data to a client.
@@ -264,9 +262,11 @@ namespace Fluidity
         /// <param name="channelId"></param>
         /// <param name="segment"></param>
         /// <param name="connectionId"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId)
         {
-            _server.SendToClient(channelId, segment, _channels, connectionId);
+            SanitizeChannel(ref channelId);
+            _server.SendToClient(channelId, segment, connectionId);
         }
         #endregion
 
@@ -381,9 +381,9 @@ namespace Fluidity
         /// </summary>
         private bool StartServer()
         {
-            _server.Initialize(this, _channels);
+            _server.Initialize(this, _reliableMTU, _unreliableMTU);
             string bindAddress = (_serverBindsAll) ? GlobalConstants.BIND_ALL : _serverBindAddress;
-            return _server.StartConnection(bindAddress, _port, _maximumClients, (byte)_channels.Length, POLL_TIMEOUT);
+            return _server.StartConnection(bindAddress, _port, _maximumClients, GetChannelCount(), POLL_TIMEOUT);
         }
 
         /// <summary>
@@ -400,8 +400,8 @@ namespace Fluidity
         /// <param name="address"></param>
         private bool StartClient(string address)
         {
-            _client.Initialize(this, _channels);
-            return _client.StartConnection(address, _port, (byte)_channels.Length, POLL_TIMEOUT);
+            _client.Initialize(this, _reliableMTU, _unreliableMTU);
+            return _client.StartConnection(address, _port, GetChannelCount(), POLL_TIMEOUT);
         }
 
         /// <summary>
@@ -426,12 +426,25 @@ namespace Fluidity
 
         #region Channels.
         /// <summary>
+        /// If channelId is invalid then channelId becomes forced to reliable.
+        /// </summary>
+        /// <param name="channelId"></param>
+        private void SanitizeChannel(ref byte channelId)
+        {
+            if (channelId < 0 || channelId >= GetChannelCount())
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Channel of {channelId} is out of range of supported channels. Channel will be defaulted to reliable.");
+                channelId = GetDefaultReliableChannel();
+            }
+        }
+        /// <summary>
         /// Returns how many channels the transport is using.
         /// </summary>
         /// <returns></returns>
         public override byte GetChannelCount()
         {
-            return (byte)_channels.Length;
+            return 2;
         }
         /// <summary>
         /// Returns which channel to use by default for reliable.
@@ -455,14 +468,20 @@ namespace Fluidity
         /// <returns></returns>
         public override int GetMTU(byte channel)
         {
-            if (channel >= _channels.Length)
+            if (channel == 0)
+            {
+                return _reliableMTU;
+            }
+            else if (channel == 1)
+            {
+                return _unreliableMTU;
+            }
+            else
             {
                 if (base.NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Channel {channel} is out of bounds.");
                 return 0;
             }
-
-            return _channels[channel].MaximumTransmissionUnit;
         }
         #endregion
 
@@ -470,17 +489,10 @@ namespace Fluidity
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            /* Force default channel settings. */
-            //Make sure array is long enough.
-            if (_channels == null || _channels.Length < 2)
-                _channels = new ChannelData[2];
-            //Set to defaults.
-            _channels[0] = new ChannelData(ChannelType.Reliable, 1200);
-            _channels[1] = new ChannelData(ChannelType.Unreliable, 1200);
+            _reliableMTU = Math.Max(0, _reliableMTU);
+            _unreliableMTU = Math.Max(0, _unreliableMTU);
         }
-
 #endif
         #endregion
-
     }
 }

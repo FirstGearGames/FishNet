@@ -48,7 +48,7 @@ namespace FishNet.Component.Spawning
 
         private void Start()
         {
-            FirstInitialize();
+            InitializeOnce();
         }
 
         private void OnDestroy()
@@ -61,7 +61,7 @@ namespace FishNet.Component.Spawning
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        private void FirstInitialize()
+        private void InitializeOnce()
         {
             _networkManager = InstanceFinder.NetworkManager;
             if (_networkManager == null)

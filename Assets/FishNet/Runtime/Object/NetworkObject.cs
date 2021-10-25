@@ -152,18 +152,20 @@ namespace FishNet.Object
 
             if (asServer || (!asServer && !NetworkManager.IsServer))
                 Deinitializing = true;
+            else if (!asServer)
+                RemoveClientRpcLinkIndexes();
         }
 
-        /// <summary>
-        /// Disables this object and resets network values.
-        /// </summary>
-        internal void DisableNetworkObject()
-        {
-            SetOwner(null, false);
-            ObjectId = -1;
-            Observers.Clear();
-            NetworkManager = null;
-        }
+        ///// <summary>
+        ///// Disables this object and resets network values.
+        ///// </summary>
+        //internal void DisableNetworkObject()
+        //{
+        //    SetOwner(null, false);
+        //    ObjectId = -1;
+        //    Observers.Clear();
+        //    NetworkManager = null;
+        //}
 
         /// <summary>
         /// Removes ownership from all clients.
@@ -240,7 +242,7 @@ namespace FishNet.Object
 
                 using (PooledWriter writer = WriterPool.GetWriter())
                 {
-                    writer.WriteByte((byte)PacketId.OwnershipChange);
+                    writer.WriteUInt16((ushort)PacketId.OwnershipChange);
                     writer.WriteNetworkObject(this);
                     writer.WriteNetworkConnection(Owner);
                     //If sharing then send to all observers.

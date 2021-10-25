@@ -32,7 +32,7 @@ namespace FishNet.Managing
             else
                 _logging = _logging.Clone();
 
-            _logging.FirstInitialize();
+            _logging.InitializeOnce();
         }
 
 

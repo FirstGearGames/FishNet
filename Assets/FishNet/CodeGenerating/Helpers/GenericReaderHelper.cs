@@ -36,8 +36,8 @@ namespace FishNet.CodeGenerating.Helping
         #endregion
 
         #region Const.
-        internal const string FIRSTINITIALIZE_METHOD_NAME = GenericWriterHelper.FIRSTINITIALIZE_METHOD_NAME;
-        internal const MethodAttributes FIRSTINITIALIZE_METHOD_ATTRIBUTES = GenericWriterHelper.FIRSTINITIALIZE_METHOD_ATTRIBUTES;
+        internal const string INITIALIZEONCE_METHOD_NAME = GenericWriterHelper.INITIALIZEONCE_METHOD_NAME;
+        internal const MethodAttributes INITIALIZEONCE_METHOD_ATTRIBUTES = GenericWriterHelper.INITIALIZEONCE_METHOD_ATTRIBUTES;
         #endregion
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace FishNet.CodeGenerating.Helping
              * and also add it to methods if were created. */
             if (_generatedReaderWriterOnLoadMethodDef == null)
             {
-                _generatedReaderWriterOnLoadMethodDef = CodegenSession.GeneralHelper.GetOrCreateMethod(_generatedReaderWriterClassTypeDef, out created, FIRSTINITIALIZE_METHOD_ATTRIBUTES, FIRSTINITIALIZE_METHOD_NAME, CodegenSession.Module.TypeSystem.Void);
+                _generatedReaderWriterOnLoadMethodDef = CodegenSession.GeneralHelper.GetOrCreateMethod(_generatedReaderWriterClassTypeDef, out created, INITIALIZEONCE_METHOD_ATTRIBUTES, INITIALIZEONCE_METHOD_NAME, CodegenSession.Module.TypeSystem.Void);
                 if (created)
                     CodegenSession.GeneralHelper.CreateRuntimeInitializeOnLoadMethodAttribute(_generatedReaderWriterOnLoadMethodDef);
             }

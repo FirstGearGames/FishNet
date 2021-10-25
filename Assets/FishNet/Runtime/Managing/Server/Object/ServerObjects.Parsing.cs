@@ -5,6 +5,7 @@ using FishNet.Serializing;
 using UnityEngine;
 using System;
 using FishNet.Transporting;
+using FishNet.Managing.Utility;
 
 namespace FishNet.Managing.Server
 {
@@ -15,7 +16,7 @@ namespace FishNet.Managing.Server
         /// Parses a ServerRpc.
         /// </summary>
         /// <param name="data"></param>
-        internal void ParseServerRpc(PooledReader reader, int senderClientId, int dataLength, Channel channel)
+        internal void ParseServerRpc(PooledReader reader, int senderClientId, Channel channel)
         {
             NetworkConnection conn;
             if (!NetworkManager.ServerManager.Clients.TryGetValue(senderClientId, out conn))
@@ -24,12 +25,12 @@ namespace FishNet.Managing.Server
                     Debug.LogWarning($"NetworkConnection not found for connection {senderClientId}.");
             }
 
-            int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
+            int dataLength = Packets.GetPacketLength(PacketId.TargetRpc, reader, channel);
             if (nb != null)
                 nb.OnServerRpc(reader, conn, channel);
             else
-                SkipDataLength(PacketId.ServerRpc, reader, startPosition, dataLength);
+                SkipDataLength(PacketId.ServerRpc, reader, dataLength);
         }
     }
 

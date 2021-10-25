@@ -29,9 +29,9 @@ namespace FishNet.Example.Authenticating
         private string _password = "HelloWorld";
         #endregion
 
-        public override void FirstInitialize(NetworkManager networkManager)
+        public override void InitializeOnce(NetworkManager networkManager)
         {
-            base.FirstInitialize(networkManager);
+            base.InitializeOnce(networkManager);
 
             //Listen for connection state change as client.
             base.NetworkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
