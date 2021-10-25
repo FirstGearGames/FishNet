@@ -3,11 +3,17 @@ A feature-rich Unity networking solution aimed towards reliability, ease of use,
 
 Developed by a professional game designer, supported by the community.
 
+Documentation: https://fish-networking.gitbook.io/docs/
+
 Discord: https://discord.gg/NqzSEqR
 
 Trello: https://trello.com/b/taAfXWKP/fishnet-fish-networking
 
-Donation Options:
+# Addons
+
+FishySteamworks, a Steamworks transport: https://github.com/FirstGearGames/FishySteamworks/
+
+# Donation Options
 
   https://www.gofundme.com/f/fishnet
   
