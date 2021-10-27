@@ -11,9 +11,9 @@
 using System;
 using System.Threading;
 
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil.Cil {
+namespace MonoFN.Cecil.Cil {
 
 	public sealed class MethodBody {
 

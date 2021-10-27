@@ -8,9 +8,9 @@
 // Licensed under the MIT/X11 license.
 //
 
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public sealed class ParameterDefinition : ParameterReference, ICustomAttributeProvider, IConstantProvider, IMarshalInfoProvider {
 

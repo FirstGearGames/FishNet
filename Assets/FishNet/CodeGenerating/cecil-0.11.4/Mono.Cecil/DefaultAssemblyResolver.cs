@@ -11,7 +11,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public class DefaultAssemblyResolver : BaseAssemblyResolver {
 

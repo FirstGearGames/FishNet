@@ -10,9 +10,9 @@
 
 using System.Text;
 using System.Threading;
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public sealed class PropertyDefinition : PropertyReference, IMemberDefinition, IConstantProvider {
 

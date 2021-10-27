@@ -15,11 +15,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using SR = System.Reflection;
 
-using Mono.Collections.Generic;
-using Mono.Cecil.Cil;
-using Mono.Cecil.PE;
+using MonoFN.Collections.Generic;
+using MonoFN.Cecil.Cil;
+using MonoFN.Cecil.PE;
 
-namespace Mono.Cecil.Cil {
+namespace MonoFN.Cecil.Cil {
 
 	[StructLayout (LayoutKind.Sequential)]
 	public struct ImageDebugDirectory {
@@ -1093,7 +1093,7 @@ namespace Mono.Cecil.Cil {
 
 		static string GetSymbolTypeName (SymbolKind kind, string name)
 		{
-			return "Mono.Cecil" + "." + GetSymbolNamespace (kind) + "." + kind + name;
+			return "MonoFN.Cecil" + "." + GetSymbolNamespace (kind) + "." + kind + name;
 		}
 
 		static string GetSymbolNamespace (SymbolKind kind)
@@ -1143,7 +1143,7 @@ namespace Mono.Cecil.Cil {
 	}
 }
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	static partial class Mixin {
 

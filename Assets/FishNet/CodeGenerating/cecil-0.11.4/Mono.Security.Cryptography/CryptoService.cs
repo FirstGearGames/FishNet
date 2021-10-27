@@ -14,11 +14,11 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Runtime.Serialization;
 
-using Mono.Security.Cryptography;
+using MonoFN.Security.Cryptography;
 
-using Mono.Cecil.PE;
+using MonoFN.Cecil.PE;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	// Most of this code has been adapted
 	// from Jeroen Frijters' fantastic work

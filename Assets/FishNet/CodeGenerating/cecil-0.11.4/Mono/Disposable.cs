@@ -6,11 +6,11 @@
 // Copyright (c) 2008 - 2011 Novell, Inc.
 //
 // Licensed under the MIT/X11 license.
-//
+// 
 
 using System;
 
-namespace Mono {
+namespace MonoFN {
 
 	static class Disposable {
 

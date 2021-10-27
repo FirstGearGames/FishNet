@@ -10,12 +10,12 @@
 
 using System;
 using System.Collections.Generic;
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 using SR = System.Reflection;
 
-using Mono.Cecil.Metadata;
+using MonoFN.Cecil.Metadata;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public interface IMetadataImporterProvider {
 		IMetadataImporter GetMetadataImporter (ModuleDefinition module);

@@ -13,7 +13,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace Mono.Collections.Generic {
+namespace MonoFN.Collections.Generic {
 
 	public sealed class ReadOnlyCollection<T> : Collection<T>, ICollection<T>, IList {
 

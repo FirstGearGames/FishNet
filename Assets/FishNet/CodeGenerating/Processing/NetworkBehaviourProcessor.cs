@@ -1,8 +1,8 @@
 ﻿using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
-using Mono.Collections.Generic;
+using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
+using MonoFN.Collections.Generic;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;

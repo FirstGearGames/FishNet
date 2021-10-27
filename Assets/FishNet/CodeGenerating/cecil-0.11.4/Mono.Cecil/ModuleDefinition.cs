@@ -14,12 +14,12 @@ using System.IO;
 using System.Threading;
 using SR = System.Reflection;
 
-using Mono.Cecil.Cil;
-using Mono.Cecil.Metadata;
-using Mono.Cecil.PE;
-using Mono.Collections.Generic;
+using MonoFN.Cecil.Cil;
+using MonoFN.Cecil.Metadata;
+using MonoFN.Cecil.PE;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public enum ReadingMode {
 		Immediate = 1,

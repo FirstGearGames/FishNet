@@ -10,9 +10,9 @@
 
 using System;
 
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil.Cil {
+namespace MonoFN.Cecil.Cil {
 
 	public sealed class ILProcessor {
 
@@ -288,11 +288,5 @@ namespace Mono.Cecil.Cil {
 		{
 			instructions.Clear ();
 		}
-
-		internal void Append (object sayTrue)
-		{
-			throw new NotImplementedException ();
-		}
 	}
 }
-

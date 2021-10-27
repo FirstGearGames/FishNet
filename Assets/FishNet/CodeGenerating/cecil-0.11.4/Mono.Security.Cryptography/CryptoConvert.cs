@@ -30,7 +30,7 @@
 using System;
 using System.Security.Cryptography;
 
-namespace Mono.Security.Cryptography {
+namespace MonoFN.Security.Cryptography {
 
 	static class CryptoConvert {
 

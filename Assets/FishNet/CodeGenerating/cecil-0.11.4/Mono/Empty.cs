@@ -9,9 +9,9 @@
 //
 
 using System;
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono {
+namespace MonoFN {
 
 	static class Empty<T> {
 
@@ -27,7 +27,7 @@ namespace Mono {
 	}
 }
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	static partial class Mixin {
 

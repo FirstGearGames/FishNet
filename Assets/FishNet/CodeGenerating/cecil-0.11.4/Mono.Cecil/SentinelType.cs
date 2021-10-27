@@ -10,9 +10,9 @@
 
 using System;
 
-using MD = Mono.Cecil.Metadata;
+using MD = MonoFN.Cecil.Metadata;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public sealed class SentinelType : TypeSpecification {
 

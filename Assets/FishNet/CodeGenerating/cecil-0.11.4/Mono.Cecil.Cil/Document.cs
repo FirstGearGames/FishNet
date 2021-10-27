@@ -10,7 +10,7 @@
 
 using System;
 
-namespace Mono.Cecil.Cil {
+namespace MonoFN.Cecil.Cil {
 
 	public enum DocumentType {
 		Other,

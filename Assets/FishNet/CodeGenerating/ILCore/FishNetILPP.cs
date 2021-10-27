@@ -1,8 +1,8 @@
 ﻿using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Processing;

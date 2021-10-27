@@ -10,7 +10,7 @@
 
 using System;
 
-namespace Mono.Cecil.Metadata {
+namespace MonoFN.Cecil.Metadata {
 
 	sealed class GuidHeap : Heap {
 

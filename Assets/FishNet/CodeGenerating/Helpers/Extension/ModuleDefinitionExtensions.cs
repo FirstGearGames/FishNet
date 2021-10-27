@@ -2,7 +2,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using FishNet.CodeGenerating.ILCore;
-using Mono.Cecil;
+using MonoFN.Cecil;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {

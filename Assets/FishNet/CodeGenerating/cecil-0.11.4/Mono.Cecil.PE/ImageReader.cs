@@ -11,13 +11,13 @@
 using System;
 using System.IO;
 
-using Mono.Cecil.Cil;
-using Mono.Cecil.Metadata;
-using Mono.Collections.Generic;
+using MonoFN.Cecil.Cil;
+using MonoFN.Cecil.Metadata;
+using MonoFN.Collections.Generic;
 
 using RVA = System.UInt32;
 
-namespace Mono.Cecil.PE {
+namespace MonoFN.Cecil.PE {
 
 	sealed class ImageReader : BinaryStreamReader {
 

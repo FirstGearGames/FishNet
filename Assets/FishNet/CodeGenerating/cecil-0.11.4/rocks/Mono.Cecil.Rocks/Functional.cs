@@ -11,7 +11,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Mono.Cecil.Rocks {
+namespace MonoFN.Cecil.Rocks {
 
 	static class Functional {
 

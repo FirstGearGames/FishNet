@@ -11,7 +11,7 @@
 using System;
 using System.IO;
 
-namespace Mono.Cecil.PE {
+namespace MonoFN.Cecil.PE {
 
 	class BinaryStreamReader : BinaryReader {
 

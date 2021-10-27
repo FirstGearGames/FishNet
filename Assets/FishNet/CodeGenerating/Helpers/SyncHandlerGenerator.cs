@@ -4,8 +4,8 @@ using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -22,9 +22,9 @@ namespace FishNet.CodeGenerating.Helping
         #endregion
 
         #region Const.
-        public const Mono.Cecil.TypeAttributes SYNCSTUB_TYPE_ATTRIBUTES = (Mono.Cecil.TypeAttributes.BeforeFieldInit |
-            Mono.Cecil.TypeAttributes.Class | Mono.Cecil.TypeAttributes.AnsiClass | Mono.Cecil.TypeAttributes.Public |
-            Mono.Cecil.TypeAttributes.AutoClass);
+        public const MonoFN.Cecil.TypeAttributes SYNCSTUB_TYPE_ATTRIBUTES = (MonoFN.Cecil.TypeAttributes.BeforeFieldInit |
+            MonoFN.Cecil.TypeAttributes.Class | MonoFN.Cecil.TypeAttributes.AnsiClass | MonoFN.Cecil.TypeAttributes.Public |
+            MonoFN.Cecil.TypeAttributes.AutoClass);
         private const string SYNCSTUB_CLASS_PREFIX = "SyncHandler";
         #endregion
         /* //feature add and test the dirty boolean changes
@@ -153,13 +153,13 @@ namespace FishNet.CodeGenerating.Helping
 
                 /* Adding fields to class. */
                 //PreviousClientValue.
-                FieldDefinition previousClientValueFieldDef = new FieldDefinition("_previousClientValue", Mono.Cecil.FieldAttributes.Private, dataTypeRef);
+                FieldDefinition previousClientValueFieldDef = new FieldDefinition("_previousClientValue", MonoFN.Cecil.FieldAttributes.Private, dataTypeRef);
                 syncClassTypeDef.Fields.Add(previousClientValueFieldDef);
                 //InitializedValue.
-                FieldDefinition initializeValueFieldDef = new FieldDefinition("_initializeValue", Mono.Cecil.FieldAttributes.Private, dataTypeRef);
+                FieldDefinition initializeValueFieldDef = new FieldDefinition("_initializeValue", MonoFN.Cecil.FieldAttributes.Private, dataTypeRef);
                 syncClassTypeDef.Fields.Add(initializeValueFieldDef);
                 //Value.
-                FieldDefinition valueFieldDef = new FieldDefinition("_value", Mono.Cecil.FieldAttributes.Private, dataTypeRef);
+                FieldDefinition valueFieldDef = new FieldDefinition("_value", MonoFN.Cecil.FieldAttributes.Private, dataTypeRef);
                 syncClassTypeDef.Fields.Add(valueFieldDef);
 
                 MethodDefinition tmpMd;
@@ -202,9 +202,9 @@ namespace FishNet.CodeGenerating.Helping
             FieldDefinition previousClientValueFieldDef, FieldDefinition initializeValueFieldDef,
             FieldDefinition valueFieldDef, MethodReference baseInitializeInstanceMethodRef)
         {
-            Mono.Cecil.MethodAttributes methodAttr = (Mono.Cecil.MethodAttributes.HideBySig |
-                    Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.SpecialName |
-                    Mono.Cecil.MethodAttributes.RTSpecialName);
+            MonoFN.Cecil.MethodAttributes methodAttr = (MonoFN.Cecil.MethodAttributes.HideBySig |
+                    MonoFN.Cecil.MethodAttributes.Public | MonoFN.Cecil.MethodAttributes.SpecialName |
+                    MonoFN.Cecil.MethodAttributes.RTSpecialName);
 
             //Create constructor.
             MethodDefinition createdMethodDef = new MethodDefinition(".ctor", methodAttr,
@@ -262,7 +262,7 @@ namespace FishNet.CodeGenerating.Helping
             TypeReference dataTypeRef)
         {
             MethodDefinition createdMethodDef = new MethodDefinition("SetValue",
-                (Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig),
+                (MonoFN.Cecil.MethodAttributes.Public | MonoFN.Cecil.MethodAttributes.HideBySig),
                 CodegenSession.Module.TypeSystem.Boolean);
             createdClassTypeDef.Methods.Add(createdMethodDef);
 
@@ -388,7 +388,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodDefinition CreateReadMethodDefinition(TypeDefinition createdClassTypeDef, MethodReference setValueMethodRef, MethodReference baseReadMethodRef, TypeReference dataTypeRef)
         {
             MethodDefinition createdMethodDef = new MethodDefinition("Read",
-                (Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig | Mono.Cecil.MethodAttributes.Virtual),
+                (MonoFN.Cecil.MethodAttributes.Public | MonoFN.Cecil.MethodAttributes.HideBySig | MonoFN.Cecil.MethodAttributes.Virtual),
                 CodegenSession.Module.TypeSystem.Boolean);
             createdClassTypeDef.Methods.Add(createdMethodDef);
 
@@ -433,14 +433,14 @@ namespace FishNet.CodeGenerating.Helping
         private MethodDefinition CreateWriteDeltaMethodDefinition(TypeDefinition createdClassTypeDef, FieldDefinition valueFieldDef, MethodReference baseWriteMethodRef, TypeReference dataTypeRef)
         {
             MethodDefinition createdMethodDef = new MethodDefinition(baseWriteMethodRef.Name,
-                (Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig | Mono.Cecil.MethodAttributes.Virtual),
+                (MonoFN.Cecil.MethodAttributes.Public | MonoFN.Cecil.MethodAttributes.HideBySig | MonoFN.Cecil.MethodAttributes.Virtual),
                 CodegenSession.Module.TypeSystem.Void);
             createdClassTypeDef.Methods.Add(createdMethodDef);
 
             //PooledWriter parameter.
             ParameterDefinition writerParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdMethodDef, CodegenSession.WriterHelper.PooledWriter_TypeRef);
             //resetSyncTime parameter.
-            ParameterDefinition resetSyncTimeParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdMethodDef, typeof(bool), "", (Mono.Cecil.ParameterAttributes.HasDefault | Mono.Cecil.ParameterAttributes.Optional));
+            ParameterDefinition resetSyncTimeParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdMethodDef, typeof(bool), "", (MonoFN.Cecil.ParameterAttributes.HasDefault | MonoFN.Cecil.ParameterAttributes.Optional));
             resetSyncTimeParameterDef.Constant = (bool)true;
 
             ILProcessor processor = createdMethodDef.Body.GetILProcessor();
@@ -480,7 +480,7 @@ namespace FishNet.CodeGenerating.Helping
         private void CreateWriteFullMethodDefinition(TypeDefinition createdClassTypeDef, MethodReference writeMethodRef, FieldDefinition valueFieldDef, FieldDefinition initialValueFieldDef, MethodReference baseWriteMethodRef)
         {
             MethodDefinition createdMethodDef = new MethodDefinition(baseWriteMethodRef.Name,
-                (Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig | Mono.Cecil.MethodAttributes.Virtual),
+                (MonoFN.Cecil.MethodAttributes.Public | MonoFN.Cecil.MethodAttributes.HideBySig | MonoFN.Cecil.MethodAttributes.Virtual),
                 CodegenSession.Module.TypeSystem.Void);
             createdClassTypeDef.Methods.Add(createdMethodDef);
 
@@ -511,7 +511,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="dataTypeRef"></param>
         private MethodDefinition CreateGetValueMethodDefinition(TypeDefinition createdClassTypeDef, FieldDefinition valueFieldDef, TypeReference dataTypeRef)
         {
-            MethodDefinition createdMethodDef = new MethodDefinition("GetValue", (Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig),
+            MethodDefinition createdMethodDef = new MethodDefinition("GetValue", (MonoFN.Cecil.MethodAttributes.Public | MonoFN.Cecil.MethodAttributes.HideBySig),
                 dataTypeRef);
             createdClassTypeDef.Methods.Add(createdMethodDef);
 
@@ -535,7 +535,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="dataTypeRef"></param>
         private MethodDefinition CreateGetPreviousClientValueMethodDefinition(TypeDefinition createdClassTypeDef, FieldDefinition previousClientValueFieldDef, TypeReference dataTypeRef)
         {
-            MethodDefinition createdMethodDef = new MethodDefinition("GetPreviousClientValue", (Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig),
+            MethodDefinition createdMethodDef = new MethodDefinition("GetPreviousClientValue", (MonoFN.Cecil.MethodAttributes.Public | MonoFN.Cecil.MethodAttributes.HideBySig),
                 dataTypeRef);
             createdClassTypeDef.Methods.Add(createdMethodDef);
 
@@ -559,7 +559,7 @@ namespace FishNet.CodeGenerating.Helping
         private void CreateResetMethodDefinition(TypeDefinition createdClassTypeDef, FieldDefinition initializedValueFieldDef, FieldDefinition valueFieldDef, MethodReference baseResetMethodRef)
         {
             MethodDefinition createdMethodDef = new MethodDefinition("Reset",
-                (Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig | Mono.Cecil.MethodAttributes.Virtual),
+                (MonoFN.Cecil.MethodAttributes.Public | MonoFN.Cecil.MethodAttributes.HideBySig | MonoFN.Cecil.MethodAttributes.Virtual),
                 CodegenSession.Module.TypeSystem.Void);
             createdClassTypeDef.Methods.Add(createdMethodDef);
 

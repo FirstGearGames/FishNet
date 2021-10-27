@@ -22,7 +22,7 @@ namespace FishNet.Transporting
         OwnershipChange = 11,
         Broadcast = 12,
         SyncObject = 13,
-        TransformUpdate = 14
+        PingPong = 14
     }
 
 }

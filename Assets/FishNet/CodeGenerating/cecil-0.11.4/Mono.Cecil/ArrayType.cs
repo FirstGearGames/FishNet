@@ -11,10 +11,10 @@
 using System;
 using System.Text;
 using System.Threading;
-using Mono.Collections.Generic;
-using MD = Mono.Cecil.Metadata;
+using MonoFN.Collections.Generic;
+using MD = MonoFN.Cecil.Metadata;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public struct ArrayDimension {
 

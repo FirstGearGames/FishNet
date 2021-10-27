@@ -10,9 +10,9 @@
 
 using System.Text;
 
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public interface IMethodSignature : IMetadataTokenProvider {
 

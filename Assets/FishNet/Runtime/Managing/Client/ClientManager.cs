@@ -16,7 +16,7 @@ namespace FishNet.Managing.Client
     {
         #region Public.
         /// <summary>
-        /// Called after local client's connection state changes.
+        /// Called after the local client connection state changes.
         /// </summary>
         public event Action<ClientConnectionStateArgs> OnClientConnectionState;
         /// <summary>
@@ -202,6 +202,10 @@ namespace FishNet.Managing.Client
                         {
                             ParseBroadcast(reader);
                         }
+                        else if (packetId == PacketId.PingPong)
+                        { 
+                            ParsePingPong(reader);
+                        }
                         else if (packetId == PacketId.SyncVar)
                         {
                             Objects.ParseSyncType(reader, false, args.Channel);
@@ -239,6 +243,16 @@ namespace FishNet.Managing.Client
                  * an exit early check. */
                 Objects.IterateObjectCache();
             }
+        }
+        
+        /// <summary>
+        /// Parses a PingPong packet.
+        /// </summary>
+        /// <param name="reader"></param>
+        private void ParsePingPong(PooledReader reader)
+        {
+            uint clientTick = reader.ReadUInt32(AutoPackType.Unpacked);
+            NetworkManager.TimeManager.ModifyPing(clientTick);
         }
 
         /// <summary>

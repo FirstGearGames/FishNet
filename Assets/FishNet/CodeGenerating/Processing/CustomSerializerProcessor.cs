@@ -2,8 +2,8 @@
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Serializing;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
 
 namespace FishNet.CodeGenerating.Processing

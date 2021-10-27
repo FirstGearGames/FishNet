@@ -8,7 +8,7 @@
 // Licensed under the MIT/X11 license.
 //
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public interface IMemberDefinition : ICustomAttributeProvider {
 

@@ -14,9 +14,9 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public delegate AssemblyDefinition AssemblyResolveEventHandler (object sender, AssemblyNameReference reference);
 
@@ -68,7 +68,7 @@ namespace Mono.Cecil {
 
 	public abstract class BaseAssemblyResolver : IAssemblyResolver {
 
-		static readonly bool on_mono = Type.GetType ("Mono.Runtime") != null;
+		static readonly bool on_mono = Type.GetType ("MonoFN.Runtime") != null;
 
 		readonly Collection<string> directories;
 

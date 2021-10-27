@@ -1,5 +1,5 @@
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
 using System.IO;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
 

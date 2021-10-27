@@ -11,9 +11,9 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public enum SecurityAction : ushort {
 		Request = 1,

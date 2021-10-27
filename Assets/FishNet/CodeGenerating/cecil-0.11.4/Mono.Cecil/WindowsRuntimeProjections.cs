@@ -11,9 +11,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	sealed class TypeDefinitionProjection {
 

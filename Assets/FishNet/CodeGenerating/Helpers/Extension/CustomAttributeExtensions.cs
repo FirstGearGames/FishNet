@@ -1,4 +1,4 @@
-﻿using Mono.Cecil;
+﻿using MonoFN.Cecil;
 using System.Linq;
 
 namespace FishNet.CodeGenerating.Helping.Extension

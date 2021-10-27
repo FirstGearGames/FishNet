@@ -11,12 +11,12 @@
 using System;
 using System.IO;
 
-using Mono.Cecil.Cil;
-using Mono.Cecil.Metadata;
+using MonoFN.Cecil.Cil;
+using MonoFN.Cecil.Metadata;
 
 using RVA = System.UInt32;
 
-namespace Mono.Cecil.PE {
+namespace MonoFN.Cecil.PE {
 
 	sealed class ImageWriter : BinaryStreamWriter {
 

@@ -12,11 +12,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Mono.Cecil.Rocks {
+namespace MonoFN.Cecil.Rocks {
 
-//#if INSIDE_ROCKS
+#if UNITY_EDITOR
 	public
-//#endif
+#endif
 	static class TypeReferenceRocks {
 
 		public static ArrayType MakeArrayType (this TypeReference self)

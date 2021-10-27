@@ -10,9 +10,9 @@
 
 using System;
 
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	sealed class ParameterDefinitionCollection : Collection<ParameterDefinition> {
 

@@ -11,7 +11,7 @@
 using System;
 using System.IO;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public sealed class EmbeddedResource : Resource {
 

@@ -11,14 +11,14 @@
 using System;
 using System.Collections.Generic;
 
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-using Mono.Cecil.Metadata;
-using Mono.Cecil.PE;
+using MonoFN.Cecil.Metadata;
+using MonoFN.Cecil.PE;
 
 using RVA = System.UInt32;
 
-namespace Mono.Cecil.Cil {
+namespace MonoFN.Cecil.Cil {
 
 	sealed class CodeWriter : ByteBuffer {
 

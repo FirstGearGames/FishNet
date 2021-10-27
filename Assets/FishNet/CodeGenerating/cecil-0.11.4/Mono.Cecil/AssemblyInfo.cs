@@ -16,7 +16,7 @@ using System.Runtime.InteropServices;
 
 [assembly: Guid ("fd225bb4-fa53-44b2-a6db-85f5e48dcb54")]
 
-[assembly: InternalsVisibleTo ("Mono.Cecil.Tests, PublicKey=" + Consts.PublicKey)]
-[assembly: InternalsVisibleTo ("Mono.Cecil.Pdb, PublicKey=" + Consts.PublicKey)]
-[assembly: InternalsVisibleTo ("Mono.Cecil.Mdb, PublicKey=" + Consts.PublicKey)]
-[assembly: InternalsVisibleTo ("Mono.Cecil.Rocks, PublicKey=" + Consts.PublicKey)]
+[assembly: InternalsVisibleTo ("MonoFN.Cecil.Tests, PublicKey=" + Consts.PublicKey)]
+[assembly: InternalsVisibleTo ("MonoFN.Cecil.Pdb, PublicKey=" + Consts.PublicKey)]
+[assembly: InternalsVisibleTo ("MonoFN.Cecil.Mdb, PublicKey=" + Consts.PublicKey)]
+[assembly: InternalsVisibleTo ("MonoFN.Cecil.Rocks, PublicKey=" + Consts.PublicKey)]

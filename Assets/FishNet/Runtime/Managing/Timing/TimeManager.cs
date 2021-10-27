@@ -1,17 +1,22 @@
 ﻿using FishNet.Connection;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Timing.Broadcast;
+using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
+using SystemStopwatch = System.Diagnostics.Stopwatch;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
-using UnityEngine;
+
 
 namespace FishNet.Managing.Timing
 {
+
+
     /// <summary>
     /// Provides data and actions for network time and tick based systems.
     /// </summary>
@@ -63,14 +68,19 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public event Action OnFixedUpdate;
         /// <summary>
+        /// RoundTripTime in milliseconds.
+        /// </summary>
+        public long RoundTripTime { get; private set; } 
+        /// <summary>
         /// Tick on the last received packet, be it from server or client.
-        /// This value isn't used yet.
+        /// This value is not used yet.
         /// </summary>
         public uint LastPacketTick { get; internal set; }
         /// <summary>
-        /// Current network tick.
+        /// Current approximate network tick as it is on server.
         /// When running as client only this is an approximation to what the server tick is.
-        /// The value of this field may decrease if the client needs to adjust timing.
+        /// The value of this field may increase and decrease as timing adjusts.
+        /// This value is reset upon disconnecting.
         /// Tick can be used to get the server time by using TicksToTime().
         /// </summary>
         public uint Tick { get; private set; }
@@ -79,6 +89,14 @@ namespace FishNet.Managing.Timing
         /// </summary>
         [HideInInspector]
         public double TickDelta { get; private set; } = 0d;
+        /// <summary>
+        /// How long the local server has been connected.
+        /// </summary>
+        public float ServerUptime { get; private set; } = 0f;
+        /// <summary>
+        /// How long the local client has been connected.
+        /// </summary>
+        public float ClientUptime { get; private set; } = 0f;
         #endregion
 
         #region Serialized.
@@ -93,9 +111,9 @@ namespace FishNet.Managing.Timing
         /// 
         /// </summary>
         [Tooltip("How many times per second the server will simulate. This does not limit server frame rate.")]
-        [Range(1, 340)]
+        [Range(1, 240)]
         [SerializeField]
-        private ushort _tickRate = 120;
+        private ushort _tickRate = 30;
         /// <summary>
         /// How many times per second the server will simulate. This does not limit server frame rate.
         /// </summary>
@@ -132,9 +150,31 @@ namespace FishNet.Managing.Timing
 
         #region Private.
         /// <summary>
+        /// 
+        /// </summary>
+        private uint _localTick = 0;
+        /// <summary>
+        /// A tick that is not synchronized. This value will only increment. May be used for indexing or Ids with custom logic.
+        /// When called on the server Tick is returned, otherwise LocalTick is returned.
+        /// This value resets upon disconnecting.
+        /// </summary>
+        public uint LocalTick
+        {
+            get => (_networkManager.IsServer) ? Tick : _localTick;
+            private set => _localTick = value;
+        }
+        /// <summary>
         /// Stopwatch used to calculate ticks.
         /// </summary>
-        System.Diagnostics.Stopwatch _stopwatch = new System.Diagnostics.Stopwatch();
+        SystemStopwatch _tickStopwatch = new SystemStopwatch();
+        /// <summary>
+        /// Stopwatch used for pings.
+        /// </summary>
+        SystemStopwatch _pingStopwatch = new SystemStopwatch();
+        /// <summary>
+        /// MovingAverage instance used to calculate mean ping.
+        /// </summary>
+        private MovingAverage _pingAverage = new MovingAverage(5);
         /// <summary>
         /// Time elapsed after ticks. This is extra time beyond the simulation rate.
         /// </summary>
@@ -164,9 +204,9 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private Stack<ClientTickData> _tickDataCache = new Stack<ClientTickData>();
         /// <summary>
-        /// How often to update timing on clients.
+        /// How many ticks to wait for each timing update to clients.
         /// </summary>
-        private ushort _timingAdjustmentInterval = 0;
+        private ushort _timingAdjustmentInterval;
         /// <summary>
         /// Last frame an iteration occurred for incoming.
         /// </summary>
@@ -175,6 +215,10 @@ namespace FishNet.Managing.Timing
         /// Last frame an iteration occurred for outgoing.
         /// </summary>
         private int _lastOutgoingIterationFrame = -1;
+        /// <summary>
+        /// True if client received Pong since last ping.
+        /// </summary>
+        private bool _receivedPong = true;
         /// <summary>
         /// Number of TimeManagers open which are using manual physics.
         /// </summary>
@@ -189,17 +233,25 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Percentage of TickDelta client will adjust their timing per step.
         /// </summary>
-        private const double CLIENT_STEP_PERCENT = 0.02d;
+        private const double CLIENT_STEP_PERCENT = 0.01d;
         /// <summary>
         /// How quickly to move AdjustedDeltaTick to DeltaTick.
         /// </summary>
-        private const double ADJUSTED_DELTA_RECOVERY_RATE = 0.002f;
+        private const double ADJUSTED_DELTA_RECOVERY_RATE = 0.00001f;
+        /// <summary>
+        /// Ping interval in seconds.
+        /// </summary>
+        internal const float PING_INTERVAL = 1f;
+        /// <summary>
+        /// How many seconds between each timing adjustment from the server.
+        /// </summary>
+        private const byte ADJUST_TIMING_INTERVAL = 2;
         #endregion
 
         private void Awake()
         {
             AddNetworkLoops();
-            _stopwatch.Restart();
+            _tickStopwatch.Restart();
         }
 
 #if UNITY_EDITOR
@@ -218,7 +270,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickFixedUpdate()
         {
-            TryIterate(true, false);
+            TryIterateData(true, false);
             OnFixedUpdate?.Invoke();
         }
 
@@ -228,10 +280,17 @@ namespace FishNet.Managing.Timing
         internal void TickUpdate()
         {
             if (!Time.inFixedTimeStep)
-                TryIterate(true, false);
+                TryIterateData(true, false);
+
+            if (_networkManager.IsServer)
+                ServerUptime += Time.deltaTime;
 
             if (_networkManager.IsClient)
+            {
+                ClientUptime += Time.deltaTime;
+                TrySendPing();
                 _adjustedTickDelta = Mathf.MoveTowards((float)_adjustedTickDelta, (float)TickDelta, Time.deltaTime * (float)ADJUSTED_DELTA_RECOVERY_RATE);
+            }
 
             IncreaseTick();
             OnUpdate?.Invoke();
@@ -246,7 +305,7 @@ namespace FishNet.Managing.Timing
             /* Iterate outgoing after lateupdate
              * so data is always sent out
              * after everything processes. */
-            TryIterate(false, false);
+            TryIterateData(false, false);
         }
 
 
@@ -258,6 +317,8 @@ namespace FishNet.Managing.Timing
             _networkManager = networkManager;
             SetInitialValues();
             _networkManager.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
+            _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
+            _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
             _networkManager.ServerManager.OnAuthenticationResult += ServerManager_OnAuthenticationResult;
             _networkManager.ClientManager.RegisterBroadcast<TimingAdjustmentBroadcast>(OnTimingAdjustmentBroadcast);
             _networkManager.ServerManager.RegisterBroadcast<AddBufferedBroadcast>(OnAddBufferedBroadcast);
@@ -277,6 +338,38 @@ namespace FishNet.Managing.Timing
         }
 
 
+        /// <summary>
+        /// Called after the local client connection state changes.
+        /// </summary>
+        private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
+        {
+            if (obj.ConnectionState != LocalConnectionStates.Started)
+            {
+                _pingStopwatch.Stop();
+                ClientUptime = 0f;
+                LocalTick = 0;
+                //Also reset Tick if not running as host.
+                if (!_networkManager.IsServer)
+                    Tick = 0;
+            }
+            else
+            {
+                _pingStopwatch.Restart();
+            }
+        }
+
+        /// <summary>
+        /// Called after the local server connection state changes.
+        /// </summary>
+        private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
+        {
+            if (obj.ConnectionState != LocalConnectionStates.Started)
+            {
+                ServerUptime = 0f;
+                Tick = 0;
+            }
+        }
+
 
         /// <summary>
         /// Sets values to use based on settings.
@@ -285,6 +378,8 @@ namespace FishNet.Managing.Timing
         {
             TickDelta = (1d / TickRate);
             _adjustedTickDelta = TickDelta;
+            //Update every x seconds.
+            _timingAdjustmentInterval = (ushort)(TickRate * ADJUST_TIMING_INTERVAL);
 
             SetAutomaticSimulation(_automaticPhysics);
 
@@ -336,16 +431,80 @@ namespace FishNet.Managing.Timing
 #endif
             }
         }
+
+        #region PingPong.
+        /// <summary>
+        /// Modifies client ping based on LocalTick and clientTIck.
+        /// </summary>
+        /// <param name="clientTIck"></param>
+        internal void ModifyPing(uint clientTIck)
+        {
+            uint tickDifference = (LocalTick - clientTIck);
+            _pingAverage.ComputeAverage(tickDifference);
+
+            double averageInTime = (_pingAverage.Average * TickDelta * 1000);
+            RoundTripTime = (long)Math.Round(averageInTime);
+            _receivedPong = true;
+        }
+
+
+        /// <summary>
+        /// Sends a ping to the server.
+        /// </summary>
+        private void TrySendPing()
+        {
+            /* Set next ping time based on uptime.
+            * Client should try to get their ping asap
+            * once connecting but more casually after. 
+            * If client did not receive a response to last
+            * ping then wait longer. The server maybe didn't
+            * respond because client is sending too fast. */
+            long requiredTime = (_receivedPong) ?
+                (long)(PING_INTERVAL * 1000) :
+                (long)(PING_INTERVAL * 1500);
+
+            if (_pingStopwatch.ElapsedMilliseconds < requiredTime)
+                return;
+
+            _pingStopwatch.Restart();
+            //Unset receivedPong, wait for new response.
+            _receivedPong = false;
+
+            using (PooledWriter writer = WriterPool.GetWriter())
+            {
+                writer.WriteUInt16((ushort)PacketId.PingPong);
+                writer.WriteUInt32(LocalTick, AutoPackType.Unpacked);
+                _networkManager.TransportManager.SendToServer((byte)Channel.Unreliable, writer.GetArraySegment());
+            }
+        }
+
+        /// <summary>
+        /// Sends a pong to a client.
+        /// </summary>
+        internal void SendPong(NetworkConnection conn, uint clientTick)
+        {
+            if (!conn.IsActive || !conn.Authenticated)
+                return;
+
+            using (PooledWriter writer = WriterPool.GetWriter())
+            {
+                writer.WriteUInt16((ushort)PacketId.PingPong);
+                writer.WriteUInt32(clientTick, AutoPackType.Unpacked);
+                conn.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
+            }
+        }
+        #endregion
+
         /// <summary>
         /// Increases the based on simulation rate.
         /// </summary>
         private void IncreaseTick()
         {
             double timePerSimulation = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
-            long frameMs = _stopwatch.ElapsedMilliseconds;
+            long frameMs = _tickStopwatch.ElapsedMilliseconds;
 
             _elapsedTime += frameMs / 1000d;
-            _stopwatch.Restart();
+            _tickStopwatch.Restart();
             bool ticked = (_elapsedTime >= timePerSimulation);
 
             while (_elapsedTime >= timePerSimulation)
@@ -355,7 +514,7 @@ namespace FishNet.Managing.Timing
                  * OnPreTick promises data hasn't been read yet.
                  * Therefor iterate must occur after OnPreTick.
                  * Iteration will only run once per frame. */
-                TryIterate(true, true);
+                TryIterateData(true, true);
                 OnTick?.Invoke(Tick);
 
                 if (!_automaticPhysics)
@@ -373,11 +532,12 @@ namespace FishNet.Managing.Timing
                     SendTimingAdjustment();
 
                 Tick++;
+                LocalTick++;
             }
 
             //If ticked also try to send out data.
             if (ticked)
-                TryIterate(false, true);
+                TryIterateData(false, true);
         }
 
         /// <summary>
@@ -406,7 +566,10 @@ namespace FishNet.Managing.Timing
             if (!authenticated)
                 return;
 
-            //AddToBuffered(arg1, _timingAdjustmentInterval);
+            /* Start buffered at 0 and let client accumulate
+             * buffered. Set ticks remaining to how many
+             * ticks should pass for buffer to be at desired
+             * amount. */
             ClientTickData ctd = AddToBuffered(arg1, 0);
             ctd.SendTicksRemaining = _timingAdjustmentInterval;
             SynchronizeTick(arg1);
@@ -439,11 +602,11 @@ namespace FishNet.Managing.Timing
         }
 
         /// <summary>
-        /// Tries to iterate incoming data.
+        /// Tries to iterate incoming or outgoing data.
         /// </summary>
         /// <param name="incoming">True to iterate incoming.</param>
         /// <param name="isTick">True if call is occuring during a tick.</param>
-        private void TryIterate(bool incoming, bool isTick)
+        private void TryIterateData(bool incoming, bool isTick)
         {
             /* If only iterating on ticks then data should
              * only be read or sent during a tick.
@@ -586,7 +749,14 @@ namespace FishNet.Managing.Timing
             if (_networkManager.IsServer)
                 return;
 
-            Tick = ta.Tick;
+            uint currentTick = Tick;
+            //Add half of rtt onto tick.
+            uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
+            Tick = ta.Tick + rttTicks;
+
+            uint nextTick = (Tick > currentTick) ? (Tick - currentTick) : (currentTick - Tick);
+            string header = (Tick > currentTick) ? "- " : "+ ";
+
             sbyte steps = ta.Step;
             if (steps == 0)
                 return;

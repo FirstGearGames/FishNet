@@ -126,9 +126,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Parses a received broadcast.
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="connectionId"></param>
-        private void ParseBroadcast(PooledReader reader, int connectionId)
+        private void ParseBroadcast(PooledReader reader, NetworkConnection conn)
         {
             ushort key = reader.ReadUInt16();
 
@@ -141,11 +139,6 @@ namespace FishNet.Managing.Server
                 foreach (ClientBroadcastDelegate handler in handlers)
                 {
                     reader.Position = readerStartPosition;
-                    //Find connection sending broadcast.
-                    NetworkConnection conn;
-                    if (!Clients.TryGetValue(connectionId, out conn))
-                        conn = NetworkManager.EmptyConnection;
-
                     handler.Invoke(conn, reader);
                 }
             }
@@ -265,7 +258,7 @@ namespace FishNet.Managing.Server
             {
                 Broadcasts.WriteBroadcast<T>(writer, message, channel);
                 ArraySegment<byte> segment = writer.GetArraySegment();
-                
+
                 foreach (NetworkConnection conn in Clients.Values)
                 {
                     //

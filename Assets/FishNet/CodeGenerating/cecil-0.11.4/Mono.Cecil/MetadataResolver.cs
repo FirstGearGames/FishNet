@@ -10,9 +10,9 @@
 
 using System;
 
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public interface IAssemblyResolver : IDisposable {
 		AssemblyDefinition Resolve (AssemblyNameReference name);
@@ -385,6 +385,8 @@ namespace Mono.Cecil {
 
 			if (a.Name != b.Name || a.Namespace != b.Namespace)
 				return false;
+
+			//TODO: check scope
 
 			return AreSame (a.DeclaringType, b.DeclaringType);
 		}

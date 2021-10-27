@@ -9,9 +9,9 @@
 //
 
 using System;
-using Mono.Cecil.PE;
+using MonoFN.Cecil.PE;
 
-namespace Mono.Cecil.Metadata {
+namespace MonoFN.Cecil.Metadata {
 
 	enum Table : byte {
 		Module = 0x00,

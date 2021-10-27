@@ -10,9 +10,9 @@
 
 using System;
 
-using Mono.Cecil.Metadata;
+using MonoFN.Cecil.Metadata;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	static partial class Mixin {
 

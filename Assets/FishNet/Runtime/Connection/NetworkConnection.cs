@@ -3,7 +3,7 @@ using FishNet.Managing;
 using FishNet.Object;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using System.Runtime.CompilerServices;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Connection
@@ -65,16 +65,21 @@ namespace FishNet.Connection
         /// </summary>
         public bool IsLocalClient => (NetworkManager != null) ? (NetworkManager.ClientManager.Connection == this) : false;
         /// <summary>
+        /// 
+        /// </summary>
+        public HashSet<NetworkObject> _objects = new HashSet<NetworkObject>();
+        /// <summary>
         /// Objects owned by this connection. Available to this connection and server.
         /// </summary>
-        public HashSet<NetworkObject> Objects = new HashSet<NetworkObject>();
+        public IReadOnlyCollection<NetworkObject> Objects => _objects;
+        /// <summary>
+        /// The first object within Objects.
+        /// </summary>
+        public NetworkObject FirstObject { get; private set; } = null;
         /// <summary>
         /// Scenes this connection is in. Available to this connection and server.
         /// </summary>
         public HashSet<Scene> Scenes { get; private set; } = new HashSet<Scene>();
-        #endregion
-
-        #region Internal.
         /// <summary>
         /// True if this connection is being disconnected. Only available to server.
         /// </summary>
@@ -135,15 +140,17 @@ namespace FishNet.Connection
             NetworkManager = nm;
             ClientId = clientId;
             InitializeBuffer();
+            InitializePing();
         }
 
         /// <summary>
         /// Resets this instance.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Reset()
         {
             ClientId = -1;
-            Objects.Clear();
+            ClearObjects();
             Authenticated = false;
             NetworkManager = null;
             _loadedStartScenesAsClient = false;
@@ -206,9 +213,14 @@ namespace FishNet.Connection
         /// Adds to Objects owned by this connection.
         /// </summary>
         /// <param name="nob"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AddObject(NetworkObject nob)
         {
-            Objects.Add(nob);
+            _objects.Add(nob);
+            //If adding the first object then set new FirstObject.
+            if (_objects.Count == 1)
+                FirstObject = nob;
+
             OnObjectAdded?.Invoke(nob);
         }
 
@@ -216,10 +228,43 @@ namespace FishNet.Connection
         /// Removes from Objects owned by this connection.
         /// </summary>
         /// <param name="nob"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RemoveObject(NetworkObject nob)
         {
-            Objects.Remove(nob);
+            _objects.Remove(nob);
+            //If removing the first object then set a new one.
+            if (nob == FirstObject)
+                SetFirstObject();
+
             OnObjectRemoved?.Invoke(nob);
+        }
+
+        /// <summary>
+        /// Clears all Objects.
+        /// </summary>
+        private void ClearObjects()
+        {
+            _objects.Clear();
+            FirstObject = null;
+        }
+
+        /// <summary>
+        /// Sets FirstObject using the first element in Objects.
+        /// </summary>
+        private void SetFirstObject()
+        {
+            if (_objects.Count == 0)
+            {
+                FirstObject = null;
+            }
+            else
+            {
+                foreach (NetworkObject nob in Objects)
+                {
+                    FirstObject = nob;
+                    break;
+                }
+            }
         }
 
         /// <summary>

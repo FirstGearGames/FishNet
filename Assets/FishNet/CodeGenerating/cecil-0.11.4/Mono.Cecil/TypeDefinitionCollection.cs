@@ -11,11 +11,11 @@
 using System;
 using System.Collections.Generic;
 
-using Mono.Cecil.Metadata;
+using MonoFN.Cecil.Metadata;
 
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	using Slot = Row<string, string>;
 

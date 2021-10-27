@@ -1,7 +1,7 @@
-﻿using Mono.Cecil.Cil;
+﻿using MonoFN.Cecil.Cil;
 using System;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 	internal sealed class TypeResolver {
 		private readonly IGenericInstance _typeDefinitionContext;
 		private readonly IGenericInstance _methodDefinitionContext;

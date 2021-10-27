@@ -6,8 +6,8 @@ using FishNet.Object;
 using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -373,11 +373,11 @@ namespace FishNet.CodeGenerating.Helping
             else
             {
                 created = true;
-                MethodAttributes methodAttr = (Mono.Cecil.MethodAttributes.HideBySig |
-                        Mono.Cecil.MethodAttributes.SpecialName |
-                        Mono.Cecil.MethodAttributes.RTSpecialName);
+                MethodAttributes methodAttr = (MonoFN.Cecil.MethodAttributes.HideBySig |
+                        MonoFN.Cecil.MethodAttributes.SpecialName |
+                        MonoFN.Cecil.MethodAttributes.RTSpecialName);
                 if (makeStatic)
-                    methodAttr |= Mono.Cecil.MethodAttributes.Static;
+                    methodAttr |= MonoFN.Cecil.MethodAttributes.Static;
 
                 //Create a constructor.
                 constructorMethodDef = new MethodDefinition(".ctor", methodAttr,

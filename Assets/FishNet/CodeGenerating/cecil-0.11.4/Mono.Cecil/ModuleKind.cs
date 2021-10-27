@@ -10,7 +10,7 @@
 
 using System;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public enum ModuleKind {
 		Dll,

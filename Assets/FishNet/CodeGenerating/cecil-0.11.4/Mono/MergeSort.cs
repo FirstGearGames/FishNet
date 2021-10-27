@@ -11,7 +11,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Mono {
+namespace MonoFN {
 
 	class MergeSort<T> {
 		private readonly T [] elements;

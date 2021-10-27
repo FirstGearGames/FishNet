@@ -11,9 +11,9 @@
 using System;
 using System.Text;
 
-using Mono.Cecil.Metadata;
+using MonoFN.Cecil.Metadata;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	class TypeParser {
 

@@ -10,11 +10,11 @@
 
 using System;
 using System.Threading;
-using Mono.Collections.Generic;
+using MonoFN.Collections.Generic;
 
-using Mono.Cecil.Metadata;
+using MonoFN.Cecil.Metadata;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 
 	public sealed class GenericParameter : TypeReference, ICustomAttributeProvider {
 

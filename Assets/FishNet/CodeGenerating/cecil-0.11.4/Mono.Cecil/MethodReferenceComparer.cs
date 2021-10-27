@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Mono.Cecil {
+namespace MonoFN.Cecil {
 	internal sealed class MethodReferenceComparer : EqualityComparer<MethodReference> {
 		// Initialized lazily for each thread
 		[ThreadStatic]

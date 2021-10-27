@@ -7,13 +7,7 @@ using UnityEngine;
 using FishNet.Authenticating;
 using FishNet.Managing.Transporting;
 using FishNet.Managing.Logging;
-/// <summary>
-/// Returns written data length for packet.
-/// </summary>
-/// <param name="packetId"></param>
-/// <param name="reader"></param>
-/// <param name="channel"></param>
-/// <returns></returns>i
+
 
 namespace FishNet.Managing.Server
 {
@@ -25,7 +19,7 @@ namespace FishNet.Managing.Server
     {
         #region Public.
         /// <summary>
-        /// Called after local the server connection state changes.
+        /// Called after the local server connection state changes.
         /// </summary>
         public event Action<ServerConnectionStateArgs> OnServerConnectionState;
         /// <summary>
@@ -455,15 +449,19 @@ namespace FishNet.Managing.Server
 
                         if (packetId == PacketId.ServerRpc)
                         {
-                            Objects.ParseServerRpc(reader, args.ConnectionId, args.Channel);
+                            Objects.ParseServerRpc(reader, conn, args.Channel);
                         }
                         else if (packetId == PacketId.Broadcast)
                         {
-                            ParseBroadcast(reader, args.ConnectionId);
+                            ParseBroadcast(reader, conn);
+                        }
+                        else if (packetId == PacketId.PingPong)
+                        {
+                            ParsePingPong(reader, conn);
                         }
                         else
                         {
-                            if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                            if (NetworkManager.CanLog(LoggingType.Error))
                                 Debug.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
                             return;
                         }
@@ -472,12 +470,31 @@ namespace FishNet.Managing.Server
             }
             catch (Exception e)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Error))
-                    Debug.LogError($"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Message: {e.Message}.");
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Client will be kicked immediately. Message: {e.Message}.");
+                //Kick client immediately.
+                NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
             }
             finally { }
 
         }
+
+        /// <summary>
+        /// Parses a received PingPong.
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="conn"></param>
+        private void ParsePingPong(PooledReader reader, NetworkConnection conn)
+        {
+            /* //security limit how often clients can send pings.
+             * have clients use a stopwatch rather than frame time
+             * for checks to ensure it's not possible to send
+             * excessively should their game stutter then catch back up. */
+            uint clientTick = reader.ReadUInt32(AutoPackType.Unpacked);
+            if (conn.CanPingPong())
+                NetworkManager.TimeManager.SendPong(conn, clientTick);
+        }
+
 
         /// <summary>
         /// Called when a remote client authenticates with the server.

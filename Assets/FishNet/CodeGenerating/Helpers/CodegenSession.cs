@@ -1,5 +1,5 @@
 ﻿using FishNet.CodeGenerating.Processing;
-using Mono.Cecil;
+using MonoFN.Cecil;
 using System.Collections.Generic;
 using Unity.CompilationPipeline.Common.Diagnostics;
 using UnityEngine;

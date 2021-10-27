@@ -10,7 +10,7 @@
 
 using System;
 
-namespace Mono.Cecil.PE {
+namespace MonoFN.Cecil.PE {
 
 	class ByteBuffer {
 

@@ -10,11 +10,11 @@
 
 using System;
 
-using Mono.Cecil.Cil;
+using MonoFN.Cecil.Cil;
 
-namespace Mono.Cecil.Rocks {
+namespace MonoFN.Cecil.Rocks {
 
-#if INSIDE_ROCKS
+#if UNITY_EDITOR
 	public
 #endif
 	static class MethodBodyRocks {

@@ -1,6 +1,6 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Object;
-using Mono.Cecil;
+using MonoFN.Cecil;
 using System.Collections.Generic;
 using Unity.CompilationPipeline.Common.Diagnostics;
 using UnityEngine;
