@@ -1,2 +1,2 @@
 # Version
-0.1.2.Nightly.6
+0.1.2.Nightly.7

@@ -3,6 +3,7 @@ using FishNet.Serializing;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FishNet.Managing.Client
 {

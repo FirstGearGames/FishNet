@@ -93,7 +93,7 @@ namespace FishNet.Managing.Transporting
         {
             int startPosition = reader.Position;
             //Skip past packetId for split.
-            reader.ReadByte();
+            reader.ReadUInt16(); //pid
             /* Get tick and split and expected
              * split messages. This is included in every
              * split message. */
