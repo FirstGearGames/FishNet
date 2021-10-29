@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using FishNet.Utility.Performance;
 using FishNet.Managing.Logging;
+using FishNet.Utility.Extension;
 
 namespace FishNet.Managing.Server
 {
@@ -45,6 +46,11 @@ namespace FishNet.Managing.Server
         /// NetworkBehaviours which have dirty SyncObjects.
         /// </summary>
         private List<NetworkBehaviour> _dirtySyncObjectBehaviours = new List<NetworkBehaviour>(20);
+        /// <summary>
+        /// Objects which need to be destroyed next tick.
+        /// This is needed when running as host so host client will get any final messages for the object before they're destroyed.
+        /// </summary>
+        private Dictionary<int, NetworkObject> _pendingDestroy = new Dictionary<int, NetworkObject>();
         #endregion
 
         internal ServerObjects(NetworkManager networkManager)
@@ -212,7 +218,7 @@ namespace FishNet.Managing.Server
         private void SetupSceneObjects(Scene s)
         {
             int nobCount;
-            List<NetworkObject> networkObjects = base.GetSceneNetworkObjects(s, out nobCount);
+            List<NetworkObject> networkObjects = SceneFN.GetSceneNetworkObjects(s, out nobCount);
 
             for (int i = 0; i < nobCount; i++)
             {
@@ -404,6 +410,32 @@ namespace FishNet.Managing.Server
         #endregion
 
         #region Despawning.
+        internal void AddToPending(NetworkObject nob)
+        {
+            _pendingDestroy[nob.ObjectId] = nob;
+        }
+        /// <summary>
+        /// Tries to removes objectId from PendingDestroy and returns if successful.
+        /// </summary>
+        /// <param name="objectId"></param>
+        internal bool RemoveFromPending(int objectId)
+        {
+            return _pendingDestroy.Remove(objectId);
+        }
+        /// <summary>
+        /// Destroys NetworkObjects pending for destruction.
+        /// </summary>
+        internal void DestroyPending()
+        {
+            foreach (NetworkObject item in _pendingDestroy.Values)
+            {
+                if (item != null)
+                    MonoBehaviour.Destroy(item.gameObject);
+            }
+
+            _pendingDestroy.Clear();
+        }
+
         /// <summary>
         /// Despawns an object over the network.
         /// </summary>

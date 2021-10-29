@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using FishNet.Managing.Utility;
 using FishNet.Managing.Logging;
+using FishNet.Utility.Extension;
 
 namespace FishNet.Managing.Client
 {
@@ -88,7 +89,7 @@ namespace FishNet.Managing.Client
         private void RegisterAndDespawnSceneObjects(Scene s)
         {
             int nobCount;
-            List<NetworkObject> networkObjects = base.GetSceneNetworkObjects(s, out nobCount);
+            List<NetworkObject> networkObjects = SceneFN.GetSceneNetworkObjects(s, out nobCount);
 
             for (int i = 0; i < nobCount; i++)
             {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using FishNet.Object.Helping;
 using System.Linq;
+using FishNet.Documenting;
 #if UNITY_EDITOR
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -67,7 +68,7 @@ namespace FishNet.Object
         /// <summary>
         /// Tries to generate a SceneId.
         /// </summary>
-        private void TryCreateSceneID()
+        internal void TryCreateSceneID()
         {
             if (Application.isPlaying)
                 return;

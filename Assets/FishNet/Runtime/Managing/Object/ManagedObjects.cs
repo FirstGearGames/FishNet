@@ -35,50 +35,6 @@ namespace FishNet.Managing.Object
         protected Dictionary<ulong, NetworkObject> SceneObjects = new Dictionary<ulong, NetworkObject>();
         #endregion
 
-        #region Private.
-        /// <summary>
-        /// Objects which need to be destroyed next tick.
-        /// This is needed when running as host so host client will get any final messages for the object before they're destroyed.
-        /// </summary>
-        private Dictionary<int, NetworkObject> _pendingDestroy = new Dictionary<int, NetworkObject>();
-        /// <summary>
-        /// List for NetworkObjects.
-        /// </summary>
-        private List<NetworkObject> _networkObjectList = new List<NetworkObject>();
-        /// <summary>
-        /// ListCache for NetworkObjects.
-        /// </summary>
-        private ListCache<NetworkObject> _networkObjectCache = new ListCache<NetworkObject>();
-        /// <summary>
-        /// Used for performance gains when getting objects.
-        /// </summary>
-        private List<GameObject> _gameObjectList = new List<GameObject>();
-        #endregion
-
-
-        /// <summary>
-        /// Removes objectId from PendingDestroy.
-        /// </summary>
-        /// <param name="objectId"></param>
-        private void RemoveFromPending(int objectId)
-        {
-            _pendingDestroy.Remove(objectId);
-        }
-        /// <summary>
-        /// Destroys NetworkObjects pending for destruction.
-        /// </summary>
-        internal void DestroyPending()
-        {
-            foreach (NetworkObject item in _pendingDestroy.Values)
-            {
-                if (item != null)
-                    MonoBehaviour.Destroy(item.gameObject);
-            }
-
-            _pendingDestroy.Clear();
-        }
-
-
         public ManagedObjects()
         {
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
@@ -87,31 +43,6 @@ namespace FishNet.Managing.Object
         ~ManagedObjects()
         {
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
-        }
-
-        /// <summary>
-        /// Gets all NetworkObjects in a scene.
-        /// </summary>
-        /// <param name="s"></param>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        protected List<NetworkObject> GetSceneNetworkObjects(Scene s, out int count)
-        {
-            _networkObjectCache.Reset();
-
-            //Iterate all root objects for the scene.
-            s.GetRootGameObjects(_gameObjectList);
-            for (int i = 0; i < _gameObjectList.Count; i++)
-            {
-                /* Get NetworkObjects within children of each
-                 * root object then add them to the cache. */
-                _gameObjectList[i].GetComponentsInChildren<NetworkObject>(true, _networkObjectList);
-                if (_networkObjectList != null)
-                    _networkObjectCache.AddValues(_networkObjectList);
-            }
-
-            count = _networkObjectCache.Written;
-            return _networkObjectCache.Collection;
         }
 
         /// <summary>
@@ -170,11 +101,13 @@ namespace FishNet.Managing.Object
                 {
                     //If not host destroy object.
                     if (!NetworkManager.IsHost)
+                    {
                         MonoBehaviour.Destroy(nob.gameObject);
+                    }
                     else
                     {
                         nob.gameObject.SetActive(false);
-                        _pendingDestroy[nob.ObjectId] = nob;
+                        NetworkManager.ServerManager.Objects.AddToPending(nob);
                     }
                 }
             }
@@ -184,13 +117,21 @@ namespace FishNet.Managing.Object
                 //Scene object.
                 if (nob.SceneObject)
                 {
-                    nob.gameObject.SetActive(false);
+                    //If also server don't set inactive again, server would have already done so.
+                    if (!NetworkManager.IsServer)
+                        nob.gameObject.SetActive(false);
                 }
                 //Not a scene object, destroy normally.
                 else
                 {
-                    RemoveFromPending(nob.ObjectId);
-                    MonoBehaviour.Destroy(nob.gameObject);
+                    /* If was removed from pending then also destroy.
+                    * Pending objects are ones that exist on the server
+                     * side only to await destruction from client side.
+                     * Objects can also be destroyed if server is not
+                     * active. */
+                    bool canDestroy = (!NetworkManager.IsServer || NetworkManager.ServerManager.Objects.RemoveFromPending(nob.ObjectId));
+                    if (canDestroy)
+                        MonoBehaviour.Destroy(nob.gameObject);
                 }
             }
 
@@ -220,9 +161,9 @@ namespace FishNet.Managing.Object
 
             nob.Deinitialize(asServer);
             /* Only run if asServer, or not 
-             * asServer and server isn't running. This
-             * prevents objects from affecting the server
-             * as host* when being modified client side. */
+            * asServer and server isn't running. This
+            * prevents objects from affecting the server
+            * as host* when being modified client side. */
             if (asServer || (!asServer && !NetworkManager.IsServer))
             {
                 if (nob.SceneObject)
