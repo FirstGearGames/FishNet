@@ -1,6 +1,7 @@
 ﻿using FishNet.Connection;
 using UnityEngine;
 using FishNet.Object;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Server
 {
@@ -15,7 +16,7 @@ namespace FishNet.Managing.Server
         {
             if (go == null)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"GameObject cannot be spawned because it is null.");
                 return;
             }
@@ -32,7 +33,7 @@ namespace FishNet.Managing.Server
         {
             if (go == null)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"GameObject cannot be despawned because it is null.");
                 return;
             }

@@ -4,6 +4,7 @@ using FishNet.Managing.Logging;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FishNet.Connection
 {
@@ -97,7 +98,7 @@ namespace FishNet.Connection
             if (segment.Count > _maximumTransportUnit)
             {
                 if (_networkManager.CanLog(LoggingType.Error))
-                    UnityEngine.Debug.LogError($"Segment is length of {segment.Count} while MTU is {_maximumTransportUnit}. Packet was not split properly and will not be sent.");
+                    Debug.LogError($"Segment is length of {segment.Count} while MTU is {_maximumTransportUnit}. Packet was not split properly and will not be sent.");
                 return;
             }
 
@@ -139,13 +140,13 @@ namespace FishNet.Connection
             if (index >= _buffers.Count || index < 0)
             {
                 if (_networkManager.CanLog(LoggingType.Error))
-                    UnityEngine.Debug.LogError($"Index of {index} is out of bounds. There are {_buffers.Count} available.");
+                    Debug.LogError($"Index of {index} is out of bounds. There are {_buffers.Count} available.");
                 return null;
             }
             if (index > _bufferIndex)
             {
                 if (_networkManager.CanLog(LoggingType.Error))
-                    UnityEngine.Debug.LogError($"Index of {index} exceeds the number of written buffers. There are {WrittenBuffers} written buffers.");
+                    Debug.LogError($"Index of {index} exceeds the number of written buffers. There are {WrittenBuffers} written buffers.");
                 return null;
             }
 

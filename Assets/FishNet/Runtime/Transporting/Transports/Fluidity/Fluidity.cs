@@ -60,6 +60,15 @@ namespace Fluidity
         [Tooltip("Address to connect.")]
         [SerializeField]
         private string _clientAddress = "localhost";
+
+        [Header("Misc")]
+        /// <summary>
+        /// How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.
+        /// </summary>
+        [Tooltip("How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.")]
+        [Range(0, 1800)]
+        [SerializeField]
+        private ushort _timeout = 15;
         #endregion
 
         #region Private.
@@ -271,6 +280,15 @@ namespace Fluidity
         #endregion
 
         #region Configuration.
+        /// <summary>
+        /// How long in seconds until either the server or client socket must go without data before being timed out.
+        /// </summary>
+        /// <param name="asServer">True to get the timeout for the server socket, false for the client socket.</param>
+        /// <returns></returns>
+        public override float GetTimeout(bool asServer)
+        {
+            return (float)_timeout;
+        }
         /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
         /// </summary>

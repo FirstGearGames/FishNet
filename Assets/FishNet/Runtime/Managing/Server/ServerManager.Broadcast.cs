@@ -8,6 +8,7 @@ using FishNet.Broadcast.Helping;
 using FishNet.Transporting;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Server
 {
@@ -111,7 +112,7 @@ namespace FishNet.Managing.Server
                 //If requires authentication and client isn't authenticated.
                 if (requireAuthentication && !connection.Authenticated)
                 {
-                    if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    if (NetworkManager.CanLog(LoggingType.Warning))
                         Debug.LogWarning($"ClientId {connection.ClientId} sent broadcast {typeof(T).Name} which requires authentication, but client was not authenticated. Client has been disconnected.");
                     NetworkManager.TransportManager.Transport.StopConnection(connection.ClientId, true);
                     return;
@@ -156,13 +157,13 @@ namespace FishNet.Managing.Server
         {
             if (!Started)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
                 return;
             }
             if (requireAuthenticated && !connection.Authenticated)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot send broadcast to client because they are not authenticated.");
                 return;
             }
@@ -188,7 +189,7 @@ namespace FishNet.Managing.Server
         {
             if (!Started)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
                 return;
             }
@@ -210,7 +211,7 @@ namespace FishNet.Managing.Server
 
             if (failedAuthentication)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"One or more broadcast did not send to a client because they were not authenticated.");
                 return;
             }
@@ -228,7 +229,7 @@ namespace FishNet.Managing.Server
         {
             if (networkObject == null)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot send broadcast because networkObject is null.");
                 return;
             }
@@ -248,7 +249,7 @@ namespace FishNet.Managing.Server
         {
             if (!Started)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
                 return;
             }
@@ -271,7 +272,7 @@ namespace FishNet.Managing.Server
 
             if (failedAuthentication)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"One or more broadcast did not send to a client because they were not authenticated.");
                 return;
             }

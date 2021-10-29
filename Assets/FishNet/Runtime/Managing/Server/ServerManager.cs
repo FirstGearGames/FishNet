@@ -125,7 +125,7 @@ namespace FishNet.Managing.Server
             //Unsubscrive first incase already subscribed.
             SubscribeToTransport(false);
             SubscribeToTransport(true);
-            NetworkManager.TransportManager.OnIterateIncomingEnd += TransportManager_OnIterateIncomingEnd;
+            NetworkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
             NetworkManager.SceneManager.OnClientLoadedStartScenes += SceneManager_OnClientLoadedStartScenes;
 
             if (_authenticator != null)
@@ -152,21 +152,23 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
+        /// Called after the local client connection state changes.
+        /// </summary>
+        private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
+        {
+            /* If client is doing anything but started destroy pending.
+             * Pending is only used for host mode. */
+            if (obj.ConnectionState != LocalConnectionStates.Started)
+                Objects.DestroyPending();
+        }
+
+        /// <summary>
         /// Called when a client loads initial scenes after connecting.
         /// </summary>
         private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn, bool asServer)
         {
             if (asServer)
                 Objects.RebuildObservers(conn);
-        }
-
-        /// <summary>
-        /// Called after IterateIncoming has completed. True for on server, false for on client.
-        /// </summary>
-        private void TransportManager_OnIterateIncomingEnd(bool server)
-        {
-            if (!server)
-                Objects.DestroyPending();
         }
 
         /// <summary>
@@ -220,12 +222,12 @@ namespace FishNet.Managing.Server
 
             if (args.ConnectionState == LocalConnectionStates.Started)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                if (NetworkManager.CanLog(LoggingType.Common))
                     Debug.Log("Server has been started.");
             }
             else if (args.ConnectionState == LocalConnectionStates.Stopped)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                if (NetworkManager.CanLog(LoggingType.Common))
                     Debug.Log("Server has been stopped.");
             }
 
@@ -258,7 +260,7 @@ namespace FishNet.Managing.Server
                 Application.targetFrameRate = _frameRate;
             }
             else
-            { 
+            {
                 Application.targetFrameRate = MAXIMUM_FRAMERATE;
             }
         }
@@ -274,7 +276,7 @@ namespace FishNet.Managing.Server
                 //If started then add to authenticated clients.
                 if (args.ConnectionState == RemoteConnectionStates.Started)
                 {
-                    if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                    if (NetworkManager.CanLog(LoggingType.Common))
                         Debug.Log($"Remote connection started for Id {args.ConnectionId}.");
                     NetworkConnection conn = new NetworkConnection(NetworkManager, args.ConnectionId);
                     Clients.Add(args.ConnectionId, conn);
@@ -299,7 +301,7 @@ namespace FishNet.Managing.Server
                         Objects.ClientDisconnected(conn);
                         conn.Reset();
 
-                        if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                        if (NetworkManager.CanLog(LoggingType.Common))
                             Debug.Log($"Remote connection stopped for Id {args.ConnectionId}.");
                     }
                 }
@@ -475,8 +477,6 @@ namespace FishNet.Managing.Server
                 //Kick client immediately.
                 NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
             }
-            finally { }
-
         }
 
         /// <summary>

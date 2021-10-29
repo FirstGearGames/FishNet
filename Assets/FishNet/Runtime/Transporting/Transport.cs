@@ -126,6 +126,15 @@ namespace FishNet.Transporting
 
         #region Configuration.
         /// <summary>
+        /// How long in seconds until either the server or client socket must go without data before being timed out.
+        /// </summary>
+        /// <param name="asServer">True to get the timeout for the server socket, false for the client socket.</param>
+        /// <returns></returns>
+        public virtual float GetTimeout(bool asServer)
+        {
+            return 15f;
+        }
+        /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
         /// </summary>
         /// <returns>Maximum clients transport allows.</returns>

@@ -10,6 +10,7 @@ using FishNet.Documenting;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using FishNet.Managing.Utility;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Client
 {
@@ -50,11 +51,6 @@ namespace FishNet.Managing.Client
                 base.Spawned.Clear();
                 base.SceneObjects.Clear();
             }
-            //If started then despawn scene objects and wait for spawn messages.
-            else
-            {
-                RegisterAndDespawnSceneObjects();
-            }
         }
 
 
@@ -79,7 +75,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Registers NetworkObjects in all scenes and despawns them.
         /// </summary>
-        private void RegisterAndDespawnSceneObjects()
+        internal void RegisterAndDespawnSceneObjects()
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
                 RegisterAndDespawnSceneObjects(SceneManager.GetSceneAt(i));
@@ -131,7 +127,7 @@ namespace FishNet.Managing.Client
             }
             else
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"NetworkBehaviour could not be found when trying to parse OwnershipChange packet.");
             }
         }
@@ -163,7 +159,7 @@ namespace FishNet.Managing.Client
             {
                 if (dataLength == -1)
                 {
-                    if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                    if (NetworkManager.CanLog(LoggingType.Warning))
                         Debug.LogWarning($"NetworkBehaviour could not be found for SyncType.");
                 }
                 else
@@ -231,7 +227,7 @@ namespace FishNet.Managing.Client
                 //Only error if client only.
                 if (!NetworkManager.IsHost)
                 {
-                    if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    if (NetworkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"Spawn object could not be found or created for Id {objectId}; scene object: {sceneObject}.");
                 }
 
@@ -311,7 +307,7 @@ namespace FishNet.Managing.Client
             //Not found in despawned. Shouldn't ever happen.
             else
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                if (NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"SceneId of {sceneId} not found in SceneObjects.");
                 return null;
             }
@@ -334,7 +330,7 @@ namespace FishNet.Managing.Client
 
             if (prefabId == -1)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                if (NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Spawned object has an invalid prefabId. Make sure all objects which are being spawned over the network are within SpawnableObjects on the NetworkManager.");
             }
             else

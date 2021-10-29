@@ -1,4 +1,5 @@
 ﻿using FishNet.Managing;
+using FishNet.Managing.Timing;
 using FishNet.Serializing;
 using FishNet.Transporting;
 
@@ -97,7 +98,7 @@ namespace FishNet.Object.Synchronizing.Internal
         public void PreInitialize(NetworkManager networkManager)
         {
             NetworkManager = networkManager;
-            _timeToTicks = NetworkManager.TimeManager.TimeToTicks(Settings.SendTickRate);
+            _timeToTicks = NetworkManager.TimeManager.TimeToTicks(Settings.SendTickRate, TickRounding.RoundUp);
         }
 
         /// <summary>

@@ -139,14 +139,14 @@ namespace FishNet.Serializing
 
             Position += value;
         }
-        /// <summary>
-        /// Creates a debug print for end of stream.
-        /// </summary>
-        private void LogEndOfStream()
-        {
-            if (_networkManager.CanLog(LoggingType.Error))
-                Debug.LogError("Read length is out of range.");
-        }
+        ///// <summary>
+        ///// Creates a debug print for end of stream.
+        ///// </summary>
+        //private void LogEndOfStream()
+        //{
+        //    if (_networkManager.CanLog(LoggingType.Error))
+        //        Debug.LogError("Read length is out of range.");
+        //}
         /// <summary>
         /// Returns the buffer as an ArraySegment.
         /// </summary>
@@ -182,8 +182,8 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BlockCopy(ref byte[] target, int targetOffset, int count)
         {
-            if (Remaining < count)
-                LogEndOfStream();
+            //if (Remaining < count)
+            //    LogEndOfStream();
 
             Buffer.BlockCopy(_buffer, Position, target, targetOffset, count);
             Position += count;
@@ -196,8 +196,8 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte ReadByte()
         {
-            if (Remaining < 1)
-                LogEndOfStream();
+            //if (Remaining < 1)
+            //    LogEndOfStream();
 
             byte r = _buffer[Position];
             Position += 1;
@@ -230,8 +230,8 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ArraySegment<byte> ReadArraySegment(int count)
         {
-            if (Remaining < count)
-                LogEndOfStream();
+            //if (Remaining < count)
+            //    LogEndOfStream();
 
             ArraySegment<byte> result = new ArraySegment<byte>(_buffer, Position, count);
             Position += count;
@@ -273,8 +273,8 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe ushort ReadUInt16()
         {
-            if (Remaining < 2)
-                LogEndOfStream();
+            //if (Remaining < 2)
+            //    LogEndOfStream();
 
             ushort result;
             fixed (byte* pByte = &_buffer[Position])
@@ -298,8 +298,8 @@ namespace FishNet.Serializing
         {
             if (packType == AutoPackType.Packed)
                 return (uint)ReadPackedWhole();
-            if (Remaining < 4)
-                LogEndOfStream();
+            //if (Remaining < 4)
+            //    LogEndOfStream();
 
             uint result;
             fixed (byte* pByte = &_buffer[Position])
@@ -323,8 +323,8 @@ namespace FishNet.Serializing
         {
             if (packType == AutoPackType.Packed)
                 return (ulong)ReadPackedWhole();
-            if (Remaining < 8)
-                LogEndOfStream();
+            //if (Remaining < 8)
+            //    LogEndOfStream();
 
             ulong result;
             fixed (byte* pByte = &_buffer[Position])
@@ -864,8 +864,8 @@ namespace FishNet.Serializing
         [CodegenExclude]
         public ulong ReadPackedWhole()
         {
-            if (Remaining < 1)
-                LogEndOfStream();
+            //if (Remaining < 1)
+            //    LogEndOfStream();
 
             PackRate pr = (PackRate)_buffer[Position++];
 
@@ -888,7 +888,7 @@ namespace FishNet.Serializing
             else
             {
                 if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.Log($"Unhandled PackRate of {pr}.");
+                    Debug.LogError($"Unhandled PackRate of {pr}.");
                 return 0;
             }
         }

@@ -581,37 +581,35 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates a ret of false if compared value is unchanged from current.
         /// </summary>
-        private void CreateRetFalseIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef) //fix
+        private void CreateRetFalseIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef)
         {
-            //Instruction endIfInst = processor.Create(OpCodes.Nop);
-            ////If (Comparer.EqualityCompare(_value, _initialValue)) return;
-            //processor.Emit(OpCodes.Ldarg_0);
-            //processor.Emit(OpCodes.Ldfld, valueFieldDef.MakeHostGenericIfNeeded());
+            Instruction endIfInst = processor.Create(OpCodes.Nop);
+            //If (Comparer.EqualityCompare(_value, _initialValue)) return;
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldfld, valueFieldDef.MakeHostGenericIfNeeded());
 
-            //TypeReference originalType = null;
-            ////If comparing against another field.
-            //if (nextValueDef is FieldDefinition fd)
-            //{
-            //    originalType = fd.FieldType;
-            //    processor.Emit(OpCodes.Ldarg_0);
-            //    processor.Emit(OpCodes.Ldfld, fd);
-            //}
-            ////If comparing against a parameter.
-            //else if (nextValueDef is ParameterDefinition pd)
-            //{
-            //    originalType = pd.ParameterType;
-            //    processor.Emit(OpCodes.Ldarg, pd);
-            //}
+            TypeReference originalType = null;
+            //If comparing against another field.
+            if (nextValueDef is FieldDefinition fd)
+            {
+                originalType = fd.FieldType;
+                processor.Emit(OpCodes.Ldarg_0);
+                processor.Emit(OpCodes.Ldfld, fd);
+            }
+            //If comparing against a parameter.
+            else if (nextValueDef is ParameterDefinition pd)
+            {
+                originalType = pd.ParameterType;
+                processor.Emit(OpCodes.Ldarg, pd);
+            }
 
-            ////MethodReference syncVarEqual = CodegenSession.Module.ImportReference<NetworkBehaviour>(nb => nb.SyncTypeEquals<object>(default, default));
-            ////var syncVarEqualGm = new GenericInstanceMethod(syncVarEqual.GetElementMethod());
-            ////syncVarEqualGm.GenericArguments.Add(originalType);
-            ////processor.Emit(OpCodes.Call, syncVarEqualGm);
-
-            //processor.Emit(OpCodes.Call, _typedComparerMethodRef);
-            //processor.Emit(OpCodes.Brfalse, endIfInst);
-            //CodegenSession.GeneralHelper.CreateRetBoolean(processor, false);
-            //processor.Append(endIfInst);
+            MethodReference comparerMethodRef = CodegenSession.GeneralHelper.Comparers_EqualityCompare_MethodRef;
+            GenericInstanceMethod comparerEqualGm = new GenericInstanceMethod(comparerMethodRef.GetElementMethod());
+            comparerEqualGm.GenericArguments.Add(originalType);
+            processor.Emit(OpCodes.Call, comparerEqualGm);
+            processor.Emit(OpCodes.Brfalse, endIfInst);
+            CodegenSession.GeneralHelper.CreateRetBoolean(processor, false);
+            processor.Append(endIfInst);
         }
 
 

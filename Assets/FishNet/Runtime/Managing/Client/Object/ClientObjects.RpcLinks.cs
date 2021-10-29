@@ -4,11 +4,10 @@ using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System;
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using FishNet.Documenting;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Client
 {
@@ -55,7 +54,7 @@ namespace FishNet.Managing.Client
                  * should never be missing. */
                 if (channel == Channel.Reliable)
                 {
-                    if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    if (NetworkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"RPCLink of Id {index} could not be found. The remaining packet has been purged.");
                     reader.Skip(reader.Remaining);
                 }
@@ -82,7 +81,7 @@ namespace FishNet.Managing.Client
                 //Reliable should never be out of order/missing.
                 if (channel == Channel.Reliable)
                 {
-                    if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                    if (NetworkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"ObjectId {link.ObjectId} for RPCLink {index} could not be found.");
                 }
                 else

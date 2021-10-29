@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
+using FishNet.Utility;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -257,8 +258,8 @@ namespace FishNet.Managing.Timing
 #if UNITY_EDITOR
         private void OnDisable()
         {
-            //If exiting playmode unset instantiated.
-            if (!EditorApplication.isPlayingOrWillChangePlaymode && EditorApplication.isPlaying)
+            //If closing/stopping.
+            if (ApplicationState.IsQuitting())
                 _manualPhysics = 0;
             else if (!_automaticPhysics)
                 _manualPhysics = Math.Max(0, _manualPhysics - 1);

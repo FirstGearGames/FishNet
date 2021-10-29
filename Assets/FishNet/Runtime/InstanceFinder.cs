@@ -6,6 +6,7 @@ using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using UnityEngine;
 using FishNet.Managing.Logging;
+using FishNet.Utility;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -43,15 +44,11 @@ namespace FishNet
                     else
                     {
 
-                        /* If in editor check if exiting play mode, and if
-                         * so then exit method. This is to ensure errors aren't
-                         * thrown when users try to use NetworkManager within OnDestroy
-                         * while exiting playmode. */
-#if UNITY_EDITOR
-                        if (!EditorApplication.isPlayingOrWillChangePlaymode && EditorApplication.isPlaying)
+                        //If application is quitting return null without logging.
+                        if (ApplicationState.IsQuitting())
                             return null;
-#endif                        
-                        Debug.LogError($"NetworkManager not found in any open scenes.");
+
+                        Debug.Log($"NetworkManager not found in any open scenes.");
                     }
                 }
 

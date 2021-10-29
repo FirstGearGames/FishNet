@@ -10,6 +10,7 @@ using FishNet.Managing.Server;
 using FishNet.Managing.Client;
 using FishNet.Transporting;
 using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Scened
 {
@@ -487,7 +488,7 @@ namespace FishNet.Managing.Scened
 
             if (data.SceneLoadData.SceneLookupDatas.Length == 0)
             {
-                if (_networkManager.CanLog(Logging.LoggingType.Warning))
+                if (_networkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"No scenes specified to load.");
                 yield break;
             }
@@ -737,7 +738,7 @@ namespace FishNet.Managing.Scened
                 //If firstValidScene is still invalid then throw.
                 if (string.IsNullOrEmpty(firstValidScene.name))
                 {
-                    if (_networkManager.CanLog(Logging.LoggingType.Error))
+                    if (_networkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"Unable to move objects to a new scene because new scene lookup has failed.");
                 }
                 //Move objects.
@@ -949,7 +950,7 @@ namespace FishNet.Managing.Scened
              * the unload should continue. */
             if (scenes.Length == 0 && !asHost)
             {
-                if (_networkManager.CanLog(Logging.LoggingType.Warning))
+                if (_networkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"No scenes were found to unload.");
                 yield break;
             }
@@ -1475,7 +1476,7 @@ namespace FishNet.Managing.Scened
             bool result = data.DataInvalid();
             if (result && error)
             {
-                if (_networkManager.CanLog(Logging.LoggingType.Error))
+                if (_networkManager.CanLog(LoggingType.Error))
                     Debug.LogError(INVALID_SCENELOADDATA);
             }
 
@@ -1492,7 +1493,7 @@ namespace FishNet.Managing.Scened
             bool result = data.DataInvalid();
             if (result && error)
             {
-                if (_networkManager.CanLog(Logging.LoggingType.Error))
+                if (_networkManager.CanLog(LoggingType.Error))
                     Debug.LogError(INVALID_SCENEUNLOADDATA);
             }
 
@@ -1521,7 +1522,7 @@ namespace FishNet.Managing.Scened
                 result = _networkManager.IsServer;
                 if (!result && warn)
                 {
-                    if (_networkManager.CanLog(Logging.LoggingType.Warning))
+                    if (_networkManager.CanLog(LoggingType.Warning))
                         Debug.LogWarning($"Method cannot be called as the server is not active.");
                 }
             }
@@ -1530,7 +1531,7 @@ namespace FishNet.Managing.Scened
                 result = _networkManager.IsClient;
                 if (!result && warn)
                 {
-                    if (_networkManager.CanLog(Logging.LoggingType.Warning))
+                    if (_networkManager.CanLog(LoggingType.Warning))
                         Debug.LogWarning($"Method cannot be called as the client is not active.");
                 }
             }

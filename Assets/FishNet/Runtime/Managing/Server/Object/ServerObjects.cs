@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using FishNet.Utility.Performance;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Server
 {
@@ -166,7 +167,7 @@ namespace FishNet.Managing.Server
                 //Either something went wrong or user actually managed to spawn ~32K networked objects.
                 if (_nextNetworkObjectId > short.MaxValue)
                 {
-                    if (base.NetworkManager.CanLog(Logging.LoggingType.Error))
+                    if (base.NetworkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"No more available ObjectIds. How the heck did you manage to have {short.MaxValue} objects spawned at once?");
                     return -1;
                 }
@@ -253,30 +254,30 @@ namespace FishNet.Managing.Server
         {
             if (!NetworkManager.ServerManager.Started)
             {
-                if (base.NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (base.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning("Cannot spawn object because the server is not active.");
                 return;
             }
             if (networkObject == null)
             {
-                if (base.NetworkManager.CanLog(Logging.LoggingType.Error))
+                if (base.NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Specified networkObject is null.");
                 return;
             }
             if (!networkObject.gameObject.scene.IsValid())
             {
-                if (base.NetworkManager.CanLog(Logging.LoggingType.Error))
+                if (base.NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
                 return;
             }
             if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes)
             {
-                if (base.NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (base.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
             }
             if (networkObject.IsSpawned)
             {
-                if (base.NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (base.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"{networkObject.name} is already spawned.");
                 return;
             }

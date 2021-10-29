@@ -255,17 +255,13 @@ namespace FishNet.CodeGenerating.ILCore
                 //Add to all processed.
                 allProcessedSyncs.AddRange(processedSyncs);
             }
-
-            //Run through the typeDefs again to replace syncvar calls.
-            foreach (TypeDefinition typeDef in networkBehaviourTypeDefs)
+            
+            /* Must run through all scripts should user change syncvar
+             * from outside the networkbehaviour. */
+            if (allProcessedSyncs.Count > 0)
             {
-                //Add to processed.
-                TypeDefinition copyTypeDef = typeDef;
-                do
-                {
-                    CodegenSession.NetworkBehaviourSyncProcessor.ReplaceGetSets(copyTypeDef, allProcessedSyncs);
-                    copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
-                } while (copyTypeDef != null);
+                foreach (TypeDefinition td in CodegenSession.Module.Types)
+                    CodegenSession.NetworkBehaviourSyncProcessor.ReplaceGetSets(td, allProcessedSyncs);
             }
 
             /* Removes typedefinitions which are inherited by

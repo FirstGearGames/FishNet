@@ -1,4 +1,5 @@
-﻿using FishNet.Object;
+﻿using FishNet.Managing.Logging;
+using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Performance;
@@ -54,6 +55,15 @@ namespace FishNet.Managing.Object
         private List<GameObject> _gameObjectList = new List<GameObject>();
         #endregion
 
+
+        /// <summary>
+        /// Removes objectId from PendingDestroy.
+        /// </summary>
+        /// <param name="objectId"></param>
+        private void RemoveFromPending(int objectId)
+        {
+            _pendingDestroy.Remove(objectId);
+        }
         /// <summary>
         /// Destroys NetworkObjects pending for destruction.
         /// </summary>
@@ -137,7 +147,7 @@ namespace FishNet.Managing.Object
         {
             if (nob == null)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Common))
+                if (NetworkManager.CanLog(LoggingType.Common))
                     Debug.Log($"Cannot despawn a null NetworkObject.");
                 return;
             }
@@ -176,10 +186,15 @@ namespace FishNet.Managing.Object
                 {
                     //Scene object.
                     if (nob.SceneObject)
+                    { 
                         nob.gameObject.SetActive(false);
+                    }
                     //Not a scene object, destroy normally.
                     else
+                    {
+                        RemoveFromPending(nob.ObjectId);
                         MonoBehaviour.Destroy(nob.gameObject);
+                    }
                 }
             }
 
@@ -258,7 +273,7 @@ namespace FishNet.Managing.Object
             NetworkObject r;
             if (!Spawned.TryGetValue(objectId, out r))
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                if (NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Spawned NetworkObject not found for ObjectId {objectId}.");
             }
 
@@ -281,10 +296,10 @@ namespace FishNet.Managing.Object
                 /* Default logging for server is errors only. Use error on client and warning
                  * on servers to reduce chances of allocation attacks. */
 #if DEVELOPMENT_BUILD || UNITY_EDITOR || !UNITY_SERVER
-                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                if (NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"NetworkBehaviour could not be found for {packetId}.");
 #else
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"NetworkBehaviour could not be found for {packetId}.");
 #endif
             }

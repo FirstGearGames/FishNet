@@ -363,7 +363,7 @@ namespace FishNet.CodeGenerating.Helping
                     );
             }
             //Add return.
-            instructions.AddRange(CreateReturnDefault(processor, methodDef));
+            instructions.AddRange(CreateRetDefault(processor, methodDef));
             //After if statement, jumped to when successful check.
             instructions.Add(endIf);
 
@@ -413,7 +413,7 @@ namespace FishNet.CodeGenerating.Helping
                     );
             }
             //Add return.
-            instructions.AddRange(CreateReturnDefault(processor, methodDef));
+            instructions.AddRange(CreateRetDefault(processor, methodDef));
             //After if statement, jumped to when successful check.
             instructions.Add(endIf);
 
@@ -434,7 +434,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="methodDef"></param>
         /// <returns></returns>
-        private List<Instruction> CreateReturnDefault(ILProcessor processor, MethodDefinition methodDef)
+        private List<Instruction> CreateRetDefault(ILProcessor processor, MethodDefinition methodDef)
         {
             List<Instruction> instructions = new List<Instruction>();
             //If requires a value return.

@@ -6,6 +6,7 @@ using FishNet.Broadcast;
 using FishNet.Object.Helping;
 using FishNet.Transporting;
 using FishNet.Serializing.Helping;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Client
 {
@@ -133,7 +134,7 @@ namespace FishNet.Managing.Client
             }
             else
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Error))
+                if (NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Broadcast not found for key {key}.");
             }
         }
@@ -150,7 +151,7 @@ namespace FishNet.Managing.Client
             //Check local connection state.
             if (!Started)
             {
-                if (NetworkManager.CanLog(Logging.LoggingType.Warning))
+                if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot send broadcast to server because client is not active.");
                 return;
             }

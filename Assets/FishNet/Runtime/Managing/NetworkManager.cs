@@ -12,6 +12,7 @@ using FishNet.Managing.Scened;
 using FishNet.Authenticating;
 using FishNet.Object;
 using FishNet.Documenting;
+using FishNet.Managing.Logging;
 
 namespace FishNet.Managing
 {
@@ -102,7 +103,7 @@ namespace FishNet.Managing
                 return;
             if (TryGetComponent<NetworkObject>(out _))
             {
-                if (CanLog(Logging.LoggingType.Error))
+                if (CanLog(LoggingType.Error))
                     Debug.LogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
             }
 
@@ -154,7 +155,7 @@ namespace FishNet.Managing
             bool destroyThis = (InstanceFinder.NetworkManager != this);
             if (destroyThis)
             {
-                if (CanLog(Logging.LoggingType.Common))
+                if (CanLog(LoggingType.Common))
                     Debug.Log($"NetworkManager on object {gameObject.name} is a duplicate and will be destroyed. If you wish to have multiple NetworkManagers enable 'Allow Multiple'.");
                 Destroy(gameObject);
             }
@@ -242,7 +243,7 @@ namespace FishNet.Managing
                 //If found.
                 if (SpawnablePrefabs != null)
                 {
-                    if (CanLog(Logging.LoggingType.Common))
+                    if (CanLog(LoggingType.Common))
                         Debug.Log($"NetworkManager on {gameObject.name} is using the default prefabs collection.");
                 }
             }
