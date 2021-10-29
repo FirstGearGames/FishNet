@@ -181,20 +181,16 @@ namespace FishNet.Managing.Object
             //Not as server.
             else
             {
-                //If not hosts.
-                if (!NetworkManager.IsHost)
+                //Scene object.
+                if (nob.SceneObject)
                 {
-                    //Scene object.
-                    if (nob.SceneObject)
-                    { 
-                        nob.gameObject.SetActive(false);
-                    }
-                    //Not a scene object, destroy normally.
-                    else
-                    {
-                        RemoveFromPending(nob.ObjectId);
-                        MonoBehaviour.Destroy(nob.gameObject);
-                    }
+                    nob.gameObject.SetActive(false);
+                }
+                //Not a scene object, destroy normally.
+                else
+                {
+                    RemoveFromPending(nob.ObjectId);
+                    MonoBehaviour.Destroy(nob.gameObject);
                 }
             }
 
