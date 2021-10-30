@@ -43,8 +43,10 @@ namespace FishNet.Connection
         /// </summary>
         private void InitializePing()
         {
+            //Give the client some room for error.
+            float requiredInterval = (TimeManager.PING_INTERVAL * 0.85f);
             //Round down so required ticks is lower.
-            _requiredPingTicks = NetworkManager.TimeManager.TimeToTicks(TimeManager.PING_INTERVAL, TickRounding.RoundDown);
+            _requiredPingTicks = NetworkManager.TimeManager.TimeToTicks(requiredInterval, TickRounding.RoundDown);
         }
         /// <summary>
         /// Called when a ping is received from this connection. Returns if can respond to ping.
@@ -55,7 +57,7 @@ namespace FishNet.Connection
             uint currentTick = InstanceFinder.TimeManager.Tick;
             uint difference = (currentTick - _lastPingTick);
             _lastPingTick = currentTick;
-            
+
             //Ping sent too quickly.
             if (difference < _requiredPingTicks)
             {
