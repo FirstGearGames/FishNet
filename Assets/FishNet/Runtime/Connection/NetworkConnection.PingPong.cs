@@ -52,7 +52,10 @@ namespace FishNet.Connection
         /// <returns>True to respond to ping, false to kick connection.</returns>
         internal bool CanPingPong()
         {
-            uint difference = (InstanceFinder.TimeManager.Tick - _lastPingTick);
+            uint currentTick = InstanceFinder.TimeManager.Tick;
+            uint difference = (currentTick - _lastPingTick);
+            _lastPingTick = currentTick;
+            
             //Ping sent too quickly.
             if (difference < _requiredPingTicks)
             {

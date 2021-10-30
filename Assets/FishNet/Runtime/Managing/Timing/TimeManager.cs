@@ -502,12 +502,15 @@ namespace FishNet.Managing.Timing
         private void IncreaseTick()
         {
             double timePerSimulation = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
-            long frameMs = _tickStopwatch.ElapsedMilliseconds;
-
-            _elapsedTime += frameMs / 1000d;
+            /* 0ms can occur if the frame rate is so fast
+            * the application is running at less than 1ms
+             * per frame. */
+            long frameMs = Math.Max(1, _tickStopwatch.ElapsedMilliseconds);
+            _elapsedTime += (double)(frameMs / 1000d);
             _tickStopwatch.Restart();
-            bool ticked = (_elapsedTime >= timePerSimulation);
 
+            bool ticked = (_elapsedTime >= timePerSimulation);
+            //Debug.Log(_elapsedTime + ",  " + (frameMs / 1000d));
             while (_elapsedTime >= timePerSimulation)
             {
                 OnPreTick?.Invoke(Tick);

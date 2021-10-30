@@ -2,7 +2,6 @@
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -99,15 +98,25 @@ namespace FishNet.Managing.Object
                 //Not a scene object, destroy normally.
                 else
                 {
-                    //If not host destroy object.
-                    if (!NetworkManager.IsHost)
+                    //If not also client.
+                    if (!NetworkManager.IsClient)
                     {
                         MonoBehaviour.Destroy(nob.gameObject);
                     }
                     else
                     {
-                        nob.gameObject.SetActive(false);
-                        NetworkManager.ServerManager.Objects.AddToPending(nob);
+                        /* If client-host has visibility
+                         * then disable and wait for client-host to get destroy
+                         * message. Otherwise destroy immediately. */
+                        if (nob.Observers.Contains(NetworkManager.ClientManager.Connection))
+                        {
+                            nob.gameObject.SetActive(false);
+                            NetworkManager.ServerManager.Objects.AddToPending(nob);
+                        }
+                        else
+                        {
+                            MonoBehaviour.Destroy(nob.gameObject);
+                        }
                     }
                 }
             }

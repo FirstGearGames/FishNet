@@ -350,10 +350,9 @@ namespace FishNet.CodeGenerating.Helping
              * The new value will only be set if not also server,
              * as the current value on server shouldn't be overwritten
              * with the latest client received. */
-            //_previousClientValue = _value;
+            //_previousClientValue = nextValue;
             processor.Emit(OpCodes.Ldarg_0); //this.
-            processor.Emit(OpCodes.Ldarg_0); //this. one for each field.
-            processor.Emit(OpCodes.Ldfld, valueFieldDef);
+            processor.Emit(OpCodes.Ldarg, nextValueParameterDef);
             processor.Emit(OpCodes.Stfld, previousClientValueFieldDef);
 
             /* As mentioned only set value if not also server.
