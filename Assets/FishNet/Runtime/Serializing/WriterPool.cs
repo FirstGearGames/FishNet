@@ -9,10 +9,6 @@ namespace FishNet.Serializing
     public sealed class PooledWriter : Writer, IDisposable
     {
         public void Dispose() => WriterPool.Recycle(this);
-        ~PooledWriter()
-        {
-            Dispose();
-        }
     }
 
     /// <summary>
