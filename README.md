@@ -15,8 +15,10 @@ FishySteamworks, a Steamworks transport: https://github.com/FirstGearGames/Fishy
 
 # Donation Options
 
-  https://www.gofundme.com/f/fishnet
+  Github sponsor (preferred): https://github.com/sponsors/FirstGearGames
+
+  Gofundme: https://www.gofundme.com/f/fishnet
   
-  https://www.patreon.com/firstgeargames
+  Patreon: https://www.patreon.com/firstgeargames
 
 Please keep in mind while using this product in open-beta minor bugs may be found, and some optimizations still left to be completed, and new features may be implemented.
