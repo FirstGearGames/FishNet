@@ -327,8 +327,8 @@ namespace FishNet.Managing.Transporting
                 //Write any dirty syncTypes.
                 _networkManager.ServerManager.Objects.WriteDirtySyncTypes();
 
-                long sentBytes = 0;
-                uint sentPackets = 0;
+                //long sentBytes = 0;
+                //uint sentPackets = 0;
                 //Run through all dirty connections to send data to.
                 foreach (NetworkConnection conn in _dirtyToClients)
                 {
@@ -347,8 +347,8 @@ namespace FishNet.Managing.Transporting
                                 if (sb != null && sb.Length > 0)
                                 {
                                     ArraySegment<byte> segment = new ArraySegment<byte>(sb.Data, 0, sb.Length);
-                                    sentBytes += segment.Count;
-                                    sentPackets++;
+                                    //sentBytes += segment.Count;
+                                    //sentPackets++;
                                     Transport.SendToClient(channel, segment, conn.ClientId);
                                 }
                             }

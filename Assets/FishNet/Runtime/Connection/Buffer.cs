@@ -202,6 +202,7 @@ namespace FishNet.Connection
         /// <param name="reserve"></param>
         internal void Reset(int size, int reserve = 0)
         {
+            size += reserve;
             //Needs new array.
             if (Data == null)
             {

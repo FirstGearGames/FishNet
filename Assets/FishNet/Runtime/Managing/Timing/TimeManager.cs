@@ -753,13 +753,9 @@ namespace FishNet.Managing.Timing
             if (_networkManager.IsServer)
                 return;
 
-            uint currentTick = Tick;
             //Add half of rtt onto tick.
             uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
             Tick = ta.Tick + rttTicks;
-
-            uint nextTick = (Tick > currentTick) ? (Tick - currentTick) : (currentTick - Tick);
-            string header = (Tick > currentTick) ? "- " : "+ ";
 
             sbyte steps = ta.Step;
             if (steps == 0)
