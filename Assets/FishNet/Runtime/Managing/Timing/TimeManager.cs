@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
 using FishNet.Utility;
+using System.Runtime.CompilerServices;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -580,6 +581,15 @@ namespace FishNet.Managing.Timing
         }
 
         /// <summary>
+        /// Converts current ticks to time.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float TicksToTime()
+        {
+            return TicksToTime(LocalTick);
+        }
+        /// <summary>
         /// Converts a number ticks to time.
         /// </summary>
         /// <param name="ticks">Ticks to convert.</param>
@@ -588,6 +598,31 @@ namespace FishNet.Managing.Timing
         {
             return (float)(TickDelta * ticks);
         }
+        /// <summary>
+        /// Converts time passed from currentTick to previous. Value will be negative if previousTick is larger than currentTick.
+        /// </summary>
+        /// <param name="currentTick"></param>
+        /// <param name="previousTick"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float TicksToTime(uint currentTick, uint previousTick)
+        {
+            float multiplier;
+            float result;
+            if (currentTick >= previousTick)
+            {
+                multiplier = 1f;
+                result = TicksToTime(currentTick - previousTick);
+            }
+            else
+            {
+                multiplier = -1f;
+                result = TicksToTime(previousTick - currentTick);
+            }
+
+            return result * multiplier;
+        }
+
         /// <summary>
         /// Converts time to ticks.
         /// </summary>

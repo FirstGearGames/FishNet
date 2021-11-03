@@ -243,11 +243,14 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null)
         {
-            int objectId = GetNextNetworkObjectId();
-            nob.PreInitialize(NetworkManager, objectId, ownerConnection, true);
-            base.AddToSpawned(nob);
-            nob.gameObject.SetActive(true);
-            nob.Initialize(true);
+            if (nob.IsNetworked)
+            {
+                int objectId = GetNextNetworkObjectId();
+                nob.PreInitialize(NetworkManager, objectId, ownerConnection, true);
+                base.AddToSpawned(nob);
+                nob.gameObject.SetActive(true);
+                nob.Initialize(true);
+            }
         }
         #endregion    
 
@@ -292,6 +295,7 @@ namespace FishNet.Managing.Server
              * When observers are built for the network object
              * during initialization spawn messages will
              * be sent. */
+            networkObject.SetIsNetworked(true);
             SetupWithoutSynchronization(networkObject, ownerConnection);
 
             //If there is an owner then try to add them to the networkObjects scene.

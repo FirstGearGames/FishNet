@@ -2,6 +2,7 @@
 using FishNet.Connection;
 using UnityEngine;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Timing;
 
 namespace FishNet.Object
 {
@@ -16,6 +17,10 @@ namespace FishNet.Object
         /// NetworkManager for this object.
         /// </summary>
         public NetworkManager NetworkManager => (NetworkObject == null) ? null : NetworkObject.NetworkManager;
+        /// <summary>
+        /// TimeManager for this object.
+        /// </summary>
+        public TimeManager TimeManager => (NetworkObject == null) ? null : NetworkObject.TimeManager;
         /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
@@ -57,6 +62,10 @@ namespace FishNet.Object
         /// ClientId for this NetworkObject owner.
         /// </summary>
         public int OwnerId => (NetworkObject == null) ? -1 : NetworkObject.OwnerId;
+        /// <summary>
+        /// Unique Id for this NetworkObject. This does not represent the object owner.
+        /// </summary>
+        public int ObjectId => (NetworkObject == null) ? -1 : NetworkObject.ObjectId;
         /// <summary>
         /// The local connection of the client calling this method.
         /// </summary>

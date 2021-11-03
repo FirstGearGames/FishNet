@@ -4,6 +4,8 @@ using UnityEngine;
 using FishNet.Object;
 using FishNet.Managing.Object;
 using System.IO;
+using System.Collections.Generic;
+using System;
 
 namespace FishNet.Editing
 {
@@ -26,73 +28,33 @@ namespace FishNet.Editing
             EditorApplication.update += InitializeOnce;
         }
 
-
         /// <summary>
         /// FInds and sets the default prefabs reference.
         /// </summary>
         internal static DefaultPrefabObjects GetDefaultPrefabsFile(out bool justPopulated)
         {
-            string[] guids;
-            string[] objectPaths;
-
             if (_defaultPrefabs == null)
             {
-                guids = AssetDatabase.FindAssets("t:ScriptableObject", new string[] { "Assets" });
-                objectPaths = new string[guids.Length];
-                for (int i = 0; i < guids.Length; i++)
-                    objectPaths[i] = AssetDatabase.GUIDToAssetPath(guids[i]);
-
-                /* Find all network managers which use Single prefab linking
-                 * as well all network object prefabs. */
-                foreach (string item in objectPaths)
-                {
-                    //This will skip hidden unity types.
-                    if (!item.EndsWith(".asset"))
-                        continue;
-
-                    DefaultPrefabObjects result = (DefaultPrefabObjects)AssetDatabase.LoadAssetAtPath(item, typeof(DefaultPrefabObjects));
-                    if (result != null)
-                    {
-                        _defaultPrefabs = result;
-                        break;
-                    }
-
-                }
+                List<UnityEngine.Object> results = Finding.GetScriptableObjects<DefaultPrefabObjects>(true, true);
+                if (results.Count > 0)
+                    _defaultPrefabs = (DefaultPrefabObjects)results[0];
             }
 
             justPopulated = false;
             //If not found then try to create file.
             if (_defaultPrefabs == null)
             {
-                guids = AssetDatabase.FindAssets("t:asmdef", new string[] { "Assets" });
-                objectPaths = new string[guids.Length];
-                for (int i = 0; i < guids.Length; i++)
-                    objectPaths[i] = AssetDatabase.GUIDToAssetPath(guids[i]);
-
-                string fileName = "FishNet.Runtime.asmdef".ToLower();
-                /* Find all network managers which use Single prefab linking
-                 * as well all network object prefabs. */
-                foreach (string item in objectPaths)
-                {
-                    //Found directory to create object in.
-                    if (item.ToLower().Contains(fileName))
-                    {
-                        DefaultPrefabObjects dpo = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
-                        //Get save directory.
-                        string savePath = Path.GetDirectoryName(item);
-                        AssetDatabase.CreateAsset(dpo, Path.Combine(savePath, $"{nameof(DefaultPrefabObjects)}.asset"));
-                    }
-                }
-
-                //If still null.
-                if (_defaultPrefabs == null)
-                    Debug.LogWarning($"DefaultPrefabObjects not found. Prefabs list will not be automatically populated.");
+                DefaultPrefabObjects dpo = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
+                //Get save directory.
+                string savePath = Finding.GetFishNetRuntimePath(true);
+                AssetDatabase.CreateAsset(dpo, Path.Combine(savePath, $"{nameof(DefaultPrefabObjects)}.asset"));
             }
+
+            //If still null.
+            if (_defaultPrefabs == null)
+                Debug.LogWarning($"DefaultPrefabObjects not found. Prefabs list will not be automatically populated.");
             else
-            {
                 justPopulated = PopulateDefaultPrefabs();
-            }
-
 
             return _defaultPrefabs;
         }
@@ -106,6 +68,7 @@ namespace FishNet.Editing
                 return;
             _initialized = true;
 
+            Finding.GetFishNetRuntimePath(false);
             GetDefaultPrefabsFile(out _);
 
             if (_defaultPrefabs != null)
@@ -126,20 +89,10 @@ namespace FishNet.Editing
             if (_defaultPrefabs.GetObjectCount() > 0)
                 return false;
 
-            string[] guids;
-            string[] objectPaths;
-
-            guids = AssetDatabase.FindAssets("t:GameObject", null);
-            objectPaths = new string[guids.Length];
-            for (int i = 0; i < guids.Length; i++)
-                objectPaths[i] = AssetDatabase.GUIDToAssetPath(guids[i]);
-
-            /* Find all network managers which use Single prefab linking
-             * as well all network object prefabs. */
-            foreach (string item in objectPaths)
+            List<GameObject> gameObjects = Finding.GetGameObjects(true, true, true);
+            foreach (GameObject go in gameObjects)
             {
-                GameObject go = (GameObject)AssetDatabase.LoadAssetAtPath(item, typeof(GameObject));
-                if (go.TryGetComponent<NetworkObject>(out NetworkObject nob))
+                if (go.TryGetComponent(out NetworkObject nob))
                     _defaultPrefabs.AddObject(nob);
             }
 

@@ -89,7 +89,7 @@ namespace FishNet.CodeGenerating.Processing
             {
                 foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
                 {
-                    RpcType rpcType = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute.AttributeType.FullName);
+                    RpcType rpcType = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute);
                     if (rpcType != RpcType.None)
                     {
                         count++;
@@ -117,7 +117,7 @@ namespace FishNet.CodeGenerating.Processing
 
             foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
             {
-                RpcType thisRpcType = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute.AttributeType.FullName);
+                RpcType thisRpcType = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute);
                 if (thisRpcType != RpcType.None)
                 {
                     //A rpc attribute already exist.

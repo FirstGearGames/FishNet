@@ -16,8 +16,8 @@ namespace FishNet.CodeGenerating.Helping
 
         [System.ThreadStatic]
         internal static AttributeHelper AttributeHelper;
-        [System.ThreadStatic]
-        internal static ConnectionHelper ConnectionHelper;
+        //[System.ThreadStatic]
+        //internal static ConnectionHelper ConnectionHelper;
         [System.ThreadStatic]
         internal static GeneralHelper GeneralHelper;
         [System.ThreadStatic]
@@ -48,6 +48,8 @@ namespace FishNet.CodeGenerating.Helping
         internal static NetworkBehaviourRpcProcessor NetworkBehaviourRpcProcessor;
         [System.ThreadStatic]
         internal static NetworkBehaviourSyncProcessor NetworkBehaviourSyncProcessor;
+        [System.ThreadStatic]
+        internal static NetworkBehaviourPredictionProcessor NetworkBehaviourPredictionProcessor;
 
         /// <summary>
         /// True to ignore future warnings.
@@ -93,7 +95,7 @@ namespace FishNet.CodeGenerating.Helping
             Diagnostics = new List<DiagnosticMessage>();
 
             AttributeHelper = new AttributeHelper();
-            ConnectionHelper = new ConnectionHelper();
+            //ConnectionHelper = new ConnectionHelper();
             GeneralHelper = new GeneralHelper();
             GenericReaderHelper = new GenericReaderHelper();
             GenericWriterHelper = new GenericWriterHelper();
@@ -110,12 +112,11 @@ namespace FishNet.CodeGenerating.Helping
             QolAttributeProcessor = new QolAttributeProcessor();
             NetworkBehaviourRpcProcessor = new NetworkBehaviourRpcProcessor();
             NetworkBehaviourSyncProcessor = new NetworkBehaviourSyncProcessor();
+            NetworkBehaviourPredictionProcessor = new NetworkBehaviourPredictionProcessor();
 
-            if (!CodegenSession.GeneralHelper.ImportReferences())
+            if (!GeneralHelper.ImportReferences())
                 return false;
-            if (!CodegenSession.AttributeHelper.ImportReferences())
-                return false;
-            if (!ConnectionHelper.ImportReferences())
+            if (!AttributeHelper.ImportReferences())
                 return false;
             if (!GenericReaderHelper.ImportReferences())
                 return false;

@@ -4,6 +4,7 @@ using UnityEngine;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Timing;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -45,10 +46,42 @@ namespace FishNet.Object
         /// NetworkManager for this object.
         /// </summary>
         public NetworkManager NetworkManager { get; private set; }
+        /// <summary>
+        /// TimeManager for this object.
+        /// </summary>
+        public TimeManager TimeManager => (NetworkManager == null) ? null : NetworkManager.TimeManager;
+        #endregion
+
+        #region Serialized.
+        /// <summary>
+        /// Default value for IsNetworked. True if this object is acting as a NetworkedObject. Using network Spawn() will always set this object as networked.
+        /// </summary>
+        [Tooltip("Default value for IsNetworked. True if this object is acting as a NetworkedObject. Using network Spawn() will always set this object as networked.")]
+        [SerializeField]
+        private bool _isNetworked = true;
+        /// <summary>
+        /// Default value for IsNetworked.True if this object is acting as a NetworkedObject.Using network Spawn() will always set this object as networked.
+        /// </summary>
+        public bool IsNetworked
+        {
+            get => _isNetworked;
+            private set => _isNetworked = value;
+        }
+        /// <summary>
+        /// Sets IsNetworked value.
+        /// </summary>
+        /// <param name="isNetworked"></param>
+        internal void SetIsNetworked(bool isNetworked)
+        {
+            IsNetworked = isNetworked;
+        }
         #endregion
 
         private void Start()
         {
+            if (!IsNetworked)
+                return;
+
             if (NetworkManager == null || (!NetworkManager.IsClient && !NetworkManager.IsServer))
             {
                 //ActiveDuringEdit is only used for scene objects.

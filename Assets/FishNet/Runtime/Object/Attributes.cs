@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
+
     /// <summary>
     /// ServerRpc methods will send messages to the server.
     /// </summary>

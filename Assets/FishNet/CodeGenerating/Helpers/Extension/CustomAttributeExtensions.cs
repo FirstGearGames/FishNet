@@ -37,6 +37,17 @@ namespace FishNet.CodeGenerating.Helping.Extension
         {
             return attributeProvider.CustomAttributes.Any(attr => attr.AttributeType.Is<TAttribute>());
         }
+
+        /// <summary>
+        /// Returns if ca is of type target.
+        /// </summary>
+        /// <param name="ca"></param>
+        /// <param name="targetFullName"></param>
+        /// <returns></returns>
+        internal static bool Is(this CustomAttribute ca, string targetFullName)
+        {
+            return ca.AttributeType.FullName == targetFullName;
+        }
     }
 
 

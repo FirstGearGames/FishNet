@@ -1,14 +1,18 @@
 ﻿using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Helping;
+using MonoFN.Cecil;
+using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Object.Prediction;
 
 
 namespace FishNet.CodeGenerating.Helping
 {
-
     public class AttributeHelper
     {
         #region Reflection references.
+        internal string ReplicatedAttribute_FullName;
+        internal string ReconcileAttribute_FullName;
         private string ServerAttribute_FullName;
         private string ClientAttribute_FullName;
         private string ServerRpcAttribute_FullName;
@@ -27,6 +31,8 @@ namespace FishNet.CodeGenerating.Helping
             TargetRpcAttribute_FullName = typeof(TargetRpcAttribute).FullName;
             SyncVarAttribute_FullName = typeof(SyncVarAttribute).FullName;
             SyncObjectAttribute_FullName = typeof(SyncObjectAttribute).FullName;
+            ReplicatedAttribute_FullName = typeof(ReplicateAttribute).FullName;
+            ReconcileAttribute_FullName = typeof(ReconcileAttribute).FullName;
 
             return true;
         }
@@ -36,13 +42,13 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="attributeFullName"></param>
         /// <returns></returns>
-        public RpcType GetRpcAttributeType(string attributeFullName)
+        public RpcType GetRpcAttributeType(CustomAttribute ca)
         {
-            if (attributeFullName == ServerRpcAttribute_FullName)
+            if (ca.Is(ServerRpcAttribute_FullName))
                 return RpcType.Server;
-            else if (attributeFullName == ObserversRpcAttribute_FullName)
+            else if (ca.Is(ObserversRpcAttribute_FullName))
                 return RpcType.Observers;
-            else if (attributeFullName == TargetRpcAttribute_FullName)
+            else if (ca.Is(TargetRpcAttribute_FullName))
                 return RpcType.Target;
             else
                 return RpcType.None;

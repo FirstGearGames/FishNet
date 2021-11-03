@@ -134,7 +134,7 @@ namespace FishNet.Object
 
             if (sendingClient == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
+                if (NetworkObject.NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"NetworkConnection is null. ServerRpc {methodHash} will not complete. Remainder of packet may become corrupt.");
                 return;
             }
@@ -145,7 +145,7 @@ namespace FishNet.Object
             }
             else
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
+                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"ServerRpc not found for hash {methodHash}. Remainder of packet may become corrupt.");
             }
         }
@@ -165,7 +165,7 @@ namespace FishNet.Object
             }
             else
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
+                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"ObserversRpc not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
             }
         }
@@ -185,7 +185,7 @@ namespace FishNet.Object
             }
             else
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
+                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"TargetRpc not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
             }
         }
@@ -266,7 +266,7 @@ namespace FishNet.Object
              * are very low and I'd rather keep the complexity out of codegen. */
             if (target == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
+                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Action cannot be completed as no Target is specified.");
                 return;
             }
@@ -281,7 +281,7 @@ namespace FishNet.Object
 
                 if (!canSendTotarget)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Warning))
+                    if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
                         Debug.LogWarning($"Action cannot be completed as Target is not an observer for object {gameObject.name}");
                     return;
                 }
@@ -307,7 +307,7 @@ namespace FishNet.Object
             bool result = this.IsSpawned;
             if (!result)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
+                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Action cannot be completed as object {gameObject.name} is not spawned.");
             }
 
