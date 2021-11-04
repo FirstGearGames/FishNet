@@ -24,8 +24,8 @@ namespace MonoFN.Cecil.Metadata {
 			if (index == 0 || index > this.data.Length - 1)
 				return Empty<byte>.Array;
 
-			int position = (int) index;
-			int length = (int) data.ReadCompressedUInt32 (ref position);
+			int position = (int)index;
+			int length = (int)data.ReadCompressedUInt32 (ref position);
 
 			if (length > data.Length - position)
 				return Empty<byte>.Array;
@@ -47,8 +47,8 @@ namespace MonoFN.Cecil.Metadata {
 
 			buffer = data;
 
-			index = (int) signature;
-			length = (int) buffer.ReadCompressedUInt32 (ref index);
+			index = (int)signature;
+			length = (int)buffer.ReadCompressedUInt32 (ref index);
 		}
 	}
 }

@@ -8,9 +8,8 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-using System.Threading;
 using MonoFN.Collections.Generic;
+using System;
 
 namespace MonoFN.Cecil {
 
@@ -69,7 +68,7 @@ namespace MonoFN.Cecil {
 		}
 
 		internal FieldDefinitionProjection WindowsRuntimeProjection {
-			get { return (FieldDefinitionProjection) projection; }
+			get { return (FieldDefinitionProjection)projection; }
 			set { projection = value; }
 		}
 
@@ -119,12 +118,12 @@ namespace MonoFN.Cecil {
 		}
 
 		public FieldAttributes Attributes {
-			get { return (FieldAttributes) attributes; }
+			get { return (FieldAttributes)attributes; }
 			set {
-				if (IsWindowsRuntimeProjection && (ushort) value != attributes)
+				if (IsWindowsRuntimeProjection && (ushort)value != attributes)
 					throw new InvalidOperationException ();
 
-				attributes = (ushort) value;
+				attributes = (ushort)value;
 			}
 		}
 
@@ -138,7 +137,7 @@ namespace MonoFN.Cecil {
 		}
 
 		public object Constant {
-			get { return HasConstant ? constant : null;	}
+			get { return HasConstant ? constant : null; }
 			set { constant = value; }
 		}
 
@@ -172,83 +171,83 @@ namespace MonoFN.Cecil {
 		#region FieldAttributes
 
 		public bool IsCompilerControlled {
-			get { return attributes.GetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.CompilerControlled); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.CompilerControlled, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.CompilerControlled); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.CompilerControlled, value); }
 		}
 
 		public bool IsPrivate {
-			get { return attributes.GetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.Private); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.Private, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.Private); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.Private, value); }
 		}
 
 		public bool IsFamilyAndAssembly {
-			get { return attributes.GetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.FamANDAssem); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.FamANDAssem, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.FamANDAssem); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.FamANDAssem, value); }
 		}
 
 		public bool IsAssembly {
-			get { return attributes.GetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.Assembly); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.Assembly, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.Assembly); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.Assembly, value); }
 		}
 
 		public bool IsFamily {
-			get { return attributes.GetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.Family); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.Family, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.Family); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.Family, value); }
 		}
 
 		public bool IsFamilyOrAssembly {
-			get { return attributes.GetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.FamORAssem); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.FamORAssem, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.FamORAssem); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.FamORAssem, value); }
 		}
 
 		public bool IsPublic {
-			get { return attributes.GetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.Public); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) FieldAttributes.FieldAccessMask, (ushort) FieldAttributes.Public, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.Public); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)FieldAttributes.FieldAccessMask, (ushort)FieldAttributes.Public, value); }
 		}
 
 		public bool IsStatic {
-			get { return attributes.GetAttributes ((ushort) FieldAttributes.Static); }
-			set { attributes = attributes.SetAttributes ((ushort) FieldAttributes.Static, value); }
+			get { return attributes.GetAttributes ((ushort)FieldAttributes.Static); }
+			set { attributes = attributes.SetAttributes ((ushort)FieldAttributes.Static, value); }
 		}
 
 		public bool IsInitOnly {
-			get { return attributes.GetAttributes ((ushort) FieldAttributes.InitOnly); }
-			set { attributes = attributes.SetAttributes ((ushort) FieldAttributes.InitOnly, value); }
+			get { return attributes.GetAttributes ((ushort)FieldAttributes.InitOnly); }
+			set { attributes = attributes.SetAttributes ((ushort)FieldAttributes.InitOnly, value); }
 		}
 
 		public bool IsLiteral {
-			get { return attributes.GetAttributes ((ushort) FieldAttributes.Literal); }
-			set { attributes = attributes.SetAttributes ((ushort) FieldAttributes.Literal, value); }
+			get { return attributes.GetAttributes ((ushort)FieldAttributes.Literal); }
+			set { attributes = attributes.SetAttributes ((ushort)FieldAttributes.Literal, value); }
 		}
 
 		public bool IsNotSerialized {
-			get { return attributes.GetAttributes ((ushort) FieldAttributes.NotSerialized); }
-			set { attributes = attributes.SetAttributes ((ushort) FieldAttributes.NotSerialized, value); }
+			get { return attributes.GetAttributes ((ushort)FieldAttributes.NotSerialized); }
+			set { attributes = attributes.SetAttributes ((ushort)FieldAttributes.NotSerialized, value); }
 		}
 
 		public bool IsSpecialName {
-			get { return attributes.GetAttributes ((ushort) FieldAttributes.SpecialName); }
-			set { attributes = attributes.SetAttributes ((ushort) FieldAttributes.SpecialName, value); }
+			get { return attributes.GetAttributes ((ushort)FieldAttributes.SpecialName); }
+			set { attributes = attributes.SetAttributes ((ushort)FieldAttributes.SpecialName, value); }
 		}
 
 		public bool IsPInvokeImpl {
-			get { return attributes.GetAttributes ((ushort) FieldAttributes.PInvokeImpl); }
-			set { attributes = attributes.SetAttributes ((ushort) FieldAttributes.PInvokeImpl, value); }
+			get { return attributes.GetAttributes ((ushort)FieldAttributes.PInvokeImpl); }
+			set { attributes = attributes.SetAttributes ((ushort)FieldAttributes.PInvokeImpl, value); }
 		}
 
 		public bool IsRuntimeSpecialName {
-			get { return attributes.GetAttributes ((ushort) FieldAttributes.RTSpecialName); }
-			set { attributes = attributes.SetAttributes ((ushort) FieldAttributes.RTSpecialName, value); }
+			get { return attributes.GetAttributes ((ushort)FieldAttributes.RTSpecialName); }
+			set { attributes = attributes.SetAttributes ((ushort)FieldAttributes.RTSpecialName, value); }
 		}
 
 		public bool HasDefault {
-			get { return attributes.GetAttributes ((ushort) FieldAttributes.HasDefault); }
-			set { attributes = attributes.SetAttributes ((ushort) FieldAttributes.HasDefault, value); }
+			get { return attributes.GetAttributes ((ushort)FieldAttributes.HasDefault); }
+			set { attributes = attributes.SetAttributes ((ushort)FieldAttributes.HasDefault, value); }
 		}
 
 		public bool HasFieldRVA {
-			get { return attributes.GetAttributes ((ushort) FieldAttributes.HasFieldRVA); }
-			set { attributes = attributes.SetAttributes ((ushort) FieldAttributes.HasFieldRVA, value); }
+			get { return attributes.GetAttributes ((ushort)FieldAttributes.HasFieldRVA); }
+			set { attributes = attributes.SetAttributes ((ushort)FieldAttributes.HasFieldRVA, value); }
 		}
 
 		#endregion
@@ -258,14 +257,14 @@ namespace MonoFN.Cecil {
 		}
 
 		public new TypeDefinition DeclaringType {
-			get { return (TypeDefinition) base.DeclaringType; }
+			get { return (TypeDefinition)base.DeclaringType; }
 			set { base.DeclaringType = value; }
 		}
 
 		public FieldDefinition (string name, FieldAttributes attributes, TypeReference fieldType)
 			: base (name, fieldType)
 		{
-			this.attributes = (ushort) attributes;
+			this.attributes = (ushort)attributes;
 		}
 
 		public override FieldDefinition Resolve ()

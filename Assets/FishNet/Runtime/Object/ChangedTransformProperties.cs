@@ -5,7 +5,8 @@ namespace FishNet.Object
     /// <summary>
     /// Properties which have changed on a transform.
     /// </summary>
-    [System.Flags][APIExclude]
+    [System.Flags]
+    [APIExclude]
     internal enum ChangedTransformProperties : byte
     {
         Unset = 0,

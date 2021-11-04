@@ -8,14 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-using System.IO;
-
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Metadata;
-using MonoFN.Collections.Generic;
-
-using RVA = System.UInt32;
+using System;
+using System.IO;
 
 namespace MonoFN.Cecil.PE {
 
@@ -90,12 +86,12 @@ namespace MonoFN.Cecil.PE {
 
 			image.Characteristics = characteristics;
 			image.Kind = GetModuleKind (characteristics, subsystem);
-			image.DllCharacteristics = (ModuleCharacteristics) dll_characteristics;
+			image.DllCharacteristics = (ModuleCharacteristics)dll_characteristics;
 		}
 
 		TargetArchitecture ReadArchitecture ()
 		{
-			return (TargetArchitecture) ReadUInt16 ();
+			return (TargetArchitecture)ReadUInt16 ();
 		}
 
 		static ModuleKind GetModuleKind (ushort characteristics, ushort subsystem)
@@ -138,7 +134,7 @@ namespace MonoFN.Cecil.PE {
 			// UserMinor			2
 			// SubSysMajor			2
 			// SubSysMinor			2
-			Advance(44);
+			Advance (44);
 
 			image.SubSystemMajor = ReadUInt16 ();
 			image.SubSystemMinor = ReadUInt16 ();
@@ -209,7 +205,7 @@ namespace MonoFN.Cecil.PE {
 				if (current == 0)
 					break;
 
-				buffer [read++] = (char) current;
+				buffer [read++] = (char)current;
 			}
 
 			Advance (-1 + ((read + 4) & ~3) - read);
@@ -227,7 +223,7 @@ namespace MonoFN.Cecil.PE {
 				if (current == 0)
 					break;
 
-				buffer [read++] = (char) current;
+				buffer [read++] = (char)current;
 			}
 
 			return new string (buffer, 0, read);
@@ -280,7 +276,7 @@ namespace MonoFN.Cecil.PE {
 			// Metadata					8
 			metadata = ReadDataDirectory ();
 			// Flags					4
-			image.Attributes = (ModuleAttributes) ReadUInt32 ();
+			image.Attributes = (ModuleAttributes)ReadUInt32 ();
 			// EntryPointToken			4
 			image.EntryPointToken = ReadUInt32 ();
 			// Resources				8
@@ -337,7 +333,7 @@ namespace MonoFN.Cecil.PE {
 
 			MoveTo (image.Debug);
 
-			var entries = new ImageDebugHeaderEntry [(int) image.Debug.Size / ImageDebugDirectory.Size];
+			var entries = new ImageDebugHeaderEntry [(int)image.Debug.Size / ImageDebugDirectory.Size];
 
 			for (int i = 0; i < entries.Length; i++) {
 				var directory = new ImageDebugDirectory {
@@ -345,7 +341,7 @@ namespace MonoFN.Cecil.PE {
 					TimeDateStamp = ReadInt32 (),
 					MajorVersion = ReadInt16 (),
 					MinorVersion = ReadInt16 (),
-					Type = (ImageDebugType) ReadInt32 (),
+					Type = (ImageDebugType)ReadInt32 (),
 					SizeOfData = ReadInt32 (),
 					AddressOfRawData = ReadInt32 (),
 					PointerToRawData = ReadInt32 (),
@@ -358,10 +354,11 @@ namespace MonoFN.Cecil.PE {
 
 				var position = Position;
 				try {
-					MoveTo ((uint) directory.PointerToRawData);
+					MoveTo ((uint)directory.PointerToRawData);
 					var data = ReadBytes (directory.SizeOfData);
 					entries [i] = new ImageDebugHeaderEntry (directory, data);
-				} finally {
+				}
+				finally {
 					Position = position;
 				}
 			}
@@ -408,7 +405,7 @@ namespace MonoFN.Cecil.PE {
 		{
 			var position = BaseStream.Position;
 			MoveTo (offset + image.MetadataSection.PointerToRawData);
-			var data = ReadBytes ((int) size);
+			var data = ReadBytes ((int)size);
 			BaseStream.Position = position;
 
 			return data;
@@ -439,7 +436,7 @@ namespace MonoFN.Cecil.PE {
 
 			if (image.PdbHeap != null) {
 				for (int i = 0; i < Mixin.TableCount; i++) {
-					if (!image.PdbHeap.HasTable ((Table) i))
+					if (!image.PdbHeap.HasTable ((Table)i))
 						continue;
 
 					heap.Tables [i].Length = image.PdbHeap.TypeSystemTableRows [i];
@@ -447,7 +444,7 @@ namespace MonoFN.Cecil.PE {
 			}
 
 			for (int i = 0; i < Mixin.TableCount; i++) {
-				if (!heap.HasTable ((Table) i))
+				if (!heap.HasTable ((Table)i))
 					continue;
 
 				heap.Tables [i].Length = ReadUInt32 ();
@@ -480,7 +477,7 @@ namespace MonoFN.Cecil.PE {
 
 		void ComputeTableInformations ()
 		{
-			uint offset = (uint) BaseStream.Position - table_heap_offset - image.MetadataSection.PointerToRawData; // header
+			uint offset = (uint)BaseStream.Position - table_heap_offset - image.MetadataSection.PointerToRawData; // header
 
 			int stridx_size = image.StringHeap != null ? image.StringHeap.IndexSize : 2;
 			int guididx_size = image.GuidHeap != null ? image.GuidHeap.IndexSize : 2;
@@ -490,140 +487,140 @@ namespace MonoFN.Cecil.PE {
 			var tables = heap.Tables;
 
 			for (int i = 0; i < Mixin.TableCount; i++) {
-				var table = (Table) i;
+				var table = (Table)i;
 				if (!heap.HasTable (table))
 					continue;
 
 				int size;
 				switch (table) {
 				case Table.Module:
-					size = 2	// Generation
-						+ stridx_size	// Name
-						+ (guididx_size * 3);	// Mvid, EncId, EncBaseId
+					size = 2    // Generation
+						+ stridx_size   // Name
+						+ (guididx_size * 3);   // Mvid, EncId, EncBaseId
 					break;
 				case Table.TypeRef:
-					size = GetCodedIndexSize (CodedIndex.ResolutionScope)	// ResolutionScope
-						+ (stridx_size * 2);	// Name, Namespace
+					size = GetCodedIndexSize (CodedIndex.ResolutionScope)   // ResolutionScope
+						+ (stridx_size * 2);    // Name, Namespace
 					break;
 				case Table.TypeDef:
-					size = 4	// Flags
-						+ (stridx_size * 2)	// Name, Namespace
-						+ GetCodedIndexSize (CodedIndex.TypeDefOrRef)	// BaseType
-						+ GetTableIndexSize (Table.Field)	// FieldList
-						+ GetTableIndexSize (Table.Method);	// MethodList
+					size = 4    // Flags
+						+ (stridx_size * 2) // Name, Namespace
+						+ GetCodedIndexSize (CodedIndex.TypeDefOrRef)   // BaseType
+						+ GetTableIndexSize (Table.Field)   // FieldList
+						+ GetTableIndexSize (Table.Method); // MethodList
 					break;
 				case Table.FieldPtr:
-					size = GetTableIndexSize (Table.Field);	// Field
+					size = GetTableIndexSize (Table.Field); // Field
 					break;
 				case Table.Field:
-					size = 2	// Flags
-						+ stridx_size	// Name
-						+ blobidx_size;	// Signature
+					size = 2    // Flags
+						+ stridx_size   // Name
+						+ blobidx_size; // Signature
 					break;
 				case Table.MethodPtr:
-					size = GetTableIndexSize (Table.Method);	// Method
+					size = GetTableIndexSize (Table.Method);    // Method
 					break;
 				case Table.Method:
-					size = 8	// Rva 4, ImplFlags 2, Flags 2
-						+ stridx_size	// Name
-						+ blobidx_size	// Signature
+					size = 8    // Rva 4, ImplFlags 2, Flags 2
+						+ stridx_size   // Name
+						+ blobidx_size  // Signature
 						+ GetTableIndexSize (Table.Param); // ParamList
 					break;
 				case Table.ParamPtr:
 					size = GetTableIndexSize (Table.Param); // Param
 					break;
 				case Table.Param:
-					size = 4	// Flags 2, Sequence 2
-						+ stridx_size;	// Name
+					size = 4    // Flags 2, Sequence 2
+						+ stridx_size;  // Name
 					break;
 				case Table.InterfaceImpl:
-					size = GetTableIndexSize (Table.TypeDef)	// Class
-						+ GetCodedIndexSize (CodedIndex.TypeDefOrRef);	// Interface
+					size = GetTableIndexSize (Table.TypeDef)    // Class
+						+ GetCodedIndexSize (CodedIndex.TypeDefOrRef);  // Interface
 					break;
 				case Table.MemberRef:
-					size = GetCodedIndexSize (CodedIndex.MemberRefParent)	// Class
-						+ stridx_size	// Name
-						+ blobidx_size;	// Signature
+					size = GetCodedIndexSize (CodedIndex.MemberRefParent)   // Class
+						+ stridx_size   // Name
+						+ blobidx_size; // Signature
 					break;
 				case Table.Constant:
-					size = 2	// Type
-						+ GetCodedIndexSize (CodedIndex.HasConstant)	// Parent
-						+ blobidx_size;	// Value
+					size = 2    // Type
+						+ GetCodedIndexSize (CodedIndex.HasConstant)    // Parent
+						+ blobidx_size; // Value
 					break;
 				case Table.CustomAttribute:
-					size = GetCodedIndexSize (CodedIndex.HasCustomAttribute)	// Parent
-						+ GetCodedIndexSize (CodedIndex.CustomAttributeType)	// Type
-						+ blobidx_size;	// Value
+					size = GetCodedIndexSize (CodedIndex.HasCustomAttribute)    // Parent
+						+ GetCodedIndexSize (CodedIndex.CustomAttributeType)    // Type
+						+ blobidx_size; // Value
 					break;
 				case Table.FieldMarshal:
-					size = GetCodedIndexSize (CodedIndex.HasFieldMarshal)	// Parent
-						+ blobidx_size;	// NativeType
+					size = GetCodedIndexSize (CodedIndex.HasFieldMarshal)   // Parent
+						+ blobidx_size; // NativeType
 					break;
 				case Table.DeclSecurity:
-					size = 2	// Action
-						+ GetCodedIndexSize (CodedIndex.HasDeclSecurity)	// Parent
-						+ blobidx_size;	// PermissionSet
+					size = 2    // Action
+						+ GetCodedIndexSize (CodedIndex.HasDeclSecurity)    // Parent
+						+ blobidx_size; // PermissionSet
 					break;
 				case Table.ClassLayout:
-					size = 6	// PackingSize 2, ClassSize 4
-						+ GetTableIndexSize (Table.TypeDef);	// Parent
+					size = 6    // PackingSize 2, ClassSize 4
+						+ GetTableIndexSize (Table.TypeDef);    // Parent
 					break;
 				case Table.FieldLayout:
-					size = 4	// Offset
-						+ GetTableIndexSize (Table.Field);	// Field
+					size = 4    // Offset
+						+ GetTableIndexSize (Table.Field);  // Field
 					break;
 				case Table.StandAloneSig:
-					size = blobidx_size;	// Signature
+					size = blobidx_size;    // Signature
 					break;
 				case Table.EventMap:
-					size = GetTableIndexSize (Table.TypeDef)	// Parent
-						+ GetTableIndexSize (Table.Event);	// EventList
+					size = GetTableIndexSize (Table.TypeDef)    // Parent
+						+ GetTableIndexSize (Table.Event);  // EventList
 					break;
 				case Table.EventPtr:
-					size = GetTableIndexSize (Table.Event);	// Event
+					size = GetTableIndexSize (Table.Event); // Event
 					break;
 				case Table.Event:
-					size = 2	// Flags
+					size = 2    // Flags
 						+ stridx_size // Name
-						+ GetCodedIndexSize (CodedIndex.TypeDefOrRef);	// EventType
+						+ GetCodedIndexSize (CodedIndex.TypeDefOrRef);  // EventType
 					break;
 				case Table.PropertyMap:
-					size = GetTableIndexSize (Table.TypeDef)	// Parent
-						+ GetTableIndexSize (Table.Property);	// PropertyList
+					size = GetTableIndexSize (Table.TypeDef)    // Parent
+						+ GetTableIndexSize (Table.Property);   // PropertyList
 					break;
 				case Table.PropertyPtr:
-					size = GetTableIndexSize (Table.Property);	// Property
+					size = GetTableIndexSize (Table.Property);  // Property
 					break;
 				case Table.Property:
-					size = 2	// Flags
-						+ stridx_size	// Name
-						+ blobidx_size;	// Type
+					size = 2    // Flags
+						+ stridx_size   // Name
+						+ blobidx_size; // Type
 					break;
 				case Table.MethodSemantics:
-					size = 2	// Semantics
-						+ GetTableIndexSize (Table.Method)	// Method
-						+ GetCodedIndexSize (CodedIndex.HasSemantics);	// Association
+					size = 2    // Semantics
+						+ GetTableIndexSize (Table.Method)  // Method
+						+ GetCodedIndexSize (CodedIndex.HasSemantics);  // Association
 					break;
 				case Table.MethodImpl:
-					size = GetTableIndexSize (Table.TypeDef)	// Class
-						+ GetCodedIndexSize (CodedIndex.MethodDefOrRef)	// MethodBody
-						+ GetCodedIndexSize (CodedIndex.MethodDefOrRef);	// MethodDeclaration
+					size = GetTableIndexSize (Table.TypeDef)    // Class
+						+ GetCodedIndexSize (CodedIndex.MethodDefOrRef) // MethodBody
+						+ GetCodedIndexSize (CodedIndex.MethodDefOrRef);    // MethodDeclaration
 					break;
 				case Table.ModuleRef:
-					size = stridx_size;	// Name
+					size = stridx_size; // Name
 					break;
 				case Table.TypeSpec:
-					size = blobidx_size;	// Signature
+					size = blobidx_size;    // Signature
 					break;
 				case Table.ImplMap:
-					size = 2	// MappingFlags
-						+ GetCodedIndexSize (CodedIndex.MemberForwarded)	// MemberForwarded
-						+ stridx_size	// ImportName
-						+ GetTableIndexSize (Table.ModuleRef);	// ImportScope
+					size = 2    // MappingFlags
+						+ GetCodedIndexSize (CodedIndex.MemberForwarded)    // MemberForwarded
+						+ stridx_size   // ImportName
+						+ GetTableIndexSize (Table.ModuleRef);  // ImportScope
 					break;
 				case Table.FieldRVA:
-					size = 4	// RVA
-						+ GetTableIndexSize (Table.Field);	// Field
+					size = 4    // RVA
+						+ GetTableIndexSize (Table.Field);  // Field
 					break;
 				case Table.EncLog:
 					size = 8;
@@ -633,107 +630,107 @@ namespace MonoFN.Cecil.PE {
 					break;
 				case Table.Assembly:
 					size = 16 // HashAlgId 4, Version 4 * 2, Flags 4
-						+ blobidx_size	// PublicKey
-						+ (stridx_size * 2);	// Name, Culture
+						+ blobidx_size  // PublicKey
+						+ (stridx_size * 2);    // Name, Culture
 					break;
 				case Table.AssemblyProcessor:
-					size = 4;	// Processor
+					size = 4;   // Processor
 					break;
 				case Table.AssemblyOS:
-					size = 12;	// Platform 4, Version 2 * 4
+					size = 12;  // Platform 4, Version 2 * 4
 					break;
 				case Table.AssemblyRef:
-					size = 12	// Version 2 * 4 + Flags 4
-						+ (blobidx_size * 2)	// PublicKeyOrToken, HashValue
-						+ (stridx_size * 2);	// Name, Culture
+					size = 12   // Version 2 * 4 + Flags 4
+						+ (blobidx_size * 2)    // PublicKeyOrToken, HashValue
+						+ (stridx_size * 2);    // Name, Culture
 					break;
 				case Table.AssemblyRefProcessor:
-					size = 4	// Processor
-						+ GetTableIndexSize (Table.AssemblyRef);	// AssemblyRef
+					size = 4    // Processor
+						+ GetTableIndexSize (Table.AssemblyRef);    // AssemblyRef
 					break;
 				case Table.AssemblyRefOS:
-					size = 12	// Platform 4, Version 2 * 4
-						+ GetTableIndexSize (Table.AssemblyRef);	// AssemblyRef
+					size = 12   // Platform 4, Version 2 * 4
+						+ GetTableIndexSize (Table.AssemblyRef);    // AssemblyRef
 					break;
 				case Table.File:
-					size = 4	// Flags
-						+ stridx_size	// Name
-						+ blobidx_size;	// HashValue
+					size = 4    // Flags
+						+ stridx_size   // Name
+						+ blobidx_size; // HashValue
 					break;
 				case Table.ExportedType:
-					size = 8	// Flags 4, TypeDefId 4
-						+ (stridx_size * 2)	// Name, Namespace
-						+ GetCodedIndexSize (CodedIndex.Implementation);	// Implementation
+					size = 8    // Flags 4, TypeDefId 4
+						+ (stridx_size * 2) // Name, Namespace
+						+ GetCodedIndexSize (CodedIndex.Implementation);    // Implementation
 					break;
 				case Table.ManifestResource:
-					size = 8	// Offset, Flags
-						+ stridx_size	// Name
-						+ GetCodedIndexSize (CodedIndex.Implementation);	// Implementation
+					size = 8    // Offset, Flags
+						+ stridx_size   // Name
+						+ GetCodedIndexSize (CodedIndex.Implementation);    // Implementation
 					break;
 				case Table.NestedClass:
-					size = GetTableIndexSize (Table.TypeDef)	// NestedClass
-						+ GetTableIndexSize (Table.TypeDef);	// EnclosingClass
+					size = GetTableIndexSize (Table.TypeDef)    // NestedClass
+						+ GetTableIndexSize (Table.TypeDef);    // EnclosingClass
 					break;
 				case Table.GenericParam:
-					size = 4	// Number, Flags
-						+ GetCodedIndexSize (CodedIndex.TypeOrMethodDef)	// Owner
-						+ stridx_size;	// Name
+					size = 4    // Number, Flags
+						+ GetCodedIndexSize (CodedIndex.TypeOrMethodDef)    // Owner
+						+ stridx_size;  // Name
 					break;
 				case Table.MethodSpec:
-					size = GetCodedIndexSize (CodedIndex.MethodDefOrRef)	// Method
-						+ blobidx_size;	// Instantiation
+					size = GetCodedIndexSize (CodedIndex.MethodDefOrRef)    // Method
+						+ blobidx_size; // Instantiation
 					break;
 				case Table.GenericParamConstraint:
-					size = GetTableIndexSize (Table.GenericParam)	// Owner
-						+ GetCodedIndexSize (CodedIndex.TypeDefOrRef);	// Constraint
+					size = GetTableIndexSize (Table.GenericParam)   // Owner
+						+ GetCodedIndexSize (CodedIndex.TypeDefOrRef);  // Constraint
 					break;
 				case Table.Document:
-					size = blobidx_size	// Name
-						+ guididx_size	// HashAlgorithm
-						+ blobidx_size	// Hash
-						+ guididx_size;	// Language
+					size = blobidx_size // Name
+						+ guididx_size  // HashAlgorithm
+						+ blobidx_size  // Hash
+						+ guididx_size; // Language
 					break;
 				case Table.MethodDebugInformation:
 					size = GetTableIndexSize (Table.Document)  // Document
-						+ blobidx_size;	// SequencePoints
+						+ blobidx_size; // SequencePoints
 					break;
 				case Table.LocalScope:
-					size = GetTableIndexSize (Table.Method)	// Method
-						+ GetTableIndexSize (Table.ImportScope)	// ImportScope
-						+ GetTableIndexSize (Table.LocalVariable)	// VariableList
-						+ GetTableIndexSize (Table.LocalConstant)	// ConstantList
-						+ 4 * 2;	// StartOffset, Length
+					size = GetTableIndexSize (Table.Method) // Method
+						+ GetTableIndexSize (Table.ImportScope) // ImportScope
+						+ GetTableIndexSize (Table.LocalVariable)   // VariableList
+						+ GetTableIndexSize (Table.LocalConstant)   // ConstantList
+						+ 4 * 2;    // StartOffset, Length
 					break;
 				case Table.LocalVariable:
-					size = 2	// Attributes
-						+ 2		// Index
-						+ stridx_size;	// Name
+					size = 2    // Attributes
+						+ 2     // Index
+						+ stridx_size;  // Name
 					break;
 				case Table.LocalConstant:
-					size = stridx_size	// Name
-						+ blobidx_size;	// Signature
+					size = stridx_size  // Name
+						+ blobidx_size; // Signature
 					break;
 				case Table.ImportScope:
-					size = GetTableIndexSize (Table.ImportScope)	// Parent
+					size = GetTableIndexSize (Table.ImportScope)    // Parent
 						+ blobidx_size;
 					break;
 				case Table.StateMachineMethod:
 					size = GetTableIndexSize (Table.Method) // MoveNextMethod
-						+ GetTableIndexSize (Table.Method);	// KickOffMethod
+						+ GetTableIndexSize (Table.Method); // KickOffMethod
 					break;
 				case Table.CustomDebugInformation:
 					size = GetCodedIndexSize (CodedIndex.HasCustomDebugInformation) // Parent
-						+ guididx_size	// Kind
-						+ blobidx_size;	// Value
+						+ guididx_size  // Kind
+						+ blobidx_size; // Value
 					break;
 				default:
 					throw new NotSupportedException ();
 				}
 
-				tables [i].RowSize = (uint) size;
+				tables [i].RowSize = (uint)size;
 				tables [i].Offset = offset;
 
-				offset += (uint) size * tables [i].Length;
+				offset += (uint)size * tables [i].Length;
 			}
 		}
 
@@ -749,7 +746,7 @@ namespace MonoFN.Cecil.PE {
 			heap.TypeSystemTableRows = new uint [Mixin.TableCount];
 
 			for (int i = 0; i < Mixin.TableCount; i++) {
-				var table = (Table) i;
+				var table = (Table)i;
 				if (!heap.HasTable (table))
 					continue;
 
@@ -763,7 +760,8 @@ namespace MonoFN.Cecil.PE {
 				var reader = new ImageReader (stream, file_name);
 				reader.ReadImage ();
 				return reader.image;
-			} catch (EndOfStreamException e) {
+			}
+			catch (EndOfStreamException e) {
 				throw new BadImageFormatException (stream.value.GetFileName (), e);
 			}
 		}
@@ -772,9 +770,9 @@ namespace MonoFN.Cecil.PE {
 		{
 			try {
 				var reader = new ImageReader (stream, file_name);
-				var length = (uint) stream.value.Length;
+				var length = (uint)stream.value.Length;
 
-				reader.image.Sections = new[] {
+				reader.image.Sections = new [] {
 					new Section {
 						PointerToRawData = 0,
 						SizeOfRawData = length,
@@ -786,7 +784,8 @@ namespace MonoFN.Cecil.PE {
 				reader.metadata = new DataDirectory (0, length);
 				reader.ReadMetadata ();
 				return reader.image;
-			} catch (EndOfStreamException e) {
+			}
+			catch (EndOfStreamException e) {
 				throw new BadImageFormatException (stream.value.GetFileName (), e);
 			}
 		}

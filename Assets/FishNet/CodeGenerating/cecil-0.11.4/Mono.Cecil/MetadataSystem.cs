@@ -8,13 +8,12 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Metadata;
 using MonoFN.Collections.Generic;
+using System;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace MonoFN.Cecil {
 

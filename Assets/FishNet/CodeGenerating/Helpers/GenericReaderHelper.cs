@@ -5,8 +5,6 @@ using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
 using System;
 using System.Collections.Generic;
-using Unity.CompilationPipeline.Common.Diagnostics;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -118,7 +116,7 @@ namespace FishNet.CodeGenerating.Helping
             //Generate for autopacktype.
             if (isAutoPacked)
             {
-                functionGenericInstance = _functionT3TypeRef.MakeGenericInstanceType(_readerTypeRef,_autoPackTypeRef, dataTypeRef);
+                functionGenericInstance = _functionT3TypeRef.MakeGenericInstanceType(_readerTypeRef, _autoPackTypeRef, dataTypeRef);
                 functionConstructorInstanceMethodRef = _functionT3ConstructorMethodRef.MakeHostInstanceGeneric(functionGenericInstance);
             }
             //Not autopacked.

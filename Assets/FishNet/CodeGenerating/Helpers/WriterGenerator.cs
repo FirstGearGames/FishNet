@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using MonoFN.Cecil;
+﻿using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Serializing;
+using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
-using FishNet.CodeGenerating.Helping.Extension;
-using Unity.CompilationPipeline.Common.Diagnostics;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -77,6 +73,7 @@ namespace FishNet.CodeGenerating.Helping
         }
 
 
+        //todo prevent serializer from climbing hierarchy if unity object or unsupported type.
 
         /// <summary>
         /// Adds a write for a NetworkBehaviour class type to WriterMethods.

@@ -1,8 +1,8 @@
-﻿using System;
+﻿using FishNet.CodeGenerating.ILCore;
+using MonoFN.Cecil;
+using System;
 using System.Linq.Expressions;
 using System.Reflection;
-using FishNet.CodeGenerating.ILCore;
-using MonoFN.Cecil;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {

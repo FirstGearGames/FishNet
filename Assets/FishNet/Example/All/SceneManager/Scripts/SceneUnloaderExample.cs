@@ -1,6 +1,5 @@
-﻿using FishNet;
+﻿using FishNet.Managing.Scened;
 using FishNet.Object;
-using FishNet.Managing.Scened;
 using UnityEngine;
 
 namespace FishNet.Example.Scened

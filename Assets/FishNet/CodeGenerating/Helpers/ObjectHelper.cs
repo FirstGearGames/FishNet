@@ -1,8 +1,10 @@
 ﻿using FishNet.Broadcast;
-using FishNet.Object.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.Processing;
+using FishNet.Managing.Logging;
 using FishNet.Object;
+using FishNet.Object.Delegating;
+using FishNet.Object.Helping;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using MonoFN.Cecil;
@@ -11,9 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEngine;
-using FishNet.Managing.Logging;
-using FishNet.Object.Delegating;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -457,7 +456,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 string msg = "Cannot complete action because server is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component.";
                 instructions.AddRange(
-                    CodegenSession.GeneralHelper.CreateDebugWithCanLogInstructions(processor,msg,loggingType, useStatic, true)
+                    CodegenSession.GeneralHelper.CreateDebugWithCanLogInstructions(processor, msg, loggingType, useStatic, true)
                     );
             }
             //Add return.

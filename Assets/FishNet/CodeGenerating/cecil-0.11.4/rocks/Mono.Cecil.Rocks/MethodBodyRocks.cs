@@ -8,9 +8,8 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-
 using MonoFN.Cecil.Cil;
+using System;
 
 namespace MonoFN.Cecil.Rocks {
 
@@ -114,7 +113,7 @@ namespace MonoFN.Cecil.Rocks {
 					ExpandMacro (instruction, OpCodes.Ldc_I4, 8);
 					break;
 				case Code.Ldc_I4_S:
-					ExpandMacro (instruction, OpCodes.Ldc_I4, (int) (sbyte) instruction.Operand);
+					ExpandMacro (instruction, OpCodes.Ldc_I4, (int)(sbyte)instruction.Operand);
 					break;
 				case Code.Br_S:
 					instruction.OpCode = OpCodes.Br;
@@ -189,10 +188,10 @@ namespace MonoFN.Cecil.Rocks {
 				var instruction = self.Instructions [i];
 				if (instruction.OpCode.Code != Code.Ldc_I8)
 					continue;
-				var l = (long) instruction.Operand;
+				var l = (long)instruction.Operand;
 				if (l >= int.MaxValue || l <= int.MinValue)
 					continue;
-				ExpandMacro (instruction, OpCodes.Ldc_I4, (int) l);
+				ExpandMacro (instruction, OpCodes.Ldc_I4, (int)l);
 				self.Instructions.Insert (++i, Instruction.Create (OpCodes.Conv_I8));
 			}
 		}
@@ -208,7 +207,7 @@ namespace MonoFN.Cecil.Rocks {
 				int index;
 				switch (instruction.OpCode.Code) {
 				case Code.Ldarg:
-					index = ((ParameterDefinition) instruction.Operand).Index;
+					index = ((ParameterDefinition)instruction.Operand).Index;
 					if (index == -1 && instruction.Operand == self.ThisParameter)
 						index = 0;
 					else if (method.HasThis)
@@ -234,7 +233,7 @@ namespace MonoFN.Cecil.Rocks {
 					}
 					break;
 				case Code.Ldloc:
-					index = ((VariableDefinition) instruction.Operand).Index;
+					index = ((VariableDefinition)instruction.Operand).Index;
 					switch (index) {
 					case 0:
 						MakeMacro (instruction, OpCodes.Ldloc_0);
@@ -255,7 +254,7 @@ namespace MonoFN.Cecil.Rocks {
 					}
 					break;
 				case Code.Stloc:
-					index = ((VariableDefinition) instruction.Operand).Index;
+					index = ((VariableDefinition)instruction.Operand).Index;
 					switch (index) {
 					case 0:
 						MakeMacro (instruction, OpCodes.Stloc_0);
@@ -276,7 +275,7 @@ namespace MonoFN.Cecil.Rocks {
 					}
 					break;
 				case Code.Ldarga:
-					index = ((ParameterDefinition) instruction.Operand).Index;
+					index = ((ParameterDefinition)instruction.Operand).Index;
 					if (index == -1 && instruction.Operand == self.ThisParameter)
 						index = 0;
 					else if (method.HasThis)
@@ -285,11 +284,11 @@ namespace MonoFN.Cecil.Rocks {
 						ExpandMacro (instruction, OpCodes.Ldarga_S, instruction.Operand);
 					break;
 				case Code.Ldloca:
-					if (((VariableDefinition) instruction.Operand).Index < 256)
+					if (((VariableDefinition)instruction.Operand).Index < 256)
 						ExpandMacro (instruction, OpCodes.Ldloca_S, instruction.Operand);
 					break;
 				case Code.Ldc_I4:
-					int i = (int) instruction.Operand;
+					int i = (int)instruction.Operand;
 					switch (i) {
 					case -1:
 						MakeMacro (instruction, OpCodes.Ldc_I4_M1);
@@ -323,7 +322,7 @@ namespace MonoFN.Cecil.Rocks {
 						break;
 					default:
 						if (i >= -128 && i < 128)
-							ExpandMacro (instruction, OpCodes.Ldc_I4_S, (sbyte) i);
+							ExpandMacro (instruction, OpCodes.Ldc_I4_S, (sbyte)i);
 						break;
 					}
 					break;
@@ -348,7 +347,7 @@ namespace MonoFN.Cecil.Rocks {
 
 		static bool OptimizeBranch (Instruction instruction)
 		{
-			var offset = ((Instruction) instruction.Operand).Offset - (instruction.Offset + instruction.OpCode.Size + 4);
+			var offset = ((Instruction)instruction.Operand).Offset - (instruction.Offset + instruction.OpCode.Size + 4);
 			if (!(offset >= -128 && offset <= 127))
 				return false;
 

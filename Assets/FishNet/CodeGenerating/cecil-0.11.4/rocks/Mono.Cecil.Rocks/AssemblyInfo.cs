@@ -9,7 +9,6 @@
 //
 
 using System;
-using System.Reflection;
 
 //[assembly: AssemblyTitle ("MonoFN.Cecil.Rocks")]
 

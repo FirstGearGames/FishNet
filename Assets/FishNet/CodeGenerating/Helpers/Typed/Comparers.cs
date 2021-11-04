@@ -19,7 +19,7 @@ namespace FishNet.CodeGenerating.Helping
 
     internal class TypeReferenceComparer : IEqualityComparer<TypeReference>
     {
-        public bool Equals(TypeReference a, TypeReference b) 
+        public bool Equals(TypeReference a, TypeReference b)
         {
             return a.FullName == b.FullName;
         }

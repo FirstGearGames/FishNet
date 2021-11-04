@@ -8,7 +8,6 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
 using System.Collections.Generic;
 
 namespace MonoFN.Cecil.PE {
@@ -40,9 +39,9 @@ namespace MonoFN.Cecil.PE {
 			var bytes = buffer.buffer;
 
 			for (int i = 0; i < buffer.length; i++)
-				hash_code = unchecked ((hash_code ^ bytes [i]) * fnv_prime);
+				hash_code = unchecked((hash_code ^ bytes [i]) * fnv_prime);
 
 			return hash_code;
- 		}
+		}
 	}
 }

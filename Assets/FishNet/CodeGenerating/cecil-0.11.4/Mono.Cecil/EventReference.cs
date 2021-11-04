@@ -8,8 +8,6 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-
 namespace MonoFN.Cecil {
 
 	public abstract class EventReference : MemberReference {

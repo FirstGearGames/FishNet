@@ -19,16 +19,16 @@ namespace MonoFN.Cecil.Metadata {
 
 		protected override string ReadStringAt (uint index)
 		{
-			int start = (int) index;
+			int start = (int)index;
 
-			uint length = (uint) (data.ReadCompressedUInt32 (ref start) & ~1);
+			uint length = (uint)(data.ReadCompressedUInt32 (ref start) & ~1);
 			if (length < 1)
 				return string.Empty;
 
 			var chars = new char [length / 2];
 
 			for (int i = start, j = 0; i < start + length; i += 2)
-				chars [j++] = (char) (data [i] | (data [i + 1] << 8));
+				chars [j++] = (char)(data [i] | (data [i + 1] << 8));
 
 			return new string (chars);
 		}

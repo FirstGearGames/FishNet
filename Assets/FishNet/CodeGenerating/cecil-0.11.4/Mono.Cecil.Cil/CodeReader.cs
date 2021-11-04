@@ -8,12 +8,9 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-
 using MonoFN.Cecil.PE;
 using MonoFN.Collections.Generic;
-
-using RVA = System.UInt32;
+using System;
 
 namespace MonoFN.Cecil.Cil {
 
@@ -41,7 +38,7 @@ namespace MonoFN.Cecil.Cil {
 			this.method = method;
 			this.reader.context = method;
 			var position = this.Position;
-			this.Position = (int) reader.image.ResolveVirtualAddress ((uint) method.RVA);
+			this.Position = (int)reader.image.ResolveVirtualAddress ((uint)method.RVA);
 			return position;
 		}
 
@@ -80,7 +77,7 @@ namespace MonoFN.Cecil.Cil {
 				return flags >> 2;
 			case 0x3: // fat
 				Advance (-1 + 2 + 2); // go back, 2 bytes flags, 2 bytes stack size
-				return (int) ReadUInt32 ();
+				return (int)ReadUInt32 ();
 			default:
 				throw new InvalidOperationException ();
 			}
@@ -116,7 +113,7 @@ namespace MonoFN.Cecil.Cil {
 		{
 			var flags = ReadUInt16 ();
 			body.max_stack_size = ReadUInt16 ();
-			body.code_size = (int) ReadUInt32 ();
+			body.code_size = (int)ReadUInt32 ();
 			body.local_var_token = new MetadataToken (ReadUInt32 ());
 			body.init_locals = (flags & 0x10) != 0;
 
@@ -143,7 +140,7 @@ namespace MonoFN.Cecil.Cil {
 			start = Position;
 			var code_size = body.code_size;
 
-			if (code_size < 0 || Length <= (uint) (code_size + Position))
+			if (code_size < 0 || Length <= (uint)(code_size + Position))
 				code_size = 0;
 
 			var end = start + code_size;
@@ -250,10 +247,10 @@ namespace MonoFN.Cecil.Cil {
 				switch (instruction.opcode.OperandType) {
 				case OperandType.ShortInlineBrTarget:
 				case OperandType.InlineBrTarget:
-					instruction.operand = GetInstruction ((int) instruction.operand);
+					instruction.operand = GetInstruction ((int)instruction.operand);
 					break;
 				case OperandType.InlineSwitch:
-					var offsets = (int []) instruction.operand;
+					var offsets = (int [])instruction.operand;
 					var branches = new Instruction [offsets.Length];
 					for (int j = 0; j < offsets.Length; j++)
 						branches [j] = GetInstruction (offsets [j]);
@@ -319,8 +316,8 @@ namespace MonoFN.Cecil.Cil {
 
 			ReadExceptionHandlers (
 				count,
-				() => (int) ReadUInt16 (),
-				() => (int) ReadByte ());
+				() => (int)ReadUInt16 (),
+				() => (int)ReadByte ());
 		}
 
 		void ReadFatSection ()
@@ -339,7 +336,7 @@ namespace MonoFN.Cecil.Cil {
 		{
 			for (int i = 0; i < count; i++) {
 				var handler = new ExceptionHandler (
-					(ExceptionHandlerType) (read_entry () & 0x7));
+					(ExceptionHandlerType)(read_entry () & 0x7));
 
 				handler.TryStart = GetInstruction (read_entry ());
 				handler.TryEnd = GetInstruction (handler.TryStart.Offset + read_length ());
@@ -357,7 +354,7 @@ namespace MonoFN.Cecil.Cil {
 		{
 			switch (handler.HandlerType) {
 			case ExceptionHandlerType.Catch:
-				handler.CatchType = (TypeReference) reader.LookupToken (ReadToken ());
+				handler.CatchType = (TypeReference)reader.LookupToken (ReadToken ());
 				break;
 			case ExceptionHandlerType.Filter:
 				handler.FilterStart = GetInstruction (ReadInt32 ());
@@ -641,11 +638,11 @@ namespace MonoFN.Cecil.Cil {
 				ExceptionHandlerType handler_type;
 				if (fat_entry) {
 					var type = ReadUInt32 ();
-					handler_type = (ExceptionHandlerType) (type & 0x7);
+					handler_type = (ExceptionHandlerType)(type & 0x7);
 					buffer.WriteUInt32 (type);
 				} else {
 					var type = ReadUInt16 ();
-					handler_type = (ExceptionHandlerType) (type & 0x7);
+					handler_type = (ExceptionHandlerType)(type & 0x7);
 					buffer.WriteUInt16 (type);
 				}
 

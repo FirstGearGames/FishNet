@@ -48,7 +48,7 @@ namespace FishNet.Component.Utility
             {
                 if (Time.unscaledTime < _nextTimeManagerTime)
                     return;
-                
+
                 _nextTimeManagerTime = Time.unscaledTime + 1f;
                 _timeManager = InstanceFinder.TimeManager;
             }

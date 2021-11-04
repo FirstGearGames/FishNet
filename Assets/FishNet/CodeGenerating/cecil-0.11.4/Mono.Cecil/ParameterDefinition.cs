@@ -23,8 +23,8 @@ namespace MonoFN.Cecil {
 		MarshalInfo marshal_info;
 
 		public ParameterAttributes Attributes {
-			get { return (ParameterAttributes) attributes; }
-			set { attributes = (ushort) value; }
+			get { return (ParameterAttributes)attributes; }
+			set { attributes = (ushort)value; }
 		}
 
 		public IMethodSignature Method {
@@ -50,7 +50,7 @@ namespace MonoFN.Cecil {
 		}
 
 		public object Constant {
-			get { return HasConstant ? constant : null;	}
+			get { return HasConstant ? constant : null; }
 			set { constant = value; }
 		}
 
@@ -84,38 +84,38 @@ namespace MonoFN.Cecil {
 		#region ParameterAttributes
 
 		public bool IsIn {
-			get { return attributes.GetAttributes ((ushort) ParameterAttributes.In); }
-			set { attributes = attributes.SetAttributes ((ushort) ParameterAttributes.In, value); }
+			get { return attributes.GetAttributes ((ushort)ParameterAttributes.In); }
+			set { attributes = attributes.SetAttributes ((ushort)ParameterAttributes.In, value); }
 		}
 
 		public bool IsOut {
-			get { return attributes.GetAttributes ((ushort) ParameterAttributes.Out); }
-			set { attributes = attributes.SetAttributes ((ushort) ParameterAttributes.Out, value); }
+			get { return attributes.GetAttributes ((ushort)ParameterAttributes.Out); }
+			set { attributes = attributes.SetAttributes ((ushort)ParameterAttributes.Out, value); }
 		}
 
 		public bool IsLcid {
-			get { return attributes.GetAttributes ((ushort) ParameterAttributes.Lcid); }
-			set { attributes = attributes.SetAttributes ((ushort) ParameterAttributes.Lcid, value); }
+			get { return attributes.GetAttributes ((ushort)ParameterAttributes.Lcid); }
+			set { attributes = attributes.SetAttributes ((ushort)ParameterAttributes.Lcid, value); }
 		}
 
 		public bool IsReturnValue {
-			get { return attributes.GetAttributes ((ushort) ParameterAttributes.Retval); }
-			set { attributes = attributes.SetAttributes ((ushort) ParameterAttributes.Retval, value); }
+			get { return attributes.GetAttributes ((ushort)ParameterAttributes.Retval); }
+			set { attributes = attributes.SetAttributes ((ushort)ParameterAttributes.Retval, value); }
 		}
 
 		public bool IsOptional {
-			get { return attributes.GetAttributes ((ushort) ParameterAttributes.Optional); }
-			set { attributes = attributes.SetAttributes ((ushort) ParameterAttributes.Optional, value); }
+			get { return attributes.GetAttributes ((ushort)ParameterAttributes.Optional); }
+			set { attributes = attributes.SetAttributes ((ushort)ParameterAttributes.Optional, value); }
 		}
 
 		public bool HasDefault {
-			get { return attributes.GetAttributes ((ushort) ParameterAttributes.HasDefault); }
-			set { attributes = attributes.SetAttributes ((ushort) ParameterAttributes.HasDefault, value); }
+			get { return attributes.GetAttributes ((ushort)ParameterAttributes.HasDefault); }
+			set { attributes = attributes.SetAttributes ((ushort)ParameterAttributes.HasDefault, value); }
 		}
 
 		public bool HasFieldMarshal {
-			get { return attributes.GetAttributes ((ushort) ParameterAttributes.HasFieldMarshal); }
-			set { attributes = attributes.SetAttributes ((ushort) ParameterAttributes.HasFieldMarshal, value); }
+			get { return attributes.GetAttributes ((ushort)ParameterAttributes.HasFieldMarshal); }
+			set { attributes = attributes.SetAttributes ((ushort)ParameterAttributes.HasFieldMarshal, value); }
 		}
 
 		#endregion
@@ -134,7 +134,7 @@ namespace MonoFN.Cecil {
 		public ParameterDefinition (string name, ParameterAttributes attributes, TypeReference parameterType)
 			: base (name, parameterType)
 		{
-			this.attributes = (ushort) attributes;
+			this.attributes = (ushort)attributes;
 			this.token = new MetadataToken (TokenType.Param);
 		}
 

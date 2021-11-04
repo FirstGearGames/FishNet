@@ -1,6 +1,5 @@
 ﻿using FishNet.Documenting;
 using System;
-using System.Collections.Generic;
 
 namespace FishNet.Component.Animating
 {

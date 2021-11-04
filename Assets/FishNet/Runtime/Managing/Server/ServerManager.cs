@@ -1,12 +1,12 @@
-﻿using FishNet.Connection;
+﻿using FishNet.Authenticating;
+using FishNet.Connection;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using FishNet.Authenticating;
-using FishNet.Managing.Transporting;
-using FishNet.Managing.Logging;
 
 
 namespace FishNet.Managing.Server
@@ -343,133 +343,136 @@ namespace FishNet.Managing.Server
                 return;
 
             PacketId packetId = PacketId.Unset;
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
             {
-                using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager))
+#endif
+            using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager))
+            {
+                /* This is a special condition where a message may arrive split.
+                * When this occurs buffer each packet until all packets are
+                * received. */
+                if (reader.PeekUInt16() == (ushort)PacketId.Split)
                 {
-                    /* This is a special condition where a message may arrive split.
-                    * When this occurs buffer each packet until all packets are
-                    * received. */
-                    if (reader.PeekUInt16() == (ushort)PacketId.Split)
+                    /* Various conditions that will kick a client immediately.
+                     * Splits are not allowed, or split size indicator is larger than maximum allowed. */
+                    bool kickClient = false;
+                    //Clients are limited to MTU size.
+                    if (_limitClientMTU)
                     {
-                        /* Various conditions that will kick a client immediately.
-                         * Splits are not allowed, or split size indicator is larger than maximum allowed. */
-                        bool kickClient = false;
-                        //Clients are limited to MTU size.
-                        if (_limitClientMTU)
+                        kickClient = true;
+                    }
+                    //Clients may exceed MTU to some value.
+                    else
+                    {
+                        //If a maximum is set.
+                        if (_maximumClientMTU > 0)
                         {
-                            kickClient = true;
-                        }
-                        //Clients may exceed MTU to some value.
-                        else
-                        {
-                            //If a maximum is set.
-                            if (_maximumClientMTU > 0)
+                            /* A quick check can be performed to see if
+                             * this packet + already written will exceed maximum client mtu.
+                             * If it does not, then read the expected splits
+                             * to see if those may exceed mtu. 
+                             * 
+                             * The goal is to kick quick as possible when
+                             * the client is sending too much data. If expected splits
+                             * will definitely exceed data then kick, or if next incoming
+                             * data would also exceed, kick.*/
+                            if (_splitReader.Position + args.Data.Count > _maximumClientMTU)
                             {
-                                /* A quick check can be performed to see if
-                                 * this packet + already written will exceed maximum client mtu.
-                                 * If it does not, then read the expected splits
-                                 * to see if those may exceed mtu. 
-                                 * 
-                                 * The goal is to kick quick as possible when
-                                 * the client is sending too much data. If expected splits
-                                 * will definitely exceed data then kick, or if next incoming
-                                 * data would also exceed, kick.*/
-                                if (_splitReader.Position + args.Data.Count > _maximumClientMTU)
-                                {
-                                    kickClient = true;
-                                }
-                                else
-                                {
-                                    //How many splits would be too many.
-                                    int mtu = NetworkManager.TransportManager.Transport.GetMTU((byte)Channel.Reliable);
-                                    /* A split will always be in at least 2 segments
-                                     * so use a minimum of 2 segments when calculating
-                                     * how many splits are allowed. This is here should the user
-                                     * set maximumClientMTU to less than the MTU at runtime. */
-                                    uint maxAllowedSplits = (uint)Math.Max(Mathf.CeilToInt(_maximumClientMTU / mtu), 2);
-
-                                    ushort expected;
-                                    _splitReader.ReadHeader(reader, true, out _, out expected);
-                                    if (expected > maxAllowedSplits)
-                                        kickClient = true;
-                                }
+                                kickClient = true;
                             }
+                            else
+                            {
+                                //How many splits would be too many.
+                                int mtu = NetworkManager.TransportManager.Transport.GetMTU((byte)Channel.Reliable);
+                                /* A split will always be in at least 2 segments
+                                 * so use a minimum of 2 segments when calculating
+                                 * how many splits are allowed. This is here should the user
+                                 * set maximumClientMTU to less than the MTU at runtime. */
+                                uint maxAllowedSplits = (uint)Math.Max(Mathf.CeilToInt(_maximumClientMTU / mtu), 2);
 
+                                ushort expected;
+                                _splitReader.ReadHeader(reader, true, out _, out expected);
+                                if (expected > maxAllowedSplits)
+                                    kickClient = true;
+                            }
                         }
 
-                        /* Client did not pass checks.
-                         * There are other ways to exploit the checks such
-                         * as sending the same packet multiple times. This would
-                         * result in the server trying to add onto the split
-                         * over and over. However, once the server receives expected
-                         * amount of splits it will process the data, and if
-                         * the data is malformed client gets kicked anyway. */
-                        if (kickClient)
-                        {
-                            NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
-                            return;
-                        }
-
-                        ArraySegment<byte> result =
-                            _splitReader.Write(reader,
-                            NetworkManager.TransportManager.Transport.GetMTU((byte)args.Channel)
-                            );
-
-                        /* If there is no data in result then the split isn't fully received.
-                         * Since splits arrive in reliable order exit method and wait for next
-                         * packet. Once all packets are received the data will be processed. */
-                        if (result.Count == 0)
-                            return;
-                        //Split has been read in full.
-                        else
-                            reader.Initialize(result, NetworkManager);
                     }
 
-
-                    while (reader.Remaining > 0)
+                    /* Client did not pass checks.
+                     * There are other ways to exploit the checks such
+                     * as sending the same packet multiple times. This would
+                     * result in the server trying to add onto the split
+                     * over and over. However, once the server receives expected
+                     * amount of splits it will process the data, and if
+                     * the data is malformed client gets kicked anyway. */
+                    if (kickClient)
                     {
-                        packetId = (PacketId)reader.ReadUInt16();
-                        NetworkConnection conn;
+                        NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                        return;
+                    }
 
-                        /* Connection isn't available. This should never happen.
-                         * Force an immediate disconnect. */
-                        if (!Clients.TryGetValue(args.ConnectionId, out conn))
-                        {
-                            NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
-                            return;
-                        }
-                        /* If connection isn't authenticated and isn't a broadcast
-                         * then disconnect client. If a broadcast then process
-                         * normally; client may still become disconnected if the broadcast
-                         * does not allow to be called while not authenticated. */
-                        if (!conn.Authenticated && packetId != PacketId.Broadcast)
-                        {
-                            conn.Disconnect(true);
-                            return;
-                        }
+                    ArraySegment<byte> result =
+                        _splitReader.Write(reader,
+                        NetworkManager.TransportManager.Transport.GetMTU((byte)args.Channel)
+                        );
 
-                        if (packetId == PacketId.ServerRpc)
-                        {
-                            Objects.ParseServerRpc(reader, conn, args.Channel);
-                        }
-                        else if (packetId == PacketId.Broadcast)
-                        {
-                            ParseBroadcast(reader, conn);
-                        }
-                        else if (packetId == PacketId.PingPong)
-                        {
-                            ParsePingPong(reader, conn);
-                        }
-                        else
-                        {
-                            if (NetworkManager.CanLog(LoggingType.Error))
-                                Debug.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
-                            return;
-                        }
+                    /* If there is no data in result then the split isn't fully received.
+                     * Since splits arrive in reliable order exit method and wait for next
+                     * packet. Once all packets are received the data will be processed. */
+                    if (result.Count == 0)
+                        return;
+                    //Split has been read in full.
+                    else
+                        reader.Initialize(result, NetworkManager);
+                }
+
+
+                while (reader.Remaining > 0)
+                {
+                    packetId = (PacketId)reader.ReadUInt16();
+                    NetworkConnection conn;
+
+                    /* Connection isn't available. This should never happen.
+                     * Force an immediate disconnect. */
+                    if (!Clients.TryGetValue(args.ConnectionId, out conn))
+                    {
+                        NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                        return;
+                    }
+                    /* If connection isn't authenticated and isn't a broadcast
+                     * then disconnect client. If a broadcast then process
+                     * normally; client may still become disconnected if the broadcast
+                     * does not allow to be called while not authenticated. */
+                    if (!conn.Authenticated && packetId != PacketId.Broadcast)
+                    {
+                        conn.Disconnect(true);
+                        return;
+                    }
+
+                    if (packetId == PacketId.ServerRpc)
+                    {
+                        Objects.ParseServerRpc(reader, conn, args.Channel);
+                    }
+                    else if (packetId == PacketId.Broadcast)
+                    {
+                        ParseBroadcast(reader, conn);
+                    }
+                    else if (packetId == PacketId.PingPong)
+                    {
+                        ParsePingPong(reader, conn);
+                    }
+                    else
+                    {
+                        if (NetworkManager.CanLog(LoggingType.Error))
+                            Debug.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
+                        return;
                     }
                 }
             }
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+        }
             catch (Exception e)
             {
                 if (NetworkManager.CanLog(LoggingType.Error))
@@ -477,6 +480,7 @@ namespace FishNet.Managing.Server
                 //Kick client immediately.
                 NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
             }
+#endif
         }
 
         /// <summary>

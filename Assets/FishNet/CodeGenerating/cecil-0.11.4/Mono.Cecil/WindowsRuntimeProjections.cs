@@ -8,10 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Collections.Generic;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using MonoFN.Collections.Generic;
 
 namespace MonoFN.Cecil {
 
@@ -111,11 +111,11 @@ namespace MonoFN.Cecil {
 
 		static readonly Version version = new Version (4, 0, 0, 0);
 
-		static readonly byte[] contract_pk_token = {
+		static readonly byte [] contract_pk_token = {
 			0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A
 		};
 
-		static readonly byte[] contract_pk = {
+		static readonly byte [] contract_pk = {
 			0x00, 0x24, 0x00, 0x00, 0x04, 0x80, 0x00, 0x00, 0x94, 0x00, 0x00, 0x00, 0x06, 0x02, 0x00, 0x00,
 			0x00, 0x24, 0x00, 0x00, 0x52, 0x53, 0x41, 0x31, 0x00, 0x04, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
 			0x07, 0xD1, 0xFA, 0x57, 0xC4, 0xAE, 0xD9, 0xF0, 0xA3, 0x2E, 0x84, 0xAA, 0x0F, 0xAE, 0xFD, 0x0D,
@@ -130,8 +130,7 @@ namespace MonoFN.Cecil {
 
 		static Dictionary<string, ProjectionInfo> projections;
 
-		static Dictionary<string, ProjectionInfo> Projections
-		{
+		static Dictionary<string, ProjectionInfo> Projections {
 			get {
 				if (projections != null)
 					return projections;
@@ -197,9 +196,9 @@ namespace MonoFN.Cecil {
 
 		readonly ModuleDefinition module;
 		Version corlib_version = new Version (255, 255, 255, 255);
-		AssemblyNameReference[] virtual_references;
+		AssemblyNameReference [] virtual_references;
 
-		AssemblyNameReference[] VirtualReferences {
+		AssemblyNameReference [] VirtualReferences {
 			get {
 				if (virtual_references == null) {
 					// force module to read its assembly references. that will in turn initialize virtual_references
@@ -236,15 +235,13 @@ namespace MonoFN.Cecil {
 					} else {
 						treatment = GenerateRedirectionInformation (type, out redirectedMethods, out redirectedInterfaces);
 					}
-				} 
-				else if (metadata_kind == MetadataKind.ManagedWindowsMetadata && NeedsWindowsRuntimePrefix (type))
+				} else if (metadata_kind == MetadataKind.ManagedWindowsMetadata && NeedsWindowsRuntimePrefix (type))
 					treatment = TypeDefinitionTreatment.PrefixWindowsRuntimeName;
 
 				if (treatment == TypeDefinitionTreatment.PrefixWindowsRuntimeName || treatment == TypeDefinitionTreatment.NormalType)
 					if (!type.IsInterface && HasAttribute (type, "Windows.UI.Xaml", "TreatAsAbstractComposableClassAttribute"))
 						treatment |= TypeDefinitionTreatment.Abstract;
-			}
-			else if (metadata_kind == MetadataKind.ManagedWindowsMetadata && IsClrImplementationType (type))
+			} else if (metadata_kind == MetadataKind.ManagedWindowsMetadata && IsClrImplementationType (type))
 				treatment = TypeDefinitionTreatment.UnmangleWindowsRuntimeName;
 
 			if (treatment != TypeDefinitionTreatment.None)
@@ -378,12 +375,11 @@ namespace MonoFN.Cecil {
 				return false;
 
 			if (base_type.Namespace == "System")
-				switch (base_type.Name)
-				{
-					case "Attribute":
-					case "MulticastDelegate":
-					case "ValueType":
-						return false;
+				switch (base_type.Name) {
+				case "Attribute":
+				case "MulticastDelegate":
+				case "ValueType":
+					return false;
 				}
 
 			return true;
@@ -547,19 +543,18 @@ namespace MonoFN.Cecil {
 			if (projection == null)
 				return;
 
-			switch (projection.Treatment)
-			{
-				case TypeReferenceTreatment.SystemDelegate:
-				case TypeReferenceTreatment.SystemAttribute:
-					type.Scope = type.Module.Projections.GetAssemblyReference ("System.Runtime");
-					break;
+			switch (projection.Treatment) {
+			case TypeReferenceTreatment.SystemDelegate:
+			case TypeReferenceTreatment.SystemAttribute:
+				type.Scope = type.Module.Projections.GetAssemblyReference ("System.Runtime");
+				break;
 
-				case TypeReferenceTreatment.UseProjectionInfo:
-					var info = Projections [type.Name];
-					type.Name = info.ClrName;
-					type.Namespace = info.ClrNamespace;
-					type.Scope = type.Module.Projections.GetAssemblyReference (info.ClrAssembly);
-					break;
+			case TypeReferenceTreatment.UseProjectionInfo:
+				var info = Projections [type.Name];
+				type.Name = info.ClrName;
+				type.Namespace = info.ClrNamespace;
+				type.Scope = type.Module.Projections.GetAssemblyReference (info.ClrAssembly);
+				break;
 			}
 
 			type.WindowsRuntimeProjection = projection;
@@ -586,8 +581,7 @@ namespace MonoFN.Cecil {
 			var other = false;
 			var declaring_type = method.DeclaringType;
 
-			if (declaring_type.IsWindowsRuntime)
-			{
+			if (declaring_type.IsWindowsRuntime) {
 				if (IsClrImplementationType (declaring_type))
 					treatment = MethodDefinitionTreatment.None;
 				else if (declaring_type.IsNested)
@@ -596,31 +590,27 @@ namespace MonoFN.Cecil {
 					treatment = MethodDefinitionTreatment.Runtime | MethodDefinitionTreatment.InternalCall;
 				else if (declaring_type.Module.MetadataKind == MetadataKind.ManagedWindowsMetadata && !method.IsPublic)
 					treatment = MethodDefinitionTreatment.None;
-				else
-				{
+				else {
 					other = true;
 
 					var base_type = declaring_type.BaseType;
-					if (base_type != null && base_type.MetadataToken.TokenType == TokenType.TypeRef)
-					{
-						switch (GetSpecialTypeReferenceTreatment(base_type))
-						{
-							case TypeReferenceTreatment.SystemDelegate:
-								treatment = MethodDefinitionTreatment.Runtime | MethodDefinitionTreatment.Public;
-								other = false;
-								break;
+					if (base_type != null && base_type.MetadataToken.TokenType == TokenType.TypeRef) {
+						switch (GetSpecialTypeReferenceTreatment (base_type)) {
+						case TypeReferenceTreatment.SystemDelegate:
+							treatment = MethodDefinitionTreatment.Runtime | MethodDefinitionTreatment.Public;
+							other = false;
+							break;
 
-							case TypeReferenceTreatment.SystemAttribute:
-								treatment = MethodDefinitionTreatment.Runtime | MethodDefinitionTreatment.InternalCall;
-								other = false;
-								break;
+						case TypeReferenceTreatment.SystemAttribute:
+							treatment = MethodDefinitionTreatment.Runtime | MethodDefinitionTreatment.InternalCall;
+							other = false;
+							break;
 						}
 					}
 				}
 			}
 
-			if (other)
-			{
+			if (other) {
 				var seen_redirected = false;
 				var seen_non_redirected = false;
 
@@ -639,18 +629,17 @@ namespace MonoFN.Cecil {
 			}
 
 			if (other)
-				treatment |= GetMethodDefinitionTreatmentFromCustomAttributes(method);
+				treatment |= GetMethodDefinitionTreatmentFromCustomAttributes (method);
 
 			if (treatment != MethodDefinitionTreatment.None)
 				ApplyProjection (method, new MethodDefinitionProjection (method, treatment));
 		}
 
-		static MethodDefinitionTreatment GetMethodDefinitionTreatmentFromCustomAttributes(MethodDefinition method)
+		static MethodDefinitionTreatment GetMethodDefinitionTreatmentFromCustomAttributes (MethodDefinition method)
 		{
 			var treatment = MethodDefinitionTreatment.None;
 
-			foreach (var attribute in method.CustomAttributes)
-			{
+			foreach (var attribute in method.CustomAttributes) {
 				var type = attribute.AttributeType;
 				if (type.Namespace != "Windows.UI.Xaml")
 					continue;
@@ -747,22 +736,22 @@ namespace MonoFN.Cecil {
 			var declaring_type = member.DeclaringType;
 			TypeReference type;
 			switch (declaring_type.MetadataToken.TokenType) {
-				case TokenType.TypeRef:
-					type = declaring_type;
-					break;
+			case TokenType.TypeRef:
+				type = declaring_type;
+				break;
 
-				case TokenType.TypeSpec:
-					if (!declaring_type.IsGenericInstance)
-						return false;
-
-					type = ((TypeSpecification) declaring_type).ElementType;
-					if (type.MetadataType != MetadataType.Class || type.MetadataToken.TokenType != TokenType.TypeRef)
-						return false;
-
-					break;
-
-				default:
+			case TokenType.TypeSpec:
+				if (!declaring_type.IsGenericInstance)
 					return false;
+
+				type = ((TypeSpecification)declaring_type).ElementType;
+				if (type.MetadataType != MetadataType.Class || type.MetadataToken.TokenType != TokenType.TypeRef)
+					return false;
+
+				break;
+
+			default:
+				return false;
 			}
 
 			var projection = RemoveProjection (type);
@@ -804,7 +793,7 @@ namespace MonoFN.Cecil {
 				references.Remove (reference);
 		}
 
-		static AssemblyNameReference[] GetAssemblyReferences (AssemblyNameReference corlib)
+		static AssemblyNameReference [] GetAssemblyReferences (AssemblyNameReference corlib)
 		{
 			var system_runtime = new AssemblyNameReference ("System.Runtime", version);
 			var system_runtime_interopservices_windowsruntime = new AssemblyNameReference ("System.Runtime.InteropServices.WindowsRuntime", version);
@@ -821,8 +810,7 @@ namespace MonoFN.Cecil {
 				system_runtime_interopservices_windowsruntime.PublicKey =
 				system_objectmodel.PublicKey =
 				system_numerics_vectors.PublicKey = contract_pk;
-			}
-			else {
+			} else {
 				system_runtime_windowsruntime.PublicKeyToken =
 				system_runtime_windowsruntime_ui_xaml.PublicKeyToken = corlib.PublicKeyToken;
 
@@ -832,7 +820,7 @@ namespace MonoFN.Cecil {
 				system_numerics_vectors.PublicKeyToken = contract_pk_token;
 			}
 
-			return new[] {
+			return new [] {
 				system_runtime,
 				system_runtime_interopservices_windowsruntime,
 				system_objectmodel,
@@ -866,7 +854,7 @@ namespace MonoFN.Cecil {
 				return;
 
 			var treatment = CustomAttributeValueTreatment.None;
-			var type = (TypeDefinition) owner;
+			var type = (TypeDefinition)owner;
 
 			if (type.Namespace == "Windows.Foundation.Metadata") {
 				if (type.Name == "VersionAttribute")
@@ -881,7 +869,7 @@ namespace MonoFN.Cecil {
 			}
 
 			if (treatment != CustomAttributeValueTreatment.None) {
-				var attribute_targets = (AttributeTargets) attribute.ConstructorArguments [0].Value;
+				var attribute_targets = (AttributeTargets)attribute.ConstructorArguments [0].Value;
 				ApplyProjection (attribute, new CustomAttributeValueProjection (attribute_targets, treatment));
 			}
 		}
@@ -944,7 +932,7 @@ namespace MonoFN.Cecil {
 				throw new ArgumentException ();
 			}
 
-			var attribute_targets = (AttributeTargets) attribute.ConstructorArguments [0].Value;
+			var attribute_targets = (AttributeTargets)attribute.ConstructorArguments [0].Value;
 			if (version_or_deprecated)
 				attribute_targets |= AttributeTargets.Constructor | AttributeTargets.Property;
 			attribute.ConstructorArguments [0] = new CustomAttributeArgument (attribute.ConstructorArguments [0].Type, attribute_targets);

@@ -171,7 +171,7 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             ChangeData change = new ChangeData(operation, index, next);
-            _changed.Add(change);            
+            _changed.Add(change);
             bool asServer = true;
             OnChange?.Invoke(operation, index, prev, next, asServer);
         }
@@ -542,7 +542,7 @@ namespace FishNet.Object.Synchronizing
                 {
                     if (base.NetworkManager == null)
                         _clientHostCollection[index] = value;
-                        AddOperation(SyncListOperation.Set, index, prev, value);
+                    AddOperation(SyncListOperation.Set, index, prev, value);
                 }
             }
         }

@@ -1,17 +1,17 @@
-﻿using FishNet.Managing.Object;
-using FishNet.Connection;
+﻿using FishNet.Connection;
+using FishNet.Documenting;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Object;
+using FishNet.Managing.Utility;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using System;
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using FishNet.Documenting;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using FishNet.Managing.Utility;
-using FishNet.Managing.Logging;
-using FishNet.Utility.Extension;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Client
 {

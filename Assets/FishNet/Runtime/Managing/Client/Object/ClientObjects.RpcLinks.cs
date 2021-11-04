@@ -1,13 +1,11 @@
-﻿using FishNet.Managing.Object;
-using FishNet.Connection;
+﻿using FishNet.Managing.Logging;
+using FishNet.Managing.Object;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Client
 {
@@ -50,8 +48,8 @@ namespace FishNet.Managing.Client
             //Link index isn't stored.
             if (!_rpcLinks.TryGetValue(index, out RpcLink link))
             {
-                 /* Like other reliable communications the object
-                 * should never be missing. */
+                /* Like other reliable communications the object
+                * should never be missing. */
                 if (channel == Channel.Reliable)
                 {
                     if (NetworkManager.CanLog(LoggingType.Error))
@@ -60,7 +58,7 @@ namespace FishNet.Managing.Client
                 }
                 //If unreliable just purge data for object.
                 else
-                { 
+                {
                     SkipDataLength((PacketId)index, reader, dataLength);
                 }
 

@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using MonoFN.Cecil;
-using FishNet.Serializing;
-using MonoFN.Cecil.Cil;
-using FishNet.CodeGenerating.Helping.Extension;
-using Unity.CompilationPipeline.Common.Diagnostics;
+﻿using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Object;
-using UnityEngine;
+using FishNet.Serializing;
+using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
+using System;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -86,7 +83,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodDefinition CreateEnumReaderMethodDefinition(TypeReference objectTypeRef)
         {
             MethodDefinition createdReaderMethodDef = CreateStaticReaderStubMethodDefinition(objectTypeRef);
-            ILProcessor processor = createdReaderMethodDef.Body.GetILProcessor();            
+            ILProcessor processor = createdReaderMethodDef.Body.GetILProcessor();
             //Get type reference for enum type. eg byte int
             TypeReference underlyingTypeRef = objectTypeRef.Resolve().GetEnumUnderlyingTypeReference();
             //Get read method for underlying type.
@@ -305,6 +302,8 @@ namespace FishNet.CodeGenerating.Helping
             CodegenSession.GeneralHelper.SetVariableDefinitionFromObject(processor, objectVariableDef, objectTypeDef);
             if (!ReadFields(processor, readerParameterDef, objectVariableDef, objectTypeRef))
                 return null;
+            /* //codegen scriptableobjects seem to climb too high up to UnityEngine.Object when
+             * creating serializers/deserialized. Make sure this is not possible. */
 
             //Load result and return it.
             processor.Emit(OpCodes.Ldloc, objectVariableDef);

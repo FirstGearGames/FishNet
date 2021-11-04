@@ -46,7 +46,7 @@ namespace MonoFN.Cecil.PE {
 
 		public sbyte ReadSByte ()
 		{
-			return (sbyte) ReadByte ();
+			return (sbyte)ReadByte ();
 		}
 
 		public byte [] ReadBytes (int length)
@@ -59,7 +59,7 @@ namespace MonoFN.Cecil.PE {
 
 		public ushort ReadUInt16 ()
 		{
-			ushort value = (ushort) (buffer [position]
+			ushort value = (ushort)(buffer [position]
 				| (buffer [position + 1] << 8));
 			position += 2;
 			return value;
@@ -67,12 +67,12 @@ namespace MonoFN.Cecil.PE {
 
 		public short ReadInt16 ()
 		{
-			return (short) ReadUInt16 ();
+			return (short)ReadUInt16 ();
 		}
 
 		public uint ReadUInt32 ()
 		{
-			uint value = (uint) (buffer [position]
+			uint value = (uint)(buffer [position]
 				| (buffer [position + 1] << 8)
 				| (buffer [position + 2] << 16)
 				| (buffer [position + 3] << 24));
@@ -82,7 +82,7 @@ namespace MonoFN.Cecil.PE {
 
 		public int ReadInt32 ()
 		{
-			return (int) ReadUInt32 ();
+			return (int)ReadUInt32 ();
 		}
 
 		public ulong ReadUInt64 ()
@@ -90,12 +90,12 @@ namespace MonoFN.Cecil.PE {
 			uint low = ReadUInt32 ();
 			uint high = ReadUInt32 ();
 
-			return (((ulong) high) << 32) | low;
+			return (((ulong)high) << 32) | low;
 		}
 
 		public long ReadInt64 ()
 		{
-			return (long) ReadUInt64 ();
+			return (long)ReadUInt64 ();
 		}
 
 		public uint ReadCompressedUInt32 ()
@@ -105,32 +105,31 @@ namespace MonoFN.Cecil.PE {
 				return first;
 
 			if ((first & 0x40) == 0)
-				return ((uint) (first & ~0x80) << 8)
+				return ((uint)(first & ~0x80) << 8)
 					| ReadByte ();
 
-			return ((uint) (first & ~0xc0) << 24)
-				| (uint) ReadByte () << 16
-				| (uint) ReadByte () << 8
+			return ((uint)(first & ~0xc0) << 24)
+				| (uint)ReadByte () << 16
+				| (uint)ReadByte () << 8
 				| ReadByte ();
 		}
 
 		public int ReadCompressedInt32 ()
 		{
 			var b = buffer [position];
-			var u = (int) ReadCompressedUInt32 ();
+			var u = (int)ReadCompressedUInt32 ();
 			var v = u >> 1;
 			if ((u & 1) == 0)
 				return v;
 
-			switch (b & 0xc0)
-			{
-				case 0:
-				case 0x40:
-					return v - 0x40;
-				case 0x80:
-					return v - 0x2000;
-				default:
-					return v - 0x10000000;
+			switch (b & 0xc0) {
+			case 0:
+			case 0x40:
+				return v - 0x40;
+			case 0x80:
+				return v - 0x2000;
+			default:
+				return v - 0x10000000;
 			}
 		}
 
@@ -173,7 +172,7 @@ namespace MonoFN.Cecil.PE {
 
 		public void WriteSByte (sbyte value)
 		{
-			WriteByte ((byte) value);
+			WriteByte ((byte)value);
 		}
 
 		public void WriteUInt16 (ushort value)
@@ -181,8 +180,8 @@ namespace MonoFN.Cecil.PE {
 			if (position + 2 > buffer.Length)
 				Grow (2);
 
-			buffer [position++] = (byte) value;
-			buffer [position++] = (byte) (value >> 8);
+			buffer [position++] = (byte)value;
+			buffer [position++] = (byte)(value >> 8);
 
 			if (position > length)
 				length = position;
@@ -190,7 +189,7 @@ namespace MonoFN.Cecil.PE {
 
 		public void WriteInt16 (short value)
 		{
-			WriteUInt16 ((ushort) value);
+			WriteUInt16 ((ushort)value);
 		}
 
 		public void WriteUInt32 (uint value)
@@ -198,10 +197,10 @@ namespace MonoFN.Cecil.PE {
 			if (position + 4 > buffer.Length)
 				Grow (4);
 
-			buffer [position++] = (byte) value;
-			buffer [position++] = (byte) (value >> 8);
-			buffer [position++] = (byte) (value >> 16);
-			buffer [position++] = (byte) (value >> 24);
+			buffer [position++] = (byte)value;
+			buffer [position++] = (byte)(value >> 8);
+			buffer [position++] = (byte)(value >> 16);
+			buffer [position++] = (byte)(value >> 24);
 
 			if (position > length)
 				length = position;
@@ -209,7 +208,7 @@ namespace MonoFN.Cecil.PE {
 
 		public void WriteInt32 (int value)
 		{
-			WriteUInt32 ((uint) value);
+			WriteUInt32 ((uint)value);
 		}
 
 		public void WriteUInt64 (ulong value)
@@ -217,14 +216,14 @@ namespace MonoFN.Cecil.PE {
 			if (position + 8 > buffer.Length)
 				Grow (8);
 
-			buffer [position++] = (byte) value;
-			buffer [position++] = (byte) (value >> 8);
-			buffer [position++] = (byte) (value >> 16);
-			buffer [position++] = (byte) (value >> 24);
-			buffer [position++] = (byte) (value >> 32);
-			buffer [position++] = (byte) (value >> 40);
-			buffer [position++] = (byte) (value >> 48);
-			buffer [position++] = (byte) (value >> 56);
+			buffer [position++] = (byte)value;
+			buffer [position++] = (byte)(value >> 8);
+			buffer [position++] = (byte)(value >> 16);
+			buffer [position++] = (byte)(value >> 24);
+			buffer [position++] = (byte)(value >> 32);
+			buffer [position++] = (byte)(value >> 40);
+			buffer [position++] = (byte)(value >> 48);
+			buffer [position++] = (byte)(value >> 56);
 
 			if (position > length)
 				length = position;
@@ -232,28 +231,28 @@ namespace MonoFN.Cecil.PE {
 
 		public void WriteInt64 (long value)
 		{
-			WriteUInt64 ((ulong) value);
+			WriteUInt64 ((ulong)value);
 		}
 
 		public void WriteCompressedUInt32 (uint value)
 		{
 			if (value < 0x80)
-				WriteByte ((byte) value);
+				WriteByte ((byte)value);
 			else if (value < 0x4000) {
-				WriteByte ((byte) (0x80 | (value >> 8)));
-				WriteByte ((byte) (value & 0xff));
+				WriteByte ((byte)(0x80 | (value >> 8)));
+				WriteByte ((byte)(value & 0xff));
 			} else {
-				WriteByte ((byte) ((value >> 24) | 0xc0));
-				WriteByte ((byte) ((value >> 16) & 0xff));
-				WriteByte ((byte) ((value >> 8) & 0xff));
-				WriteByte ((byte) (value & 0xff));
+				WriteByte ((byte)((value >> 24) | 0xc0));
+				WriteByte ((byte)((value >> 16) & 0xff));
+				WriteByte ((byte)((value >> 8) & 0xff));
+				WriteByte ((byte)(value & 0xff));
 			}
 		}
 
 		public void WriteCompressedInt32 (int value)
 		{
 			if (value >= 0) {
-				WriteCompressedUInt32 ((uint) (value << 1));
+				WriteCompressedUInt32 ((uint)(value << 1));
 				return;
 			}
 
@@ -264,7 +263,7 @@ namespace MonoFN.Cecil.PE {
 			else if (value >= -0x20000000)
 				value = 0x20000000 + value;
 
-			WriteCompressedUInt32 ((uint) ((value << 1) | 1));
+			WriteCompressedUInt32 ((uint)((value << 1) | 1));
 		}
 
 		public void WriteBytes (byte [] bytes)

@@ -8,16 +8,15 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Cecil.Cil;
+using MonoFN.Cecil.Metadata;
+using MonoFN.Cecil.PE;
+using MonoFN.Collections.Generic;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using SR = System.Reflection;
-
-using MonoFN.Cecil.Cil;
-using MonoFN.Cecil.Metadata;
-using MonoFN.Cecil.PE;
-using MonoFN.Collections.Generic;
 
 namespace MonoFN.Cecil {
 
@@ -684,14 +683,14 @@ namespace MonoFN.Cecil {
 			if (position > 0)
 				return GetNestedType (fullName);
 
-			return ((TypeDefinitionCollection) this.Types).GetType (fullName);
+			return ((TypeDefinitionCollection)this.Types).GetType (fullName);
 		}
 
 		public TypeDefinition GetType (string @namespace, string name)
 		{
 			Mixin.CheckName (name);
 
-			return ((TypeDefinitionCollection) this.Types).GetType (@namespace ?? string.Empty, name);
+			return ((TypeDefinitionCollection)this.Types).GetType (@namespace ?? string.Empty, name);
 		}
 
 		public IEnumerable<TypeDefinition> GetTypes ()
@@ -921,14 +920,14 @@ namespace MonoFN.Cecil {
 
 		public IMetadataTokenProvider LookupToken (int token)
 		{
-			return LookupToken (new MetadataToken ((uint) token));
+			return LookupToken (new MetadataToken ((uint)token));
 		}
 
 		public IMetadataTokenProvider LookupToken (MetadataToken token)
 		{
 			return Read (token, (t, reader) => reader.LookupToken (t));
 		}
-		
+
 		public void ImmediateRead ()
 		{
 			if (!HasImage)
@@ -938,7 +937,7 @@ namespace MonoFN.Cecil {
 			moduleReader.ReadModule (this, resolve_attributes: true);
 		}
 
-		readonly object module_lock = new object();
+		readonly object module_lock = new object ();
 
 		internal object SyncRoot {
 			get { return module_lock; }
@@ -1017,7 +1016,7 @@ namespace MonoFN.Cecil {
 				architecture = parameters.Architecture,
 				mvid = Guid.NewGuid (),
 				Attributes = ModuleAttributes.ILOnly,
-				Characteristics = (ModuleCharacteristics) 0x8540,
+				Characteristics = (ModuleCharacteristics)0x8540,
 			};
 
 			if (parameters.AssemblyResolver != null)
@@ -1063,7 +1062,7 @@ namespace MonoFN.Cecil {
 
 		public void ReadSymbols (ISymbolReader reader)
 		{
-			ReadSymbols(reader, throwIfSymbolsAreNotMaching: true);
+			ReadSymbols (reader, throwIfSymbolsAreNotMaching: true);
 		}
 
 		public void ReadSymbols (ISymbolReader reader, bool throwIfSymbolsAreNotMaching)
@@ -1098,7 +1097,7 @@ namespace MonoFN.Cecil {
 			var stream = GetFileStream (fileName, FileMode.Open, parameters.ReadWrite ? FileAccess.ReadWrite : FileAccess.Read, FileShare.Read);
 
 			if (parameters.InMemory) {
-				var memory = new MemoryStream (stream.CanSeek ? (int) stream.Length : 0);
+				var memory = new MemoryStream (stream.CanSeek ? (int)stream.Length : 0);
 				using (stream)
 					stream.CopyTo (memory);
 
@@ -1108,7 +1107,8 @@ namespace MonoFN.Cecil {
 
 			try {
 				return ReadModule (Disposable.Owned (stream), fileName, parameters);
-			} catch (Exception) {
+			}
+			catch (Exception) {
 				stream.Dispose ();
 				throw;
 			}
@@ -1279,7 +1279,7 @@ namespace MonoFN.Cecil {
 
 		public static uint GetTimestamp ()
 		{
-			return (uint) DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1)).TotalSeconds;
+			return (uint)DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1)).TotalSeconds;
 		}
 
 		public static bool HasImage (this ModuleDefinition self)
@@ -1337,7 +1337,7 @@ namespace MonoFN.Cecil {
 		public static byte [] ReadAll (this Stream self)
 		{
 			int read;
-			var memory = new MemoryStream ((int) self.Length);
+			var memory = new MemoryStream ((int)self.Length);
 			var buffer = new byte [1024];
 
 			while ((read = self.Read (buffer, 0, buffer.Length)) != 0)

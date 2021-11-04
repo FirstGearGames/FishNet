@@ -8,9 +8,9 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Collections.Generic;
 using System.Text;
 using System.Threading;
-using MonoFN.Collections.Generic;
 
 namespace MonoFN.Cecil {
 
@@ -28,8 +28,8 @@ namespace MonoFN.Cecil {
 		object constant = Mixin.NotResolved;
 
 		public PropertyAttributes Attributes {
-			get { return (PropertyAttributes) attributes; }
-			set { attributes = (ushort) value; }
+			get { return (PropertyAttributes)attributes; }
+			set { attributes = (ushort)value; }
 		}
 
 		public bool HasThis {
@@ -161,31 +161,31 @@ namespace MonoFN.Cecil {
 		}
 
 		public object Constant {
-			get { return HasConstant ? constant : null;	}
+			get { return HasConstant ? constant : null; }
 			set { constant = value; }
 		}
 
 		#region PropertyAttributes
 
 		public bool IsSpecialName {
-			get { return attributes.GetAttributes ((ushort) PropertyAttributes.SpecialName); }
-			set { attributes = attributes.SetAttributes ((ushort) PropertyAttributes.SpecialName, value); }
+			get { return attributes.GetAttributes ((ushort)PropertyAttributes.SpecialName); }
+			set { attributes = attributes.SetAttributes ((ushort)PropertyAttributes.SpecialName, value); }
 		}
 
 		public bool IsRuntimeSpecialName {
-			get { return attributes.GetAttributes ((ushort) PropertyAttributes.RTSpecialName); }
-			set { attributes = attributes.SetAttributes ((ushort) PropertyAttributes.RTSpecialName, value); }
+			get { return attributes.GetAttributes ((ushort)PropertyAttributes.RTSpecialName); }
+			set { attributes = attributes.SetAttributes ((ushort)PropertyAttributes.RTSpecialName, value); }
 		}
 
 		public bool HasDefault {
-			get { return attributes.GetAttributes ((ushort) PropertyAttributes.HasDefault); }
-			set { attributes = attributes.SetAttributes ((ushort) PropertyAttributes.HasDefault, value); }
+			get { return attributes.GetAttributes ((ushort)PropertyAttributes.HasDefault); }
+			set { attributes = attributes.SetAttributes ((ushort)PropertyAttributes.HasDefault, value); }
 		}
 
 		#endregion
 
 		public new TypeDefinition DeclaringType {
-			get { return (TypeDefinition) base.DeclaringType; }
+			get { return (TypeDefinition)base.DeclaringType; }
 			set { base.DeclaringType = value; }
 		}
 
@@ -216,7 +216,7 @@ namespace MonoFN.Cecil {
 		public PropertyDefinition (string name, PropertyAttributes attributes, TypeReference propertyType)
 			: base (name, propertyType)
 		{
-			this.attributes = (ushort) attributes;
+			this.attributes = (ushort)attributes;
 			this.token = new MetadataToken (TokenType.Property);
 		}
 

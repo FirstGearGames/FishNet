@@ -25,7 +25,7 @@ namespace FishNet.Utility.Editing
                 int count;
                 List<NetworkObject> nobs = SceneFN.GetSceneNetworkObjects(s, out count);
                 for (int z = 0; z < count; z++)
-                { 
+                {
                     nobs[z].TryCreateSceneID();
                     EditorUtility.SetDirty(nobs[z]);
                 }

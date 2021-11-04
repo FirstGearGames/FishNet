@@ -52,7 +52,7 @@ namespace FishNet.Managing.Server.Editing
             }
             while (p.NextVisible(true));
 
-                serializedObject.ApplyModifiedProperties();
+            serializedObject.ApplyModifiedProperties();
         }
     }
 

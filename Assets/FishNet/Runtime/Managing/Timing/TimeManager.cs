@@ -3,15 +3,14 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Timing.Broadcast;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility;
 using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
-using FishNet.Utility;
-using System.Runtime.CompilerServices;
 #if UNITY_EDITOR
-using UnityEditor;
 #endif
 
 
@@ -72,7 +71,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// RoundTripTime in milliseconds.
         /// </summary>
-        public long RoundTripTime { get; private set; } 
+        public long RoundTripTime { get; private set; }
         /// <summary>
         /// Tick on the last received packet, be it from server or client.
         /// This value is not used yet.

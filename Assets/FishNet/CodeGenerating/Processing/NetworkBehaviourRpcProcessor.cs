@@ -8,7 +8,6 @@ using FishNet.Transporting;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -100,7 +99,7 @@ namespace FishNet.CodeGenerating.Processing
 
             return count;
         }
-       
+
 
         /// <summary>
         /// Returns the RPC attribute on a method, if one exist. Otherwise returns null.

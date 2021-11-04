@@ -8,14 +8,11 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-using System.Collections.Generic;
-
-using MonoFN.Collections.Generic;
-
 using MonoFN.Cecil.Metadata;
 using MonoFN.Cecil.PE;
-
+using MonoFN.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using RVA = System.UInt32;
 
 namespace MonoFN.Cecil.Cil {
@@ -81,7 +78,7 @@ namespace MonoFN.Cecil.Cil {
 
 			var rva = BeginMethod ();
 
-			if (fat_header || !GetOrMapTinyMethodBody (raw_body, ref rva))  {
+			if (fat_header || !GetOrMapTinyMethodBody (raw_body, ref rva)) {
 				WriteBytes (raw_body);
 			}
 
@@ -98,7 +95,7 @@ namespace MonoFN.Cecil.Cil {
 			return rva;
 		}
 
-		RVA WriteResolvedMethodBody(MethodDefinition method)
+		RVA WriteResolvedMethodBody (MethodDefinition method)
 		{
 			RVA rva;
 
@@ -114,10 +111,10 @@ namespace MonoFN.Cecil.Cil {
 					WriteExceptionHandlers ();
 			} else {
 				rva = BeginMethod ();
-				WriteByte ((byte) (0x2 | (body.CodeSize << 2))); // tiny
+				WriteByte ((byte)(0x2 | (body.CodeSize << 2))); // tiny
 				WriteInstructions ();
 
-				var start_position = (int) (rva - code_base);
+				var start_position = (int)(rva - code_base);
 				var body_size = position - start_position;
 				var body_bytes = new byte [body_size];
 
@@ -152,15 +149,15 @@ namespace MonoFN.Cecil.Cil {
 		void WriteFatHeader ()
 		{
 			var body = this.body;
-			byte flags = 0x3;	// fat
+			byte flags = 0x3;   // fat
 			if (body.InitLocals)
-				flags |= 0x10;	// init locals
+				flags |= 0x10;  // init locals
 			if (body.HasExceptionHandlers)
-				flags |= 0x8;	// more sections
+				flags |= 0x8;   // more sections
 
 			WriteByte (flags);
 			WriteByte (0x30);
-			WriteInt16 ((short) body.max_stack_size);
+			WriteInt16 ((short)body.max_stack_size);
 			WriteInt32 (body.code_size);
 			body.local_var_token = body.HasVariables
 				? GetStandAloneSignature (body.Variables)
@@ -205,69 +202,69 @@ namespace MonoFN.Cecil.Cil {
 
 			switch (operand_type) {
 			case OperandType.InlineSwitch: {
-				var targets = (Instruction []) operand;
-				WriteInt32 (targets.Length);
-				var diff = instruction.Offset + opcode.Size + (4 * (targets.Length + 1));
-				for (int i = 0; i < targets.Length; i++)
-					WriteInt32 (GetTargetOffset (targets [i]) - diff);
-				break;
-			}
+					var targets = (Instruction [])operand;
+					WriteInt32 (targets.Length);
+					var diff = instruction.Offset + opcode.Size + (4 * (targets.Length + 1));
+					for (int i = 0; i < targets.Length; i++)
+						WriteInt32 (GetTargetOffset (targets [i]) - diff);
+					break;
+				}
 			case OperandType.ShortInlineBrTarget: {
-				var target = (Instruction) operand;
-				var offset = target != null ? GetTargetOffset (target) : body.code_size;
-				WriteSByte ((sbyte) (offset - (instruction.Offset + opcode.Size + 1)));
-				break;
-			}
+					var target = (Instruction)operand;
+					var offset = target != null ? GetTargetOffset (target) : body.code_size;
+					WriteSByte ((sbyte)(offset - (instruction.Offset + opcode.Size + 1)));
+					break;
+				}
 			case OperandType.InlineBrTarget: {
-				var target = (Instruction) operand;
-				var offset = target != null ? GetTargetOffset (target) : body.code_size;
-				WriteInt32 (offset - (instruction.Offset + opcode.Size + 4));
-				break;
-			}
+					var target = (Instruction)operand;
+					var offset = target != null ? GetTargetOffset (target) : body.code_size;
+					WriteInt32 (offset - (instruction.Offset + opcode.Size + 4));
+					break;
+				}
 			case OperandType.ShortInlineVar:
-				WriteByte ((byte) GetVariableIndex ((VariableDefinition) operand));
+				WriteByte ((byte)GetVariableIndex ((VariableDefinition)operand));
 				break;
 			case OperandType.ShortInlineArg:
-				WriteByte ((byte) GetParameterIndex ((ParameterDefinition) operand));
+				WriteByte ((byte)GetParameterIndex ((ParameterDefinition)operand));
 				break;
 			case OperandType.InlineVar:
-				WriteInt16 ((short) GetVariableIndex ((VariableDefinition) operand));
+				WriteInt16 ((short)GetVariableIndex ((VariableDefinition)operand));
 				break;
 			case OperandType.InlineArg:
-				WriteInt16 ((short) GetParameterIndex ((ParameterDefinition) operand));
+				WriteInt16 ((short)GetParameterIndex ((ParameterDefinition)operand));
 				break;
 			case OperandType.InlineSig:
-				WriteMetadataToken (GetStandAloneSignature ((CallSite) operand));
+				WriteMetadataToken (GetStandAloneSignature ((CallSite)operand));
 				break;
 			case OperandType.ShortInlineI:
 				if (opcode == OpCodes.Ldc_I4_S)
-					WriteSByte ((sbyte) operand);
+					WriteSByte ((sbyte)operand);
 				else
-					WriteByte ((byte) operand);
+					WriteByte ((byte)operand);
 				break;
 			case OperandType.InlineI:
-				WriteInt32 ((int) operand);
+				WriteInt32 ((int)operand);
 				break;
 			case OperandType.InlineI8:
-				WriteInt64 ((long) operand);
+				WriteInt64 ((long)operand);
 				break;
 			case OperandType.ShortInlineR:
-				WriteSingle ((float) operand);
+				WriteSingle ((float)operand);
 				break;
 			case OperandType.InlineR:
-				WriteDouble ((double) operand);
+				WriteDouble ((double)operand);
 				break;
 			case OperandType.InlineString:
 				WriteMetadataToken (
 					new MetadataToken (
 						TokenType.String,
-						GetUserStringIndex ((string) operand)));
+						GetUserStringIndex ((string)operand)));
 				break;
 			case OperandType.InlineType:
 			case OperandType.InlineField:
 			case OperandType.InlineMethod:
 			case OperandType.InlineTok:
-				WriteMetadataToken (metadata.LookupToken ((IMetadataTokenProvider) operand));
+				WriteMetadataToken (metadata.LookupToken ((IMetadataTokenProvider)operand));
 				break;
 			default:
 				throw new ArgumentException ();
@@ -396,10 +393,10 @@ namespace MonoFN.Cecil.Cil {
 			switch (instruction.opcode.OperandType) {
 			case OperandType.ShortInlineBrTarget:
 			case OperandType.InlineBrTarget:
-				CopyBranchStackSize (ref stack_sizes, (Instruction) instruction.operand, stack_size);
+				CopyBranchStackSize (ref stack_sizes, (Instruction)instruction.operand, stack_size);
 				break;
 			case OperandType.InlineSwitch:
-				var targets = (Instruction []) instruction.operand;
+				var targets = (Instruction [])instruction.operand;
 				for (int i = 0; i < targets.Length; i++)
 					CopyBranchStackSize (ref stack_sizes, targets [i], stack_size);
 				break;
@@ -435,21 +432,21 @@ namespace MonoFN.Cecil.Cil {
 		{
 			switch (instruction.opcode.FlowControl) {
 			case FlowControl.Call: {
-				var method = (IMethodSignature) instruction.operand;
-				// pop 'this' argument
-				if (method.HasImplicitThis() && instruction.opcode.Code != Code.Newobj)
-					stack_size--;
-				// pop normal arguments
-				if (method.HasParameters)
-					stack_size -= method.Parameters.Count;
-				// pop function pointer
-				if (instruction.opcode.Code == Code.Calli)
-					stack_size--;
-				// push return value
-				if (method.ReturnType.etype != ElementType.Void || instruction.opcode.Code == Code.Newobj)
-					stack_size++;
-				break;
-			}
+					var method = (IMethodSignature)instruction.operand;
+					// pop 'this' argument
+					if (method.HasImplicitThis () && instruction.opcode.Code != Code.Newobj)
+						stack_size--;
+					// pop normal arguments
+					if (method.HasParameters)
+						stack_size -= method.Parameters.Count;
+					// pop function pointer
+					if (instruction.opcode.Code == Code.Calli)
+						stack_size--;
+					// push return value
+					if (method.ReturnType.etype != ElementType.Void || instruction.opcode.Code == Code.Newobj)
+						stack_size++;
+					break;
+				}
 			default:
 				ComputePopDelta (instruction.opcode.StackBehaviourPop, ref stack_size);
 				ComputePushDelta (instruction.opcode.StackBehaviourPush, ref stack_size);
@@ -553,13 +550,13 @@ namespace MonoFN.Cecil.Cil {
 			const byte eh_table = 0x1;
 
 			WriteByte (eh_table);
-			WriteByte ((byte) (handlers.Count * 12 + 4));
+			WriteByte ((byte)(handlers.Count * 12 + 4));
 			WriteBytes (2);
 
 			WriteExceptionHandlers (
 				handlers,
-				i => WriteUInt16 ((ushort) i),
-				i => WriteByte ((byte) i));
+				i => WriteUInt16 ((ushort)i),
+				i => WriteByte ((byte)i));
 		}
 
 		void WriteFatSection (Collection<ExceptionHandler> handlers)
@@ -570,9 +567,9 @@ namespace MonoFN.Cecil.Cil {
 			WriteByte (eh_table | fat_format);
 
 			int size = handlers.Count * 24 + 4;
-			WriteByte ((byte) (size & 0xff));
-			WriteByte ((byte) ((size >> 8) & 0xff));
-			WriteByte ((byte) ((size >> 16) & 0xff));
+			WriteByte ((byte)(size & 0xff));
+			WriteByte ((byte)((size >> 8) & 0xff));
+			WriteByte ((byte)((size >> 16) & 0xff));
 
 			WriteExceptionHandlers (handlers, WriteInt32, WriteInt32);
 		}
@@ -582,7 +579,7 @@ namespace MonoFN.Cecil.Cil {
 			for (int i = 0; i < handlers.Count; i++) {
 				var handler = handlers [i];
 
-				write_entry ((int) handler.HandlerType);
+				write_entry ((int)handler.HandlerType);
 
 				write_entry (handler.TryStart.Offset);
 				write_length (GetTargetOffset (handler.TryEnd) - handler.TryStart.Offset);

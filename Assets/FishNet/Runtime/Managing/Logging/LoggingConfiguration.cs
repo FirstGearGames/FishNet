@@ -103,10 +103,10 @@ namespace FishNet.Managing.Logging
                 else
                     return true;
 #endif
-                return false; 
+                return false;
             }
 
-            return ((byte)loggingType <= (byte)_highestLoggingType);                
+            return ((byte)loggingType <= (byte)_highestLoggingType);
         }
 
         /// <summary>

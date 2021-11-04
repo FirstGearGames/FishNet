@@ -8,15 +8,13 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Cecil.PE;
+using MonoFN.Security.Cryptography;
 using System;
 using System.IO;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Runtime.Serialization;
-
-using MonoFN.Security.Cryptography;
-
-using MonoFN.Cecil.PE;
+using System.Security.Cryptography;
 
 namespace MonoFN.Cecil {
 
@@ -40,10 +38,10 @@ namespace MonoFN.Cecil {
 				publicKey [4] = 4;
 				publicKey [5] = 128;
 				// Length of Public Key (in bytes)
-				publicKey [8] = (byte) (cspBlob.Length >> 0);
-				publicKey [9] = (byte) (cspBlob.Length >> 8);
-				publicKey [10] = (byte) (cspBlob.Length >> 16);
-				publicKey [11] = (byte) (cspBlob.Length >> 24);
+				publicKey [8] = (byte)(cspBlob.Length >> 0);
+				publicKey [9] = (byte)(cspBlob.Length >> 8);
+				publicKey [10] = (byte)(cspBlob.Length >> 16);
+				publicKey [11] = (byte)(cspBlob.Length >> 24);
 				return publicKey;
 			}
 		}
@@ -82,16 +80,16 @@ namespace MonoFN.Cecil {
 			const int buffer_size = 8192;
 
 			var text = writer.text;
-			var header_size = (int) writer.GetHeaderSize ();
-			var text_section_pointer = (int) text.PointerToRawData;
+			var header_size = (int)writer.GetHeaderSize ();
+			var text_section_pointer = (int)text.PointerToRawData;
 			var strong_name_directory = writer.GetStrongNameSignatureDirectory ();
 
 			if (strong_name_directory.Size == 0)
 				throw new InvalidOperationException ();
 
-			strong_name_pointer = (int) (text_section_pointer
+			strong_name_pointer = (int)(text_section_pointer
 				+ (strong_name_directory.VirtualAddress - text.VirtualAddress));
-			var strong_name_length = (int) strong_name_directory.Size;
+			var strong_name_length = (int)strong_name_directory.Size;
 
 			var sha1 = new SHA1Managed ();
 			var buffer = new byte [buffer_size];
@@ -100,10 +98,10 @@ namespace MonoFN.Cecil {
 				CopyStreamChunk (stream, crypto_stream, buffer, header_size);
 
 				stream.Seek (text_section_pointer, SeekOrigin.Begin);
-				CopyStreamChunk (stream, crypto_stream, buffer, (int) strong_name_pointer - text_section_pointer);
+				CopyStreamChunk (stream, crypto_stream, buffer, (int)strong_name_pointer - text_section_pointer);
 
 				stream.Seek (strong_name_length, SeekOrigin.Current);
-				CopyStreamChunk (stream, crypto_stream, buffer, (int) (stream.Length - (strong_name_pointer + strong_name_length)));
+				CopyStreamChunk (stream, crypto_stream, buffer, (int)(stream.Length - (strong_name_pointer + strong_name_length)));
 			}
 
 			return sha1.Hash;
@@ -135,7 +133,7 @@ namespace MonoFN.Cecil {
 			var buffer = new byte [buffer_size];
 
 			using (var crypto_stream = new CryptoStream (Stream.Null, sha1, CryptoStreamMode.Write))
-				CopyStreamChunk (stream, crypto_stream, buffer, (int) stream.Length);
+				CopyStreamChunk (stream, crypto_stream, buffer, (int)stream.Length);
 
 			return sha1.Hash;
 		}
@@ -160,8 +158,8 @@ namespace MonoFN.Cecil {
 			Buffer.BlockCopy (hash, 0, guid, 0, 16);
 
 			// modify the guid data so it decodes to the form of a "random" guid ala rfc4122
-			guid [7] = (byte) ((guid [7] & 0x0f) | (4 << 4));
-			guid [8] = (byte) ((guid [8] & 0x3f) | (2 << 6));
+			guid [7] = (byte)((guid [7] & 0x0f) | (4 << 4));
+			guid [8] = (byte)((guid [8] & 0x3f) | (2 << 6));
 
 			return new Guid (guid);
 		}
@@ -196,7 +194,7 @@ namespace MonoFN.Cecil {
 			var info = new SerializationInfo (typeof (StrongNameKeyPair), new FormatterConverter ());
 			key_pair.GetObjectData (info, new StreamingContext ());
 
-			key = (byte []) info.GetValue ("_keyPairArray", typeof (byte []));
+			key = (byte [])info.GetValue ("_keyPairArray", typeof (byte []));
 			key_container = info.GetString ("_keyPairContainer");
 			return key_container != null;
 		}

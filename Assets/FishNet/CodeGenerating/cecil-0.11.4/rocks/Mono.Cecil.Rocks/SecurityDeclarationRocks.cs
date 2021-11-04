@@ -44,10 +44,10 @@ namespace MonoFN.Cecil.Rocks {
 			if (!security_attribute.AttributeType.IsTypeOf ("System.Security.Permissions", "PermissionSetAttribute"))
 				return false;
 
-			var attribute = new SSP.PermissionSetAttribute ((SSP.SecurityAction) declaration.Action);
+			var attribute = new SSP.PermissionSetAttribute ((SSP.SecurityAction)declaration.Action);
 
 			var named_argument = security_attribute.Properties [0];
-			string value = (string) named_argument.Argument.Value;
+			string value = (string)named_argument.Argument.Value;
 			switch (named_argument.Name) {
 			case "XML":
 				attribute.XML = value;
@@ -119,10 +119,11 @@ namespace MonoFN.Cecil.Rocks {
 		{
 			SSP.SecurityAttribute security_attribute;
 			try {
-				security_attribute = (SSP.SecurityAttribute) Activator.CreateInstance (
-					attribute_type, new object [] { (SSP.SecurityAction) declaration.Action });
-			} catch (MissingMethodException) {
-				security_attribute = (SSP.SecurityAttribute) Activator.CreateInstance (attribute_type, new object [0]);
+				security_attribute = (SSP.SecurityAttribute)Activator.CreateInstance (
+					attribute_type, new object [] { (SSP.SecurityAction)declaration.Action });
+			}
+			catch (MissingMethodException) {
+				security_attribute = (SSP.SecurityAttribute)Activator.CreateInstance (attribute_type, new object [0]);
 			}
 
 			return security_attribute;

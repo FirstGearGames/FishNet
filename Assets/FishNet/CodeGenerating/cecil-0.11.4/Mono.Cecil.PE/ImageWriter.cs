@@ -8,12 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-using System.IO;
-
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Metadata;
-
+using System;
+using System.IO;
 using RVA = System.UInt32;
 
 namespace MonoFN.Cecil.PE {
@@ -64,7 +62,7 @@ namespace MonoFN.Cecil.PE {
 			this.GetDebugHeader ();
 			this.GetWin32Resources ();
 			this.BuildTextMap ();
-			this.sections = (ushort) (has_reloc ? 2 : 1); // text + reloc?
+			this.sections = (ushort)(has_reloc ? 2 : 1); // text + reloc?
 		}
 
 		void GetDebugHeader ()
@@ -92,7 +90,7 @@ namespace MonoFN.Cecil.PE {
 			var size = win32_resources_directory.Size;
 
 			if (size > 0) {
-				win32_resources = module.Image.GetReaderAt (win32_resources_directory.VirtualAddress, size, (s, reader) => new ByteBuffer (reader.ReadBytes ((int) s)));
+				win32_resources = module.Image.GetReaderAt (win32_resources_directory.VirtualAddress, size, (s, reader) => new ByteBuffer (reader.ReadBytes ((int)s)));
 			}
 		}
 
@@ -121,7 +119,7 @@ namespace MonoFN.Cecil.PE {
 			var previous = text;
 
 			if (has_win32_resources) {
-				rsrc = CreateSection (".rsrc", (uint) win32_resources.length, previous);
+				rsrc = CreateSection (".rsrc", (uint)win32_resources.length, previous);
 
 				PatchWin32Resources (win32_resources);
 				previous = rsrc;
@@ -183,30 +181,30 @@ namespace MonoFN.Cecil.PE {
 
 		ushort SizeOfOptionalHeader ()
 		{
-			return (ushort) (!pe64 ? 0xe0 : 0xf0);
+			return (ushort)(!pe64 ? 0xe0 : 0xf0);
 		}
 
 		void WritePEFileHeader ()
 		{
-			WriteUInt32 (0x00004550);		// Magic
-			WriteUInt16 ((ushort) module.Architecture);	// Machine
-			WriteUInt16 (sections);			// NumberOfSections
+			WriteUInt32 (0x00004550);       // Magic
+			WriteUInt16 ((ushort)module.Architecture);  // Machine
+			WriteUInt16 (sections);         // NumberOfSections
 			WriteUInt32 (metadata.timestamp);
-			WriteUInt32 (0);	// PointerToSymbolTable
-			WriteUInt32 (0);	// NumberOfSymbols
+			WriteUInt32 (0);    // PointerToSymbolTable
+			WriteUInt32 (0);    // NumberOfSymbols
 			WriteUInt16 (SizeOfOptionalHeader ());  // SizeOfOptionalHeader
 
 			const ushort LargeAddressAware = 0x0020;
 
 			// ExecutableImage | (!pe64 ? 32BitsMachine : LargeAddressAware)
-			var characteristics = (ushort) (0x0002 | (!pe64 ? 0x0100 : LargeAddressAware));
+			var characteristics = (ushort)(0x0002 | (!pe64 ? 0x0100 : LargeAddressAware));
 			if (module.Kind == ModuleKind.Dll || module.Kind == ModuleKind.NetModule)
 				characteristics |= 0x2000;
 
 			if (module.Image != null && (module.Image.Characteristics & LargeAddressAware) != 0)
 				characteristics |= LargeAddressAware;
 
-			WriteUInt16 (characteristics);	// Characteristics
+			WriteUInt16 (characteristics);  // Characteristics
 		}
 
 		Section LastSection ()
@@ -222,42 +220,42 @@ namespace MonoFN.Cecil.PE {
 
 		void WriteOptionalHeaders ()
 		{
-			WriteUInt16 ((ushort) (!pe64 ? 0x10b : 0x20b)); // Magic
+			WriteUInt16 ((ushort)(!pe64 ? 0x10b : 0x20b)); // Magic
 			WriteUInt16 (module.linker_version);
-			WriteUInt32 (text.SizeOfRawData);	// CodeSize
+			WriteUInt32 (text.SizeOfRawData);   // CodeSize
 			WriteUInt32 ((reloc != null ? reloc.SizeOfRawData : 0)
-				+ (rsrc != null ? rsrc.SizeOfRawData : 0));	// InitializedDataSize
-			WriteUInt32 (0);	// UninitializedDataSize
+				+ (rsrc != null ? rsrc.SizeOfRawData : 0)); // InitializedDataSize
+			WriteUInt32 (0);    // UninitializedDataSize
 
 			var startub_stub = text_map.GetRange (TextSegment.StartupStub);
 			WriteUInt32 (startub_stub.Length > 0 ? startub_stub.Start : 0);  // EntryPointRVA
-			WriteUInt32 (text_rva);	// BaseOfCode
+			WriteUInt32 (text_rva); // BaseOfCode
 
 			if (!pe64) {
-				WriteUInt32 (0);	// BaseOfData
-				WriteUInt32 ((uint) image_base);	// ImageBase
+				WriteUInt32 (0);    // BaseOfData
+				WriteUInt32 ((uint)image_base); // ImageBase
 			} else {
-				WriteUInt64 (image_base);	// ImageBase
+				WriteUInt64 (image_base);   // ImageBase
 			}
 
-			WriteUInt32 (section_alignment);	// SectionAlignment
-			WriteUInt32 (file_alignment);		// FileAlignment
+			WriteUInt32 (section_alignment);    // SectionAlignment
+			WriteUInt32 (file_alignment);       // FileAlignment
 
-			WriteUInt16 (4);	// OSMajor
-			WriteUInt16 (0);	// OSMinor
-			WriteUInt16 (0);	// UserMajor
-			WriteUInt16 (0);	// UserMinor
-			WriteUInt16 (module.subsystem_major);	// SubSysMajor
-			WriteUInt16 (module.subsystem_minor);	// SubSysMinor
-			WriteUInt32 (0);	// Reserved
+			WriteUInt16 (4);    // OSMajor
+			WriteUInt16 (0);    // OSMinor
+			WriteUInt16 (0);    // UserMajor
+			WriteUInt16 (0);    // UserMinor
+			WriteUInt16 (module.subsystem_major);   // SubSysMajor
+			WriteUInt16 (module.subsystem_minor);   // SubSysMinor
+			WriteUInt32 (0);    // Reserved
 
-			var last_section = LastSection();
-			WriteUInt32 (last_section.VirtualAddress + Align (last_section.VirtualSize, section_alignment));	// ImageSize
-			WriteUInt32 (text.PointerToRawData);	// HeaderSize
+			var last_section = LastSection ();
+			WriteUInt32 (last_section.VirtualAddress + Align (last_section.VirtualSize, section_alignment));    // ImageSize
+			WriteUInt32 (text.PointerToRawData);    // HeaderSize
 
-			WriteUInt32 (0);	// Checksum
-			WriteUInt16 (GetSubSystem ());	// SubSystem
-			WriteUInt16 ((ushort) module.Characteristics);	// DLLFlags
+			WriteUInt32 (0);    // Checksum
+			WriteUInt16 (GetSubSystem ());  // SubSystem
+			WriteUInt16 ((ushort)module.Characteristics);   // DLLFlags
 
 			if (!pe64) {
 				const uint stack_reserve = 0x100000;
@@ -281,37 +279,37 @@ namespace MonoFN.Cecil.PE {
 				WriteUInt64 (heap_commit);
 			}
 
-			WriteUInt32 (0);	// LoaderFlags
-			WriteUInt32 (16);	// NumberOfDataDir
+			WriteUInt32 (0);    // LoaderFlags
+			WriteUInt32 (16);   // NumberOfDataDir
 
-			WriteZeroDataDirectory ();	// ExportTable
-			WriteDataDirectory (text_map.GetDataDirectory (TextSegment.ImportDirectory));	// ImportTable
-			if (rsrc != null) {							// ResourceTable
+			WriteZeroDataDirectory ();  // ExportTable
+			WriteDataDirectory (text_map.GetDataDirectory (TextSegment.ImportDirectory));   // ImportTable
+			if (rsrc != null) {                         // ResourceTable
 				WriteUInt32 (rsrc.VirtualAddress);
 				WriteUInt32 (rsrc.VirtualSize);
 			} else
 				WriteZeroDataDirectory ();
 
-			WriteZeroDataDirectory ();	// ExceptionTable
-			WriteZeroDataDirectory ();	// CertificateTable
-			WriteUInt32 (reloc != null ? reloc.VirtualAddress : 0);			// BaseRelocationTable
+			WriteZeroDataDirectory ();  // ExceptionTable
+			WriteZeroDataDirectory ();  // CertificateTable
+			WriteUInt32 (reloc != null ? reloc.VirtualAddress : 0);         // BaseRelocationTable
 			WriteUInt32 (reloc != null ? reloc.VirtualSize : 0);
 
 			if (text_map.GetLength (TextSegment.DebugDirectory) > 0) {
 				WriteUInt32 (text_map.GetRVA (TextSegment.DebugDirectory));
-				WriteUInt32 ((uint) (debug_header.Entries.Length * ImageDebugDirectory.Size));
+				WriteUInt32 ((uint)(debug_header.Entries.Length * ImageDebugDirectory.Size));
 			} else
 				WriteZeroDataDirectory ();
 
-			WriteZeroDataDirectory ();	// Copyright
-			WriteZeroDataDirectory ();	// GlobalPtr
-			WriteZeroDataDirectory ();	// TLSTable
-			WriteZeroDataDirectory ();	// LoadConfigTable
-			WriteZeroDataDirectory ();	// BoundImport
-			WriteDataDirectory (text_map.GetDataDirectory (TextSegment.ImportAddressTable));	// IAT
-			WriteZeroDataDirectory ();	// DelayImportDesc
-			WriteDataDirectory (text_map.GetDataDirectory (TextSegment.CLIHeader));	// CLIHeader
-			WriteZeroDataDirectory ();	// Reserved
+			WriteZeroDataDirectory ();  // Copyright
+			WriteZeroDataDirectory ();  // GlobalPtr
+			WriteZeroDataDirectory ();  // TLSTable
+			WriteZeroDataDirectory ();  // LoadConfigTable
+			WriteZeroDataDirectory ();  // BoundImport
+			WriteDataDirectory (text_map.GetDataDirectory (TextSegment.ImportAddressTable));    // IAT
+			WriteZeroDataDirectory ();  // DelayImportDesc
+			WriteDataDirectory (text_map.GetDataDirectory (TextSegment.CLIHeader)); // CLIHeader
+			WriteZeroDataDirectory ();  // Reserved
 		}
 
 		void WriteZeroDataDirectory ()
@@ -350,17 +348,17 @@ namespace MonoFN.Cecil.PE {
 			var name = new byte [8];
 			var sect_name = section.Name;
 			for (int i = 0; i < sect_name.Length; i++)
-				name [i] = (byte) sect_name [i];
+				name [i] = (byte)sect_name [i];
 
 			WriteBytes (name);
 			WriteUInt32 (section.VirtualSize);
 			WriteUInt32 (section.VirtualAddress);
 			WriteUInt32 (section.SizeOfRawData);
 			WriteUInt32 (section.PointerToRawData);
-			WriteUInt32 (0);	// PointerToRelocations
-			WriteUInt32 (0);	// PointerToLineNumbers
-			WriteUInt16 (0);	// NumberOfRelocations
-			WriteUInt16 (0);	// NumberOfLineNumbers
+			WriteUInt32 (0);    // PointerToRelocations
+			WriteUInt32 (0);    // PointerToLineNumbers
+			WriteUInt16 (0);    // NumberOfRelocations
+			WriteUInt16 (0);    // NumberOfLineNumbers
 			WriteUInt32 (characteristics);
 		}
 
@@ -407,7 +405,7 @@ namespace MonoFN.Cecil.PE {
 			var written = 0;
 			var buffer = new byte [buffer_size];
 			while (written != section.SizeOfRawData) {
-				var write_size = System.Math.Min((int) section.SizeOfRawData - written, buffer_size);
+				var write_size = System.Math.Min ((int)section.SizeOfRawData - written, buffer_size);
 				Write (buffer, 0, write_size);
 				written += write_size;
 			}
@@ -430,18 +428,18 @@ namespace MonoFN.Cecil.PE {
 
 			WriteUInt32 (0x48);
 			WriteUInt16 (2);
-			WriteUInt16 ((ushort) ((module.Runtime <= TargetRuntime.Net_1_1) ? 0 : 5));
+			WriteUInt16 ((ushort)((module.Runtime <= TargetRuntime.Net_1_1) ? 0 : 5));
 
 			WriteUInt32 (text_map.GetRVA (TextSegment.MetadataHeader));
 			WriteUInt32 (GetMetadataLength ());
-			WriteUInt32 ((uint) module.Attributes);
+			WriteUInt32 ((uint)module.Attributes);
 			WriteUInt32 (metadata.entry_point.ToUInt32 ());
 			WriteDataDirectory (text_map.GetDataDirectory (TextSegment.Resources));
 			WriteDataDirectory (text_map.GetDataDirectory (TextSegment.StrongNameSignature));
-			WriteZeroDataDirectory ();	// CodeManagerTable
-			WriteZeroDataDirectory ();	// VTableFixups
-			WriteZeroDataDirectory ();	// ExportAddressTableJumps
-			WriteZeroDataDirectory ();	// ManagedNativeHeader
+			WriteZeroDataDirectory ();  // CodeManagerTable
+			WriteZeroDataDirectory ();  // VTableFixups
+			WriteZeroDataDirectory ();  // ExportAddressTableJumps
+			WriteZeroDataDirectory ();  // ManagedNativeHeader
 
 			// Code
 
@@ -495,15 +493,15 @@ namespace MonoFN.Cecil.PE {
 
 		public void WriteMetadataHeader ()
 		{
-			WriteUInt32 (0x424a5342);	// Signature
-			WriteUInt16 (1);	// MajorVersion
-			WriteUInt16 (1);	// MinorVersion
-			WriteUInt32 (0);	// Reserved
+			WriteUInt32 (0x424a5342);   // Signature
+			WriteUInt16 (1);    // MajorVersion
+			WriteUInt16 (1);    // MinorVersion
+			WriteUInt32 (0);    // Reserved
 
 			var version = GetZeroTerminatedString (runtime_version);
-			WriteUInt32 ((uint) version.Length);
+			WriteUInt32 ((uint)version.Length);
 			WriteBytes (version);
-			WriteUInt16 (0);	// Flags
+			WriteUInt16 (0);    // Flags
 			WriteUInt16 (GetStreamCount ());
 
 			uint offset = text_map.GetRVA (TextSegment.TableHeap) - text_map.GetRVA (TextSegment.MetadataHeader);
@@ -518,18 +516,18 @@ namespace MonoFN.Cecil.PE {
 
 		ushort GetStreamCount ()
 		{
-			return (ushort) (
-				1	// #~
-				+ 1	// #Strings
-				+ (metadata.user_string_heap.IsEmpty ? 0 : 1)	// #US
-				+ (metadata.guid_heap.IsEmpty ? 0 : 1)	// GUID
+			return (ushort)(
+				1   // #~
+				+ 1 // #Strings
+				+ (metadata.user_string_heap.IsEmpty ? 0 : 1)   // #US
+				+ (metadata.guid_heap.IsEmpty ? 0 : 1)  // GUID
 				+ (metadata.blob_heap.IsEmpty ? 0 : 1)
-				+ (metadata.pdb_heap == null ? 0 : 1));	// #Blob
+				+ (metadata.pdb_heap == null ? 0 : 1)); // #Blob
 		}
 
 		void WriteStreamHeader (ref uint offset, TextSegment heap, string name)
 		{
-			var length = (uint) text_map.GetLength (heap);
+			var length = (uint)text_map.GetLength (heap);
 			if (length == 0)
 				return;
 
@@ -558,7 +556,7 @@ namespace MonoFN.Cecil.PE {
 		{
 			var bytes = new byte [length];
 			for (int i = 0; i < @string.Length; i++)
-				bytes [i] = (byte) @string [i];
+				bytes [i] = (byte)@string [i];
 
 			return bytes;
 		}
@@ -584,7 +582,7 @@ namespace MonoFN.Cecil.PE {
 
 		void WriteDebugDirectory ()
 		{
-			var data_start = (int) BaseStream.Position + (debug_header.Entries.Length * ImageDebugDirectory.Size);
+			var data_start = (int)BaseStream.Position + (debug_header.Entries.Length * ImageDebugDirectory.Size);
 
 			for (var i = 0; i < debug_header.Entries.Length; i++) {
 				var entry = debug_header.Entries [i];
@@ -593,14 +591,14 @@ namespace MonoFN.Cecil.PE {
 				WriteInt32 (directory.TimeDateStamp);
 				WriteInt16 (directory.MajorVersion);
 				WriteInt16 (directory.MinorVersion);
-				WriteInt32 ((int) directory.Type);
+				WriteInt32 ((int)directory.Type);
 				WriteInt32 (directory.SizeOfData);
 				WriteInt32 (directory.AddressOfRawData);
 				WriteInt32 (data_start);
 
 				data_start += entry.Data.Length;
 			}
-			
+
 			for (var i = 0; i < debug_header.Entries.Length; i++) {
 				var entry = debug_header.Entries [i];
 				WriteBytes (entry.Data);
@@ -609,9 +607,9 @@ namespace MonoFN.Cecil.PE {
 
 		void WriteImportDirectory ()
 		{
-			WriteUInt32 (text_map.GetRVA (TextSegment.ImportDirectory) + 40);	// ImportLookupTable
-			WriteUInt32 (0);	// DateTimeStamp
-			WriteUInt32 (0);	// ForwarderChain
+			WriteUInt32 (text_map.GetRVA (TextSegment.ImportDirectory) + 40);   // ImportLookupTable
+			WriteUInt32 (0);    // DateTimeStamp
+			WriteUInt32 (0);    // ForwarderChain
 			WriteUInt32 (text_map.GetRVA (TextSegment.ImportHintNameTable) + 14);
 			WriteUInt32 (text_map.GetRVA (TextSegment.ImportAddressTable));
 			Advance (20);
@@ -622,7 +620,7 @@ namespace MonoFN.Cecil.PE {
 			// ImportHintNameTable
 			MoveToRVA (TextSegment.ImportHintNameTable);
 
-			WriteUInt16 (0);	// Hint
+			WriteUInt16 (0);    // Hint
 			WriteBytes (GetRuntimeMain ());
 			WriteByte (0);
 			WriteBytes (GetSimpleString ("mscoree.dll"));
@@ -641,7 +639,7 @@ namespace MonoFN.Cecil.PE {
 			switch (module.Architecture) {
 			case TargetArchitecture.I386:
 				WriteUInt16 (0x25ff);
-				WriteUInt32 ((uint) image_base + text_map.GetRVA (TextSegment.ImportAddressTable));
+				WriteUInt32 ((uint)image_base + text_map.GetRVA (TextSegment.ImportAddressTable));
 				return;
 			default:
 				throw new NotSupportedException ();
@@ -662,15 +660,15 @@ namespace MonoFN.Cecil.PE {
 			reloc_rva += module.Architecture == TargetArchitecture.IA64 ? 0x20u : 2;
 			var page_rva = reloc_rva & ~0xfffu;
 
-			WriteUInt32 (page_rva);	// PageRVA
-			WriteUInt32 (0x000c);	// Block Size
+			WriteUInt32 (page_rva); // PageRVA
+			WriteUInt32 (0x000c);   // Block Size
 
 			switch (module.Architecture) {
 			case TargetArchitecture.I386:
 				WriteUInt32 (0x3000 + reloc_rva - page_rva);
 				break;
 			default:
-				throw new NotSupportedException();
+				throw new NotSupportedException ();
 			}
 		}
 
@@ -704,13 +702,13 @@ namespace MonoFN.Cecil.PE {
 			int debug_dir_len = 0;
 			if (debug_header != null && debug_header.HasEntries) {
 				var directories_len = debug_header.Entries.Length * ImageDebugDirectory.Size;
-				var data_address = (int) map.GetNextRVA (TextSegment.BlobHeap) + directories_len;
+				var data_address = (int)map.GetNextRVA (TextSegment.BlobHeap) + directories_len;
 				var data_len = 0;
 
 				for (var i = 0; i < debug_header.Entries.Length; i++) {
 					var entry = debug_header.Entries [i];
 					var directory = entry.Directory;
-					
+
 					directory.AddressOfRawData = entry.Data.Length == 0 ? 0 : data_address;
 					entry.Directory = directory;
 
@@ -841,7 +839,7 @@ namespace MonoFN.Cecil.PE {
 			var child = resources.ReadUInt32 ();
 
 			var position = resources.position;
-			resources.position = (int) child & 0x7fffffff;
+			resources.position = (int)child & 0x7fffffff;
 
 			if ((child & 0x80000000) != 0)
 				PatchResourceDirectoryTable (resources);

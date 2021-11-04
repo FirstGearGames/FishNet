@@ -6,6 +6,6 @@
         TwoBytes = 2,
         FourBytes = 4,
         EightBytes = 8,
-    } 
+    }
 
 }

@@ -3,6 +3,28 @@
 namespace FishNet.CodeGenerating.Helping
 {
 
+
+
+    internal class CreatedSyncVar
+    {
+        public readonly TypeDefinition VariableTd;
+        public readonly MethodReference GetValueMr;
+        public readonly MethodReference SetValueMr;
+        public readonly MethodReference SetSyncIndexMr;
+        public readonly MethodReference ConstructorMr;
+        public readonly GenericInstanceType SyncVarGit;
+        public CreatedSyncVar(GenericInstanceType syncVarGit, TypeDefinition variableTd, MethodReference getValueMr, MethodReference setValueMr, MethodReference setSyncIndexMr, MethodReference constructorMr)
+        {
+            SyncVarGit = syncVarGit;
+            VariableTd = variableTd;
+            GetValueMr = getValueMr;
+            SetValueMr = setValueMr;
+            SetSyncIndexMr = setSyncIndexMr;
+            ConstructorMr = constructorMr;
+        }
+    }
+
+
     internal class CreatedSyncType
     {
         public TypeDefinition StubClassTypeDefinition;

@@ -1,7 +1,6 @@
 ﻿using MonoFN.Cecil;
 using System;
 using System.Linq;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
@@ -71,7 +70,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
             //Combing flags in a single check some reason doesn't work right with HasFlag.
             return (typeDef.Attributes.HasFlag(TypeAttributes.Abstract) && typeDef.Attributes.HasFlag(TypeAttributes.Sealed));
         }
-         
+
         /// <summary>
         /// Gets an enum underlying type for typeDef.
         /// </summary>
@@ -116,7 +115,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     return true;
 
                 copyTd = GetNextBaseClass(copyTd);
-            } 
+            }
 
             //Fall through.
             return false;

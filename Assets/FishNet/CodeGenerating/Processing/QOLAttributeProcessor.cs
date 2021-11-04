@@ -1,10 +1,8 @@
 ﻿using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Managing.Logging;
-using FishNet.Object;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {

@@ -1,10 +1,10 @@
-﻿using FishNet.Managing.Transporting;
-using FishNet.Connection;
+﻿using FishNet.Connection;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System;
 using UnityEngine;
-using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Client
 {
@@ -138,119 +138,123 @@ namespace FishNet.Managing.Client
                 return;
 
             PacketId packetId = PacketId.Unset;
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
             {
-                using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager))
+#endif
+            using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager))
+            {
+                /* This is a special condition where a message may arrive split.
+                 * When this occurs buffer each packet until all packets are
+                 * received. */
+                if (reader.PeekUInt16() == (ushort)PacketId.Split)
                 {
-                    /* This is a special condition where a message may arrive split.
-                     * When this occurs buffer each packet until all packets are
-                     * received. */
-                    if (reader.PeekUInt16() == (ushort)PacketId.Split)
-                    {
-                        ArraySegment<byte> result =
-                            _splitReader.Write(reader,
-                            NetworkManager.TransportManager.Transport.GetMTU((byte)args.Channel)
-                            );
+                    ArraySegment<byte> result =
+                        _splitReader.Write(reader,
+                        NetworkManager.TransportManager.Transport.GetMTU((byte)args.Channel)
+                        );
 
-                        /* If there is no data in result then the split isn't fully received.
-                         * Since splits arrive in reliable order exit method and wait for next
-                         * packet. Once all packets are received the data will be processed. */
-                        if (result.Count == 0)
-                            return;
-                        //Split has been read in full.
-                        else
-                            reader.Initialize(result, NetworkManager);
-                    }
-
-                    while (reader.Remaining > 0)
-                    {
-                        packetId = (PacketId)reader.ReadUInt16();
-                        bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
-                        /* Length of data. Only available if using unreliable. Unreliable packets
-                         * can arrive out of order which means object orientated messages such as RPCs may
-                         * arrive after the object for which they target has already been destroyed. When this happens
-                         * on lesser solutions they just dump the entire packet. However, since FishNet batches data.
-                         * it's very likely a packet will contain more than one packetId. With this mind, length is
-                         * sent as well so if any reason the data does have to be dumped it will only be dumped for
-                         * that single packetId  but not the rest. Broadcasts don't need length either even if unreliable
-                         * because they are not object bound. */
-
-                        //Is spawn or despawn; cache packet.
-                        if (spawnOrDespawn)
-                        {
-                            if (packetId == PacketId.ObjectSpawn)
-                                Objects.CacheSpawn(reader);
-                            else if (packetId == PacketId.ObjectDespawn)
-                                Objects.CacheDespawn(reader);
-                        }
-                        //Not spawn or despawn.
-                        else
-                        {
-                            /* Iterate object cache should any of the
-                             * incoming packets rely on it. Objects
-                             * in cache will always be received before any messages
-                             * that use them. */
-                            Objects.IterateObjectCache();
-                            //Then process packet normally.
-                            if (packetId == PacketId.ObserversRpc)
-                            {
-                                Objects.ParseObserversRpc(reader, args.Channel);
-                            }
-                            else if (packetId == PacketId.TargetRpc)
-                            {
-                                Objects.ParseTargetRpc(reader, args.Channel);
-                            }
-                            else if (packetId == PacketId.Broadcast)
-                            {
-                                ParseBroadcast(reader);
-                            }
-                            else if (packetId == PacketId.PingPong)
-                            {
-                                ParsePingPong(reader);
-                            }
-                            else if (packetId == PacketId.SyncVar)
-                            {
-                                Objects.ParseSyncType(reader, false, args.Channel);
-                            }
-                            else if (packetId == PacketId.SyncObject)
-                            {
-                                Objects.ParseSyncType(reader, true, args.Channel);
-                            }
-                            else if (packetId == PacketId.OwnershipChange)
-                            {
-                                Objects.ParseOwnershipChange(reader);
-                            }
-                            else if (packetId == PacketId.Authenticated)
-                            {
-                                ParseAuthenticated(reader);
-                            }
-                            else if ((ushort)packetId >= _startingLinkIndex)
-                            {
-                                Objects.ParseRpcLink(reader, (ushort)packetId, args.Channel);
-                            }
-                            else
-                            {
-                                if (NetworkManager.CanLog(LoggingType.Error))
-                                    Debug.LogError($"Client received an unhandled PacketId of {(ushort)packetId}. Remaining data has been purged.");
-                                return;
-                            }
-                        }
-                    }
-
-                    /* Iterate cache when reader is emptied.
-                     * This is incase the last packet received
-                     * was a spawned, which wouldn't trigger
-                     * the above iteration. There's no harm
-                     * in doing this check multiple times as there's
-                     * an exit early check. */
-                    Objects.IterateObjectCache();
+                    /* If there is no data in result then the split isn't fully received.
+                     * Since splits arrive in reliable order exit method and wait for next
+                     * packet. Once all packets are received the data will be processed. */
+                    if (result.Count == 0)
+                        return;
+                    //Split has been read in full.
+                    else
+                        reader.Initialize(result, NetworkManager);
                 }
+
+                while (reader.Remaining > 0)
+                {
+                    packetId = (PacketId)reader.ReadUInt16();
+                    bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
+                    /* Length of data. Only available if using unreliable. Unreliable packets
+                     * can arrive out of order which means object orientated messages such as RPCs may
+                     * arrive after the object for which they target has already been destroyed. When this happens
+                     * on lesser solutions they just dump the entire packet. However, since FishNet batches data.
+                     * it's very likely a packet will contain more than one packetId. With this mind, length is
+                     * sent as well so if any reason the data does have to be dumped it will only be dumped for
+                     * that single packetId  but not the rest. Broadcasts don't need length either even if unreliable
+                     * because they are not object bound. */
+
+                    //Is spawn or despawn; cache packet.
+                    if (spawnOrDespawn)
+                    {
+                        if (packetId == PacketId.ObjectSpawn)
+                            Objects.CacheSpawn(reader);
+                        else if (packetId == PacketId.ObjectDespawn)
+                            Objects.CacheDespawn(reader);
+                    }
+                    //Not spawn or despawn.
+                    else
+                    {
+                        /* Iterate object cache should any of the
+                         * incoming packets rely on it. Objects
+                         * in cache will always be received before any messages
+                         * that use them. */
+                        Objects.IterateObjectCache();
+                        //Then process packet normally.
+                        if (packetId == PacketId.ObserversRpc)
+                        {
+                            Objects.ParseObserversRpc(reader, args.Channel);
+                        }
+                        else if (packetId == PacketId.TargetRpc)
+                        {
+                            Objects.ParseTargetRpc(reader, args.Channel);
+                        }
+                        else if (packetId == PacketId.Broadcast)
+                        {
+                            ParseBroadcast(reader);
+                        }
+                        else if (packetId == PacketId.PingPong)
+                        {
+                            ParsePingPong(reader);
+                        }
+                        else if (packetId == PacketId.SyncVar)
+                        {
+                            Objects.ParseSyncType(reader, false, args.Channel);
+                        }
+                        else if (packetId == PacketId.SyncObject)
+                        {
+                            Objects.ParseSyncType(reader, true, args.Channel);
+                        }
+                        else if (packetId == PacketId.OwnershipChange)
+                        {
+                            Objects.ParseOwnershipChange(reader);
+                        }
+                        else if (packetId == PacketId.Authenticated)
+                        {
+                            ParseAuthenticated(reader);
+                        }
+                        else if ((ushort)packetId >= _startingLinkIndex)
+                        {
+                            Objects.ParseRpcLink(reader, (ushort)packetId, args.Channel);
+                        }
+                        else
+                        {
+                            if (NetworkManager.CanLog(LoggingType.Error))
+                                Debug.LogError($"Client received an unhandled PacketId of {(ushort)packetId}. Remaining data has been purged.");
+                            return;
+                        }
+                    }
+                }
+
+                /* Iterate cache when reader is emptied.
+                 * This is incase the last packet received
+                 * was a spawned, which wouldn't trigger
+                 * the above iteration. There's no harm
+                 * in doing this check multiple times as there's
+                 * an exit early check. */
+                Objects.IterateObjectCache();
+            }
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             }
             catch (Exception e)
             {
                 if (NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Client encountered an error while parsing data for packetId {packetId}. Message: {e.Message}.");
             }
+#endif
         }
 
         /// <summary>

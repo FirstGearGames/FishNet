@@ -1,5 +1,4 @@
-﻿using FishNet.Documenting;
-using FishNet.Managing;
+﻿using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Utility.Performance;
 using System;

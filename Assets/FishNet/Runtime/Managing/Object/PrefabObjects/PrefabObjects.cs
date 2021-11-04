@@ -7,7 +7,7 @@ namespace FishNet.Managing.Object
 {
     //document
     [APIExclude]
-    public abstract class PrefabObjects : ScriptableObject 
+    public abstract class PrefabObjects : ScriptableObject
     {
         public abstract void Clear();
         public abstract int GetObjectCount();

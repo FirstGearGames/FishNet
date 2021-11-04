@@ -1,7 +1,7 @@
 ﻿using FishNet.Connection;
-using UnityEngine;
-using FishNet.Object;
 using FishNet.Managing.Logging;
+using FishNet.Object;
+using UnityEngine;
 
 namespace FishNet.Managing.Server
 {
@@ -48,6 +48,12 @@ namespace FishNet.Managing.Server
         /// <param name="networkObject">NetworkObject instance to despawn.</param>
         public void Despawn(NetworkObject networkObject)
         {
+            if (networkObject == null)
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"NetworkObject cannot be despawned because it is null.");
+                return;
+            }
             Objects.Despawn(networkObject, true);
         }
     }

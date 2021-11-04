@@ -8,10 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Collections.Generic;
 using System;
 using System.IO;
 using System.Threading;
-using MonoFN.Collections.Generic;
 
 namespace MonoFN.Cecil {
 

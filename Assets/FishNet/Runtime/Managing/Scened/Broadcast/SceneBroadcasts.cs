@@ -1,5 +1,5 @@
-﻿using FishNet.Documenting;
-using FishNet.Broadcast;
+﻿using FishNet.Broadcast;
+using FishNet.Documenting;
 
 namespace FishNet.Managing.Scened
 {

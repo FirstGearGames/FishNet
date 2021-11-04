@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System;
 using FishNet.Object.Helping;
 using System.Linq;
-using FishNet.Documenting;
 #if UNITY_EDITOR
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -135,7 +134,7 @@ namespace FishNet.Object
                  * scene is existed. Essentially, it gets repopulated
                  * when the scene is re-opened. */
                 SceneId = sceneId;
-                _scenePathHash = scenePathHash; 
+                _scenePathHash = scenePathHash;
             }
         }
 

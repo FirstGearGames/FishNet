@@ -329,7 +329,7 @@ namespace FishNet.Object
                 WriteUnreliableLength(writer, methodWriter.Length + _rpcHashSize);
             //Hash and data.
             WriteRpcHash(rpcHash, writer);
-            writer.WriteArraySegment(methodWriter.GetArraySegment());            
+            writer.WriteArraySegment(methodWriter.GetArraySegment());
             return writer;
         }
 

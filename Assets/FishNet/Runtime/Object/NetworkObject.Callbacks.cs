@@ -1,5 +1,4 @@
 ﻿using FishNet.Connection;
-using System;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -11,6 +10,9 @@ namespace FishNet.Object
         /// </summary>
         private void InitializeCallbacks(bool asServer)
         {
+            /* When invoking OnOwnership here previous owner will
+             * always be an empty connection, since the object is just
+             * now initializing. */
             //As server.
             if (asServer)
             {
@@ -20,19 +22,19 @@ namespace FishNet.Object
                 if (OwnerIsValid)
                 {
                     for (int i = 0; i < NetworkBehaviours.Length; i++)
-                        NetworkBehaviours[i].OnOwnershipServer(Owner);
+                        NetworkBehaviours[i].OnOwnershipServer(NetworkManager.EmptyConnection);
                 }
             }
             //As client.
             else
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnStartClient(IsOwner);
+                    NetworkBehaviours[i].OnStartClient();
 
                 if (IsOwner)
                 {
                     for (int i = 0; i < NetworkBehaviours.Length; i++)
-                        NetworkBehaviours[i].OnOwnershipClient(Owner);
+                        NetworkBehaviours[i].OnOwnershipClient(NetworkManager.EmptyConnection);
                 }
             }
         }
@@ -75,25 +77,25 @@ namespace FishNet.Object
             else
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnStopClient(IsOwner);
+                    NetworkBehaviours[i].OnStopClient();
             }
         }
 
         /// <summary>
         /// Invokes OnOwnership callbacks.
         /// </summary>
-        /// <param name="newOwner"></param>
-        private void InvokeOwnership(NetworkConnection newOwner, bool asServer)
+        /// <param name="prevOwner"></param>
+        private void InvokeOwnership(NetworkConnection prevOwner, bool asServer)
         {
             if (asServer)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnOwnershipServer(newOwner);
+                    NetworkBehaviours[i].OnOwnershipServer(prevOwner);
             }
             else
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnOwnershipClient(newOwner);
+                    NetworkBehaviours[i].OnOwnershipClient(prevOwner);
             }
         }
     }

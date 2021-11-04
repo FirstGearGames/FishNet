@@ -22,13 +22,13 @@ namespace FishNet.Serializing
         /// </summary>
         private static readonly Stack<PooledWriter> _pool = new Stack<PooledWriter>();
         #endregion
-  
+
         /// <summary>
         /// Get the next writer in the pool or creates a new one if none are available.
         /// </summary>
         public static PooledWriter GetWriter()
         {
-            PooledWriter result = (_pool.Count > 0) ? _pool.Pop() : new PooledWriter();         
+            PooledWriter result = (_pool.Count > 0) ? _pool.Pop() : new PooledWriter();
             result.Reset();
             return result;
         }

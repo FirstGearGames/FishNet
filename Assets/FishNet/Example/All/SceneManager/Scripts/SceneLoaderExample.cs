@@ -1,7 +1,6 @@
-﻿using FishNet;
-using FishNet.Connection;
-using FishNet.Object;
+﻿using FishNet.Connection;
 using FishNet.Managing.Scened;
+using FishNet.Object;
 using System.Collections.Generic;
 using UnityEngine;
 

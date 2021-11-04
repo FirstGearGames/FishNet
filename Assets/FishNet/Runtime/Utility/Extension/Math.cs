@@ -2,8 +2,8 @@
 {
 
     public static class MathFN
-    { 
- 
+    {
+
         public static sbyte ClampSByte(long value, sbyte min, sbyte max)
         {
             if (value < min)

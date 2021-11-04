@@ -75,7 +75,7 @@ namespace FishNet.Component.Observing
                     }
                     //Can process again.
                     else
-                    { 
+                    {
                         _timedUpdates[connection] = (currentTime + _updateFrequency);
                     }
                 }

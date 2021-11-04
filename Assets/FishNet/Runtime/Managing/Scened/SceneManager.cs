@@ -1,16 +1,16 @@
 ﻿using FishNet.Connection;
+using FishNet.Managing.Client;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Server;
 using FishNet.Object;
+using FishNet.Transporting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using FishNet.Managing.Server;
-using FishNet.Managing.Client;
-using FishNet.Transporting;
 using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
-using FishNet.Managing.Logging;
 
 namespace FishNet.Managing.Scened
 {
@@ -415,7 +415,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name="sceneLoadData"></param>
         /// <param name="asServer"></param>
-        private void LoadGlobalScenesInternal(SceneLoadData sceneLoadData, string[] globalScenes,  bool asServer)
+        private void LoadGlobalScenesInternal(SceneLoadData sceneLoadData, string[] globalScenes, bool asServer)
         {
             if (!CanExecute(asServer, true))
                 return;

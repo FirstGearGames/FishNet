@@ -8,13 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-using System.IO;
-
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Metadata;
-using MonoFN.Collections.Generic;
-
+using System;
+using System.IO;
 using RVA = System.UInt32;
 
 namespace MonoFN.Cecil.PE {
@@ -71,7 +68,7 @@ namespace MonoFN.Cecil.PE {
 
 		public int GetTableLength (Table table)
 		{
-			return (int) TableHeap [table].Length;
+			return (int)TableHeap [table].Length;
 		}
 
 		public int GetTableIndexSize (Table table)
@@ -81,7 +78,7 @@ namespace MonoFN.Cecil.PE {
 
 		public int GetCodedIndexSize (CodedIndex coded_index)
 		{
-			var index = (int) coded_index;
+			var index = (int)coded_index;
 			var size = coded_index_sizes [index];
 			if (size != 0)
 				return size;
@@ -147,7 +144,8 @@ namespace MonoFN.Cecil.PE {
 					return null;
 
 				return read (item, reader);
-			} finally {
+			}
+			finally {
 				Stream.value.Position = position;
 			}
 		}

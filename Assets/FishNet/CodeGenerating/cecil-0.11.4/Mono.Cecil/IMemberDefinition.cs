@@ -59,9 +59,9 @@ namespace MonoFN.Cecil {
 		public static ushort SetAttributes (this ushort self, ushort attributes, bool value)
 		{
 			if (value)
-				return (ushort) (self | attributes);
+				return (ushort)(self | attributes);
 
-			return (ushort) (self & ~attributes);
+			return (ushort)(self & ~attributes);
 		}
 
 		public static bool GetMaskedAttributes (this ushort self, ushort mask, uint attributes)
@@ -72,11 +72,11 @@ namespace MonoFN.Cecil {
 		public static ushort SetMaskedAttributes (this ushort self, ushort mask, uint attributes, bool value)
 		{
 			if (value) {
-				self = (ushort) (self & ~mask);
-				return (ushort) (self | attributes);
+				self = (ushort)(self & ~mask);
+				return (ushort)(self | attributes);
 			}
 
-			return (ushort) (self & ~(mask & attributes));
+			return (ushort)(self & ~(mask & attributes));
 		}
 	}
 }

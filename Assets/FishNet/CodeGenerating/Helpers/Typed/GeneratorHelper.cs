@@ -2,8 +2,6 @@
 using FishNet.Object;
 using MonoFN.Cecil;
 using System.Collections.Generic;
-using Unity.CompilationPipeline.Common.Diagnostics;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -41,7 +39,7 @@ namespace FishNet.CodeGenerating.Helping
                     return SerializerType.Invalid;
                 }
             }
-            
+
             objectTypeDef = objectTypeRef.Resolve();
             //Invalid typeDef.
             if (objectTypeDef == null)

@@ -15,17 +15,13 @@ namespace FishNet.Example.Scened
         [SerializeField]
         private bool _clientAuth = true;
 
-        public override void OnStartClient(bool isOwner)
+        public override void OnStartClient()
         {
-            base.OnStartClient(isOwner);
-            if (isOwner)
+            base.OnStartClient();
+            if (base.IsOwner)
                 _camera.SetActive(true);
         }
 
-        public override void OnOwnershipClient(NetworkConnection newOwner)
-        {
-            base.OnOwnershipClient(newOwner);
-        }
         private void Update()
         {
             if (!base.IsOwner)

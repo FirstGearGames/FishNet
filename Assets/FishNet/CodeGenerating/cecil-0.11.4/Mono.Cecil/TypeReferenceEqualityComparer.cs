@@ -160,7 +160,7 @@ namespace MonoFN.Cecil {
 				return false;
 
 			for (int i = 0; i < aGenericArgumentsCount; i++)
-				if (!AreEqual (a.GenericArguments[i], b.GenericArguments[i], comparisonMode))
+				if (!AreEqual (a.GenericArguments [i], b.GenericArguments [i], comparisonMode))
 					return false;
 
 			return true;
@@ -185,7 +185,7 @@ namespace MonoFN.Cecil {
 				var genericInstanceType = (GenericInstanceType)obj;
 				var hashCode = GetHashCodeFor (genericInstanceType.ElementType) * hashCodeMultiplier + genericInstanceTypeMultiplier;
 				for (var i = 0; i < genericInstanceType.GenericArguments.Count; i++)
-					hashCode = hashCode * hashCodeMultiplier + GetHashCodeFor (genericInstanceType.GenericArguments[i]);
+					hashCode = hashCode * hashCodeMultiplier + GetHashCodeFor (genericInstanceType.GenericArguments [i]);
 				return hashCode;
 			}
 

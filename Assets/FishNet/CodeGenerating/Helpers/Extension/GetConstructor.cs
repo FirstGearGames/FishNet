@@ -6,6 +6,38 @@ namespace FishNet.CodeGenerating.Helping
     {
 
         /// <summary>
+        /// Gets the first constructor that optionally has, or doesn't have parameters.
+        /// </summary>
+        /// <param name="typeRef"></param>
+        /// <returns></returns>
+        public static MethodDefinition GetFirstConstructor(this TypeReference typeRef, bool requireParameters)
+        {
+            return typeRef.Resolve().GetFirstConstructor(requireParameters);
+        }
+        /// <summary>
+        /// Gets the first constructor that optionally has, or doesn't have parameters.
+        /// </summary>
+        /// <param name="typeRef"></param>
+        /// <returns></returns>
+        public static MethodDefinition GetFirstConstructor(this TypeDefinition typeDef, bool requireParameters)
+        {
+
+            foreach (MethodDefinition methodDef in typeDef.Methods)
+            {
+                if (methodDef.IsConstructor && methodDef.IsPublic)
+                {
+                    if (requireParameters && methodDef.Parameters.Count > 0)
+                        return methodDef;
+                    else if (!requireParameters && methodDef.Parameters.Count == 0)
+                        return methodDef;
+                }
+
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Gets the first public constructor with no parameters.
         /// </summary>
         /// <returns></returns>

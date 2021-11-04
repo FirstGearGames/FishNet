@@ -134,7 +134,7 @@ namespace MonoFN.Cecil.Metadata {
 
 		public int GetHashCode (Row<uint, uint> obj)
 		{
-			return (int) (obj.Col1 ^ obj.Col2);
+			return (int)(obj.Col1 ^ obj.Col2);
 		}
 
 		public bool Equals (Row<uint, uint, uint> x, Row<uint, uint, uint> y)
@@ -146,7 +146,7 @@ namespace MonoFN.Cecil.Metadata {
 
 		public int GetHashCode (Row<uint, uint, uint> obj)
 		{
-			return (int) (obj.Col1 ^ obj.Col2 ^ obj.Col3);
+			return (int)(obj.Col1 ^ obj.Col2 ^ obj.Col3);
 		}
 	}
 }

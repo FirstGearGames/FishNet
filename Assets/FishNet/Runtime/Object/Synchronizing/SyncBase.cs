@@ -154,11 +154,11 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Writes current value.
         /// </summary>
         /// <param name="writer"></param>
-        ///<param name="resetSyncTick">True to set the next time data may sync.</param>
+        /// <param name="resetSyncTick">True to set the next time data may sync.</param>
         public virtual void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             if (resetSyncTick)
-                NextSyncTick = NetworkManager.TimeManager.Tick +  _timeToTicks;
+                NextSyncTick = NetworkManager.TimeManager.Tick + _timeToTicks;
 
             writer.WriteByte((byte)SyncIndex);
         }

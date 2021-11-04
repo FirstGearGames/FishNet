@@ -22,7 +22,7 @@ namespace FishNet.Transporting
         /// <summary>
         /// Initializes the transport. Use this instead of Awake.
         /// </summary>
-        public virtual void Initialize(NetworkManager networkManager) 
+        public virtual void Initialize(NetworkManager networkManager)
         {
             NetworkManager = networkManager;
         }

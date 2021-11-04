@@ -1,11 +1,10 @@
 #if UNITY_EDITOR
+using FishNet.Managing.Object;
+using FishNet.Object;
+using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
-using FishNet.Object;
-using FishNet.Managing.Object;
-using System.IO;
-using System.Collections.Generic;
-using System;
 
 namespace FishNet.Editing
 {
@@ -89,7 +88,7 @@ namespace FishNet.Editing
             if (_defaultPrefabs.GetObjectCount() > 0)
                 return false;
 
-            List<GameObject> gameObjects = Finding.GetGameObjects(true, true, true);
+            List<GameObject> gameObjects = Finding.GetGameObjects(true, true, false);
             foreach (GameObject go in gameObjects)
             {
                 if (go.TryGetComponent(out NetworkObject nob))

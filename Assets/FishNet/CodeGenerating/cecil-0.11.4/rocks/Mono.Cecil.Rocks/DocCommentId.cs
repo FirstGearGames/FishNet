@@ -14,8 +14,7 @@ using System.Text;
 
 namespace MonoFN.Cecil.Rocks {
 
-	public class DocCommentId
-	{
+	public class DocCommentId {
 		StringBuilder id;
 
 		DocCommentId ()
@@ -87,42 +86,41 @@ namespace MonoFN.Cecil.Rocks {
 
 		void WriteTypeSignature (TypeReference type)
 		{
-			switch (type.MetadataType)
-			{
-				case MetadataType.Array:
-					WriteArrayTypeSignature ((ArrayType) type);
-					break;
-				case MetadataType.ByReference:
-					WriteTypeSignature (((ByReferenceType) type).ElementType);
-					id.Append ('@');
-					break;
-				case MetadataType.FunctionPointer:
-					WriteFunctionPointerTypeSignature ((FunctionPointerType) type);
-					break;
-				case MetadataType.GenericInstance:
-					WriteGenericInstanceTypeSignature ((GenericInstanceType) type);
-					break;
-				case MetadataType.Var:
-					id.Append ('`');
-					id.Append (((GenericParameter) type).Position);
-					break;
-				case MetadataType.MVar:
-					id.Append ('`').Append ('`');
-					id.Append (((GenericParameter) type).Position);
-					break;
-				case MetadataType.OptionalModifier:
-					WriteModiferTypeSignature ((OptionalModifierType) type, '!');
-					break;
-				case MetadataType.RequiredModifier:
-					WriteModiferTypeSignature ((RequiredModifierType) type, '|');
-					break;
-				case MetadataType.Pointer:
-					WriteTypeSignature (((PointerType) type).ElementType);
-					id.Append ('*');
-					break;
-				default:
-					WriteTypeFullName (type);
-					break;
+			switch (type.MetadataType) {
+			case MetadataType.Array:
+				WriteArrayTypeSignature ((ArrayType)type);
+				break;
+			case MetadataType.ByReference:
+				WriteTypeSignature (((ByReferenceType)type).ElementType);
+				id.Append ('@');
+				break;
+			case MetadataType.FunctionPointer:
+				WriteFunctionPointerTypeSignature ((FunctionPointerType)type);
+				break;
+			case MetadataType.GenericInstance:
+				WriteGenericInstanceTypeSignature ((GenericInstanceType)type);
+				break;
+			case MetadataType.Var:
+				id.Append ('`');
+				id.Append (((GenericParameter)type).Position);
+				break;
+			case MetadataType.MVar:
+				id.Append ('`').Append ('`');
+				id.Append (((GenericParameter)type).Position);
+				break;
+			case MetadataType.OptionalModifier:
+				WriteModiferTypeSignature ((OptionalModifierType)type, '!');
+				break;
+			case MetadataType.RequiredModifier:
+				WriteModiferTypeSignature ((RequiredModifierType)type, '|');
+				break;
+			case MetadataType.Pointer:
+				WriteTypeSignature (((PointerType)type).ElementType);
+				id.Append ('*');
+				break;
+			default:
+				WriteTypeFullName (type);
+				break;
 			}
 		}
 
@@ -222,7 +220,7 @@ namespace MonoFN.Cecil.Rocks {
 
 		void WriteItemName (string name)
 		{
-			id.Append (name.Replace ('.', '#').Replace('<', '{').Replace('>', '}'));
+			id.Append (name.Replace ('.', '#').Replace ('<', '{').Replace ('>', '}'));
 		}
 
 		public override string ToString ()
@@ -237,25 +235,24 @@ namespace MonoFN.Cecil.Rocks {
 
 			var documentId = new DocCommentId ();
 
-			switch (member.MetadataToken.TokenType)
-			{
-				case TokenType.Field:
-					documentId.WriteField ((FieldDefinition) member);
-					break;
-				case TokenType.Method:
-					documentId.WriteMethod ((MethodDefinition) member);
-					break;
-				case TokenType.TypeDef:
-					documentId.WriteType ((TypeDefinition) member);
-					break;
-				case TokenType.Event:
-					documentId.WriteEvent ((EventDefinition) member);
-					break;
-				case TokenType.Property:
-					documentId.WriteProperty ((PropertyDefinition) member);
-					break;
-				default:
-					throw new NotSupportedException (member.FullName);
+			switch (member.MetadataToken.TokenType) {
+			case TokenType.Field:
+				documentId.WriteField ((FieldDefinition)member);
+				break;
+			case TokenType.Method:
+				documentId.WriteMethod ((MethodDefinition)member);
+				break;
+			case TokenType.TypeDef:
+				documentId.WriteType ((TypeDefinition)member);
+				break;
+			case TokenType.Event:
+				documentId.WriteEvent ((EventDefinition)member);
+				break;
+			case TokenType.Property:
+				documentId.WriteProperty ((PropertyDefinition)member);
+				break;
+			default:
+				throw new NotSupportedException (member.FullName);
 			}
 
 			return documentId.ToString ();

@@ -20,7 +20,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Channel to send values on.
         /// </summary>
         public Channel Channel = Channel.Reliable;
- 
+
         /// <summary>
         /// Constructs a new NetworkedVarSettings instance
         /// </summary>

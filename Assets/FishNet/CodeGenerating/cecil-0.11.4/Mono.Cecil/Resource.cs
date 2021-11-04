@@ -27,8 +27,8 @@ namespace MonoFN.Cecil {
 		}
 
 		public ManifestResourceAttributes Attributes {
-			get { return (ManifestResourceAttributes) attributes; }
-			set { attributes = (uint) value; }
+			get { return (ManifestResourceAttributes)attributes; }
+			set { attributes = (uint)value; }
 		}
 
 		public abstract ResourceType ResourceType {
@@ -38,13 +38,13 @@ namespace MonoFN.Cecil {
 		#region ManifestResourceAttributes
 
 		public bool IsPublic {
-			get { return attributes.GetMaskedAttributes ((uint) ManifestResourceAttributes.VisibilityMask, (uint) ManifestResourceAttributes.Public); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) ManifestResourceAttributes.VisibilityMask, (uint) ManifestResourceAttributes.Public, value); }
+			get { return attributes.GetMaskedAttributes ((uint)ManifestResourceAttributes.VisibilityMask, (uint)ManifestResourceAttributes.Public); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)ManifestResourceAttributes.VisibilityMask, (uint)ManifestResourceAttributes.Public, value); }
 		}
 
 		public bool IsPrivate {
-			get { return attributes.GetMaskedAttributes ((uint) ManifestResourceAttributes.VisibilityMask, (uint) ManifestResourceAttributes.Private); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) ManifestResourceAttributes.VisibilityMask, (uint) ManifestResourceAttributes.Private, value); }
+			get { return attributes.GetMaskedAttributes ((uint)ManifestResourceAttributes.VisibilityMask, (uint)ManifestResourceAttributes.Private); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)ManifestResourceAttributes.VisibilityMask, (uint)ManifestResourceAttributes.Private, value); }
 		}
 
 		#endregion
@@ -52,7 +52,7 @@ namespace MonoFN.Cecil {
 		internal Resource (string name, ManifestResourceAttributes attributes)
 		{
 			this.name = name;
-			this.attributes = (uint) attributes;
+			this.attributes = (uint)attributes;
 		}
 	}
 }

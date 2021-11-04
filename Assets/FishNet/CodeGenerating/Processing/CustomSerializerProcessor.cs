@@ -101,7 +101,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="methodDef"></param>
         /// <param name="instructionIndex"></param>
-        private void CheckToModifyInstructions(ExtensionType extensionType,  MethodDefinition methodDef, ref int instructionIndex)
+        private void CheckToModifyInstructions(ExtensionType extensionType, MethodDefinition methodDef, ref int instructionIndex)
         {
             Instruction instruction = methodDef.Body.Instructions[instructionIndex];
             //Fields.
@@ -118,7 +118,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="methodDef"></param>
         /// <param name="instructionIndex"></param>
-        private void CheckFieldReferenceInstruction(ExtensionType extensionType,  MethodDefinition methodDef, ref int instructionIndex)
+        private void CheckFieldReferenceInstruction(ExtensionType extensionType, MethodDefinition methodDef, ref int instructionIndex)
         {
             Instruction instruction = methodDef.Body.Instructions[instructionIndex];
             FieldReference field = (FieldReference)instruction.Operand;
@@ -142,7 +142,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="methodDef"></param>
         /// <param name="instructionIndex"></param>
         /// <param name="method"></param>
-        private void CheckCallInstruction(ExtensionType extensionType,  MethodDefinition methodDef, ref int instructionIndex, MethodReference method)
+        private void CheckCallInstruction(ExtensionType extensionType, MethodDefinition methodDef, ref int instructionIndex, MethodReference method)
         {
             if (!method.IsGenericInstance)
                 return;

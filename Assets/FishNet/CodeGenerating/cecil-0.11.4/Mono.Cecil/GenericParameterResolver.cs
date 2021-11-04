@@ -75,8 +75,8 @@ namespace MonoFN.Cecil {
 		private static TypeReference ResolveIfNeeded (IGenericInstance genericInstanceMethod, IGenericInstance genericInstanceType, GenericParameter genericParameterElement)
 		{
 			return (genericParameterElement.MetadataType == MetadataType.MVar)
-				? (genericInstanceMethod != null ? genericInstanceMethod.GenericArguments[genericParameterElement.Position] : genericParameterElement)
-				: genericInstanceType.GenericArguments[genericParameterElement.Position];
+				? (genericInstanceMethod != null ? genericInstanceMethod.GenericArguments [genericParameterElement.Position] : genericParameterElement)
+				: genericInstanceType.GenericArguments [genericParameterElement.Position];
 		}
 
 		private static ArrayType ResolveIfNeeded (IGenericInstance genericInstanceMethod, IGenericInstance genericInstanceType, ArrayType arrayType)
@@ -105,21 +105,21 @@ namespace MonoFN.Cecil {
 				var genParam = (GenericParameter)genericArgument;
 
 				switch (genParam.Type) {
-					case GenericParameterType.Type: {
-							if (genericInstanceType == null)
-								throw new NotSupportedException ();
+				case GenericParameterType.Type: {
+						if (genericInstanceType == null)
+							throw new NotSupportedException ();
 
-							newGenericInstance.GenericArguments.Add (genericInstanceType.GenericArguments[genParam.Position]);
-						}
-						break;
+						newGenericInstance.GenericArguments.Add (genericInstanceType.GenericArguments [genParam.Position]);
+					}
+					break;
 
-					case GenericParameterType.Method: {
-							if (genericInstanceMethod == null)
-								newGenericInstance.GenericArguments.Add (genParam);
-							else
-								newGenericInstance.GenericArguments.Add (genericInstanceMethod.GenericArguments[genParam.Position]);
-						}
-						break;
+				case GenericParameterType.Method: {
+						if (genericInstanceMethod == null)
+							newGenericInstance.GenericArguments.Add (genParam);
+						else
+							newGenericInstance.GenericArguments.Add (genericInstanceMethod.GenericArguments [genParam.Position]);
+					}
+					break;
 				}
 			}
 

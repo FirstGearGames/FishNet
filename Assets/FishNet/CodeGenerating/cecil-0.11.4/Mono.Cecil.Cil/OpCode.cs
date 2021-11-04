@@ -100,7 +100,7 @@ namespace MonoFN.Cecil.Cil {
 		readonly byte stack_behavior_push;
 
 		public string Name {
-			get { return OpCodeNames.names [(int) Code]; }
+			get { return OpCodeNames.names [(int)Code]; }
 		}
 
 		public int Size {
@@ -116,44 +116,44 @@ namespace MonoFN.Cecil.Cil {
 		}
 
 		public short Value {
-			get { return op1 == 0xff ? op2 : (short) ((op1 << 8) | op2); }
+			get { return op1 == 0xff ? op2 : (short)((op1 << 8) | op2); }
 		}
 
 		public Code Code {
-			get { return (Code) code; }
+			get { return (Code)code; }
 		}
 
 		public FlowControl FlowControl {
-			get { return (FlowControl) flow_control; }
+			get { return (FlowControl)flow_control; }
 		}
 
 		public OpCodeType OpCodeType {
-			get { return (OpCodeType) opcode_type; }
+			get { return (OpCodeType)opcode_type; }
 		}
 
 		public OperandType OperandType {
-			get { return (OperandType) operand_type; }
+			get { return (OperandType)operand_type; }
 		}
 
 		public StackBehaviour StackBehaviourPop {
-			get { return (StackBehaviour) stack_behavior_pop; }
+			get { return (StackBehaviour)stack_behavior_pop; }
 		}
 
 		public StackBehaviour StackBehaviourPush {
-			get { return (StackBehaviour) stack_behavior_push; }
+			get { return (StackBehaviour)stack_behavior_push; }
 		}
 
 		internal OpCode (int x, int y)
 		{
-			this.op1 = (byte) ((x >> 0) & 0xff);
-			this.op2 = (byte) ((x >> 8) & 0xff);
-			this.code = (byte) ((x >> 16) & 0xff);
-			this.flow_control = (byte) ((x >> 24) & 0xff);
+			this.op1 = (byte)((x >> 0) & 0xff);
+			this.op2 = (byte)((x >> 8) & 0xff);
+			this.code = (byte)((x >> 16) & 0xff);
+			this.flow_control = (byte)((x >> 24) & 0xff);
 
-			this.opcode_type = (byte) ((y >> 0) & 0xff);
-			this.operand_type = (byte) ((y >> 8) & 0xff);
-			this.stack_behavior_pop = (byte) ((y >> 16) & 0xff);
-			this.stack_behavior_push = (byte) ((y >> 24) & 0xff);
+			this.opcode_type = (byte)((y >> 0) & 0xff);
+			this.operand_type = (byte)((y >> 8) & 0xff);
+			this.stack_behavior_pop = (byte)((y >> 16) & 0xff);
+			this.stack_behavior_push = (byte)((y >> 24) & 0xff);
 
 			if (op1 == 0xff)
 				OpCodes.OneByteOpCode [op2] = this;
@@ -171,7 +171,7 @@ namespace MonoFN.Cecil.Cil {
 			if (!(obj is OpCode))
 				return false;
 
-			var opcode = (OpCode) obj;
+			var opcode = (OpCode)obj;
 			return op1 == opcode.op1 && op2 == opcode.op2;
 		}
 
@@ -430,7 +430,7 @@ namespace MonoFN.Cecil.Cil {
 				var buffer = new char [table [p++]];
 
 				for (int j = 0; j < buffer.Length; j++)
-					buffer [j] = (char) table [p++];
+					buffer [j] = (char)table [p++];
 
 				names [i] = new string (buffer);
 			}

@@ -28,7 +28,7 @@ namespace MonoFN.Cecil.Metadata {
 
 			var buffer = new byte [guid_size];
 
-			Buffer.BlockCopy (this.data, (int) ((index - 1) * guid_size), buffer, 0, guid_size);
+			Buffer.BlockCopy (this.data, (int)((index - 1) * guid_size), buffer, 0, guid_size);
 
 			return new Guid (buffer);
 		}

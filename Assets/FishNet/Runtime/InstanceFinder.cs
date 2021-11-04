@@ -1,14 +1,13 @@
 using FishNet.Managing;
 using FishNet.Managing.Client;
+using FishNet.Managing.Logging;
 using FishNet.Managing.Scened;
 using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
-using UnityEngine;
-using FishNet.Managing.Logging;
 using FishNet.Utility;
+using UnityEngine;
 #if UNITY_EDITOR
-using UnityEditor;
 #endif
 
 namespace FishNet

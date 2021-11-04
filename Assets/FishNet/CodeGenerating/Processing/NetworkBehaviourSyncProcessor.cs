@@ -6,8 +6,8 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
-using System.Collections.Generic;
 using MonoFN.Collections.Generic;
+using System.Collections.Generic;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -29,7 +29,7 @@ namespace FishNet.CodeGenerating.Processing
         #endregion
 
         #region Const.
-        private const string SYNCHANDLER_PREFIX = "syncHandler_";
+        private const string SYNCVAR_PREFIX = "syncVar___";
         private const string ACCESSOR_PREFIX = "sync___";
         private const string SETSYNCINDEX_METHOD_NAME = "SetSyncIndex";
         private const string INITIALIZEINSTANCE_METHOD_NAME = "InitializeInstance";
@@ -124,7 +124,7 @@ namespace FishNet.CodeGenerating.Processing
         internal SyncType GetSyncType(FieldDefinition fieldDef, out CustomAttribute syncAttribute)
         {
             syncAttribute = null;
-            if (fieldDef.Name.StartsWith(SYNCHANDLER_PREFIX))
+            if (fieldDef.Name.StartsWith(SYNCVAR_PREFIX))
                 return SyncType.Unset;
 
             bool syncObject;
@@ -411,31 +411,26 @@ namespace FishNet.CodeGenerating.Processing
         {
             accessorGetValueMethodRef = null;
             accessorSetValueMethodRef = null;
-            MethodReference syncHandlerGetValueMethodRef;
-            MethodReference syncHandlerSetValueMethodRef;
-            MethodReference syncHandlerGetPreviousClientValueMethodRef;
-            MethodReference syncHandlerReadMethodRef;
-            FieldDefinition createdSyncHandlerFieldDef = CreateSyncVarFieldDefinition(typeDef, originalFieldDef,
-                out syncHandlerGetValueMethodRef, out syncHandlerSetValueMethodRef, out syncHandlerGetPreviousClientValueMethodRef, out syncHandlerReadMethodRef);
+            CreatedSyncVar createdSyncVar;
+            FieldDefinition createdSyncVarFd = CreateSyncVarFieldDefinition(typeDef, originalFieldDef, out createdSyncVar);
 
-            if (createdSyncHandlerFieldDef != null)
+            if (createdSyncVarFd != null)
             {
                 MethodReference hookMethodRef = GetSyncVarHookMethodReference(typeDef, originalFieldDef, syncTypeAttribute);
 
                 //If accessor was made add it's methods to createdSyncTypeObjects.
-                if (CreateSyncVarAccessor(originalFieldDef, createdSyncHandlerFieldDef, syncHandlerSetValueMethodRef,
-                    syncHandlerGetPreviousClientValueMethodRef, out accessorGetValueMethodRef, out accessorSetValueMethodRef,
-                    hookMethodRef) != null)
+                if (CreateSyncVarAccessor(originalFieldDef, createdSyncVarFd, createdSyncVar, out accessorGetValueMethodRef,
+                    out accessorSetValueMethodRef, hookMethodRef) != null)
                 {
                     _createdSyncTypeMethodDefinitions.Add(accessorGetValueMethodRef.Resolve());
                     _createdSyncTypeMethodDefinitions.Add(accessorSetValueMethodRef.Resolve());
                 }
 
-                InitializeSyncHandler(syncCount, createdSyncHandlerFieldDef, typeDef, originalFieldDef, syncTypeAttribute);
+                InitializeSyncVar(syncCount, createdSyncVarFd, typeDef, originalFieldDef, syncTypeAttribute, createdSyncVar);
 
-                MethodDefinition syncHandlerReadMethodDef = CreateSyncHandlerRead(typeDef, syncCount, originalFieldDef, accessorSetValueMethodRef);
-                if (syncHandlerReadMethodDef != null)
-                    _createdSyncTypeMethodDefinitions.Add(syncHandlerReadMethodDef);
+                MethodDefinition syncVarReadMd = CreateSyncVarRead(typeDef, syncCount, originalFieldDef, accessorSetValueMethodRef);
+                if (syncVarReadMd != null)
+                    _createdSyncTypeMethodDefinitions.Add(syncVarReadMd);
 
                 return true;
             }
@@ -449,21 +444,14 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates or gets a SyncType class for originalFieldDef.
         /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="originalFieldDef"></param>
-        /// <param name="syncVarAttribute"></param>
-        /// <param name="createdSetValueMethodRef"></param>
-        /// <param name="syncHandlerGetValueMethodRef"></param>
-        /// <param name="diagnostics"></param>
         /// <returns></returns>  
-        private FieldDefinition CreateSyncVarFieldDefinition(TypeDefinition typeDef, FieldDefinition originalFieldDef, out MethodReference syncHandlerGetValueMethodRef, out MethodReference syncHandlerSetValueMethodRef, out MethodReference syncHandlerGetPreviousClientValueMethodRef, out MethodReference syncHandlerReadMethodRef)
+        private FieldDefinition CreateSyncVarFieldDefinition(TypeDefinition typeDef, FieldDefinition originalFieldDef, out CreatedSyncVar createdSyncVar)
         {
-            //Get class stub used.
-            TypeDefinition syncStubTypeDef = CodegenSession.SyncHandlerGenerator.GetOrCreateSyncHandler(originalFieldDef.FieldType, out syncHandlerGetValueMethodRef, out syncHandlerSetValueMethodRef, out syncHandlerGetPreviousClientValueMethodRef, out syncHandlerReadMethodRef);
-            if (syncStubTypeDef == null)
+            createdSyncVar = CodegenSession.CreatedSyncVarGenerator.GetCreatedSyncVar(originalFieldDef, true);
+            if (createdSyncVar == null)
                 return null;
 
-            FieldDefinition createdFieldDef = new FieldDefinition($"{SYNCHANDLER_PREFIX}{originalFieldDef.Name}", originalFieldDef.Attributes, syncStubTypeDef);
+            FieldDefinition createdFieldDef = new FieldDefinition($"{SYNCVAR_PREFIX}{originalFieldDef.Name}", originalFieldDef.Attributes, createdSyncVar.SyncVarGit);
             if (createdFieldDef == null)
             {
                 CodegenSession.LogError($"Could not create field for Sync type {originalFieldDef.FieldType.FullName}, name of {originalFieldDef.Name}.");
@@ -523,123 +511,98 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates accessor for a SyncVar.
         /// </summary>
-        /// <param name="moduleDef"></param>
-        /// <param name="originalFieldDef"></param>
-        /// <param name="syncHandlerFieldDef"></param>
-        /// <param name="syncHandlerSetValueMethodRef"></param>
-        /// <param name="accessorGetValueMethodRef"></param>
-        /// <param name="accessorSetValueMethodRef"></param>
-        /// <param name="hookMethodRef"></param>
-        /// <param name="diagnostics"></param>
         /// <returns></returns>
-        private FieldDefinition CreateSyncVarAccessor(FieldDefinition originalFieldDef, FieldDefinition syncHandlerFieldDef, MethodReference syncHandlerSetValueMethodRef, MethodReference syncHandlerGetPreviousClientValueMethodRef, out MethodReference accessorGetValueMethodRef, out MethodReference accessorSetValueMethodRef, MethodReference hookMethodRef)
+        private FieldDefinition CreateSyncVarAccessor(FieldDefinition originalFd, FieldDefinition createdSyncVarFd, CreatedSyncVar createdSyncVar, out MethodReference accessorGetValueMr, out MethodReference accessorSetValueMr, MethodReference hookMr)
         {
             /* Create and add property definition. */
-            PropertyDefinition createdPropertyDef = new PropertyDefinition($"SyncAccessor_{originalFieldDef.Name}", PropertyAttributes.None, originalFieldDef.FieldType);
-            createdPropertyDef.DeclaringType = originalFieldDef.DeclaringType;
+            PropertyDefinition createdPropertyDef = new PropertyDefinition($"SyncAccessor_{originalFd.Name}", PropertyAttributes.None, originalFd.FieldType);
+            createdPropertyDef.DeclaringType = originalFd.DeclaringType;
             //add the methods and property to the type.
-            originalFieldDef.DeclaringType.Properties.Add(createdPropertyDef);
+            originalFd.DeclaringType.Properties.Add(createdPropertyDef);
 
             ILProcessor processor;
 
             /* Get method for property definition. */
-            MethodDefinition createdGetMethodDef = originalFieldDef.DeclaringType.AddMethod($"{ACCESSOR_PREFIX}get_value_{originalFieldDef.Name}", MethodAttributes.Public |
+            MethodDefinition createdGetMethodDef = originalFd.DeclaringType.AddMethod($"{ACCESSOR_PREFIX}get_value_{originalFd.Name}", MethodAttributes.Public |
                     MethodAttributes.SpecialName | MethodAttributes.HideBySig,
-                    originalFieldDef.FieldType);
+                    originalFd.FieldType);
             createdGetMethodDef.SemanticsAttributes = MethodSemanticsAttributes.Getter;
 
             processor = createdGetMethodDef.Body.GetILProcessor();
             processor.Emit(OpCodes.Ldarg_0); //this.
-            processor.Emit(OpCodes.Ldfld, originalFieldDef);
+            processor.Emit(OpCodes.Ldfld, originalFd);
             processor.Emit(OpCodes.Ret);
-            accessorGetValueMethodRef = CodegenSession.Module.ImportReference(createdGetMethodDef);
+            accessorGetValueMr = CodegenSession.Module.ImportReference(createdGetMethodDef);
             //Add getter to properties.
             createdPropertyDef.GetMethod = createdGetMethodDef;
 
+
+
             /* Set method. */
             //Create the set method
-            MethodDefinition createdSetMethodDef = originalFieldDef.DeclaringType.AddMethod($"{ACCESSOR_PREFIX}set_value_{originalFieldDef.Name}", MethodAttributes.Public |
+            MethodDefinition createdSetMethodDef = originalFd.DeclaringType.AddMethod($"{ACCESSOR_PREFIX}set_value_{originalFd.Name}", MethodAttributes.Public |
                     MethodAttributes.SpecialName |
                     MethodAttributes.HideBySig);
             createdSetMethodDef.SemanticsAttributes = MethodSemanticsAttributes.Setter;
 
-            ParameterDefinition valueParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdSetMethodDef, originalFieldDef.FieldType, "value");
-            ParameterDefinition asServerParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdSetMethodDef, typeof(bool), "asServer");
+            ParameterDefinition valueParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdSetMethodDef, originalFd.FieldType, "value");
+            ParameterDefinition calledByUserParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdSetMethodDef, typeof(bool), "asServer");
             processor = createdSetMethodDef.Body.GetILProcessor();
 
+            //CodegenSession.GeneralHelper.CreateDebug(processor, "A", Managing.Logging.LoggingType.Common, false);
             //Create previous value for hook. Only store it if hook is available.
             VariableDefinition prevValueVariableDef = CodegenSession.GeneralHelper.CreateVariable(createdSetMethodDef, valueParameterDef.ParameterType);
-            if (hookMethodRef != null)
+            if (hookMr != null)
             {
-                //If (asServer) previousValue = this.originalField.
-                Instruction notAsServerPrevValueInst = processor.Create(OpCodes.Nop);
-                Instruction notAsServerEndIfInst = processor.Create(OpCodes.Nop);
-                processor.Emit(OpCodes.Ldarg, asServerParameterDef);
-                processor.Emit(OpCodes.Brfalse, notAsServerPrevValueInst);
-                processor.Emit(OpCodes.Ldarg_0); //this.
-                processor.Emit(OpCodes.Ldfld, originalFieldDef);
-                processor.Emit(OpCodes.Stloc, prevValueVariableDef);
-                processor.Emit(OpCodes.Br, notAsServerEndIfInst);
-                processor.Append(notAsServerPrevValueInst);
-
-                //(else) -> If (!asServer)
-                //If (!IsServer) previousValue = this.originalField.
-                Instruction isServerInst = processor.Create(OpCodes.Nop);
+                //X previousValue = createdSyncVarField.GetValue(calledByUser);
                 processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(OpCodes.Call, CodegenSession.GeneralHelper.IsServer_MethodRef);
-                processor.Emit(OpCodes.Brtrue, isServerInst);
-                processor.Emit(OpCodes.Ldarg_0); //this.
-                processor.Emit(OpCodes.Ldfld, originalFieldDef);
+                processor.Emit(OpCodes.Ldfld, createdSyncVarFd);
+                processor.Emit(OpCodes.Ldarg, calledByUserParameterDef);
+                processor.Emit(OpCodes.Callvirt, createdSyncVar.GetValueMr);
                 processor.Emit(OpCodes.Stloc, prevValueVariableDef);
-                processor.Emit(OpCodes.Br, notAsServerEndIfInst);
-                //else else (isServer) previousValue = syncHnadler.GetPreviousClientValue().
-                processor.Append(isServerInst);
-                processor.Emit(OpCodes.Ldarg_0); //this.
-                processor.Emit(OpCodes.Ldfld, syncHandlerFieldDef);
-                processor.Emit(OpCodes.Call, syncHandlerGetPreviousClientValueMethodRef);
-                processor.Emit(OpCodes.Stloc, prevValueVariableDef);
-                processor.Append(notAsServerEndIfInst);
             }
-
-            //if (!syncHandler_XXXX.SetValue(....) return
+            // CodegenSession.GeneralHelper.CreateDebug(processor, "B", Managing.Logging.LoggingType.Common, false);
+            //if (!SyncVar<>.SetValue(....) return
             Instruction endSetInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Ldarg_0); //this.
-            processor.Emit(OpCodes.Ldfld, syncHandlerFieldDef);
+            processor.Emit(OpCodes.Ldfld, createdSyncVarFd);
             processor.Emit(OpCodes.Ldarg, valueParameterDef);
-            processor.Emit(OpCodes.Ldarg, asServerParameterDef);
-            processor.Emit(OpCodes.Callvirt, syncHandlerSetValueMethodRef);
-            processor.Emit(OpCodes.Brfalse, endSetInst);
-
+            processor.Emit(OpCodes.Ldarg, calledByUserParameterDef);
+            processor.Emit(OpCodes.Callvirt, createdSyncVar.SetValueMr);
+            processor.Emit(OpCodes.Brfalse_S, endSetInst);
+            // CodegenSession.GeneralHelper.CreateDebug(processor, "C", Managing.Logging.LoggingType.Common, false);
             //Assign to new value. _originalField = value;
             processor.Emit(OpCodes.Ldarg_0); //this.
             processor.Emit(OpCodes.Ldarg, valueParameterDef);
-            processor.Emit(OpCodes.Stfld, originalFieldDef);
-
+            processor.Emit(OpCodes.Stfld, originalFd);
+            // CodegenSession.GeneralHelper.CreateDebug(processor, "D", Managing.Logging.LoggingType.Common, false);
             //If hook exist then call it with value changes and asServer.
-            if (hookMethodRef != null)
+            if (hookMr != null)
             {
+                //  CodegenSession.GeneralHelper.CreateDebug(processor, "E", Managing.Logging.LoggingType.Common, false);
                 processor.Emit(OpCodes.Ldarg_0); //this.
                 processor.Emit(OpCodes.Ldloc, prevValueVariableDef);
                 processor.Emit(OpCodes.Ldarg_0); //this.
-                processor.Emit(OpCodes.Ldfld, originalFieldDef);
-                processor.Emit(OpCodes.Ldarg, asServerParameterDef);
-                processor.Emit(OpCodes.Call, hookMethodRef);
+                processor.Emit(OpCodes.Ldfld, originalFd);
+                processor.Emit(OpCodes.Ldarg, calledByUserParameterDef);
+                processor.Emit(OpCodes.Call, hookMr);
             }
-
+            //codegen delete debugs
+            //  CodegenSession.GeneralHelper.CreateDebug(processor, "F", Managing.Logging.LoggingType.Common, false);
             processor.Append(endSetInst);
             processor.Emit(OpCodes.Ret);
-            accessorSetValueMethodRef = CodegenSession.Module.ImportReference(createdSetMethodDef);
+            accessorSetValueMr = CodegenSession.Module.ImportReference(createdSetMethodDef);
             //Add setter to properties.
             createdPropertyDef.SetMethod = createdSetMethodDef;
 
-            return originalFieldDef;
+            return originalFd;
         }
 
         /// <summary>
         /// Sets methods used from SyncBase for typeDef.
         /// </summary>
         /// <returns></returns>
-        private bool SetSyncBaseMethods(TypeDefinition typeDef, out MethodReference setSyncIndexMr, out MethodReference initializeInstanceMr)
+        internal bool SetSyncBaseMethods(TypeDefinition typeDef, out MethodReference setSyncIndexMr, out MethodReference initializeInstanceMr)
         {
             setSyncIndexMr = null;
             initializeInstanceMr = null;
@@ -677,7 +640,7 @@ namespace FishNet.CodeGenerating.Processing
         }
 
         /// <summary>
-        /// Initializes the SyncHandler FieldDefinition.
+        /// Initializes a custom SyncObject.
         /// </summary>
         internal bool InitializeCustom(uint syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute attribute)
         {
@@ -741,7 +704,7 @@ namespace FishNet.CodeGenerating.Processing
 
 
         /// <summary>
-        /// Initializes the SyncHandler FieldDefinition.
+        /// Initializes a SyncList.
         /// </summary>
         internal bool InitializeSyncList(uint syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute attribute)
         {
@@ -808,12 +771,8 @@ namespace FishNet.CodeGenerating.Processing
 
 
         /// <summary>
-        /// Initializes the SyncHandler FieldDefinition.
+        /// Initializes a SyncDictionary.
         /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="originalFieldDef"></param>
-        /// <param name="attribute"></param>
-        /// <param name="diagnostics"></param>
         internal bool InitializeSyncDictionary(uint syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute attribute)
         {
             float sendRate = 0.1f;
@@ -869,32 +828,15 @@ namespace FishNet.CodeGenerating.Processing
 
 
         /// <summary>
-        /// Initializes the SyncHandler FieldDefinition.
+        /// Initializes a SyncVar<>.
         /// </summary>
-        /// <param name="createdFieldDef"></param>
-        /// <param name="typeDef"></param>
-        /// <param name="originalFieldDef"></param>
-        /// <param name="attribute"></param>
-        /// <param name="diagnostics"></param>
-        internal void InitializeSyncHandler(uint syncCount, FieldDefinition createdFieldDef, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute attribute)
+        internal void InitializeSyncVar(uint syncCount, FieldDefinition createdFieldDef, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute attribute, CreatedSyncVar createdSyncVar)
         {
             //Get all possible attributes.
             float sendRate = attribute.GetField("SendRate", 0.1f);
             WritePermission writePermissions = WritePermission.ServerOnly;
             ReadPermission readPermissions = attribute.GetField("ReadPermissions", ReadPermission.Observers);
             Channel channel = attribute.GetField("Channel", Channel.Reliable);
-
-            MethodReference syncHandlerConstructorMethodRef;
-            //Get constructor for syncType.
-            if (CodegenSession.SyncHandlerGenerator.CreatedSyncTypes.TryGetValue(originalFieldDef.FieldType.Resolve(), out CreatedSyncType cst))
-            {
-                syncHandlerConstructorMethodRef = cst.ConstructorMethodReference;
-            }
-            else
-            {
-                CodegenSession.LogError($"Created constructor not found for SyncType {originalFieldDef.DeclaringType}.");
-                return;
-            }
 
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
@@ -908,17 +850,17 @@ namespace FishNet.CodeGenerating.Processing
             instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef)); //initial value.
-            instructions.Add(processor.Create(OpCodes.Newobj, syncHandlerConstructorMethodRef));
+            instructions.Add(processor.Create(OpCodes.Newobj, createdSyncVar.ConstructorMr));
             instructions.Add(processor.Create(OpCodes.Stfld, createdFieldDef));
 
             uint hash = (uint)syncCount;
             //uint hash = originalFieldDef.FullName.GetStableHash32();
-            //Set NB and SyncIndex to SyncHandler.
+            //Set NB and SyncIndex to SyncVar<>.
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, createdFieldDef));
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
             instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
-            instructions.Add(processor.Create(OpCodes.Callvirt, CodegenSession.SyncHandlerGenerator.SyncBase_SetSyncIndex_MethodRef));
+            instructions.Add(processor.Create(OpCodes.Callvirt, createdSyncVar.SetSyncIndexMr));
 
             processor.InsertFirst(instructions);
         }
@@ -1273,13 +1215,12 @@ namespace FishNet.CodeGenerating.Processing
         }
 
         /// <summary>
-        /// Creates a call to a SyncHandler.Read and sets value locally.
+        /// Reads a PooledReader locally then sets value to the SyncVars accessor.
         /// </summary>
         /// <param name="typeDef"></param>
         /// <param name="syncIndex"></param>
         /// <param name="originalFieldDef"></param>
-        /// <param name="syncHandlerGetValueMethodRef"></param>
-        private MethodDefinition CreateSyncHandlerRead(TypeDefinition typeDef, uint syncIndex, FieldDefinition originalFieldDef, MethodReference accessorSetMethodRef)
+        private MethodDefinition CreateSyncVarRead(TypeDefinition typeDef, uint syncIndex, FieldDefinition originalFieldDef, MethodReference accessorSetMethodRef)
         {
             Instruction jmpGoalInst;
             ILProcessor processor;

@@ -16,15 +16,15 @@ namespace MonoFN.Cecil {
 
 		readonly uint token;
 
-		public uint RID	{
+		public uint RID {
 			get { return token & 0x00ffffff; }
 		}
 
 		public TokenType TokenType {
-			get { return (TokenType) (token & 0xff000000); }
+			get { return (TokenType)(token & 0xff000000); }
 		}
 
-		public static readonly MetadataToken Zero = new MetadataToken ((uint) 0);
+		public static readonly MetadataToken Zero = new MetadataToken ((uint)0);
 
 		public MetadataToken (uint token)
 		{
@@ -38,17 +38,17 @@ namespace MonoFN.Cecil {
 
 		public MetadataToken (TokenType type, uint rid)
 		{
-			token = (uint) type | rid;
+			token = (uint)type | rid;
 		}
 
 		public MetadataToken (TokenType type, int rid)
 		{
-			token = (uint) type | (uint) rid;
+			token = (uint)type | (uint)rid;
 		}
 
 		public int ToInt32 ()
 		{
-			return (int) token;
+			return (int)token;
 		}
 
 		public uint ToUInt32 ()
@@ -58,7 +58,7 @@ namespace MonoFN.Cecil {
 
 		public override int GetHashCode ()
 		{
-			return (int) token;
+			return (int)token;
 		}
 
 		public bool Equals (MetadataToken other)
@@ -69,7 +69,7 @@ namespace MonoFN.Cecil {
 		public override bool Equals (object obj)
 		{
 			if (obj is MetadataToken) {
-				var other = (MetadataToken) obj;
+				var other = (MetadataToken)obj;
 				return other.token == token;
 			}
 

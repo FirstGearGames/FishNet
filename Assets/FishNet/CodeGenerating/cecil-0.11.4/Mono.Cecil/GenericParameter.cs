@@ -8,11 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Cecil.Metadata;
+using MonoFN.Collections.Generic;
 using System;
 using System.Threading;
-using MonoFN.Collections.Generic;
-
-using MonoFN.Cecil.Metadata;
 
 namespace MonoFN.Cecil {
 
@@ -27,8 +26,8 @@ namespace MonoFN.Cecil {
 		Collection<CustomAttribute> custom_attributes;
 
 		public GenericParameterAttributes Attributes {
-			get { return (GenericParameterAttributes) attributes; }
-			set { attributes = (ushort) value; }
+			get { return (GenericParameterAttributes)attributes; }
+			set { attributes = (ushort)value; }
 		}
 
 		public int Position {
@@ -84,8 +83,8 @@ namespace MonoFN.Cecil {
 					return null;
 
 				return owner.GenericParameterType == GenericParameterType.Method
-					? ((MethodReference) owner).DeclaringType.Scope
-					: ((TypeReference) owner).Scope;
+					? ((MethodReference)owner).DeclaringType.Scope
+					: ((TypeReference)owner).Scope;
 			}
 			set { throw new InvalidOperationException (); }
 		}
@@ -130,39 +129,39 @@ namespace MonoFN.Cecil {
 		}
 
 		public override MetadataType MetadataType {
-			get { return (MetadataType) etype; }
+			get { return (MetadataType)etype; }
 		}
 
 		#region GenericParameterAttributes
 
 		public bool IsNonVariant {
-			get { return attributes.GetMaskedAttributes ((ushort) GenericParameterAttributes.VarianceMask, (ushort) GenericParameterAttributes.NonVariant); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) GenericParameterAttributes.VarianceMask, (ushort) GenericParameterAttributes.NonVariant, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)GenericParameterAttributes.VarianceMask, (ushort)GenericParameterAttributes.NonVariant); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)GenericParameterAttributes.VarianceMask, (ushort)GenericParameterAttributes.NonVariant, value); }
 		}
 
 		public bool IsCovariant {
-			get { return attributes.GetMaskedAttributes ((ushort) GenericParameterAttributes.VarianceMask, (ushort) GenericParameterAttributes.Covariant); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) GenericParameterAttributes.VarianceMask, (ushort) GenericParameterAttributes.Covariant, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)GenericParameterAttributes.VarianceMask, (ushort)GenericParameterAttributes.Covariant); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)GenericParameterAttributes.VarianceMask, (ushort)GenericParameterAttributes.Covariant, value); }
 		}
 
 		public bool IsContravariant {
-			get { return attributes.GetMaskedAttributes ((ushort) GenericParameterAttributes.VarianceMask, (ushort) GenericParameterAttributes.Contravariant); }
-			set { attributes = attributes.SetMaskedAttributes ((ushort) GenericParameterAttributes.VarianceMask, (ushort) GenericParameterAttributes.Contravariant, value); }
+			get { return attributes.GetMaskedAttributes ((ushort)GenericParameterAttributes.VarianceMask, (ushort)GenericParameterAttributes.Contravariant); }
+			set { attributes = attributes.SetMaskedAttributes ((ushort)GenericParameterAttributes.VarianceMask, (ushort)GenericParameterAttributes.Contravariant, value); }
 		}
 
 		public bool HasReferenceTypeConstraint {
-			get { return attributes.GetAttributes ((ushort) GenericParameterAttributes.ReferenceTypeConstraint); }
-			set { attributes = attributes.SetAttributes ((ushort) GenericParameterAttributes.ReferenceTypeConstraint, value); }
+			get { return attributes.GetAttributes ((ushort)GenericParameterAttributes.ReferenceTypeConstraint); }
+			set { attributes = attributes.SetAttributes ((ushort)GenericParameterAttributes.ReferenceTypeConstraint, value); }
 		}
 
 		public bool HasNotNullableValueTypeConstraint {
-			get { return attributes.GetAttributes ((ushort) GenericParameterAttributes.NotNullableValueTypeConstraint); }
-			set { attributes = attributes.SetAttributes ((ushort) GenericParameterAttributes.NotNullableValueTypeConstraint, value); }
+			get { return attributes.GetAttributes ((ushort)GenericParameterAttributes.NotNullableValueTypeConstraint); }
+			set { attributes = attributes.SetAttributes ((ushort)GenericParameterAttributes.NotNullableValueTypeConstraint, value); }
 		}
 
 		public bool HasDefaultConstructorConstraint {
-			get { return attributes.GetAttributes ((ushort) GenericParameterAttributes.DefaultConstructorConstraint); }
-			set { attributes = attributes.SetAttributes ((ushort) GenericParameterAttributes.DefaultConstructorConstraint, value); }
+			get { return attributes.GetAttributes ((ushort)GenericParameterAttributes.DefaultConstructorConstraint); }
+			set { attributes = attributes.SetAttributes ((ushort)GenericParameterAttributes.DefaultConstructorConstraint, value); }
 		}
 
 		#endregion
@@ -241,7 +240,7 @@ namespace MonoFN.Cecil {
 			UpdateGenericParameter (item, index);
 
 			for (int i = index; i < size; i++)
-				items[i].position = i + 1;
+				items [i].position = i + 1;
 		}
 
 		protected override void OnSet (GenericParameter item, int index)
@@ -263,7 +262,7 @@ namespace MonoFN.Cecil {
 			item.type = GenericParameterType.Type;
 
 			for (int i = index + 1; i < size; i++)
-				items[i].position = i - 1;
+				items [i].position = i - 1;
 		}
 	}
 
@@ -324,8 +323,7 @@ namespace MonoFN.Cecil {
 		}
 	}
 
-	class GenericParameterConstraintCollection : Collection<GenericParameterConstraint>
-	{
+	class GenericParameterConstraintCollection : Collection<GenericParameterConstraint> {
 		readonly GenericParameter generic_parameter;
 
 		internal GenericParameterConstraintCollection (GenericParameter genericParameter)

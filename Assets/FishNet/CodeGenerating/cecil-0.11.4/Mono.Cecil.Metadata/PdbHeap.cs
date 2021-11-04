@@ -8,8 +8,6 @@
 // Licensed under the MIT/X11 license.
 //
 
-using MonoFN.Cecil.PE;
-
 using RID = System.UInt32;
 
 namespace MonoFN.Cecil.Metadata {
@@ -28,7 +26,7 @@ namespace MonoFN.Cecil.Metadata {
 
 		public bool HasTable (Table table)
 		{
-			return (TypeSystemTables & (1L << (int) table)) != 0;
+			return (TypeSystemTables & (1L << (int)table)) != 0;
 		}
 	}
 }

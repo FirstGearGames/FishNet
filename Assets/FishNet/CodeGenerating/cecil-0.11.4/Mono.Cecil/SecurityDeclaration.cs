@@ -8,10 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Collections.Generic;
 using System;
 using System.Diagnostics;
 using System.Threading;
-using MonoFN.Collections.Generic;
 
 namespace MonoFN.Cecil {
 
@@ -68,8 +68,8 @@ namespace MonoFN.Cecil {
 		public bool HasProperties {
 			get { return !properties.IsNullOrEmpty (); }
 		}
-		
-		public Collection<CustomAttributeNamedArgument> Properties { 
+
+		public Collection<CustomAttributeNamedArgument> Properties {
 			get {
 				if (properties == null)
 					Interlocked.CompareExchange (ref properties, new Collection<CustomAttributeNamedArgument> (), null);
@@ -119,7 +119,7 @@ namespace MonoFN.Cecil {
 			get {
 				Resolve ();
 
-				if (security_attributes == null) 
+				if (security_attributes == null)
 					Interlocked.CompareExchange (ref security_attributes, new Collection<SecurityAttribute> (), null);
 
 				return security_attributes;

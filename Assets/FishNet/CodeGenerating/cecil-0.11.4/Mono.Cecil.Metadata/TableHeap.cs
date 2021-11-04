@@ -8,9 +8,6 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-using MonoFN.Cecil.PE;
-
 namespace MonoFN.Cecil.Metadata {
 
 	enum Table : byte {
@@ -88,7 +85,7 @@ namespace MonoFN.Cecil.Metadata {
 		public readonly TableInformation [] Tables = new TableInformation [Mixin.TableCount];
 
 		public TableInformation this [Table table] {
-			get { return Tables [(int) table]; }
+			get { return Tables [(int)table]; }
 		}
 
 		public TableHeap (byte [] data)
@@ -98,7 +95,7 @@ namespace MonoFN.Cecil.Metadata {
 
 		public bool HasTable (Table table)
 		{
-			return (Valid & (1L << (int) table)) != 0;
+			return (Valid & (1L << (int)table)) != 0;
 		}
 	}
 }

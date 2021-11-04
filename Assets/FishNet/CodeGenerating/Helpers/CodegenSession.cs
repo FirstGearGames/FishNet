@@ -31,7 +31,7 @@ namespace FishNet.CodeGenerating.Helping
         [System.ThreadStatic]
         internal static ReaderHelper ReaderHelper;
         [System.ThreadStatic]
-        internal static SyncHandlerGenerator SyncHandlerGenerator;
+        internal static CreatedSyncVarGenerator CreatedSyncVarGenerator;
         [System.ThreadStatic]
         internal static TransportHelper TransportHelper;
         [System.ThreadStatic]
@@ -52,25 +52,16 @@ namespace FishNet.CodeGenerating.Helping
         internal static NetworkBehaviourPredictionProcessor NetworkBehaviourPredictionProcessor;
 
         /// <summary>
-        /// True to ignore future warnings.
-        /// </summary>
-        private static bool _ignoreNextWarning = false;
-
-        /// <summary>
         /// Logs a warning.
         /// </summary>
         /// <param name="msg"></param>
-        internal static void LogWarning(string msg, bool ignoreNextWarning = false)
+        internal static void LogWarning(string msg)
         {
-            if (!_ignoreNextWarning || !ignoreNextWarning) 
-            {
 #if UNITY_2020_1_OR_NEWER
             Diagnostics.AddWarning(msg);
 #else
-                Debug.LogWarning(msg);
+            Debug.LogWarning(msg);
 #endif
-            }
-            _ignoreNextWarning = ignoreNextWarning;
         }
         /// <summary>
         /// Logs an error.
@@ -102,7 +93,7 @@ namespace FishNet.CodeGenerating.Helping
             ObjectHelper = new ObjectHelper();
             ReaderGenerator = new ReaderGenerator();
             ReaderHelper = new ReaderHelper();
-            SyncHandlerGenerator = new SyncHandlerGenerator();
+            CreatedSyncVarGenerator = new CreatedSyncVarGenerator();
             TransportHelper = new TransportHelper();
             WriterGenerator = new WriterGenerator();
             WriterHelper = new WriterHelper();
@@ -128,7 +119,7 @@ namespace FishNet.CodeGenerating.Helping
                 return false;
             if (!ReaderHelper.ImportReferences())
                 return false;
-            if (!SyncHandlerGenerator.ImportReferences())
+            if (!CreatedSyncVarGenerator.ImportReferences())
                 return false;
             if (!TransportHelper.ImportReferences())
                 return false;

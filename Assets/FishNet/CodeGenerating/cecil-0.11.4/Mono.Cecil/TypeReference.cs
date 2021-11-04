@@ -8,10 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-using System.Threading;
 using MonoFN.Cecil.Metadata;
 using MonoFN.Collections.Generic;
+using System;
+using System.Threading;
 
 namespace MonoFN.Cecil {
 
@@ -101,7 +101,7 @@ namespace MonoFN.Cecil {
 		}
 
 		internal TypeReferenceProjection WindowsRuntimeProjection {
-			get { return (TypeReferenceProjection) projection; }
+			get { return (TypeReferenceProjection)projection; }
 			set { projection = value; }
 		}
 
@@ -125,7 +125,7 @@ namespace MonoFN.Cecil {
 			get {
 				if (generic_parameters == null)
 					Interlocked.CompareExchange (ref generic_parameters, new GenericParameterCollection (this), null);
-					
+
 				return generic_parameters;
 			}
 		}
@@ -231,7 +231,7 @@ namespace MonoFN.Cecil {
 				case ElementType.None:
 					return IsValueType ? MetadataType.ValueType : MetadataType.Class;
 				default:
-					return (MetadataType) etype;
+					return (MetadataType)etype;
 				}
 			}
 		}

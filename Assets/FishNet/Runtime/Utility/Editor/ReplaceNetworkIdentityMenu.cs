@@ -1,7 +1,6 @@
 ﻿#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
-using FishNet.Object;
 #if MIRROR
 using Mirror;
 #endif

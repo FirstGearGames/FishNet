@@ -53,7 +53,7 @@ namespace MonoFN.Cecil {
 					return false;
 
 				for (int i = 0; i < xGeneric.GenericArguments.Count; i++)
-					if (!TypeReferenceEqualityComparer.AreEqual (xGeneric.GenericArguments[i], yGeneric.GenericArguments[i]))
+					if (!TypeReferenceEqualityComparer.AreEqual (xGeneric.GenericArguments [i], yGeneric.GenericArguments [i]))
 						return false;
 			}
 
@@ -63,8 +63,7 @@ namespace MonoFN.Cecil {
 			if (xResolved != yResolved)
 				return false;
 
-			if (xResolved == null)
-			{
+			if (xResolved == null) {
 				// We couldn't resolve either method. In order for them to be equal, their parameter types _must_ match. But wait, there's a twist!
 				// There exists a situation where we might get into a recursive state: parameter type comparison might lead to comparing the same
 				// methods again if the parameter types are generic parameters whose owners are these methods. We guard against these by using a
@@ -78,7 +77,7 @@ namespace MonoFN.Cecil {
 					yComparisonStack = new List<MethodReference> ();
 
 				for (int i = 0; i < xComparisonStack.Count; i++) {
-					if (xComparisonStack[i] == x && yComparisonStack[i] == y)
+					if (xComparisonStack [i] == x && yComparisonStack [i] == y)
 						return true;
 				}
 
@@ -89,13 +88,15 @@ namespace MonoFN.Cecil {
 
 					try {
 						for (int i = 0; i < x.Parameters.Count; i++) {
-							if (!TypeReferenceEqualityComparer.AreEqual (x.Parameters[i].ParameterType, y.Parameters[i].ParameterType))
+							if (!TypeReferenceEqualityComparer.AreEqual (x.Parameters [i].ParameterType, y.Parameters [i].ParameterType))
 								return false;
 						}
-					} finally {
+					}
+					finally {
 						yComparisonStack.RemoveAt (yComparisonStack.Count - 1);
 					}
-				} finally {
+				}
+				finally {
 					xComparisonStack.RemoveAt (xComparisonStack.Count - 1);
 				}
 			}
@@ -115,7 +116,7 @@ namespace MonoFN.Cecil {
 				return false;
 
 			for (var i = 0; i < x.Parameters.Count; i++)
-				if (!TypeReferenceEqualityComparer.AreEqual (x.Parameters[i].ParameterType, y.Parameters[i].ParameterType, comparisonMode))
+				if (!TypeReferenceEqualityComparer.AreEqual (x.Parameters [i].ParameterType, y.Parameters [i].ParameterType, comparisonMode))
 					return false;
 
 			if (!TypeReferenceEqualityComparer.AreEqual (x.ReturnType, y.ReturnType, comparisonMode))
@@ -133,7 +134,7 @@ namespace MonoFN.Cecil {
 			if (genericInstanceMethod != null) {
 				var hashCode = GetHashCodeFor (genericInstanceMethod.ElementMethod);
 				for (var i = 0; i < genericInstanceMethod.GenericArguments.Count; i++)
-					hashCode = hashCode * hashCodeMultiplier + TypeReferenceEqualityComparer.GetHashCodeFor (genericInstanceMethod.GenericArguments[i]);
+					hashCode = hashCode * hashCodeMultiplier + TypeReferenceEqualityComparer.GetHashCodeFor (genericInstanceMethod.GenericArguments [i]);
 				return hashCode;
 			}
 

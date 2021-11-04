@@ -5,7 +5,7 @@ namespace FishNet.Object
 {
 
     public abstract partial class NetworkBehaviour : MonoBehaviour
-    {        
+    {
         /// <summary>
         /// Called on the server after initializing this object.
         /// SyncTypes modified before or during this method will be sent to clients in the spawn message.
@@ -34,18 +34,16 @@ namespace FishNet.Object
         /// <summary>
         /// Called on the client after initializing this object.
         /// </summary>
-        /// <param name="isOwner">True if the owner of this object.</param>
-        public virtual void OnStartClient(bool isOwner) { }
+        public virtual void OnStartClient() { }
         /// <summary>
         /// Called on the client before deinitializing this object.
         /// </summary>
-        /// <param name="isOwner">True if the owner of this object.</param>
-        public virtual void OnStopClient(bool isOwner) { }
+        public virtual void OnStopClient() { }
         /// <summary>
         /// Called on the client after gaining or losing ownership.
         /// </summary>
-        /// <param name="newOwner">Current owner of this object.</param>
-        public virtual void OnOwnershipClient(NetworkConnection newOwner) { }
+        /// <param name="newOwner">Previous owner of this object.</param>
+        public virtual void OnOwnershipClient(NetworkConnection prevOwner) { }
 
     }
 

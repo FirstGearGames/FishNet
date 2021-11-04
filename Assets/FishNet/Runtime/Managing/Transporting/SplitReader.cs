@@ -1,6 +1,5 @@
 ﻿using FishNet.Serializing;
 using System;
-using UnityEngine;
 
 namespace FishNet.Managing.Transporting
 {
@@ -32,7 +31,7 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         private ushort _received;
         #endregion
-      
+
         /// <summary>
         /// Writes to buffer.
         /// </summary>

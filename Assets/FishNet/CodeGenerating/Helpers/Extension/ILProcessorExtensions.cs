@@ -1,7 +1,5 @@
-﻿using MonoFN.Cecil;
-using MonoFN.Cecil.Cil;
+﻿using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
@@ -51,7 +49,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="instructions"></param>
-        public static void InsertBefore(this ILProcessor processor,Instruction target, List<Instruction> instructions)
+        public static void InsertBefore(this ILProcessor processor, Instruction target, List<Instruction> instructions)
         {
             int index = processor.Body.Instructions.IndexOf(target);
             for (int i = 0; i < instructions.Count; i++)

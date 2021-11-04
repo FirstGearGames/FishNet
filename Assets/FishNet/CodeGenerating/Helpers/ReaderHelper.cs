@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using MonoFN.Cecil;
-using FishNet.Serializing;
-using MonoFN.Cecil.Cil;
-using System.Reflection;
+﻿using FishNet.CodeGenerating.ILCore;
 using FishNet.Connection;
-using Unity.CompilationPipeline.Common.Diagnostics;
-using FishNet.Serializing.Helping;
-using FishNet.CodeGenerating.ILCore;
-using UnityEngine;
+using FishNet.Serializing;
+using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace FishNet.CodeGenerating.Helping
 {

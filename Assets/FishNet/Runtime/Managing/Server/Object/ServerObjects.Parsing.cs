@@ -1,9 +1,9 @@
-﻿using FishNet.Managing.Object;
-using FishNet.Connection;
+﻿using FishNet.Connection;
+using FishNet.Managing.Object;
+using FishNet.Managing.Utility;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using FishNet.Managing.Utility;
 
 namespace FishNet.Managing.Server
 {

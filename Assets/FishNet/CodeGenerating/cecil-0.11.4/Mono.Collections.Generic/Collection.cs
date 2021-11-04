@@ -8,11 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Cecil;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
-using MonoFN.Cecil;
 
 namespace MonoFN.Collections.Generic {
 
@@ -72,10 +71,12 @@ namespace MonoFN.Collections.Generic {
 				CheckIndex (index);
 
 				try {
-					this [index] = (T) value;
+					this [index] = (T)value;
 					return;
-				} catch (InvalidCastException) {
-				} catch (NullReferenceException) {
+				}
+				catch (InvalidCastException) {
+				}
+				catch (NullReferenceException) {
 				}
 
 				throw new ArgumentException ();
@@ -104,7 +105,7 @@ namespace MonoFN.Collections.Generic {
 			if (capacity < 0)
 				throw new ArgumentOutOfRangeException ();
 
-			items = capacity == 0 
+			items = capacity == 0
 				? Empty<T>.Array
 				: new T [capacity];
 		}
@@ -269,10 +270,12 @@ namespace MonoFN.Collections.Generic {
 		int IList.Add (object value)
 		{
 			try {
-				Add ((T) value);
+				Add ((T)value);
 				return size - 1;
-			} catch (InvalidCastException) {
-			} catch (NullReferenceException) {
+			}
+			catch (InvalidCastException) {
+			}
+			catch (NullReferenceException) {
 			}
 
 			throw new ArgumentException ();
@@ -285,15 +288,17 @@ namespace MonoFN.Collections.Generic {
 
 		bool IList.Contains (object value)
 		{
-			return ((IList) this).IndexOf (value) > -1;
+			return ((IList)this).IndexOf (value) > -1;
 		}
 
 		int IList.IndexOf (object value)
 		{
 			try {
-				return IndexOf ((T) value);
-			} catch (InvalidCastException) {
-			} catch (NullReferenceException) {
+				return IndexOf ((T)value);
+			}
+			catch (InvalidCastException) {
+			}
+			catch (NullReferenceException) {
 			}
 
 			return -1;
@@ -304,10 +309,12 @@ namespace MonoFN.Collections.Generic {
 			CheckIndex (index);
 
 			try {
-				Insert (index, (T) value);
+				Insert (index, (T)value);
 				return;
-			} catch (InvalidCastException) {
-			} catch (NullReferenceException) {
+			}
+			catch (InvalidCastException) {
+			}
+			catch (NullReferenceException) {
 			}
 
 			throw new ArgumentException ();
@@ -316,9 +323,11 @@ namespace MonoFN.Collections.Generic {
 		void IList.Remove (object value)
 		{
 			try {
-				Remove ((T) value);
-			} catch (InvalidCastException) {
-			} catch (NullReferenceException) {
+				Remove ((T)value);
+			}
+			catch (InvalidCastException) {
+			}
+			catch (NullReferenceException) {
 			}
 		}
 

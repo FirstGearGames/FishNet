@@ -24,7 +24,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodReference NetworkManager_LogCommon_MethodRef;
         private MethodReference NetworkManager_LogWarning_MethodRef;
         private MethodReference NetworkManager_LogError_MethodRef;
-        private MethodReference Debug_LogCommon_MethodRef;
+        internal MethodReference Debug_LogCommon_MethodRef;
         private MethodReference Debug_LogWarning_MethodRef;
         private MethodReference Debug_LogError_MethodRef;
         internal MethodReference Comparers_EqualityCompare_MethodRef;
@@ -33,7 +33,6 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference NetworkObject_Deinitializing_MethodRef = null;
         private Dictionary<Type, TypeReference> _importedTypeReferences = new Dictionary<Type, TypeReference>();
         private Dictionary<FieldDefinition, FieldReference> _importedFieldReferences = new Dictionary<FieldDefinition, FieldReference>();
-        private Dictionary<Type, GenericInstanceMethod> _equalityComparerMethodReferences = new Dictionary<Type, GenericInstanceMethod>();
         private string NonSerialized_Attribute_FullName;
         private string Single_FullName;
         #endregion
@@ -159,28 +158,6 @@ namespace FishNet.CodeGenerating.Helping
             return false;
         }
 
-
-        /// <summary>
-        /// Gets the equality comparerer method for type.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        internal GenericInstanceMethod GetEqualityComparer(Type type)
-        {
-            GenericInstanceMethod result;
-            if (_equalityComparerMethodReferences.TryGetValue(type, out result))
-            {
-                return result;
-            }
-            else
-            {
-                result = new GenericInstanceMethod(Comparers_EqualityCompare_MethodRef.GetElementMethod());
-                result.GenericArguments.Add(GetTypeReference(type));
-                _equalityComparerMethodReferences.Add(type, result);
-            }
-
-            return result;
-        }
 
         /// <summary>
         /// Creates the RuntimeInitializeOnLoadMethod attribute for a method.
@@ -598,9 +575,8 @@ namespace FishNet.CodeGenerating.Helping
             }
             else if (typeDef.InheritsFrom<UnityEngine.ScriptableObject>())
             {
-                MethodReference createScriptableObjectInstance = processor.Body.Method.Module.ImportReference(() => UnityEngine.ScriptableObject.CreateInstance<UnityEngine.ScriptableObject>());
-                GenericInstanceMethod genericInstanceMethod = new GenericInstanceMethod(createScriptableObjectInstance.GetElementMethod());
-                genericInstanceMethod.GenericArguments.Add(type);
+                MethodReference soCreateInstanceMr = processor.Body.Method.Module.ImportReference(() => UnityEngine.ScriptableObject.CreateInstance<UnityEngine.ScriptableObject>());
+                GenericInstanceMethod genericInstanceMethod = soCreateInstanceMr.GetElementMethod().MakeGenericMethod(new TypeReference[] { type });
                 processor.Emit(OpCodes.Call, genericInstanceMethod);
                 processor.Emit(OpCodes.Stloc, variableDef);
             }

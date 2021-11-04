@@ -163,21 +163,21 @@ namespace FishNet.Component.Transforming
             ChangeTickSubscription(true);
         }
 
-        public override void OnStartClient(bool isOwner)
+        public override void OnStartClient()
         {
-            base.OnStartClient(isOwner);
+            base.OnStartClient();
             SetDefaultGoalDatas(false, true);
             SetInstantRates(false, true);
         }
 
-        public override void OnOwnershipClient(NetworkConnection newOwner)
+        public override void OnOwnershipClient(NetworkConnection prevOwner)
         {
-            base.OnOwnershipClient(newOwner);
+            base.OnOwnershipClient(prevOwner);
             /* If newOwner is self then client
              * must subscribe to ticks. Client can also
              * unsubscribe from ticks if not owner,
              * long as the server is also not active. */
-            if (newOwner.IsLocalClient)
+            if (base.IsOwner)
             {
                 ChangeTickSubscription(true);
             }
@@ -203,9 +203,9 @@ namespace FishNet.Component.Transforming
             ChangeTickSubscription(false);
         }
 
-        public override void OnStopClient(bool isOwner)
+        public override void OnStopClient()
         {
-            base.OnStopClient(isOwner);
+            base.OnStopClient();
             //If not also server unsubscribe from ticks.
             if (!base.IsServer)
                 ChangeTickSubscription(false);
@@ -714,7 +714,7 @@ namespace FishNet.Component.Transforming
             _receivedClientBytes.WriteArraySegment(data);
 
             //Indicates new data has been received from client.
-            _clientBytesChanged = true; 
+            _clientBytesChanged = true;
 
             GoalData oldGoalData = _serverGoalData;
             //Tick from last goal data.

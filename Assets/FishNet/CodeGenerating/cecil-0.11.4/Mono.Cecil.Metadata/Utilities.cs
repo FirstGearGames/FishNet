@@ -8,9 +8,8 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-
 using MonoFN.Cecil.Metadata;
+using System;
 
 namespace MonoFN.Cecil {
 
@@ -26,14 +25,14 @@ namespace MonoFN.Cecil {
 				integer = data [position];
 				position++;
 			} else if ((data [position] & 0x40) == 0) {
-				integer = (uint) (data [position] & ~0x80) << 8;
+				integer = (uint)(data [position] & ~0x80) << 8;
 				integer |= data [position + 1];
 				position += 2;
 			} else {
-				integer = (uint) (data [position] & ~0xc0) << 24;
-				integer |= (uint) data [position + 1] << 16;
-				integer |= (uint) data [position + 2] << 8;
-				integer |= (uint) data [position + 3];
+				integer = (uint)(data [position] & ~0xc0) << 24;
+				integer |= (uint)data [position + 1] << 16;
+				integer |= (uint)data [position + 2] << 8;
+				integer |= (uint)data [position + 3];
 				position += 4;
 			}
 			return integer;
@@ -626,7 +625,7 @@ namespace MonoFN.Cecil {
 				break;
 			case CodedIndex.HasCustomDebugInformation:
 				bits = 5;
-				tables = new[] {
+				tables = new [] {
 					Table.Method, Table.Field, Table.TypeRef, Table.TypeDef, Table.Param, Table.InterfaceImpl, Table.MemberRef,
 					Table.Module, Table.DeclSecurity, Table.Property, Table.Event, Table.StandAloneSig, Table.ModuleRef,
 					Table.TypeSpec, Table.Assembly, Table.AssemblyRef, Table.File, Table.ExportedType,

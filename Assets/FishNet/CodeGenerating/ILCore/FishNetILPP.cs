@@ -1,15 +1,13 @@
-﻿using System.IO;
-using System.Linq;
-using System.Collections.Generic;
+﻿using FishNet.Broadcast;
+using FishNet.CodeGenerating.Helping;
+using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.CodeGenerating.Processing;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
-using FishNet.CodeGenerating.Helping;
-using FishNet.CodeGenerating.Processing;
-using FishNet.CodeGenerating.Helping.Extension;
-using FishNet.Broadcast;
-using UnityEngine;
-using FishNet.Object.Helping;
 
 namespace FishNet.CodeGenerating.ILCore
 {
@@ -255,7 +253,7 @@ namespace FishNet.CodeGenerating.ILCore
                 //Add to all processed.
                 allProcessedSyncs.AddRange(processedSyncs);
             }
-            
+
             /* Must run through all scripts should user change syncvar
              * from outside the networkbehaviour. */
             if (allProcessedSyncs.Count > 0)

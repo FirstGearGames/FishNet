@@ -201,7 +201,7 @@ namespace FishNet.Editing
                 }
                 UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath(item, tType);
                 if (obj != null && tType != null && obj.GetType() == tType)
-                { 
+                {
                     results.Add(obj);
                     if (breakOnFirst)
                         return results;

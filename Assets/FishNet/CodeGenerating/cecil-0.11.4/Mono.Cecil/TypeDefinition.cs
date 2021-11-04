@@ -8,10 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-using System.Threading;
 using MonoFN.Cecil.Metadata;
 using MonoFN.Collections.Generic;
+using System;
+using System.Threading;
 
 namespace MonoFN.Cecil {
 
@@ -35,12 +35,12 @@ namespace MonoFN.Cecil {
 		Collection<SecurityDeclaration> security_declarations;
 
 		public TypeAttributes Attributes {
-			get { return (TypeAttributes) attributes; }
+			get { return (TypeAttributes)attributes; }
 			set {
-				if (IsWindowsRuntimeProjection && (ushort) value != attributes)
+				if (IsWindowsRuntimeProjection && (ushort)value != attributes)
 					throw new InvalidOperationException ();
 
-				attributes = (uint) value;
+				attributes = (uint)value;
 			}
 		}
 
@@ -96,7 +96,7 @@ namespace MonoFN.Cecil {
 
 				ResolveLayout ();
 
-				return packing_size >= 0 ? packing_size : (short) -1;
+				return packing_size >= 0 ? packing_size : (short)-1;
 			}
 			set { packing_size = value; }
 		}
@@ -174,7 +174,7 @@ namespace MonoFN.Cecil {
 				if (HasImage)
 					return Module.Read (ref methods, this, (type, reader) => reader.ReadMethods (type));
 
-				Interlocked.CompareExchange (ref methods, new MemberDefinitionCollection<MethodDefinition> (this) , null);
+				Interlocked.CompareExchange (ref methods, new MemberDefinitionCollection<MethodDefinition> (this), null);
 				return methods;
 			}
 		}
@@ -287,128 +287,128 @@ namespace MonoFN.Cecil {
 		#region TypeAttributes
 
 		public bool IsNotPublic {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NotPublic); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NotPublic, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NotPublic); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NotPublic, value); }
 		}
 
 		public bool IsPublic {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.Public); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.Public, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.Public); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.Public, value); }
 		}
 
 		public bool IsNestedPublic {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedPublic); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedPublic, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedPublic); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedPublic, value); }
 		}
 
 		public bool IsNestedPrivate {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedPrivate); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedPrivate, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedPrivate); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedPrivate, value); }
 		}
 
 		public bool IsNestedFamily {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedFamily); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedFamily, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedFamily); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedFamily, value); }
 		}
 
 		public bool IsNestedAssembly {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedAssembly); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedAssembly, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedAssembly); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedAssembly, value); }
 		}
 
 		public bool IsNestedFamilyAndAssembly {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedFamANDAssem); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedFamANDAssem, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedFamANDAssem); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedFamANDAssem, value); }
 		}
 
 		public bool IsNestedFamilyOrAssembly {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedFamORAssem); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.VisibilityMask, (uint) TypeAttributes.NestedFamORAssem, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedFamORAssem); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.VisibilityMask, (uint)TypeAttributes.NestedFamORAssem, value); }
 		}
 
 		public bool IsAutoLayout {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.LayoutMask, (uint) TypeAttributes.AutoLayout); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.LayoutMask, (uint) TypeAttributes.AutoLayout, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.LayoutMask, (uint)TypeAttributes.AutoLayout); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.LayoutMask, (uint)TypeAttributes.AutoLayout, value); }
 		}
 
 		public bool IsSequentialLayout {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.LayoutMask, (uint) TypeAttributes.SequentialLayout); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.LayoutMask, (uint) TypeAttributes.SequentialLayout, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.LayoutMask, (uint)TypeAttributes.SequentialLayout); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.LayoutMask, (uint)TypeAttributes.SequentialLayout, value); }
 		}
 
 		public bool IsExplicitLayout {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.LayoutMask, (uint) TypeAttributes.ExplicitLayout); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.LayoutMask, (uint) TypeAttributes.ExplicitLayout, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.LayoutMask, (uint)TypeAttributes.ExplicitLayout); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.LayoutMask, (uint)TypeAttributes.ExplicitLayout, value); }
 		}
 
 		public bool IsClass {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.ClassSemanticMask, (uint) TypeAttributes.Class); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.ClassSemanticMask, (uint) TypeAttributes.Class, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.ClassSemanticMask, (uint)TypeAttributes.Class); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.ClassSemanticMask, (uint)TypeAttributes.Class, value); }
 		}
 
 		public bool IsInterface {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.ClassSemanticMask, (uint) TypeAttributes.Interface); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.ClassSemanticMask, (uint) TypeAttributes.Interface, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.ClassSemanticMask, (uint)TypeAttributes.Interface); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.ClassSemanticMask, (uint)TypeAttributes.Interface, value); }
 		}
 
 		public bool IsAbstract {
-			get { return attributes.GetAttributes ((uint) TypeAttributes.Abstract); }
-			set { attributes = attributes.SetAttributes ((uint) TypeAttributes.Abstract, value); }
+			get { return attributes.GetAttributes ((uint)TypeAttributes.Abstract); }
+			set { attributes = attributes.SetAttributes ((uint)TypeAttributes.Abstract, value); }
 		}
 
 		public bool IsSealed {
-			get { return attributes.GetAttributes ((uint) TypeAttributes.Sealed); }
-			set { attributes = attributes.SetAttributes ((uint) TypeAttributes.Sealed, value); }
+			get { return attributes.GetAttributes ((uint)TypeAttributes.Sealed); }
+			set { attributes = attributes.SetAttributes ((uint)TypeAttributes.Sealed, value); }
 		}
 
 		public bool IsSpecialName {
-			get { return attributes.GetAttributes ((uint) TypeAttributes.SpecialName); }
-			set { attributes = attributes.SetAttributes ((uint) TypeAttributes.SpecialName, value); }
+			get { return attributes.GetAttributes ((uint)TypeAttributes.SpecialName); }
+			set { attributes = attributes.SetAttributes ((uint)TypeAttributes.SpecialName, value); }
 		}
 
 		public bool IsImport {
-			get { return attributes.GetAttributes ((uint) TypeAttributes.Import); }
-			set { attributes = attributes.SetAttributes ((uint) TypeAttributes.Import, value); }
+			get { return attributes.GetAttributes ((uint)TypeAttributes.Import); }
+			set { attributes = attributes.SetAttributes ((uint)TypeAttributes.Import, value); }
 		}
 
 		public bool IsSerializable {
-			get { return attributes.GetAttributes ((uint) TypeAttributes.Serializable); }
-			set { attributes = attributes.SetAttributes ((uint) TypeAttributes.Serializable, value); }
+			get { return attributes.GetAttributes ((uint)TypeAttributes.Serializable); }
+			set { attributes = attributes.SetAttributes ((uint)TypeAttributes.Serializable, value); }
 		}
 
 		public bool IsWindowsRuntime {
-			get { return attributes.GetAttributes ((uint) TypeAttributes.WindowsRuntime); }
-			set { attributes = attributes.SetAttributes ((uint) TypeAttributes.WindowsRuntime, value); }
+			get { return attributes.GetAttributes ((uint)TypeAttributes.WindowsRuntime); }
+			set { attributes = attributes.SetAttributes ((uint)TypeAttributes.WindowsRuntime, value); }
 		}
 
 		public bool IsAnsiClass {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.StringFormatMask, (uint) TypeAttributes.AnsiClass); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.StringFormatMask, (uint) TypeAttributes.AnsiClass, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.StringFormatMask, (uint)TypeAttributes.AnsiClass); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.StringFormatMask, (uint)TypeAttributes.AnsiClass, value); }
 		}
 
 		public bool IsUnicodeClass {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.StringFormatMask, (uint) TypeAttributes.UnicodeClass); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.StringFormatMask, (uint) TypeAttributes.UnicodeClass, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.StringFormatMask, (uint)TypeAttributes.UnicodeClass); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.StringFormatMask, (uint)TypeAttributes.UnicodeClass, value); }
 		}
 
 		public bool IsAutoClass {
-			get { return attributes.GetMaskedAttributes ((uint) TypeAttributes.StringFormatMask, (uint) TypeAttributes.AutoClass); }
-			set { attributes = attributes.SetMaskedAttributes ((uint) TypeAttributes.StringFormatMask, (uint) TypeAttributes.AutoClass, value); }
+			get { return attributes.GetMaskedAttributes ((uint)TypeAttributes.StringFormatMask, (uint)TypeAttributes.AutoClass); }
+			set { attributes = attributes.SetMaskedAttributes ((uint)TypeAttributes.StringFormatMask, (uint)TypeAttributes.AutoClass, value); }
 		}
 
 		public bool IsBeforeFieldInit {
-			get { return attributes.GetAttributes ((uint) TypeAttributes.BeforeFieldInit); }
-			set { attributes = attributes.SetAttributes ((uint) TypeAttributes.BeforeFieldInit, value); }
+			get { return attributes.GetAttributes ((uint)TypeAttributes.BeforeFieldInit); }
+			set { attributes = attributes.SetAttributes ((uint)TypeAttributes.BeforeFieldInit, value); }
 		}
 
 		public bool IsRuntimeSpecialName {
-			get { return attributes.GetAttributes ((uint) TypeAttributes.RTSpecialName); }
-			set { attributes = attributes.SetAttributes ((uint) TypeAttributes.RTSpecialName, value); }
+			get { return attributes.GetAttributes ((uint)TypeAttributes.RTSpecialName); }
+			set { attributes = attributes.SetAttributes ((uint)TypeAttributes.RTSpecialName, value); }
 		}
 
 		public bool HasSecurity {
-			get { return attributes.GetAttributes ((uint) TypeAttributes.HasSecurity); }
-			set { attributes = attributes.SetAttributes ((uint) TypeAttributes.HasSecurity, value); }
+			get { return attributes.GetAttributes ((uint)TypeAttributes.HasSecurity); }
+			set { attributes = attributes.SetAttributes ((uint)TypeAttributes.HasSecurity, value); }
 		}
 
 		#endregion
@@ -440,7 +440,7 @@ namespace MonoFN.Cecil {
 			get {
 				ElementType primitive_etype;
 				if (MetadataSystem.TryGetPrimitiveElementType (this, out primitive_etype))
-					return (MetadataType) primitive_etype;
+					return (MetadataType)primitive_etype;
 
 				return base.MetadataType;
 			}
@@ -451,19 +451,19 @@ namespace MonoFN.Cecil {
 		}
 
 		public new TypeDefinition DeclaringType {
-			get { return (TypeDefinition) base.DeclaringType; }
+			get { return (TypeDefinition)base.DeclaringType; }
 			set { base.DeclaringType = value; }
 		}
 
 		internal new TypeDefinitionProjection WindowsRuntimeProjection {
-			get { return (TypeDefinitionProjection) projection; }
+			get { return (TypeDefinitionProjection)projection; }
 			set { projection = value; }
 		}
 
 		public TypeDefinition (string @namespace, string name, TypeAttributes attributes)
 			: base (@namespace, name)
 		{
-			this.attributes = (uint) attributes;
+			this.attributes = (uint)attributes;
 			this.token = new MetadataToken (TokenType.TypeDef);
 		}
 
@@ -492,8 +492,7 @@ namespace MonoFN.Cecil {
 		}
 	}
 
-	public sealed class InterfaceImplementation : ICustomAttributeProvider
-	{
+	public sealed class InterfaceImplementation : ICustomAttributeProvider {
 		internal TypeDefinition type;
 		internal MetadataToken token;
 
@@ -549,8 +548,7 @@ namespace MonoFN.Cecil {
 		}
 	}
 
-	class InterfaceImplementationCollection : Collection<InterfaceImplementation>
-	{
+	class InterfaceImplementationCollection : Collection<InterfaceImplementation> {
 		readonly TypeDefinition type;
 
 		internal InterfaceImplementationCollection (TypeDefinition type)

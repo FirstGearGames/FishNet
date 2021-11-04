@@ -8,10 +8,9 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Collections.Generic;
 using System;
 using System.Threading;
-
-using MonoFN.Collections.Generic;
 
 namespace MonoFN.Cecil.Cil {
 
@@ -369,7 +368,7 @@ namespace MonoFN.Cecil.Cil {
 			public Instruction Instruction;
 		}
 
-		InstructionOffset ResolveInstructionOffset(InstructionOffset inputOffset, ref InstructionOffsetCache cache)
+		InstructionOffset ResolveInstructionOffset (InstructionOffset inputOffset, ref InstructionOffsetCache cache)
 		{
 			if (inputOffset.IsResolved)
 				return inputOffset;

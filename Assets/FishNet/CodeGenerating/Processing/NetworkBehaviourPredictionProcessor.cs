@@ -1,15 +1,12 @@
 ﻿
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
-using FishNet.Connection;
 using FishNet.Managing.Logging;
-using FishNet.Object.Helping;
 using FishNet.Transporting;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {

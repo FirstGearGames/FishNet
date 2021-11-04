@@ -1,10 +1,6 @@
-﻿using FishNet.Serializing;
+﻿using FishNet.Transporting;
 using System;
-using FishNet.Transporting;
 using System.Linq;
-using System.Collections.Generic;
-using FishNet.Object;
-using UnityEngine;
 
 namespace FishNet.Managing.Client
 {

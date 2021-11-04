@@ -1,9 +1,9 @@
-using UnityEngine;
-using System;
-using FishNet.Transporting;
 using FishNet.Managing;
 using FishNet.Managing.Logging;
+using FishNet.Transporting;
+using System;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace Fluidity
 {

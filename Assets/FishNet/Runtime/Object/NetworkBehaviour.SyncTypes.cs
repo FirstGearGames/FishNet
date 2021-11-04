@@ -91,6 +91,8 @@ namespace FishNet.Object
         /// <returns>True if able to dirty SyncType.</returns>
         internal bool DirtySyncType(bool isSyncObject)
         {
+            if (!IsServer)
+                return false;
             if (NetworkObject.Observers.Count == 0)
                 return false;
 
@@ -286,7 +288,7 @@ namespace FishNet.Object
                                 headerWriter.WriteUInt16((ushort)packetId);
 
                                 PooledWriter dataWriter = WriterPool.GetWriter();
-                                dataWriter.WriteNetworkBehaviour(this); 
+                                dataWriter.WriteNetworkBehaviour(this);
                                 /* //clean try and clean this up similar to rpc changes
                                 // with unreliable lengths and what not. */
 

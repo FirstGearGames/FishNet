@@ -43,7 +43,7 @@ namespace FishNet.Connection
         /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
         /// <param name="requireAuthenticated">True if the client must be authenticated for this broadcast to send.</param>
         /// <param name="channel">Channel to send on,</param>
-        public void Broadcast<T>(T message, bool requireAuthenticated = true,  Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        public void Broadcast<T>(T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!IsActive)
             {
@@ -51,7 +51,7 @@ namespace FishNet.Connection
                     Debug.LogError($"Connection is not valid, cannot send broadcast.");
             }
             else
-            { 
+            {
                 InstanceFinder.ServerManager.Broadcast<T>(this, message, requireAuthenticated, channel);
             }
         }

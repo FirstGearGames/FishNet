@@ -8,9 +8,8 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-
 using MonoFN.Cecil.Metadata;
+using System;
 
 namespace MonoFN.Cecil {
 
@@ -43,7 +42,7 @@ namespace MonoFN.Cecil {
 
 					for (int i = 0; i < types.Length; i++) {
 						if (types [i] == null)
-							types [i] = reader.GetTypeDefinition ((uint) i + 1);
+							types [i] = reader.GetTypeDefinition ((uint)i + 1);
 
 						var type = types [i];
 

@@ -5,8 +5,6 @@ using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -53,7 +51,7 @@ namespace FishNet.CodeGenerating.Helping
             _actionT3TypeRef = CodegenSession.Module.ImportReference(typeof(Action<,,>));
             _actionT2ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Action<,>).GetConstructors()[0]);
             _actionT3ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Action<,,>).GetConstructors()[0]);
-            
+
             _autoPackTypeRef = CodegenSession.Module.ImportReference(typeof(AutoPackType));
 
             System.Reflection.PropertyInfo writePropertyInfo;

@@ -1,6 +1,6 @@
-﻿using System.Linq;
+﻿using MonoFN.Cecil;
+using System.Linq;
 using System.Reflection;
-using MonoFN.Cecil;
 
 namespace FishNet.CodeGenerating.ILCore
 {

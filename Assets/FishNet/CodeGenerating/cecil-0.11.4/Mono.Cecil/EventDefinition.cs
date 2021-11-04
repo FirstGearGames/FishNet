@@ -8,8 +8,8 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System.Threading;
 using MonoFN.Collections.Generic;
+using System.Threading;
 
 namespace MonoFN.Cecil {
 
@@ -25,8 +25,8 @@ namespace MonoFN.Cecil {
 		internal Collection<MethodDefinition> other_methods;
 
 		public EventAttributes Attributes {
-			get { return (EventAttributes) attributes; }
-			set { attributes = (ushort) value; }
+			get { return (EventAttributes)attributes; }
+			set { attributes = (ushort)value; }
 		}
 
 		public MethodDefinition AddMethod {
@@ -102,19 +102,19 @@ namespace MonoFN.Cecil {
 		#region EventAttributes
 
 		public bool IsSpecialName {
-			get { return attributes.GetAttributes ((ushort) EventAttributes.SpecialName); }
-			set { attributes = attributes.SetAttributes ((ushort) EventAttributes.SpecialName, value); }
+			get { return attributes.GetAttributes ((ushort)EventAttributes.SpecialName); }
+			set { attributes = attributes.SetAttributes ((ushort)EventAttributes.SpecialName, value); }
 		}
 
 		public bool IsRuntimeSpecialName {
-			get { return attributes.GetAttributes ((ushort) EventAttributes.RTSpecialName); }
-			set { attributes = attributes.SetAttributes ((ushort) EventAttributes.RTSpecialName, value); }
+			get { return attributes.GetAttributes ((ushort)EventAttributes.RTSpecialName); }
+			set { attributes = attributes.SetAttributes ((ushort)EventAttributes.RTSpecialName, value); }
 		}
 
 		#endregion
 
 		public new TypeDefinition DeclaringType {
-			get { return (TypeDefinition) base.DeclaringType; }
+			get { return (TypeDefinition)base.DeclaringType; }
 			set { base.DeclaringType = value; }
 		}
 
@@ -125,7 +125,7 @@ namespace MonoFN.Cecil {
 		public EventDefinition (string name, EventAttributes attributes, TypeReference eventType)
 			: base (name, eventType)
 		{
-			this.attributes = (ushort) attributes;
+			this.attributes = (ushort)attributes;
 			this.token = new MetadataToken (TokenType.Event);
 		}
 

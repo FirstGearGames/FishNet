@@ -8,13 +8,12 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Cecil.Metadata;
+using MonoFN.Cecil.PE;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-
-using MonoFN.Cecil.Metadata;
-using MonoFN.Cecil.PE;
 
 namespace MonoFN.Cecil.Cil {
 
@@ -171,7 +170,7 @@ namespace MonoFN.Cecil.Cil {
 				throw new InvalidOperationException ();
 
 			return new EmbeddedPortablePdbReader (
-				(PortablePdbReader) new PortablePdbReaderProvider ().GetSymbolReader (module, GetPortablePdbStream (entry)));
+				(PortablePdbReader)new PortablePdbReaderProvider ().GetSymbolReader (module, GetPortablePdbStream (entry)));
 		}
 
 		static Stream GetPortablePdbStream (ImageDebugHeaderEntry entry)
@@ -194,8 +193,7 @@ namespace MonoFN.Cecil.Cil {
 		}
 	}
 
-	public sealed class EmbeddedPortablePdbReader : ISymbolReader
-	{
+	public sealed class EmbeddedPortablePdbReader : ISymbolReader {
 		private readonly PortablePdbReader reader;
 
 		internal EmbeddedPortablePdbReader (PortablePdbReader reader)
@@ -227,8 +225,7 @@ namespace MonoFN.Cecil.Cil {
 		}
 	}
 
-	public sealed class PortablePdbWriterProvider : ISymbolWriterProvider
-	{
+	public sealed class PortablePdbWriterProvider : ISymbolWriterProvider {
 		public ISymbolWriter GetSymbolWriter (ModuleDefinition module, string fileName)
 		{
 			Mixin.CheckModule (module);
@@ -298,7 +295,7 @@ namespace MonoFN.Cecil.Cil {
 				MajorVersion = 256,
 				MinorVersion = 20557,
 				Type = ImageDebugType.CodeView,
-				TimeDateStamp = (int) module.timestamp,
+				TimeDateStamp = (int)module.timestamp,
 			};
 
 			var buffer = new ByteBuffer ();
@@ -389,7 +386,7 @@ namespace MonoFN.Cecil.Cil {
 				if (tables [i] == null || tables [i].Length == 0)
 					continue;
 
-				pdb_heap.WriteUInt32 ((uint) tables [i].Length);
+				pdb_heap.WriteUInt32 ((uint)tables [i].Length);
 			}
 		}
 
@@ -409,7 +406,7 @@ namespace MonoFN.Cecil.Cil {
 			Mixin.CheckFileName (fileName);
 
 			var stream = new MemoryStream ();
-			var pdb_writer = (PortablePdbWriter) new PortablePdbWriterProvider ().GetSymbolWriter (module, stream);
+			var pdb_writer = (PortablePdbWriter)new PortablePdbWriterProvider ().GetSymbolWriter (module, stream);
 			return new EmbeddedPortablePdbWriter (stream, pdb_writer);
 		}
 
@@ -453,14 +450,14 @@ namespace MonoFN.Cecil.Cil {
 			w.WriteByte (0x44);
 			w.WriteByte (0x42);
 
-			w.WriteInt32 ((int) stream.Length);
+			w.WriteInt32 ((int)stream.Length);
 
 			stream.Position = 0;
 
 			using (var compress_stream = new DeflateStream (data, CompressionMode.Compress, leaveOpen: true))
 				stream.CopyTo (compress_stream);
 
-			directory.SizeOfData = (int) data.Length;
+			directory.SizeOfData = (int)data.Length;
 
 			return new ImageDebugHeader (new [] {
 				writer.GetDebugHeader ().Entries [0],

@@ -107,7 +107,7 @@ namespace MonoFN.Cecil.Cil {
 			set { hash = value; }
 		}
 
-		public byte[] EmbeddedSource {
+		public byte [] EmbeddedSource {
 			get { return embedded_source; }
 			set { embedded_source = value; }
 		}

@@ -8,12 +8,11 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Cecil.Metadata;
+using MonoFN.Collections.Generic;
 using System;
 using System.Collections.Generic;
-using MonoFN.Collections.Generic;
 using SR = System.Reflection;
-
-using MonoFN.Cecil.Metadata;
 
 namespace MonoFN.Cecil {
 
@@ -240,7 +239,7 @@ namespace MonoFN.Cecil {
 			if (type.DeclaringType != null)
 				return context.TypeParameter (NormalizeTypeFullName (type.DeclaringType), type.GenericParameterPosition);
 
-			throw new InvalidOperationException();
+			throw new InvalidOperationException ();
 		}
 
 		static string NormalizeMethodName (SR.MethodBase method)
@@ -269,7 +268,8 @@ namespace MonoFN.Cecil {
 					instance_arguments.Add (ImportType (arguments [i], context));
 
 				return instance;
-			} finally {
+			}
+			finally {
 				context.Pop ();
 			}
 		}
@@ -308,11 +308,10 @@ namespace MonoFN.Cecil {
 			if (TryGetAssemblyNameReference (name, out reference))
 				return reference;
 
-			reference = new AssemblyNameReference (name.Name, name.Version)
-			{
+			reference = new AssemblyNameReference (name.Name, name.Version) {
 				PublicKeyToken = name.GetPublicKeyToken (),
 				Culture = name.CultureInfo.Name,
-				HashAlgorithm = (AssemblyHashAlgorithm) name.HashAlgorithm,
+				HashAlgorithm = (AssemblyHashAlgorithm)name.HashAlgorithm,
 			};
 
 			module.AssemblyReferences.Add (reference);
@@ -351,7 +350,8 @@ namespace MonoFN.Cecil {
 					DeclaringType = declaring_type,
 					FieldType = ImportType (field.FieldType, context),
 				};
-			} finally {
+			}
+			finally {
 				context.Pop ();
 			}
 		}
@@ -406,7 +406,8 @@ namespace MonoFN.Cecil {
 				reference.DeclaringType = declaring_type;
 
 				return reference;
-			} finally {
+			}
+			finally {
 				context.Pop ();
 			}
 		}
@@ -441,7 +442,8 @@ namespace MonoFN.Cecil {
 					instance_arguments.Add (ImportType (arguments [i], context));
 
 				return instance;
-			} finally {
+			}
+			finally {
 				context.Pop ();
 			}
 		}
@@ -518,10 +520,10 @@ namespace MonoFN.Cecil {
 		{
 			switch (scope.MetadataScopeType) {
 			case MetadataScopeType.AssemblyNameReference:
-				return ImportReference ((AssemblyNameReference) scope);
+				return ImportReference ((AssemblyNameReference)scope);
 			case MetadataScopeType.ModuleDefinition:
 				if (scope == module) return scope;
-				return ImportReference (((ModuleDefinition) scope).Assembly.Name);
+				return ImportReference (((ModuleDefinition)scope).Assembly.Name);
 			case MetadataScopeType.ModuleReference:
 				throw new NotImplementedException ();
 			}
@@ -571,22 +573,22 @@ namespace MonoFN.Cecil {
 		{
 			switch (type.etype) {
 			case ElementType.SzArray:
-				var vector = (ArrayType) type;
+				var vector = (ArrayType)type;
 				return new ArrayType (ImportType (vector.ElementType, context));
 			case ElementType.Ptr:
-				var pointer = (PointerType) type;
+				var pointer = (PointerType)type;
 				return new PointerType (ImportType (pointer.ElementType, context));
 			case ElementType.ByRef:
-				var byref = (ByReferenceType) type;
+				var byref = (ByReferenceType)type;
 				return new ByReferenceType (ImportType (byref.ElementType, context));
 			case ElementType.Pinned:
-				var pinned = (PinnedType) type;
+				var pinned = (PinnedType)type;
 				return new PinnedType (ImportType (pinned.ElementType, context));
 			case ElementType.Sentinel:
-				var sentinel = (SentinelType) type;
+				var sentinel = (SentinelType)type;
 				return new SentinelType (ImportType (sentinel.ElementType, context));
 			case ElementType.FnPtr:
-				var fnptr = (FunctionPointerType) type;
+				var fnptr = (FunctionPointerType)type;
 				var imported_fnptr = new FunctionPointerType () {
 					HasThis = fnptr.HasThis,
 					ExplicitThis = fnptr.ExplicitThis,
@@ -603,17 +605,17 @@ namespace MonoFN.Cecil {
 
 				return imported_fnptr;
 			case ElementType.CModOpt:
-				var modopt = (OptionalModifierType) type;
+				var modopt = (OptionalModifierType)type;
 				return new OptionalModifierType (
 					ImportType (modopt.ModifierType, context),
 					ImportType (modopt.ElementType, context));
 			case ElementType.CModReqD:
-				var modreq = (RequiredModifierType) type;
+				var modreq = (RequiredModifierType)type;
 				return new RequiredModifierType (
 					ImportType (modreq.ModifierType, context),
 					ImportType (modreq.ElementType, context));
 			case ElementType.Array:
-				var array = (ArrayType) type;
+				var array = (ArrayType)type;
 				var imported_array = new ArrayType (ImportType (array.ElementType, context));
 				if (array.IsVector)
 					return imported_array;
@@ -631,7 +633,7 @@ namespace MonoFN.Cecil {
 
 				return imported_array;
 			case ElementType.GenericInst:
-				var instance = (GenericInstanceType) type;
+				var instance = (GenericInstanceType)type;
 				var element_type = ImportType (instance.ElementType, context);
 				var arguments = instance.GenericArguments;
 				var imported_instance = new GenericInstanceType (element_type, arguments.Count);
@@ -642,12 +644,12 @@ namespace MonoFN.Cecil {
 
 				return imported_instance;
 			case ElementType.Var:
-				var var_parameter = (GenericParameter) type;
+				var var_parameter = (GenericParameter)type;
 				if (var_parameter.DeclaringType == null)
 					throw new InvalidOperationException ();
 				return context.TypeParameter (var_parameter.DeclaringType.FullName, var_parameter.Position);
 			case ElementType.MVar:
-				var mvar_parameter = (GenericParameter) type;
+				var mvar_parameter = (GenericParameter)type;
 				if (mvar_parameter.DeclaringMethod == null)
 					throw new InvalidOperationException ();
 				return context.MethodParameter (context.NormalizeMethodName (mvar_parameter.DeclaringMethod), mvar_parameter.Position);
@@ -667,7 +669,8 @@ namespace MonoFN.Cecil {
 					DeclaringType = declaring_type,
 					FieldType = ImportType (field.FieldType, context),
 				};
-			} finally {
+			}
+			finally {
 				context.Pop ();
 			}
 		}
@@ -704,8 +707,9 @@ namespace MonoFN.Cecil {
 						new ParameterDefinition (ImportType (parameters [i].ParameterType, context)));
 
 				return reference;
-			} finally {
-				context.Pop();
+			}
+			finally {
+				context.Pop ();
 			}
 		}
 
@@ -714,7 +718,7 @@ namespace MonoFN.Cecil {
 			if (!method.IsGenericInstance)
 				throw new NotSupportedException ();
 
-			var instance = (GenericInstanceMethod) method;
+			var instance = (GenericInstanceMethod)method;
 			var element_method = ImportMethod (instance.ElementMethod, context);
 			var imported_instance = new GenericInstanceMethod (element_method);
 

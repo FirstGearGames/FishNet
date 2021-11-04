@@ -8,12 +8,10 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Cecil.PE;
 using System;
 using System.Collections.Generic;
 using System.Text;
-
-using MonoFN.Cecil.PE;
-
 using RVA = System.UInt32;
 
 namespace MonoFN.Cecil.Metadata {
@@ -49,17 +47,17 @@ namespace MonoFN.Cecil.Metadata {
 
 		int GetTableLength (Table table)
 		{
-			return (int) table_infos [(int) table].Length;
+			return (int)table_infos [(int)table].Length;
 		}
 
-		public TTable GetTable<TTable> (Table table) where TTable : MetadataTable, new ()
+		public TTable GetTable<TTable> (Table table) where TTable : MetadataTable, new()
 		{
-			var md_table = (TTable) tables [(int) table];
+			var md_table = (TTable)tables [(int)table];
 			if (md_table != null)
 				return md_table;
 
 			md_table = new TTable ();
-			tables [(int) table] = md_table;
+			tables [(int)table] = md_table;
 			return md_table;
 		}
 
@@ -68,7 +66,7 @@ namespace MonoFN.Cecil.Metadata {
 			if (size == 4)
 				WriteUInt32 (value);
 			else
-				WriteUInt16 ((ushort) value);
+				WriteUInt16 ((ushort)value);
 		}
 
 		public void WriteBySize (uint value, bool large)
@@ -76,7 +74,7 @@ namespace MonoFN.Cecil.Metadata {
 			if (large)
 				WriteUInt32 (value);
 			else
-				WriteUInt16 ((ushort) value);
+				WriteUInt16 ((ushort)value);
 		}
 
 		public void WriteString (uint @string)
@@ -96,12 +94,12 @@ namespace MonoFN.Cecil.Metadata {
 
 		public void WriteRID (uint rid, Table table)
 		{
-			WriteBySize (rid, table_infos [(int) table].IsLarge);
+			WriteBySize (rid, table_infos [(int)table].IsLarge);
 		}
 
 		int GetCodedIndexSize (CodedIndex coded_index)
 		{
-			var index = (int) coded_index;
+			var index = (int)coded_index;
 			var size = coded_index_sizes [index];
 			if (size != 0)
 				return size;
@@ -116,13 +114,13 @@ namespace MonoFN.Cecil.Metadata {
 
 		public void WriteTableHeap ()
 		{
-			WriteUInt32 (0);					// Reserved
-			WriteByte (GetTableHeapVersion ());	// MajorVersion
-			WriteByte (0);						// MinorVersion
-			WriteByte (GetHeapSizes ());		// HeapSizes
-			WriteByte (10);						// Reserved2
-			WriteUInt64 (GetValid ());			// Valid
-			WriteUInt64 (0xc416003301fa00);		// Sorted
+			WriteUInt32 (0);                    // Reserved
+			WriteByte (GetTableHeapVersion ()); // MajorVersion
+			WriteByte (0);                      // MinorVersion
+			WriteByte (GetHeapSizes ());        // HeapSizes
+			WriteByte (10);                     // Reserved2
+			WriteUInt64 (GetValid ());          // Valid
+			WriteUInt64 (0xc416003301fa00);     // Sorted
 
 			WriteRowCount ();
 			WriteTables ();
@@ -135,7 +133,7 @@ namespace MonoFN.Cecil.Metadata {
 				if (table == null || table.Length == 0)
 					continue;
 
-				WriteUInt32 ((uint) table.Length);
+				WriteUInt32 ((uint)table.Length);
 			}
 		}
 
@@ -180,7 +178,7 @@ namespace MonoFN.Cecil.Metadata {
 			for (int i = 0; i < tables.Length; i++) {
 				var table = tables [i];
 				if (table != null && table.Length > 0)
-					table_infos [i].Length = (uint) table.Length;
+					table_infos [i].Length = (uint)table.Length;
 			}
 		}
 
@@ -247,7 +245,7 @@ namespace MonoFN.Cecil.Metadata {
 
 		public uint AddResource (byte [] resource)
 		{
-			var offset = (uint) this.position;
+			var offset = (uint)this.position;
 			WriteInt32 (resource.Length);
 			WriteBytes (resource);
 			return offset;
@@ -263,7 +261,7 @@ namespace MonoFN.Cecil.Metadata {
 
 		public RVA AddData (byte [] data)
 		{
-			var rva = (RVA) position;
+			var rva = (RVA)position;
 			WriteBytes (data);
 			return rva;
 		}
@@ -302,7 +300,7 @@ namespace MonoFN.Cecil.Metadata {
 			if (guids.TryGetValue (guid, out index))
 				return index;
 
-			index = (uint) guids.Count + 1;
+			index = (uint)guids.Count + 1;
 			WriteGuid (guid);
 			guids.Add (guid, index);
 			return index;
@@ -334,7 +332,7 @@ namespace MonoFN.Cecil.Metadata {
 			if (strings.TryGetValue (@string, out index))
 				return index;
 
-			index = (uint) strings.Count + 1;
+			index = (uint)strings.Count + 1;
 			strings.Add (@string, index);
 			return index;
 		}
@@ -357,9 +355,9 @@ namespace MonoFN.Cecil.Metadata {
 
 				if (previous.EndsWith (@string, StringComparison.Ordinal) && !IsLowSurrogateChar (entry.Key [0])) {
 					// Map over the tail of prev string. Watch for null-terminator of prev string.
-					string_offsets [index] = (uint) (position - (Encoding.UTF8.GetByteCount (entry.Key) + 1));
+					string_offsets [index] = (uint)(position - (Encoding.UTF8.GetByteCount (entry.Key) + 1));
 				} else {
-					string_offsets [index] = (uint) position;
+					string_offsets [index] = (uint)position;
 					WriteString (@string);
 				}
 
@@ -391,7 +389,7 @@ namespace MonoFN.Cecil.Metadata {
 		// that are a suffix of it.  
 		private class SuffixSort : IComparer<KeyValuePair<string, uint>> {
 
-			public int Compare(KeyValuePair<string, uint> xPair, KeyValuePair<string, uint> yPair)
+			public int Compare (KeyValuePair<string, uint> xPair, KeyValuePair<string, uint> yPair)
 			{
 				var x = xPair.Key;
 				var y = yPair.Key;
@@ -431,7 +429,7 @@ namespace MonoFN.Cecil.Metadata {
 			if (blobs.TryGetValue (blob, out index))
 				return index;
 
-			index = (uint) base.position;
+			index = (uint)base.position;
 			WriteBlob (blob);
 			blobs.Add (blob, index);
 			return index;
@@ -439,7 +437,7 @@ namespace MonoFN.Cecil.Metadata {
 
 		void WriteBlob (ByteBuffer blob)
 		{
-			WriteCompressedUInt32 ((uint) blob.length);
+			WriteCompressedUInt32 ((uint)blob.length);
 			WriteBytes (blob);
 		}
 	}
@@ -452,7 +450,7 @@ namespace MonoFN.Cecil.Metadata {
 			if (strings.TryGetValue (@string, out index))
 				return index;
 
-			index = (uint) base.position;
+			index = (uint)base.position;
 			WriteString (@string);
 			strings.Add (@string, index);
 			return index;
@@ -460,7 +458,7 @@ namespace MonoFN.Cecil.Metadata {
 
 		protected override void WriteString (string @string)
 		{
-			WriteCompressedUInt32 ((uint) @string.Length * 2 + 1);
+			WriteCompressedUInt32 ((uint)@string.Length * 2 + 1);
 
 			byte special = 0;
 

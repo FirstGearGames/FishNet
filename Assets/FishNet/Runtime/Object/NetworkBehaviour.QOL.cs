@@ -1,8 +1,8 @@
-﻿using FishNet.Managing;
-using FishNet.Connection;
-using UnityEngine;
+﻿using FishNet.Connection;
+using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Timing;
+using UnityEngine;
 
 namespace FishNet.Object
 {

@@ -1,12 +1,12 @@
-using System;
 using ENet;
+using System;
 
 namespace Fluidity
 {
     [Serializable]
     public enum ChannelType : byte
     {
-        Reliable = PacketFlags.Reliable,   
+        Reliable = PacketFlags.Reliable,
         Unreliable = PacketFlags.Unsequenced
     }
 
@@ -54,7 +54,7 @@ namespace Fluidity.Server
     public struct ConnectionEvent
     {
         public bool Connected;
-        public int ConnectionId;        
+        public int ConnectionId;
     }
 
 }

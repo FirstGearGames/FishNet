@@ -56,28 +56,28 @@ namespace MonoFN.Cecil {
 		}
 
 		public AssemblyAttributes Attributes {
-			get { return (AssemblyAttributes) attributes; }
-			set { attributes = (uint) value; }
+			get { return (AssemblyAttributes)attributes; }
+			set { attributes = (uint)value; }
 		}
 
 		public bool HasPublicKey {
-			get { return attributes.GetAttributes ((uint) AssemblyAttributes.PublicKey); }
-			set { attributes = attributes.SetAttributes ((uint) AssemblyAttributes.PublicKey, value); }
+			get { return attributes.GetAttributes ((uint)AssemblyAttributes.PublicKey); }
+			set { attributes = attributes.SetAttributes ((uint)AssemblyAttributes.PublicKey, value); }
 		}
 
 		public bool IsSideBySideCompatible {
-			get { return attributes.GetAttributes ((uint) AssemblyAttributes.SideBySideCompatible); }
-			set { attributes = attributes.SetAttributes ((uint) AssemblyAttributes.SideBySideCompatible, value); }
+			get { return attributes.GetAttributes ((uint)AssemblyAttributes.SideBySideCompatible); }
+			set { attributes = attributes.SetAttributes ((uint)AssemblyAttributes.SideBySideCompatible, value); }
 		}
 
 		public bool IsRetargetable {
-			get { return attributes.GetAttributes ((uint) AssemblyAttributes.Retargetable); }
-			set { attributes = attributes.SetAttributes ((uint) AssemblyAttributes.Retargetable, value); }
+			get { return attributes.GetAttributes ((uint)AssemblyAttributes.Retargetable); }
+			set { attributes = attributes.SetAttributes ((uint)AssemblyAttributes.Retargetable, value); }
 		}
 
 		public bool IsWindowsRuntime {
-			get { return attributes.GetAttributes ((uint) AssemblyAttributes.WindowsRuntime); }
-			set { attributes = attributes.SetAttributes ((uint) AssemblyAttributes.WindowsRuntime, value); }
+			get { return attributes.GetAttributes ((uint)AssemblyAttributes.WindowsRuntime); }
+			set { attributes = attributes.SetAttributes ((uint)AssemblyAttributes.WindowsRuntime, value); }
 		}
 
 		public byte [] PublicKey {
@@ -150,7 +150,7 @@ namespace MonoFN.Cecil {
 
 				var pk_token = PublicKeyToken;
 				if (!pk_token.IsNullOrEmpty () && pk_token.Length > 0) {
-					for (int i = 0 ; i < pk_token.Length ; i++) {
+					for (int i = 0; i < pk_token.Length; i++) {
 						builder.Append (pk_token [i].ToString ("x2"));
 					}
 				} else
@@ -250,7 +250,7 @@ namespace MonoFN.Cecil {
 
 	partial class Mixin {
 
-		public static Version ZeroVersion = new Version (0, 0, 0 ,0);
+		public static Version ZeroVersion = new Version (0, 0, 0, 0);
 
 		public static Version CheckVersion (Version version)
 		{

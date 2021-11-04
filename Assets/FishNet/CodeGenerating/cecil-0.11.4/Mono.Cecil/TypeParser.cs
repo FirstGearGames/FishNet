@@ -8,10 +8,9 @@
 // Licensed under the MIT/X11 license.
 //
 
+using MonoFN.Cecil.Metadata;
 using System;
 using System.Text;
-
-using MonoFN.Cecil.Metadata;
 
 namespace MonoFN.Cecil {
 
@@ -444,7 +443,7 @@ namespace MonoFN.Cecil {
 				return;
 
 			if (type.IsTypeSpecification ())
-				AppendTypeSpecification ((TypeSpecification) type, name);
+				AppendTypeSpecification ((TypeSpecification)type, name);
 
 			if (RequiresFullyQualifiedName (type, top_level)) {
 				name.Append (", ");
@@ -457,9 +456,9 @@ namespace MonoFN.Cecil {
 			var scope = type.Scope;
 			switch (scope.MetadataScopeType) {
 			case MetadataScopeType.AssemblyNameReference:
-				return ((AssemblyNameReference) scope).FullName;
+				return ((AssemblyNameReference)scope).FullName;
 			case MetadataScopeType.ModuleDefinition:
-				return ((ModuleDefinition) scope).Assembly.Name.FullName;
+				return ((ModuleDefinition)scope).Assembly.Name.FullName;
 			}
 
 			throw new ArgumentException ();
@@ -468,7 +467,7 @@ namespace MonoFN.Cecil {
 		static void AppendTypeSpecification (TypeSpecification type, StringBuilder name)
 		{
 			if (type.ElementType.IsTypeSpecification ())
-				AppendTypeSpecification ((TypeSpecification) type.ElementType, name);
+				AppendTypeSpecification ((TypeSpecification)type.ElementType, name);
 
 			switch (type.etype) {
 			case ElementType.Ptr:
@@ -479,7 +478,7 @@ namespace MonoFN.Cecil {
 				break;
 			case ElementType.SzArray:
 			case ElementType.Array:
-				var array = (ArrayType) type;
+				var array = (ArrayType)type;
 				if (array.IsVector) {
 					name.Append ("[]");
 				} else {
@@ -490,7 +489,7 @@ namespace MonoFN.Cecil {
 				}
 				break;
 			case ElementType.GenericInst:
-				var instance = (GenericInstanceType) type;
+				var instance = (GenericInstanceType)type;
 				var arguments = instance.GenericArguments;
 
 				name.Append ('[');

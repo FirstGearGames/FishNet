@@ -243,9 +243,11 @@ namespace FishNet.Object
             }
 
             bool activeNewOwner = (newOwner != null && newOwner.IsActive);
+
+            //Set prevOwner, disallowing null.
             NetworkConnection prevOwner = Owner;
-            bool activePrevOwner = (prevOwner != null && prevOwner.IsActive);
-            bool validPrevOwner = (prevOwner != null && prevOwner.IsValid);
+            if (prevOwner == null)
+                prevOwner = NetworkManager.EmptyConnection;
 
             SetOwner(newOwner);
             /* Only modify objects if asServer or not
@@ -257,11 +259,11 @@ namespace FishNet.Object
             {
                 if (activeNewOwner)
                     newOwner.AddObject(this);
-                if (validPrevOwner)
+                if (prevOwner.IsValid)
                     prevOwner.RemoveObject(this);
             }
             //After changing owners invoke callbacks.
-            InvokeOwnership(Owner, asServer);
+            InvokeOwnership(prevOwner, asServer);
 
             //If asServer send updates to clients as needed.
             if (asServer)
@@ -286,7 +288,7 @@ namespace FishNet.Object
                     //Only sending to old / new.
                     else
                     {
-                        if (activePrevOwner)
+                        if (prevOwner.IsActive)
                             NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), prevOwner);
                         if (activeNewOwner)
                             NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), newOwner);

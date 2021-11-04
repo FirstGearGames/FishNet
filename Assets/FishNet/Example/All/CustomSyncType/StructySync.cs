@@ -227,7 +227,7 @@ namespace FishNet.Example.CustomSyncObject
 
                 OnChange?.Invoke(operation, prev, next, asServer);
             }
-            
+
         }
 
         /// <summary>
@@ -254,7 +254,7 @@ namespace FishNet.Example.CustomSyncObject
             Structy data = GetValue(asServer);
             bool sameValue = (!force && (name == data.Name));
             if (!sameValue)
-            {                
+            {
                 Structy prev = data;
 
                 Structy next = data;
@@ -303,7 +303,7 @@ namespace FishNet.Example.CustomSyncObject
         /// </summary>
         /// <param name="asServer"></param>
         /// <returns></returns>
-        public Structy GetValue(bool asServer)  
+        public Structy GetValue(bool asServer)
         {
             return (asServer) ? _value : _clientValue;
         }

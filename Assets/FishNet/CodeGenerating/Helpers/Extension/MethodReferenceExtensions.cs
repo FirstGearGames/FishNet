@@ -1,19 +1,37 @@
 ﻿using MonoFN.Cecil;
 using MonoFN.Cecil.Rocks;
 using System;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
 
     public static class MethodReferenceExtensions
     {
-
+        /// <summary>
+        /// Makes a generic method with specified arguments.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="genericArguments"></param>
+        /// <returns></returns>
         public static GenericInstanceMethod MakeGenericMethod(this MethodReference method, params TypeReference[] genericArguments)
         {
             GenericInstanceMethod result = new GenericInstanceMethod(method);
-            foreach (var argument in genericArguments)
+            foreach (TypeReference argument in genericArguments)
                 result.GenericArguments.Add(argument);
+            return result;
+        }
+
+        /// <summary>
+        /// Makes a generic method with the same arguments as the original.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <returns></returns>
+        public static GenericInstanceMethod MakeGenericMethod(this MethodReference method)
+        {
+            GenericInstanceMethod result = new GenericInstanceMethod(method);
+            foreach (ParameterDefinition pd in method.Parameters)
+                result.GenericArguments.Add(pd.ParameterType);
+
             return result;
         }
 
@@ -33,7 +51,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 CallingConvention = self.CallingConvention,
                 HasThis = self.HasThis,
                 ExplicitThis = self.ExplicitThis
-            }; 
+            };
 
             foreach (ParameterDefinition parameter in self.Parameters)
                 reference.Parameters.Add(new ParameterDefinition(parameter.ParameterType));
@@ -52,11 +70,11 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="self"></param>
         /// <param name="instanceType"></param>
         /// <returns></returns>
-        public static MethodReference MakeHostInstanceGeneric(this MethodReference self,TypeReference typeRef, params TypeReference[] args)
+        public static MethodReference MakeHostInstanceGeneric(this MethodReference self, TypeReference typeRef, params TypeReference[] args)
         {
-            
+
             GenericInstanceType git = typeRef.MakeGenericInstanceType(args);
-            MethodReference reference = new MethodReference(self.Name, self.ReturnType,git)
+            MethodReference reference = new MethodReference(self.Name, self.ReturnType, git)
             {
                 CallingConvention = self.CallingConvention,
                 HasThis = self.HasThis,

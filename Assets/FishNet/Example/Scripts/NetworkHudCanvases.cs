@@ -1,15 +1,47 @@
 ﻿using FishNet.Managing;
+using FishNet.Transporting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class NetworkHudCanvases : MonoBehaviour
 {
-    private NetworkManager _networkManager;
-    public GameObject ServerButton;
-    public GameObject ClientButton;
-
+    #region Public.
+    /// <summary>
+    /// True to auto start server and client.
+    /// </summary>
     public bool AutoStart = true;
+    #endregion
+
+    #region Serialized.
+    [SerializeField]
+    private Color _stoppedColor;
+    [SerializeField]
+    private Color _changingColor;
+    [SerializeField]
+    private Color _startedColor;
+    [Header("Indicators")]
+    /// <summary>
+    /// Indicator for server state.
+    /// </summary>
+    [Tooltip("Indicator for server state.")]
+    [SerializeField]
+    private Image _serverIndicator;
+    /// <summary>
+    /// Indicator for client state.
+    /// </summary>
+    [Tooltip("Indicator for client state.")]
+    [SerializeField]
+    private Image _clientIndicator;
+    #endregion
+
+    #region Private.
+    /// <summary>
+    /// Found NetworkManager.
+    /// </summary>
+    private NetworkManager _networkManager;
+    #endregion
+
 
     private void Start()
     {
@@ -21,6 +53,19 @@ public class NetworkHudCanvases : MonoBehaviour
             gameObject.AddComponent<StandaloneInputModule>();
 
         _networkManager = FindObjectOfType<NetworkManager>();
+        if (_networkManager == null)
+        {
+            Debug.LogError("NetworkManager not found, HUD will not function.");
+            return;
+        }
+        else
+        {
+            UpdateColor(LocalConnectionStates.Stopped, ref _serverIndicator);
+            UpdateColor(LocalConnectionStates.Stopped, ref _clientIndicator);
+            _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
+            _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
+        }
+
         if (AutoStart)
         {
             OnClick_Server();
@@ -28,22 +73,46 @@ public class NetworkHudCanvases : MonoBehaviour
                 OnClick_Client();
         }
     }
-    private void Update()
+
+    private void OnDestroy()
     {
-        Text t;
+        if (_networkManager == null)
+            return;
 
-        t = ServerButton.GetComponentInChildren<Text>();
-        if (_networkManager.ServerManager.Started)
-            t.text = "Stop Server";
-        else
-            t.text = "Start Server";
-
-        t = ClientButton.GetComponentInChildren<Text>();
-        if (_networkManager.ClientManager.Started)
-            t.text = "Stop Client";
-        else
-            t.text = "Start Client";
+        _networkManager.ServerManager.OnServerConnectionState -= ServerManager_OnServerConnectionState;
+        _networkManager.ClientManager.OnClientConnectionState -= ClientManager_OnClientConnectionState;
     }
+
+    /// <summary>
+    /// Updates img color baased on state.
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="img"></param>
+    private void UpdateColor(LocalConnectionStates state, ref Image img)
+    {
+        Color c;
+        if (state == LocalConnectionStates.Started)
+            c = _startedColor;
+        else if (state == LocalConnectionStates.Stopped)
+            c = _stoppedColor;
+        else
+            c = _changingColor;
+
+        img.color = c;
+    }
+
+
+    private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
+    {
+        UpdateColor(obj.ConnectionState, ref _clientIndicator);
+    }
+
+
+    private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
+    {
+        UpdateColor(obj.ConnectionState, ref _serverIndicator);
+    }
+
 
     public void OnClick_Server()
     {

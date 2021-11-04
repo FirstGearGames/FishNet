@@ -8,8 +8,6 @@
 // Licensed under the MIT/X11 license.
 //
 
-using System;
-
 using RVA = System.UInt32;
 
 namespace MonoFN.Cecil.PE {
@@ -44,7 +42,7 @@ namespace MonoFN.Cecil.PE {
 
 		public void AddMap (TextSegment segment, int length)
 		{
-			map [(int) segment] = new Range (GetStart (segment), (uint) length);
+			map [(int)segment] = new Range (GetStart (segment), (uint)length);
 		}
 
 		public void AddMap (TextSegment segment, int length, int align)
@@ -56,40 +54,40 @@ namespace MonoFN.Cecil.PE {
 
 		public void AddMap (TextSegment segment, Range range)
 		{
-			map [(int) segment] = range;
+			map [(int)segment] = range;
 		}
 
 		public Range GetRange (TextSegment segment)
 		{
-			return map [(int) segment];
+			return map [(int)segment];
 		}
 
 		public DataDirectory GetDataDirectory (TextSegment segment)
 		{
-			var range = map [(int) segment];
+			var range = map [(int)segment];
 
 			return new DataDirectory (range.Length == 0 ? 0 : range.Start, range.Length);
 		}
 
 		public RVA GetRVA (TextSegment segment)
 		{
-			return map [(int) segment].Start;
+			return map [(int)segment].Start;
 		}
 
 		public RVA GetNextRVA (TextSegment segment)
 		{
-			var i = (int) segment;
+			var i = (int)segment;
 			return map [i].Start + map [i].Length;
 		}
 
 		public int GetLength (TextSegment segment)
 		{
-			return (int) map [(int) segment].Length;
+			return (int)map [(int)segment].Length;
 		}
 
 		RVA GetStart (TextSegment segment)
 		{
-			var index = (int) segment;
+			var index = (int)segment;
 			return index == 0 ? ImageWriter.text_rva : ComputeStart (index);
 		}
 
@@ -101,7 +99,7 @@ namespace MonoFN.Cecil.PE {
 
 		public uint GetLength ()
 		{
-			var range = map [(int) TextSegment.StartupStub];
+			var range = map [(int)TextSegment.StartupStub];
 			return range.Start - ImageWriter.text_rva + range.Length;
 		}
 	}

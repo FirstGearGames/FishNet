@@ -130,7 +130,7 @@ namespace FishNet.Observing
                      * the rest. */
                     bool conditionMet = condition.ConditionMet(connection, out bool notProcessed);
                     if (notProcessed)
-                        conditionMet = currentlyAdded;                       
+                        conditionMet = currentlyAdded;
 
                     //Condition not met.
                     if (!conditionMet)

@@ -369,7 +369,7 @@ namespace FishNet.Managing.Transporting
                 }
 
                 //if (sentBytes > 0 && _networkManager.ServerManager.Objects.Spawned.Count > 1)
-                    //Debug.Log($"Sent {sentBytes} bytes. Avg {sentBytes / (_networkManager.ServerManager.Objects.Spawned.Count - 1)} per object.");
+                //Debug.Log($"Sent {sentBytes} bytes. Avg {sentBytes / (_networkManager.ServerManager.Objects.Spawned.Count - 1)} per object.");
                 _dirtyToClients.Clear();
             }
             /* If sending from the client. */
