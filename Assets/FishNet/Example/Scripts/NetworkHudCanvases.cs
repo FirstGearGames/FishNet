@@ -14,10 +14,22 @@ public class NetworkHudCanvases : MonoBehaviour
     #endregion
 
     #region Serialized.
+    /// <summary>
+    /// Color when socket is stopped.
+    /// </summary>
+    [Tooltip("Color when socket is stopped.")]
     [SerializeField]
     private Color _stoppedColor;
+    /// <summary>
+    /// Color when socket is changing.
+    /// </summary>
+    [Tooltip("Color when socket is changing.")]
     [SerializeField]
     private Color _changingColor;
+    /// <summary>
+    /// Color when socket is started.
+    /// </summary>
+    [Tooltip("Color when socket is started.")]
     [SerializeField]
     private Color _startedColor;
     [Header("Indicators")]
@@ -40,6 +52,14 @@ public class NetworkHudCanvases : MonoBehaviour
     /// Found NetworkManager.
     /// </summary>
     private NetworkManager _networkManager;
+    /// <summary>
+    /// Current state of client socket.
+    /// </summary>
+    private LocalConnectionStates _clientState = LocalConnectionStates.Stopped;
+    /// <summary>
+    /// Current state of server socket.
+    /// </summary>
+    private LocalConnectionStates _serverState = LocalConnectionStates.Stopped;
     #endregion
 
 
@@ -104,23 +124,29 @@ public class NetworkHudCanvases : MonoBehaviour
 
     private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
     {
+        _clientState = obj.ConnectionState;
         UpdateColor(obj.ConnectionState, ref _clientIndicator);
     }
 
 
     private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
     {
+        _serverState = obj.ConnectionState;
         UpdateColor(obj.ConnectionState, ref _serverIndicator);
     }
 
 
     public void OnClick_Server()
     {
-        if (_networkManager.IsServer)
+        if (_networkManager == null)
+            return;
+
+        if (_serverState != LocalConnectionStates.Stopped)
         {
             //Stop client as well.
-            if (_networkManager.IsClient)
-                _networkManager.TransportManager.Transport.StopConnection(false);
+            if (_clientState != LocalConnectionStates.Stopped)
+                OnClick_Client();
+
             _networkManager.TransportManager.Transport.StopConnection(true);
         }
         else
@@ -132,7 +158,10 @@ public class NetworkHudCanvases : MonoBehaviour
 
     public void OnClick_Client()
     {
-        if (_networkManager.IsClient)
+        if (_networkManager == null)
+            return;
+
+        if (_clientState != LocalConnectionStates.Stopped)
             _networkManager.TransportManager.Transport.StopConnection(false);
         else
             _networkManager.TransportManager.Transport.StartConnection(false);
