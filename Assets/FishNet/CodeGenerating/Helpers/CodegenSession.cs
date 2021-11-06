@@ -16,8 +16,6 @@ namespace FishNet.CodeGenerating.Helping
 
         [System.ThreadStatic]
         internal static AttributeHelper AttributeHelper;
-        //[System.ThreadStatic]
-        //internal static ConnectionHelper ConnectionHelper;
         [System.ThreadStatic]
         internal static GeneralHelper GeneralHelper;
         [System.ThreadStatic]
@@ -48,9 +46,10 @@ namespace FishNet.CodeGenerating.Helping
         internal static NetworkBehaviourRpcProcessor NetworkBehaviourRpcProcessor;
         [System.ThreadStatic]
         internal static NetworkBehaviourSyncProcessor NetworkBehaviourSyncProcessor;
+#if PREDICTION
         [System.ThreadStatic]
         internal static NetworkBehaviourPredictionProcessor NetworkBehaviourPredictionProcessor;
-
+#endif
         /// <summary>
         /// Logs a warning.
         /// </summary>
@@ -103,7 +102,9 @@ namespace FishNet.CodeGenerating.Helping
             QolAttributeProcessor = new QolAttributeProcessor();
             NetworkBehaviourRpcProcessor = new NetworkBehaviourRpcProcessor();
             NetworkBehaviourSyncProcessor = new NetworkBehaviourSyncProcessor();
+#if PREDICTION
             NetworkBehaviourPredictionProcessor = new NetworkBehaviourPredictionProcessor();
+#endif
 
             if (!GeneralHelper.ImportReferences())
                 return false;

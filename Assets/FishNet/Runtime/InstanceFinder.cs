@@ -6,6 +6,7 @@ using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using FishNet.Utility;
+using System.Linq;
 using UnityEngine;
 #if UNITY_EDITOR
 #endif
@@ -29,26 +30,49 @@ namespace FishNet
             {
                 if (_networkManager == null)
                 {
-                    NetworkManager[] managers = GameObject.FindObjectsOfType<NetworkManager>();
-                    if (managers.Length > 0)
+                    int managersCount = NetworkManager.Instances.Count;
+                    //At least one manager.
+                    if (managersCount > 0)
                     {
-                        if (managers.Length > 1)
+                        _networkManager = NetworkManager.Instances.First();
+                        if (managersCount > 1)
                         {
-                            if (managers[0].CanLog(LoggingType.Warning))
+                            if (_networkManager.CanLog(LoggingType.Warning))
                                 Debug.LogWarning($"Multiple NetworkManagers found, the first result will be returned. If you only wish to have one NetworkManager then uncheck 'Allow Multiple' within your NetworkManagers.");
                         }
-
-                        _networkManager = managers[0];
                     }
+                    //No managers.
                     else
                     {
-
                         //If application is quitting return null without logging.
                         if (ApplicationState.IsQuitting())
                             return null;
 
                         Debug.Log($"NetworkManager not found in any open scenes.");
                     }
+
+                    #region old
+                    //NetworkManager[] managers = GameObject.FindObjectsOfType<NetworkManager>();
+                    //if (managers.Length > 0)
+                    //{
+                    //    if (managers.Length > 1)
+                    //    {
+                    //        if (managers[0].CanLog(LoggingType.Warning))
+                    //            Debug.LogWarning($"Multiple NetworkManagers found, the first result will be returned. If you only wish to have one NetworkManager then uncheck 'Allow Multiple' within your NetworkManagers.");
+                    //    }
+
+                    //    _networkManager = managers[0];
+                    //}
+                    //else
+                    //{
+
+                    //    //If application is quitting return null without logging.
+                    //    if (ApplicationState.IsQuitting())
+                    //        return null;
+
+                    //    Debug.Log($"NetworkManager not found in any open scenes.");
+                    //}
+                    #endregion
                 }
 
                 return _networkManager;

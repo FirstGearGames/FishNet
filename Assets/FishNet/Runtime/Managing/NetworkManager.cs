@@ -12,6 +12,9 @@ using FishNet.Authenticating;
 using FishNet.Object;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
+using FishNet.Utility;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FishNet.Managing
 {
@@ -21,7 +24,37 @@ namespace FishNet.Managing
     [DefaultExecutionOrder(short.MinValue)]
     public partial class NetworkManager : MonoBehaviour
     {
+        #region Types.
+        /// <summary>
+        /// How to persist with multiple NetworkManagers.
+        /// </summary>
+        public enum PersistenceType
+        {
+            /// <summary>
+            /// Destroy any new NetworkManagers.
+            /// </summary>
+            DestroyNewest,
+            /// <summary>
+            /// Destroy previous NetworkManager when a new NetworkManager occurs.
+            /// </summary>
+            DestroyOldest,
+            /// <summary>
+            /// Allow multiple NetworkManagers, do not destroy any automatically.
+            /// </summary>
+            AllowMultiple
+        }
+
+        #endregion
+
         #region Public.
+        /// <summary>
+        /// 
+        /// </summary>
+        private static HashSet<NetworkManager> _instances = new HashSet<NetworkManager>();
+        /// <summary>
+        /// Currently initialized NetworkManagers.
+        /// </summary>
+        public static IReadOnlyCollection<NetworkManager> Instances => _instances;
         /// <summary>
         /// True if server is active.
         /// </summary>
@@ -87,19 +120,28 @@ namespace FishNet.Managing
         [SerializeField]
         private bool _dontDestroyOnLoad = true;
         /// <summary>
-        /// True to allow multiple NetworkManagers. When false any copies will be destroyed.
+        /// How to persist when other NetworkManagers are introduced.
         /// </summary>
-        [Tooltip("True to allow multiple NetworkManagers. When false any copies will be destroyed.")]
+        [Tooltip("How to persist when other NetworkManagers are introduced.")]
         [SerializeField]
-        private bool _allowMultiple = false;
+        private PersistenceType _persistence = PersistenceType.DestroyNewest;
+        #endregion
+
+        #region Private.
+        /// <summary>
+        /// True if this NetworkManager can persist after Awake checks.
+        /// </summary>
+        private bool _canPersist = false;
         #endregion
 
         protected virtual void Awake()
         {
             InitializeLogging();
 
-            if (WillBeDestroyed())
+            _canPersist = CanInitialize();
+            if (!_canPersist)
                 return;
+
             if (TryGetComponent<NetworkObject>(out _))
             {
                 if (CanLog(LoggingType.Error))
@@ -114,6 +156,13 @@ namespace FishNet.Managing
             AddTimeManager();
             AddSceneManager(); ;
             InitializeComponents();
+
+            _instances.Add(this);
+        }
+
+        private void OnDestroy()
+        {
+            _instances.Remove(this);
         }
 
         /// <summary>
@@ -141,25 +190,49 @@ namespace FishNet.Managing
 
 
         /// <summary>
-        /// Returns if this NetworkManager can exist.
+        /// Returns if this NetworkManager can initialize.
         /// </summary>
         /// <returns></returns>
-        private bool WillBeDestroyed()
+        private bool CanInitialize()
         {
-            if (_allowMultiple)
-                return false;
+            /* If allow multiple then any number of
+             * NetworkManagers are allowed. Don't
+             * automatically destroy any. */
+            if (_persistence == PersistenceType.AllowMultiple)
+                return true;
 
-            //If here multiple are not allowed.
-            //If found NetworkManager isn't this copy then return false.
-            bool destroyThis = (InstanceFinder.NetworkManager != this);
-            if (destroyThis)
+            //If at least one manager is already instantiated/initialized.
+            if (_instances.Count > 0)
             {
-                if (CanLog(LoggingType.Common))
-                    Debug.Log($"NetworkManager on object {gameObject.name} is a duplicate and will be destroyed. If you wish to have multiple NetworkManagers enable 'Allow Multiple'.");
-                Destroy(gameObject);
-            }
+                GameObject target = null;
+                //If destroy newest.
+                if (_persistence == PersistenceType.DestroyNewest)
+                {
+                    target = gameObject;
+                }
+                //If destroy oldest.
+                else
+                {
+                    NetworkManager previous = Instances.First();
+                    if (previous != null)
+                        target = previous.gameObject;
+                }
 
-            return destroyThis;
+                bool result = (target != gameObject);
+                if (target != null)
+                {
+                    if (CanLog(LoggingType.Common))
+                        Debug.Log($"NetworkManager on object {gameObject.name} is is being destroyed due to persistence type {_persistence}.");
+                    Destroy(gameObject);
+                }
+
+                return result;
+            }
+            //First manager, will not be destroyed.
+            else
+            {
+                return true;
+            }
         }
 
         /// <summary>

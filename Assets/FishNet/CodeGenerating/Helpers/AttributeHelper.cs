@@ -11,7 +11,7 @@ namespace FishNet.CodeGenerating.Helping
     public class AttributeHelper
     {
         #region Reflection references.
-        internal string ReplicatedAttribute_FullName;
+        internal string ReplicateAttribute_FullName;
         internal string ReconcileAttribute_FullName;
         private string ServerAttribute_FullName;
         private string ClientAttribute_FullName;
@@ -31,7 +31,7 @@ namespace FishNet.CodeGenerating.Helping
             TargetRpcAttribute_FullName = typeof(TargetRpcAttribute).FullName;
             SyncVarAttribute_FullName = typeof(SyncVarAttribute).FullName;
             SyncObjectAttribute_FullName = typeof(SyncObjectAttribute).FullName;
-            ReplicatedAttribute_FullName = typeof(ReplicateAttribute).FullName;
+            ReplicateAttribute_FullName = typeof(ReplicateAttribute).FullName;
             ReconcileAttribute_FullName = typeof(ReconcileAttribute).FullName;
 
             return true;

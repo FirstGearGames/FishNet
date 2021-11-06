@@ -157,9 +157,9 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Gets current value.
         /// </summary>
-        /// <param name="previousValue"></param>
+        /// <param name="calledByUser"></param>
         /// <returns></returns>
-        public T GetValue(bool previousValue) => (previousValue) ? _previousClientValue : _value;
+        public T GetValue(bool calledByUser) => (calledByUser) ? _value : _previousClientValue;
 
         /// <summary>
         /// Resets to initialized values.

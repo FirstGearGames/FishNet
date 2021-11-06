@@ -41,7 +41,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="typeDef"></param>
         /// <param name="diagnostics"></param>
-        internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, uint syncTypeStartCount)
+        internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, ref uint syncTypeStartCount)
         {
             bool modified = false;
             _createdSyncTypeMethodDefinitions.Clear();

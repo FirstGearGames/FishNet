@@ -2,6 +2,7 @@
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.Processing;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Object.Delegating;
 using FishNet.Object.Helping;
@@ -19,34 +20,41 @@ namespace FishNet.CodeGenerating.Helping
     internal class ObjectHelper
     {
         #region Reflection references.
+        //Fullnames.
         internal string NetworkBehaviour_FullName;
         internal string IBroadcast_FullName;
         internal string SyncList_FullName;
+        //Prediction.
+        internal MethodReference NetworkBehaviour_SendReplicate_MethodRef;
+        //RPCs.
+        internal MethodReference NetworkBehaviour_SendServerRpc_MethodRef;
+        internal MethodReference NetworkBehaviour_SendObserversRpc_MethodRef;
+        internal MethodReference NetworkBehaviour_SendTargetRpc_MethodRef;
         private MethodReference NetworkBehaviour_RegisterServerRpc_MethodRef;
         private MethodReference NetworkBehaviour_RegisterObserversRpc_MethodRef;
         private MethodReference NetworkBehaviour_RegisterTargetRpc_MethodRef;
         private MethodReference Networkbehaviour_ServerRpcDelegateConstructor_MethodRef;
         private MethodReference Networkbehaviour_ClientRpcDelegateConstructor_MethodRef;
-        private MethodReference NetworkBehaviour_SendServerRpc_MethodRef;
-        private MethodReference NetworkBehaviour_SendObserversRpc_MethodRef;
-        private MethodReference NetworkBehaviour_SendTargetRpc_MethodRef;
+        //Is checks.
         private MethodReference NetworkBehaviour_IsClient_MethodRef;
         private MethodReference InstanceFinder_IsClient_MethodRef;
         private MethodReference NetworkBehaviour_IsServer_MethodRef;
         private MethodReference InstanceFinder_IsServer_MethodRef;
         private MethodReference NetworkBehaviour_IsHost_MethodRef;
         private MethodReference NetworkBehaviour_IsOwner_MethodRef;
+        //Misc.
         private MethodReference NetworkBehaviour_CompareOwner_MethodRef;
         private MethodReference NetworkBehaviour_OwnerIsValid_MethodRef;
         internal MethodReference NetworkBehaviour_LocalConnection_MethodRef;
         internal MethodReference NetworkBehaviour_Owner_MethodRef;
         internal MethodReference NetworkBehaviour_ReadSyncVar_MethodRef;
         internal MethodReference Dictionary_Add_UShort_SyncBase_MethodRef;
+        internal MethodReference NetworkBehaviour_TimeManager_MethodRef;
+        internal MethodReference TimeManager_LocalTick_MethodRef;
         #endregion
 
         #region Const.
         internal const string AWAKE_METHOD_NAME = "Awake";
-        internal const string BUFFERED_RPC_PROPERTY_NAME = "BufferLast";
         #endregion
 
         internal bool ImportReferences()
@@ -76,7 +84,7 @@ namespace FishNet.CodeGenerating.Helping
                 }
             }
 
-            //InstanceFinder methods.
+            //InstanceFinder infos.
             Type instanceFinderType = typeof(InstanceFinder);
             foreach (PropertyInfo pi in instanceFinderType.GetProperties())
             {
@@ -86,51 +94,66 @@ namespace FishNet.CodeGenerating.Helping
                     InstanceFinder_IsServer_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
             }
 
+
+            //TimeManager infos.
+            Type timeManagerType = typeof(TimeManager);
+            foreach (PropertyInfo pi in timeManagerType.GetProperties())
+            {
+                if (pi.Name == nameof(TimeManager.LocalTick))
+                    TimeManager_LocalTick_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
+            }
+
             //ServerRpcDelegate and ClientRpcDelegate constructors.
             Networkbehaviour_ServerRpcDelegateConstructor_MethodRef = CodegenSession.Module.ImportReference(typeof(ServerRpcDelegate).GetConstructors().First());
             Networkbehaviour_ClientRpcDelegateConstructor_MethodRef = CodegenSession.Module.ImportReference(typeof(ClientRpcDelegate).GetConstructors().First());
 
-            foreach (MethodInfo methodInfo in networkBehaviourType.GetMethods((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
+            foreach (MethodInfo mi in networkBehaviourType.GetMethods((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
                 //CreateDelegates.
-                if (methodInfo.Name == nameof(NetworkBehaviour.RegisterServerRpc))
-                    NetworkBehaviour_RegisterServerRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.RegisterObserversRpc))
-                    NetworkBehaviour_RegisterObserversRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.RegisterTargetRpc))
-                    NetworkBehaviour_RegisterTargetRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                if (mi.Name == nameof(NetworkBehaviour.RegisterServerRpc))
+                    NetworkBehaviour_RegisterServerRpc_MethodRef = CodegenSession.Module.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.RegisterObserversRpc))
+                    NetworkBehaviour_RegisterObserversRpc_MethodRef = CodegenSession.Module.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.RegisterTargetRpc))
+                    NetworkBehaviour_RegisterTargetRpc_MethodRef = CodegenSession.Module.ImportReference(mi);
+                //SendPredictions.
+                else if (mi.Name == nameof(NetworkBehaviour.SendReplicate))
+                    NetworkBehaviour_SendReplicate_MethodRef = CodegenSession.Module.ImportReference(mi);
                 //SendRpcs.
-                else if (methodInfo.Name == nameof(NetworkBehaviour.SendServerRpc))
-                    NetworkBehaviour_SendServerRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.SendObserversRpc))
-                    NetworkBehaviour_SendObserversRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.SendTargetRpc))
-                    NetworkBehaviour_SendTargetRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (mi.Name == nameof(NetworkBehaviour.SendServerRpc))
+                    NetworkBehaviour_SendServerRpc_MethodRef = CodegenSession.Module.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.SendObserversRpc))
+                    NetworkBehaviour_SendObserversRpc_MethodRef = CodegenSession.Module.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.SendTargetRpc))
+                    NetworkBehaviour_SendTargetRpc_MethodRef = CodegenSession.Module.ImportReference(mi);
                 //Misc.
-                else if (methodInfo.Name == nameof(NetworkBehaviour.CompareOwner))
-                    NetworkBehaviour_CompareOwner_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.ReadSyncVar))
-                    NetworkBehaviour_ReadSyncVar_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (mi.Name == nameof(NetworkBehaviour.CompareOwner))
+                    NetworkBehaviour_CompareOwner_MethodRef = CodegenSession.Module.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.ReadSyncVar))
+                    NetworkBehaviour_ReadSyncVar_MethodRef = CodegenSession.Module.ImportReference(mi);
             }
 
-            foreach (PropertyInfo propertyInfo in networkBehaviourType.GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
+            foreach (PropertyInfo pi in networkBehaviourType.GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
                 //Server/Client states.
-                if (propertyInfo.Name == nameof(NetworkBehaviour.IsClient))
-                    NetworkBehaviour_IsClient_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
-                else if (propertyInfo.Name == nameof(NetworkBehaviour.IsServer))
-                    NetworkBehaviour_IsServer_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
-                else if (propertyInfo.Name == nameof(NetworkBehaviour.IsHost))
-                    NetworkBehaviour_IsHost_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
-                else if (propertyInfo.Name == nameof(NetworkBehaviour.IsOwner))
-                    NetworkBehaviour_IsOwner_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
+                if (pi.Name == nameof(NetworkBehaviour.IsClient))
+                    NetworkBehaviour_IsClient_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
+                else if (pi.Name == nameof(NetworkBehaviour.IsServer))
+                    NetworkBehaviour_IsServer_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
+                else if (pi.Name == nameof(NetworkBehaviour.IsHost))
+                    NetworkBehaviour_IsHost_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
+                else if (pi.Name == nameof(NetworkBehaviour.IsOwner))
+                    NetworkBehaviour_IsOwner_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
                 //Owner.
-                else if (propertyInfo.Name == nameof(NetworkBehaviour.Owner))
-                    NetworkBehaviour_Owner_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
-                else if (propertyInfo.Name == nameof(NetworkBehaviour.LocalConnection))
-                    NetworkBehaviour_LocalConnection_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
-                else if (propertyInfo.Name == nameof(NetworkBehaviour.OwnerIsValid))
-                    NetworkBehaviour_OwnerIsValid_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
+                else if (pi.Name == nameof(NetworkBehaviour.Owner))
+                    NetworkBehaviour_Owner_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
+                else if (pi.Name == nameof(NetworkBehaviour.LocalConnection))
+                    NetworkBehaviour_LocalConnection_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
+                else if (pi.Name == nameof(NetworkBehaviour.OwnerIsValid))
+                    NetworkBehaviour_OwnerIsValid_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
+                //Misc.
+                else if (pi.Name == nameof(NetworkBehaviour.TimeManager))
+                    NetworkBehaviour_TimeManager_MethodRef = CodegenSession.Module.ImportReference(pi.GetMethod);
             }
 
             return true;
@@ -240,63 +263,6 @@ namespace FishNet.CodeGenerating.Helping
             processor.InsertLast(insts);
         }
 
-        /// <summary>
-        /// Creates a call to SendServerRpc on NetworkBehaviour.
-        /// </summary>
-        /// <param name="writerVariableDef"></param>
-        /// <param name="channel"></param>
-        internal void CreateSendServerRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
-        {
-            CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
-            //Call NetworkBehaviour.
-            processor.Emit(OpCodes.Call, NetworkBehaviour_SendServerRpc_MethodRef);
-        }
-
-        /// <summary>
-        /// Creates a call to SendObserversRpc on NetworkBehaviour.
-        /// </summary>
-        /// <param name="writerVariableDef"></param>
-        /// <param name="channel"></param>
-        internal void CreateSendObserversRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, CustomAttribute rpcAttribute)
-        {
-            CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
-            //Also add if buffered.
-            bool bufferLast = rpcAttribute.GetField(BUFFERED_RPC_PROPERTY_NAME, false);
-            int buffered = (bufferLast) ? 1 : 0;
-            processor.Emit(OpCodes.Ldc_I4, buffered);
-            //Call NetworkBehaviour.
-            processor.Emit(OpCodes.Call, NetworkBehaviour_SendObserversRpc_MethodRef);
-        }
-        /// <summary>
-        /// Creates a call to SendTargetRpc on NetworkBehaviour.
-        /// </summary>
-        /// <param name="writerVariableDef"></param>
-        internal void CreateSendTargetRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, ParameterDefinition targetConnectionParameterDef)
-        {
-            CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
-            //Reference to NetworkConnection that RPC is going to.
-            processor.Emit(OpCodes.Ldarg, targetConnectionParameterDef);
-            //Call NetworkBehaviour.
-            processor.Emit(OpCodes.Call, NetworkBehaviour_SendTargetRpc_MethodRef);
-        }
-
-        /// <summary>
-        /// Writes common properties that all SendRpc methods use.
-        /// </summary>
-        /// <param name="processor"></param>
-        /// <param name="methodHash"></param>
-        /// <param name="writerVariableDef"></param>
-        /// <param name="channelVariableDef"></param>
-        private void CreateSendRpcCommon(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
-        {
-            processor.Emit(OpCodes.Ldarg_0); // argument: this
-            //Hash argument. 
-            processor.Emit(OpCodes.Ldc_I4, (int)methodHash);
-            //reference to PooledWriter.
-            processor.Emit(OpCodes.Ldloc, writerVariableDef);
-            //reference to Channel.
-            processor.Emit(OpCodes.Ldloc, channelVariableDef);
-        }
         /// <summary>
         /// Creates exit method condition if local client is not owner.
         /// </summary>

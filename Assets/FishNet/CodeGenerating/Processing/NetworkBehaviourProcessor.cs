@@ -35,7 +35,7 @@ namespace FishNet.CodeGenerating.Processing
         private MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
         #endregion
 
-        internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, Dictionary<TypeDefinition, uint> childSyncTypeCounts, Dictionary<TypeDefinition, uint> childRpcCounts)
+        internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, Dictionary<TypeDefinition, uint> childSyncTypeCounts, Dictionary<TypeDefinition, uint> childRpcCounts, Dictionary<TypeDefinition, uint> childPredictionCounts)
         {
             bool modified = false;
             TypeDefinition copyTypeDef = typeDef;
@@ -75,11 +75,17 @@ namespace FishNet.CodeGenerating.Processing
                 /* RPCs. */
                 uint rpcStartCount;
                 childRpcCounts.TryGetValue(copyTypeDef, out rpcStartCount);
-                modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, rpcStartCount);
+                modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref rpcStartCount);
+#if PREDICTION
+                /* Prediction. */
+                uint predictionCount;
+                childPredictionCounts.TryGetValue(copyTypeDef, out predictionCount);
+                modified |= CodegenSession.NetworkBehaviourPredictionProcessor.Process(copyTypeDef, ref predictionCount);
+#endif
                 /* SyncTypes. */
                 uint syncTypeStartCount;
                 childSyncTypeCounts.TryGetValue(copyTypeDef, out syncTypeStartCount);
-                modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(copyTypeDef, allProcessedSyncs, syncTypeStartCount);
+                modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(copyTypeDef, allProcessedSyncs, ref syncTypeStartCount);
                 _processedClasses.Add(copyTypeDef);
 
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);

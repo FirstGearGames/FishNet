@@ -17,6 +17,8 @@ namespace FishNet.CodeGenerating.Helping
     internal class GeneralHelper
     {
         #region Reflection references.
+        internal MethodReference List_Add_MethodRef;
+        internal MethodReference List_RemoveRange_MethodRef;
         private MethodReference InstanceFinder_NetworkManager_MethodRef;
         private MethodReference NetworkBehaviour_CanLog_MethodRef;
         private MethodReference NetworkManager_CanLog_MethodRef;
@@ -77,6 +79,13 @@ namespace FishNet.CodeGenerating.Helping
                     NetworkManager_CanLog_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
+            //Lists.
+            Type lstType = typeof(List<>);
+            System.Reflection.MethodInfo lstAdd = lstType.GetMethod("Add");
+            List_Add_MethodRef = CodegenSession.Module.ImportReference(lstAdd);
+            System.Reflection.MethodInfo lstRemoveRange = lstType.GetMethod("RemoveRange");
+            List_RemoveRange_MethodRef = CodegenSession.Module.Import(lstRemoveRange);
+
             //Unity debug logs.
             Type debugType = typeof(UnityEngine.Debug);
             foreach (System.Reflection.MethodInfo methodInfo in debugType.GetMethods())
@@ -89,6 +98,7 @@ namespace FishNet.CodeGenerating.Helping
                     Debug_LogCommon_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
+            //COdegen helpers/shortcuts.
             Type codegenHelper = typeof(CodegenHelper);
             foreach (System.Reflection.MethodInfo methodInfo in codegenHelper.GetMethods())
             {

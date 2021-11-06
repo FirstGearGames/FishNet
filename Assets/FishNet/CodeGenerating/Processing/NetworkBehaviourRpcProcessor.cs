@@ -20,9 +20,9 @@ namespace FishNet.CodeGenerating.Processing
         private const string READER_PREFIX = "RpcReader___";
         private const string REQUIRE_OWNERSHIP_TEXT = "RequireOwnership";
         private const string INCLUDE_OWNER_TEXT = "IncludeOwner";
+        private const string BUFFERED_RPC_PROPERTY_NAME = "BufferLast";
         #endregion
-
-        internal bool Process(TypeDefinition typeDef, uint rpcStartCount)
+        internal bool Process(TypeDefinition typeDef, ref uint rpcStartCount)
         {
             bool modified = false;
 
@@ -318,9 +318,9 @@ namespace FishNet.CodeGenerating.Processing
             //uint methodHash = originalMethodDef.FullName.GetStableHash32();
             /* Call the method on NetworkBehaviour responsible for sending out the rpc. */
             if (rpcType == RpcType.Observers)
-                CodegenSession.ObjectHelper.CreateSendObserversRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, rpcAttribute);
+                CreateSendObserversRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, rpcAttribute);
             else if (rpcType == RpcType.Target)
-                CodegenSession.ObjectHelper.CreateSendTargetRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, targetConnectionParameterDef);
+                CreateSendTargetRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, targetConnectionParameterDef);
 
             //Dispose of writer.
             CodegenSession.WriterHelper.DisposePooledWriter(createdProcessor, pooledWriterVariableDef);
@@ -383,7 +383,7 @@ namespace FishNet.CodeGenerating.Processing
             uint methodHash = allRpcCount;
             //uint methodHash = originalMethodDef.FullName.GetStableHash32();
             //Call the method on NetworkBehaviour responsible for sending out the rpc.
-            CodegenSession.ObjectHelper.CreateSendServerRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef);
+            CreateSendServerRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef);
             //Dispose of writer.
             CodegenSession.WriterHelper.DisposePooledWriter(createdProcessor, pooledWriterVariableDef);
 
@@ -831,5 +831,60 @@ namespace FishNet.CodeGenerating.Processing
             originalProcessor.Emit(OpCodes.Call, writerMethodRef);
             originalProcessor.Emit(OpCodes.Ret);
         }
+
+
+        #region CreateSend....
+
+        /// <summary>
+        /// Creates a call to SendServerRpc on NetworkBehaviour.
+        /// </summary>
+        /// <param name="writerVariableDef"></param>
+        /// <param name="channel"></param>
+        private void CreateSendServerRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
+        {
+            CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
+            //Call NetworkBehaviour.
+            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SendServerRpc_MethodRef);
+        }
+
+        /// <summary>
+        /// Creates a call to SendObserversRpc on NetworkBehaviour.
+        /// </summary>
+        private void CreateSendObserversRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, CustomAttribute rpcAttribute)
+        {
+            CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
+            //Also add if buffered.
+            bool bufferLast = rpcAttribute.GetField(BUFFERED_RPC_PROPERTY_NAME, false);
+            int buffered = (bufferLast) ? 1 : 0;
+            processor.Emit(OpCodes.Ldc_I4, buffered);
+            //Call NetworkBehaviour.
+            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SendObserversRpc_MethodRef);
+        }
+        /// <summary>
+        /// Creates a call to SendTargetRpc on NetworkBehaviour.
+        /// </summary>
+        private void CreateSendTargetRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, ParameterDefinition targetConnectionParameterDef)
+        {
+            CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
+            //Reference to NetworkConnection that RPC is going to.
+            processor.Emit(OpCodes.Ldarg, targetConnectionParameterDef);
+            //Call NetworkBehaviour.
+            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SendTargetRpc_MethodRef);
+        }
+
+        /// <summary>
+        /// Writes common properties that all SendRpc methods use.
+        /// </summary>
+        private void CreateSendRpcCommon(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
+        {
+            processor.Emit(OpCodes.Ldarg_0); // argument: this
+            //Hash argument. 
+            processor.Emit(OpCodes.Ldc_I4, (int)methodHash);
+            //reference to PooledWriter.
+            processor.Emit(OpCodes.Ldloc, writerVariableDef);
+            //reference to Channel.
+            processor.Emit(OpCodes.Ldloc, channelVariableDef);
+        }
+        #endregion
     }
 }
