@@ -2,6 +2,7 @@ using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Object;
 using FishNet.Serializing;
+using FishNet.Utility;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -461,6 +462,10 @@ namespace FishNet.Component.Animating
         {
             if (_animator == null)
                 _animator = GetComponent<Animator>();
+
+            //Don't run the rest if not in play mode.
+            if (!ApplicationState.IsPlaying())
+                return;
 
             if (!_isActive)
             {

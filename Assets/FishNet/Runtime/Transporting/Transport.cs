@@ -159,17 +159,29 @@ namespace FishNet.Transporting
         /// Sets which address the client will connect to.
         /// </summary>
         /// <param name="address">Address client will connect to.</param>
-        public abstract void SetClientAddress(string address);
+        public virtual void SetClientAddress(string address) { }
+        /// <summary>
+        /// Returns which address the client will connect to.
+        /// </summary>
+        public virtual string GetClientAddress() => string.Empty;
         /// <summary>
         /// Sets which address the server will bind to.
         /// </summary>
         /// <param name="address">Address server will bind to.</param>
-        public abstract void SetServerBindAddress(string address);
+        public virtual void SetServerBindAddress(string address) { }
+        /// <summary>
+        /// Gets which address the server will bind to.
+        /// </summary>
+        public virtual string GetServerBindAddress() => string.Empty;
         /// <summary>
         /// Sets which port to use.
         /// </summary>
         /// <param name="port">Port to use.</param>
-        public abstract void SetPort(ushort port);
+        public virtual void SetPort(ushort port) { }
+        /// <summary>
+        /// Gets which port to use.
+        /// </summary>
+        public virtual ushort GetPort() => 0;
         #endregion
 
         #region Start and stop.

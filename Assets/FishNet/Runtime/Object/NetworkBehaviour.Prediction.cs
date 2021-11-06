@@ -167,7 +167,7 @@ namespace FishNet.Object
         {
             //Writer containing full packet.
             PooledWriter writer = WriterPool.GetWriter();
-            writer.WriteUInt16((ushort)PacketId.Replicate);
+            writer.WritePacketId(PacketId.Reconcile);
             writer.WriteNetworkBehaviour(this);
             //Write packet length. The +1 is for hash.
             WriteUnreliableLength(writer, methodWriter.Length + 1);
@@ -184,7 +184,7 @@ namespace FishNet.Object
         {
             //Writer containing full packet.
             PooledWriter writer = WriterPool.GetWriter();
-            writer.WriteUInt16((ushort)PacketId.Reconcile);
+            writer.WritePacketId(PacketId.Reconcile);
             writer.WriteNetworkBehaviour(this);
             //Write packet length. The +1 is for hash.
             WriteUnreliableLength(writer, methodWriter.Length + 1);

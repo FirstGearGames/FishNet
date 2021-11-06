@@ -67,7 +67,7 @@ namespace FishNet.Connection
         /// <summary>
         /// 
         /// </summary>
-        public HashSet<NetworkObject> _objects = new HashSet<NetworkObject>();
+        private HashSet<NetworkObject> _objects = new HashSet<NetworkObject>();
         /// <summary>
         /// Objects owned by this connection. Available to this connection and server.
         /// </summary>

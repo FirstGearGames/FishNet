@@ -76,6 +76,10 @@ namespace FishNet.Managing
         /// </summary>
         public bool IsHost => (IsServer && IsClient);
         /// <summary>
+        /// True if client nor server are active.
+        /// </summary>
+        public bool IsOffline => (!IsServer && !IsClient);
+        /// <summary>
         /// ServerManager for this NetworkManager.
         /// </summary>
         public ServerManager ServerManager { get; private set; } = null;

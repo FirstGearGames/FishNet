@@ -277,7 +277,7 @@ namespace FishNet.Managing.Transporting
                 * Intentionally not packed because spawn message count
                 * is unknown and tick will likely exceed packing
                 * fairly quickly into the game. */
-                headerWriter.WriteUInt16((ushort)PacketId.Split);
+                headerWriter.WritePacketId(PacketId.Split);
                 headerWriter.WriteUInt32(_networkManager.TimeManager.Tick, AutoPackType.Unpacked);
                 headerWriter.WriteUInt16(bufferCount);
                 //Sanity check, to ensure I don't make mistakes.

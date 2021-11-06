@@ -24,7 +24,8 @@ namespace FishNet.Transporting
         SyncObject = 13,
         PingPong = 14,
         Replicate = 15,
-        Reconcile = 16
+        Reconcile = 16,
+        Disconnect = 17
     }
 
 }

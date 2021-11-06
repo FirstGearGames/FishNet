@@ -12,7 +12,6 @@ using FishNet.Component.Observing;
 using FishNet.Editing;
 using System.IO;
 using System.Collections;
-using FishNet.Upgrading.Editing;
 using Mirror;
 using MirrorNetworkProximityChecker = Mirror.NetworkProximityChecker;
 using MirrorExperimentalNetworkTransformBase = Mirror.Experimental.NetworkTransformBase;
@@ -56,12 +55,26 @@ namespace FishNet.Upgrading.Mirror.Editing
         /// DistanceCondition created for the user.
         /// </summary>
         private DistanceCondition _distanceCondition = null;
-        //Number of components removed. Will finalize naming later. //todo.
-        private int _nts = 0;
-        private int _nas = 0;
-        private int _nis = 0;
-        private int _sc = 0;
-        private int _pc = 0;
+        /// <summary>
+        /// 
+        /// </summary>
+        private int _replacedNetworkTransforms = 0;
+        /// <summary>
+        /// 
+        /// </summary>
+        private int _replacedNetworkAnimators = 0;
+        /// <summary>
+        /// 
+        /// </summary>
+        private int _replacedNetworkIdentities = 0;
+        /// <summary>
+        /// 
+        /// </summary>
+        private int _replacedSceneCheckers = 0;
+        /// <summary>
+        /// 
+        /// </summary>
+        private int _replacedProximityCheckers = 0;
         /// <summary>
         /// True if anything was changed.
         /// </summary>
@@ -80,9 +93,13 @@ namespace FishNet.Upgrading.Mirror.Editing
         private bool _initialized = false;
 
 
+        private const string OBJECT_NAME_PREFIX = "MirrorUpgrade";
+
+
         private void Awake()
         {
-            Debug.Log($"{gameObject.name} is working. Please wait until this object is removed from your hierarchy.");
+            gameObject.name = OBJECT_NAME_PREFIX;
+            Debug.Log($"{gameObject.name} is working. Please wait until this object is removed from your hierarchy.");            
             EditorApplication.update += EditorUpdate;
         }
 
@@ -105,11 +122,12 @@ namespace FishNet.Upgrading.Mirror.Editing
                 return;
             if (_goIndex >= _gameObjects.Count)
             {
-                Debug.Log($"Switched {_nts} NetworkTransforms.");
-                Debug.Log($"Switched {_nas} NetworkAnimators.");
-                Debug.Log($"Switched {_sc} SceneCheckers.");
-                Debug.Log($"Switched {_pc} ProximityCheckers.");
-                Debug.Log($"Switched {_nis} NetworkIdentities.");
+                gameObject.name = $"{OBJECT_NAME_PREFIX} - 100%";
+                Debug.Log($"Switched {_replacedNetworkTransforms} NetworkTransforms.");
+                Debug.Log($"Switched {_replacedNetworkAnimators} NetworkAnimators.");
+                Debug.Log($"Switched {_replacedSceneCheckers} SceneCheckers.");
+                Debug.Log($"Switched {_replacedProximityCheckers} ProximityCheckers.");
+                Debug.Log($"Switched {_replacedNetworkIdentities} NetworkIdentities.");
 
                 if (_changed)
                     PrintSaveWarning();
@@ -117,6 +135,10 @@ namespace FishNet.Upgrading.Mirror.Editing
                 DestroyImmediate(gameObject);
                 return;
             }
+
+            float percentFloat = ((float)_goIndex / (float)_gameObjects.Count) * 100f;
+            int percentInt = Mathf.FloorToInt(percentFloat);
+            gameObject.name = $"{OBJECT_NAME_PREFIX} - {percentInt}%";
 
             GameObject go = _gameObjects[_goIndex];
             _goIndex++;
@@ -135,38 +157,42 @@ namespace FishNet.Upgrading.Mirror.Editing
              * is gone(weird right? maybe editor thing), and a coroutine
              * doesn't show errors well, they just fail silently. */
 
+            bool changedThisFrame = false;
             if (IterateNetworkTransform(go))
             {
+                changedThisFrame = true;
                 _changed = true;
-                _nts++;
-                _goIndex--;
-                return;
+                _replacedNetworkTransforms++;                
             }
             if (IterateNetworkAnimator(go))
             {
+                changedThisFrame = true;
                 _changed = true;
-                _nas++;
-                _goIndex--;
-                return;
+                _replacedNetworkAnimators++;
             }
+
             if (IterateSceneChecker(go))
             {
+                changedThisFrame = true;
                 _changed = true;
-                _sc++;
-                //Always only one of these, don't need to return/reduce goIndex.
+                _replacedSceneCheckers++;
             }
             if (IterateProximityChecker(go))
             {
+                changedThisFrame = true;
                 _changed = true;
-                _pc++;
-                //Always only one of these, don't need to return/reduce goIndex.
+                _replacedProximityCheckers++;
+            }
+            if (changedThisFrame)
+            {
+                _goIndex--;
+                return;
             }
             //NetworkIdentity must be done last.
             if (IterateNetworkIdentity(go))
             {
                 _changed = true;
-                _nis++;
-                //Always only one of these, don't need to return/reduce goIndex.
+                _replacedNetworkIdentities++;
             }
         }
 
@@ -305,7 +331,7 @@ namespace FishNet.Upgrading.Mirror.Editing
             void Replace(UnityEngine.Component component)
             {
                 EditorUtility.SetDirty(go);
-                DestroyImmediate(msc, true);
+                DestroyImmediate(component, true);
 
                 FNNetworkObserver networkObserver;
                 if (!go.TryGetComponent(out networkObserver))

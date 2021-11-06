@@ -238,6 +238,22 @@ namespace FishNet.CodeGenerating.Processing
                 return ExtensionType.None;
 
             bool write = (methodDef.ReturnType == methodDef.Module.TypeSystem.Void);
+
+            //Return None for Mirror types.
+#if MIRROR
+            if (write)
+            {
+                if (methodDef.Parameters.Count > 0 && methodDef.Parameters[0].ParameterType.FullName == "Mirror.NetworkWriter")
+                    return ExtensionType.None;                    
+            }
+            else
+            {
+                if (methodDef.Parameters.Count > 0 && methodDef.Parameters[0].ParameterType.FullName == "Mirror.NetworkReader")
+                    return ExtensionType.None;
+            }
+#endif
+
+
             string prefix = (write) ?
                 WriterHelper.WRITE_PREFIX : ReaderHelper.READ_PREFIX;
 

@@ -277,7 +277,7 @@ namespace FishNet.Object
 
                 using (PooledWriter writer = WriterPool.GetWriter())
                 {
-                    writer.WriteUInt16((ushort)PacketId.OwnershipChange);
+                    writer.WritePacketId(PacketId.OwnershipChange);
                     writer.WriteNetworkObject(this);
                     writer.WriteNetworkConnection(Owner);
                     //If sharing then send to all observers.

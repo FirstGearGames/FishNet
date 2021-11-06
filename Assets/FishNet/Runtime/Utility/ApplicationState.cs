@@ -50,6 +50,15 @@ namespace FishNet.Utility
 #endif
         }
 
+        public static bool IsPlaying()
+        {
+#if UNITY_EDITOR
+            return EditorApplication.isPlaying;
+#else
+            return Application.isPlaying;
+#endif
+        }
+
     }
 
 

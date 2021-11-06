@@ -142,17 +142,9 @@ public class NetworkHudCanvases : MonoBehaviour
             return;
 
         if (_serverState != LocalConnectionStates.Stopped)
-        {
-            //Stop client as well.
-            if (_clientState != LocalConnectionStates.Stopped)
-                OnClick_Client();
-
-            _networkManager.TransportManager.Transport.StopConnection(true);
-        }
+            _networkManager.ServerManager.StopConnection(true);
         else
-        {
-            _networkManager.TransportManager.Transport.StartConnection(true);
-        }
+            _networkManager.ServerManager.StartConnection();
     }
 
 
@@ -162,8 +154,8 @@ public class NetworkHudCanvases : MonoBehaviour
             return;
 
         if (_clientState != LocalConnectionStates.Stopped)
-            _networkManager.TransportManager.Transport.StopConnection(false);
+            _networkManager.ClientManager.StopConnection();
         else
-            _networkManager.TransportManager.Transport.StartConnection(false);
+            _networkManager.ClientManager.StartConnection();
     }
 }

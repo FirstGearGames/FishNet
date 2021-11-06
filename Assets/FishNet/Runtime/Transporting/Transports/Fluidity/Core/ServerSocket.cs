@@ -194,7 +194,6 @@ namespace Fluidity.Server
             //Don't disconnect immediately, wait until next command iteration.
             if (!immediately)
             {
-
                 if (base.GetConnectionState() == LocalConnectionStates.Stopped)
                     return false;
 
@@ -280,6 +279,11 @@ namespace Fluidity.Server
 
                         HandleENetEvent(ref enetEvent);
                     }
+
+                    /* If the thread is to stop but there's outgoing queued then send it out.
+                     * This requires outgoing to not be blocked as per !_dequeOutgoing */
+                    if (_stopThread && _outgoing.Count > 0)
+                        DequeueOutgoing(socket);
                 }
 
                 /* Thread is ending. */

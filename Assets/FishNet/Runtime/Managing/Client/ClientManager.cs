@@ -82,6 +82,21 @@ namespace FishNet.Managing.Client
         }
 
         /// <summary>
+        /// Stops the local client connection.
+        /// </summary>
+        public void StopConnection()
+        {
+            NetworkManager.TransportManager.Transport.StopConnection(false);
+        }
+        /// <summary>
+        /// Stops the local client connection.
+        /// </summary>
+        public void StartConnection()
+        {
+            NetworkManager.TransportManager.Transport.StartConnection(false);
+        }
+
+        /// <summary>
         /// Called when a connection state changes local server or client, or a remote client.
         /// </summary>
         /// <param name="args"></param>
@@ -147,7 +162,7 @@ namespace FishNet.Managing.Client
                 /* This is a special condition where a message may arrive split.
                  * When this occurs buffer each packet until all packets are
                  * received. */
-                if (reader.PeekUInt16() == (ushort)PacketId.Split)
+                if (reader.PeekPacketId() == PacketId.Split)
                 {
                     ArraySegment<byte> result =
                         _splitReader.Write(reader,
@@ -166,7 +181,7 @@ namespace FishNet.Managing.Client
 
                 while (reader.Remaining > 0)
                 {
-                    packetId = (PacketId)reader.ReadUInt16();
+                    packetId = reader.ReadPacketId();
                     bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
                     /* Length of data. Only available if using unreliable. Unreliable packets
                      * can arrive out of order which means object orientated messages such as RPCs may
@@ -194,7 +209,11 @@ namespace FishNet.Managing.Client
                          * that use them. */
                         Objects.IterateObjectCache();
                         //Then process packet normally.
-                        if (packetId == PacketId.ObserversRpc)
+                        if ((ushort)packetId >= _startingLinkIndex)
+                        {
+                            Objects.ParseRpcLink(reader, (ushort)packetId, args.Channel);
+                        }
+                        else if (packetId == PacketId.ObserversRpc)
                         {
                             Objects.ParseObserversRpc(reader, args.Channel);
                         }
@@ -226,9 +245,10 @@ namespace FishNet.Managing.Client
                         {
                             ParseAuthenticated(reader);
                         }
-                        else if ((ushort)packetId >= _startingLinkIndex)
+                        else if (packetId == PacketId.Disconnect)
                         {
-                            Objects.ParseRpcLink(reader, (ushort)packetId, args.Channel);
+                            reader.Skip(reader.Remaining);
+                            StopConnection();
                         }
                         else
                         {

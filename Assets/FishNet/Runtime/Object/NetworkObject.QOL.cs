@@ -14,7 +14,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if only the client is active, and authenticated.
         /// </summary>
-        public bool IsClientOnly => (!IsServer && IsClient);
+        public bool IsClientOnly => NetworkManager.IsClientOnly;
         /// <summary>
         /// True if server is active.
         /// </summary>
@@ -22,11 +22,15 @@ namespace FishNet.Object
         /// <summary>
         /// True if only the server is active.
         /// </summary>
-        public bool IsServerOnly => (IsServer && !IsClient);
+        public bool IsServerOnly => NetworkManager.IsServerOnly;
         /// <summary>
         /// True if client and server are active.
         /// </summary>
-        public bool IsHost => (IsServer && IsClient);
+        public bool IsHost => NetworkManager.IsHost;
+        /// <summary>
+        /// True if client nor server are active.
+        /// </summary>
+        public bool IsOffline => NetworkManager.IsOffline;
         /// <summary>
         /// True if the local client is the owner of this object.
         /// </summary>

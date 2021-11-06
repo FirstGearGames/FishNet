@@ -108,6 +108,17 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Sends a packetId.
+        /// </summary>
+        /// <param name="pid"></param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void WritePacketId(PacketId pid)
+        {
+            WriteUInt16((ushort)pid);
+        }
+
+        /// <summary>
         /// Inserts value at index within the buffer.
         /// This method does not perform sanity checks.
         /// </summary>

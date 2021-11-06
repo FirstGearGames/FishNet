@@ -331,7 +331,7 @@ namespace FishNet.Managing.Server
              * writer with values based on if owner or not. This would
              * result in significantly more iterations. */
             PooledWriter headerWriter = WriterPool.GetWriter();
-            headerWriter.WriteUInt16((ushort)PacketId.ObjectSpawn);
+            headerWriter.WritePacketId(PacketId.ObjectSpawn);
             headerWriter.WriteNetworkObject(nob);
             if (base.NetworkManager.ServerManager.ShareOwners || connection == nob.Owner)
                 headerWriter.WriteInt16((short)nob.OwnerId);
@@ -500,7 +500,7 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         private void WriteDespawn(NetworkObject nob, ref PooledWriter everyoneWriter)
         {
-            everyoneWriter.WriteUInt16((ushort)PacketId.ObjectDespawn);
+            everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
             everyoneWriter.WriteNetworkObject(nob);
         }
     }

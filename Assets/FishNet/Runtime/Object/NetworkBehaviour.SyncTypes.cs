@@ -285,7 +285,7 @@ namespace FishNet.Object
                             using (PooledWriter headerWriter = WriterPool.GetWriter())
                             {
                                 PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
-                                headerWriter.WriteUInt16((ushort)packetId);
+                                headerWriter.WritePacketId(packetId);
 
                                 PooledWriter dataWriter = WriterPool.GetWriter();
                                 dataWriter.WriteNetworkBehaviour(this);

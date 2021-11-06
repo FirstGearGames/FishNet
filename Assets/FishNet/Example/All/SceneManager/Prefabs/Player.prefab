@@ -282,6 +282,7 @@ MonoBehaviour:
     Position: {x: 0, y: 1.34, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
     LocalScale: {x: 1, y: 1, z: 1}
+  _isNetworked: 1
 --- !u!114 &6420552185407096997
 MonoBehaviour:
   m_ObjectHideFlags: 0

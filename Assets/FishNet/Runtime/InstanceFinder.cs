@@ -141,13 +141,25 @@ namespace FishNet
         /// </summary>
         public static bool IsServer => (NetworkManager == null) ? false : NetworkManager.IsServer;
         /// <summary>
+        /// True if only the server is active.
+        /// </summary>
+        public static bool IsServerOnly => (NetworkManager == null) ? false : NetworkManager.IsServerOnly;
+        /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
         public static bool IsClient => (NetworkManager == null) ? false : NetworkManager.IsClient;
         /// <summary>
+        /// True if only the client is active, and authenticated.
+        /// </summary>
+        public static bool IsClientOnly => (NetworkManager == null) ? false : NetworkManager.IsClientOnly;
+        /// <summary>
         /// True if client and server are active.
         /// </summary>
-        public static bool IsHost => (NetworkManager == null) ? false : (ServerManager.Started && ClientManager.Started);
+        public static bool IsHost => (NetworkManager == null) ? false : NetworkManager.IsHost;
+        /// <summary>
+        /// True if client nor server are active.
+        /// </summary>
+        public static bool IsOffline => (NetworkManager == null) ? true : (!NetworkManager.IsServer && !NetworkManager.IsClient);
         #endregion
 
         #region Private.

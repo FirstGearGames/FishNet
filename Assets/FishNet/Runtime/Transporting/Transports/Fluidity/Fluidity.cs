@@ -322,6 +322,14 @@ namespace Fluidity
             _clientAddress = address;
         }
         /// <summary>
+        /// Gets which address the client will connect to.
+        /// </summary>
+        public override string GetClientAddress()
+        {
+            return _clientAddress;
+        }
+
+        /// <summary>
         /// Sets which address the server will bind to.
         /// </summary>
         /// <param name="address"></param>
@@ -330,12 +338,28 @@ namespace Fluidity
             _serverBindAddress = address;
         }
         /// <summary>
+        /// Gets which address the server will bind to.
+        /// </summary>
+        /// <param name="address"></param>
+        public override string GetServerBindAddress()
+        {
+            return _serverBindAddress;
+        }
+        /// <summary>
         /// Sets which port to use.
         /// </summary>
         /// <param name="port"></param>
         public override void SetPort(ushort port)
         {
             _port = port;
+        }
+        /// <summary>
+        /// Gets which port to use.
+        /// </summary>
+        /// <param name="port"></param>
+        public override ushort GetPort()
+        {
+            return _port;
         }
         #endregion
 

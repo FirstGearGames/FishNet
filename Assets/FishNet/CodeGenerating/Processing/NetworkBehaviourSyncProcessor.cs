@@ -1320,6 +1320,8 @@ namespace FishNet.CodeGenerating.Processing
                     continue;
                 if (methodDef.IsConstructor)
                     continue;
+                if (methodDef.Body == null)
+                    continue;
 
                 results.Add(methodDef);
             }

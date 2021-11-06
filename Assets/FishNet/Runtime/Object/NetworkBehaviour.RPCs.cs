@@ -322,7 +322,7 @@ namespace FishNet.Object
         {
             //Writer containing full packet.
             PooledWriter writer = WriterPool.GetWriter();
-            writer.WriteUInt16((ushort)packetId);
+            writer.WritePacketId(packetId);
             writer.WriteNetworkBehaviour(this);
             //Only write length if unreliable.
             if (channel == Channel.Unreliable)

@@ -473,7 +473,7 @@ namespace FishNet.Managing.Timing
 
             using (PooledWriter writer = WriterPool.GetWriter())
             {
-                writer.WriteUInt16((ushort)PacketId.PingPong);
+                writer.WritePacketId(PacketId.PingPong);
                 writer.WriteUInt32(LocalTick, AutoPackType.Unpacked);
                 _networkManager.TransportManager.SendToServer((byte)Channel.Unreliable, writer.GetArraySegment());
             }
@@ -489,7 +489,7 @@ namespace FishNet.Managing.Timing
 
             using (PooledWriter writer = WriterPool.GetWriter())
             {
-                writer.WriteUInt16((ushort)PacketId.PingPong);
+                writer.WritePacketId(PacketId.PingPong);
                 writer.WriteUInt32(clientTick, AutoPackType.Unpacked);
                 conn.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
             }

@@ -152,6 +152,37 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
+        /// Stops the local server connection.
+        /// </summary>
+        /// <param name="sendDisconnectMessage">True to send a disconnect message to all clients first.</param>
+        public bool StopConnection(bool sendDisconnectMessage)
+        {
+            if (sendDisconnectMessage)
+            {
+                PooledWriter writer = WriterPool.GetWriter();
+                writer.WritePacketId(PacketId.Disconnect);
+                ArraySegment<byte> segment = writer.GetArraySegment();
+                //Send segment to each client, authenticated or not.
+                foreach (NetworkConnection conn in Clients.Values)
+                    conn.SendToClient((byte)Channel.Reliable, segment);
+                //Recycle writer.
+                writer.Dispose();
+                //Force an out iteration.
+                NetworkManager.TransportManager.IterateOutgoing(true);
+            }
+
+            //Return stop connection result.
+            return NetworkManager.TransportManager.Transport.StopConnection(true);
+        }
+        /// <summary>
+        /// Starts the local server connection.
+        /// </summary>
+        public void StartConnection()
+        {
+            NetworkManager.TransportManager.Transport.StartConnection(true);
+        }
+
+        /// <summary>
         /// Called after the local client connection state changes.
         /// </summary>
         private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
@@ -316,7 +347,7 @@ namespace FishNet.Managing.Server
         {
             using (PooledWriter writer = WriterPool.GetWriter())
             {
-                writer.WriteUInt16((ushort)PacketId.Authenticated);
+                writer.WritePacketId(PacketId.Authenticated);
                 writer.WriteInt16((short)conn.ClientId);
                 NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), conn);
             }
@@ -352,7 +383,7 @@ namespace FishNet.Managing.Server
                 /* This is a special condition where a message may arrive split.
                 * When this occurs buffer each packet until all packets are
                 * received. */
-                if (reader.PeekUInt16() == (ushort)PacketId.Split)
+                if (reader.PeekPacketId() == PacketId.Split)
                 {
                     /* Various conditions that will kick a client immediately.
                      * Splits are not allowed, or split size indicator is larger than maximum allowed. */
@@ -431,7 +462,7 @@ namespace FishNet.Managing.Server
 
                 while (reader.Remaining > 0)
                 {
-                    packetId = (PacketId)reader.ReadUInt16();
+                    packetId = reader.ReadPacketId();
                     NetworkConnection conn;
 
                     /* Connection isn't available. This should never happen.

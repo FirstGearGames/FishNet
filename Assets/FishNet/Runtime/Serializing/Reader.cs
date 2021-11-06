@@ -115,14 +115,25 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Reads a packetId.
+        /// </summary>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal PacketId ReadPacketId()
+        {
+            return (PacketId)ReadUInt16();
+        }
+
+        /// <summary>
         /// Returns a ushort without advancing the reader.
         /// </summary>
         /// <returns></returns>
         [CodegenExclude]
-        public ushort PeekUInt16()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal PacketId PeekPacketId()
         {
             int currentPosition = Position;
-            ushort result = ReadUInt16();
+            PacketId result = ReadPacketId();
             Position = currentPosition;
             return result;
         }

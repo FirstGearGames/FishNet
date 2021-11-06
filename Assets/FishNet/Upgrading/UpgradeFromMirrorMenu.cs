@@ -33,7 +33,6 @@ namespace FishNet.Upgrading.Mirror.Editing
             }
 
             GameObject iteratorGo = new GameObject();
-            iteratorGo.name = "MirrorUpgrade";
             iteratorGo.AddComponent<MirrorUpgrade>();
 #else
             Debug.LogError("Mirror must be imported to perform this function.");
