@@ -206,8 +206,8 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         internal void CacheSpawn(PooledReader reader)
         {
-            int objectId = reader.ReadInt16();
-            int ownerId = reader.ReadInt16();
+            int objectId = reader.ReadNetworkObjectId();
+            int ownerId = reader.ReadNetworkConnectionId();
             bool sceneObject = reader.ReadBoolean();
 
             NetworkObject nob;
@@ -257,7 +257,7 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         internal void CacheDespawn(PooledReader reader)
         {
-            int objectId = reader.ReadInt16();
+            int objectId = reader.ReadNetworkObjectId();
             if (base.Spawned.TryGetValue(objectId, out NetworkObject nob))
                 _objectCache.AddDespawn(nob);
         }

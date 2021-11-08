@@ -287,11 +287,7 @@ namespace FishNet.Serializing
                 if (Position + 4 > _buffer.Length)
                     DoubleBuffer(4);
 
-                _buffer[Position++] = (byte)value;
-                _buffer[Position++] = (byte)(value >> 8);
-                _buffer[Position++] = (byte)(value >> 16);
-                _buffer[Position++] = (byte)(value >> 24);
-
+                WriterExtensions.WriteUInt32(_buffer, value, ref Position);
                 Length = Math.Max(Length, Position);
             }
             else

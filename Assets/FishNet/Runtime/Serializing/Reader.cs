@@ -801,6 +801,28 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Reads the Id for a NetworkConnection.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CodegenExclude]
+        public int ReadNetworkConnectionId()
+        {
+            return ReadInt16();
+        }
+
+        /// <summary>
+        /// Reads the Id for a NetworkObject.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CodegenExclude]
+        public int ReadNetworkObjectId()
+        {
+            return ReadInt16();
+        }
+
+        /// <summary>
         /// Writes a NetworkConnection.
         /// </summary>
         /// <param name="conn"></param>

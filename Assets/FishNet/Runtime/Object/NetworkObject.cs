@@ -5,6 +5,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Timing;
+using FishNet.Utility;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -76,6 +77,28 @@ namespace FishNet.Object
             IsNetworked = isNetworked;
         }
         #endregion
+
+        private void Awake()
+        {
+            /* Only run check when playing so nested nobs are not
+             * destroyed on prefabs. */
+            if (ApplicationState.IsPlaying())
+            {
+                //If this has a parent check for higher up network objects.
+                Transform start = transform.root;
+                if (start != null && start != transform)
+                {
+                    NetworkObject parentNob = start.GetComponentInParent<NetworkObject>();
+                    //Disallow child network objects for now.
+                    if (parentNob != null)
+                    {
+                        if (InstanceFinder.NetworkManager.CanLog(LoggingType.Common))
+                            Debug.Log($"NetworkObject removed from object {gameObject.name}, child of {start.name}. This message is informative only and may be ignored.");
+                        Destroy(this);
+                    }
+                }
+            }
+        }
 
         private void Start()
         {

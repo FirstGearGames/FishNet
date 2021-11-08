@@ -59,10 +59,8 @@ namespace FishNet.Connection
         /// <summary>
         /// Sends data from the server to a client.
         /// </summary>
-        /// <param name="channel"></param>
-        /// <param name="segment"></param>
-        /// <param name="connectionId"></param>
-        internal void SendToClient(byte channel, ArraySegment<byte> segment)
+        /// <param name="forceNewBuffer">True to force data into a new buffer.</param>
+        internal void SendToClient(byte channel, ArraySegment<byte> segment, bool forceNewBuffer = false)
         {
             //Cannot send data when disconnecting.
             if (Disconnecting)
@@ -80,7 +78,7 @@ namespace FishNet.Connection
                 return;
             }
 
-            _toClientBundles[channel].Write(segment);
+            _toClientBundles[channel].Write(segment, forceNewBuffer);
             ServerDirty();
         }
 

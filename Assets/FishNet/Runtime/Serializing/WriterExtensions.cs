@@ -17,6 +17,22 @@ namespace FishNet.Serializing
     public static class WriterExtensions
     {
 
+
+        /// <summary>
+        /// Writes value to dst without error checking.
+        /// </summary>
+        /// <param name="dst"></param>
+        /// <param name="value"></param>
+        /// <param name="position"></param>
+        [CodegenExclude]
+        internal static void WriteUInt32(byte[] dst, uint value, ref int position)
+        {
+            dst[position++] = (byte)value;
+            dst[position++] = (byte)(value >> 8);
+            dst[position++] = (byte)(value >> 16);
+            dst[position++] = (byte)(value >> 24);
+        }
+
         public static void WriteByte(this Writer writer, byte value) => writer.WriteByte(value);
         [CodegenExclude]
         public static void WriteBytes(this Writer writer, byte[] buffer, int offset, int count) => writer.WriteBytes(buffer, offset, count);

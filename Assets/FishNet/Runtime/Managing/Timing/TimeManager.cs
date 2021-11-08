@@ -27,7 +27,7 @@ namespace FishNet.Managing.Timing
         #region Types.        
         private class ClientTickData
         {
-            public ushort Buffered;
+            public int Buffered;
             public ushort SendTicksRemaining;
 
             public ClientTickData(ushort buffered)
@@ -74,7 +74,6 @@ namespace FishNet.Managing.Timing
         public long RoundTripTime { get; private set; }
         /// <summary>
         /// Tick on the last received packet, be it from server or client.
-        /// This value is not used yet.
         /// </summary>
         public uint LastPacketTick { get; internal set; }
         /// <summary>
@@ -147,6 +146,7 @@ namespace FishNet.Managing.Timing
         [Range(1, 100)]
         [SerializeField]
         private byte _targetBufferedInputs = 2;
+        public byte TargetBufferedInputs => _targetBufferedInputs;
         #endregion
 
         #region Private.
@@ -172,6 +172,10 @@ namespace FishNet.Managing.Timing
         /// Stopwatch used for pings.
         /// </summary>
         SystemStopwatch _pingStopwatch = new SystemStopwatch();
+        /// <summary>
+        /// Ticks passed since last ping.
+        /// </summary>
+        private uint _pingTicks = 0;
         /// <summary>
         /// MovingAverage instance used to calculate mean ping.
         /// </summary>
@@ -275,6 +279,20 @@ namespace FishNet.Managing.Timing
             OnFixedUpdate?.Invoke();
         }
 
+        public void TooFast(NetworkConnection conn)
+        {
+            AddToBuffered(conn, 1);
+        }
+        public void TooSlow(NetworkConnection conn)
+        {
+            //Connection found.
+            if (_bufferedClientInputs.TryGetValue(conn, out ClientTickData ctd))
+            {
+                //Cap value to ensure clients cannot cause an overflow attack.
+                uint next = (uint)Math.Max(0, ctd.Buffered - 1);
+                ctd.Buffered = (ushort)next;
+            }
+        }
         /// <summary>
         /// Called when Update ticks. This is called before any other script.
         /// </summary>
@@ -289,7 +307,6 @@ namespace FishNet.Managing.Timing
             if (_networkManager.IsClient)
             {
                 ClientUptime += Time.deltaTime;
-                TrySendPing();
                 _adjustedTickDelta = Mathf.MoveTowards((float)_adjustedTickDelta, (float)TickDelta, Time.deltaTime * (float)ADJUSTED_DELTA_RECOVERY_RATE);
             }
 
@@ -448,7 +465,6 @@ namespace FishNet.Managing.Timing
             _receivedPong = true;
         }
 
-
         /// <summary>
         /// Sends a ping to the server.
         /// </summary>
@@ -464,16 +480,23 @@ namespace FishNet.Managing.Timing
                 (long)(PING_INTERVAL * 1000) :
                 (long)(PING_INTERVAL * 1500);
 
-            if (_pingStopwatch.ElapsedMilliseconds < requiredTime)
+            _pingTicks++;
+            uint requiredTicks = TimeToTicks(PING_INTERVAL);
+            /* We cannot just consider time because ticks might run slower
+             * from adjustments. We also cannot only consider ticks because
+             * they might run faster from adjustments. Therefor require both
+             * to have pass checks. */
+            if (_pingTicks < requiredTicks || _pingStopwatch.ElapsedMilliseconds < requiredTime)
                 return;
 
+            _pingTicks = 0;
             _pingStopwatch.Restart();
             //Unset receivedPong, wait for new response.
             _receivedPong = false;
 
             using (PooledWriter writer = WriterPool.GetWriter())
             {
-                writer.WritePacketId(PacketId.PingPong);
+                writer.WriteUInt16((ushort)PacketId.PingPong);
                 writer.WriteUInt32(LocalTick, AutoPackType.Unpacked);
                 _networkManager.TransportManager.SendToServer((byte)Channel.Unreliable, writer.GetArraySegment());
             }
@@ -489,7 +512,7 @@ namespace FishNet.Managing.Timing
 
             using (PooledWriter writer = WriterPool.GetWriter())
             {
-                writer.WritePacketId(PacketId.PingPong);
+                writer.WriteUInt16((ushort)PacketId.PingPong);
                 writer.WriteUInt32(clientTick, AutoPackType.Unpacked);
                 conn.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
             }
@@ -541,7 +564,11 @@ namespace FishNet.Managing.Timing
 
             //If ticked also try to send out data.
             if (ticked)
+            {
+                if (_networkManager.IsClient)
+                    TrySendPing();
                 TryIterateData(false, true);
+            }
         }
 
         /// <summary>
@@ -680,13 +707,13 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Sets number of inputs buffered for a connection.
         /// </summary>
-        private ClientTickData AddToBuffered(NetworkConnection connection, uint count = 1)
+        private ClientTickData AddToBuffered(NetworkConnection connection, int count = 1)
         {
             //Connection found.
             if (_bufferedClientInputs.TryGetValue(connection, out ClientTickData ctd))
             {
                 //Cap value to ensure clients cannot cause an overflow attack.
-                uint next = ctd.Buffered + count;
+                int next = ctd.Buffered + count;
                 if (next > ushort.MaxValue)
                     next = ushort.MaxValue;
                 ctd.Buffered = (ushort)next;
@@ -768,8 +795,8 @@ namespace FishNet.Managing.Timing
                  * would result in -2 step. Lesser steps speed up client
                  * send rate more, while higher steps slow it down. */
                 int buffered = (ctd.Buffered - _timingAdjustmentInterval);
-                sbyte steps = MathFN.ClampSByte((buffered - _targetBufferedInputs), -2, (sbyte)_maximumBufferedInputs);
-                ctd.Buffered = 0;
+                sbyte steps = MathFN.ClampSByte((buffered - _targetBufferedInputs), -4, (sbyte)_maximumBufferedInputs);
+                ctd.Buffered -= _timingAdjustmentInterval;
 
                 _timeAdjustment.Tick = Tick;
                 _timeAdjustment.Step = steps;

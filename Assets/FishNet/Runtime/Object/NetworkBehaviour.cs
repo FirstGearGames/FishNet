@@ -1,4 +1,5 @@
-﻿using FishNet.Utility.Constant;
+﻿using FishNet.Utility;
+using FishNet.Utility.Constant;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -48,12 +49,14 @@ namespace FishNet.Object
 #if UNITY_EDITOR
         protected virtual void Reset()
         {
-            TryAddNetworkObject();
+            if (!ApplicationState.IsPlaying())
+                TryAddNetworkObject();
         }
 
         protected virtual void OnValidate()
         {
-            TryAddNetworkObject();
+            if (!ApplicationState.IsPlaying())
+                TryAddNetworkObject();
         }
         /// <summary>
         /// Tries to add the NetworkObject component.

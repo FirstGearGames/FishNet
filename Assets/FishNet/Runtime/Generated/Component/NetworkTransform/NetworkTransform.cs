@@ -13,6 +13,8 @@ namespace FishNet.Component.Transforming
     /// </summary>   
     public class NetworkTransform : NetworkBehaviour
     {
+        //todo cache last received tick. if new update tick is older than last, skip it.
+
         #region Types.
         private enum Changed
         {
@@ -131,10 +133,6 @@ namespace FishNet.Component.Transforming
         /// Last sent transform values. Can be used for client or server.
         /// </summary>
         private GoalData _lastTransformValues = default;
-        /// <summary>
-        /// Local tick for client. This value is not synchronized.
-        /// </summary>
-        private uint _clientLocalTick = 0;
 
         /// <summary>
         /// How many ticks to use as a buffer for interpolation.
@@ -184,7 +182,6 @@ namespace FishNet.Component.Transforming
             //Not new owner.
             else
             {
-                _clientLocalTick = 0;
                 /* If client authoritative and ownership was lost
                  * then default goals must be set to force the
                  * object to it's last transform. */
@@ -367,14 +364,10 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Deerializes a received packet.
         /// </summary>
-        private void DeserializePacket(ArraySegment<byte> data, out uint tick, ref GoalData goalData)
+        private void DeserializePacket(ArraySegment<byte> data, ref GoalData goalData)
         {
             using (PooledReader r = ReaderPool.GetReader(data, base.NetworkManager))
             {
-                /* For now tick will always be packed into each
-                 * update. Once I'm able to properly optimize NT this won't be the case. */
-                tick = r.ReadUInt32(AutoPackType.Unpacked);
-
                 UpdateFlag updateFlags = (UpdateFlag)r.ReadByte();
 
                 //X
@@ -524,14 +517,14 @@ namespace FishNet.Component.Transforming
                     _serverChangedSinceReliable |= changed;
                 }
 
-                //If here a send for transform values will occur. Update last values.
-                _lastTransformValues = new GoalData(base.NetworkManager.TimeManager.Tick,
+                /* If here a send for transform values will occur. Update last values.
+                 * Tick doesn't need to be set for whoever controls transform. */
+                _lastTransformValues = new GoalData(0,
                     transform.position, transform.rotation, transform.localScale);
 
                 //Send latest.
                 using (PooledWriter writer = WriterPool.GetWriter())
                 {
-                    writer.WriteUInt32(base.NetworkManager.TimeManager.Tick, AutoPackType.Unpacked);
                     SerializeChanged(changed, writer);
                     ObserversUpdateTransform(writer.GetArraySegment(), channel);
                 }
@@ -553,7 +546,6 @@ namespace FishNet.Component.Transforming
             //Values changed since last check.
             Changed changed = GetChanged(_lastTransformValues);
 
-
             //If no change.
             if (changed == Changed.Unset)
             {
@@ -572,20 +564,17 @@ namespace FishNet.Component.Transforming
                 _clientChangedSinceReliable |= changed;
             }
 
-            //If here a send for transform values will occur. Update last values.
-            _lastTransformValues = new GoalData(_clientLocalTick,
+            /* If here a send for transform values will occur. Update last values.
+            * Tick doesn't need to be set for whoever controls transform. */
+            _lastTransformValues = new GoalData(0,
                 transform.position, transform.rotation, transform.localScale);
 
             //Send latest.
             using (PooledWriter writer = WriterPool.GetWriter())
             {
-                writer.WriteUInt32(_clientLocalTick, AutoPackType.Unpacked);
                 SerializeChanged(changed, writer);
                 ServerUpdateTransform(writer.GetArraySegment(), channel);
             }
-
-            //Increase localTick.
-            _clientLocalTick++;
         }
 
         #region GetChanged.
@@ -765,9 +754,8 @@ namespace FishNet.Component.Transforming
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateGoalData(ArraySegment<byte> packetData, ref GoalData goalData)
         {
-            uint tick;
-            DeserializePacket(packetData, out tick, ref goalData);
-            goalData.Tick = tick;
+            DeserializePacket(packetData, ref goalData);
+            goalData.Tick = base.TimeManager.LastPacketTick;
         }
     }
 

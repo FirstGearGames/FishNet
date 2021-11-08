@@ -334,7 +334,7 @@ namespace FishNet.Managing.Server
             headerWriter.WritePacketId(PacketId.ObjectSpawn);
             headerWriter.WriteNetworkObject(nob);
             if (base.NetworkManager.ServerManager.ShareOwners || connection == nob.Owner)
-                headerWriter.WriteInt16((short)nob.OwnerId);
+                headerWriter.WriteNetworkConnection(nob.Owner);
             else
                 headerWriter.WriteInt16(-1);
 

@@ -149,7 +149,7 @@ namespace FishNet.Managing.Client
         private void ParseReceived(ClientReceivedDataArgs args)
         {
             ArraySegment<byte> segment = args.Data;
-            if (segment.Count == 0)
+            if (segment.Count <= TransportManager.TICK_BYTES)
                 return;
 
             PacketId packetId = PacketId.Unset;
@@ -159,24 +159,27 @@ namespace FishNet.Managing.Client
 #endif
             using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager))
             {
+                NetworkManager.TimeManager.LastPacketTick = reader.ReadUInt32(AutoPackType.Unpacked);
                 /* This is a special condition where a message may arrive split.
-                 * When this occurs buffer each packet until all packets are
-                 * received. */
+                * When this occurs buffer each packet until all packets are
+                * received. */
                 if (reader.PeekPacketId() == PacketId.Split)
                 {
-                    ArraySegment<byte> result =
-                        _splitReader.Write(reader,
-                        NetworkManager.TransportManager.Transport.GetMTU((byte)args.Channel)
-                        );
-
-                    /* If there is no data in result then the split isn't fully received.
-                     * Since splits arrive in reliable order exit method and wait for next
-                     * packet. Once all packets are received the data will be processed. */
-                    if (result.Count == 0)
+                    //Skip packetId.
+                    reader.ReadPacketId();
+                    int expectedMessages;
+                    _splitReader.GetHeader(reader, out expectedMessages);
+                    _splitReader.Write(NetworkManager.TimeManager.LastPacketTick, reader, expectedMessages);
+                    /* If fullMessage returns 0 count then the split
+                     * has not written fully yet. Otherwise, if there is
+                     * data within then reinitialize reader with the
+                     * full message. */
+                    ArraySegment<byte> fullMessage = _splitReader.GetFullMessage();
+                    if (fullMessage.Count == 0)
                         return;
-                    //Split has been read in full.
-                    else
-                        reader.Initialize(result, NetworkManager);
+
+                    //Initialize reader with full message.
+                    reader.Initialize(fullMessage, NetworkManager);
                 }
 
                 while (reader.Remaining > 0)
@@ -293,7 +296,7 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         private void ParseAuthenticated(PooledReader reader)
         {
-            int connectionId = reader.ReadInt16();
+            int connectionId = reader.ReadNetworkConnectionId();
             //If only a client then make a new connection.
             if (!NetworkManager.IsServer)
             {

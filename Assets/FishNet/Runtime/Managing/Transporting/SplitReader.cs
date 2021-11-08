@@ -1,107 +1,77 @@
 ﻿using FishNet.Serializing;
 using System;
+using UnityEngine;
 
 namespace FishNet.Managing.Transporting
 {
 
     internal class SplitReader
     {
-        #region Public.
-        /// <summary>
-        /// Current write position of the buffer.
-        /// </summary>
-        public int Position = 0;
-        #endregion
-
         #region Private.
         /// <summary>
         /// Tick split is for.
+        /// Tick must be a negative value so that it's impossible for the first tick to align.
         /// </summary>
-        private uint _tick = uint.MaxValue;
-        /// <summary>
-        /// Buffer for all split packets.
-        /// </summary>
-        private byte[] _buffer;
+        private long _tick = -1;
         /// <summary>
         /// Expected number of splits.
         /// </summary>
-        private ushort _expected;
+        private int _expectedMessages = 0;
         /// <summary>
         /// Number of splits received so far.
         /// </summary>
-        private ushort _received;
+        private ushort _receivedMessages = 0;
+        /// <summary>
+        /// Writer containing split packet combined.
+        /// </summary>
+        private PooledWriter _writer = WriterPool.GetWriter();
         #endregion
 
         /// <summary>
-        /// Writes to buffer.
+        /// Gets split header values.
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="mtu"></param>
-        /// <returns></returns>
-        internal ArraySegment<byte> Write(PooledReader reader, int mtu)
+        internal void GetHeader(PooledReader reader, out int expectedMessages)
         {
-            uint tick;
-            ushort expected;
-            ReadHeader(reader, false, out tick, out expected);
-
-            /* If tick is difference than stored tick
-             * then this is a new split. Reset everything. */
-            if (_tick != tick)
-            {
-                Position = 0;
-                _received = 0;
-                _tick = tick;
-                _expected = expected;
-
-                /* Maximum size can not be more than MTU times
-                * expected splits. Therefor it's quick and easy
-                * to resize only once, if needed. */
-                int maximumSize = (mtu * _expected);
-                if (_buffer == null || _buffer.Length < maximumSize)
-                    Array.Resize(ref _buffer, maximumSize);
-            }
-
-            /* Bytes left in the reader. This should
-             * always be more than unless data
-             * came in corrupt. */
-            int remaining = reader.Length - reader.Position;
-            //Copy data to buffer.
-            if (remaining > 0)
-            {
-                ArraySegment<byte> readerBuffer = reader.GetArraySegmentBuffer();
-                Buffer.BlockCopy(readerBuffer.Array, reader.Position + readerBuffer.Offset, _buffer, Position, remaining);
-            }
-
-            //Increase position and received.
-            Position += remaining;
-            _received += 1;
-
-            //If received all expected then return a new array segment with buffer.
-            if (_received == _expected)
-                return new ArraySegment<byte>(_buffer, 0, Position);
-            //Have not received all, return empty array segment.
-            else
-                return new ArraySegment<byte>();
+            expectedMessages = reader.ReadInt32(AutoPackType.Unpacked);
         }
 
         /// <summary>
-        /// Readers header data of split packet.
+        /// Combines split data.
         /// </summary>
-        /// <param name="reader"></param>
-        internal void ReadHeader(PooledReader reader, bool resetReaderPosition, out uint tick, out ushort expected)
+        internal void Write(uint tick, PooledReader reader, int expectedMessages)
         {
-            int startPosition = reader.Position;
-            //Skip past packetId for split.
-            reader.ReadUInt16(); //pid
-            /* Get tick and split and expected
-             * split messages. This is included in every
-             * split message. */
-            tick = reader.ReadUInt32(AutoPackType.Unpacked);
-            expected = reader.ReadUInt16();
+            //New tick which means new split.
+            if (tick != _tick)
+            {
+                _tick = tick;
+                _receivedMessages = 0;
+                _expectedMessages = expectedMessages;
+                _writer.Reset();
+            }
 
-            if (resetReaderPosition)
-                reader.Position = startPosition;
+            /* Empty remainder of reader into the writer.
+             * It does not matter if parts of the reader
+             * contain data added after the split because
+             * once the split is fully combined the data
+             * is parsed as though it came in as one message,
+             * which is how data is normally read. */
+            ArraySegment<byte> data = reader.ReadArraySegment(reader.Remaining);
+            _writer.WriteArraySegment(data);
+            _receivedMessages++;
         }
+
+        /// <summary>
+        /// Returns if all split messages have been received.
+        /// </summary>
+        /// <returns></returns>
+        internal ArraySegment<byte> GetFullMessage()
+        {
+            if (_receivedMessages < _expectedMessages)
+                return default(ArraySegment<byte>);
+            else
+                return _writer.GetArraySegment();
+        }
+
     }
 
 
