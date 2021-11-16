@@ -14,7 +14,7 @@ namespace FishNet.CodeGenerating.Helping
 
         #region Relfection references.
         private TypeReference _syncBase_TypeRef;
-        private TypeReference _syncVar_TypeRef;
+        internal TypeReference SyncVar_TypeRef;
         private MethodReference _syncVar_Constructor_MethodRef;
         #endregion
 
@@ -35,12 +35,12 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal bool ImportReferences()
         {
-            _syncVar_TypeRef = CodegenSession.Module.ImportReference(typeof(SyncVar<>));
-            MethodDefinition svConstructor = _syncVar_TypeRef.GetFirstConstructor(true);
-            _syncVar_Constructor_MethodRef = CodegenSession.Module.ImportReference(svConstructor);
+            SyncVar_TypeRef = CodegenSession.ImportReference(typeof(SyncVar<>)); 
+            MethodDefinition svConstructor = SyncVar_TypeRef.GetFirstConstructor(true);
+            _syncVar_Constructor_MethodRef = CodegenSession.ImportReference(svConstructor);
 
             Type syncBaseType = typeof(SyncBase);
-            _syncBase_TypeRef = CodegenSession.Module.ImportReference(syncBaseType);
+            _syncBase_TypeRef = CodegenSession.ImportReference(syncBaseType);
 
             return true;
         }
@@ -64,9 +64,9 @@ namespace FishNet.CodeGenerating.Helping
                 if (!createMissing)
                     return null;
 
-                CodegenSession.Module.ImportReference(dataTd);
+                CodegenSession.ImportReference(dataTd);
 
-                GenericInstanceType syncVarGit = _syncVar_TypeRef.MakeGenericInstanceType(new TypeReference[] { dataTr });
+                GenericInstanceType syncVarGit = SyncVar_TypeRef.MakeGenericInstanceType(new TypeReference[] { dataTr });
                 TypeReference genericDataTr = syncVarGit.GenericArguments[0];
 
                 //Make sure can serialize.
@@ -86,18 +86,18 @@ namespace FishNet.CodeGenerating.Helping
 
                 MethodReference setValueMr = null;
                 MethodReference getValueMr = null;
-                foreach (MethodDefinition md in _syncVar_TypeRef.Resolve().Methods)
+                foreach (MethodDefinition md in SyncVar_TypeRef.Resolve().Methods)
                 {
                     //GetValue.
                     if (md.Name == GETVALUE_NAME)
                     {
-                        MethodReference mr = CodegenSession.Module.ImportReference(md);
+                        MethodReference mr = CodegenSession.ImportReference(md);
                         getValueMr = mr.MakeHostInstanceGeneric(syncVarGit);
                     }
                     //SetValue.
                     else if (md.Name == SETVALUE_NAME)
                     {
-                        MethodReference mr = CodegenSession.Module.ImportReference(md);
+                        MethodReference mr = CodegenSession.ImportReference(md);
                         setValueMr = mr.MakeHostInstanceGeneric(syncVarGit);
                     }
 
@@ -106,7 +106,7 @@ namespace FishNet.CodeGenerating.Helping
                 if (setValueMr == null || getValueMr == null)
                     return null;
 
-                CreatedSyncVar csv = new CreatedSyncVar(syncVarGit, dataTd, getValueMr, setValueMr, setSyncIndexMr, genericSyncVarCtor);
+                CreatedSyncVar csv = new CreatedSyncVar(syncVarGit, dataTd, getValueMr, setValueMr, setSyncIndexMr, null, genericSyncVarCtor);
                 _createdSyncVars.Add(dataTd, csv);
                 return csv;
             }

@@ -217,7 +217,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Called when a tick occurs.
         /// </summary>
-        private void TimeManager_OnTick(uint obj)
+        private void TimeManager_OnTick()
         {
             /* There is no reason to send data twice in the same frame,
              * nothing would have changed. */
@@ -228,7 +228,7 @@ namespace FishNet.Component.Transforming
             if (base.IsServer)
                 SendToClients();
             if (base.IsClient)
-                CheckSendToServer();
+                SendToServer();
         }
 
         /* 
@@ -535,7 +535,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sends transform data to server if needed.
         /// </summary>
-        private void CheckSendToServer()
+        private void SendToServer()
         {
             //Not client auth or not owner.
             if (!_clientAuthoritative || !base.IsOwner)

@@ -5,6 +5,7 @@ using FishNet.Serializing;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
@@ -14,13 +15,32 @@ namespace FishNet.Object.Synchronizing
     {
         #region Types.
         /// <summary>
+        /// Information needed to invoke a callback.
+        /// </summary>
+        private struct CachedOnChange
+        {
+            internal readonly SyncListOperation Operation;
+            internal readonly int Index;
+            internal readonly T Previous;
+            internal readonly T Next;
+
+            public CachedOnChange(SyncListOperation operation, int index, T previous, T next)
+            {
+                Operation = operation;
+                Index = index;
+                Previous = previous;
+                Next = next;
+            }
+        }
+
+        /// <summary>
         /// Information about how the collection has changed.
         /// </summary>
         private struct ChangeData
         {
-            internal SyncListOperation Operation;
-            internal int Index;
-            internal T Item;
+            internal readonly SyncListOperation Operation;
+            internal readonly int Index;
+            internal readonly T Item;
 
             public ChangeData(SyncListOperation operation, int index, T item)
             {
@@ -106,6 +126,14 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private readonly List<ChangeData> _changed = new List<ChangeData>();
         /// <summary>
+        /// Server OnChange events waiting for start callbacks.
+        /// </summary>
+        private readonly List<CachedOnChange> _serverOnChanges = new List<CachedOnChange>();
+        /// <summary>
+        /// Client OnChange events waiting for start callbacks.
+        /// </summary>
+        private readonly List<CachedOnChange> _clientOnChanges = new List<CachedOnChange>();
+        /// <summary>
         /// True if values have changed since initialization.
         /// The only reasonable way to reset this during a Reset call is by duplicating the original list and setting all values to it on reset.
         /// </summary>
@@ -146,6 +174,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="index"></param>
         /// <param name="prev"></param>
         /// <param name="next"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddOperation(SyncListOperation operation, int index, T prev, T next)
         {
             /* Only check this if NetworkManager is set.
@@ -173,7 +202,26 @@ namespace FishNet.Object.Synchronizing
             ChangeData change = new ChangeData(operation, index, next);
             _changed.Add(change);
             bool asServer = true;
-            OnChange?.Invoke(operation, index, prev, next, asServer);
+
+            InvokeOnChange(operation, index, prev, next, asServer);
+        }
+
+        /// <summary>
+        /// Called after OnStartXXXX has occurred.
+        /// </summary>
+        /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
+        protected internal override void OnStartCallback(bool asServer)
+        {
+            base.OnStartCallback(asServer);
+            List<CachedOnChange> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
+
+            if (OnChange != null)
+            {
+                foreach (CachedOnChange item in collection)
+                    OnChange.Invoke(item.Operation, item.Index, item.Previous, item.Next, asServer);
+            }
+
+            collection.Clear();
         }
 
         /// <summary>
@@ -232,6 +280,8 @@ namespace FishNet.Object.Synchronizing
         /// Sets current values.
         /// </summary>
         /// <param name="reader"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [APIExclude]
         public override void Read(PooledReader reader)
         {
             bool asServer = false;
@@ -286,12 +336,37 @@ namespace FishNet.Object.Synchronizing
                 }
 
 
-                OnChange?.Invoke(operation, index, prev, next, false);
+                InvokeOnChange(operation, index, prev, next, false);
             }
 
             //If changes were made invoke complete after all have been read.
             if (changes > 0)
-                OnChange?.Invoke(SyncListOperation.Complete, -1, default, default, false);
+                InvokeOnChange(SyncListOperation.Complete, -1, default, default, false);
+        }
+
+        /// <summary>
+        /// Invokes OnChanged callback.
+        /// </summary>
+        private void InvokeOnChange(SyncListOperation operation, int index, T prev, T next, bool asServer)
+        {
+            if (OnChange != null)
+            {
+                if (asServer)
+                {
+                    if (base.NetworkBehaviour.OnStartServerCalled)
+                        OnChange.Invoke(operation, index, prev, next, asServer);
+                    else
+                        _serverOnChanges.Add(new CachedOnChange(operation, index, prev, next));
+                }
+                else
+                {
+                    if (base.NetworkBehaviour.OnStartClientCalled)
+                        OnChange.Invoke(operation, index, prev, next, asServer);
+                    else
+                        _clientOnChanges.Add(new CachedOnChange(operation, index, prev, next));
+                }
+
+            }
         }
 
         /// <summary>

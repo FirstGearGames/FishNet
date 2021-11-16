@@ -3,6 +3,7 @@ using MonoFN.Cecil;
 using System.Collections.Generic;
 using Unity.CompilationPipeline.Common.Diagnostics;
 using UnityEngine;
+using SR = System.Reflection;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -14,6 +15,8 @@ namespace FishNet.CodeGenerating.Helping
         [System.ThreadStatic]
         internal static List<DiagnosticMessage> Diagnostics;
 
+        [System.ThreadStatic]
+        internal static TimeManagerHelper TimeManagerHelper;
         [System.ThreadStatic]
         internal static AttributeHelper AttributeHelper;
         [System.ThreadStatic]
@@ -84,8 +87,8 @@ namespace FishNet.CodeGenerating.Helping
             Module = module;
             Diagnostics = new List<DiagnosticMessage>();
 
+            TimeManagerHelper = new TimeManagerHelper();
             AttributeHelper = new AttributeHelper();
-            //ConnectionHelper = new ConnectionHelper();
             GeneralHelper = new GeneralHelper();
             GenericReaderHelper = new GenericReaderHelper();
             GenericWriterHelper = new GenericWriterHelper();
@@ -106,6 +109,14 @@ namespace FishNet.CodeGenerating.Helping
             NetworkBehaviourPredictionProcessor = new NetworkBehaviourPredictionProcessor();
 #endif
 
+            if (!TimeManagerHelper.ImportReferences())
+                return false;
+#if PREDICTION
+            if (!NetworkBehaviourPredictionProcessor.ImportReferences())
+                return false;
+#endif
+            if (!NetworkBehaviourSyncProcessor.ImportReferences())
+                return false;
             if (!GeneralHelper.ImportReferences())
                 return false;
             if (!AttributeHelper.ImportReferences())
@@ -132,6 +143,71 @@ namespace FishNet.CodeGenerating.Helping
             return true;
         }
 
+
+
+        #region ImportReference.
+
+        public static MethodReference ImportReference(SR.MethodBase method)
+        {
+            return Module.ImportReference(method);
+        }
+
+        public static MethodReference ImportReference(SR.MethodBase method, IGenericParameterProvider context)
+        {
+            return Module.ImportReference(method, context);
+        }
+
+        public static TypeReference ImportReference(TypeReference type)
+        {
+            return Module.ImportReference(type);
+        }
+
+        public static TypeReference ImportReference(TypeReference type, IGenericParameterProvider context)
+        {
+            return Module.ImportReference(type, context);
+        }
+
+        public static FieldReference ImportReference(FieldReference field)
+        {
+            return Module.ImportReference(field);
+        }
+
+        public static FieldReference ImportReference(FieldReference field, IGenericParameterProvider context)
+        {
+            return Module.ImportReference(field, context);
+        }
+        public static MethodReference ImportReference(MethodReference method)
+        {
+            return Module.ImportReference(method);
+        }
+
+        public static MethodReference ImportReference(MethodReference method, IGenericParameterProvider context)
+        {
+            return Module.ImportReference(method, context);
+        }
+        public static TypeReference ImportReference(System.Type type)
+        {
+            return ImportReference(type, null);
+        }
+
+
+        public static TypeReference ImportReference(System.Type type, IGenericParameterProvider context)
+        {
+            return Module.ImportReference(type, context);
+        }
+
+
+        public static FieldReference ImportReference(SR.FieldInfo field)
+        {
+            return Module.ImportReference(field);
+        }
+
+        public static FieldReference ImportReference(SR.FieldInfo field, IGenericParameterProvider context)
+        {
+            return Module.ImportReference(field,context);
+        }
+
+        #endregion
     }
 
 

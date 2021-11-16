@@ -473,7 +473,11 @@ namespace FishNet.Managing.Server
                         return;
                     }
 
-                    if (packetId == PacketId.ServerRpc)
+                    if (packetId == PacketId.Replicate)
+                    {
+                        Objects.ParseReplicateRpc(reader, conn, args.Channel);
+                    }
+                    else if (packetId == PacketId.ServerRpc)
                     {
                         Objects.ParseServerRpc(reader, conn, args.Channel);
                     }

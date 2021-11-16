@@ -1,9 +1,10 @@
 ﻿using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
 
-    public static class MethodDefinitionExtensions
+    internal static class MethodDefinitionExtensions
     {
         /// <summary>
         /// Returns the ParameterDefinition index from end of parameters.
@@ -11,7 +12,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="md"></param>
         /// <param name="index"></param>
         /// <returns></returns>
-        public static ParameterDefinition GetEndParameter(this MethodDefinition md, int index)
+        internal static ParameterDefinition GetEndParameter(this MethodDefinition md, int index)
         {
             //Not enough parameters.
             if (md.Parameters.Count < (index + 1))
@@ -20,6 +21,24 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return md.Parameters[md.Parameters.Count - (index + 1)];
         }
 
+
+        /// <summary>
+        /// Creates a variable type within the body and returns it's VariableDef.
+        /// </summary>
+        internal static VariableDefinition CreateVariable(this MethodDefinition methodDef, TypeReference variableTypeRef)
+        {
+            VariableDefinition variableDef = new VariableDefinition(variableTypeRef);
+            methodDef.Body.Variables.Add(variableDef);
+            return variableDef;
+        }
+
+        /// <summary>
+        /// Creates a variable type within the body and returns it's VariableDef.
+        /// </summary>
+        internal static VariableDefinition CreateVariable(this MethodDefinition methodDef, System.Type variableType)
+        {
+            return CreateVariable(methodDef, CodegenSession.GeneralHelper.GetTypeReference(variableType));
+        }
     }
 
 

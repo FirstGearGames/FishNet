@@ -1,6 +1,7 @@
 ﻿using FishNet.Managing.Logging;
 using FishNet.Managing.Object;
 using FishNet.Object;
+using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
@@ -68,10 +69,13 @@ namespace FishNet.Managing.Client
             //Found NetworkObject for link.
             if (Spawned.TryGetValue(link.ObjectId, out NetworkObject nob))
             {
-                if (link.ObserversRpc)
-                    nob.NetworkBehaviours[link.ComponentIndex].OnObserversRpc(link.RpcHash, reader, channel);
-                else
-                    nob.NetworkBehaviours[link.ComponentIndex].OnTargetRpc(link.RpcHash, reader, channel);
+                NetworkBehaviour nb = nob.NetworkBehaviours[link.ComponentIndex];
+                if (link.RpcType == RpcType.Target)
+                    nb.OnTargetRpc(link.RpcHash, reader, channel);
+                else if (link.RpcType == RpcType.Observers)
+                    nb.OnObserversRpc(link.RpcHash, reader, channel);
+                else if (link.RpcType == RpcType.Replicate)
+                    nb.OnReconcileRpc(link.RpcHash, reader, channel);
             }
             //Could not find NetworkObject.
             else

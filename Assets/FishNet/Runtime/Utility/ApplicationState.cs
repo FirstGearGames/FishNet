@@ -7,13 +7,12 @@ using UnityEditor;
 
 
 
-[assembly: InternalsVisibleTo(Constants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Utility
 {
 #if UNITY_EDITOR
     [InitializeOnLoad]
 #endif
-    internal static class ApplicationState
+    public static class ApplicationState
     {
 
 #if !UNITY_EDITOR

@@ -17,6 +17,10 @@ namespace FishNet.CodeGenerating.Helping
     internal class GeneralHelper
     {
         #region Reflection references.
+        internal TypeReference List_TypeRef;
+        internal MethodReference List_Clear_MethodRef;
+        internal MethodReference List_GetItem_MethodRef;
+        internal MethodReference List_GetCount_MethodRef;
         internal MethodReference List_Add_MethodRef;
         internal MethodReference List_RemoveRange_MethodRef;
         private MethodReference InstanceFinder_NetworkManager_MethodRef;
@@ -30,6 +34,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodReference Debug_LogWarning_MethodRef;
         private MethodReference Debug_LogError_MethodRef;
         internal MethodReference Comparers_EqualityCompare_MethodRef;
+        internal MethodReference Comparers_IsDefault_MethodRef;
         internal MethodReference IsServer_MethodRef = null;
         internal MethodReference IsClient_MethodRef = null;
         internal MethodReference NetworkObject_Deinitializing_MethodRef = null;
@@ -45,69 +50,82 @@ namespace FishNet.CodeGenerating.Helping
             Single_FullName = typeof(float).FullName;
 
             Type comparers = typeof(Comparers);
-            Comparers_EqualityCompare_MethodRef = CodegenSession.Module.ImportReference<Comparers>(x => Comparers.EqualityCompare<object>(default, default));
+            foreach (System.Reflection.MethodInfo mi in comparers.GetMethods())
+            {
+                if (mi.Name == nameof(Comparers.EqualityCompare))
+                    Comparers_EqualityCompare_MethodRef = CodegenSession.ImportReference(mi);
+                else if (mi.Name == nameof(Comparers.IsDefault))
+                    Comparers_IsDefault_MethodRef = CodegenSession.ImportReference(mi);
+            }
 
             //Networkbehaviour.
             Type networkBehaviourType = typeof(NetworkBehaviour);
             foreach (System.Reflection.MethodInfo methodInfo in networkBehaviourType.GetMethods())
             {
                 if (methodInfo.Name == nameof(NetworkBehaviour.CanLog))
-                    NetworkBehaviour_CanLog_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    NetworkBehaviour_CanLog_MethodRef = CodegenSession.ImportReference(methodInfo);
             }
             foreach (System.Reflection.PropertyInfo propertyInfo in networkBehaviourType.GetProperties())
             {
                 if (propertyInfo.Name == nameof(NetworkBehaviour.NetworkManager))
-                    NetworkBehaviour_NetworkManager_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
+                    NetworkBehaviour_NetworkManager_MethodRef = CodegenSession.ImportReference(propertyInfo.GetMethod);
             }
 
             //Instancefinder.
             Type instanceFinderType = typeof(InstanceFinder);
             System.Reflection.PropertyInfo getNetworkManagerPropertyInfo = instanceFinderType.GetProperty(nameof(InstanceFinder.NetworkManager));
-            InstanceFinder_NetworkManager_MethodRef = CodegenSession.Module.ImportReference(getNetworkManagerPropertyInfo.GetMethod);
+            InstanceFinder_NetworkManager_MethodRef = CodegenSession.ImportReference(getNetworkManagerPropertyInfo.GetMethod);
 
-            //NetworkManager debug logs.
+            //NetworkManager debug logs. 
             Type networkManagerType = typeof(NetworkManager);
             foreach (System.Reflection.MethodInfo methodInfo in networkManagerType.GetMethods())
             {
                 if (methodInfo.Name == nameof(NetworkManager.Log))
-                    NetworkManager_LogCommon_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    NetworkManager_LogCommon_MethodRef = CodegenSession.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(NetworkManager.LogWarning))
-                    NetworkManager_LogWarning_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    NetworkManager_LogWarning_MethodRef = CodegenSession.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(NetworkManager.LogError))
-                    NetworkManager_LogError_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    NetworkManager_LogError_MethodRef = CodegenSession.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(NetworkManager.CanLog))
-                    NetworkManager_CanLog_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    NetworkManager_CanLog_MethodRef = CodegenSession.ImportReference(methodInfo);
             }
 
             //Lists.
             Type lstType = typeof(List<>);
-            System.Reflection.MethodInfo lstAdd = lstType.GetMethod("Add");
-            List_Add_MethodRef = CodegenSession.Module.ImportReference(lstAdd);
-            System.Reflection.MethodInfo lstRemoveRange = lstType.GetMethod("RemoveRange");
-            List_RemoveRange_MethodRef = CodegenSession.Module.Import(lstRemoveRange);
+            List_TypeRef = CodegenSession.ImportReference(lstType);
+            System.Reflection.MethodInfo lstMi;
+            lstMi = lstType.GetMethod("Add");
+            List_Add_MethodRef = CodegenSession.ImportReference(lstMi);
+            lstMi = lstType.GetMethod("RemoveRange");
+            List_RemoveRange_MethodRef = CodegenSession.ImportReference(lstMi);
+            lstMi = lstType.GetMethod("get_Count");
+            List_GetCount_MethodRef = CodegenSession.ImportReference(lstMi);
+            lstMi = lstType.GetMethod("get_Item");
+            List_GetItem_MethodRef = CodegenSession.ImportReference(lstMi);
+            lstMi = lstType.GetMethod("Clear");
+            List_Clear_MethodRef = CodegenSession.ImportReference(lstMi);
 
             //Unity debug logs.
             Type debugType = typeof(UnityEngine.Debug);
             foreach (System.Reflection.MethodInfo methodInfo in debugType.GetMethods())
             {
                 if (methodInfo.Name == nameof(Debug.LogWarning) && methodInfo.GetParameters().Length == 1)
-                    Debug_LogWarning_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    Debug_LogWarning_MethodRef = CodegenSession.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(Debug.LogError) && methodInfo.GetParameters().Length == 1)
-                    Debug_LogError_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    Debug_LogError_MethodRef = CodegenSession.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(Debug.Log) && methodInfo.GetParameters().Length == 1)
-                    Debug_LogCommon_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    Debug_LogCommon_MethodRef = CodegenSession.ImportReference(methodInfo);
             }
 
-            //COdegen helpers/shortcuts.
             Type codegenHelper = typeof(CodegenHelper);
             foreach (System.Reflection.MethodInfo methodInfo in codegenHelper.GetMethods())
             {
                 if (methodInfo.Name == nameof(CodegenHelper.NetworkObject_Deinitializing))
-                    NetworkObject_Deinitializing_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    NetworkObject_Deinitializing_MethodRef = CodegenSession.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(CodegenHelper.IsClient))
-                    IsClient_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    IsClient_MethodRef = CodegenSession.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(CodegenHelper.IsServer))
-                    IsServer_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    IsServer_MethodRef = CodegenSession.ImportReference(methodInfo);
             }
 
             return true;
@@ -184,7 +202,7 @@ namespace FishNet.CodeGenerating.Helping
 
             int parameterRequirement = (loadType.Length == 0) ? 0 : 1;
             MethodDefinition constructorMethodDef = attTypeRef.GetConstructor(parameterRequirement);
-            MethodReference constructorMethodRef = CodegenSession.Module.ImportReference(constructorMethodDef);
+            MethodReference constructorMethodRef = CodegenSession.ImportReference(constructorMethodDef);
             CustomAttribute ca = new CustomAttribute(constructorMethodRef);
             /* If load type isn't null then it
              * has to be passed in as the first argument. */
@@ -195,7 +213,7 @@ namespace FishNet.CodeGenerating.Helping
                 {
                     if (loadType == value.ToString())
                     {
-                        TypeReference tr = CodegenSession.Module.ImportReference(t);
+                        TypeReference tr = CodegenSession.ImportReference(t);
                         CustomAttributeArgument arg = new CustomAttributeArgument(tr, value);
                         ca.ConstructorArguments.Add(arg);
                     }
@@ -259,10 +277,10 @@ namespace FishNet.CodeGenerating.Helping
             {
                 created = true;
                 type = new TypeDefinition(FishNetILPP.RUNTIME_ASSEMBLY_NAME, className,
-                    typeAttr, CodegenSession.Module.ImportReference(typeof(object)));
+                    typeAttr, CodegenSession.ImportReference(typeof(object)));
                 //Add base class if specified.
                 if (baseTypeRef != null)
-                    type.BaseType = CodegenSession.Module.ImportReference(baseTypeRef);
+                    type.BaseType = CodegenSession.ImportReference(baseTypeRef);
 
                 CodegenSession.Module.Types.Add(type);
                 return type;
@@ -313,7 +331,7 @@ namespace FishNet.CodeGenerating.Helping
             TypeReference result;
             if (!_importedTypeReferences.TryGetValue(type, out result))
             {
-                result = CodegenSession.Module.ImportReference(type);
+                result = CodegenSession.ImportReference(type);
                 _importedTypeReferences.Add(type, result);
             }
 
@@ -329,7 +347,7 @@ namespace FishNet.CodeGenerating.Helping
             FieldReference result;
             if (!_importedFieldReferences.TryGetValue(fieldDef, out result))
             {
-                result = CodegenSession.Module.ImportReference(fieldDef);
+                result = CodegenSession.ImportReference(fieldDef);
                 _importedFieldReferences.Add(fieldDef, result);
             }
 
@@ -476,7 +494,10 @@ namespace FishNet.CodeGenerating.Helping
         {
             List<Instruction> instructions = new List<Instruction>();
             if (loggingType == LoggingType.Off)
+            {
+                CodegenSession.LogError($"CreateDebug called with LoggingType.Off.");
                 return instructions;
+            }
 
             instructions.Add(processor.Create(OpCodes.Ldstr, message));
 
@@ -491,18 +512,6 @@ namespace FishNet.CodeGenerating.Helping
             instructions.Add(processor.Create(OpCodes.Call, methodRef));
 
             return instructions;
-        }
-        /// <summary>
-        /// Creates a debug.
-        /// </summary>
-        /// <param name="processor"></param>
-        internal void CreateDebug(ILProcessor processor, string message, LoggingType loggingType, bool useNetworkManagerLog)
-        {
-            List<Instruction> instructions = CreateDebugInstructions(processor, message, loggingType, useNetworkManagerLog);
-            if (instructions.Count == 0)
-                return;
-
-            processor.Add(instructions);
         }
         #endregion
 
@@ -664,5 +673,6 @@ namespace FishNet.CodeGenerating.Helping
 
             return (hasWriter && hasReader);
         }
+
     }
 }

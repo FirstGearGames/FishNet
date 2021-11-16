@@ -59,7 +59,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
             foreach (GenericParameter generic_parameter in self.GenericParameters)
                 reference.GenericParameters.Add(new GenericParameter(generic_parameter.Name, reference));
 
-            return CodegenSession.Module.ImportReference(reference);
+            return CodegenSession.ImportReference(reference);
         }
         /// <summary>
         /// Given a method of a generic class such as ArraySegment`T.get_Count,

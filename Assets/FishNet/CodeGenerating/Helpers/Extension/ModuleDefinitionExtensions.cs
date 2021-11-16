@@ -22,7 +22,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
         public static TypeReference ImportReference<T>(this ModuleDefinition moduleDef)
         {
-            return CodegenSession.Module.ImportReference(typeof(T));
+            return CodegenSession.ImportReference(typeof(T));
         }
 
         public static MethodReference ImportReference(this ModuleDefinition moduleDef, Expression<Action> expression)

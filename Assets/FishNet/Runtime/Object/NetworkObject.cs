@@ -168,9 +168,6 @@ namespace FishNet.Object
             SetOwner(owner);
             ObjectId = objectId;
 
-            if (asServer)
-                PreInitializeObservers();
-
             if (NetworkBehaviours == null || NetworkBehaviours.Length == 0)
             {
                 NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>();
@@ -185,6 +182,9 @@ namespace FishNet.Object
                         NetworkBehaviours[i].PreInitialize(this, (byte)i);
                 }
             }
+
+            if (asServer)
+                PreInitializeObservers();
 
             //Add to connection objects if owner exist.
             if (owner != null)

@@ -1,6 +1,8 @@
 ﻿using FishNet.Connection;
+using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Timing.Broadcast;
+using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility;
@@ -45,17 +47,25 @@ namespace FishNet.Managing.Timing
 
         #region Public.
         /// <summary>
+        /// Called before performing a reconcile on NetworkBehaviour.
+        /// </summary>
+        public event Action<NetworkBehaviour> OnPreReconcile;
+        /// <summary>
+        /// Called after performing a reconcile on a NetworkBehaviour.
+        /// </summary>
+        public event Action<NetworkBehaviour> OnPostReconcile;
+        /// <summary>
         /// Called right before a tick occurs, as well before data is read.
         /// </summary>
-        public event Action<uint> OnPreTick;
+        public event Action OnPreTick;
         /// <summary>
         /// Called when a tick occurs.
         /// </summary>
-        public event Action<uint> OnTick;
+        public event Action OnTick;
         /// <summary>
-        /// Called after a tick occurs; physics would have simulated if using ManuallySimulatePhysics.
+        /// Called after a tick occurs; physics would have simulated if using PhysicsMode.TimeManager.
         /// </summary>
-        public event Action<uint> OnPostTick;
+        public event Action OnPostTick;
         /// <summary>
         /// Called when MonoBehaviours call Update.
         /// </summary>
@@ -82,6 +92,7 @@ namespace FishNet.Managing.Timing
         /// The value of this field may increase and decrease as timing adjusts.
         /// This value is reset upon disconnecting.
         /// Tick can be used to get the server time by using TicksToTime().
+        /// Use LocalTick for values that only increase.
         /// </summary>
         public uint Tick { get; private set; }
         /// <summary>
@@ -122,11 +133,15 @@ namespace FishNet.Managing.Timing
 
         [Header("Prediction")]
         /// <summary>
-        /// True to let Unity run physics. False to let TimeManager run physics after each tick.
+        /// 
         /// </summary>
-        [Tooltip("True to let Unity run physics. False to let TimeManager run physics after each tick.")]
+        [Tooltip("How to perform physics.")]
         [SerializeField]
-        private bool _automaticPhysics = true;
+        private PhysicsMode _physicsMode = PhysicsMode.Unity;
+        /// <summary>
+        /// How to perform physics.
+        /// </summary>
+        public PhysicsMode PhysicsMode => _physicsMode;
         /// <summary>
         /// 
         /// </summary>
@@ -265,7 +280,7 @@ namespace FishNet.Managing.Timing
             //If closing/stopping.
             if (ApplicationState.IsQuitting())
                 _manualPhysics = 0;
-            else if (!_automaticPhysics)
+            else if (PhysicsMode == PhysicsMode.TimeManager)
                 _manualPhysics = Math.Max(0, _manualPhysics - 1);
         }
 #endif
@@ -388,6 +403,18 @@ namespace FishNet.Managing.Timing
             }
         }
 
+        /// <summary>
+        /// Invokes OnPre/PostReconcile events.
+        /// Internal use.
+        /// </summary>
+        [APIExclude] //codegen make internal and then public in codegen.
+        public void InvokeOnReconcile(NetworkBehaviour nb, bool before)
+        {
+            if (before)
+                OnPreReconcile?.Invoke(nb);
+            else
+                OnPostReconcile?.Invoke(nb);
+        }
 
         /// <summary>
         /// Sets values to use based on settings.
@@ -399,7 +426,7 @@ namespace FishNet.Managing.Timing
             //Update every x seconds.
             _timingAdjustmentInterval = (ushort)(TickRate * ADJUST_TIMING_INTERVAL);
 
-            SetAutomaticSimulation(_automaticPhysics);
+            SetAutomaticSimulation(PhysicsMode);
 
             _clientTimingRange = new double[]
             {
@@ -412,10 +439,10 @@ namespace FishNet.Managing.Timing
         /// Updates automaticSimulation modes.
         /// </summary>
         /// <param name="automatic"></param>
-        private void SetAutomaticSimulation(bool automatic)
+        private void SetAutomaticSimulation(PhysicsMode mode)
         {
             //Do not automatically simulate.
-            if (!automatic)
+            if (mode == PhysicsMode.TimeManager)
             {
                 /* Only check this if network manager
                  * is not null. It would be null via
@@ -536,21 +563,21 @@ namespace FishNet.Managing.Timing
             //Debug.Log(_elapsedTime + ",  " + (frameMs / 1000d));
             while (_elapsedTime >= timePerSimulation)
             {
-                OnPreTick?.Invoke(Tick);
+                OnPreTick?.Invoke();
                 /* This has to be called inside the loop because
                  * OnPreTick promises data hasn't been read yet.
                  * Therefor iterate must occur after OnPreTick.
                  * Iteration will only run once per frame. */
                 TryIterateData(true, true);
-                OnTick?.Invoke(Tick);
+                OnTick?.Invoke();
 
-                if (!_automaticPhysics)
+                if (PhysicsMode == PhysicsMode.TimeManager)
                 {
                     Physics.Simulate((float)TickDelta);
                     Physics2D.Simulate((float)TickDelta);
                 }
 
-                OnPostTick?.Invoke(Tick);
+                OnPostTick?.Invoke();
                 _elapsedTime -= timePerSimulation;
 
                 if (_networkManager.IsClient)

@@ -27,7 +27,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             ResetValues();
 
-            Channel_TypeRef = CodegenSession.Module.ImportReference(typeof(Channel));
+            Channel_TypeRef = CodegenSession.ImportReference(typeof(Channel));
 
             return true;
         }

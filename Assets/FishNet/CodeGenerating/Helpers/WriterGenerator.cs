@@ -250,7 +250,7 @@ namespace FishNet.CodeGenerating.Helping
                 processor.Emit(OpCodes.Ldc_I4, (int)packType);
             }
             //writer.Write
-            processor.Emit(OpCodes.Callvirt, writeMethodRef);
+            processor.Emit(OpCodes.Call, writeMethodRef);
 
             //i++
             processor.Emit(OpCodes.Ldloc, loopIndex);
@@ -274,7 +274,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodDefinition CreateListWriterMethodDefinition(TypeReference objectTypeRef)
         {
             GenericInstanceType genericInstance = (GenericInstanceType)objectTypeRef;
-            CodegenSession.Module.ImportReference(genericInstance);
+            CodegenSession.ImportReference(genericInstance);
             TypeReference elementTypeRef = genericInstance.GenericArguments[0];
 
             /* Try to get instanced first for collection element type, if it doesn't exist then try to

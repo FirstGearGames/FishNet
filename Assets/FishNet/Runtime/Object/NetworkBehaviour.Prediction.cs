@@ -4,25 +4,26 @@ using FishNet.Managing.Logging;
 using FishNet.Object.Prediction.Delegating;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Constant;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
+[assembly: InternalsVisibleTo(Constants.CODEGEN_ASSEMBLY_NAME)]
 namespace FishNet.Object
 {
-
 
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Private.
         /// <summary>
-        /// Registered ServerRpc methods.
+        /// Registered Replicate methods.
         /// </summary>
-        private readonly Dictionary<uint, ReplicateDelegate> _replicateDelegates = new Dictionary<uint, ReplicateDelegate>();
+        private readonly Dictionary<uint, ReplicateRpcDelegate> _replicateRpcDelegates = new Dictionary<uint, ReplicateRpcDelegate>();
         /// <summary>
-        /// Registered ObserversRpc methods.
+        /// Registered Reconcile methods.
         /// </summary>
-        private readonly Dictionary<uint, ReconcileDelegate> _reconcileDelegates = new Dictionary<uint, ReconcileDelegate>();
+        private readonly Dictionary<uint, ReconcileRpcDelegate> _reconcileRpcDelegates = new Dictionary<uint, ReconcileRpcDelegate>();
         #endregion
 
         /// <summary>
@@ -33,9 +34,9 @@ namespace FishNet.Object
         /// <param name="del"></param>
         [APIExclude] //codegen this can be made protected internal then set public via codegen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterReplicate(uint hash, ReplicateDelegate del)
+        protected internal void RegisterReplicateRpc(uint hash, ReplicateRpcDelegate del)
         {
-            _replicateDelegates[hash] = del;
+            _replicateRpcDelegates[hash] = del;
         }
         /// <summary>
         /// Registers a RPC method.
@@ -45,73 +46,97 @@ namespace FishNet.Object
         /// <param name="del"></param>
         [APIExclude] //codegen this can be made protected internal then set public via codegen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterReconcile(uint hash, ReconcileDelegate del)
+        protected internal void RegisterReconcileRpc(uint hash, ReconcileRpcDelegate del)
         {
-            _reconcileDelegates[hash] = del;
+            _reconcileRpcDelegates[hash] = del;
         }
 
+
         /// <summary>
-        /// Called when a ServerRpc is received.
+        /// Called when a replicate is received.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void OnReplicate(PooledReader reader, NetworkConnection sendingClient, Channel channel)
+        internal void OnReplicateRpc(uint? methodHash, PooledReader reader, NetworkConnection sendingClient, Channel channel)
         {
-            uint methodHash = reader.ReadByte();
+            if (methodHash == null)
+                methodHash = ReadRpcHash(reader);
 
             if (sendingClient == null)
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"NetworkConnection is null. ServerRpc {methodHash} will not complete. Remainder of packet may become corrupt.");
+                    Debug.LogError($"NetworkConnection is null. Replicate {methodHash} will not complete. Remainder of packet may become corrupt.");
                 return;
             }
 
-            if (_replicateDelegates.TryGetValue(methodHash, out ReplicateDelegate data))
+            if (_replicateRpcDelegates.TryGetValue(methodHash.Value, out ReplicateRpcDelegate del))
             {
-                data.Invoke(this, reader, channel, sendingClient);
+                del.Invoke(this, reader, sendingClient);
             }
             else
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Replicate not found for hash {methodHash}. Remainder of packet may become corrupt.");
+                    Debug.LogWarning($"Replicate not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
             }
         }
 
+
+
         /// <summary>
-        /// Called when an TargetRpc is received.
+        /// Called when a reconcile is received.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void OnReconcile(uint? hash, PooledReader reader, Channel channel)
+        internal void OnReconcileRpc(uint? methodHash, PooledReader reader, Channel channel)
         {
-            if (hash == null)
-                hash = reader.ReadByte();
+            if (methodHash == null)
+                methodHash = ReadRpcHash(reader);
 
-            if (_reconcileDelegates.TryGetValue(hash.Value, out ReconcileDelegate del))
+            if (_reconcileRpcDelegates.TryGetValue(methodHash.Value, out ReconcileRpcDelegate del))
             {
-                del.Invoke(this, reader, channel);
+                del.Invoke(this, reader);
             }
             else
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Reconcile not found for hash {hash.Value}. Remainder of packet may become corrupt.");
+                    Debug.LogWarning($"Reconcile not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
             }
         }
 
         /// <summary>
-        /// Sends a RPC to server.
-        /// Internal use.
-        /// </summary>
-        /// <param name="rpcHash"></param>
-        /// <param name="methodWriter"></param>
-        /// <param name="channel"></param>
-        [APIExclude] //codegen this can be made internal then set public via codegen
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendReplicate(uint rpcHash, PooledWriter methodWriter)
+        /// Writes number of past inputs from buffer to writer and sends it to the server.
+        /// Internal use. 
+        /// </summary> //codegen can be made internal, then public via codegen
+        [APIExclude]
+        public void SendReplicateRpc<T>(uint hash, List<T> replicateBuffer, int count)
         {
             if (!IsSpawnedWithWarning())
                 return;
 
-            PooledWriter writer = CreateReplicate(rpcHash, methodWriter);
-            NetworkObject.NetworkManager.TransportManager.SendToServer((byte)Channel.Unreliable, writer.GetArraySegment());
+            int lastBufferIndex = (replicateBuffer.Count - 1);
+            //Nothing to send; should never be possible.
+            if (lastBufferIndex < 0)
+                return;
+
+            int bufferCount = replicateBuffer.Count;
+            //Populate history into a new array. //todo fix GC
+            count = Mathf.Min(bufferCount, count);
+
+            T[] sent = new T[count];
+            for (int i = 0; i < count; i++)
+                sent[i] = replicateBuffer[(bufferCount - count) + i];
+
+            Channel channel = Channel.Unreliable;
+            //Write history to methodWriter.
+            PooledWriter methodWriter = WriterPool.GetWriter();
+            methodWriter.Write(sent);
+
+            PooledWriter writer;
+            //if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
+            //writer = CreateLinkedRpc(link, methodWriter, Channel.Unreliable);
+            //else //todo add support for -> server rpc links.
+            writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
+            NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), false);
+
+            methodWriter.Dispose();
             writer.Dispose();
         }
 
@@ -119,79 +144,30 @@ namespace FishNet.Object
         /// Sends a RPC to target.
         /// Internal use.
         /// </summary>
-        /// <param name="hash"></param>
-        /// <param name="methodWriter"></param>
-        /// <param name="channel"></param>
-        /// <param name="connection"></param>
         [APIExclude] //codegen this can be made internal then set public via codegen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendReconcile(uint hash, PooledWriter methodWriter, NetworkConnection connection)
+        public void SendReconcileRpc<T>(uint hash, T reconcileData)
         {
             if (!IsSpawnedWithWarning())
                 return;
-
-            if (connection == null)
-            {
-                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Action cannot be completed as no connection is specified.");
+            if (!OwnerIsActive)
                 return;
-            }
-            else
-            {
-                /* If not using observers, sending to owner,
-                 * or observers contains target. */
-                //bool canSendTotarget = (!NetworkObject.UsingObservers ||
-                //    NetworkObject.OwnerId == target.ClientId ||
-                //    NetworkObject.Observers.Contains(target));
-                bool canSendTotarget = NetworkObject.OwnerId == connection.ClientId || NetworkObject.Observers.Contains(connection);
 
-                if (!canSendTotarget)
-                {
-                    if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Action cannot be completed as connectionId {connection.ClientId} is not an observer for object {gameObject.name}");
-                    return;
-                }
-            }
+            Channel channel = Channel.Unreliable;
+            PooledWriter methodWriter = WriterPool.GetWriter();
+            methodWriter.Write(reconcileData);
 
-            PooledWriter writer = CreateReconcile(hash, methodWriter);
-            NetworkObject.NetworkManager.TransportManager.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment(), connection);
+            PooledWriter writer;
+            //if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
+                //writer = CreateLinkedRpc(link, methodWriter, Channel.Unreliable);
+            //else
+                writer = CreateRpc(hash, methodWriter, PacketId.Reconcile, channel);
+            NetworkObject.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), Owner);
+
+            methodWriter.Dispose();
             writer.Dispose();
         }
 
-
-        /// <summary>
-        /// Writes a replication and returns the writer.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private PooledWriter CreateReplicate(uint hash, PooledWriter methodWriter)
-        {
-            //Writer containing full packet.
-            PooledWriter writer = WriterPool.GetWriter();
-            writer.WritePacketId(PacketId.Reconcile);
-            writer.WriteNetworkBehaviour(this);
-            //Write packet length. The +1 is for hash.
-            WriteUnreliableLength(writer, methodWriter.Length + 1);
-            writer.WriteByte((byte)hash);
-            writer.WriteArraySegment(methodWriter.GetArraySegment());
-            return writer;
-        }
-
-        /// <summary>
-        /// Writes a reconcile and returns the writer.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private PooledWriter CreateReconcile(uint hash, PooledWriter methodWriter)
-        {
-            //Writer containing full packet.
-            PooledWriter writer = WriterPool.GetWriter();
-            writer.WritePacketId(PacketId.Reconcile);
-            writer.WriteNetworkBehaviour(this);
-            //Write packet length. The +1 is for hash.
-            WriteUnreliableLength(writer, methodWriter.Length + 1);
-            writer.WriteByte((byte)hash);
-            writer.WriteArraySegment(methodWriter.GetArraySegment());
-            return writer;
-        }
     }
 
 

@@ -369,6 +369,16 @@ namespace FishNet.Object
         }
 
 
+        /// <summary>
+        /// Manually marks a SyncType as dirty, be it SyncVar or SyncObject.
+        /// </summary>
+        /// <param name="syncType">SyncType variable to dirty.</param>
+        protected void DirtySyncType(object syncType)
+        {
+            /* This doesn't actually do anything.
+             * The codegen replaces calls to this method
+             * with a Dirty call for syncType. */
+        }
 
 
     }

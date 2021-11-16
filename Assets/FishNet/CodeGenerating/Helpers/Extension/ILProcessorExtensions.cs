@@ -1,4 +1,5 @@
-﻿using MonoFN.Cecil.Cil;
+﻿using MonoFN.Cecil;
+using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
 
 namespace FishNet.CodeGenerating.Helping.Extension
@@ -6,6 +7,68 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
     public static class ILProcessorExtensions
     {
+
+        /// <summary>
+        /// Creates a debug log for text without any conditions.
+        /// </summary>
+        public static void DebugLog(this ILProcessor processor, string txt)
+        {
+            processor.Emit(OpCodes.Ldstr, txt);
+            processor.Emit(OpCodes.Call, CodegenSession.GeneralHelper.Debug_LogCommon_MethodRef);
+        }
+        /// <summary>
+        /// Creates a debug log for vd without any conditions.
+        /// </summary>
+        public static void DebugLog(this ILProcessor processor, VariableDefinition vd)
+        {
+            processor.Emit(OpCodes.Ldloc, vd);
+            processor.Emit(OpCodes.Box, vd.VariableType);
+            processor.Emit(OpCodes.Call, CodegenSession.GeneralHelper.Debug_LogCommon_MethodRef);
+        }
+        /// <summary>
+        /// Creates a debug log for vd without any conditions.
+        /// </summary>
+        public static void DebugLog(this ILProcessor processor, FieldDefinition fd, bool loadArg0)
+        {
+            if (loadArg0)
+                processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldfld, fd);
+            processor.Emit(OpCodes.Box, fd.FieldType);
+            processor.Emit(OpCodes.Call, CodegenSession.GeneralHelper.Debug_LogCommon_MethodRef);
+        }
+        /// <summary>
+        /// Creates a debug log for pd without any conditions.
+        /// </summary>
+        public static void DebugLog(this ILProcessor processor, ParameterDefinition pd)
+        {
+            processor.Emit(OpCodes.Ldloc, pd);
+            processor.Emit(OpCodes.Box, pd.ParameterType);
+            processor.Emit(OpCodes.Call, CodegenSession.GeneralHelper.Debug_LogCommon_MethodRef);
+        }
+
+        ///// <summary>
+        ///// Creates a debug log for mr without any conditions.
+        ///// </summary>
+        //public static void DebugLog(this ILProcessor processor, MethodReference mr)
+        //{
+        //    processor.Emit(OpCodes.Call, mr);
+        //    processor.Emit(OpCodes.Box, mr.ReturnType);
+        //    processor.Emit(OpCodes.Call, CodegenSession.GeneralHelper.Debug_LogCommon_MethodRef);
+        //}
+
+
+        /// <summary>
+        /// Inserts instructions at the beginning.
+        /// </summary>
+        /// <param name="processor"></param>
+        /// <param name="instructions"></param>
+        public static void InsertAt(this ILProcessor processor, int target, List<Instruction> instructions)
+        {
+            for (int i = 0; i < instructions.Count; i++)
+                processor.Body.Instructions.Insert(i + target, instructions[i]);
+        }
+
+
         /// <summary>
         /// Inserts instructions at the beginning.
         /// </summary>
@@ -98,6 +161,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 }
             }
         }
+
+
     }
 
 

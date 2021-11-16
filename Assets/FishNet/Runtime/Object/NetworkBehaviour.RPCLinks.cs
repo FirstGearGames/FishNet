@@ -1,4 +1,5 @@
 ﻿using FishNet.Managing.Server;
+using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
@@ -7,7 +8,6 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-
 
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
@@ -19,14 +19,14 @@ namespace FishNet.Object
             /// </summary>
             public ushort LinkIndex;
             /// <summary>
-            /// True if link is for an ObserversRpc.
+            /// Type of Rpc link is for.
             /// </summary>
-            public bool ObserversRpc;
+            public RpcType RpcType;
 
-            public RpcLinkType(ushort linkIndex, bool observersRpc)
+            public RpcLinkType(ushort linkIndex, RpcType rpcType)
             {
                 LinkIndex = linkIndex;
-                ObserversRpc = observersRpc;
+                RpcType = rpcType;
             }
         }
 
@@ -54,28 +54,34 @@ namespace FishNet.Object
                  * when the object is destroyed they can be added back
                  * into availableRpcLinks, within the ServerManager. */
 
-                ServerManager sm = NetworkManager.ServerManager;
+                ServerManager serverManager = NetworkManager.ServerManager;
                 //ObserverRpcs.
                 foreach (uint rpcHash in _observersRpcDelegates.Keys)
                 {
-                    if (!MakeLink(rpcHash, true))
+                    if (!MakeLink(rpcHash, RpcType.Observers))
                         return;
                 }
                 //TargetRpcs.
                 foreach (uint rpcHash in _targetRpcDelegates.Keys)
                 {
-                    if (!MakeLink(rpcHash, false))
+                    if (!MakeLink(rpcHash, RpcType.Target))
+                        return;
+                }
+                //ReconcileRpcs.
+                foreach (uint rpcHash in _reconcileRpcDelegates.Keys)
+                {
+                    if (!MakeLink(rpcHash, RpcType.Reconcile))
                         return;
                 }
 
                 /* Tries to make a link and returns if
                  * successful. When a link cannot be made the method
                  * should exit as no other links will be possible. */
-                bool MakeLink(uint rpcHash, bool observersRpc)
+                bool MakeLink(uint rpcHash, RpcType rpcType)
                 {
-                    if (sm.GetRpcLink(out ushort linkIndex))
+                    if (serverManager.GetRpcLink(out ushort linkIndex))
                     {
-                        _rpcLinks[rpcHash] = new RpcLinkType(linkIndex, observersRpc);
+                        _rpcLinks[rpcHash] = new RpcLinkType(linkIndex, rpcType);
                         return true;
                     }
                     else
@@ -120,7 +126,7 @@ namespace FishNet.Object
                 //Hash.
                 rpcLinkWriter.WriteUInt16((ushort)item.Key);
                 //True/false if observersRpc.
-                rpcLinkWriter.WriteBoolean(item.Value.ObserversRpc);
+                rpcLinkWriter.WriteByte((byte)item.Value.RpcType);
             }
 
             writer.WriteBytesAndSize(rpcLinkWriter.GetBuffer(), 0, rpcLinkWriter.Length);

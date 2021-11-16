@@ -2,12 +2,14 @@
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.Processing;
+using FishNet.Serializing.Helping;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.ILCore
 {
@@ -61,17 +63,25 @@ namespace FishNet.CodeGenerating.ILCore
 
             bool modified = false;
 
-            /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
-             * then don't bother processing the rest. */
-            if (CodegenSession.NetworkBehaviourProcessor.NonNetworkBehaviourHasInvalidAttributes(CodegenSession.Module.Types))
-                return new ILPostProcessResult(null, CodegenSession.Diagnostics);
+            if (IsFishNetAssembly(compiledAssembly))
+            {
+                //Not used...
+                modified |= ModifyMakePublicMethods();
+            }
+            else
+            {
+                /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
+                 * then don't bother processing the rest. */
+                if (CodegenSession.NetworkBehaviourProcessor.NonNetworkBehaviourHasInvalidAttributes(CodegenSession.Module.Types))
+                    return new ILPostProcessResult(null, CodegenSession.Diagnostics);
 
-            modified |= CreateDeclaredDelegates();
-            modified |= CreateDeclaredSerializers();
-            modified |= CreateIBroadcast();
-            modified |= CreateQOLAttributes();
-            modified |= CreateNetworkBehaviours();
-            modified |= CreateGenericReadWriteDelegates();
+                modified |= CreateDeclaredDelegates();
+                modified |= CreateDeclaredSerializers();
+                modified |= CreateIBroadcast();
+                modified |= CreateQOLAttributes();
+                modified |= CreateNetworkBehaviours();
+                modified |= CreateGenericReadWriteDelegates();
+            }
 
             if (!modified)
             {
@@ -92,6 +102,31 @@ namespace FishNet.CodeGenerating.ILCore
             }
         }
 
+        /// <summary>
+        /// Makees methods public scope which use CodegenMakePublic attribute.
+        /// </summary>
+        /// <returns></returns>
+        private bool ModifyMakePublicMethods()
+        {
+            string makePublicTypeFullName = typeof(CodegenMakePublicAttribute).FullName;
+            foreach (TypeDefinition td in CodegenSession.Module.Types)
+            {
+                foreach (MethodDefinition md in td.Methods)
+                {
+                    foreach (CustomAttribute ca in md.CustomAttributes)
+                    {
+                        if (ca.AttributeType.FullName == makePublicTypeFullName)
+                        {
+                            md.Attributes &= ~MethodAttributes.Assembly;
+                            md.Attributes |= MethodAttributes.Public;
+                        }
+                    }
+                }
+            }
+
+            //There is always at least one modified.
+            return true;
+        }
         /// <summary>
         /// Creates delegates for user declared serializers.
         /// </summary>
@@ -176,7 +211,7 @@ namespace FishNet.CodeGenerating.ILCore
             //Create reader/writers for found typeDefs.
             foreach (TypeDefinition td in typeDefs)
             {
-                TypeReference typeRef = CodegenSession.Module.ImportReference(td);
+                TypeReference typeRef = CodegenSession.ImportReference(td);
 
                 bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(typeRef, true);
                 if (!canSerialize)
@@ -232,9 +267,6 @@ namespace FishNet.CodeGenerating.ILCore
             //Set how many rpcs are in children classes for each typedef.
             Dictionary<TypeDefinition, uint> inheritedRpcCounts = new Dictionary<TypeDefinition, uint>();
             SetChildRpcCounts(inheritedRpcCounts, networkBehaviourTypeDefs);
-            //Set how many predictions are in children classes for each typeDef.
-            Dictionary<TypeDefinition, uint> inheritedPredictionCounts = new Dictionary<TypeDefinition, uint>();
-            SetChildPredictionCounts(inheritedPredictionCounts, networkBehaviourTypeDefs);
             //Set how many synctypes are in children classes for each typedef.
             Dictionary<TypeDefinition, uint> inheritedSyncTypeCounts = new Dictionary<TypeDefinition, uint>();
             SetChildSyncTypeCounts(inheritedSyncTypeCounts, networkBehaviourTypeDefs);
@@ -248,10 +280,10 @@ namespace FishNet.CodeGenerating.ILCore
 
             foreach (TypeDefinition typeDef in networkBehaviourTypeDefs)
             {
-                CodegenSession.Module.ImportReference(typeDef);
+                CodegenSession.ImportReference(typeDef);
                 //Synctypes processed for this nb and it's inherited classes.
                 List<(SyncType, ProcessedSync)> processedSyncs = new List<(SyncType, ProcessedSync)>();
-                CodegenSession.NetworkBehaviourProcessor.Process(typeDef, processedSyncs, inheritedSyncTypeCounts, inheritedRpcCounts, inheritedPredictionCounts);
+                CodegenSession.NetworkBehaviourProcessor.Process(typeDef, processedSyncs, inheritedSyncTypeCounts, inheritedRpcCounts);
                 //Add to all processed.
                 allProcessedSyncs.AddRange(processedSyncs);
             }
@@ -379,47 +411,6 @@ namespace FishNet.CodeGenerating.ILCore
                         copyTd = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTd);
                     } while (copyTd != null);
                 }
-            }
-
-
-            /* This performs the same functionality as SetChildRpcCounts
-             * but for Prediction. */
-            void SetChildPredictionCounts(Dictionary<TypeDefinition, uint> typeDefCounts, List<TypeDefinition> tds)
-            {
-#if PREDICTION
-                foreach (TypeDefinition typeDef in tds)
-                {
-                    //Number of RPCs found while climbing typeDef.
-                    uint childCount = 0;
-
-                    TypeDefinition copyTd = typeDef;
-                    do
-                    {
-                        //How many RPCs are in copyTd.
-                        uint copyCount = CodegenSession.NetworkBehaviourPredictionProcessor.GetPredictionCount(copyTd);
-
-                        /* If not found it this is the first time being
-                         * processed. When this occurs set the value
-                         * to 0. It will be overwritten below if baseCount
-                         * is higher. */
-                        uint previousCopyChildCount = 0;
-                        if (!typeDefCounts.TryGetValue(copyTd, out previousCopyChildCount))
-                            typeDefCounts[copyTd] = 0;
-                        /* If baseCount is higher then replace count for copyTd.
-                         * This can occur when a class is inherited by several types
-                         * and the first processed type might only have 1 rpc, while
-                         * the next has 2. This could be better optimized but to keep
-                         * the code easier to read, it will stay like this. */
-                        if (childCount > previousCopyChildCount)
-                            typeDefCounts[copyTd] = childCount;
-
-                        //Increase baseCount with RPCs found here.
-                        childCount += copyCount;
-
-                        copyTd = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTd);
-                    } while (copyTd != null);
-                }
-#endif
             }
 
 

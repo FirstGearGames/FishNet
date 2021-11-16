@@ -116,7 +116,6 @@ namespace FishNet.CodeGenerating.Helping
             TypeReference networkBehaviourTypeRef = CodegenSession.GeneralHelper.GetTypeReference(typeof(NetworkBehaviour));
 
             processor.Emit(OpCodes.Ldarg_0);
-            //  processor.Emit<Reader>(OpCodes.Call, (reader) => reader.ReadNetworkBehaviour());
             processor.Emit(OpCodes.Call, CodegenSession.ReaderHelper.GetFavoredReadMethodReference(networkBehaviourTypeRef, true));
             processor.Emit(OpCodes.Castclass, classTypeRef);
             processor.Emit(OpCodes.Ret);
@@ -203,7 +202,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodDefinition CreateListReaderMethodDefinition(TypeReference objectTypeRef)
         {
             GenericInstanceType genericInstance = (GenericInstanceType)objectTypeRef;
-            CodegenSession.Module.ImportReference(genericInstance);
+            CodegenSession.ImportReference(genericInstance);
             TypeReference elementTypeRef = genericInstance.GenericArguments[0];
 
             /* Try to get instanced first for collection element type, if it doesn't exist then try to

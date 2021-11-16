@@ -30,6 +30,20 @@ namespace FishNet.CodeGenerating.Helping.Extension
         }
 
         /// <summary>
+        /// Returns a nested TypeDefinition of name.
+        /// </summary>
+        internal static TypeDefinition GetNestedType(this TypeDefinition typeDef, string name)
+        {
+            foreach (TypeDefinition nestedTd in typeDef.NestedTypes)
+            {
+                if (nestedTd.Name == name)
+                    return nestedTd;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Returns if the BaseType for TypeDef exist and is not NetworkBehaviour,
         /// </summary>
         /// <param name="typeDef"></param>

@@ -1297,6 +1297,7 @@ GameObject:
   - component: {fileID: 7443408887680269496}
   - component: {fileID: 7443408887680269499}
   - component: {fileID: 7443408887680269493}
+  - component: {fileID: 7443408887680269500}
   m_Layer: 0
   m_Name: 'NetworkManager '
   m_TagString: Untagged
@@ -1321,6 +1322,23 @@ MonoBehaviour:
   _runInBackground: 1
   _dontDestroyOnLoad: 1
   _persistence: 0
+--- !u!114 &7443408887680269500
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408887680269498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _transportOnTick: 0
+  _tickRate: 30
+  _physicsMode: 0
+  _maximumBufferedInputs: 15
+  _targetBufferedInputs: 2
 --- !u!222 &9050426448999039876
 CanvasRenderer:
   m_ObjectHideFlags: 0

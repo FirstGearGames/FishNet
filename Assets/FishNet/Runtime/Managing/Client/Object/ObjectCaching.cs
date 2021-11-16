@@ -1,4 +1,5 @@
 ﻿using FishNet.Object;
+using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Utility.Performance;
 using System;
@@ -62,10 +63,10 @@ namespace FishNet.Managing.Client
 
             try
             {
-                List<CachedNetworkObject> cnobs = _cachedObjects.Collection;
+                List<CachedNetworkObject> collection = _cachedObjects.Collection;
                 for (int i = 0; i < written; i++)
                 {
-                    CachedNetworkObject cnob = cnobs[i];
+                    CachedNetworkObject cnob = collection[i];
                     //Shouldn't be possible, but networkobject went null before iteration could run.
                     if (cnob.NetworkObject == null)
                         continue;
@@ -74,6 +75,17 @@ namespace FishNet.Managing.Client
                         IterateSpawn(cnob);
                     else
                         IterateDespawn(cnob);
+                }
+
+                //Activate objects.
+                for (int i = 0; i < written; i++)
+                {
+                    CachedNetworkObject cnob = collection[i];
+                    if (cnob.Spawn)
+                    {
+                        cnob.NetworkObject.gameObject.SetActive(true);
+                        cnob.NetworkObject.Initialize(false);
+                    }
                 }
             }
             finally
@@ -106,7 +118,7 @@ namespace FishNet.Managing.Client
                         //RpcHash.
                         reader.ReadUInt16(),
                         //ObserverRpc.
-                        reader.ReadBoolean());
+                        (RpcType)reader.ReadByte());
                     //Add to links.
                     _clientObjects.SetRpcLink(linkIndex, link);
 
@@ -126,10 +138,6 @@ namespace FishNet.Managing.Client
                 length = reader.ReadInt32();
                 nb.OnSyncType(reader, length, true);
             }
-
-            //Activate.
-            cnob.NetworkObject.gameObject.SetActive(true);
-            cnob.NetworkObject.Initialize(false);
         }
 
         /// <summary>

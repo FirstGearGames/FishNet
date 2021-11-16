@@ -45,20 +45,20 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal bool ImportReferences()
         {
-            _genericReaderTypeRef = CodegenSession.Module.ImportReference(typeof(GenericReader<>));
-            _readerTypeRef = CodegenSession.Module.ImportReference(typeof(Reader));
-            _functionT2TypeRef = CodegenSession.Module.ImportReference(typeof(Func<,>));
-            _functionT3TypeRef = CodegenSession.Module.ImportReference(typeof(Func<,,>));
-            _functionT2ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Func<,>).GetConstructors()[0]);
-            _functionT3ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Func<,,>).GetConstructors()[0]);
+            _genericReaderTypeRef = CodegenSession.ImportReference(typeof(GenericReader<>));
+            _readerTypeRef = CodegenSession.ImportReference(typeof(Reader));
+            _functionT2TypeRef = CodegenSession.ImportReference(typeof(Func<,>));
+            _functionT3TypeRef = CodegenSession.ImportReference(typeof(Func<,,>));
+            _functionT2ConstructorMethodRef = CodegenSession.ImportReference(typeof(Func<,>).GetConstructors()[0]);
+            _functionT3ConstructorMethodRef = CodegenSession.ImportReference(typeof(Func<,,>).GetConstructors()[0]);
 
-            _autoPackTypeRef = CodegenSession.Module.ImportReference(typeof(AutoPackType));
+            _autoPackTypeRef = CodegenSession.ImportReference(typeof(AutoPackType));
 
             System.Reflection.PropertyInfo writePropertyInfo;
             writePropertyInfo = typeof(GenericReader<>).GetProperty(nameof(GenericReader<int>.Read));
-            _readGetSetMethodRef = CodegenSession.Module.ImportReference(writePropertyInfo.GetSetMethod());
+            _readGetSetMethodRef = CodegenSession.ImportReference(writePropertyInfo.GetSetMethod());
             writePropertyInfo = typeof(GenericReader<>).GetProperty(nameof(GenericReader<int>.ReadAutoPack));
-            _readAutoPackGetSetMethodRef = CodegenSession.Module.ImportReference(writePropertyInfo.GetSetMethod());
+            _readAutoPackGetSetMethodRef = CodegenSession.ImportReference(writePropertyInfo.GetSetMethod());
 
             return true;
         }

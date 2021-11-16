@@ -31,9 +31,9 @@ namespace FishNet.CodeGenerating.Processing
             MethodDefinition[] startingMethodDefs = typeDef.Methods.ToArray();
             foreach (MethodDefinition methodDef in startingMethodDefs)
             {
-                if (rpcStartCount >= ushort.MaxValue)
+                if (rpcStartCount >= ObjectHelper.MAX_RPC_ALLOWANCE)
                 {
-                    CodegenSession.LogError($"{typeDef.FullName} and inherited types exceed {ushort.MaxValue} RPC methods. Only {ushort.MaxValue} RPC methods are supported per inheritance hierarchy.");
+                    CodegenSession.LogError($"{typeDef.FullName} and inherited types exceed {ObjectHelper.MAX_RPC_ALLOWANCE} RPC methods. Only {ObjectHelper.MAX_RPC_ALLOWANCE} RPC methods are supported per inheritance hierarchy.");
                     return false;
                 }
 
@@ -303,7 +303,7 @@ namespace FishNet.CodeGenerating.Processing
 
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(createdMethodDef, channelParameterDef);
             //Create a local PooledWriter variable.
-            VariableDefinition pooledWriterVariableDef = CodegenSession.WriterHelper.CreatePooledWriter(createdProcessor, createdMethodDef);
+            VariableDefinition pooledWriterVariableDef = CodegenSession.WriterHelper.CreatePooledWriter(createdMethodDef);
             //Create all writer.WriteType() calls. 
             for (int i = 0; i < serializedParameters.Count; i++)
             {
@@ -311,7 +311,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (writeMethodRef == null)
                     return null;
 
-                CodegenSession.WriterHelper.CreateWrite(createdProcessor, pooledWriterVariableDef, serializedParameters[i], writeMethodRef);
+                CodegenSession.WriterHelper.CreateWrite(createdMethodDef, pooledWriterVariableDef, serializedParameters[i], writeMethodRef);
             }
 
             uint methodHash = allRpcCount;
@@ -323,7 +323,7 @@ namespace FishNet.CodeGenerating.Processing
                 CreateSendTargetRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, targetConnectionParameterDef);
 
             //Dispose of writer.
-            CodegenSession.WriterHelper.DisposePooledWriter(createdProcessor, pooledWriterVariableDef);
+            createdProcessor.Add( CodegenSession.WriterHelper.DisposePooledWriter(createdMethodDef, pooledWriterVariableDef));
             //Add end of method.
             createdProcessor.Emit(OpCodes.Ret);
 
@@ -369,7 +369,7 @@ namespace FishNet.CodeGenerating.Processing
 
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(createdMethodDef, channelParameterDef);
             //Create a local PooledWriter variable.
-            VariableDefinition pooledWriterVariableDef = CodegenSession.WriterHelper.CreatePooledWriter(createdProcessor, createdMethodDef);
+            VariableDefinition pooledWriterVariableDef = CodegenSession.WriterHelper.CreatePooledWriter(createdMethodDef);
             //Create all writer.WriteType() calls. 
             for (int i = 0; i < serializedParameters.Count; i++)
             {
@@ -377,7 +377,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (writeMethodRef == null)
                     return null;
 
-                CodegenSession.WriterHelper.CreateWrite(createdProcessor, pooledWriterVariableDef, serializedParameters[i], writeMethodRef);
+                CodegenSession.WriterHelper.CreateWrite(createdMethodDef, pooledWriterVariableDef, serializedParameters[i], writeMethodRef);
             }
 
             uint methodHash = allRpcCount;
@@ -385,7 +385,7 @@ namespace FishNet.CodeGenerating.Processing
             //Call the method on NetworkBehaviour responsible for sending out the rpc.
             CreateSendServerRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef);
             //Dispose of writer.
-            CodegenSession.WriterHelper.DisposePooledWriter(createdProcessor, pooledWriterVariableDef);
+            createdProcessor.Add(CodegenSession.WriterHelper.DisposePooledWriter(createdMethodDef, pooledWriterVariableDef));
 
             //Add end of method.
             createdProcessor.Emit(OpCodes.Ret);
@@ -677,7 +677,7 @@ namespace FishNet.CodeGenerating.Processing
             for (int i = 0; i < serializedParameters.Count; i++)
             {
                 //Get read instructions and insert it before the return.
-                List<Instruction> insts = CodegenSession.ReaderHelper.CreateReadInstructions(createdProcessor, createdMethodDef, readerParameterDef, serializedParameters[i].ParameterType, out readVariableDefs[i]);
+                List<Instruction> insts = CodegenSession.ReaderHelper.CreateRead(createdMethodDef, readerParameterDef, serializedParameters[i].ParameterType, out readVariableDefs[i]);
                 allReadInsts.AddRange(insts);
             }
 
@@ -827,7 +827,7 @@ namespace FishNet.CodeGenerating.Processing
                 originalProcessor.Emit(OpCodes.Ldarg, pd);
 
             //Call method.
-            MethodReference writerMethodRef = CodegenSession.Module.ImportReference(writerMethodDef);
+            MethodReference writerMethodRef = CodegenSession.ImportReference(writerMethodDef);
             originalProcessor.Emit(OpCodes.Call, writerMethodRef);
             originalProcessor.Emit(OpCodes.Ret);
         }

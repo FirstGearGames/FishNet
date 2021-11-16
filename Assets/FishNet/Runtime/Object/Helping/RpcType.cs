@@ -1,11 +1,13 @@
 ﻿namespace FishNet.Object.Helping
 {
-    public enum RpcType
+    public enum RpcType : byte
     {
-        None,
-        Server,
-        Observers,
-        Target
+        None = 0,
+        Server = 1,
+        Observers = 2,
+        Target = 3,
+        Replicate = 4,
+        Reconcile = 5
     }
 
 }

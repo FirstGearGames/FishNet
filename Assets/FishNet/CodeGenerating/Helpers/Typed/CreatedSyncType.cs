@@ -13,13 +13,15 @@ namespace FishNet.CodeGenerating.Helping
         public readonly MethodReference SetSyncIndexMr;
         public readonly MethodReference ConstructorMr;
         public readonly GenericInstanceType SyncVarGit;
-        public CreatedSyncVar(GenericInstanceType syncVarGit, TypeDefinition variableTd, MethodReference getValueMr, MethodReference setValueMr, MethodReference setSyncIndexMr, MethodReference constructorMr)
+        public MethodReference HookMr;
+        public CreatedSyncVar(GenericInstanceType syncVarGit, TypeDefinition variableTd, MethodReference getValueMr, MethodReference setValueMr, MethodReference setSyncIndexMr,MethodReference hookMr,  MethodReference constructorMr)
         {
             SyncVarGit = syncVarGit;
             VariableTd = variableTd;
             GetValueMr = getValueMr;
             SetValueMr = setValueMr;
             SetSyncIndexMr = setSyncIndexMr;
+            HookMr = hookMr;
             ConstructorMr = constructorMr;
         }
     }

@@ -1,4 +1,6 @@
-﻿namespace FishNet.Object
+﻿using FishNet.Object.Helping;
+
+namespace FishNet.Object
 {
 
     #region Types.
@@ -20,16 +22,16 @@
         /// </summary>
         public uint RpcHash;
         /// <summary>
-        /// True if link is for an ObserversRpc, false if for a TargetRpc.
+        /// Type of Rpc link is for.
         /// </summary>
-        public bool ObserversRpc;
+        public RpcType RpcType;
 
-        public RpcLink(int objectId, byte componentIndex, uint rpcHash, bool observersRpc)
+        public RpcLink(int objectId, byte componentIndex, uint rpcHash, RpcType rpcType)
         {
             ObjectId = objectId;
             ComponentIndex = componentIndex;
             RpcHash = rpcHash;
-            ObserversRpc = observersRpc;
+            RpcType = rpcType;
         }
     }
     #endregion

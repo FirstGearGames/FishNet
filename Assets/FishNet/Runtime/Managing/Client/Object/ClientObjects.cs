@@ -171,6 +171,20 @@ namespace FishNet.Managing.Client
             }
         }
 
+        /// <summary>
+        /// Parses a ReconcileRpc.
+        /// </summary>
+        /// <param name="reader"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ParseReconcileRpc(PooledReader reader, Channel channel)
+        {
+            NetworkBehaviour nb = reader.ReadNetworkBehaviour();
+            int dataLength = Packets.GetPacketLength(PacketId.ObserversRpc, reader, channel);
+            if (nb != null)
+                nb.OnReconcileRpc(null, reader, channel);
+            else
+                SkipDataLength(PacketId.ObserversRpc, reader, dataLength);
+        }
 
         /// <summary>
         /// Parses an ObserversRpc.

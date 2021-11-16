@@ -216,6 +216,10 @@ namespace FishNet.Managing.Client
                         {
                             Objects.ParseRpcLink(reader, (ushort)packetId, args.Channel);
                         }
+                        else if (packetId == PacketId.Reconcile)
+                        {
+                            Objects.ParseReconcileRpc(reader, args.Channel);
+                        }
                         else if (packetId == PacketId.ObserversRpc)
                         {
                             Objects.ParseObserversRpc(reader, args.Channel);

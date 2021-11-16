@@ -34,9 +34,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal bool ImportReferences()
         {
-            PooledReader_TypeRef = CodegenSession.Module.ImportReference(typeof(PooledReader));
-            Reader_TypeRef = CodegenSession.Module.ImportReference(typeof(Reader));
-            NetworkConnection_TypeRef = CodegenSession.Module.ImportReference(typeof(NetworkConnection));
+            PooledReader_TypeRef = CodegenSession.ImportReference(typeof(PooledReader));
+            Reader_TypeRef = CodegenSession.ImportReference(typeof(Reader));
+            NetworkConnection_TypeRef = CodegenSession.ImportReference(typeof(NetworkConnection));
 
             Type pooledReaderType = typeof(PooledReader);
 
@@ -46,7 +46,7 @@ namespace FishNet.CodeGenerating.Helping
                 //ReadPackedWhole.
                 if (methodInfo.Name == nameof(PooledReader.ReadPackedWhole))
                 {
-                    Reader_ReadPackedWhole_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                    Reader_ReadPackedWhole_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;
                 }
 
@@ -76,8 +76,8 @@ namespace FishNet.CodeGenerating.Helping
 
                 /* TypeReference for the return type
                  * of the read method. */
-                TypeReference typeRef = CodegenSession.Module.ImportReference(methodInfo.ReturnType);
-                MethodReference methodRef = CodegenSession.Module.ImportReference(methodInfo);
+                TypeReference typeRef = CodegenSession.ImportReference(methodInfo.ReturnType);
+                MethodReference methodRef = CodegenSession.ImportReference(methodInfo);
 
                 /* If here all checks pass. */
                 AddReaderMethod(typeRef, methodRef, true, true);
@@ -118,8 +118,8 @@ namespace FishNet.CodeGenerating.Helping
 
                 /* TypeReference for the return type
                  * of the read method. */
-                TypeReference typeRef = CodegenSession.Module.ImportReference(methodInfo.ReturnType);
-                MethodReference methodRef = CodegenSession.Module.ImportReference(methodInfo);
+                TypeReference typeRef = CodegenSession.ImportReference(methodInfo.ReturnType);
+                MethodReference methodRef = CodegenSession.ImportReference(methodInfo);
 
                 /* If here all checks pass. */
                 AddReaderMethod(typeRef, methodRef, false, true);
@@ -228,23 +228,7 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Callvirt, readBoolMethodRef);
             processor.Emit(OpCodes.Stloc, localBoolVariableDef);
         }
-        ///// <summary>
-        ///// Creates a call to WritePackWhole with value.
-        ///// </summary>
-        ///// <param name="processor"></param>
-        ///// <param name="value"></param>
-        //internal void CreateWritePackedWhole(ILProcessor processor, ParameterDefinition writerParameterDef, int value)
-        //{
-        //    //Create local int and set it to value.
-        //    VariableDefinition intVariableDef = CodegenSession.GeneralHelper.CreateLocalVariable(processor.Body.Method, typeof(int));
-        //    CodegenSession.GeneralHelper.SetVariableDefinition(processor, intVariableDef, value);
-        //    //Writer.
-        //    processor.Emit(OpCodes.Ldarg, writerParameterDef);
-        //    //Writer.WritePackedWhole(value).
-        //    processor.Emit(OpCodes.Ldloc, intVariableDef);
-        //    processor.Emit(OpCodes.Conv_U8);
-        //    processor.Emit(OpCodes.Callvirt, Writer_WritePackedWhole_MethodRef);
-        //}
+    
         /// <summary>
         /// Creates a call to WritePackWhole with value.
         /// </summary>
@@ -283,7 +267,7 @@ namespace FishNet.CodeGenerating.Helping
             return methodRef;
         }
         /// <summary>
-        /// Returns the MethodReference for typeRef favoring instanced or static. Tries to create reader if not present.
+        /// Returns the MethodReference for typeRef favoring instanced or static. Returns null if not found.
         /// </summary>
         /// <param name="typeRef"></param>
         /// <param name="favorInstanced"></param>
@@ -342,30 +326,6 @@ namespace FishNet.CodeGenerating.Helping
                 dict[typeRef] = methodRef;
         }
 
-
-        /// <summary>
-        /// Creates and returns a local variable after using a PooledReader reference to populate it.
-        /// EG: bool bool1 = pooledReader.ReadBool();
-        /// </summary>
-        /// <param name="processor"></param>
-        /// <param name="methodDef"></param>
-        /// <param name="readerParameterDef"></param>
-        /// <param name="readTypeRef"></param>
-        /// <returns></returns>
-        internal VariableDefinition CreateRead(ILProcessor processor, MethodDefinition methodDef, ParameterDefinition readerParameterDef, TypeReference readTypeRef)
-        {
-            VariableDefinition variableDef;
-            List<Instruction> insts = CreateReadInstructions(processor, methodDef, readerParameterDef, readTypeRef, out variableDef);
-
-            if (insts != null)
-            {
-                foreach (Instruction i in insts)
-                    processor.Append(i);
-            }
-
-            return variableDef;
-        }
-
         /// <summary>
         /// Creates read instructions returning instructions and outputing variable of read result.
         /// </summary>
@@ -375,8 +335,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="readTypeRef"></param>
         /// <param name="diagnostics"></param>
         /// <returns></returns>
-        internal List<Instruction> CreateReadInstructions(ILProcessor processor, MethodDefinition methodDef, ParameterDefinition readerParameterDef, TypeReference readTypeRef, out VariableDefinition createdVariableDef)
+        internal List<Instruction> CreateRead(MethodDefinition methodDef, ParameterDefinition readerParameterDef, TypeReference readTypeRef, out VariableDefinition createdVariableDef)
         {
+            ILProcessor processor = methodDef.Body.GetILProcessor();
             List<Instruction> insts = new List<Instruction>();
             MethodReference readerMethodRef = GetFavoredReadMethodReference(readTypeRef, true);
             if (readerMethodRef != null)
@@ -391,7 +352,7 @@ namespace FishNet.CodeGenerating.Helping
                     AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(readTypeRef);
                     insts.Add(processor.Create(OpCodes.Ldc_I4, (int)packType));
                 }
-                insts.Add(processor.Create(OpCodes.Callvirt, readerMethodRef));
+                insts.Add(processor.Create(OpCodes.Call, readerMethodRef));
                 //Store into local variable.
                 insts.Add(processor.Create(OpCodes.Stloc, createdVariableDef));
                 return insts;

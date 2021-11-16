@@ -5,6 +5,7 @@ using FishNet.Serializing;
 using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
@@ -14,11 +15,31 @@ namespace FishNet.Object.Synchronizing
     {
 
         #region Types.
+        /// <summary>
+        /// Information needed to invoke a callback.
+        /// </summary>
+        private struct CachedOnChange
+        {
+            internal readonly SyncDictionaryOperation Operation;
+            internal readonly TKey Key;
+            internal readonly TValue Value;
+
+            public CachedOnChange(SyncDictionaryOperation operation, TKey key, TValue value)
+            {
+                Operation = operation;
+                Key = key;
+                Value = value;
+            }
+        }
+
+        /// <summary>
+        /// Information about how the collection has changed.
+        /// </summary>
         private struct ChangeData
         {
-            internal SyncDictionaryOperation Operation;
-            internal TKey Key;
-            internal TValue Value;
+            internal readonly SyncDictionaryOperation Operation;
+            internal readonly TKey Key;
+            internal readonly TValue Value;
 
             public ChangeData(SyncDictionaryOperation operation, TKey key, TValue value)
             {
@@ -83,6 +104,14 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private readonly List<ChangeData> _changed = new List<ChangeData>();
         /// <summary>
+        /// Server OnChange events waiting for start callbacks.
+        /// </summary>
+        private readonly List<CachedOnChange> _serverOnChanges = new List<CachedOnChange>();
+        /// <summary>
+        /// Client OnChange events waiting for start callbacks.
+        /// </summary>
+        private readonly List<CachedOnChange> _clientOnChanges = new List<CachedOnChange>();
+        /// <summary>
         /// True if values have changed since initialization.
         /// The only reasonable way to reset this during a Reset call is by duplicating the original list and setting all values to it on reset.
         /// </summary>
@@ -118,6 +147,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="key"></param>
         /// <param name="value"></param>
         [APIExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddOperation(SyncDictionaryOperation operation, TKey key, TValue value)
         {
             if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
@@ -139,11 +169,29 @@ namespace FishNet.Object.Synchronizing
             ChangeData change = new ChangeData(operation, key, value);
             _changed.Add(change);
             bool asServer = true;
-            OnChange?.Invoke(operation, key, value, asServer);
+            InvokeOnChange(operation, key, value, asServer);
 
             base.Dirty();
         }
 
+
+        /// <summary>
+        /// Called after OnStartXXXX has occurred.
+        /// </summary>
+        /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
+        protected internal override void OnStartCallback(bool asServer)
+        {
+            base.OnStartCallback(asServer);
+            List<CachedOnChange> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
+
+            if (OnChange != null)
+            {
+                foreach (CachedOnChange item in collection)
+                    OnChange.Invoke(item.Operation, item.Key, item.Value, asServer);
+            }
+
+            collection.Clear();
+        }
 
 
         /// <summary>
@@ -211,6 +259,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="reader"></param>
         [APIExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void Read(PooledReader reader)
         {
             bool asServer = false;
@@ -250,13 +299,40 @@ namespace FishNet.Object.Synchronizing
                     objects.Remove(key);
                 }
 
-                OnChange?.Invoke(operation, key, value, false);
+                InvokeOnChange(operation, key, value, false);
             }
 
             //If changes were made invoke complete after all have been read.
             if (changes > 0)
-                OnChange?.Invoke(SyncDictionaryOperation.Complete, default, default, false);
+                InvokeOnChange(SyncDictionaryOperation.Complete, default, default, false);
         }
+
+
+        /// <summary>
+        /// Invokes OnChanged callback.
+        /// </summary>
+        private void InvokeOnChange(SyncDictionaryOperation operation, TKey key, TValue value, bool asServer)
+        {
+            if (OnChange != null)
+            {
+                if (asServer)
+                {
+                    if (base.NetworkBehaviour.OnStartServerCalled)
+                        OnChange.Invoke(operation, key, value, asServer);
+                    else
+                        _serverOnChanges.Add(new CachedOnChange(operation, key, value));
+                }
+                else
+                {
+                    if (base.NetworkBehaviour.OnStartClientCalled)
+                        OnChange.Invoke(operation,  key, value, asServer);
+                    else
+                        _clientOnChanges.Add(new CachedOnChange(operation,  key, value));
+                }
+
+            }
+        }
+
 
         /// <summary>
         /// Resets to initialized values.

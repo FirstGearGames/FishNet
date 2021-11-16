@@ -30,12 +30,12 @@ namespace FishNet.CodeGenerating.Processing
         #endregion
 
         #region Const.
-        internal const string NETWORKINITIALIZE_EARLY_INTERNAL_NAME = "NetworkInitialize_Early___Internal";
-        internal const string NETWORKINITIALIZE_LATE_INTERNAL_NAME = "NetworkInitialize_Late___Internal";
+        internal const string NETWORKINITIALIZE_EARLY_INTERNAL_NAME = "NetworkInitialize___Early";
+        internal const string NETWORKINITIALIZE_LATE_INTERNAL_NAME = "NetworkInitialize__Late";
         private MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
         #endregion
 
-        internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, Dictionary<TypeDefinition, uint> childSyncTypeCounts, Dictionary<TypeDefinition, uint> childRpcCounts, Dictionary<TypeDefinition, uint> childPredictionCounts)
+        internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, Dictionary<TypeDefinition, uint> childSyncTypeCounts, Dictionary<TypeDefinition, uint> childRpcCounts)
         {
             bool modified = false;
             TypeDefinition copyTypeDef = typeDef;
@@ -73,14 +73,15 @@ namespace FishNet.CodeGenerating.Processing
                  * can use it. */
                 CreateNetworkInitializeMethods(copyTypeDef);
                 /* RPCs. */
-                uint rpcStartCount;
-                childRpcCounts.TryGetValue(copyTypeDef, out rpcStartCount);
-                modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref rpcStartCount);
+                uint rpcCount;
+                childRpcCounts.TryGetValue(copyTypeDef, out rpcCount);
+                modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref rpcCount);
+                /* //perf rpcCounts can be optimized by having different counts
+                 * for target, observers, server, replicate, and reoncile rpcs. Since
+                 * each registers to their own delegates this is possible. */
 #if PREDICTION
                 /* Prediction. */
-                uint predictionCount;
-                childPredictionCounts.TryGetValue(copyTypeDef, out predictionCount);
-                modified |= CodegenSession.NetworkBehaviourPredictionProcessor.Process(copyTypeDef, ref predictionCount);
+                modified |= CodegenSession.NetworkBehaviourPredictionProcessor.Process(copyTypeDef, ref rpcCount);
 #endif
                 /* SyncTypes. */
                 uint syncTypeStartCount;
@@ -175,7 +176,7 @@ namespace FishNet.CodeGenerating.Processing
                  * Get awake for copy and base of copy. */
                 MethodDefinition copyAwakeMethodDef = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
                 MethodDefinition baseAwakeMethodDef = copyTypeDef.BaseType.Resolve().GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
-                MethodReference baseAwakeMethodRef = CodegenSession.Module.ImportReference(baseAwakeMethodDef);
+                MethodReference baseAwakeMethodRef = CodegenSession.ImportReference(baseAwakeMethodDef);
 
                 ILProcessor processor = copyAwakeMethodDef.Body.GetILProcessor();
 
@@ -241,7 +242,7 @@ namespace FishNet.CodeGenerating.Processing
                     string methodName = (callEarly) ? NETWORKINITIALIZE_EARLY_INTERNAL_NAME :
                         NETWORKINITIALIZE_LATE_INTERNAL_NAME;
                     MethodDefinition initializeMethodDef = copyTypeDef.GetMethod(methodName);
-                    MethodReference initializeMethodRef = CodegenSession.Module.ImportReference(initializeMethodDef);
+                    MethodReference initializeMethodRef = CodegenSession.ImportReference(initializeMethodDef);
 
                     MethodDefinition awakeMethodDef = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
                     ILProcessor processor = awakeMethodDef.Body.GetILProcessor();

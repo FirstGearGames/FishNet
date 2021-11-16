@@ -17,6 +17,12 @@ namespace FishNet.Serializing.Helping
         {
             return (EqualityComparer<T>.Default.Equals(a, b));
         }
+
+        public static bool IsDefault<T>(T t)
+        {
+            return t.Equals(default(T));
+        }
+
     }
 
 

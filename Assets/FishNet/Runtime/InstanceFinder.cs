@@ -50,29 +50,6 @@ namespace FishNet
 
                         Debug.Log($"NetworkManager not found in any open scenes.");
                     }
-
-                    #region old
-                    //NetworkManager[] managers = GameObject.FindObjectsOfType<NetworkManager>();
-                    //if (managers.Length > 0)
-                    //{
-                    //    if (managers.Length > 1)
-                    //    {
-                    //        if (managers[0].CanLog(LoggingType.Warning))
-                    //            Debug.LogWarning($"Multiple NetworkManagers found, the first result will be returned. If you only wish to have one NetworkManager then uncheck 'Allow Multiple' within your NetworkManagers.");
-                    //    }
-
-                    //    _networkManager = managers[0];
-                    //}
-                    //else
-                    //{
-
-                    //    //If application is quitting return null without logging.
-                    //    if (ApplicationState.IsQuitting())
-                    //        return null;
-
-                    //    Debug.Log($"NetworkManager not found in any open scenes.");
-                    //}
-                    #endregion
                 }
 
                 return _networkManager;

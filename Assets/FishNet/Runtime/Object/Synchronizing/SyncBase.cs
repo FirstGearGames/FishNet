@@ -61,8 +61,6 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Initializes this SyncBase.
         /// </summary>
-        /// <param name="nb"></param>
-        /// <param name="syncIndex"></param>
         /// <param name="writePermissions"></param>
         /// <param name="readPermissions"></param>
         /// <param name="tickRate"></param>
@@ -100,6 +98,12 @@ namespace FishNet.Object.Synchronizing.Internal
             NetworkManager = networkManager;
             _timeToTicks = NetworkManager.TimeManager.TimeToTicks(Settings.SendTickRate, TickRounding.RoundUp);
         }
+
+        /// <summary>
+        /// Called after OnStartXXXX has occurred.
+        /// </summary>
+        /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
+        protected internal virtual void OnStartCallback(bool asServer) { }
 
         /// <summary>
         /// Dirties this Sync and the NetworkBehaviour.

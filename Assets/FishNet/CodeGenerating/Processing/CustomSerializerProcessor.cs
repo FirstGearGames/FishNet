@@ -36,7 +36,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (extensionType == ExtensionType.None)
                     continue;
 
-                MethodReference methodRef = CodegenSession.Module.ImportReference(methodDef);
+                MethodReference methodRef = CodegenSession.ImportReference(methodDef);
                 if (extensionType == ExtensionType.Write)
                 {
                     CodegenSession.WriterHelper.AddWriterMethod(methodRef.Parameters[1].ParameterType, methodRef, false, true);

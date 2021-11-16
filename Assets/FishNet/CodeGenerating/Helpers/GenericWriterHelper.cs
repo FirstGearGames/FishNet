@@ -17,10 +17,10 @@ namespace FishNet.CodeGenerating.Helping
         private TypeReference _writerTypeRef;
         private MethodReference _writeGetSetMethodRef;
         private MethodReference _writeAutoPackGetSetMethodRef;
-        private TypeReference _actionT2TypeRef;
-        private TypeReference _actionT3TypeRef;
-        private MethodReference _actionT2ConstructorMethodRef;
-        private MethodReference _actionT3ConstructorMethodRef;
+        internal TypeReference ActionT2TypeRef;
+        internal TypeReference ActionT3TypeRef;
+        internal MethodReference ActionT2ConstructorMethodRef;
+        internal MethodReference ActionT3ConstructorMethodRef;
         private TypeDefinition _generatedReaderWriterClassTypeDef;
         private MethodDefinition _generatedReaderWriterOnLoadMethodDef;
         private TypeReference _autoPackTypeRef;
@@ -45,20 +45,20 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal bool ImportReferences()
         {
-            _genericWriterTypeRef = CodegenSession.Module.ImportReference(typeof(GenericWriter<>));
-            _writerTypeRef = CodegenSession.Module.ImportReference(typeof(Writer));
-            _actionT2TypeRef = CodegenSession.Module.ImportReference(typeof(Action<,>));
-            _actionT3TypeRef = CodegenSession.Module.ImportReference(typeof(Action<,,>));
-            _actionT2ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Action<,>).GetConstructors()[0]);
-            _actionT3ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Action<,,>).GetConstructors()[0]);
+            _genericWriterTypeRef = CodegenSession.ImportReference(typeof(GenericWriter<>));
+            _writerTypeRef = CodegenSession.ImportReference(typeof(Writer));
+            ActionT2TypeRef = CodegenSession.ImportReference(typeof(Action<,>));
+            ActionT3TypeRef = CodegenSession.ImportReference(typeof(Action<,,>));
+            ActionT2ConstructorMethodRef = CodegenSession.ImportReference(typeof(Action<,>).GetConstructors()[0]);
+            ActionT3ConstructorMethodRef = CodegenSession.ImportReference(typeof(Action<,,>).GetConstructors()[0]);
 
-            _autoPackTypeRef = CodegenSession.Module.ImportReference(typeof(AutoPackType));
+            _autoPackTypeRef = CodegenSession.ImportReference(typeof(AutoPackType));
 
             System.Reflection.PropertyInfo writePropertyInfo;
             writePropertyInfo = typeof(GenericWriter<>).GetProperty(nameof(GenericWriter<int>.Write));
-            _writeGetSetMethodRef = CodegenSession.Module.ImportReference(writePropertyInfo.GetSetMethod());
+            _writeGetSetMethodRef = CodegenSession.ImportReference(writePropertyInfo.GetSetMethod());
             writePropertyInfo = typeof(GenericWriter<>).GetProperty(nameof(GenericWriter<int>.WriteAutoPack));
-            _writeAutoPackGetSetMethodRef = CodegenSession.Module.ImportReference(writePropertyInfo.GetSetMethod());
+            _writeAutoPackGetSetMethodRef = CodegenSession.ImportReference(writePropertyInfo.GetSetMethod());
 
 
             return true;
@@ -80,10 +80,10 @@ namespace FishNet.CodeGenerating.Helping
                 _generatedReaderWriterClassTypeDef.Module.TypeSystem.Void);
             _generatedReaderWriterClassTypeDef.Methods.Add(createdMethodDef);
 
-            TypeReference extensionAttributeTypeRef = CodegenSession.Module.ImportReference(typeof(System.Runtime.CompilerServices.ExtensionAttribute));
+            TypeReference extensionAttributeTypeRef = CodegenSession.ImportReference(typeof(System.Runtime.CompilerServices.ExtensionAttribute));
             MethodDefinition constructor = extensionAttributeTypeRef.GetConstructor();
 
-            MethodReference extensionAttributeConstructorMethodRef = CodegenSession.Module.ImportReference(constructor);
+            MethodReference extensionAttributeConstructorMethodRef = CodegenSession.ImportReference(constructor);
             CustomAttribute extensionCustomAttribute = new CustomAttribute(extensionAttributeConstructorMethodRef);
             createdMethodDef.CustomAttributes.Add(extensionCustomAttribute);
 
@@ -171,14 +171,14 @@ namespace FishNet.CodeGenerating.Helping
             //Generate for auto pack type.
             if (isAutoPacked)
             {
-                actionGenericInstance = _actionT3TypeRef.MakeGenericInstanceType(_writerTypeRef, dataTypeRef, _autoPackTypeRef);
-                actionConstructorInstanceMethodRef = _actionT3ConstructorMethodRef.MakeHostInstanceGeneric(actionGenericInstance);
+                actionGenericInstance = ActionT3TypeRef.MakeGenericInstanceType(_writerTypeRef, dataTypeRef, _autoPackTypeRef);
+                actionConstructorInstanceMethodRef = ActionT3ConstructorMethodRef.MakeHostInstanceGeneric(actionGenericInstance);
             }
             //Generate for normal type.
             else
             {
-                actionGenericInstance = _actionT2TypeRef.MakeGenericInstanceType(_writerTypeRef, dataTypeRef);
-                actionConstructorInstanceMethodRef = _actionT2ConstructorMethodRef.MakeHostInstanceGeneric(actionGenericInstance);
+                actionGenericInstance = ActionT2TypeRef.MakeGenericInstanceType(_writerTypeRef, dataTypeRef);
+                actionConstructorInstanceMethodRef = ActionT2ConstructorMethodRef.MakeHostInstanceGeneric(actionGenericInstance);
             }
 
             processor.Emit(OpCodes.Newobj, actionConstructorInstanceMethodRef);
