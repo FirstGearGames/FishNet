@@ -11,8 +11,16 @@ namespace FishNet.Managing.Object
     [CreateAssetMenu(fileName = "New SinglePrefabObjects", menuName = "FishNet/Spawnable Prefabs/Single Prefab Objects")]
     public class SinglePrefabObjects : PrefabObjects
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Prefabs which may be spawned.")]
         [SerializeField]
         private List<NetworkObject> _prefabs = new List<NetworkObject>();
+        /// <summary>
+        /// Prefabs which may be spawned.
+        /// </summary>
+        public IReadOnlyList<NetworkObject> Prefabs => _prefabs;
 
         public override void Clear()
         {

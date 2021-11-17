@@ -322,7 +322,7 @@ namespace FishNet.CodeGenerating.Helping
                 processor.Emit(OpCodes.Ldc_I4, (int)packType);
             }
             //writer.Write
-            processor.Emit(OpCodes.Callvirt, writeMethodRef);
+            processor.Emit(OpCodes.Call, writeMethodRef);
 
             //i++
             processor.Emit(OpCodes.Ldloc, loopIndex);

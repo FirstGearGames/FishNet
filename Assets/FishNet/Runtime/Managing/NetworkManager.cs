@@ -12,7 +12,6 @@ using FishNet.Authenticating;
 using FishNet.Object;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
-using FishNet.Utility;
 using System.Collections.Generic;
 using System.Linq;
 

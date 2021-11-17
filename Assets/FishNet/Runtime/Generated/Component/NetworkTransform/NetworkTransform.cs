@@ -579,6 +579,14 @@ namespace FishNet.Component.Transforming
 
         #region GetChanged.
         /// <summary>
+        /// Returns if there is any change between two datas.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool HasChanged(ref GoalData a, ref GoalData b)
+        {
+            return !(a.Position == b.Position && a.Rotation == b.Rotation && a.Scale == b.Scale);
+        }
+        /// <summary>
         /// Gets transform values that have changed against goalData.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -628,8 +636,17 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets move rates which will occur over time.
         /// </summary>
-        private void SetCalculatedRates(uint lastTick, ref GoalData oldGoalData, ref GoalData goalData, bool forServer)
+        private void SetCalculatedRates(uint lastTick, ref GoalData oldGoalData, ref GoalData goalData, bool forServer, Channel channel)
         {
+            /* Only update rates if data has changed.
+             * When data comes in reliably for eventual consistency
+             * it's possible that it will be the same as the last
+             * unreliable packet. When this happens no change has occurred
+             * and the distance of change woudl also be 0; this prevents
+             * the NT from moving. Only need to compare data if channel is reliable. */
+            if (channel == Channel.Reliable && !HasChanged(ref oldGoalData, ref goalData))
+                return;
+
             //Distance between properties.
             float distance;
 
@@ -715,7 +732,7 @@ namespace FishNet.Component.Transforming
                 SetInstantRates(true, false);
             //Otherwise use timed.
             else
-                SetCalculatedRates(lastTick, ref oldGoalData, ref _serverGoalData, true);
+                SetCalculatedRates(lastTick, ref oldGoalData, ref _serverGoalData, true, channel);
 
             /* If channel is reliable then this is a settled packet.
              * Reset last received tick so next starting move eases
@@ -745,7 +762,7 @@ namespace FishNet.Component.Transforming
             uint lastTick = oldGoalData.Tick;
             UpdateGoalData(data, ref _clientGoalData);
 
-            SetCalculatedRates(lastTick, ref oldGoalData, ref _clientGoalData, false);
+            SetCalculatedRates(lastTick, ref oldGoalData, ref _clientGoalData, false, channel);
         }
 
         /// <summary>

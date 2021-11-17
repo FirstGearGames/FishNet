@@ -12,8 +12,16 @@ namespace FishNet.Managing.Object
     [CreateAssetMenu(fileName = "New DualPrefabObjects", menuName = "FishNet/Spawnable Prefabs/Dual Prefab Objects")]
     public class DualPrefabObjects : PrefabObjects
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Prefabs which may be spawned.")]
         [SerializeField]
         private List<DualPrefab> _prefabs = new List<DualPrefab>();
+        /// <summary>
+        /// Prefabs which may be spawned.
+        /// </summary>
+        public IReadOnlyCollection<DualPrefab> Prefabs => _prefabs;
 
         public override void Clear()
         {
