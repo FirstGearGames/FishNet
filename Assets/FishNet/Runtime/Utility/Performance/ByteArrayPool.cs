@@ -1,54 +1,61 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace FishNet.Utility.Performance
 {
 
-    internal static class ByteArrayPool
+    /// <summary>
+    /// Retrieves and stores byte arrays using a pooling system.
+    /// </summary>
+    public static class ByteArrayPool
     {
         /// <summary>
-        /// Current buffers.
+        /// Stored byte arrays.
         /// </summary>
-        private static Queue<byte[]> _buffers = new Queue<byte[]>();
+        private static Queue<byte[]> _byteArrays = new Queue<byte[]>();
+        /// <summary>
+        /// Stored concurrent byte arrays.
+        /// </summary>
+        private static ConcurrentQueue<byte[]> _concurrentByteArrays = new ConcurrentQueue<byte[]>();
 
         /// <summary>
-        /// Tries to return a buffer of the specified length. If one cannot be found, a new one will be made.
+        /// Returns a byte array which will be of at lesat minimum length. The returns array must manually be stored.
         /// </summary>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        public static byte[] GetArray(int length)
+        public static byte[] Retrieve(int minimumLength, bool useConcurrent = false)
         {
-            byte[] result;
+            byte[] result = null;
 
-            if (_buffers.Count > 0)
+            if (!useConcurrent)
             {
-                result = _buffers.Dequeue();
-                /* Rather than try to find a buffer of appropriate size
-                 * grab the first one and if it's not needed length then
-                 * resize it. This will create garbage but as this is
-                 * done more often it decreases the chances of having
-                 * to resize buffers. It also saves performance loss
-                 * of removing from the middle of a list when a buffer of
-                 * appropriate size is found. */
-                if (result.Length < length)
-                    Array.Resize(ref result, length);
+                if (_byteArrays.Count > 0)
+                    result = _byteArrays.Dequeue();
             }
             else
             {
-                result = new byte[length];
+                if (_concurrentByteArrays.Count > 0)
+                    _concurrentByteArrays.TryDequeue(out result);
             }
+
+            if (result == null)
+                result = new byte[minimumLength];
+            else if (result.Length < minimumLength)
+                Array.Resize(ref result, minimumLength);
 
             return result;
         }
 
         /// <summary>
-        /// Stores a buffer for re-use.
+        /// Stores a byte array for re-use.
         /// </summary>
-        /// <param name="buffer"></param>
-        public static void StoreArray(byte[] buffer)
+        public static void Store(byte[] buffer, bool useConcurrent = false)
         {
-            _buffers.Enqueue(buffer);
+            if (!useConcurrent)
+                _byteArrays.Enqueue(buffer);
+            else
+                _concurrentByteArrays.Enqueue(buffer);
         }
+
     }
 
 

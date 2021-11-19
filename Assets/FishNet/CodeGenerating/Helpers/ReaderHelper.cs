@@ -20,8 +20,8 @@ namespace FishNet.CodeGenerating.Helping
         private readonly Dictionary<TypeReference, MethodReference> _staticReaderMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
         private HashSet<TypeReference> _autoPackedMethods = new HashSet<TypeReference>(new TypeReferenceComparer());
         private MethodReference Reader_ReadPackedWhole_MethodRef;
+        internal MethodReference Reader_ReadToCollection_MethodRef;
         #endregion
-
 
         #region Const.
         internal const string READ_PREFIX = "Read";
@@ -47,6 +47,11 @@ namespace FishNet.CodeGenerating.Helping
                 if (methodInfo.Name == nameof(PooledReader.ReadPackedWhole))
                 {
                     Reader_ReadPackedWhole_MethodRef = CodegenSession.ImportReference(methodInfo);
+                    continue;
+                }
+                else if (methodInfo.Name == nameof(PooledReader.ReadToArrayCollection))
+                {
+                    Reader_ReadToCollection_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;
                 }
 

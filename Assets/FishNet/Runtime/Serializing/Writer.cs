@@ -7,6 +7,7 @@ using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Constant;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
@@ -807,6 +808,45 @@ namespace FishNet.Serializing
         #endregion
 
         #region Generators.
+        /// <summary>
+        /// Writes to the end of value starting at offset.
+        /// </summary>
+        [CodegenExclude]
+        public void WriteToEnd<T>(List<T> value, int offset)
+        {
+            int count = value.Count;
+            if (value == null || offset >= count)
+            {
+                WriteInt32(-1);
+            }
+            else
+            {
+                
+                WriteInt32(count - offset);
+                for (int i = offset; i < count; i++)
+                    Write<T>(value[i]);
+            }
+        }
+        /// <summary>
+        /// Writes to the end of value starting at offset.
+        /// </summary>
+        [CodegenExclude]
+        public void WriteToEnd<T>(T[] value, int offset)
+        {
+            int length = value.Length;
+            if (value == null || offset >= length)
+            {
+                WriteInt32(-1);
+            }
+            else
+            {
+
+                WriteInt32(length - offset);
+                for (int i = offset; i < length; i++)
+                    Write<T>(value[i]);
+            }
+        }
+
         /// <summary>
         /// Writers any supported type.
         /// </summary>

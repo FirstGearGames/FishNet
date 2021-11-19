@@ -180,10 +180,6 @@ namespace FishNet.Managing.Timing
             private set => _localTick = value;
         }
         /// <summary>
-        /// Stopwatch used to calculate ticks.
-        /// </summary>
-        SystemStopwatch _tickStopwatch = new SystemStopwatch();
-        /// <summary>
         /// Stopwatch used for pings.
         /// </summary>
         SystemStopwatch _pingStopwatch = new SystemStopwatch();
@@ -198,7 +194,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Time elapsed after ticks. This is extra time beyond the simulation rate.
         /// </summary>
-        private double _elapsedTime = 0f;
+        private double _elapsedTickTime = 0f;
         /// <summary>
         /// NetworkManager used with this.
         /// </summary>
@@ -271,7 +267,6 @@ namespace FishNet.Managing.Timing
         private void Awake()
         {
             AddNetworkLoops();
-            _tickStopwatch.Restart();
         }
 
 #if UNITY_EDITOR
@@ -290,24 +285,11 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickFixedUpdate()
         {
+
             TryIterateData(true, false);
             OnFixedUpdate?.Invoke();
         }
 
-        public void TooFast(NetworkConnection conn)
-        {
-            AddToBuffered(conn, 1);
-        }
-        public void TooSlow(NetworkConnection conn)
-        {
-            //Connection found.
-            if (_bufferedClientInputs.TryGetValue(conn, out ClientTickData ctd))
-            {
-                //Cap value to ensure clients cannot cause an overflow attack.
-                uint next = (uint)Math.Max(0, ctd.Buffered - 1);
-                ctd.Buffered = (ushort)next;
-            }
-        }
         /// <summary>
         /// Called when Update ticks. This is called before any other script.
         /// </summary>
@@ -444,6 +426,7 @@ namespace FishNet.Managing.Timing
             //Do not automatically simulate.
             if (mode == PhysicsMode.TimeManager)
             {
+                Time.fixedDeltaTime = (float)TickDelta;
                 /* Only check this if network manager
                  * is not null. It would be null via
                  * OnValidate. */
@@ -552,17 +535,14 @@ namespace FishNet.Managing.Timing
         private void IncreaseTick()
         {
             double timePerSimulation = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
-            /* 0ms can occur if the frame rate is so fast
-            * the application is running at less than 1ms
-             * per frame. */
-            long frameMs = Math.Max(1, _tickStopwatch.ElapsedMilliseconds);
-            _elapsedTime += (double)(frameMs / 1000d);
-            _tickStopwatch.Restart();
+            double time = Time.deltaTime;
+            _elapsedTickTime += time;
 
-            bool ticked = (_elapsedTime >= timePerSimulation);
-            //Debug.Log(_elapsedTime + ",  " + (frameMs / 1000d));
-            while (_elapsedTime >= timePerSimulation)
+            bool ticked = (_elapsedTickTime >= timePerSimulation);
+            while (_elapsedTickTime >= timePerSimulation)
             {
+                _elapsedTickTime -= timePerSimulation;
+
                 OnPreTick?.Invoke();
                 /* This has to be called inside the loop because
                  * OnPreTick promises data hasn't been read yet.
@@ -573,12 +553,12 @@ namespace FishNet.Managing.Timing
 
                 if (PhysicsMode == PhysicsMode.TimeManager)
                 {
-                    Physics.Simulate((float)TickDelta);
-                    Physics2D.Simulate((float)TickDelta);
+                    float tick = (float)TickDelta;
+                    Physics.Simulate(tick);
+                    Physics2D.Simulate(tick);
                 }
 
                 OnPostTick?.Invoke();
-                _elapsedTime -= timePerSimulation;
 
                 if (_networkManager.IsClient)
                     SendAddBuffered();

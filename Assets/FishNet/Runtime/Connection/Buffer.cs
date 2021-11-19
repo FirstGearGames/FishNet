@@ -273,7 +273,7 @@ namespace FishNet.Connection
 
         internal ByteBuffer(int size, int reserve = 0)
         {
-            Data = ByteArrayPool.GetArray(size);
+            Data = ByteArrayPool.Retrieve(size);
             _reserve = reserve;
             Reset();
         }
@@ -281,7 +281,7 @@ namespace FishNet.Connection
         ~ByteBuffer()
         {
             if (Data != null)
-                ByteArrayPool.StoreArray(Data);
+                ByteArrayPool.Store(Data);
         }
 
         /// <summary>

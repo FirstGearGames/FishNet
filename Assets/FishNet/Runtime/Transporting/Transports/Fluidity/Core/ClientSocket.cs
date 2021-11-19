@@ -49,14 +49,6 @@ namespace Fluidity.Client
         /// Outbound messages which need to be handled.
         /// </summary>
         private ConcurrentQueue<OutgoingPacket> _outgoing = new ConcurrentQueue<OutgoingPacket>();
-        /// <summary>
-        /// Commands which need to be handled.
-        /// </summary>
-        private ConcurrentQueue<CommandPacket> _commands = new ConcurrentQueue<CommandPacket>();
-        /// <summary>
-        /// ConnectionEvents which need to be handled.
-        /// </summary>
-        private ConcurrentQueue<ConnectionEvent> _connectionEvents = new ConcurrentQueue<ConnectionEvent>();
         #endregion
         /// <summary>
         /// True to stop the socket thread.
@@ -114,7 +106,7 @@ namespace Fluidity.Client
             _channelsCount = channelsCount;
             _pollTime = pollTime;
 
-            ResetValues();
+            ResetQueues();
 
             _stopThread = false;
             _thread = new Thread(ThreadSocket);
@@ -139,13 +131,11 @@ namespace Fluidity.Client
         /// <summary>
         /// Resets values as though this is a new instance.
         /// </summary>
-        private void ResetValues()
+        private void ResetQueues()
         {
             while (_localConnectionStates.TryDequeue(out _)) ;
             while (_incoming.TryDequeue(out _)) ;
             while (_outgoing.TryDequeue(out _)) ;
-            while (_commands.TryDequeue(out _)) ;
-            while (_connectionEvents.TryDequeue(out _)) ;
         }
 
         // This runs in a seperate thread, be careful accessing anything outside of it's thread
@@ -167,8 +157,6 @@ namespace Fluidity.Client
 
                 while (!_stopThread)
                 {
-                    //Actions issued to socket locally.
-                    DequeueCommands();
                     //Packets to be sent out.
                     DequeueOutgoing(client);
                     //Check for events until there are none.
@@ -196,15 +184,6 @@ namespace Fluidity.Client
 
 
         /// <summary>
-        /// Dequeues and processes commands.
-        /// </summary>
-        private void DequeueCommands()
-        {
-            //Client doesn't use commands yet?
-            while (_commands.TryDequeue(out _)) { }
-        }
-
-        /// <summary>
         /// Dequeues and processes outgoing.
         /// </summary>
         private void DequeueOutgoing(Peer client)
@@ -212,13 +191,24 @@ namespace Fluidity.Client
             if (!_dequeueOutgoing)
                 return;
 
-            while (_outgoing.TryDequeue(out OutgoingPacket outgoing))
+            //Not connected.
+            if (base.GetConnectionState() != LocalConnectionStates.Started)
             {
-                client.Send(outgoing.Channel, ref outgoing.Packet);
-                outgoing.Packet.Dispose();
+                /* Only dequeue outgoing because other queues might have
+                 * relevant information, such as the local connection queue. */
+                while (_outgoing.TryDequeue(out _)) ;
+            }
+            else
+            {
+                while (_outgoing.TryDequeue(out OutgoingPacket outgoing))
+                {
+                    client.Send(outgoing.Channel, ref outgoing.Packet);
+                    outgoing.Packet.Dispose();
+                }
             }
 
-            _dequeueOutgoing = true;
+            _dequeueOutgoing = false;
+
         }
 
         /// <summary>
@@ -234,10 +224,7 @@ namespace Fluidity.Client
 
                 case ENet.EventType.Connect:
                     //Unfortunately PeerId is always 0 on client. It must be sent by server outside transport.
-                    _connectionEvents.Enqueue(new ConnectionEvent()
-                    {
-                        Connected = true
-                    });
+                    _localConnectionStates.Enqueue(LocalConnectionStates.Started);
                     break;
                 case ENet.EventType.Disconnect:
                 case ENet.EventType.Timeout:
@@ -287,19 +274,9 @@ namespace Fluidity.Client
 
             //Stopped or trying to stop.
             if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
-                return;
-
-            /* Commands. */
-            //Client doesn't use commands yet?
-            while (_commands.TryDequeue(out CommandPacket commandPacket)) { }
-
-            /* ConnectionEvents. */
-            while (_connectionEvents.TryDequeue(out ConnectionEvent connectionEvent))
             {
-                if (connectionEvent.Connected)
-                    base.SetConnectionState(LocalConnectionStates.Started, false);
-                else
-                    base.SetConnectionState(LocalConnectionStates.Stopped, false);
+                ResetQueues();
+                return;
             }
 
             /* Incoming. */

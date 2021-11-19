@@ -385,6 +385,15 @@ namespace FishNet.Managing.Server
             if (segment.Count <= TransportManager.TICK_BYTES)
                 return;
 
+            //FishNet internally splits packets so nothing should ever arrive over MTU.
+            int channelMtu = NetworkManager.TransportManager.Transport.GetMTU((byte)args.Channel);
+            //If over MTU kick client immediately.
+            if (segment.Count > channelMtu)
+            {
+                NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                return;
+            }
+
             PacketId packetId = PacketId.Unset;
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try

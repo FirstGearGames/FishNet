@@ -60,6 +60,10 @@ namespace FishNet.Managing.Scened
         /// Called when a client presence changes within a scene, after the server rebuilds observers.
         /// </summary>
         public event Action<ClientPresenceChangeEventArgs> OnClientPresenceChangeEnd;
+        /// <summary>
+        /// Connections within each scene.
+        /// </summary>
+        public Dictionary<Scene, HashSet<NetworkConnection>> SceneConnections { get; private set; } = new Dictionary<Scene, HashSet<NetworkConnection>>();
         #endregion
 
         #region Private.
@@ -87,10 +91,6 @@ namespace FishNet.Managing.Scened
         /// Scenes to load or unload, in order.
         /// </summary>
         private List<object> _queuedOperations = new List<object>();
-        /// <summary>
-        /// Connections within each scene.
-        /// </summary>
-        public Dictionary<Scene, HashSet<NetworkConnection>> SceneConnections { get; private set; } = new Dictionary<Scene, HashSet<NetworkConnection>>();
         /// <summary>
         /// Scenes which must be manually unloaded, even when emptied.
         /// </summary>

@@ -12,7 +12,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Average from samples favoring the most recent sample.
         /// </summary>
-        public double Average { get; private set; }
+        public float Average { get; private set; }
         #endregion
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Collected samples.
         /// </summary>
-        private double[] _samples;
+        private float[] _samples;
         /// <summary>
         /// Number of samples written. Will be at most samples size.
         /// </summary>
@@ -30,11 +30,11 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Samples accumulated over queue.
         /// </summary>
-        private double _sampleAccumulator;
+        private float _sampleAccumulator;
 
         public MovingAverage(int sampleSize)
         {
-            _samples = new double[sampleSize];
+            _samples = new float[sampleSize];
         }
 
 
@@ -42,10 +42,10 @@ namespace FishNet.Managing.Timing
         /// Computes a new windowed average each time a new sample arrives
         /// </summary>
         /// <param name="newSample"></param>
-        public void ComputeAverage(double newSample)
+        public void ComputeAverage(float newSample)
         {
-            if (newSample < 0d)
-                newSample = 0d;
+            if (newSample < 0f)
+                newSample = 0f;
 
             _sampleAccumulator += newSample;
             _samples[_writeIndex] = newSample;

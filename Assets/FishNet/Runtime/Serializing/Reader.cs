@@ -7,6 +7,7 @@ using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Constant;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -928,6 +929,33 @@ namespace FishNet.Serializing
         #endregion
 
         #region Generators.
+        /// <summary>
+        /// Reads into collection and returns amount read.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection"></param>
+        /// <returns></returns>
+        [CodegenExclude]
+        public int ReadToCollection<T>(ref T[] collection)
+        {
+            int count = ReadInt32();
+            if (count <= 0)
+            {
+                return count;
+            }
+            else
+            {
+                //Initialize buffer if not already done.
+                if (collection == null || collection.Length < count)
+                    collection = new T[count];
+
+                for (int i = 0; i < count; i++)
+                    collection[i] = Read<T>();
+            }
+
+            return count;
+        }
+     
         /// <summary>
         /// Reads any supported type.
         /// </summary>

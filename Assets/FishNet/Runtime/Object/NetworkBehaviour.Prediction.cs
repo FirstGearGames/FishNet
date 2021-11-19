@@ -24,6 +24,30 @@ namespace FishNet.Object
         /// Registered Reconcile methods.
         /// </summary>
         private readonly Dictionary<uint, ReconcileRpcDelegate> _reconcileRpcDelegates = new Dictionary<uint, ReconcileRpcDelegate>();
+        /// <summary>
+        /// True if initialized compnents for prediction.
+        /// </summary>
+        private bool _predictionInitialized = false;
+        /// <summary>
+        /// Rigidbody found on this object. This is used for prediction.
+        /// </summary>
+        private Rigidbody _rigidbody = null;
+        /// <summary>
+        /// Rigidbody2D found on this object. This is used for prediction.
+        /// </summary>
+        private Rigidbody2D _rigidbody2d = null;
+        /// <summary>
+        /// Last position for TransformMayChange.
+        /// </summary>
+        private Vector3 _lastMayChangePosition = Vector3.zero;
+        /// <summary>
+        /// Last rotation for TransformMayChange.
+        /// </summary>
+        private Quaternion _lastMayChangeRotation = Quaternion.identity;
+        /// <summary>
+        /// Last scale for TransformMayChange.
+        /// </summary>
+        private Vector3 _lastMayChangeScale = Vector3.zero;
         #endregion
 
         /// <summary>
@@ -70,7 +94,7 @@ namespace FishNet.Object
 
             if (_replicateRpcDelegates.TryGetValue(methodHash.Value, out ReplicateRpcDelegate del))
             {
-                del.Invoke(this, reader, sendingClient);
+                del.Invoke(this, reader, sendingClient); 
             }
             else
             {
@@ -110,24 +134,22 @@ namespace FishNet.Object
         {
             if (!IsSpawnedWithWarning())
                 return;
-
+             
             int lastBufferIndex = (replicateBuffer.Count - 1);
             //Nothing to send; should never be possible.
             if (lastBufferIndex < 0)
                 return;
-
-            int bufferCount = replicateBuffer.Count;
-            //Populate history into a new array. //todo fix GC
-            count = Mathf.Min(bufferCount, count);
-
-            T[] sent = new T[count];
-            for (int i = 0; i < count; i++)
-                sent[i] = replicateBuffer[(bufferCount - count) + i];
+            /* Where to start writing from. When passed
+             * into the writer values from this offset
+             * and forward will be written. */
+            int offset = replicateBuffer.Count - count;
+            if (offset < 0)
+                offset = 0;
 
             Channel channel = Channel.Unreliable;
             //Write history to methodWriter.
             PooledWriter methodWriter = WriterPool.GetWriter();
-            methodWriter.Write(sent);
+            methodWriter.WriteToEnd(replicateBuffer, offset);
 
             PooledWriter writer;
             //if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
@@ -146,14 +168,13 @@ namespace FishNet.Object
         /// </summary>
         [APIExclude] //codegen this can be made internal then set public via codegen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendReconcileRpc<T>(uint hash, T reconcileData)
+        public void SendReconcileRpc<T>(uint hash, T reconcileData, Channel channel)
         {
             if (!IsSpawnedWithWarning())
                 return;
             if (!OwnerIsActive)
                 return;
 
-            Channel channel = Channel.Unreliable;
             PooledWriter methodWriter = WriterPool.GetWriter();
             methodWriter.Write(reconcileData);
 
@@ -168,6 +189,46 @@ namespace FishNet.Object
             writer.Dispose();
         }
 
+        /// <summary>
+        /// Returns if there is a chance the transform may change after the tick.
+        /// </summary>
+        /// <returns></returns>
+        protected internal bool TransformMayChange()
+        {
+            if (!_predictionInitialized)
+            {
+                _predictionInitialized = true;
+                _rigidbody = GetComponentInParent<Rigidbody>();
+                _rigidbody2d = GetComponentInParent<Rigidbody2D>();
+            }
+
+            /* Use distance when checking if changed because rigidbodies can twitch
+             * or move an extremely small amount. These small moves are not worth
+             * resending over because they often fix themselves each frame. */
+            float changeDistance = 0.000004f;
+
+            bool positionChanged = (transform.position - _lastMayChangePosition).sqrMagnitude > changeDistance;
+            bool rotationChanged = (transform.rotation.eulerAngles - _lastMayChangeRotation.eulerAngles).sqrMagnitude > changeDistance;
+            bool scaleChanged = (transform.localScale - _lastMayChangeScale).sqrMagnitude > changeDistance;
+            bool transformChanged = (positionChanged || rotationChanged || scaleChanged);
+            /* Returns true if transform.hasChanged, or if either
+             * of the rigidbodies have velocity. */
+            bool changed = (
+                transformChanged ||
+                (_rigidbody != null && (_rigidbody.velocity != Vector3.zero || _rigidbody.angularVelocity != Vector3.zero)) ||
+                (_rigidbody2d != null && (_rigidbody2d.velocity != Vector2.zero || _rigidbody2d.angularVelocity != 0f))
+                );
+
+            //If transform changed update last values.
+            if (transformChanged)
+            {
+                _lastMayChangePosition = transform.position;
+                _lastMayChangeRotation = transform.rotation;
+                _lastMayChangeScale = transform.localScale;
+            }
+
+            return changed;
+        }
     }
 
 
