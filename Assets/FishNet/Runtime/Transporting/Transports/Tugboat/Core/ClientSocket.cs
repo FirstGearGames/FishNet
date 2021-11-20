@@ -4,14 +4,17 @@ using System;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
+using UnityEngine;
 
-namespace FishNet.Lighthouse.Client
+namespace FishNet.Tugboat.Client
 {
     public class ClientSocket : CommonSocket
     {
         ~ClientSocket()
         {
-            _stopThread = true;
+            if (_taskCancelToken != null)
+                EndTask();
         }
 
         #region Private.
@@ -52,25 +55,17 @@ namespace FishNet.Lighthouse.Client
         private ConcurrentQueue<Packet> _outgoing = new ConcurrentQueue<Packet>();
         #endregion
         /// <summary>
-        /// NetPeer for the server connection.
+        /// Client socket manager.
         /// </summary>
-        private NetPeer _serverPeer = null;
-        /// <summary>
-        /// True to stop the socket thread.
-        /// </summary>
-        private volatile bool _stopThread = false;
+        private NetManager _client = null;
         /// <summary>
         /// True to dequeue Outgoing.
         /// </summary>
         private volatile bool _canDequeueOutgoing = false;
         /// <summary>
-        /// Buffer used to temporarily hold incoming data.
+        /// Token to cancel task.
         /// </summary>
-        private byte[] _incomingBuffer;
-        /// <summary>
-        /// Thread used for socket.
-        /// </summary>
-        private Thread _thread;
+        private CancellationTokenSource _taskCancelToken = null;
         #endregion
 
         /// <summary>
@@ -87,8 +82,52 @@ namespace FishNet.Lighthouse.Client
                 reliableMTU,
                 unreliableMTU
             };
-            int largestMTU = Math.Max(reliableMTU, unreliableMTU);
-            _incomingBuffer = new byte[largestMTU];
+        }
+
+
+        /// <summary>
+        /// Ends running task without any checks.
+        /// </summary>
+        private void EndTask()
+        {
+            if (_taskCancelToken != null && !_taskCancelToken.IsCancellationRequested)
+                _taskCancelToken.Cancel();
+        }
+
+        /// <summary>
+        /// Threaded operation to process client actions.
+        /// </summary>
+        private void ThreadedSocket(CancellationToken cancelToken)
+        {
+            EventBasedNetListener listener = new EventBasedNetListener();
+            listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
+            listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
+            listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
+
+            _client = new NetManager(listener);
+            _client.Start();
+            _client.Connect(_address, _port, string.Empty);
+
+            _localConnectionStates.Enqueue(LocalConnectionStates.Starting);
+
+            while (!cancelToken.IsCancellationRequested)
+            {
+                DequeueOutgoing();
+                _client.PollEvents();
+                Thread.Sleep(_pollTime);
+            }
+
+            _client.Stop(true);
+            SetLocalConnectionStopped();
+        }
+
+        /// <summary>
+        /// Sets local connection as stopped and ends task.
+        /// </summary>
+        private void SetLocalConnectionStopped()
+        {
+            _localConnectionStates.Enqueue(LocalConnectionStates.Stopped);
+            EndTask();
         }
 
         /// <summary>
@@ -100,7 +139,7 @@ namespace FishNet.Lighthouse.Client
         /// <param name="pollTime"></param>
         internal bool StartConnection(string address, ushort port, byte channelsCount, int pollTime)
         {
-            if (base.GetConnectionState() != LocalConnectionStates.Stopped || (_thread != null && _thread.IsAlive))
+            if (base.GetConnectionState() != LocalConnectionStates.Stopped)
                 return false;
 
             base.SetConnectionState(LocalConnectionStates.Starting, false);
@@ -113,9 +152,8 @@ namespace FishNet.Lighthouse.Client
 
             ResetQueues();
 
-            _stopThread = false;
-            _thread = new Thread(ThreadSocket);
-            _thread.Start();
+            _taskCancelToken = new CancellationTokenSource();
+            Task t = Task.Run(() => ThreadedSocket(_taskCancelToken.Token), _taskCancelToken.Token);
             return true;
         }
 
@@ -129,7 +167,7 @@ namespace FishNet.Lighthouse.Client
                 return false;
 
             base.SetConnectionState(LocalConnectionStates.Stopping, false);
-            _stopThread = true;
+            EndTask();
             return true;
         }
 
@@ -144,39 +182,13 @@ namespace FishNet.Lighthouse.Client
             base.ClearPacketQueue(ref _outgoing);
         }
 
-        /// <summary>
-        /// Handles processing the socket on a new thread.
-        /// </summary>
-        private void ThreadSocket()
-        {
-            EventBasedNetListener listener = new EventBasedNetListener();
-            listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
-            listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
-            listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
-
-            NetManager clientManager = new NetManager(listener);
-            clientManager.Start();
-            clientManager.Connect(_address, _port, string.Empty);
-
-            _localConnectionStates.Enqueue(LocalConnectionStates.Starting);
-
-            while (!_stopThread)
-            {
-                DequeueOutgoing();
-                clientManager.PollEvents();
-                Thread.Sleep(1);
-            }
-
-            clientManager.Stop(true);
-            _localConnectionStates.Enqueue(LocalConnectionStates.Stopped);
-        }
 
         /// <summary>
         /// Called when connected from the server.
         /// </summary>
         private void Listener_PeerDisconnectedEvent(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            _localConnectionStates.Enqueue(LocalConnectionStates.Stopped);
+            SetLocalConnectionStopped();
         }
 
         /// <summary>
@@ -203,7 +215,9 @@ namespace FishNet.Lighthouse.Client
             if (!_canDequeueOutgoing)
                 return;
 
-            NetPeer peer = _serverPeer;
+            NetPeer peer = null;
+            if (_client != null)
+                peer = _client.FirstPeer;
             //Server connection hasn't been made.
             if (peer == null)
             {
@@ -247,16 +261,20 @@ namespace FishNet.Lighthouse.Client
                 base.SetConnectionState(state, false);
 
             //Not yet started, cannot continue.
-            if (base.GetConnectionState() != LocalConnectionStates.Started)
+            LocalConnectionStates localState = base.GetConnectionState();
+            if (localState != LocalConnectionStates.Started)
             {
                 ResetQueues();
+                //If stopped try to kill task.
+                if (localState == LocalConnectionStates.Stopped)
+                    EndTask();
                 return;
             }
 
             /* Incoming. */
             ClientReceivedDataArgs dataArgs = new ClientReceivedDataArgs();
             while (_incoming.TryDequeue(out Packet incoming))
-            {                
+            {
                 dataArgs.Data = incoming.GetArraySegment();
                 dataArgs.Channel = (Channel)incoming.Channel;
                 base.Transport.HandleClientReceivedDataArgs(dataArgs);
@@ -269,7 +287,7 @@ namespace FishNet.Lighthouse.Client
         /// Sends a packet to the server.
         /// </summary>
         internal void SendToServer(byte channelId, ArraySegment<byte> segment)
-        {
+        {            
             //Not started, cannot send.
             if (base.GetConnectionState() != LocalConnectionStates.Started)
                 return;

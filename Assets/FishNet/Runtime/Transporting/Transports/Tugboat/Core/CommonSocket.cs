@@ -4,7 +4,7 @@ using LiteNetLib;
 using System;
 using System.Collections.Concurrent;
 
-namespace FishNet.Lighthouse
+namespace FishNet.Tugboat
 {
 
     public abstract class CommonSocket

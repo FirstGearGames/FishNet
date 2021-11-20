@@ -1,7 +1,7 @@
 ﻿using FishNet.Utility.Performance;
 using System;
 
-namespace FishNet.Lighthouse
+namespace FishNet.Tugboat
 {
 
 
@@ -44,7 +44,7 @@ namespace FishNet.Lighthouse
 
 }
 
-namespace FishNet.Lighthouse.Server
+namespace FishNet.Tugboat.Server
 {
     internal enum CommandTypes : byte
     {

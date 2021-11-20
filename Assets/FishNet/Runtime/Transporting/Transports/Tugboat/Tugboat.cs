@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace FishNet.Lighthouse
+namespace FishNet.Tugboat
 {
     [DisallowMultipleComponent]
     public class Lighthouse : Transport

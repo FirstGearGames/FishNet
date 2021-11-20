@@ -134,7 +134,7 @@ namespace FishNet.Object
         {
             if (!IsSpawnedWithWarning())
                 return;
-             
+
             int lastBufferIndex = (replicateBuffer.Count - 1);
             //Nothing to send; should never be possible.
             if (lastBufferIndex < 0)

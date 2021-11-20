@@ -821,7 +821,7 @@ namespace FishNet.Serializing
             }
             else
             {
-                
+
                 WriteInt32(count - offset);
                 for (int i = offset; i < count; i++)
                     Write<T>(value[i]);
