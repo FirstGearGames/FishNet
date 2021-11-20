@@ -49,7 +49,7 @@ namespace FishNet.CodeGenerating.Helping
                     Reader_ReadPackedWhole_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;
                 }
-                else if (methodInfo.Name == nameof(PooledReader.ReadToArrayCollection))
+                else if (methodInfo.Name == nameof(PooledReader.ReadToCollection))
                 {
                     Reader_ReadToCollection_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;
