@@ -31,11 +31,11 @@ namespace FishNet.Object
         /// <summary>
         /// Rigidbody found on this object. This is used for prediction.
         /// </summary>
-        private Rigidbody _rigidbody = null;
+        private Rigidbody _predictionRigidbody = null;
         /// <summary>
         /// Rigidbody2D found on this object. This is used for prediction.
         /// </summary>
-        private Rigidbody2D _rigidbody2d = null;
+        private Rigidbody2D _predictionRigidbody2d = null;
         /// <summary>
         /// Last position for TransformMayChange.
         /// </summary>
@@ -198,8 +198,8 @@ namespace FishNet.Object
             if (!_predictionInitialized)
             {
                 _predictionInitialized = true;
-                _rigidbody = GetComponentInParent<Rigidbody>();
-                _rigidbody2d = GetComponentInParent<Rigidbody2D>();
+                _predictionRigidbody = GetComponentInParent<Rigidbody>();
+                _predictionRigidbody2d = GetComponentInParent<Rigidbody2D>();
             }
 
             /* Use distance when checking if changed because rigidbodies can twitch
@@ -215,8 +215,8 @@ namespace FishNet.Object
              * of the rigidbodies have velocity. */
             bool changed = (
                 transformChanged ||
-                (_rigidbody != null && (_rigidbody.velocity != Vector3.zero || _rigidbody.angularVelocity != Vector3.zero)) ||
-                (_rigidbody2d != null && (_rigidbody2d.velocity != Vector2.zero || _rigidbody2d.angularVelocity != 0f))
+                (_predictionRigidbody != null && (_predictionRigidbody.velocity != Vector3.zero || _predictionRigidbody.angularVelocity != Vector3.zero)) ||
+                (_predictionRigidbody2d != null && (_predictionRigidbody2d.velocity != Vector2.zero || _predictionRigidbody2d.angularVelocity != 0f))
                 );
 
             //If transform changed update last values.

@@ -8,7 +8,7 @@ using UnityEngine;
 namespace FishNet.Tugboat
 {
     [DisallowMultipleComponent]
-    public class Lighthouse : Transport
+    public class Tugboat : Transport
     {
 
         #region Serialized.
