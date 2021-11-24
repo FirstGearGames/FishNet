@@ -124,6 +124,8 @@ namespace FishNet.Object
 
         private void OnDestroy()
         {
+            if (OwnerIsValid)
+                Owner.RemoveObject(this);
             //Already being deinitialized by FishNet.
             if (Deinitializing)
                 return;
@@ -218,9 +220,6 @@ namespace FishNet.Object
 
                 RemoveClientRpcLinkIndexes();
             }
-
-            if (OwnerIsValid)
-                Owner.RemoveObject(this);
         }
 
         ///// <summary>
