@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace Fluidity
+namespace FishNet.Fluidity
 {
     [DisallowMultipleComponent]
     public class Fluidity : Transport

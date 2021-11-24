@@ -27,8 +27,15 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void InitializeRpcLinks()
         {
-            ushort startingLinkIndex = (ushort)(1 + (ushort)Enum.GetValues(typeof(PacketId)).Cast<PacketId>().Max());
-            for (ushort i = startingLinkIndex; i < ushort.MaxValue; i++)
+            /* Brute force enum values. 
+             * Linq Last/Max lookup throws for IL2CPP. */
+            ushort highestValue = 0;
+            Array pidValues = Enum.GetValues(typeof(PacketId));
+            foreach (PacketId pid in pidValues)
+                highestValue = Math.Max(highestValue, (ushort)pid);
+
+            highestValue += 1;
+            for (ushort i = highestValue; i < ushort.MaxValue; i++)
                 _availableRpcLinkIndexes.Push(i);
         }
 

@@ -206,10 +206,21 @@ namespace FishNet.Object
         {
             InvokeStopCallbacks(asServer);
 
-            if (asServer || (!asServer && !NetworkManager.IsServer))
+            if (asServer)
+            {
                 Deinitializing = true;
-            else if (!asServer)
+            }
+            else
+            {
+                //Client only.
+                if (!NetworkManager.IsServer)
+                    Deinitializing = true;
+
                 RemoveClientRpcLinkIndexes();
+            }
+
+            if (OwnerIsValid)
+                Owner.RemoveObject(this);
         }
 
         ///// <summary>

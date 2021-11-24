@@ -4,6 +4,7 @@ using FishNet.Serializing;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FishNet.Managing.Client
 {
@@ -39,6 +40,7 @@ namespace FishNet.Managing.Client
         {
             CachedNetworkObject cnob = _cachedObjects.AddReference();
             cnob.InitializeSpawn(nob, rpcLinks, syncValues, manager);
+            _clientObjects.AddToSpawned(nob);
         }
 
         /// <summary>
@@ -64,20 +66,20 @@ namespace FishNet.Managing.Client
             try
             {
                 List<CachedNetworkObject> collection = _cachedObjects.Collection;
+                /* The next iteration will set rpclinks,
+                 * synctypes, and so on. */
                 for (int i = 0; i < written; i++)
                 {
                     CachedNetworkObject cnob = collection[i];
-                    //Shouldn't be possible, but networkobject went null before iteration could run.
-                    if (cnob.NetworkObject == null)
-                        continue;
-
                     if (cnob.Spawn)
                         IterateSpawn(cnob);
                     else
                         IterateDespawn(cnob);
                 }
 
-                //Activate objects.
+                /* Lastly activate the objects after all data
+                 * has been synchronized. This will execute callbacks,
+                 * and any synctype hooks after the callbacks. */
                 for (int i = 0; i < written; i++)
                 {
                     CachedNetworkObject cnob = collection[i];
@@ -101,6 +103,15 @@ namespace FishNet.Managing.Client
         /// <param name="cnob"></param>
         private void IterateSpawn(CachedNetworkObject cnob)
         {
+            /* All nob spawns have been added to spawned before
+            * they are processed. This ensures they will be found if
+            * anything is referencing them before/after initialization. */
+            /* However, they have to be added again here should an ItereteDespawn
+             * had removed them. This can occur if an object is set to be spawned,
+             * thus added to spawned before iterations, then a despawn runs which
+             * removes it from spawn. */
+            _clientObjects.AddToSpawned(cnob.NetworkObject);
+
             List<ushort> rpcLinkIndexes = new List<ushort>();
             //Apply rpcLinks.
             foreach (NetworkBehaviour nb in cnob.NetworkObject.NetworkBehaviours)

@@ -35,10 +35,6 @@ namespace FishNet.Managing.Server
         /// </summary>
         private Queue<int> _objectIdCache = new Queue<int>();
         /// <summary>
-        /// Cache for network objects a disconnected client owned.
-        /// </summary>
-        private ListCache<NetworkObject> _disconnectedClientObjectsCache = new ListCache<NetworkObject>();
-        /// <summary>
         /// NetworkBehaviours which have dirty SyncVars.
         /// </summary>
         private List<NetworkBehaviour> _dirtySyncVarBehaviours = new List<NetworkBehaviour>(20);
@@ -130,18 +126,15 @@ namespace FishNet.Managing.Server
             /* A cache is made because the Objects
              * collection would end up modified during
              * iteration from removing ownership and despawning. */
-            _disconnectedClientObjectsCache.Reset();
+            ListCache<NetworkObject> cache = ListCaches.NetworkObjectCache;
+            cache.Reset();
             foreach (NetworkObject nob in connection.Objects)
-                _disconnectedClientObjectsCache.AddValue(nob);
+                cache.AddValue(nob);
 
-            for (int i = 0; i < _disconnectedClientObjectsCache.Written; i++)
-            {
-                NetworkObject nob = _disconnectedClientObjectsCache.Collection[i];
-                if (nob.SceneObject)
-                    nob.RemoveOwnership();
-                else
-                    nob.Despawn();
-            }
+            int written = cache.Written;
+            List<NetworkObject> collection = cache.Collection;
+            for (int i = 0; i < written; i++)
+                collection[i].Despawn();
         }
         #endregion
 
@@ -486,24 +479,35 @@ namespace FishNet.Managing.Server
             WriteDespawn(nob, ref everyoneWriter);
 
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
-            foreach (NetworkConnection conn in nob.Observers)
+
+            //Build into listcache.
+            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
+            cache.Reset();
+            cache.AddValues(nob.Observers);
+            int written = cache.Written;
+            for (int i = 0; i < written; i++)
             {
+                //Invoke ondespawn and send despawn.
+                NetworkConnection conn = cache.Collection[i];
                 nob.InvokeOnServerDespawn(conn);
                 NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, despawnSegment, conn);
+                //Remove from observers.
+                nob.Observers.Remove(conn);
             }
+
 
             everyoneWriter.Dispose();
         }
-        /// <summary>
-        /// Writes a despawn.
-        /// </summary>
-        /// <param name="nob"></param>
-        private void WriteDespawn(NetworkObject nob, ref PooledWriter everyoneWriter)
-        {
-            everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
-            everyoneWriter.WriteNetworkObject(nob);
-        }
+    /// <summary>
+    /// Writes a despawn.
+    /// </summary>
+    /// <param name="nob"></param>
+    private void WriteDespawn(NetworkObject nob, ref PooledWriter everyoneWriter)
+    {
+        everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
+        everyoneWriter.WriteNetworkObject(nob);
     }
+}
     #endregion
 
 

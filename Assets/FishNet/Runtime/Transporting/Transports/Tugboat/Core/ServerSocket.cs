@@ -366,7 +366,7 @@ namespace FishNet.Tugboat.Server
             }
 
             /* 
-             * Enqueue disconnects for next iteration. //todo
+             * Enqueue disconnects for next iteration. //performance
              * Enet has a bug where data may not send out if this isn't done.
              * Need to test if litenetlib suffers from this as well. */
             for (int i = 0; i < disconnectNextIterationCount; i++)

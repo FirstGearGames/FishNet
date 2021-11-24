@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace Fluidity.Server
+namespace FishNet.Fluidity.Server
 {
     public class ServerSocket : CommonSocket
     {

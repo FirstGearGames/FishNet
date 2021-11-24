@@ -67,7 +67,8 @@ namespace FishNet.Object
         /// <param name="destroyInstantiated">True to also destroy the object if it was instantiated. False will only disable the object.</param>
         public void Despawn()
         {
-            NetworkManager.ServerManager.Despawn(gameObject);
+            NetworkObject nob = this;
+            NetworkManager.ServerManager.Despawn(nob);
         }
         /// <summary>
         /// Spawns an object over the network. Only call from the server.

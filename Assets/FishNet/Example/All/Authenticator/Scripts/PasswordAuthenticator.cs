@@ -9,6 +9,10 @@ using UnityEngine;
 namespace FishNet.Example.Authenticating
 {
 
+    /// <summary>
+    /// This is an example of a password authenticator.
+    /// Never send passwords without encryption.
+    /// </summary>
     public class PasswordAuthenticator : Authenticator
     {
         #region Public.

@@ -1,6 +1,6 @@
 ﻿using FishNet.Transporting;
 
-namespace Fluidity
+namespace FishNet.Fluidity
 {
 
     public abstract class CommonSocket

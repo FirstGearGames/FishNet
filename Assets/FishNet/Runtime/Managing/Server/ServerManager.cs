@@ -134,7 +134,7 @@ namespace FishNet.Managing.Server
             NetworkManager = manager;
             Objects = new ServerObjects(manager);
             InitializeRpcLinks();
-            //Unsubscrive first incase already subscribed.
+            //Unsubscribe first incase already subscribed.
             SubscribeToTransport(false);
             SubscribeToTransport(true);
             NetworkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;

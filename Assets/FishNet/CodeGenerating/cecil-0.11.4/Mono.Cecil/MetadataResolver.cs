@@ -385,8 +385,6 @@ namespace MonoFN.Cecil {
 			if (a.Name != b.Name || a.Namespace != b.Namespace)
 				return false;
 
-			//TODO: check scope
-
 			return AreSame (a.DeclaringType, b.DeclaringType);
 		}
 	}

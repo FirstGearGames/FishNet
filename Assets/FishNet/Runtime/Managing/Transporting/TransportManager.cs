@@ -88,7 +88,7 @@ namespace FishNet.Managing.Transporting
             /* If transport isn't specified then add default
              * transport. */
             if (Transport == null && !gameObject.TryGetComponent<Transport>(out Transport))
-                Transport = gameObject.AddComponent<Fluidity.Fluidity>();
+                Transport = gameObject.AddComponent<FishNet.Tugboat.Tugboat>();
 
             Transport.Initialize(_networkManager);
             InitializeToServerBundles();

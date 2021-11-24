@@ -84,6 +84,11 @@ namespace FishNet.Connection
         /// True if this connection is being disconnected. Only available to server.
         /// </summary>
         public bool Disconnecting { get; private set; } = false;
+        /// <summary>
+        /// Custom data associated with this connection which may be modified by the user.
+        /// The value of this field are not synchronized over the network.
+        /// </summary>
+        public object CustomData = null;
         #endregion
 
         #region Comparers.

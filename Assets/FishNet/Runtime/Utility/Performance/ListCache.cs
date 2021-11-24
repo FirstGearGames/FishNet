@@ -1,8 +1,22 @@
-﻿using System;
+﻿using FishNet.Connection;
+using FishNet.Object;
+using System;
 using System.Collections.Generic;
 
 namespace FishNet.Utility.Performance
 {
+    internal static class ListCaches
+    {
+        /// <summary>
+        /// Cache for NetworkObjects.
+        /// </summary>
+        public static ListCache<NetworkObject> NetworkObjectCache = new ListCache<NetworkObject>();
+        /// <summary>
+        /// Cache for NetworkConnectios.
+        /// </summary>
+        public static ListCache<NetworkConnection> NetworkConnectionCache = new ListCache<NetworkConnection>();
+    }
+
     /// <summary>
     /// Creates a reusable cache of T which auto expands.
     /// </summary>

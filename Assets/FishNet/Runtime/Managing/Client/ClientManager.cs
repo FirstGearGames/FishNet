@@ -108,7 +108,7 @@ namespace FishNet.Managing.Client
 
             //Clear connection after so objects can update using current Connection value.
             if (!Started)
-                Connection = NetworkManager.EmptyConnection;
+                Connection = NetworkManager.EmptyConnection; 
 
             if (Started && NetworkManager.CanLog(LoggingType.Common))
                 Debug.Log($"Local client is connected to the server.");

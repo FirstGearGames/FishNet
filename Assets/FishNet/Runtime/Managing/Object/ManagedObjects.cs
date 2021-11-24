@@ -59,14 +59,19 @@ namespace FishNet.Managing.Object
         {
             if (nob == null)
                 return;
-            /* Try to remove from Spawned even
-             * if the NetworkObject may not be present.
-             * Although this is very cheap, down the road
-             * FishNet may check for initialization before
-             * performing this action. */
+
+            RemoveFromSpawned(nob, true);
+        }
+
+        /// <summary>
+        /// Removes a NetworkedObject from spawned.
+        /// </summary>
+        /// <param name="nob"></param>
+        private void RemoveFromSpawned(NetworkObject nob, bool unexpectedlyDestroyed)
+        {
             Spawned.Remove(nob.ObjectId);
             //Do the same with SceneObjects.
-            if (nob.SceneObject)
+            if (unexpectedlyDestroyed && nob.SceneObject)
                 RemoveFromSceneObjects(nob);
         }
 
@@ -136,7 +141,7 @@ namespace FishNet.Managing.Object
                 }
             }
 
-            Spawned.Remove(nob.ObjectId);
+            RemoveFromSpawned(nob, false);
         }
 
         /// <summary>
@@ -178,7 +183,7 @@ namespace FishNet.Managing.Object
         /// Adds a NetworkObject to Spawned.
         /// </summary>
         /// <param name="nob"></param>
-        protected void AddToSpawned(NetworkObject nob)
+        internal void AddToSpawned(NetworkObject nob)
         {
             Spawned[nob.ObjectId] = nob;
         }

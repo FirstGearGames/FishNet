@@ -9,12 +9,10 @@ using UnityEngine;
 namespace FishNet.Component.Transforming
 {
     /// <summary> 
-    /// Janky NetworkTransform. This is only for testing and will be replaced prior to release.
+    /// A somewhat basic but reliable NetworkTransform that will be improved upon greatly after release.
     /// </summary>   
     public class NetworkTransform : NetworkBehaviour
     {
-        //todo cache last received tick. if new update tick is older than last, skip it.
-
         #region Types.
         private enum Changed
         {
@@ -76,17 +74,38 @@ namespace FishNet.Component.Transforming
 
         #endregion
 
+        #region Serialized.
+        /// <summary>
+        /// True to compress small values. If you find accuracy of transform properties or speed simiulation to be less than desirable try disabling this option.
+        /// </summary>
         [Tooltip("True to compress small values. If you find accuracy of transform properties or speed simiulation to be less than desirable try disabling this option.")]
         [SerializeField]
         private bool _compressSmall = true;
-        [Tooltip("How far the transform must travel in a single update to cause a teleport rather than smoothing. Use 0f to disable this feature.")]
+        /// <summary>
+        /// True to enable teleport threshhold.
+        /// </summary>
+        [Tooltip("True to enable teleport threshhold.")]
+        [SerializeField]
+        private bool _enableTeleport = false;
+        /// <summary>
+        /// How far the transform must travel in a single update to cause a teleport rather than smoothing. Using 0f will teleport every update.
+        /// </summary>
+        [Tooltip("How far the transform must travel in a single update to cause a teleport rather than smoothing. Using 0f will teleport every update.")]
         [SerializeField]
         private float _teleportThreshold = 0f;
+        /// <summary>
+        /// True if owner controls how the object is synchronized.
+        /// </summary>
+        [Tooltip("True if owner controls how the object is synchronized.")]
         [SerializeField]
         private bool _clientAuthoritative = true;
+        /// <summary>
+        /// True to synchronize movements on server to owner when not using client authoritative movement.
+        /// </summary>
         [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
         [SerializeField]
-        private bool _synchronizeToOwner = true;
+        private bool _sendToOwner = true;
+        #endregion
 
 
         /// <summary>
@@ -101,6 +120,14 @@ namespace FishNet.Component.Transforming
         /// Last frame tick occurred on.
         /// </summary>
         private int _lastTickFrame = 0;
+        /// <summary>
+        /// Last tick an ObserverRpc passed checks.
+        /// </summary>
+        private uint _lastObserversRpcTick = 0;
+        /// <summary>
+        /// Last tick a ServerRpc passed checks.
+        /// </summary>
+        private uint _lastServerRpcTick = 0;
         /// <summary>
         /// Last received data from an authoritative client.
         /// </summary>
@@ -166,6 +193,13 @@ namespace FishNet.Component.Transforming
             base.OnStartClient();
             SetDefaultGoalDatas(false, true);
             SetInstantRates(false, true);
+        }
+
+        public override void OnOwnershipServer(NetworkConnection newOwner)
+        {
+            base.OnOwnershipServer(newOwner);
+            //Reset last tick since each client sends their own ticks.
+            _lastServerRpcTick = 0;
         }
 
         public override void OnOwnershipClient(NetworkConnection prevOwner)
@@ -417,7 +451,7 @@ namespace FishNet.Component.Transforming
             if (_clientAuthoritative && base.IsOwner)
                 return;
             //If not client authoritative, is owner, and don't sync to owner.
-            if (!_clientAuthoritative && base.IsOwner && !_synchronizeToOwner)
+            if (!_clientAuthoritative && base.IsOwner && !_sendToOwner)
                 return;
             //True if not client controlled.
             bool controlledByClient = (_clientAuthoritative && base.OwnerIsActive);
@@ -652,7 +686,7 @@ namespace FishNet.Component.Transforming
 
             distance = Vector3.Distance(goalData.Position, oldGoalData.Position);
             //If distance teleports assume rest do.
-            if (_teleportThreshold > 0 && distance >= _teleportThreshold)
+            if (_enableTeleport && distance >= _teleportThreshold)
             {
                 SetInstantRates(forServer, !forServer);
                 return;
@@ -713,6 +747,12 @@ namespace FishNet.Component.Transforming
         [ServerRpc]
         private void ServerUpdateTransform(ArraySegment<byte> data, Channel channel)
         {
+            //Not new data.
+            uint lastPacketTick = base.TimeManager.LastPacketTick;
+            if (lastPacketTick <= _lastServerRpcTick)
+                return;
+            _lastServerRpcTick = lastPacketTick;
+
             //Set to received bytes.
             if (_receivedClientBytes == null)
                 _receivedClientBytes = WriterPool.GetWriter();
@@ -750,12 +790,18 @@ namespace FishNet.Component.Transforming
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ObserversUpdateTransform(ArraySegment<byte> data, Channel channel)
         {
-            if (!_clientAuthoritative && base.IsOwner && !_synchronizeToOwner)
+            if (!_clientAuthoritative && base.IsOwner && !_sendToOwner)
                 return;
             if (_clientAuthoritative && base.IsOwner)
                 return;
             if (base.IsServer)
                 return;
+
+            //Not new data.
+            uint lastPacketTick = base.TimeManager.LastPacketTick;
+            if (lastPacketTick <= _lastObserversRpcTick)
+                return;
+            _lastObserversRpcTick = lastPacketTick;
 
             GoalData oldGoalData = _clientGoalData;
             //Tick from last goal data.

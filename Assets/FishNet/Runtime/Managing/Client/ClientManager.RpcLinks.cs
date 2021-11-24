@@ -19,7 +19,15 @@ namespace FishNet.Managing.Client
         /// <param name="manager"></param>
         private void InitializeOnceRpcLinks()
         {
-            _startingLinkIndex = (ushort)(1 + (ushort)Enum.GetValues(typeof(PacketId)).Cast<PacketId>().Max());
+            /* Brute force enum values. 
+             * Linq Last/Max lookup throws for IL2CPP. */
+            ushort highestValue = 0;
+            Array pidValues = Enum.GetValues(typeof(PacketId));
+            foreach (PacketId pid in pidValues)
+                highestValue = Math.Max(highestValue, (ushort)pid);
+
+            highestValue += 1;
+            _startingLinkIndex = highestValue;
         }
 
     }

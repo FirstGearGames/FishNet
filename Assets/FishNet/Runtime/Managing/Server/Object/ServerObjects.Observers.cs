@@ -13,10 +13,6 @@ namespace FishNet.Managing.Server
     {
         #region Private.
         /// <summary>
-        /// Cache for NetworkConnections.
-        /// </summary>
-        private ListCache<NetworkConnection> _networkConnectionListCache = new ListCache<NetworkConnection>();
-        /// <summary>
         /// Cache filled with objects which are being spawned on clients due to an observer change.
         /// </summary>
         private List<NetworkObject> _observerChangeObjectsCache = new List<NetworkObject>(100);
@@ -280,21 +276,22 @@ namespace FishNet.Managing.Server
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             PooledWriter ownerWriter = WriterPool.GetWriter();
 
-            _networkConnectionListCache.Reset();
+            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
+            cache.Reset();
             if (connections == null)
             {
                 foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)
-                    _networkConnectionListCache.AddValue(item);
+                    cache.AddValue(item);
             }
             else
             {
-                _networkConnectionListCache.AddValues(connections);
+                cache.AddValues(connections);
             }
 
-
-            for (int i = 0; i < _networkConnectionListCache.Written; i++)
+            int written = cache.Written;
+            for (int i = 0; i < written; i++)
             {
-                NetworkConnection conn = _networkConnectionListCache.Collection[i];
+                NetworkConnection conn = cache.Collection[i];
 
                 everyoneWriter.Reset();
                 ownerWriter.Reset();

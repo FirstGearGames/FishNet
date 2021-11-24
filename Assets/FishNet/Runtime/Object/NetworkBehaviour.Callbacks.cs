@@ -57,7 +57,7 @@ namespace FishNet.Object
         /// <param name="connection">Connection the object is being spawned for.</param>
         public virtual void OnSpawnServer(NetworkConnection connection) { }
         /// <summary>
-        /// Called on the server before a despawn message for this object has been sent to clients.
+        /// Called on the server before a despawn message for this object has been sent to connection.
         /// Useful for sending remote calls or actions to clients.
         /// </summary>
         public virtual void OnDespawnServer(NetworkConnection connection) { }

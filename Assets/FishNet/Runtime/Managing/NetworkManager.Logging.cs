@@ -21,7 +21,6 @@ namespace FishNet.Managing
         private const string COMMON_LOGGING_PREFIX = "Log - ";
         #endregion
 
-
         /// <summary>
         /// Initializes logging settings.
         /// </summary>
@@ -119,7 +118,6 @@ namespace FishNet.Managing
             else
                 prefix = string.Empty;
 
-            //todo write to file.
         }
     }
 

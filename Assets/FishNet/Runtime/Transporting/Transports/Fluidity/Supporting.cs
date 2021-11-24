@@ -1,7 +1,7 @@
 using ENet;
 using System;
 
-namespace Fluidity
+namespace FishNet.Fluidity
 {
     [Serializable]
     public enum ChannelType : byte
@@ -20,7 +20,7 @@ namespace Fluidity
 
 }
 
-namespace Fluidity.Server
+namespace FishNet.Fluidity.Server
 {
 
     public enum CommandTypes : byte
@@ -60,7 +60,7 @@ namespace Fluidity.Server
 }
 
 
-namespace Fluidity.Client
+namespace FishNet.Fluidity.Client
 {
 
     public enum CommandTypes : byte

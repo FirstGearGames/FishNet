@@ -10,10 +10,7 @@ namespace FishNet.Utility.Extension
     public static class SceneFN
     {
         #region Private.
-        /// <summary>
-        /// ListCache for NetworkObjects.
-        /// </summary>
-        private static ListCache<NetworkObject> _networkObjectCache = new ListCache<NetworkObject>();
+
         /// <summary>
         /// Used for performance gains when getting objects.
         /// </summary>
@@ -32,7 +29,8 @@ namespace FishNet.Utility.Extension
         /// <returns></returns>
         internal static List<NetworkObject> GetSceneNetworkObjects(Scene s, out int count)
         {
-            _networkObjectCache.Reset();
+            ListCache<NetworkObject> cache = ListCaches.NetworkObjectCache;
+            cache.Reset();
 
             //Iterate all root objects for the scene.
             s.GetRootGameObjects(_gameObjectList);
@@ -42,11 +40,11 @@ namespace FishNet.Utility.Extension
                  * root object then add them to the cache. */
                 _gameObjectList[i].GetComponentsInChildren<NetworkObject>(true, _networkObjectList);
                 if (_networkObjectList != null)
-                    _networkObjectCache.AddValues(_networkObjectList);
+                    cache.AddValues(_networkObjectList);
             }
 
-            count = _networkObjectCache.Written;
-            return _networkObjectCache.Collection;
+            count = cache.Written;
+            return cache.Collection;
         }
 
     }
