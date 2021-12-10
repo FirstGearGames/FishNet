@@ -1,4 +1,4 @@
-# FishNet - Networking Evolved (OPEN BETA)
+# FishNet - Networking Evolved (1.0.0 is Awaiting asset-store approval!)
 A feature-rich Unity networking solution aimed towards reliability, ease of use, efficiency, and flexibility.
 
 Developed by a professional game designer, supported by the community.
