@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
-[assembly: InternalsVisibleTo(Constants.GENERATED_ASSEMBLY_NAME)]
+[assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
 {
     /// <summary>
@@ -39,7 +39,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Number of bytes writen to the buffer.
         /// </summary>
-        public int Length { get; private set; } = 0;
+        public int Length { get; private set; }
         #endregion
 
         #region Private.
@@ -65,6 +65,29 @@ namespace FishNet.Serializing
         {
             Length = 0;
             Position = 0;
+        }
+
+        /// <summary>
+        /// Writes a dictionary.
+        /// </summary>
+        public void WriteDictionary<TKey, TValue>(Dictionary<TKey, TValue> dict)
+        {
+            if (dict == null)
+            {
+                WriteBoolean(true);
+                return;
+            }
+            else
+            { 
+                WriteBoolean(false);
+            }
+
+            WriteInt32(dict.Count);
+            foreach (KeyValuePair<TKey, TValue> item in dict)
+            {
+                Write(item.Key);
+                Write(item.Value);
+            }
         }
 
         /// <summary>
@@ -805,6 +828,22 @@ namespace FishNet.Serializing
 
             Length = Math.Max(Length, Position);
         }
+        #endregion
+
+        #region Nullables.
+        ///// <summary>
+        ///// Writes a nullable int.
+        ///// </summary>
+        ///// <param name="value"></param>
+        //public void WriteNullableInt(int? value)
+        //{
+        //    if (value == null)
+        //        WriteByte(0);
+        //    else
+        //        WriteByte(1);
+
+        //    WriteInt32(value.Value);
+        //}
         #endregion
 
         #region Generators.

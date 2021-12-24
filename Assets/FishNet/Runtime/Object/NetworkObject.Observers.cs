@@ -25,15 +25,36 @@ namespace FishNet.Object
         public HashSet<NetworkConnection> Observers = new HashSet<NetworkConnection>();
         #endregion
 
+        #region Private.
+        /// <summary>
+        /// True if NetworkObserver has been initialized.
+        /// </summary>
+        private bool _networkObserverInitiliazed = false;
+        #endregion
 
+        /// <summary>
+        /// Adds the default NetworkObserver conditions using the ObserverManager.
+        /// </summary>
+        private void AddDefaultNetworkObserverConditions()
+        {
+            if (_networkObserverInitiliazed)
+                return;
+
+            NetworkObserver = GetComponent<NetworkObserver>();
+            NetworkManager.ObserverManager.AddDefaultConditions(this, NetworkObserver);
+        }
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
         private void PreInitializeObservers()
         {
-            NetworkObserver = GetComponent<NetworkObserver>();
+            if (_networkObserverInitiliazed)
+                return;
+
             if (NetworkObserver != null)
                 NetworkObserver.PreInitialize(this);
+
+            _networkObserverInitiliazed = true;
         }
 
         /// <summary>

@@ -19,10 +19,9 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public NetworkObject[] MovedNetworkObjects = new NetworkObject[0];
         /// <summary>
-        /// True to replace current scenes with new ones. When true the first scene will be loaded as the active scene and the rest additive.
-        /// False to add scenes onto currently loaded scenes.
+        /// How to replace current scenes with new ones. When replacing scenes the first scene loaded will be set as the active scene, and the rest additive.
         /// </summary>
-        public bool ReplaceScenes = false;
+        public ReplaceOption ReplaceScenes = ReplaceOption.None;
         /// <summary>
         /// Parameters which may be set and will be included in load callbacks.
         /// </summary>

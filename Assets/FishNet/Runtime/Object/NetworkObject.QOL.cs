@@ -38,7 +38,7 @@ namespace FishNet.Object
         /// <summary>
         /// Owner of this object.
         /// </summary>
-        public NetworkConnection Owner { get; private set; } = null;
+        public NetworkConnection Owner { get; private set; }
         /// <summary>
         /// True if there is an owner.
         /// </summary>

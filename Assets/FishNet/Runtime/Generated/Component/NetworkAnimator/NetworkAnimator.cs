@@ -252,7 +252,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         [Tooltip("True to synchronize server results back to owner. Typically used when you are changing animations on the server and are relying on the server response to update the clients animations.")]
         [SerializeField]
-        private bool _synchronizeToOwner = false;
+        private bool _sendToOwner;
         #endregion
 
         #region Private.
@@ -275,11 +275,11 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Last layer weights.
         /// </summary>
-        private float[] _layerWeights = null;
+        private float[] _layerWeights;
         /// <summary>
         /// Last speed.
         /// </summary>
-        private float _speed = 0f;
+        private float _speed;
         /// <summary>
         /// Next time client may send parameter updates.
         /// </summary>
@@ -292,10 +292,6 @@ namespace FishNet.Component.Animating
         /// Trigger values set by using SetTrigger and ResetTrigger.
         /// </summary>
         private List<TriggerUpdate> _triggerUpdates = new List<TriggerUpdate>();
-        /// <summary>
-        /// Updates going to the server.
-        /// </summary>
-        private byte[] _toServerBuffer = new byte[0];
         /// <summary>
         /// Updates going to clients.
         /// </summary>
@@ -335,7 +331,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// 
         /// </summary>
-        private byte? _cachedComponentIndex = null;
+        private byte? _cachedComponentIndex;
         /// <summary>
         /// Cached ComponentIndex for the NetworkBehaviour this FNA is on. This is because Mirror codes bad.
         /// </summary>
@@ -372,11 +368,11 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Last animator set.
         /// </summary>
-        private Animator _lastAnimator = null;
+        private Animator _lastAnimator;
         /// <summary>
         /// Last Controller set.
         /// </summary>
-        private RuntimeAnimatorController _lastController = null;
+        private RuntimeAnimatorController _lastController;
         /// <summary>
         /// PooledWriter for this animator.
         /// </summary>
@@ -384,7 +380,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Holds client authoritative updates received to send to other clients.
         /// </summary>
-        private ClientAuthoritativeUpdate _clientAuthoritativeUpdates = null;
+        private ClientAuthoritativeUpdate _clientAuthoritativeUpdates;
         #endregion
 
         #region Const.
@@ -874,7 +870,7 @@ namespace FishNet.Component.Animating
             if (ClientAuthoritative && base.IsOwner)
                 return;
             //Exit if not client authoritative, but also not sync to owner, and is owner.
-            if (!ClientAuthoritative && !_synchronizeToOwner && base.IsOwner)
+            if (!ClientAuthoritative && !_sendToOwner && base.IsOwner)
                 return;
             //Exit if trying to apply when server and not client authoritative.
             if (base.IsServer && !ClientAuthoritative)
@@ -1216,7 +1212,7 @@ namespace FishNet.Component.Animating
                 return;
 
             //Also block if not using client authority, synchronizing to owner, and not server.
-            if (!ClientAuthoritative && _synchronizeToOwner && !base.IsServer)
+            if (!ClientAuthoritative && _sendToOwner && !base.IsServer)
                 return;
 
             //Update locally.
@@ -1299,7 +1295,7 @@ namespace FishNet.Component.Animating
                 if (ClientAuthoritative)
                     return;
                 //Not client authoritative, but also don't sync to owner.
-                else if (!ClientAuthoritative && !_synchronizeToOwner)
+                else if (!ClientAuthoritative && !_sendToOwner)
                     return;
             }
 

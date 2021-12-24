@@ -26,7 +26,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Last instruction to read a sync type.
         /// </summary>
-        private Instruction _lastReadInstruction = null;
+        private Instruction _lastReadInstruction;
         /// <summary>
         /// Sync objects, such as get and set, created during this process. Used to skip modifying created methods.
         /// </summary>
@@ -35,7 +35,6 @@ namespace FishNet.CodeGenerating.Processing
         /// ReadSyncVar methods which have had their base call already made.
         /// </summary>
         private HashSet<MethodDefinition> _baseCalledReadSyncVars = new HashSet<MethodDefinition>();
-        private FieldReference originalFr;
         #endregion
 
         #region Const.
@@ -81,7 +80,7 @@ namespace FishNet.CodeGenerating.Processing
             foreach (FieldDefinition fd in fieldDefs)
             {
                 CustomAttribute syncAttribute;
-                SyncType st = GetSyncType(fd, out syncAttribute);
+                SyncType st = GetSyncType(fd, true, out syncAttribute);
 
                 //Not a sync type field.
                 if (st == SyncType.Unset)
@@ -151,7 +150,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="fieldDef"></param>
         /// <param name="diagnostics"></param>
         /// <returns></returns>
-        internal SyncType GetSyncType(FieldDefinition fieldDef, out CustomAttribute syncAttribute)
+        internal SyncType GetSyncType(FieldDefinition fieldDef, bool validate, out CustomAttribute syncAttribute)
         {
             syncAttribute = null;
             if (fieldDef.Name.StartsWith(SYNCVAR_PREFIX))
@@ -163,59 +162,78 @@ namespace FishNet.CodeGenerating.Processing
              * to throw errors when user creates a sync type
              * without using the attribute. */
 
-            //Exit early if attribute is known and not a sync object.
-            if (syncAttribute != null && !syncObject)
+            if (!validate)
             {
-                //Make sure syncvar attribute isnt on a sync object.
-                if (GetObjectSyncType(syncAttribute) != SyncType.Unset)
+                return (syncAttribute == null) ? SyncType.Unset : SyncType.Custom;
+            }
+            else
+            {
+
+                /* If no attribute make sure the field does not implement
+                 * ISyncType. If it does then a SyncObject or SyncVar attribute
+                 * should exist. */
+                if (syncAttribute == null)
                 {
-                    CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} uses a [SyncVar] attribute but should be using [SyncObject].");
+                    if (fieldDef.FieldType.CachedResolve().GetLastBaseClass().ImplementsInterface<ISyncType>())
+                        CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} is a SyncType but is missing the [SyncVar] or [SyncObject] attribute.");
                     return SyncType.Unset;
                 }
-                else
-                    return SyncType.Variable;
+                
+                /* If the attribute is not [SyncObject] then the attribute
+                 * is [SyncVar]. Only checks that need to be made is to make sure
+                 * the user is not using a SyncVar attribute when they should be using a SyncObject attribute. */
+                if (syncAttribute != null && !syncObject)
+                {
+                    //Make sure syncvar attribute isnt on a sync object.
+                    if (GetSyncObjectSyncType(syncAttribute) != SyncType.Unset)
+                    {
+                        CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} uses a [SyncVar] attribute but should be using [SyncObject].");
+                        return SyncType.Unset;
+                    }
+                    else
+                        return SyncType.Variable;
+                }
+
+                /* If here could be syncObject
+                 * or attribute might be null. */
+                if (fieldDef.FieldType.CachedResolve().ImplementsInterfaceRecursive<ISyncType>())
+                    return GetSyncObjectSyncType(syncAttribute);
+
+                SyncType GetSyncObjectSyncType(CustomAttribute sa)
+                {
+                    //If attribute is null then throw error.
+                    if (sa == null)
+                    {
+                        CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} is a SyncType but [SyncObject] attribute was not found.");
+                        return SyncType.Unset;
+                    }
+
+                    if (fieldDef.FieldType.Name == typeof(SyncList<>).Name)
+                    {
+                        return SyncType.List;
+                    }
+                    else if (fieldDef.FieldType.Name == typeof(SyncDictionary<,>).Name)
+                    {
+                        return SyncType.Dictionary;
+                    }
+                    //Custom types must also implement ICustomSync.
+                    else if (fieldDef.FieldType.CachedResolve().ImplementsInterfaceRecursive<ICustomSync>())
+                    {
+                        return SyncType.Custom;
+                    }
+                    else
+                    {
+                        return SyncType.Unset;
+                    }
+                }
+
+                //Fall through.
+                if (syncAttribute != null)
+                    CodegenSession.LogError($"SyncObject attribute found on {fieldDef.Name} within {fieldDef.DeclaringType.Name} but type {fieldDef.FieldType.Name} does not inherit from SyncBase, or if a custom type does not implement ICustomSync.");
+
+                return SyncType.Unset;
             }
 
-            /* If here could be syncObject
-             * or attribute might be null. */
-            if (fieldDef.FieldType.Resolve().ImplementsInterface<ISyncType>())
-            {
-                return GetObjectSyncType(syncAttribute);
-            }
-
-            SyncType GetObjectSyncType(CustomAttribute sa)
-            {
-                //If attribute is null then throw error.
-                if (sa == null)
-                {
-                    CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} is a SyncType but [SyncObject] attribute was not found.");
-                    return SyncType.Unset;
-                }
-
-                if (fieldDef.FieldType.Name == typeof(SyncList<>).Name)
-                {
-                    return SyncType.List;
-                }
-                else if (fieldDef.FieldType.Name == typeof(SyncDictionary<,>).Name)
-                {
-                    return SyncType.Dictionary;
-                }
-                //Custom types must also implement ICustomSync.
-                else if (fieldDef.FieldType.Resolve().ImplementsInterface<ICustomSync>())
-                {
-                    return SyncType.Custom;
-                }
-                else
-                {
-                    return SyncType.Unset;
-                }
-            }
-
-            //Fall through.
-            if (syncAttribute != null)
-                CodegenSession.LogError($"SyncObject attribute found on {fieldDef.Name} within {fieldDef.DeclaringType.Name} but type {fieldDef.FieldType.Name} does not inherit from SyncBase, or if a custom type does not implement ICustomSync.");
-
-            return SyncType.Unset;
         }
 
 
@@ -225,9 +243,9 @@ namespace FishNet.CodeGenerating.Processing
         private bool TryCreateCustom(uint syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncAttribute)
         {
             //Get the serialized type.
-            MethodDefinition getSerialziedTypeMd = originalFieldDef.FieldType.Resolve().GetMethod(GETSERIALIZEDTYPE_METHOD_NAME);
+            MethodDefinition getSerialziedTypeMd = originalFieldDef.FieldType.CachedResolve().GetMethod(GETSERIALIZEDTYPE_METHOD_NAME);
             MethodReference getSerialziedTypeMr = CodegenSession.ImportReference(getSerialziedTypeMd);
-            Collection<Instruction> instructions = getSerialziedTypeMr.Resolve().Body.Instructions;
+            Collection<Instruction> instructions = getSerialziedTypeMr.CachedResolve().Body.Instructions;
 
             bool canSerialize = false;
             TypeReference serializedDataTypeRef = null;
@@ -271,10 +289,12 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private bool TryCreateSyncList(uint syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncAttribute)
         {
+            //Import fieldType to module.
+            TypeReference fieldTypeTr = CodegenSession.ImportReference(originalFieldDef.FieldType);
             //Make sure type can be serialized.
-            GenericInstanceType tmpGenerinstanceType = originalFieldDef.FieldType as GenericInstanceType;
+            GenericInstanceType tmpGenerinstanceType = fieldTypeTr as GenericInstanceType;
             //this returns the correct data type, eg SyncList<int> would return int.
-            TypeReference dataTypeRef = tmpGenerinstanceType.GenericArguments[0];
+            TypeReference dataTypeRef = CodegenSession.ImportReference(tmpGenerinstanceType.GenericArguments[0]);
 
             bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(dataTypeRef, true);
             if (!canSerialize)
@@ -450,8 +470,8 @@ namespace FishNet.CodeGenerating.Processing
                 if (CreateSyncVarAccessor(originalFieldDef, createdSyncVarFd, createdSyncVar, out accessorGetValueMethodRef,
                     out accessorSetValueMethodRef, hookMr) != null)
                 {
-                    _createdSyncTypeMethodDefinitions.Add(accessorGetValueMethodRef.Resolve());
-                    _createdSyncTypeMethodDefinitions.Add(accessorSetValueMethodRef.Resolve());
+                    _createdSyncTypeMethodDefinitions.Add(accessorGetValueMethodRef.CachedResolve());
+                    _createdSyncTypeMethodDefinitions.Add(accessorSetValueMethodRef.CachedResolve());
                 }
 
                 InitializeSyncVar(syncCount, createdSyncVarFd, typeDef, originalFieldDef, syncTypeAttribute, createdSyncVar);
@@ -615,7 +635,7 @@ namespace FishNet.CodeGenerating.Processing
                     syncBaseTd = copyTd;
                     break;
                 }
-                copyTd = TypeDefinitionExtensions.GetNextBaseClass(copyTd);
+                copyTd = copyTd.GetNextBaseClass();
             } while (copyTd != null);
 
             //If SyncBase isn't found.
@@ -659,7 +679,7 @@ namespace FishNet.CodeGenerating.Processing
             //Set needed methods from syncbase.
             MethodReference setSyncIndexMr;
             MethodReference initializeInstanceMr;
-            if (!SetSyncBaseMethods(originalFieldDef.FieldType.Resolve(), out setSyncIndexMr, out initializeInstanceMr))
+            if (!SetSyncBaseMethods(originalFieldDef.FieldType.CachedResolve(), out setSyncIndexMr, out initializeInstanceMr))
                 return false;
 
             MethodDefinition injectionMethodDef;
@@ -726,7 +746,7 @@ namespace FishNet.CodeGenerating.Processing
             //Set needed methods from syncbase.
             MethodReference setSyncIndexMr;
             MethodReference initializeInstanceMr;
-            if (!SetSyncBaseMethods(originalFieldDef.FieldType.Resolve(), out setSyncIndexMr, out initializeInstanceMr))
+            if (!SetSyncBaseMethods(originalFieldDef.FieldType.CachedResolve(), out setSyncIndexMr, out initializeInstanceMr))
                 return false;
 
             MethodDefinition injectionMethodDef;
@@ -793,7 +813,7 @@ namespace FishNet.CodeGenerating.Processing
             //Set needed methods from syncbase.
             MethodReference setSyncIndexMr;
             MethodReference initializeInstanceMr;
-            if (!SetSyncBaseMethods(originalFieldDef.FieldType.Resolve(), out setSyncIndexMr, out initializeInstanceMr))
+            if (!SetSyncBaseMethods(originalFieldDef.FieldType.CachedResolve(), out setSyncIndexMr, out initializeInstanceMr))
                 return false;
 
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
@@ -854,9 +874,9 @@ namespace FishNet.CodeGenerating.Processing
 
             //If there is a hook method.
             if (createdSyncVar.HookMr != null)
-            { 
+            {
                 //SyncVar<dataType>.add_OnChanged (event).
-                TypeDefinition svTd = CodegenSession.CreatedSyncVarGenerator.SyncVar_TypeRef.Resolve();
+                TypeDefinition svTd = CodegenSession.CreatedSyncVarGenerator.SyncVar_TypeRef.CachedResolve();
                 GenericInstanceType svGit = svTd.MakeGenericInstanceType(new TypeReference[] { originalFd.FieldType });
                 MethodDefinition addMd = svTd.GetMethod("add_OnChange");
                 MethodReference genericAddMr = addMd.MakeHostInstanceGeneric(svGit);
@@ -871,7 +891,7 @@ namespace FishNet.CodeGenerating.Processing
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
                 insts.Add(processor.Create(OpCodes.Ldfld, createdFd));
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
-                insts.Add(processor.Create(OpCodes.Ldftn, createdSyncVar.HookMr.Resolve()));
+                insts.Add(processor.Create(OpCodes.Ldftn, createdSyncVar.HookMr.CachedResolve()));
                 insts.Add(processor.Create(OpCodes.Newobj, gitActionCtorMr));
                 insts.Add(processor.Create(OpCodes.Callvirt, genericAddMr));
             }
@@ -998,7 +1018,7 @@ namespace FishNet.CodeGenerating.Processing
             //                    {
             //                        ProcessedSync ps = GetProcessedSync(originalFd, psLst);
             //                        //Make sure PS is found, and is not the created accessor.
-            //                        if (ps != null && ps.GetMethodRef.Resolve() != methodDef)
+            //                        if (ps != null && ps.GetMethodRef.CachedResolve() != methodDef)
             //                        {
             //                            Debug.Log("C");
             //                            ILProcessor processor = methodDef.Body.GetILProcessor();
@@ -1019,33 +1039,33 @@ namespace FishNet.CodeGenerating.Processing
             //}
 
             for (int i = 0; i < methodDef.Body.Instructions.Count; i++)
-            {                
+            {
                 Instruction inst = methodDef.Body.Instructions[i];
 
                 /* Loading a field. (Getter) */
                 if (inst.OpCode == OpCodes.Ldfld && inst.Operand is FieldReference opFieldld)
                 {
-                    FieldReference resolvedOpField = opFieldld.Resolve();
+                    FieldReference resolvedOpField = opFieldld.CachedResolve();
                     if (resolvedOpField == null)
-                        resolvedOpField = opFieldld.DeclaringType.Resolve().GetField(opFieldld.Name);
+                        resolvedOpField = opFieldld.DeclaringType.CachedResolve().GetField(opFieldld.Name);
 
                     modified |= ProcessGetField(methodDef, i, resolvedOpField, processedLookup);
                 }
                 /* Load address, reference field. */
                 else if (inst.OpCode == OpCodes.Ldflda && inst.Operand is FieldReference opFieldlda)
                 {
-                    FieldReference resolvedOpField = opFieldlda.Resolve();
+                    FieldReference resolvedOpField = opFieldlda.CachedResolve();
                     if (resolvedOpField == null)
-                        resolvedOpField = opFieldlda.DeclaringType.Resolve().GetField(opFieldlda.Name);
+                        resolvedOpField = opFieldlda.DeclaringType.CachedResolve().GetField(opFieldlda.Name);
 
                     modified |= ProcessAddressField(methodDef, i, resolvedOpField, processedLookup);
                 }
                 /* Setting a field. (Setter) */
                 else if (inst.OpCode == OpCodes.Stfld && inst.Operand is FieldReference opFieldst)
                 {
-                    FieldReference resolvedOpField = opFieldst.Resolve();
+                    FieldReference resolvedOpField = opFieldst.CachedResolve();
                     if (resolvedOpField == null)
-                        resolvedOpField = opFieldst.DeclaringType.Resolve().GetField(opFieldst.Name);
+                        resolvedOpField = opFieldst.DeclaringType.CachedResolve().GetField(opFieldst.Name);
 
                     modified |= ProcessSetField(methodDef, i, resolvedOpField, processedLookup);
                 }
@@ -1073,7 +1093,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (ps == null)
                     return false;
                 //Don't modify the accessor method.
-                if (ps.GetMethodRef.Resolve() == methodDef)
+                if (ps.GetMethodRef.CachedResolve() == methodDef)
                     return false;
 
                 //Generic type.
@@ -1132,7 +1152,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (ps == null)
                     return false;
                 //Don't modify the accessor method.
-                if (ps.SetMethodRef.Resolve() == methodDef)
+                if (ps.SetMethodRef.CachedResolve() == methodDef)
                     return false;
                 ILProcessor processor = methodDef.Body.GetILProcessor();
                 //Generic type.
@@ -1203,7 +1223,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (ps == null)
                     return false;
                 //Don't modify the accessor method.
-                if (ps.GetMethodRef.Resolve() == methodDef || ps.SetMethodRef.Resolve() == methodDef)
+                if (ps.GetMethodRef.CachedResolve() == methodDef || ps.SetMethodRef.CachedResolve() == methodDef)
                     return false;
 
                 ILProcessor processor = methodDef.Body.GetILProcessor();
@@ -1283,7 +1303,7 @@ namespace FishNet.CodeGenerating.Processing
                  * look into calling the ReadSyncVar method. */
                 if (copyTd.BaseType != null && copyTd.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
                 {
-                    readMd = copyTd.BaseType.Resolve().GetMethod(CodegenSession.ObjectHelper.NetworkBehaviour_ReadSyncVar_MethodRef.Name);
+                    readMd = copyTd.BaseType.CachedResolve().GetMethod(CodegenSession.ObjectHelper.NetworkBehaviour_ReadSyncVar_MethodRef.Name);
                     //Not all classes will have syncvars to read.
                     if (!_baseCalledReadSyncVars.Contains(callerMd) && readMd != null && callerMd != null)
                     {

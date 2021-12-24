@@ -9,21 +9,21 @@ namespace FishNet.Runtime
     [StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
     public static class TimeManagerReaderWriters
     {
-        public static void WriteAX34(this PooledWriter writer, AddBufferedBroadcast value)
+        public static void WriteAddBufferedBroadcast(this Writer writer, AddBufferedBroadcast value)
         {
 
         }
-        public static AddBufferedBroadcast ReadJHD3h(this PooledReader reader)
+        public static AddBufferedBroadcast ReadAddBufferedBroadcast(this Reader reader)
         {
             return new AddBufferedBroadcast();
         }
-        public static void Write___TimingAdjustmentBroadcast(this PooledWriter writer, TimingAdjustmentBroadcast value)
+        public static void Write___TimingAdjustmentBroadcast(this Writer writer, TimingAdjustmentBroadcast value)
         {
             writer.WriteUInt32(value.Tick, AutoPackType.Unpacked);
             writer.WriteSByte(value.Step);
         }
 
-        public static TimingAdjustmentBroadcast Read___TimingAdjustmentBroadcast(this PooledReader reader)
+        public static TimingAdjustmentBroadcast Read___TimingAdjustmentBroadcast(this Reader reader)
         {
             return new TimingAdjustmentBroadcast()
             {

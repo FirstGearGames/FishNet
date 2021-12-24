@@ -21,7 +21,7 @@ namespace FishNet.Example.Scened
         /// </summary>
         [Tooltip("True to only unload for the connectioning causing the trigger.")]
         [SerializeField]
-        private bool _connectionOnly = false;
+        private bool _connectionOnly;
         /// <summary>
         /// True to unload unused scenes.
         /// </summary>

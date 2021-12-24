@@ -15,6 +15,7 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference MaximumBufferedInputs_MethodRef;
         internal MethodReference PhysicsMode_MethodRef;
         internal MethodReference InvokeOnReconcile_MethodRef;
+        internal MethodReference InvokeOnReplicateReplay_MethodRef;
         #endregion
 
 
@@ -38,6 +39,8 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (mi.Name == nameof(TimeManager.InvokeOnReconcile))
                     InvokeOnReconcile_MethodRef = CodegenSession.ImportReference(mi);
+                else if (mi.Name == nameof(TimeManager.InvokeOnReplicateReplay))
+                    InvokeOnReplicateReplay_MethodRef = CodegenSession.ImportReference(mi);
             }
 
             return true;

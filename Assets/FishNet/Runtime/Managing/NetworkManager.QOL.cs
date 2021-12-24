@@ -12,7 +12,7 @@ namespace FishNet.Managing
         /// </summary>
         [Tooltip("Collection to use for spawnable objects.")]
         [SerializeField]
-        private PrefabObjects _spawnablePrefabs = null;
+        private PrefabObjects _spawnablePrefabs;
         /// <summary>
         /// Collection to use for spawnable objects.
         /// </summary>

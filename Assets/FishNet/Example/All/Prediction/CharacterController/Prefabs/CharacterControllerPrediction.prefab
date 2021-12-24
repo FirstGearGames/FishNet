@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 9117857247562382210}
   - component: {fileID: 9144896207351220584}
   - component: {fileID: 9144896207351220583}
-  - component: {fileID: -8734481433503219825}
+  - component: {fileID: 1012129365208062032}
   m_Layer: 0
   m_Name: CharacterControllerPrediction
   m_TagString: Untagged
@@ -121,6 +121,7 @@ MonoBehaviour:
     Rotation: {x: 0, y: 0, z: 0, w: 1}
     LocalScale: {x: 1, y: 1, z: 1}
   _isNetworked: 1
+  ChildNetworkObjects: []
 --- !u!114 &9144896207351220584
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -133,7 +134,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bb7bd88fd11b5d4aa7fca3d42172ab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Rate: 15
+  _moveRate: 5
 --- !u!143 &9144896207351220583
 CharacterController:
   m_ObjectHideFlags: 0
@@ -152,7 +153,7 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &-8734481433503219825
+--- !u!114 &1012129365208062032
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -164,8 +165,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _compressSmall: 1
+  _compress: 1
+  _synchronizeParent: 0
+  _interpolation: 2
+  _extrapolation: 0
   _enableTeleport: 0
-  _teleportThreshold: 0
+  _teleportThreshold: 1
   _clientAuthoritative: 0
   _sendToOwner: 0
+  _positionSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+  _rotationSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+  _scaleSnapping:
+    X: 0
+    Y: 0
+    Z: 0

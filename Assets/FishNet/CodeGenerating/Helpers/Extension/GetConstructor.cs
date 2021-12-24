@@ -1,5 +1,8 @@
-﻿using MonoFN.Cecil;
+﻿using FishNet.CodeGenerating.Helping.Extension;
+using MonoFN.Cecil;
 using System;
+using UnityEngine;
+
 namespace FishNet.CodeGenerating.Helping
 {
     public static class Constructors
@@ -12,7 +15,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         public static MethodDefinition GetFirstConstructor(this TypeReference typeRef, bool requireParameters)
         {
-            return typeRef.Resolve().GetFirstConstructor(requireParameters);
+            return typeRef.CachedResolve().GetFirstConstructor(requireParameters);
         }
         /// <summary>
         /// Gets the first constructor that optionally has, or doesn't have parameters.
@@ -43,7 +46,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         public static MethodDefinition GetConstructor(this TypeReference typeRef)
         {
-            return typeRef.Resolve().GetConstructor();
+            return typeRef.CachedResolve().GetConstructor();
         }
         /// <summary>
         /// Gets the first public constructor with no parameters.
@@ -67,7 +70,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         public static MethodDefinition GetConstructor(this TypeReference typeRef, Type[] arguments)
         {
-            return typeRef.Resolve().GetConstructor(arguments);
+            return typeRef.CachedResolve().GetConstructor(arguments);
         }
 
         /// <summary>
@@ -107,7 +110,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         public static MethodDefinition GetConstructor(this TypeReference typeRef, TypeReference[] arguments)
         {
-            return typeRef.Resolve().GetConstructor(arguments);
+            return typeRef.CachedResolve().GetConstructor(arguments);
         }
 
         /// <summary>
@@ -146,7 +149,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         public static MethodDefinition GetConstructor(this TypeReference typeRef, int parameterCount)
         {
-            return typeRef.Resolve().GetConstructor(parameterCount);
+            return typeRef.CachedResolve().GetConstructor(parameterCount);
         }
 
 

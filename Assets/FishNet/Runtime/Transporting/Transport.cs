@@ -132,7 +132,7 @@ namespace FishNet.Transporting
         /// <returns></returns>
         public virtual float GetTimeout(bool asServer)
         {
-            return 15f;
+            return -1f;
         }
         /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
@@ -190,11 +190,6 @@ namespace FishNet.Transporting
         /// </summary>
         /// <param name="server">True to start server.</param>
         public abstract bool StartConnection(bool server);
-        /// <summary>
-        /// Starts the local client.
-        /// </summary>
-        /// <param name="address">Address to connect to.</param>
-        public abstract bool StartConnection(string address);
         /// <summary>
         /// Stops the local server or client.
         /// </summary>

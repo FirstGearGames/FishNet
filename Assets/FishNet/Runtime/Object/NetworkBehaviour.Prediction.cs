@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-[assembly: InternalsVisibleTo(Constants.CODEGEN_ASSEMBLY_NAME)]
+[assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
 namespace FishNet.Object
 {
 
@@ -27,27 +27,27 @@ namespace FishNet.Object
         /// <summary>
         /// True if initialized compnents for prediction.
         /// </summary>
-        private bool _predictionInitialized = false;
+        private bool _predictionInitialized;
         /// <summary>
         /// Rigidbody found on this object. This is used for prediction.
         /// </summary>
-        private Rigidbody _predictionRigidbody = null;
+        private Rigidbody _predictionRigidbody;
         /// <summary>
         /// Rigidbody2D found on this object. This is used for prediction.
         /// </summary>
-        private Rigidbody2D _predictionRigidbody2d = null;
+        private Rigidbody2D _predictionRigidbody2d;
         /// <summary>
         /// Last position for TransformMayChange.
         /// </summary>
-        private Vector3 _lastMayChangePosition = Vector3.zero;
+        private Vector3 _lastMayChangePosition;
         /// <summary>
         /// Last rotation for TransformMayChange.
         /// </summary>
-        private Quaternion _lastMayChangeRotation = Quaternion.identity;
+        private Quaternion _lastMayChangeRotation;
         /// <summary>
         /// Last scale for TransformMayChange.
         /// </summary>
-        private Vector3 _lastMayChangeScale = Vector3.zero;
+        private Vector3 _lastMayChangeScale;
         #endregion
 
         /// <summary>
@@ -104,7 +104,6 @@ namespace FishNet.Object
         }
 
 
-
         /// <summary>
         /// Called when a reconcile is received.
         /// </summary>
@@ -125,6 +124,12 @@ namespace FishNet.Object
             }
         }
 
+        /// <summary>
+        /// Clears cached replicates. This can be useful to call on server and client after teleporting.
+        /// </summary>
+        /// <param name="asServer">True to reset values for server, false to reset values for client.</param>
+        public virtual void ClearReplicateCache(bool asServer) { }
+        
         /// <summary>
         /// Writes number of past inputs from buffer to writer and sends it to the server.
         /// Internal use. 
@@ -179,10 +184,11 @@ namespace FishNet.Object
             methodWriter.Write(reconcileData);
 
             PooledWriter writer;
-            //if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
-                //writer = CreateLinkedRpc(link, methodWriter, Channel.Unreliable);
-            //else
+            if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
+                writer = CreateLinkedRpc(link, methodWriter, channel);
+            else
                 writer = CreateRpc(hash, methodWriter, PacketId.Reconcile, channel);
+            
             NetworkObject.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), Owner);
 
             methodWriter.Dispose();

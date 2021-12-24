@@ -5,6 +5,7 @@ using FishNet.CodeGenerating.Processing;
 using FishNet.Serializing.Helping;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
+using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -49,6 +50,7 @@ namespace FishNet.CodeGenerating.ILCore
             return referencesFishNet;
         }
         public override ILPostProcessor GetInstance() => this;
+
         public override ILPostProcessResult Process(ICompiledAssembly compiledAssembly)
         {
             AssemblyDefinition assemblyDef = ILCoreHelper.GetAssemblyDefinition(compiledAssembly);
@@ -63,6 +65,9 @@ namespace FishNet.CodeGenerating.ILCore
 
             bool modified = false;
 
+            //System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+            //stopwatch.Restart();
+
             if (IsFishNetAssembly(compiledAssembly))
             {
                 //Not used...
@@ -74,14 +79,25 @@ namespace FishNet.CodeGenerating.ILCore
                  * then don't bother processing the rest. */
                 if (CodegenSession.NetworkBehaviourProcessor.NonNetworkBehaviourHasInvalidAttributes(CodegenSession.Module.Types))
                     return new ILPostProcessResult(null, CodegenSession.Diagnostics);
-
+                //before 226ms, after 17ms                   
                 modified |= CreateDeclaredDelegates();
-                modified |= CreateDeclaredSerializers();
-                modified |= CreateIBroadcast();
+                //before 5ms, after 5ms
+                modified |= CreateDeclaredSerializers(); 
+                //before 30ms, after 26ms
+                modified |= CreateIBroadcast(); 
+                //before 140ms, after 10ms
                 modified |= CreateQOLAttributes();
-                modified |= CreateNetworkBehaviours();
+                //before 75ms, after 6ms
+                modified |= CreateNetworkBehaviours(); 
+                //before 260ms, after 215ms 
                 modified |= CreateGenericReadWriteDelegates();
+                //before 52ms, after 27ms
+                  
+                //Total at once
+                //before 761, after 236ms
             }
+
+            //CodegenSession.LogWarning($"Assembly {compiledAssembly.Name} took {stopwatch.ElapsedMilliseconds}.");
 
             if (!modified)
             {
@@ -130,9 +146,7 @@ namespace FishNet.CodeGenerating.ILCore
         /// <summary>
         /// Creates delegates for user declared serializers.
         /// </summary>
-        /// <param name="moduleDef"></param>
-        /// <param name="diagnostics"></param>
-        private bool CreateDeclaredDelegates()
+        public bool CreateDeclaredDelegates()
         {
             bool modified = false;
 
@@ -182,31 +196,38 @@ namespace FishNet.CodeGenerating.ILCore
         {
             bool modified = false;
 
+            string networkBehaviourFullName = CodegenSession.ObjectHelper.NetworkBehaviour_FullName;
+
             HashSet<TypeDefinition> typeDefs = new HashSet<TypeDefinition>();
             foreach (TypeDefinition td in CodegenSession.Module.Types)
             {
-                TypeDefinition climbTypeDef = td;
-                while (climbTypeDef != null)
+                TypeDefinition climbTd = td;
+                do
                 {
-                    /* Check initial class as well all types within
-                     * the class. Then check all of it's base classes. */
-                    if (climbTypeDef.ImplementsInterface<IBroadcast>())
-                        typeDefs.Add(climbTypeDef);
-
+                    //Reached NetworkBehaviour class.
+                    if (climbTd.FullName == networkBehaviourFullName)
+                        break;
+                     
+                    ///* Check initial class as well all types within
+                    // * the class. Then check all of it's base classes. */
+                    if (climbTd.ImplementsInterface<IBroadcast>())
+                        typeDefs.Add(climbTd);
+                    //7ms
+                     
                     //Add nested. Only going to go a single layer deep.
                     foreach (TypeDefinition nestedTypeDef in td.NestedTypes)
                     {
                         if (nestedTypeDef.ImplementsInterface<IBroadcast>())
                             typeDefs.Add(nestedTypeDef);
                     }
+                    //0ms
+ 
+                    climbTd = climbTd.GetNextBaseClass(); 
+                    //this + name check 40ms
+                } while (climbTd != null);
 
-                    //Climb up base classes.
-                    if (climbTypeDef.BaseType != null)
-                        climbTypeDef = climbTypeDef.BaseType.Resolve();
-                    else
-                        climbTypeDef = null;
-                }
             }
+
 
             //Create reader/writers for found typeDefs.
             foreach (TypeDefinition td in typeDefs)
@@ -270,6 +291,7 @@ namespace FishNet.CodeGenerating.ILCore
             //Set how many synctypes are in children classes for each typedef.
             Dictionary<TypeDefinition, uint> inheritedSyncTypeCounts = new Dictionary<TypeDefinition, uint>();
             SetChildSyncTypeCounts(inheritedSyncTypeCounts, networkBehaviourTypeDefs);
+
             /* This holds all sync types created, synclist, dictionary, var
              * and so on. This data is used after all syncvars are made so
              * other methods can look for references to created synctypes and
@@ -283,7 +305,8 @@ namespace FishNet.CodeGenerating.ILCore
                 CodegenSession.ImportReference(typeDef);
                 //Synctypes processed for this nb and it's inherited classes.
                 List<(SyncType, ProcessedSync)> processedSyncs = new List<(SyncType, ProcessedSync)>();
-                CodegenSession.NetworkBehaviourProcessor.Process(typeDef, processedSyncs, inheritedSyncTypeCounts, inheritedRpcCounts);
+                CodegenSession.NetworkBehaviourProcessor.Process(typeDef, processedSyncs,
+                    inheritedSyncTypeCounts, inheritedRpcCounts);
                 //Add to all processed.
                 allProcessedSyncs.AddRange(processedSyncs);
             }
@@ -293,7 +316,10 @@ namespace FishNet.CodeGenerating.ILCore
             if (allProcessedSyncs.Count > 0)
             {
                 foreach (TypeDefinition td in CodegenSession.Module.Types)
+                {
                     CodegenSession.NetworkBehaviourSyncProcessor.ReplaceGetSets(td, allProcessedSyncs);
+                    CodegenSession.NetworkBehaviourRpcProcessor.RedirectBaseCalls();
+                }
             }
 
             /* Removes typedefinitions which are inherited by
@@ -312,16 +338,15 @@ namespace FishNet.CodeGenerating.ILCore
                     /* Iterates all base types and
                      * adds them to inheritedTds so long
                      * as the base type is not a NetworkBehaviour. */
-                    TypeDefinition copyTd = tds[i];
-                    while (copyTd.BaseType != null)
+                    TypeDefinition copyTd = tds[i].GetNextBaseClass();
+                    while (copyTd != null)
                     {
-                        TypeDefinition nextBase = TypeDefinitionExtensions.GetNextBaseClass(copyTd);
-                        //Next class is NetworkBehaviour.
-                        if (nextBase.FullName == CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
+                        //Class is NB.
+                        if (copyTd.FullName == CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
                             break;
 
-                        inheritedTds.Add(nextBase);
-                        copyTd = TypeDefinitionExtensions.GetNextBaseClass(copyTd);
+                        inheritedTds.Add(copyTd);
+                        copyTd = copyTd.GetNextBaseClass();
                     }
                 }
 
@@ -368,7 +393,7 @@ namespace FishNet.CodeGenerating.ILCore
                         //Increase baseCount with RPCs found here.
                         childCount += copyCount;
 
-                        copyTd = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTd);
+                        copyTd = copyTd.GetNextBaseClassToProcess(); 
                     } while (copyTd != null);
                 }
 
@@ -408,7 +433,7 @@ namespace FishNet.CodeGenerating.ILCore
                         //Increase baseCount with RPCs found here.
                         childCount += copyCount;
 
-                        copyTd = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTd);
+                        copyTd = copyTd.GetNextBaseClassToProcess();
                     } while (copyTd != null);
                 }
             }
@@ -425,9 +450,8 @@ namespace FishNet.CodeGenerating.ILCore
         private bool CreateGenericReadWriteDelegates()
         {
             bool modified = false;
-
             modified |= CodegenSession.WriterHelper.CreateGenericDelegates();
-            modified |= CodegenSession.ReaderHelper.CreateGenericDelegates();
+            modified |= CodegenSession.ReaderHelper.CreateGenericDelegates(); 
 
             return modified;
         }

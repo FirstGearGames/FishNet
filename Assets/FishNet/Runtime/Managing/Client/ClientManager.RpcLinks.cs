@@ -1,16 +1,17 @@
 ﻿using FishNet.Transporting;
 using System;
 using System.Linq;
+using UnityEngine;
 
 namespace FishNet.Managing.Client
 {
-    public partial class ClientManager
+    public partial class ClientManager : MonoBehaviour
     {
         #region Private.
         /// <summary>
         /// Starting packetId value for RPCLinks.
         /// </summary>
-        private ushort _startingLinkIndex = 0;
+        private ushort _startingLinkIndex;
         #endregion
 
         /// <summary>

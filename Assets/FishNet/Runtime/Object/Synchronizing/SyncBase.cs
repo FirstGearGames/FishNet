@@ -12,7 +12,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// True if a SyncObject, false if a SyncVar.
         /// </summary>
-        public bool IsSyncObject { get; private set; } = false;
+        public bool IsSyncObject { get; private set; }
         /// <summary>
         /// The settings for this SyncVar.
         /// </summary>
@@ -24,7 +24,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// True if this SyncVar needs to send data.
         /// </summary>
-        public bool IsDirty { get; private set; } = false;
+        public bool IsDirty { get; private set; }
         /// <summary>
         /// NetworkManager this uses.
         /// </summary>
@@ -51,7 +51,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Sync interval converted to ticks.
         /// </summary>
-        private uint _timeToTicks = 0;
+        private uint _timeToTicks;
         /// <summary>
         /// Channel to use for next write. To ensure eventual consistency this eventually changes to reliable when Settings are unreliable.
         /// </summary>

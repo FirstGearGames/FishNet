@@ -2,15 +2,27 @@
 using FishNet.Object;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FishNet.Utility.Performance
 {
-    internal static class ListCaches
+    /// <summary>
+    /// Various ListCache instances that may be used on the Unity thread.
+    /// </summary>
+    public static class ListCaches
     {
         /// <summary>
         /// Cache for NetworkObjects.
         /// </summary>
         public static ListCache<NetworkObject> NetworkObjectCache = new ListCache<NetworkObject>();
+        /// <summary>
+        /// Cache for NetworkBehaviours.
+        /// </summary>
+        public static ListCache<NetworkBehaviour> NetworkBehaviourCache = new ListCache<NetworkBehaviour>();
+        /// <summary>
+        /// Cache for Transforms.
+        /// </summary>
+        public static ListCache<Transform> TransformCache = new ListCache<Transform>();
         /// <summary>
         /// Cache for NetworkConnectios.
         /// </summary>
@@ -20,8 +32,7 @@ namespace FishNet.Utility.Performance
     /// <summary>
     /// Creates a reusable cache of T which auto expands.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    internal class ListCache<T>
+    public class ListCache<T>
     {
         #region Public.
         /// <summary>
@@ -31,7 +42,7 @@ namespace FishNet.Utility.Performance
         /// <summary>
         /// Entries currently written.
         /// </summary>
-        public int Written { get; private set; } = 0;
+        public int Written { get; private set; }
         #endregion
 
         public ListCache()

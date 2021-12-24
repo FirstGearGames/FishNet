@@ -5,6 +5,7 @@ using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -74,7 +75,7 @@ namespace FishNet.CodeGenerating.Helping
             if (_generatedReaderWriterClassTypeDef == null)
                 _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, WriterGenerator.GENERATED_TYPE_ATTRIBUTES, WriterGenerator.GENERATED_CLASS_NAME, null);
 
-            MethodDefinition writeMethodDef = writeMethodRef.Resolve();
+            MethodDefinition writeMethodDef = writeMethodRef.CachedResolve();
             MethodDefinition createdMethodDef = new MethodDefinition($"Static___{writeMethodRef.Name}",
                 (MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig),
                 _generatedReaderWriterClassTypeDef.Module.TypeSystem.Void);
@@ -95,7 +96,7 @@ namespace FishNet.CodeGenerating.Helping
             for (int i = 0; i < writeMethodDef.Parameters.Count; i++)
             {
                 remainingParameterDefs[i] = CodegenSession.GeneralHelper.CreateParameter(createdMethodDef, writeMethodDef.Parameters[i].ParameterType);
-                _generatedReaderWriterClassTypeDef.Module.ImportReference(remainingParameterDefs[i].ParameterType.Resolve());
+                _generatedReaderWriterClassTypeDef.Module.ImportReference(remainingParameterDefs[i].ParameterType.CachedResolve());
             }
 
             ILProcessor processor = createdMethodDef.Body.GetILProcessor();
@@ -113,7 +114,7 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates a Write delegate for writeMethodRef and places it within the generated reader/writer constructor.
         /// </summary>
         /// <param name="writeMethodRef"></param>
-        internal void CreateWriteDelegate(MethodReference writeMethodRef)
+        internal void CreateWriteDelegate(MethodReference writeMethodRef, bool isStatic)
         {
             /* If class for generated reader/writers isn't known yet.
             * It's possible this is the case if the entry being added
@@ -141,8 +142,8 @@ namespace FishNet.CodeGenerating.Helping
 
             ILProcessor processor = _generatedReaderWriterOnLoadMethodDef.Body.GetILProcessor();
             TypeReference dataTypeRef;
-            //Static methods will have the data type as the second parameter (1).
-            if (writeMethodRef.Resolve().Attributes.HasFlag(MethodAttributes.Static))
+            //Static methods will have the data type as the second parameter (1). 
+            if (isStatic)
                 dataTypeRef = writeMethodRef.Parameters[1].ParameterType;
             else
                 dataTypeRef = writeMethodRef.Parameters[0].ParameterType;
@@ -156,7 +157,6 @@ namespace FishNet.CodeGenerating.Helping
             {
                 _delegatedTypes.Add(dataTypeRef);
             }
-
 
             /* Create a Action<Writer, T> delegate.
              * May also be Action<Writer, AutoPackType, T> delegate

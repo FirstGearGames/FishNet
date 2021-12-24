@@ -137,7 +137,7 @@ namespace FishNet.Object.Synchronizing
         /// True if values have changed since initialization.
         /// The only reasonable way to reset this during a Reset call is by duplicating the original list and setting all values to it on reset.
         /// </summary>
-        private bool _valuesChanged = false;
+        private bool _valuesChanged;
         #endregion
 
         [APIExclude]

@@ -26,7 +26,7 @@ namespace FishNet.Component.Spawning
         /// </summary>
         [Tooltip("Prefab to spawn for the player.")]
         [SerializeField]
-        private NetworkObject _playerPrefab = null;
+        private NetworkObject _playerPrefab;
         /// <summary>
         /// Areas in which players may spawn.
         /// </summary>
@@ -43,7 +43,7 @@ namespace FishNet.Component.Spawning
         /// <summary>
         /// Next spawns to use.
         /// </summary>
-        private int _nextSpawn = 0;
+        private int _nextSpawn;
         #endregion
 
         private void Start()

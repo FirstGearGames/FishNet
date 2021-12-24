@@ -24,10 +24,10 @@ namespace FishNet.Utility.Extension
         /// <summary>
         /// Gets all NetworkObjects in a scene.
         /// </summary>
-        /// <param name="s"></param>
-        /// <param name="count"></param>
+        /// <param name="s">Scene to get objects in.</param>
+        /// <param name="count">Number of entries written to the collection.</param>
         /// <returns></returns>
-        internal static List<NetworkObject> GetSceneNetworkObjects(Scene s, out int count)
+        public static List<NetworkObject> GetSceneNetworkObjects(Scene s, out int count)
         {
             ListCache<NetworkObject> cache = ListCaches.NetworkObjectCache;
             cache.Reset();

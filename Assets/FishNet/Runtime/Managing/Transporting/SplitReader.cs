@@ -16,11 +16,11 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Expected number of splits.
         /// </summary>
-        private int _expectedMessages = 0;
+        private int _expectedMessages;
         /// <summary>
         /// Number of splits received so far.
         /// </summary>
-        private ushort _receivedMessages = 0;
+        private ushort _receivedMessages;
         /// <summary>
         /// Writer containing split packet combined.
         /// </summary>

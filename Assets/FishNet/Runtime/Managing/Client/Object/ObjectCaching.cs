@@ -182,15 +182,15 @@ namespace FishNet.Managing.Client
         /// Cached NetworkObject.
         /// </summary>
 #pragma warning disable 0649
-        public NetworkObject NetworkObject { get; private set; } = null;
+        public NetworkObject NetworkObject { get; private set; }
         /// <summary>
         /// Reader containing rpc links for the network object.
         /// </summary>
-        public PooledReader RpcLinkReader { get; private set; } = null;
+        public PooledReader RpcLinkReader { get; private set; }
         /// <summary>
         /// Reader containing sync values for the network object.
         /// </summary>
-        public PooledReader SyncValuesReader { get; private set; } = null;
+        public PooledReader SyncValuesReader { get; private set; }
 #pragma warning restore 0649
         /// <summary>
         /// Initializes for a spawned NetworkObject.

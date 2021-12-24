@@ -16,15 +16,15 @@ namespace FishNet.Connection
         /// <summary>
         /// Last tick this connection sent a ping.
         /// </summary>
-        private uint _lastPingTick = 0;
+        private uint _lastPingTick;
         /// <summary>
         /// Number of times client has excessively sent a ping.
         /// </summary>
-        private float _excessivePingCount = 0f;
+        private float _excessivePingCount;
         /// <summary>
         /// Ticks expected between each ping.
         /// </summary>
-        private uint _requiredPingTicks = 0;
+        private uint _requiredPingTicks;
         #endregion
 
         #region Const.

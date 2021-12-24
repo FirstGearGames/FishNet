@@ -14,9 +14,9 @@ namespace FishNet.Object
     {
         #region Types.
         /// <summary>
-        /// Used to generate data sent from syncvars.
+        /// Used to generate data sent from synctypes.
         /// </summary>
-        private class SyncVarWriter
+        private class SyncTypeWriter
         {
             /// <summary>
             /// Clients which can be synchronized.
@@ -25,9 +25,9 @@ namespace FishNet.Object
             /// <summary>
             /// Writers for each channel.
             /// </summary>
-            public PooledWriter[] Writers { get; private set; } = null;
+            public PooledWriter[] Writers { get; private set; }
 
-            public SyncVarWriter(ReadPermission readPermission, byte channelCount)
+            public SyncTypeWriter(ReadPermission readPermission, byte channelCount)
             {
                 ReadPermission = readPermission;
                 Writers = new PooledWriter[channelCount];
@@ -51,9 +51,9 @@ namespace FishNet.Object
 
         #region Private.
         /// <summary>
-        /// Writers for syncvars. A writer will exist for every ReadPermission type.
+        /// Writers for syncTypes. A writer will exist for every ReadPermission type.
         /// </summary>
-        private SyncVarWriter[] _syncTypeWriters = new SyncVarWriter[2];
+        private SyncTypeWriter[] _syncTypeWriters;
         /// <summary>
         /// SyncVars within this NetworkBehaviour.
         /// </summary>
@@ -61,7 +61,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if at least one syncVar is dirty.
         /// </summary>
-        private bool _syncVarDirty = false;
+        private bool _syncVarDirty;
         /// <summary>
         /// SyncVars within this NetworkBehaviour.
         /// </summary>
@@ -69,7 +69,11 @@ namespace FishNet.Object
         /// <summary>
         /// True if at least one syncObject is dirty.
         /// </summary>
-        private bool _syncObjectDirty = false;
+        private bool _syncObjectDirty;
+        /// <summary>
+        /// All ReadPermission values.
+        /// </summary>
+        private static ReadPermission[] _readPermissions;
         #endregion
 
         /// <summary>
@@ -115,10 +119,24 @@ namespace FishNet.Object
         /// <param name="componentIndex"></param>
         private void PreInitializeSyncTypes(NetworkObject networkObject)
         {
+            if (_readPermissions == null)
+            {
+                System.Array arr = System.Enum.GetValues(typeof(ReadPermission));
+                _readPermissions = new ReadPermission[arr.Length];
+
+                int count = 0;
+                foreach (ReadPermission rp in arr)
+                {
+                    _readPermissions[count] = rp;
+                    count++;
+                }
+            }
+
             //Build writers for observers and owner.
             byte channelCount = NetworkObject.NetworkManager.TransportManager.Transport.GetChannelCount();
-            _syncTypeWriters[0] = new SyncVarWriter(ReadPermission.Observers, channelCount);
-            _syncTypeWriters[1] = new SyncVarWriter(ReadPermission.OwnerOnly, channelCount);
+            _syncTypeWriters = new SyncTypeWriter[_readPermissions.Length];
+            for (int i = 0; i < _syncTypeWriters.Length; i++)
+                _syncTypeWriters[i] = new SyncTypeWriter(_readPermissions[i], channelCount);
 
             foreach (SyncBase sb in _syncVars.Values)
                 sb.PreInitialize(networkObject.NetworkManager);
@@ -307,8 +325,9 @@ namespace FishNet.Object
                                 dataWriter.Dispose();
 
                                 //If sending to observers.
-                                if (_syncTypeWriters[i].ReadPermission == ReadPermission.Observers)
-                                    NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, headerWriter.GetArraySegment(), NetworkObject.Observers);
+                                bool excludeOwnerPermission = (_syncTypeWriters[i].ReadPermission == ReadPermission.ExcludeOwner);
+                                if (excludeOwnerPermission || _syncTypeWriters[i].ReadPermission == ReadPermission.Observers)
+                                    NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, headerWriter.GetArraySegment(), NetworkObject, excludeOwnerPermission);
                                 //Sending only to owner.
                                 else
                                     NetworkObject.NetworkManager.TransportManager.SendToClient(channel, headerWriter.GetArraySegment(), NetworkObject.Owner);

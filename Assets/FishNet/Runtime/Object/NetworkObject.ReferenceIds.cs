@@ -37,13 +37,13 @@ namespace FishNet.Object
         /// Hash to the scene which this object resides.
         /// </summary>
         [SerializeField, HideInInspector]
-        private uint _scenePathHash = 0;
+        private uint _scenePathHash;
 #pragma warning restore 414
         /// <summary>
         /// 
         /// </summary>
         [SerializeField, HideInInspector]
-        private ulong _sceneId = 0;
+        private ulong _sceneId;
         /// <summary>
         /// Id for this scene object.
         /// </summary>
@@ -181,7 +181,7 @@ namespace FishNet.Object
             return false;
         }
 
-        protected virtual void OnValidate()
+        partial void PartialOnValidate()
         {
             TryCreateSceneID();
         }

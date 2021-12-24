@@ -58,27 +58,27 @@ namespace FishNet.Upgrading.Mirror.Editing
         /// <summary>
         /// 
         /// </summary>
-        private int _replacedNetworkTransforms = 0;
+        private int _replacedNetworkTransforms;
         /// <summary>
         /// 
         /// </summary>
-        private int _replacedNetworkAnimators = 0;
+        private int _replacedNetworkAnimators;
         /// <summary>
         /// 
         /// </summary>
-        private int _replacedNetworkIdentities = 0;
+        private int _replacedNetworkIdentities;
         /// <summary>
         /// 
         /// </summary>
-        private int _replacedSceneCheckers = 0;
+        private int _replacedSceneCheckers;
         /// <summary>
         /// 
         /// </summary>
-        private int _replacedProximityCheckers = 0;
+        private int _replacedProximityCheckers;
         /// <summary>
         /// True if anything was changed.
         /// </summary>
-        private bool _changed = false;
+        private bool _changed;
         /// <summary>
         /// Index in gameObjects to iterate.
         /// </summary>
@@ -90,7 +90,7 @@ namespace FishNet.Upgrading.Mirror.Editing
         /// <summary>
         /// True if initialized.
         /// </summary>
-        private bool _initialized = false;
+        private bool _initialized;
 
 
         private const string OBJECT_NAME_PREFIX = "MirrorUpgrade";

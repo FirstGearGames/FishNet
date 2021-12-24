@@ -6,6 +6,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Performance;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace FishNet.Managing.Server
 {
@@ -23,7 +24,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Index in TimedNetworkObservers to start on next cycle.
         /// </summary>
-        private int _nextTimedObserversIndex = 0;
+        private int _nextTimedObserversIndex;
         #endregion
 
         /// <summary>
@@ -201,7 +202,7 @@ namespace FishNet.Managing.Server
         /// Rebuilds observers on all objects for a connection.
         /// </summary>
         /// <param name="connection"></param>
-        internal void RebuildObservers(NetworkConnection connection)
+        public void RebuildObservers(NetworkConnection connection)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             PooledWriter ownerWriter = WriterPool.GetWriter();
@@ -258,35 +259,12 @@ namespace FishNet.Managing.Server
 
 
         /// <summary>
-        /// Rebuilds observers on all connections for a NetworkObject.
+        /// Rebuilds observers for cached connections for a NetworkObject.
         /// </summary>
-        /// <param name="nob">NetworkObject to rebuild on.</param>
-        internal void RebuildObservers(NetworkObject nob)
-        {
-            RebuildObservers(nob, null);
-        }
-
-        /// <summary>
-        /// Rebuilds observers on all connections for a NetworkObject.
-        /// </summary>
-        /// <param name="networkObject">NetworkObject to rebuild on.</param>
-        /// <param name="connections">Connections to rebuild for. If null networkObject will rebuild for all connections.</param>
-        internal void RebuildObservers(NetworkObject networkObject, NetworkConnection[] connections)
+        private void RebuildObservers(NetworkObject networkObject, ListCache<NetworkConnection> cache)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             PooledWriter ownerWriter = WriterPool.GetWriter();
-
-            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
-            cache.Reset();
-            if (connections == null)
-            {
-                foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)
-                    cache.AddValue(item);
-            }
-            else
-            {
-                cache.AddValues(connections);
-            }
 
             int written = cache.Written;
             for (int i = 0; i < written; i++)
@@ -326,6 +304,49 @@ namespace FishNet.Managing.Server
             //Dispose of writers created in this method.
             everyoneWriter.Dispose();
             ownerWriter.Dispose();
+        }
+
+
+        /// <summary>
+        /// Rebuilds observers for all connections for a NetworkObject.
+        /// </summary>
+        /// <param name="nob">NetworkObject to rebuild on.</param>
+        internal void RebuildObservers(NetworkObject nob)
+        {
+            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
+            cache.Reset();
+            foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)
+                cache.AddValue(item);
+
+            RebuildObservers(nob, cache);
+        }
+        /// <summary>
+        /// Rebuilds observers for connections on NetworkObject.
+        /// </summary>
+        /// <param name="networkObject">NetworkObject to rebuild on.</param>
+        /// <param name="connections">Connections to rebuild for.
+        internal void RebuildObservers(NetworkObject networkObject, NetworkConnection[] connections)
+        {
+            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
+            cache.Reset();
+            cache.AddValues(connections);
+            RebuildObservers(networkObject, cache);
+        }
+
+        /// <summary>
+        /// Rebuilds observers for connections on NetworkObject.
+        /// </summary>
+        /// <param name="networkObject">NetworkObject to rebuild on.</param>
+        /// <param name="connections">Connections to rebuild for.
+        internal void RebuildObservers(NetworkObject networkObject, List<NetworkConnection> connections)
+        {
+            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
+            cache.Reset();
+            cache.AddValues(connections);
+            RebuildObservers(networkObject, cache);
+            IEnumerable<NetworkConnection> ccc = new List<NetworkConnection>();
+            foreach (NetworkConnection connection in ccc)
+            { }
         }
 
 

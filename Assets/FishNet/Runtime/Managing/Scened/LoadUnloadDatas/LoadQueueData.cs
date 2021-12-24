@@ -2,7 +2,7 @@
 using FishNet.Utility.Constant;
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo(Constants.GENERATED_ASSEMBLY_NAME)]
+[assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Managing.Scened
 {
 

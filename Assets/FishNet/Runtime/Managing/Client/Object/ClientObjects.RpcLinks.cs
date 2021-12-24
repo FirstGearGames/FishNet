@@ -74,7 +74,7 @@ namespace FishNet.Managing.Client
                     nb.OnTargetRpc(link.RpcHash, reader, channel);
                 else if (link.RpcType == RpcType.Observers)
                     nb.OnObserversRpc(link.RpcHash, reader, channel);
-                else if (link.RpcType == RpcType.Replicate)
+                else if (link.RpcType == RpcType.Reconcile)
                     nb.OnReconcileRpc(link.RpcHash, reader, channel);
             }
             //Could not find NetworkObject.

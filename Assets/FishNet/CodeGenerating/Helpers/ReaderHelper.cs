@@ -1,4 +1,5 @@
-﻿using FishNet.CodeGenerating.ILCore;
+﻿using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.CodeGenerating.ILCore;
 using FishNet.Connection;
 using FishNet.Serializing;
 using MonoFN.Cecil;
@@ -6,6 +7,7 @@ using MonoFN.Cecil.Cil;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -20,6 +22,7 @@ namespace FishNet.CodeGenerating.Helping
         private readonly Dictionary<TypeReference, MethodReference> _staticReaderMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
         private HashSet<TypeReference> _autoPackedMethods = new HashSet<TypeReference>(new TypeReferenceComparer());
         private MethodReference Reader_ReadPackedWhole_MethodRef;
+        internal MethodReference Reader_ReadDictionary_MethodRef;
         internal MethodReference Reader_ReadToCollection_MethodRef;
         #endregion
 
@@ -49,22 +52,29 @@ namespace FishNet.CodeGenerating.Helping
                     Reader_ReadPackedWhole_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;
                 }
+                //ReadToCollection.
                 else if (methodInfo.Name == nameof(PooledReader.ReadToCollection))
                 {
                     Reader_ReadToCollection_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;
                 }
+                //ReadDictionary.
+                else if (methodInfo.Name == nameof(PooledReader.ReadDictionary))
+                {
+                    Reader_ReadDictionary_MethodRef = CodegenSession.ImportReference(methodInfo);
+                    continue;
+                }
 
-                if (CodegenSession.GeneralHelper.IgnoreMethod(methodInfo))
+                else if (CodegenSession.GeneralHelper.IgnoreMethod(methodInfo))
                     continue;
                 //Generic methods are not supported.
-                if (methodInfo.IsGenericMethod)
+                else if (methodInfo.IsGenericMethod)
                     continue;
                 //Not long enough to be a write method.
-                if (methodInfo.Name.Length < READ_PREFIX.Length)
+                else if (methodInfo.Name.Length < READ_PREFIX.Length)
                     continue;
                 //Method name doesn't start with writePrefix.
-                if (methodInfo.Name.Substring(0, READ_PREFIX.Length) != READ_PREFIX)
+                else if (methodInfo.Name.Substring(0, READ_PREFIX.Length) != READ_PREFIX)
                     continue;
                 ParameterInfo[] parameterInfos = methodInfo.GetParameters();
                 //Can have at most one parameter for packing.
@@ -168,7 +178,7 @@ namespace FishNet.CodeGenerating.Helping
 
             if (!result && createMissing)
             {
-                if (!CodegenSession.GeneralHelper.HasNonSerializableAttribute(typeRef.Resolve()))
+                if (!CodegenSession.GeneralHelper.HasNonSerializableAttribute(typeRef.CachedResolve()))
                 {
                     MethodReference methodRef = CodegenSession.ReaderGenerator.CreateReader(typeRef);
                     result = (methodRef != null);
@@ -200,7 +210,7 @@ namespace FishNet.CodeGenerating.Helping
             else
                 CreateReadPackedWhole(processor, readerParameterDef, resultVariableDef);
 
-            //If (true or == -1) jmp to endIf.
+            //If (true or == -1) jmp to endIf. True is null.
             processor.Emit(OpCodes.Ldloc, resultVariableDef);
             if (useBool)
             {
@@ -233,7 +243,7 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Callvirt, readBoolMethodRef);
             processor.Emit(OpCodes.Stloc, localBoolVariableDef);
         }
-    
+
         /// <summary>
         /// Creates a call to WritePackWhole with value.
         /// </summary>
@@ -250,7 +260,7 @@ namespace FishNet.CodeGenerating.Helping
         }
 
 
-        #region GetReaderrMethodReference.
+        #region GetReaderMethodReference.
         /// <summary>
         /// Returns the MethodReference for typeRef.
         /// </summary>
@@ -332,6 +342,17 @@ namespace FishNet.CodeGenerating.Helping
         }
 
         /// <summary>
+        /// Removes typeRef from static/instanced reader methods.
+        /// </summary>
+        internal void RemoveReaderMethod(TypeReference typeRef, bool instanced)
+        {
+            Dictionary<TypeReference, MethodReference> dict = (instanced) ?
+                _instancedReaderMethods : _staticReaderMethods;
+
+            dict.Remove(typeRef);
+        }
+
+        /// <summary>
         /// Creates read instructions returning instructions and outputing variable of read result.
         /// </summary>
         /// <param name="processor"></param>
@@ -373,15 +394,12 @@ namespace FishNet.CodeGenerating.Helping
 
 
         /// <summary>
-        /// Creates a read call on a method for FieldDef. Creates and returns a local variable after using a PooledReader reference to populate it.
-        /// EG: bool bool1 = pooledReader.ReadBool();
+        /// Creates a read for fieldRef and populates it into a created variable of class or struct type.
         /// </summary>
-        /// <param name="processor"></param>
-        /// <param name="readerParameterDef"></param>
-        /// <returns></returns>
-        internal bool CreateReadNoCreateMissing(ILProcessor processor, ParameterDefinition readerParameterDef, VariableDefinition objectVariableDef, FieldDefinition fieldDef)
+        internal bool CreateReadIntoClassOrStruct(MethodDefinition methodDef, ParameterDefinition readerParameterDef, VariableDefinition objectVariableDef, FieldReference fieldRef)
         {
-            MethodReference readMethodRef = GetFavoredReadMethodReference(fieldDef.FieldType, true);
+            ILProcessor processor = methodDef.Body.GetILProcessor();
+            MethodReference readMethodRef = GetFavoredReadMethodReference(fieldRef.FieldType, true);
             if (readMethodRef != null)
             {
                 /* How to load object instance. If it's a structure
@@ -393,21 +411,21 @@ namespace FishNet.CodeGenerating.Helping
                 processor.Emit(loadOpCode, objectVariableDef);
                 //reader.
                 processor.Emit(OpCodes.Ldarg, readerParameterDef);
-                if (IsAutoPackedType(fieldDef.FieldType))
+                if (IsAutoPackedType(fieldRef.FieldType))
                 {
-                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(fieldDef.FieldType);
+                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(fieldRef.FieldType);
                     processor.Emit(OpCodes.Ldc_I4, (int)packType);
                 }
                 //reader.ReadXXXX().
                 processor.Emit(OpCodes.Call, readMethodRef);
                 //obj.Field = result / reader.ReadXXXX().
-                processor.Emit(OpCodes.Stfld, fieldDef);
+                processor.Emit(OpCodes.Stfld, fieldRef);
 
                 return true;
             }
             else
             {
-                CodegenSession.LogError($"Reader not found for {fieldDef.FullName}.");
+                CodegenSession.LogError($"Reader not found for {fieldRef.FullName}.");
                 return false;
             }
         }

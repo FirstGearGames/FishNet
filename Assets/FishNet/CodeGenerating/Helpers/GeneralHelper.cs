@@ -11,16 +11,21 @@ using MonoFN.Cecil.Cil;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using SR = System.Reflection;
 
 namespace FishNet.CodeGenerating.Helping
 {
     internal class GeneralHelper
     {
         #region Reflection references.
+        internal MethodReference Queue_Enqueue_MethodRef;
+        internal MethodReference Queue_get_Count_MethodRef;
+        internal MethodReference Queue_Dequeue_MethodRef;
+        internal MethodReference Queue_Clear_MethodRef;
         internal TypeReference List_TypeRef;
         internal MethodReference List_Clear_MethodRef;
         internal MethodReference List_GetItem_MethodRef;
-        internal MethodReference List_GetCount_MethodRef;
+        internal MethodReference List_get_Count_MethodRef;
         internal MethodReference List_Add_MethodRef;
         internal MethodReference List_RemoveRange_MethodRef;
         private MethodReference InstanceFinder_NetworkManager_MethodRef;
@@ -40,17 +45,38 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference NetworkObject_Deinitializing_MethodRef = null;
         private Dictionary<Type, TypeReference> _importedTypeReferences = new Dictionary<Type, TypeReference>();
         private Dictionary<FieldDefinition, FieldReference> _importedFieldReferences = new Dictionary<FieldDefinition, FieldReference>();
+        private Dictionary<MethodReference, MethodDefinition> _methodReferenceResolves = new Dictionary<MethodReference, MethodDefinition>();
+        private Dictionary<TypeReference, TypeDefinition> _typeReferenceResolves = new Dictionary<TypeReference, TypeDefinition>();
+        private Dictionary<FieldReference, FieldDefinition> _fieldReferenceResolves = new Dictionary<FieldReference, FieldDefinition>();
         private string NonSerialized_Attribute_FullName;
         private string Single_FullName;
         #endregion
 
         internal bool ImportReferences()
         {
+            Type tmpType;
+            SR.MethodInfo tmpMi; 
+
             NonSerialized_Attribute_FullName = typeof(NonSerializedAttribute).FullName;
             Single_FullName = typeof(float).FullName;
 
+            tmpType = typeof(Queue<>);
+            CodegenSession.ImportReference(tmpType);
+            tmpMi = tmpType.GetMethod("get_Count");
+            Queue_get_Count_MethodRef = CodegenSession.ImportReference(tmpMi);
+            foreach (SR.MethodInfo mi in tmpType.GetMethods())
+            {
+
+                if (mi.Name == nameof(Queue<int>.Enqueue))
+                    Queue_Enqueue_MethodRef = CodegenSession.ImportReference(mi);
+                else if (mi.Name == nameof(Queue<int>.Dequeue))
+                    Queue_Dequeue_MethodRef = CodegenSession.ImportReference(mi);
+                else if (mi.Name == nameof(Queue<int>.Clear))
+                    Queue_Clear_MethodRef = CodegenSession.ImportReference(mi);
+            }
+
             Type comparers = typeof(Comparers);
-            foreach (System.Reflection.MethodInfo mi in comparers.GetMethods())
+            foreach (SR.MethodInfo mi in comparers.GetMethods())
             {
                 if (mi.Name == nameof(Comparers.EqualityCompare))
                     Comparers_EqualityCompare_MethodRef = CodegenSession.ImportReference(mi);
@@ -60,12 +86,12 @@ namespace FishNet.CodeGenerating.Helping
 
             //Networkbehaviour.
             Type networkBehaviourType = typeof(NetworkBehaviour);
-            foreach (System.Reflection.MethodInfo methodInfo in networkBehaviourType.GetMethods())
+            foreach (SR.MethodInfo methodInfo in networkBehaviourType.GetMethods())
             {
                 if (methodInfo.Name == nameof(NetworkBehaviour.CanLog))
                     NetworkBehaviour_CanLog_MethodRef = CodegenSession.ImportReference(methodInfo);
             }
-            foreach (System.Reflection.PropertyInfo propertyInfo in networkBehaviourType.GetProperties())
+            foreach (SR.PropertyInfo propertyInfo in networkBehaviourType.GetProperties())
             {
                 if (propertyInfo.Name == nameof(NetworkBehaviour.NetworkManager))
                     NetworkBehaviour_NetworkManager_MethodRef = CodegenSession.ImportReference(propertyInfo.GetMethod);
@@ -73,12 +99,12 @@ namespace FishNet.CodeGenerating.Helping
 
             //Instancefinder.
             Type instanceFinderType = typeof(InstanceFinder);
-            System.Reflection.PropertyInfo getNetworkManagerPropertyInfo = instanceFinderType.GetProperty(nameof(InstanceFinder.NetworkManager));
+            SR.PropertyInfo getNetworkManagerPropertyInfo = instanceFinderType.GetProperty(nameof(InstanceFinder.NetworkManager));
             InstanceFinder_NetworkManager_MethodRef = CodegenSession.ImportReference(getNetworkManagerPropertyInfo.GetMethod);
 
             //NetworkManager debug logs. 
             Type networkManagerType = typeof(NetworkManager);
-            foreach (System.Reflection.MethodInfo methodInfo in networkManagerType.GetMethods())
+            foreach (SR.MethodInfo methodInfo in networkManagerType.GetMethods())
             {
                 if (methodInfo.Name == nameof(NetworkManager.Log))
                     NetworkManager_LogCommon_MethodRef = CodegenSession.ImportReference(methodInfo);
@@ -91,23 +117,23 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             //Lists.
-            Type lstType = typeof(List<>);
-            List_TypeRef = CodegenSession.ImportReference(lstType);
-            System.Reflection.MethodInfo lstMi;
-            lstMi = lstType.GetMethod("Add");
+            tmpType = typeof(List<>);
+            List_TypeRef = CodegenSession.ImportReference(tmpType);
+            SR.MethodInfo lstMi;
+            lstMi = tmpType.GetMethod("Add");
             List_Add_MethodRef = CodegenSession.ImportReference(lstMi);
-            lstMi = lstType.GetMethod("RemoveRange");
+            lstMi = tmpType.GetMethod("RemoveRange");
             List_RemoveRange_MethodRef = CodegenSession.ImportReference(lstMi);
-            lstMi = lstType.GetMethod("get_Count");
-            List_GetCount_MethodRef = CodegenSession.ImportReference(lstMi);
-            lstMi = lstType.GetMethod("get_Item");
+            lstMi = tmpType.GetMethod("get_Count");
+            List_get_Count_MethodRef = CodegenSession.ImportReference(lstMi);
+            lstMi = tmpType.GetMethod("get_Item");
             List_GetItem_MethodRef = CodegenSession.ImportReference(lstMi);
-            lstMi = lstType.GetMethod("Clear");
+            lstMi = tmpType.GetMethod("Clear");
             List_Clear_MethodRef = CodegenSession.ImportReference(lstMi);
 
             //Unity debug logs.
             Type debugType = typeof(UnityEngine.Debug);
-            foreach (System.Reflection.MethodInfo methodInfo in debugType.GetMethods())
+            foreach (SR.MethodInfo methodInfo in debugType.GetMethods())
             {
                 if (methodInfo.Name == nameof(Debug.LogWarning) && methodInfo.GetParameters().Length == 1)
                     Debug_LogWarning_MethodRef = CodegenSession.ImportReference(methodInfo);
@@ -118,7 +144,7 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             Type codegenHelper = typeof(CodegenHelper);
-            foreach (System.Reflection.MethodInfo methodInfo in codegenHelper.GetMethods())
+            foreach (SR.MethodInfo methodInfo in codegenHelper.GetMethods())
             {
                 if (methodInfo.Name == nameof(CodegenHelper.NetworkObject_Deinitializing))
                     NetworkObject_Deinitializing_MethodRef = CodegenSession.ImportReference(methodInfo);
@@ -130,6 +156,93 @@ namespace FishNet.CodeGenerating.Helping
 
             return true;
         }
+
+
+
+#region Resolves.
+        /// <summary>
+        /// Adds a typeRef to TypeReferenceResolves.
+        /// </summary>
+        internal void AddTypeReferenceResolve(TypeReference typeRef, TypeDefinition typeDef)
+        {
+            _typeReferenceResolves[typeRef] = typeDef;
+        }
+
+        /// <summary>
+        /// Gets a TypeDefinition for typeRef.
+        /// </summary>
+        internal TypeDefinition GetTypeReferenceResolve(TypeReference typeRef)
+        {
+            TypeDefinition result;
+            if (_typeReferenceResolves.TryGetValue(typeRef, out result))
+            {
+                return result;
+            }
+            else
+            {
+                result = typeRef.Resolve();
+                AddTypeReferenceResolve(typeRef, result);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Adds a methodRef to MethodReferenceResolves.
+        /// </summary>
+        internal void AddMethodReferenceResolve(MethodReference methodRef, MethodDefinition methodDef)
+        {
+            _methodReferenceResolves[methodRef] = methodDef;
+        }
+
+        /// <summary>
+        /// Gets a TypeDefinition for typeRef.
+        /// </summary>
+        internal MethodDefinition GetMethodReferenceResolve(MethodReference methodRef)
+        {
+            MethodDefinition result;
+            if (_methodReferenceResolves.TryGetValue(methodRef, out result))
+            {
+                return result;
+            }
+            else
+            {
+                result = methodRef.Resolve();
+                AddMethodReferenceResolve(methodRef, result);
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// Adds a fieldRef to FieldReferenceResolves.
+        /// </summary>
+        internal void AddFieldReferenceResolve(FieldReference fieldRef, FieldDefinition fieldDef)
+        {
+            _fieldReferenceResolves[fieldRef] = fieldDef;
+        }
+
+        /// <summary>
+        /// Gets a FieldDefinition for fieldRef.
+        /// </summary>
+        internal FieldDefinition GetFieldReferenceResolve(FieldReference fieldRef)
+        {
+            FieldDefinition result;
+            if (_fieldReferenceResolves.TryGetValue(fieldRef, out result))
+            {
+                return result;
+            }
+            else
+            {
+                result = fieldRef.Resolve();
+                AddFieldReferenceResolve(fieldRef, result);
+            }
+
+            return result;
+        }
+        #endregion
+
 
         /// <summary>
         /// Returns if typeDef should be ignored.
@@ -175,9 +288,9 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="methodInfo"></param>
         /// <returns></returns>
-        internal bool IgnoreMethod(System.Reflection.MethodInfo methodInfo)
+        internal bool IgnoreMethod(SR.MethodInfo methodInfo)
         {
-            foreach (System.Reflection.CustomAttributeData item in methodInfo.CustomAttributes)
+            foreach (SR.CustomAttributeData item in methodInfo.CustomAttributes)
             {
                 if (item.AttributeType == typeof(CodegenExcludeAttribute))
                     return true;
@@ -667,6 +780,8 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal bool HasSerializerAndDeserializer(TypeReference typeRef, bool create)
         {
+            //Make sure it's imported into current module.
+            typeRef = CodegenSession.ImportReference(typeRef);
             //Can be serialized/deserialized.
             bool hasWriter = CodegenSession.WriterHelper.HasSerializer(typeRef, create);
             bool hasReader = CodegenSession.ReaderHelper.HasDeserializer(typeRef, create);

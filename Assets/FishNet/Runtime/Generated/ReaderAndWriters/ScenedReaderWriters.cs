@@ -56,7 +56,7 @@ namespace FishNet.Runtime
                 writer.WriteBoolean(false);
                 ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(writer, value.SceneLookupDatas);
                 ScenedReadersAndWriters.Write___FishNetu002EObjectu002ENetworkObjectu005Bu005D(writer, value.MovedNetworkObjects);
-                writer.WriteBoolean(value.ReplaceScenes);
+                writer.WriteByte((byte)value.ReplaceScenes);
                 ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadParams(writer, value.Params);
                 ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadOptions(writer, value.Options);
             }
@@ -185,7 +185,7 @@ namespace FishNet.Runtime
             {
                 SceneLookupDatas = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLookupDatau005Bu005D(reader),
                 MovedNetworkObjects = ScenedReadersAndWriters.Read___FishNetu002EObjectu002ENetworkObjectu005Bu005D(reader),
-                ReplaceScenes = reader.ReadBoolean(),
+                ReplaceScenes = (ReplaceOption)reader.ReadByte(),
                 Params = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadParams(reader),
                 Options = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadOptions(reader)
             };

@@ -24,14 +24,14 @@ namespace FishNet.Component.Utility
         /// </summary>
         [Tooltip("Which corner to display ping in.")]
         [SerializeField]
-        private Corner _placement;
+        private Corner _placement = Corner.TopRight;
         #endregion
 
         #region Private.
         /// <summary>
         /// Next time TimeManager can be polled. Throttle this to save performance.
         /// </summary>
-        private float _nextTimeManagerTime = 0f;
+        private float _nextTimeManagerTime;
         /// <summary>
         /// TimeManager to get ping from.
         /// </summary>

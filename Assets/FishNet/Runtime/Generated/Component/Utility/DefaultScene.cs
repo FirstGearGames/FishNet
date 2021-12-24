@@ -21,7 +21,7 @@ public class DefaultScene : MonoBehaviour
     /// </summary>
     [Tooltip("True to replace all scenes with the offline scene immediately.")]
     [SerializeField]
-    private bool _startInOffline = false;
+    private bool _startInOffline;
     /// <summary>
     /// Scene to load when disconnected. Server and client will load this scene.
     /// </summary>
@@ -34,6 +34,12 @@ public class DefaultScene : MonoBehaviour
     [Tooltip("Scene to load when connected. Server and client will load this scene.")]
     [SerializeField, Scene]
     private string _onlineScene;
+    /// <summary>
+    /// Which scenes to replace when loading into onlineScene.
+    /// </summary>
+    [Tooltip("Which scenes to replace when loading into onlineScene.")]
+    [SerializeField]
+    private ReplaceOption _replaceScenes = ReplaceOption.All;
     #endregion
 
     private void Awake()
@@ -102,7 +108,7 @@ public class DefaultScene : MonoBehaviour
         if (obj.ConnectionState == LocalConnectionStates.Started)
         {
             SceneLoadData sld = new SceneLoadData(GetSceneName(_onlineScene));
-            sld.ReplaceScenes = true;
+            sld.ReplaceScenes = _replaceScenes;
             InstanceFinder.SceneManager.LoadGlobalScenes(sld);
         }
         //When server stops load offline scene.

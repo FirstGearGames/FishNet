@@ -29,7 +29,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Next ObjectId which may be used for NetworkObjects.
         /// </summary>
-        private int _nextNetworkObjectId = 0;
+        private int _nextNetworkObjectId;
         /// <summary>
         /// Cached ObjectIds which may be used when exceeding available ObjectIds.
         /// </summary>
@@ -480,7 +480,7 @@ namespace FishNet.Managing.Server
 
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
 
-            //Build into listcache.
+            //Add observers to a list cache.
             ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
             cache.Reset();
             cache.AddValues(nob.Observers);
@@ -492,22 +492,42 @@ namespace FishNet.Managing.Server
                 nob.InvokeOnServerDespawn(conn);
                 NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, despawnSegment, conn);
                 //Remove from observers.
-                nob.Observers.Remove(conn);
+                //nob.Observers.Remove(conn);
             }
-
 
             everyoneWriter.Dispose();
         }
-    /// <summary>
-    /// Writes a despawn.
-    /// </summary>
-    /// <param name="nob"></param>
-    private void WriteDespawn(NetworkObject nob, ref PooledWriter everyoneWriter)
-    {
-        everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
-        everyoneWriter.WriteNetworkObject(nob);
+        /// <summary>
+        /// Writes a despawn.
+        /// </summary>
+        /// <param name="nob"></param>
+        private void WriteDespawn(NetworkObject nob, ref PooledWriter everyoneWriter)
+        {
+            everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
+            everyoneWriter.WriteNetworkObject(nob);
+        }
+
+
+        private void __WriteDespawnAndSend(NetworkObject nob)
+        {
+            PooledWriter everyoneWriter = WriterPool.GetWriter();
+            WriteDespawn(nob, ref everyoneWriter);
+
+            ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
+            foreach (NetworkConnection conn in nob.Observers)
+            {
+                nob.InvokeOnServerDespawn(conn);
+                NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, despawnSegment, conn);
+            }
+
+            everyoneWriter.Dispose();
+        }
+
+
+
+
+
     }
-}
     #endregion
 
 

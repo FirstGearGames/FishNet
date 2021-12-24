@@ -25,13 +25,35 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// NetworkObjects which are cached to be spawned or despawned.
         /// </summary>
-        private ClientObjectCache _objectCache = null;
+        private ClientObjectCache _objectCache;
         #endregion
 
         internal ClientObjects(NetworkManager networkManager)
         {
             base.NetworkManager = networkManager;
             _objectCache = new ClientObjectCache(this);
+        }
+
+        /// <summary>
+        /// Called when a connection state changes for the local server.
+        /// </summary>
+        internal void OnServerConnectionState(ServerConnectionStateArgs args)
+        {
+            //Nothing needs to be done if started.
+            if (args.ConnectionState == LocalConnectionStates.Started)
+                return;
+
+            /* If not started and client is active then deinitialize
+             * client objects first. This will let the deinit calls
+             * perform before the server destroys them. Ideally this
+             * would be done when the user shows intend to shutdown
+             * the server, but realistically planning for server socket
+             * drops is a much more universal solution. 
+             *
+             * Calling StopConnection on the client will set it's local state
+             * to Stopping which will result in a deinit. */
+            if (NetworkManager.IsClient)
+                base.NetworkManager.ClientManager.StopConnection();
         }
 
         /// <summary>
@@ -179,7 +201,8 @@ namespace FishNet.Managing.Client
         internal void ParseReconcileRpc(PooledReader reader, Channel channel)
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
-            int dataLength = Packets.GetPacketLength(PacketId.ObserversRpc, reader, channel);
+            int dataLength = Packets.GetPacketLength(PacketId.Reconcile, reader, channel);
+            
             if (nb != null)
                 nb.OnReconcileRpc(null, reader, channel);
             else

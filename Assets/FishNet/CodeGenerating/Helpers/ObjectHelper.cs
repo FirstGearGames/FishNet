@@ -85,8 +85,8 @@ namespace FishNet.CodeGenerating.Helping
             //Dictionary.Add(ushort, SyncBase).
             System.Type dictType = typeof(Dictionary<ushort, SyncBase>);
             TypeReference dictTypeRef = CodegenSession.ImportReference(dictType);
-            //Dictionary_Add_UShort_SyncBase_MethodRef = dictTypeRef.Resolve().GetMethod("add_Item", )
-            foreach (MethodDefinition item in dictTypeRef.Resolve().Methods)
+            //Dictionary_Add_UShort_SyncBase_MethodRef = dictTypeRef.CachedResolve().GetMethod("add_Item", )
+            foreach (MethodDefinition item in dictTypeRef.CachedResolve().Methods)
             {
                 if (item.Name == nameof(Dictionary<ushort, SyncBase>.Add))
                 {

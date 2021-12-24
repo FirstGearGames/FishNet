@@ -9,7 +9,7 @@ namespace FishNet.Example.Scened
     public class PlayerController : NetworkBehaviour
     {
         [SerializeField]
-        private GameObject _camera = null;
+        private GameObject _camera;
         [SerializeField]
         private float _moveRate = 4f;
         [SerializeField]

@@ -33,11 +33,11 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// True if the server connection has started.
         /// </summary>
-        public bool Started { get; private set; } = false;
+        public bool Started { get; private set; }
         /// <summary>
         /// Handling and information for objects on the server.
         /// </summary>
-        public ServerObjects Objects { get; private set; } = null;
+        public ServerObjects Objects { get; private set; }
         /// <summary>
         /// Authenticated and non-authenticated connected clients.
         /// </summary>
@@ -47,7 +47,7 @@ namespace FishNet.Managing.Server
         /// NetworkManager for server.
         /// </summary>
         [HideInInspector]
-        public NetworkManager NetworkManager = null;
+        public NetworkManager NetworkManager { get; private set; }
         #endregion
 
         #region Serialized.
@@ -62,16 +62,20 @@ namespace FishNet.Managing.Server
         /// </summary>
         public Authenticator Authenticator { get => _authenticator; set => _authenticator = value; }
         /// <summary>
-        /// Maximum frame rate the server may run at. This value is ignored as host.
+        ///  
         /// </summary>
         [Tooltip("Maximum frame rate the server may run at. This value is ignored as host.")]
-        [Range(1, MAXIMUM_FRAMERATE)]
+        [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
-        private ushort _frameRate = MAXIMUM_FRAMERATE;
+        private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
         /// <summary>
-        /// 
+        /// Maximum frame rate the server may run at. This value is ignored as host.
         /// </summary>
-        [Tooltip("True to share current owner of objects with all clients. False to hide owner of objects from everyone but owner.")]
+        internal ushort FrameRate
+        {
+            get => _frameRate;
+            private set => _frameRate = value;
+        }
         [SerializeField]
         private bool _shareOwners = true;
         /// <summary>
@@ -100,7 +104,7 @@ namespace FishNet.Managing.Server
         [Tooltip("Maximum amount of data a client may send. Use 0 for unlimited, otherwise specify an ammount. This is only applicable when LimitClientMTU is disabled; otherwise, clients are kicked immediately should they exceed MTU.")]
         //[Range(0, int.MaxValue)] //The range attribute is broken via Unity. It shows negative values when using int or higher as max value.
         [SerializeField]
-        private int _maximumClientMTU = 0;
+        private int _maximumClientMTU;
         /// <summary>
         /// Maximum amount of data a client may send. Use 0 for unlimited, otherwise specify an ammount. This is only applicable when LimitClientMTU is disabled; otherwise, clients are kicked immediately should they exceed MTU.
         /// </summary>
@@ -116,13 +120,6 @@ namespace FishNet.Managing.Server
         /// Used to read splits.
         /// </summary>
         private SplitReader _splitReader = new SplitReader();
-        #endregion
-
-        #region Const.
-        /// <summary>
-        /// Maximum framerate allowed.
-        /// </summary>
-        private const ushort MAXIMUM_FRAMERATE = 9999;
         #endregion
 
         /// <summary>
@@ -158,7 +155,13 @@ namespace FishNet.Managing.Server
                         Debug.LogError($"Maximum Client MTU of {MaximumClientMTU} is set lower than the Maximum Reliable MTU of {reliableMTU} for the transport. Maximum Client MTU has been changed to {MaximumClientMTU}.");
                 }
             }
+        }
 
+        /// <summary>
+        /// Starts the server if configured to for headless.
+        /// </summary>
+        internal void StartForHeadless()
+        {
             if (_startOnHeadless && Application.isBatchMode)
                 NetworkManager.TransportManager.Transport.StartConnection(true);
         }
@@ -252,12 +255,16 @@ namespace FishNet.Managing.Server
 
 
         /// <summary>
-        /// Called when a connection state changes local server.
+        /// Called when a connection state changes for the local server.
         /// </summary>
-        /// <param name="args"></param>
         private void Transport_OnServerConnectionState(ServerConnectionStateArgs args)
-        {
+        {            
+            /* Let the client manager know the server state is changing first.
+             * This gives the client an opportunity to clean-up or prepare
+             * before the server completes it's actions. */
+            NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
             Started = (args.ConnectionState == LocalConnectionStates.Started);
+            
             Objects.OnServerConnectionState(args);
             //If not connected then clear clients.
             if (args.ConnectionState != LocalConnectionStates.Started)
@@ -274,39 +281,9 @@ namespace FishNet.Managing.Server
                     Debug.Log("Server has been stopped.");
             }
 
-            UpdateFramerate();
+            NetworkManager.UpdateFramerate();
             OnServerConnectionState?.Invoke(args);
-        }
-
-        /// <summary>
-        /// Updates frame rate based on state of server and client.
-        /// </summary>
-        internal void UpdateFramerate()
-        {
-            bool clientStarted = NetworkManager.ClientManager.Started;
-            bool serverStarted = Started;
-
-            if (clientStarted)
-            {
-                Application.targetFrameRate = MAXIMUM_FRAMERATE;
-            }
-            else if (serverStarted)
-            {
-                ushort tickRate = NetworkManager.TimeManager.TickRate;
-                if (_frameRate < tickRate)
-                {
-                    if (NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Server frame rate was set to {_frameRate} while tick rate is set to {tickRate}. Server frame rate must be a minimum of tick rate. Frame rate has been increased to tick rate.");
-                    _frameRate = tickRate;
-                }
-
-                Application.targetFrameRate = _frameRate;
-            }
-            else
-            {
-                Application.targetFrameRate = MAXIMUM_FRAMERATE;
-            }
-        }
+        }    
 
         /// <summary>
         /// Called when a connection state changes for a remote client.

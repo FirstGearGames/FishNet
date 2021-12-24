@@ -82,8 +82,8 @@ namespace FishNet.Managing.Object
         {
             if (nob == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Common))
-                    Debug.Log($"Cannot despawn a null NetworkObject.");
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot despawn a null NetworkObject.");
                 return;
             }
 
@@ -164,7 +164,6 @@ namespace FishNet.Managing.Object
             //Null can occur when running as host and server already despawns such as wehen stopping.
             if (nob == null)
                 return;
-
             nob.Deinitialize(asServer);
             /* Only run if asServer, or not 
             * asServer and server isn't running. This

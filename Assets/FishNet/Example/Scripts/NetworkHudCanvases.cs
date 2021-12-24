@@ -68,7 +68,7 @@ public class NetworkHudCanvases : MonoBehaviour
         EventSystem systems = FindObjectOfType<EventSystem>();
         if (systems == null)
             gameObject.AddComponent<EventSystem>();
-        StandaloneInputModule inputModule = FindObjectOfType<StandaloneInputModule>();
+        BaseInputModule inputModule = FindObjectOfType<BaseInputModule>();
         if (inputModule == null)
             gameObject.AddComponent<StandaloneInputModule>();
 

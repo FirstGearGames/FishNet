@@ -3,7 +3,7 @@ using FishNet.Utility.Constant;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-[assembly: InternalsVisibleTo(Constants.CODEGEN_ASSEMBLY_NAME)]
+[assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
 namespace FishNet.Object
 {
     /// <summary>
@@ -24,11 +24,11 @@ namespace FishNet.Object
         /// <summary>
         /// ComponentIndex for this NetworkBehaviour.
         /// </summary>
-        public byte ComponentIndex { get; private set; } = 0;
+        public byte ComponentIndex { get; private set; }
         /// <summary>
         /// NetworkObject this behaviour is for.
         /// </summary>        
-        public NetworkObject NetworkObject { get; private set; } = null;
+        public NetworkObject NetworkObject { get; private set; }
 
 
         /// <summary>

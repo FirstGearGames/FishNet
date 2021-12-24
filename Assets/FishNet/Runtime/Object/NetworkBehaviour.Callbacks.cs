@@ -8,6 +8,30 @@ namespace FishNet.Object
 
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
+        #region Public.
+        /// <summary>
+        /// True if OnStartServer has been called.
+        /// </summary>
+        [APIExclude]
+        public bool OnStartServerCalled { get; private set; }
+        /// <summary>
+        /// True if OnStartClient has been called.
+        /// </summary>
+        [APIExclude]
+        public bool OnStartClientCalled { get; private set; }
+        #endregion
+
+        #region Private.
+        /// <summary>
+        /// True if OnStartNetwork has been called.
+        /// </summary>
+        private bool _onStartNetworkCalled;
+        /// <summary>
+        /// True if OnStopNetwork has been called.
+        /// </summary>
+        private bool _onStopNetworkCalled;
+        #endregion
+
         /// <summary>
         /// Invokes cached callbacks on SyncTypes which were held until OnStartXXXXX was called.
         /// </summary>
@@ -20,20 +44,51 @@ namespace FishNet.Object
                 item.OnStartCallback(asServer);
         }
         /// <summary>
-        /// True if OnStartServer has been called.
+        /// Invokes the OnStart/StopNetwork.
         /// </summary>
-        [APIExclude]
-        public bool OnStartServerCalled { get; private set; } = false;
+        /// <param name="start"></param>
+        internal void InvokeOnNetwork(bool start)
+        {
+            if (start)
+            {
+                if (_onStartNetworkCalled)
+                    return;
+                OnStartNetwork();
+            }
+            else
+            {
+                if (_onStopNetworkCalled)
+                    return;
+                OnStopNetwork();
+            }
+        }
+
         /// <summary>
-        /// True if OnStartClient has been called.
+        /// Called when the network has initialized this object. May be called for server or client but will only be called once.
+        /// When as host or server this method will run before OnStartServer. 
+        /// When as client only the method will run before OnStartClient.
         /// </summary>
-        [APIExclude]
-        public bool OnStartClientCalled { get; private set; } = false;
+        public virtual void OnStartNetwork()
+        {
+            _onStartNetworkCalled = true;
+            _onStopNetworkCalled = false;
+        }
+        /// <summary>
+        /// Called when the network is deinitialized this object. May be called for server or client but will only be called once.
+        /// When as host or server this method will run after OnStopServer.
+        /// When as client only this method will run after OnStopClient.
+        /// </summary>
+        public virtual void OnStopNetwork()
+        {
+            _onStopNetworkCalled = true;
+            _onStartNetworkCalled = false;
+        }
+
         /// <summary>
         /// Called on the server after initializing this object.
         /// SyncTypes modified before or during this method will be sent to clients in the spawn message.
         /// </summary> 
-        public virtual void OnStartServer() 
+        public virtual void OnStartServer()
         {
             OnStartServerCalled = true;
             InvokeSyncTypeCallbacks(true);
@@ -48,8 +103,8 @@ namespace FishNet.Object
         /// <summary>
         /// Called on the server after ownership has changed.
         /// </summary>
-        /// <param name="newOwner">Current owner of this object.</param>
-        public virtual void OnOwnershipServer(NetworkConnection newOwner) { }
+        /// <param name="prevOwner">Previous owner of this object.</param>
+        public virtual void OnOwnershipServer(NetworkConnection prevOwner) { }
         /// <summary>
         /// Called on the server after a spawn message for this object has been sent to clients.
         /// Useful for sending remote calls or data to clients.
@@ -79,7 +134,7 @@ namespace FishNet.Object
         /// <summary>
         /// Called on the client after gaining or losing ownership.
         /// </summary>
-        /// <param name="newOwner">Previous owner of this object.</param>
+        /// <param name="prevOwner">Previous owner of this object.</param>
         public virtual void OnOwnershipClient(NetworkConnection prevOwner) { }
 
     }

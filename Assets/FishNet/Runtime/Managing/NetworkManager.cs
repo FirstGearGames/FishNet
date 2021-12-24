@@ -13,6 +13,8 @@ using FishNet.Object;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using System.Collections.Generic;
+using System;
+using FishNet.Managing.Observing;
 using System.Linq;
 
 namespace FishNet.Managing
@@ -21,6 +23,7 @@ namespace FishNet.Managing
     /// Acts as a container for all things related to your networking session.
     /// </summary>
     [DefaultExecutionOrder(short.MinValue)]
+    [DisallowMultipleComponent]
     public partial class NetworkManager : MonoBehaviour
     {
         #region Types.
@@ -49,11 +52,30 @@ namespace FishNet.Managing
         /// <summary>
         /// 
         /// </summary>
-        private static HashSet<NetworkManager> _instances = new HashSet<NetworkManager>();
+        private static List<NetworkManager> _instances = new List<NetworkManager>();
         /// <summary>
         /// Currently initialized NetworkManagers.
         /// </summary>
-        public static IReadOnlyCollection<NetworkManager> Instances => _instances;
+        public static IReadOnlyCollection<NetworkManager> Instances
+        {
+            get
+            {
+                /* Remove null instances of NetworkManager.
+                * This shouldn't happen because instances are removed
+                * OnDestroy but none the less something is causing
+                * it. */
+                for (int i = 0; i < _instances.Count; i++)
+                {
+                    if (_instances[i] == null)
+                    {
+                        _instances.RemoveAt(i);
+                        i--;
+                    }
+                }
+                return _instances;
+            }
+        }
+
         /// <summary>
         /// True if server is active.
         /// </summary>
@@ -81,27 +103,31 @@ namespace FishNet.Managing
         /// <summary>
         /// ServerManager for this NetworkManager.
         /// </summary>
-        public ServerManager ServerManager { get; private set; } = null;
+        public ServerManager ServerManager { get; private set; }
         /// <summary>
         /// ClientManager for this NetworkManager.
         /// </summary>
-        public ClientManager ClientManager { get; private set; } = null;
+        public ClientManager ClientManager { get; private set; }
         /// <summary>
         /// TransportManager for this NetworkManager.
         /// </summary>
-        public TransportManager TransportManager { get; private set; } = null;
+        public TransportManager TransportManager { get; private set; }
         /// <summary>
         /// TimeManager for this NetworkManager.
         /// </summary>
-        public TimeManager TimeManager { get; private set; } = null;
+        public TimeManager TimeManager { get; private set; }
         /// <summary>
         /// SceneManager for this NetworkManager.
         /// </summary>
-        public SceneManager SceneManager { get; private set; } = null;
+        public SceneManager SceneManager { get; private set; }
+        /// <summary>
+        /// ObserverManager for this NetworkManager.
+        /// </summary>
+        public ObserverManager ObserverManager { get; private set; }
         /// <summary>
         /// Authenticator for this NetworkManager. May be null if no Authenticator is used.
         /// </summary>
-        public Authenticator Authenticator { get; private set; } = null;
+        public Authenticator Authenticator { get; private set; }
         /// <summary>
         /// An empty connection reference. Used when a connection cannot be found to prevent object creation.
         /// </summary>
@@ -134,8 +160,16 @@ namespace FishNet.Managing
         /// <summary>
         /// True if this NetworkManager can persist after Awake checks.
         /// </summary>
-        private bool _canPersist = false;
+        private bool _canPersist;
         #endregion
+
+        #region Const.
+        /// <summary>
+        /// Maximum framerate allowed.
+        /// </summary>
+        internal const ushort MAXIMUM_FRAMERATE = 9999;
+        #endregion
+
 
         protected virtual void Awake()
         {
@@ -157,10 +191,13 @@ namespace FishNet.Managing
             AddTransportManager();
             AddServerAndClientManagers();
             AddTimeManager();
-            AddSceneManager(); ;
+            AddSceneManager();
+            AddObserverManager();
             InitializeComponents();
 
             _instances.Add(this);
+
+            ServerManager.StartForHeadless();
         }
 
         private void OnDestroy()
@@ -179,6 +216,28 @@ namespace FishNet.Managing
             ServerManager.InitializeOnce(this);
             ClientManager.InitializeOnce(this);
         }
+
+        /// <summary>
+        /// Updates the frame rate based on server and client status.
+        /// </summary>
+        internal void UpdateFramerate()
+        {
+            bool clientStarted = ClientManager.Started;
+            bool serverStarted = ServerManager.Started;
+
+            int frameRate;
+            if (clientStarted && serverStarted)
+                frameRate = Math.Max(ServerManager.FrameRate, ClientManager.FrameRate);
+            else if (clientStarted)
+                frameRate = ClientManager.FrameRate;
+            else if (serverStarted)
+                frameRate = ServerManager.FrameRate;
+            else
+                frameRate = MAXIMUM_FRAMERATE;
+
+            Application.targetFrameRate = frameRate;
+        }
+
         /// <summary>
         /// Called when MonoBehaviours call LateUpdate.
         /// </summary>
@@ -204,8 +263,9 @@ namespace FishNet.Managing
             if (_persistence == PersistenceType.AllowMultiple)
                 return true;
 
+            List<NetworkManager> instances = Instances.ToList();
             //If at least one manager is already instantiated/initialized.
-            if (_instances.Count > 0)
+            if (instances.Count > 0)
             {
                 GameObject target = null;
                 //If destroy newest.
@@ -216,7 +276,7 @@ namespace FishNet.Managing
                 //If destroy oldest.
                 else
                 {
-                    NetworkManager previous = Instances.First();
+                    NetworkManager previous = instances[0];
                     if (previous != null)
                         target = previous.gameObject;
                 }
@@ -225,7 +285,7 @@ namespace FishNet.Managing
                 if (target != null)
                 {
                     if (CanLog(LoggingType.Common))
-                        Debug.Log($"NetworkManager on object {gameObject.name} is is being destroyed due to persistence type {_persistence}.");
+                        Debug.Log($"NetworkManager on object {gameObject.name} is is being destroyed due to persistence type {_persistence}. Another NetworkManager already exists on object {instances[0].gameObject.name}.");
                     Destroy(gameObject);
                 }
 
@@ -290,17 +350,32 @@ namespace FishNet.Managing
         }
 
         /// <summary>
+        /// Adds ObserverManager.
+        /// </summary>
+        private void AddObserverManager()
+        {
+            if (gameObject.TryGetComponent<ObserverManager>(out ObserverManager result))
+                ObserverManager = result;
+            else
+                ObserverManager = gameObject.AddComponent<ObserverManager>();
+        }
+
+        /// <summary>
         /// Adds and assigns NetworkServer and NetworkClient if they are not already setup.
         /// </summary>
         private void AddServerAndClientManagers()
         {
-            //Add ServerManager if missing.
+            //Add servermanager.
             if (gameObject.TryGetComponent<ServerManager>(out ServerManager sm))
                 ServerManager = sm;
             else
                 ServerManager = gameObject.AddComponent<ServerManager>();
 
-            ClientManager = new ClientManager();
+            //Add clientmanager.
+            if (gameObject.TryGetComponent<ClientManager>(out ClientManager cm))
+                ClientManager = cm;
+            else
+                ClientManager = gameObject.AddComponent<ClientManager>();
         }
 
         #region Editor.

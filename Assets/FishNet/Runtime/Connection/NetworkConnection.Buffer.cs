@@ -19,7 +19,7 @@ namespace FishNet.Connection
         /// <summary>
         /// True if this object has been dirtied.
         /// </summary>
-        private bool _serverDirtied = false;
+        private bool _serverDirtied;
         #endregion
 
         /// <summary>

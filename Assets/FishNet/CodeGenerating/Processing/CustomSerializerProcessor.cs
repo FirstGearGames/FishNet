@@ -5,6 +5,7 @@ using FishNet.Serializing;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -128,7 +129,6 @@ namespace FishNet.CodeGenerating.Processing
             {
                 GenericInstanceType typeGenericInst = (GenericInstanceType)type;
                 TypeReference parameterType = typeGenericInst.GenericArguments[0];
-
                 CreateReaderOrWriter(extensionType, methodDef, ref instructionIndex, parameterType);
             }
         }
@@ -176,14 +176,17 @@ namespace FishNet.CodeGenerating.Processing
         {
             if (!parameterType.IsGenericParameter && parameterType.CanBeResolved())
             {
-                TypeDefinition typeDefinition = parameterType.Resolve();
+                TypeDefinition typeDefinition = parameterType.CachedResolve();
                 //If class and not value type check for accessible constructor.
                 if (typeDefinition.IsClass && !typeDefinition.IsValueType)
                 {
                     MethodDefinition constructor = typeDefinition.GetMethod(".ctor");
                     //Constructor is inaccessible, cannot create serializer for type.
-                    if (!constructor.IsPublic || !(constructor.IsAssembly && typeDefinition.Module == CodegenSession.Module))
+                    if (!constructor.IsPublic)
+                    {
+                        CodegenSession.LogError($"Unable to generator serializers for {typeDefinition.FullName} because it's constructor is not public.");
                         return;
+                    }
                 }
 
                 ILProcessor processor = methodDef.Body.GetILProcessor();
@@ -260,6 +263,15 @@ namespace FishNet.CodeGenerating.Processing
             //Does not contain prefix.
             if (methodDef.Name.Length < prefix.Length || methodDef.Name.Substring(0, prefix.Length) != prefix)
                 return ExtensionType.None;
+
+            //Make sure first parameter is right.
+            if (methodDef.Parameters.Count >= 1)
+            {
+                TypeReference tr = methodDef.Parameters[0].ParameterType;
+                if (tr.FullName != CodegenSession.WriterHelper.Writer_TypeRef.FullName &&
+                    tr.FullName != CodegenSession.ReaderHelper.Reader_TypeRef.FullName)
+                    return ExtensionType.None;
+            }
 
             if (write && methodDef.Parameters.Count < 2)
             {

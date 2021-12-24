@@ -16,11 +16,11 @@ namespace FishNet.Editing
         /// True if initialized.
         /// </summary>
         [System.NonSerialized]
-        private static bool _initialized = false;
+        private static bool _initialized;
         /// <summary>
         /// Found default prefabs.
         /// </summary>
-        private static DefaultPrefabObjects _defaultPrefabs = null;
+        private static DefaultPrefabObjects _defaultPrefabs;
 
         static DefaultPrefabsFinder()
         {

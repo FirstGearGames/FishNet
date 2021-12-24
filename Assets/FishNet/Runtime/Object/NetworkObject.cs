@@ -6,6 +6,9 @@ using FishNet.Transporting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Timing;
 using FishNet.Utility;
+using System.Collections.Generic;
+using FishNet.Utility.Performance;
+using FishNet.Observing;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -37,7 +40,7 @@ namespace FishNet.Object
         /// <summary>
         /// NetworkBehaviours within the root and children of this object.
         /// </summary>
-        public NetworkBehaviour[] NetworkBehaviours { get; private set; } = null;
+        public NetworkBehaviour[] NetworkBehaviours { get; private set; }
         /// <summary>
         /// 
         /// </summary>
@@ -75,7 +78,14 @@ namespace FishNet.Object
         internal void SetIsNetworked(bool isNetworked)
         {
             IsNetworked = isNetworked;
+            for (int i = 0; i < ChildNetworkObjects.Count; i++)
+                ChildNetworkObjects[i].SetIsNetworked(isNetworked);
         }
+        /// <summary>
+        /// NetworkObjects which are children of this one.
+        /// </summary>
+        [SerializeField, HideInInspector]
+        internal List<NetworkObject> ChildNetworkObjects = new List<NetworkObject>();
         #endregion
 
         private void Awake()
@@ -170,21 +180,87 @@ namespace FishNet.Object
             SetOwner(owner);
             ObjectId = objectId;
 
+            /* This must be called at the beginning
+             * so that all conditions are handled by the observer
+             * manager prior to the preinitialize call on networkobserver. 
+             * The method called is dependent on NetworkManager being set. */
+            AddDefaultNetworkObserverConditions();
+
             if (NetworkBehaviours == null || NetworkBehaviours.Length == 0)
             {
-                NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>();
-                if (NetworkBehaviours.Length > byte.MaxValue)
+                //If there are no child nobs then get NetworkBehaviours normally.
+                if (ChildNetworkObjects.Count == 0)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"Currently only 256 NetworkBehaviour scripts per object are allowed. Object {gameObject.name} will not initialized.");
+                    NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>();
                 }
+                //There are child nobs.
                 else
                 {
-                    for (int i = 0; i < NetworkBehaviours.Length; i++)
-                        NetworkBehaviours[i].PreInitialize(this, (byte)i);
+                    //Transforms which can be searched for networkbehaviours.
+                    ListCache<Transform> transformCache = ListCaches.TransformCache;
+                    transformCache.Reset();
+
+                    transformCache.AddValue(transform);
+
+                    for (int z = 0; z < transformCache.Written; z++)
+                    {
+                        Transform currentT = transformCache.Collection[z];
+                        for (int i = 0; i < currentT.childCount; i++)
+                        {
+                            Transform t = currentT.GetChild(i);
+                            bool hasNob = false;
+                            for (int x = 0; x < ChildNetworkObjects.Count; x++)
+                            {
+                                if (ChildNetworkObjects[x].transform == t)
+                                {
+                                    hasNob = true;
+                                    break;
+                                }
+                            }
+
+                            /* If the transform being checked 
+                             * does not have a network object then
+                             * add it to the cache. */
+                            if (!hasNob)
+                                transformCache.AddValue(t);
+                        }
+                    }
+
+                    int written;
+                    //Iterate all cached transforms and get networkbehaviours.
+                    ListCache<NetworkBehaviour> nbCache = ListCaches.NetworkBehaviourCache;
+                    nbCache.Reset();                    
+                    written = transformCache.Written;
+                    List<Transform> ts = transformCache.Collection;
+                    //
+                    for (int i = 0; i < written; i++)
+                        nbCache.AddValues(ts[i].GetNetworkBehaviours());
+
+                    //Copy to array.
+                    written = nbCache.Written;
+                    List<NetworkBehaviour> nbs = nbCache.Collection;
+                    NetworkBehaviours = new NetworkBehaviour[written];
+                    //
+                    for (int i = 0; i < written; i++)
+                        NetworkBehaviours[i] = nbs[i];
                 }
             }
 
+            //Check and initialize found network behaviours.
+            if (NetworkBehaviours.Length > byte.MaxValue)
+            {
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Currently only {byte.MaxValue} NetworkBehaviour scripts per object are allowed. Object {gameObject.name} will not initialized.");
+            }
+            else
+            {
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].PreInitialize(this, (byte)i);
+            }
+
+            /* NetworkObserver uses some information from
+             * NetworkBehaviour so it must be preinitialized
+             * after NetworkBehaviours are. */
             if (asServer)
                 PreInitializeObservers();
 
@@ -385,6 +461,18 @@ namespace FishNet.Object
 
         #region Editor.
 #if UNITY_EDITOR
+        protected virtual void OnValidate()
+        {
+            ////Set if there are any nobs in children.
+            //NetworkObject[] nobs  = GetComponentsInChildren<NetworkObject>(true);
+            //ChildNetworkObjects.Clear();
+            ////Start at index 1 as 0 would be this nob.
+            //for (int i = 1; i < nobs.Length; i++)
+            //    ChildNetworkObjects.Add(nobs[i]);
+
+            PartialOnValidate();
+        }
+        partial void PartialOnValidate();
         protected virtual void Reset()
         {
             SerializeSceneTransformProperties();

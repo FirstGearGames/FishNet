@@ -54,6 +54,16 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public event Action<NetworkBehaviour> OnPostReconcile;
         /// <summary>
+        /// Called before physics is simulated when replaying a replicate method.
+        /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
+        /// </summary>
+        public event Action<PhysicsScene, PhysicsScene2D> OnPreReplicateReplay;
+        /// <summary>
+        /// Called before physics is simulated when replaying a replicate method.
+        /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
+        /// </summary>
+        public event Action<PhysicsScene, PhysicsScene2D> OnPostReplicateReplay;
+        /// <summary>
         /// Called right before a tick occurs, as well before data is read.
         /// </summary>
         public event Action OnPreTick;
@@ -98,25 +108,19 @@ namespace FishNet.Managing.Timing
         /// DeltaTime for TickRate.
         /// </summary>
         [HideInInspector]
-        public double TickDelta { get; private set; } = 0d;
+        public double TickDelta { get; private set; }
         /// <summary>
         /// How long the local server has been connected.
         /// </summary>
-        public float ServerUptime { get; private set; } = 0f;
+        public float ServerUptime { get; private set; }
         /// <summary>
         /// How long the local client has been connected.
         /// </summary>
-        public float ClientUptime { get; private set; } = 0f;
+        public float ClientUptime { get; private set; }
         #endregion
 
         #region Serialized.
         [Header("Timing")]
-        /// <summary>
-        /// True to only send and receive data on ticks. False to do so whenever data is available.
-        /// </summary>
-        [Tooltip("True to only send and receive data on ticks. False to do so whenever data is available.")]
-        [SerializeField]
-        private bool _transportOnTick = false;
         /// <summary>
         /// 
         /// </summary>
@@ -167,7 +171,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// 
         /// </summary>
-        private uint _localTick = 0;
+        private uint _localTick;
         /// <summary>
         /// A tick that is not synchronized. This value will only increment. May be used for indexing or Ids with custom logic.
         /// When called on the server Tick is returned, otherwise LocalTick is returned.
@@ -185,7 +189,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Ticks passed since last ping.
         /// </summary>
-        private uint _pingTicks = 0;
+        private uint _pingTicks;
         /// <summary>
         /// MovingAverage instance used to calculate mean ping.
         /// </summary>
@@ -193,7 +197,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Time elapsed after ticks. This is extra time beyond the simulation rate.
         /// </summary>
-        private double _elapsedTickTime = 0f;
+        private double _elapsedTickTime;
         /// <summary>
         /// NetworkManager used with this.
         /// </summary>
@@ -237,7 +241,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Number of TimeManagers open which are using manual physics.
         /// </summary>
-        private static uint _manualPhysics = 0;
+        private static uint _manualPhysics;
         #endregion
 
         #region Const.
@@ -256,7 +260,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// How quickly to move AdjustedDeltaTick to DeltaTick.
         /// </summary>
-        private const double ADJUSTED_DELTA_RECOVERY_RATE = 0.000f; 
+        private const double ADJUSTED_DELTA_RECOVERY_RATE = 0.000f;
         /// <summary>
         /// Ping interval in seconds.
         /// </summary>
@@ -266,11 +270,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private const byte ADJUST_TIMING_INTERVAL = 2;
         #endregion
-
-        private void Awake()
-        {
-            AddNetworkLoops();
-        }
 
 #if UNITY_EDITOR
         private void OnDisable()
@@ -288,7 +287,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickFixedUpdate()
         {
-
             TryIterateData(true, false);
             OnFixedUpdate?.Invoke();
         }
@@ -340,6 +338,8 @@ namespace FishNet.Managing.Timing
             _networkManager.ServerManager.OnAuthenticationResult += ServerManager_OnAuthenticationResult;
             _networkManager.ClientManager.RegisterBroadcast<TimingAdjustmentBroadcast>(OnTimingAdjustmentBroadcast);
             _networkManager.ServerManager.RegisterBroadcast<AddBufferedBroadcast>(OnAddBufferedBroadcast);
+
+            AddNetworkLoops();
         }
 
         /// <summary>
@@ -399,6 +399,19 @@ namespace FishNet.Managing.Timing
                 OnPreReconcile?.Invoke(nb);
             else
                 OnPostReconcile?.Invoke(nb);
+        }
+
+        /// <summary>
+        /// Invokes OnReplicateReplay.
+        /// Internal use.
+        /// </summary>
+        [APIExclude] //codegen make internal and then public in codegen.
+        public void InvokeOnReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d, bool before)
+        {
+            if (before)
+                OnPreReplicateReplay?.Invoke(ps, ps2d);
+            else
+                OnPostReplicateReplay?.Invoke(ps, ps2d);
         }
 
         /// <summary>
@@ -472,8 +485,9 @@ namespace FishNet.Managing.Timing
         {
             uint tickDifference = (LocalTick - clientTIck);
             _pingAverage.ComputeAverage(tickDifference);
-
             double averageInTime = (_pingAverage.Average * TickDelta * 1000);
+            //Remove tickrate for a more accurate ping representation.
+            averageInTime = Math.Max(0, averageInTime - (TickDelta * 1000d));
             RoundTripTime = (long)Math.Round(averageInTime);
             _receivedPong = true;
         }
@@ -684,13 +698,8 @@ namespace FishNet.Managing.Timing
         /// <param name="isTick">True if call is occuring during a tick.</param>
         private void TryIterateData(bool incoming, bool isTick)
         {
-            /* If only iterating on ticks then data should
-             * only be read or sent during a tick.
-             * Otherwise, data will be handled immediately,
-             * outside the tick loop. */
-            if (isTick && !_transportOnTick)
-                return;
-            else if (!isTick && _transportOnTick)
+            //Only transport on tick.
+            if (!isTick)
                 return;
 
             int frameCount = Time.frameCount;

@@ -4,6 +4,7 @@ using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Serializing
@@ -33,6 +34,7 @@ namespace FishNet.Serializing
             dst[position++] = (byte)(value >> 24);
         }
 
+        public static void WriteDictionary<TKey, TValue>(this Writer writer, Dictionary<TKey, TValue> dict) => writer.WriteDictionary(dict);
         public static void WriteByte(this Writer writer, byte value) => writer.WriteByte(value);
         [CodegenExclude]
         public static void WriteBytes(this Writer writer, byte[] buffer, int offset, int count) => writer.WriteBytes(buffer, offset, count);

@@ -9,146 +9,152 @@ using UnityEngine;
 * 
 */
 
-public class RigidbodyPrediction : NetworkBehaviour
+namespace FishNet.Example.Prediction.Rigidbodies
 {
-    #region Types.
-    public struct MoveData
+
+    public class RigidbodyPrediction : NetworkBehaviour
     {
-        public bool Jump;
-        public float Horizontal;
-        public float Vertical;
-        public MoveData(bool jump, float horizontal, float vertical)
+        #region Types.
+        public struct MoveData
         {
-            Jump = jump;
-            Horizontal = horizontal;
-            Vertical = vertical;
-        }
-    }
-    public struct ReconcileData
-    {
-        public Vector3 Position;
-        public Quaternion Rotation;
-        public Vector3 Velocity;
-        public Vector3 AngularVelocity;
-        public ReconcileData(Vector3 position, Quaternion rotation, Vector3 velocity, Vector3 angularVelocity)
-        {
-            Position = position;
-            Rotation = rotation;
-            Velocity = velocity;
-            AngularVelocity = angularVelocity;
-        }
-    }
-    #endregion
-
-    #region Serialized.
-    [SerializeField]
-    private float _jumpForce = 15f;
-    [SerializeField]
-    private float _moveRate = 15f;
-    #endregion
-
-    #region Private.
-    /// <summary>
-    /// Rigidbody on this object.
-    /// </summary>
-    private Rigidbody _rigidbody;
-    /// <summary>
-    /// Next time a jump is allowed.
-    /// </summary>
-    private float _nextJumpTime = 0f;
-    /// <summary>
-    /// True to jump next frame.
-    /// </summary>
-    private bool _jump = false;
-    #endregion
-
-
-
-    private void Awake()
-    {
-        
-        _rigidbody = GetComponent<Rigidbody>();
-        InstanceFinder.TimeManager.OnTick += TimeManager_OnTick;
-        InstanceFinder.TimeManager.OnPostTick += TimeManager_OnPostTick;
-    }
-
-    private void OnDestroy()
-    {
-        if (InstanceFinder.TimeManager != null)
-        {
-            InstanceFinder.TimeManager.OnTick -= TimeManager_OnTick;
-            InstanceFinder.TimeManager.OnPostTick -= TimeManager_OnPostTick;
-        }
-    }
-
-    private void Update()
-    {
-        if (base.IsOwner)
-        {
-            if (Input.GetKeyDown(KeyCode.Space) && Time.time > _nextJumpTime)
+            public bool Jump;
+            public float Horizontal;
+            public float Vertical;
+            public MoveData(bool jump, float horizontal, float vertical)
             {
-                _nextJumpTime = Time.time + 1f;
-                _jump = true;
+                Jump = jump;
+                Horizontal = horizontal;
+                Vertical = vertical;
             }
         }
-    }
-
-    private void TimeManager_OnTick()
-    {
-        if (base.IsOwner)
+        public struct ReconcileData
         {
-            Reconciliation(default, false);
-            CheckInput(out MoveData md);
-            Move(md, false);
+            public Vector3 Position;
+            public Quaternion Rotation;
+            public Vector3 Velocity;
+            public Vector3 AngularVelocity;
+            public ReconcileData(Vector3 position, Quaternion rotation, Vector3 velocity, Vector3 angularVelocity)
+            {
+                Position = position;
+                Rotation = rotation;
+                Velocity = velocity;
+                AngularVelocity = angularVelocity;
+            }
         }
-        if (base.IsServer)
+        #endregion
+
+        #region Serialized.
+        [SerializeField]
+        private float _jumpForce = 15f;
+        [SerializeField]
+        private float _moveRate = 15f;
+        #endregion
+
+        #region Private.
+        /// <summary>
+        /// Rigidbody on this object.
+        /// </summary>
+        private Rigidbody _rigidbody;
+        /// <summary>
+        /// Next time a jump is allowed.
+        /// </summary>
+        private float _nextJumpTime;
+        /// <summary>
+        /// True to jump next frame.
+        /// </summary>
+        private bool _jump;
+        #endregion
+
+
+
+        private void Awake()
         {
-            Move(default, true);
+
+            _rigidbody = GetComponent<Rigidbody>();
+            InstanceFinder.TimeManager.OnTick += TimeManager_OnTick;
+            InstanceFinder.TimeManager.OnPostTick += TimeManager_OnPostTick;
         }
-    }
 
-
-    private void TimeManager_OnPostTick()
-    {
-        if (base.IsServer)
+        private void OnDestroy()
         {
-            ReconcileData rd = new ReconcileData(transform.position, transform.rotation, _rigidbody.velocity, _rigidbody.angularVelocity);
-            Reconciliation(rd, true);
+            if (InstanceFinder.TimeManager != null)
+            {
+                InstanceFinder.TimeManager.OnTick -= TimeManager_OnTick;
+                InstanceFinder.TimeManager.OnPostTick -= TimeManager_OnPostTick;
+            }
         }
-    }
 
-    private void CheckInput(out MoveData md)
-    {
-        md = default;
+        private void Update()
+        {
+            if (base.IsOwner)
+            {
+                if (Input.GetKeyDown(KeyCode.Space) && Time.time > _nextJumpTime)
+                {
+                    _nextJumpTime = Time.time + 1f;
+                    _jump = true;
+                }
+            }
+        }
 
-        float horizontal = Input.GetAxisRaw("Horizontal");
-        float vertical = Input.GetAxisRaw("Vertical");
+        private void TimeManager_OnTick()
+        {
+            if (base.IsOwner)
+            {
+                Reconciliation(default, false);
+                CheckInput(out MoveData md);
+                Move(md, false);
+            }
+            if (base.IsServer)
+            {
+                Move(default, true);
+            }
+        }
 
-        if (horizontal == 0f && vertical == 0f && !_jump)
-            return;
 
-        md = new MoveData(_jump, horizontal, vertical);
-        _jump = false;
-    }
+        private void TimeManager_OnPostTick()
+        {
+            if (base.IsServer)
+            {
+                ReconcileData rd = new ReconcileData(transform.position, transform.rotation, _rigidbody.velocity, _rigidbody.angularVelocity);
+                Reconciliation(rd, true);
+            }
+        }
 
-    [Replicate]
-    private void Move(MoveData md, bool asServer, bool replaying = false)
-    {
-        //Add extra gravity for faster falls.
-        Vector3 forces = new Vector3(md.Horizontal, Physics.gravity.y, md.Vertical) * _moveRate;
-        _rigidbody.AddForce(forces);
+        private void CheckInput(out MoveData md)
+        {
+            md = default;
 
-        if (md.Jump)
-            _rigidbody.AddForce(new Vector3(0f, _jumpForce, 0f), ForceMode.Impulse);
-    }
+            float horizontal = Input.GetAxisRaw("Horizontal");
+            float vertical = Input.GetAxisRaw("Vertical");
 
-    [Reconcile]
-    private void Reconciliation(ReconcileData rd, bool asServer)
-    {
-        transform.position = rd.Position;
-        transform.rotation = rd.Rotation;
-        _rigidbody.velocity = rd.Velocity;
-        _rigidbody.angularVelocity = rd.AngularVelocity;
+            if (horizontal == 0f && vertical == 0f && !_jump)
+                return;
+
+            md = new MoveData(_jump, horizontal, vertical);
+            _jump = false;
+        }
+
+        [Replicate]
+        private void Move(MoveData md, bool asServer, bool replaying = false)
+        {
+            //Add extra gravity for faster falls.
+            Vector3 forces = new Vector3(md.Horizontal, Physics.gravity.y, md.Vertical) * _moveRate;
+            _rigidbody.AddForce(forces);
+
+            if (md.Jump)
+                _rigidbody.AddForce(new Vector3(0f, _jumpForce, 0f), ForceMode.Impulse);
+        }
+
+        [Reconcile]
+        private void Reconciliation(ReconcileData rd, bool asServer)
+        {
+            transform.position = rd.Position;
+            transform.rotation = rd.Rotation;
+            _rigidbody.velocity = rd.Velocity;
+            _rigidbody.angularVelocity = rd.AngularVelocity;
+        }
+
+
     }
 
 

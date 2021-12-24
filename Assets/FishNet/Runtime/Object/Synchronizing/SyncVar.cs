@@ -44,11 +44,11 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Server OnChange event waiting for start callbacks.
         /// </summary>
-        private CachedOnChange? _serverOnChange = null;
+        private CachedOnChange? _serverOnChange;
         /// <summary>
         /// Client OnChange event waiting for start callbacks.
         /// </summary>
-        private CachedOnChange? _clientOnChange = null;
+        private CachedOnChange? _clientOnChange;
         /// <summary>
         /// Value before the network is initialized on the containing object.
         /// </summary>

@@ -10,7 +10,7 @@ namespace FishNet.Object
         /// <summary>
         /// RpcLinks being used within this NetworkObject.
         /// </summary>
-        private List<ushort> _rpcLinkIndexes = null;
+        private List<ushort> _rpcLinkIndexes;
         #endregion
 
         /// <summary>

@@ -30,7 +30,7 @@ namespace FishNet.Object
         /// <summary>
         /// Number of total RPC methods for scripts in the same inheritance tree for this instance.
         /// </summary>
-        private uint _rpcMethodCount = 0;
+        private uint _rpcMethodCount;
         /// <summary>
         /// Size of every rpcHash for this networkBehaviour.
         /// </summary>
@@ -60,8 +60,10 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void RegisterServerRpc(uint rpcHash, ServerRpcDelegate del)
         {
+            bool contains = _serverRpcDelegates.ContainsKey(rpcHash);
             _serverRpcDelegates[rpcHash] = del;
-            IncreaseRpcMethodCount();
+            if (!contains)
+                IncreaseRpcMethodCount();
         }
         /// <summary>
         /// Registers a RPC method.
@@ -73,8 +75,10 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void RegisterObserversRpc(uint rpcHash, ClientRpcDelegate del)
         {
+            bool contains = _observersRpcDelegates.ContainsKey(rpcHash);
             _observersRpcDelegates[rpcHash] = del;
-            IncreaseRpcMethodCount();
+            if (!contains)
+                IncreaseRpcMethodCount();
         }
         /// <summary>
         /// Registers a RPC method.
@@ -86,8 +90,10 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void RegisterTargetRpc(uint rpcHash, ClientRpcDelegate del)
         {
+            bool contains = _targetRpcDelegates.ContainsKey(rpcHash);
             _targetRpcDelegates[rpcHash] = del;
-            IncreaseRpcMethodCount();
+            if (!contains)
+                IncreaseRpcMethodCount();
         }
 
         /// <summary>

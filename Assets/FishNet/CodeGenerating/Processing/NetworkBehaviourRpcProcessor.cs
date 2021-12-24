@@ -7,12 +7,18 @@ using FishNet.Object.Helping;
 using FishNet.Transporting;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
+using MonoFN.Cecil.Rocks;
 using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
+using SR = System.Reflection;
 
 namespace FishNet.CodeGenerating.Processing
 {
     internal class NetworkBehaviourRpcProcessor
     {
+
+        private List<(MethodDefinition, MethodDefinition)> _virtualRpcs = new List<(MethodDefinition createdLogicMd, MethodDefinition originalRpcMd)>();
 
         #region Const.
         private const string LOGIC_PREFIX = "RpcLogic___";
@@ -22,6 +28,7 @@ namespace FishNet.CodeGenerating.Processing
         private const string INCLUDE_OWNER_TEXT = "IncludeOwner";
         private const string BUFFERED_RPC_PROPERTY_NAME = "BufferLast";
         #endregion
+
         internal bool Process(TypeDefinition typeDef, ref uint rpcStartCount)
         {
             bool modified = false;
@@ -38,7 +45,7 @@ namespace FishNet.CodeGenerating.Processing
                 }
 
                 RpcType rpcType;
-                CustomAttribute rpcAttribute = GetRpcAttribute(methodDef, out rpcType);
+                CustomAttribute rpcAttribute = GetRpcAttribute(methodDef, true, out rpcType);
                 if (rpcAttribute == null)
                     continue;
 
@@ -60,20 +67,35 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     modified = true;
                     delegateMethodDefs.Add((rpcType, methodDef, readerMethodDef, rpcStartCount, rpcAttribute));
+                    if (logicMethodDef.IsVirtual)
+                        _virtualRpcs.Add((logicMethodDef, methodDef));
+
                     rpcStartCount++;
                 }
             }
 
             if (modified)
             {
-                //NetworkObject.Create_____Delegate.
                 foreach ((RpcType rpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, uint methodHash, CustomAttribute rpcAttribute) in delegateMethodDefs)
+                {
+                    //NetworkObject.Create_____Delegate.
                     CodegenSession.ObjectHelper.CreateRpcDelegate(originalMethodDef, readerMethodDef, rpcType, methodHash, rpcAttribute);
+
+                }
 
                 modified = true;
             }
 
             return modified;
+        }
+
+        /// <summary>
+        /// Redirects base calls for overriden RPCs.
+        /// </summary>
+        internal void RedirectBaseCalls()
+        {
+            foreach ((MethodDefinition logicMd, MethodDefinition originalMd) in _virtualRpcs)
+                RedirectBaseCall(logicMd, originalMd);            
         }
 
         /// <summary>
@@ -104,73 +126,95 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Returns the RPC attribute on a method, if one exist. Otherwise returns null.
         /// </summary>
-        /// <param name="methodDef"></param>
-        /// <param name="rpcType"></param>
+        /// <param name="validate">True to validate parameters and check for serializers.</param>
         /// <returns></returns>
-        internal CustomAttribute GetRpcAttribute(MethodDefinition methodDef, out RpcType rpcType)
+        internal CustomAttribute GetRpcAttribute(MethodDefinition methodDef, bool validate, out RpcType rpcType)
         {
-            CustomAttribute foundAttribute = null;
-            rpcType = RpcType.None;
-            //Becomes true if an error occurred during this process.
+            //True if an error occurred.
             bool error = false;
+            //Last rpc attribute found.
+            CustomAttribute rpcAttribute = null;
+            //Found RpcType.
+            rpcType = RpcType.None;
+            //Number of rpc attributes found.
+            uint foundAttributes = 0;
 
             foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
             {
-                RpcType thisRpcType = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute);
-                if (thisRpcType != RpcType.None)
+                RpcType tmpRpcType = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute);
+                if (tmpRpcType != RpcType.None)
                 {
-                    //A rpc attribute already exist.
-                    if (foundAttribute != null)
-                    {
-                        CodegenSession.LogError($"{methodDef.Name} RPC method cannot have multiple RPC attributes.");
-                        error = true;
-                    }
-                    //Static method.
-                    if (methodDef.IsStatic)
-                    {
-                        CodegenSession.LogError($"{methodDef.Name} RPC method cannot be static.");
-                        error = true;
-                    }
-                    //Abstract method.
-                    if (methodDef.IsAbstract)
-                    {
-                        CodegenSession.LogError($"{methodDef.Name} RPC method cannot be abstract.");
-                        error = true;
-                    }
-                    //Non void return.
-                    if (methodDef.ReturnType != methodDef.Module.TypeSystem.Void)
-                    {
-                        CodegenSession.LogError($"{methodDef.Name} RPC method must return void.");
-                        error = true;
-                    }
-                    //TargetRpc but missing correct parameters.
-                    if (thisRpcType == RpcType.Target)
-                    {
-                        if (methodDef.Parameters.Count == 0 || !methodDef.Parameters[0].Is(typeof(NetworkConnection)))
-                        {
-                            CodegenSession.LogError($"Target RPC {methodDef.Name} must have a NetworkConnection as the first parameter.");
-                            error = true;
-                        }
-                    }
-
-                    //If all checks passed.
-                    if (!error)
-                    {
-                        foundAttribute = customAttribute;
-                        rpcType = thisRpcType;
-                    }
+                    rpcType = tmpRpcType;
+                    rpcAttribute = customAttribute;
+                    foundAttributes++;
                 }
             }
 
-            if (foundAttribute != null)
+            if (validate && rpcAttribute != null)
             {
+
+                //A rpc attribute already exist.
+                if (foundAttributes > 1)
+                {
+                    CodegenSession.LogError($"{methodDef.Name} RPC method cannot have multiple RPC attributes.");
+                    error = true;
+                }
+                //Virtual method.
+                //else if (methodDef.Attributes.HasFlag(MethodAttributes.Virtual))
+                //{
+                //    CodegenSession.LogError($"{methodDef.Name} RPC method cannot be virtual.");
+                //    error = true;
+                //}
+                //Static method.
+                else if (methodDef.IsStatic)
+                {
+                    CodegenSession.LogError($"{methodDef.Name} RPC method cannot be static.");
+                    error = true;
+                }
+                //Abstract method.
+                else if (methodDef.IsAbstract)
+                {
+                    CodegenSession.LogError($"{methodDef.Name} RPC method cannot be abstract.");
+                    error = true;
+                }
+                //Non void return.
+                else if (methodDef.ReturnType != methodDef.Module.TypeSystem.Void)
+                {
+                    CodegenSession.LogError($"{methodDef.Name} RPC method must return void.");
+                    error = true;
+                }
+                //Misc failing conditions.
+                else
+                {
+                    //Check if is overloaded.
+                    TypeDefinition td = methodDef.DeclaringType;
+                    foreach (MethodDefinition md in td.GetMethods())
+                    {
+                        if (md != methodDef && md.Name == methodDef.Name)
+                        {
+                            CodegenSession.LogError($"{methodDef.Name} RPC method cannot be overloaded. This feature will be provided in a later release.");
+                            error = true;
+                            break;
+                        }
+                    }
+                }
+                //TargetRpc but missing correct parameters.
+                if (rpcType == RpcType.Target)
+                {
+                    if (methodDef.Parameters.Count == 0 || !methodDef.Parameters[0].Is(typeof(NetworkConnection)))
+                    {
+                        CodegenSession.LogError($"Target RPC {methodDef.Name} must have a NetworkConnection as the first parameter.");
+                        error = true;
+                    }
+                }
+
                 //Make sure all parameters can be serialized.
                 for (int i = 0; i < methodDef.Parameters.Count; i++)
                 {
                     ParameterDefinition parameterDef = methodDef.Parameters[i];
 
                     //If NetworkConnection, TargetRpc, and first parameter.
-                    if (parameterDef.Is(typeof(NetworkConnection)) && rpcType == RpcType.Target && i == 0)
+                    if ((i == 0) && (rpcType == RpcType.Target) && parameterDef.Is(typeof(NetworkConnection)))
                         continue;
 
                     //Can be serialized/deserialized.
@@ -186,11 +230,11 @@ namespace FishNet.CodeGenerating.Processing
             //If an error occurred then reset results.
             if (error)
             {
-                foundAttribute = null;
+                rpcAttribute = null;
                 rpcType = RpcType.None;
             }
 
-            return foundAttribute;
+            return rpcAttribute;
         }
 
         /// <summary>
@@ -323,7 +367,7 @@ namespace FishNet.CodeGenerating.Processing
                 CreateSendTargetRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, targetConnectionParameterDef);
 
             //Dispose of writer.
-            createdProcessor.Add( CodegenSession.WriterHelper.DisposePooledWriter(createdMethodDef, pooledWriterVariableDef));
+            createdProcessor.Add(CodegenSession.WriterHelper.DisposePooledWriter(createdMethodDef, pooledWriterVariableDef));
             //Add end of method.
             createdProcessor.Emit(OpCodes.Ret);
 
@@ -422,7 +466,10 @@ namespace FishNet.CodeGenerating.Processing
         /// <returns></returns>
         private MethodDefinition CreateRpcReaderMethod(TypeDefinition typeDef, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, MethodDefinition logicMethodDef, CustomAttribute rpcAttribute, RpcType rpcType)
         {
-            string methodName = $"{READER_PREFIX}{originalMethodDef.Name}";
+            StringBuilder sb = new StringBuilder();
+            foreach (ParameterDefinition pd in originalMethodDef.Parameters)
+                sb.Append(pd.ParameterType.Name);
+            string methodName = $"{READER_PREFIX}{originalMethodDef.Name}{sb.ToString()}";
             /* If method already exist then just return it. This
              * can occur when a method needs to be rebuilt due to
              * inheritence, and renumbering the RPC method names. 
@@ -745,7 +792,6 @@ namespace FishNet.CodeGenerating.Processing
             createdMethodDef = new MethodDefinition(
             methodName, originalMethodDef.Attributes, originalMethodDef.ReturnType);
             typeDef.Methods.Add(createdMethodDef);
-
             createdMethodDef.Body.InitLocals = true;
 
             //Copy parameter expecations into new method.
@@ -764,8 +810,6 @@ namespace FishNet.CodeGenerating.Processing
             originalMethodDef.CustomDebugInformations.Clear();
             //Swap debuginformation scope.
             (originalMethodDef.DebugInformation.Scope, createdMethodDef.DebugInformation.Scope) = (createdMethodDef.DebugInformation.Scope, originalMethodDef.DebugInformation.Scope);
-            //Allows rpcs to call base methods.
-            FixRemoteCallToBaseMethod(createdMethodDef, originalMethodDef);
 
             return createdMethodDef;
         }
@@ -776,36 +820,28 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="type"></param>
         /// <param name="createdMethodDef"></param>
-        private void FixRemoteCallToBaseMethod(MethodDefinition createdMethodDef, MethodDefinition originalMethodDef)
+        private void RedirectBaseCall(MethodDefinition createdMethodDef, MethodDefinition originalMethodDef)
         {
             //All logic RPCs end with the logic suffix.
             if (!createdMethodDef.Name.StartsWith(LOGIC_PREFIX))
                 return;
-
-            //Gets the original method name to set base calls to.
-            string baseRemoteCallName = originalMethodDef.Name;
-            TypeDefinition originalTypeDef = originalMethodDef.DeclaringType;
+            //Not virtual, no need to check.
+            if (!createdMethodDef.IsVirtual)
+                return;
 
             foreach (Instruction instruction in createdMethodDef.Body.Instructions)
             {
-                // if call to base.CmdDoSomething within this.CallCmdDoSomething
-                if (CodegenSession.GeneralHelper.IsCallToMethod(instruction, out MethodDefinition calledMethod) && calledMethod.Name == baseRemoteCallName)
+                // if call to base.RpcDoSomething within this.RpcDoSOmething.
+                if (CodegenSession.GeneralHelper.IsCallToMethod(instruction, out MethodDefinition calledMethod) && calledMethod.Name == originalMethodDef.Name)
                 {
-                    TypeDefinition baseType = originalTypeDef.BaseType.Resolve();
-                    MethodReference baseMethod = baseType.GetMethodInBaseType(baseRemoteCallName);
-                    if (baseMethod == null)
+                    MethodReference baseLogicMd = createdMethodDef.DeclaringType .GetMethodInBase(createdMethodDef.Name);
+                    if (baseLogicMd == null)
                     {
                         CodegenSession.LogError($"Could not find base method for {createdMethodDef.Name}.");
                         return;
                     }
 
-                    if (!baseMethod.Resolve().IsVirtual)
-                    {
-                        CodegenSession.LogError($"Could not find base method that was virtual {createdMethodDef.Name}.");
-                        return;
-                    }
-
-                    instruction.Operand = createdMethodDef.Module.ImportReference(baseMethod);
+                    instruction.Operand = CodegenSession.ImportReference(baseLogicMd);
                 }
             }
         }

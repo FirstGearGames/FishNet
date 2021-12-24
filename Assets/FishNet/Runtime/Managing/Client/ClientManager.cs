@@ -12,7 +12,7 @@ namespace FishNet.Managing.Client
     /// A container for local client data and actions.
     /// </summary>
     [DisallowMultipleComponent]
-    public partial class ClientManager
+    public partial class ClientManager : MonoBehaviour
     {
         #region Public.
         /// <summary>
@@ -22,19 +22,37 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// True if the client connection is connected to the server.
         /// </summary>
-        public bool Started { get; private set; } = false;
+        public bool Started { get; private set; }
         /// <summary>
         /// NetworkConnection the local client is using to send data to the server.
         /// </summary>
-        public NetworkConnection Connection = null;
+        public NetworkConnection Connection;
         /// <summary>
         /// Handling and information for objects known to the local client.
         /// </summary>
-        public ClientObjects Objects { get; private set; } = null;
+        public ClientObjects Objects { get; private set; }
         /// <summary>
         /// NetworkManager for client.
         /// </summary>
-        public NetworkManager NetworkManager = null;
+        [HideInInspector]
+        public NetworkManager NetworkManager { get; private set; }
+        #endregion
+
+        #region Serialized.
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.")]
+        [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
+        [SerializeField]
+        private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
+        /// <summary>
+        /// Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.
+        /// </summary>
+        internal ushort FrameRate => _frameRate;
+        #endregion
+
+        #region Private.
         /// <summary>
         /// Used to read splits.
         /// </summary>
@@ -88,12 +106,30 @@ namespace FishNet.Managing.Client
         {
             NetworkManager.TransportManager.Transport.StopConnection(false);
         }
+
         /// <summary>
-        /// Stops the local client connection.
+        /// Starts the local client connection.
         /// </summary>
         public void StartConnection()
         {
             NetworkManager.TransportManager.Transport.StartConnection(false);
+        }
+
+        /// <summary>
+        /// Sets the transport address and starts the local client connection.
+        /// </summary>
+        public void StartConnection(string address)
+        {
+            StartConnection(address, NetworkManager.TransportManager.Transport.GetPort());
+        }
+        /// <summary>
+        /// Sets the transport address and port, and starts the local client connection.
+        /// </summary>
+        public void StartConnection(string address, ushort port)
+        {
+            NetworkManager.TransportManager.Transport.SetClientAddress(address);
+            NetworkManager.TransportManager.Transport.SetPort(port);
+            StartConnection();
         }
 
         /// <summary>
@@ -115,7 +151,7 @@ namespace FishNet.Managing.Client
             else if (stopped && NetworkManager.CanLog(LoggingType.Common))
                 Debug.Log($"Local client is disconnected from the server.");
 
-            NetworkManager.ServerManager.UpdateFramerate();
+            NetworkManager.UpdateFramerate();
             OnClientConnectionState?.Invoke(args);
         }
 

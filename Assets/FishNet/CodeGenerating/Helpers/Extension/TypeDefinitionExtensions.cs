@@ -8,6 +8,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
     internal static class TypeDefinitionExtensions
     {
+
         /// <summary>
         /// Returns if typeDef or any of it's parents inherit from NetworkBehaviour.
         /// </summary>
@@ -15,14 +16,15 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         internal static bool InheritsNetworkBehaviour(this TypeDefinition typeDef)
         {
-            TypeDefinition copyTypeDef = typeDef;
-            while (copyTypeDef != null)
+            string nbFullName = CodegenSession.ObjectHelper.NetworkBehaviour_FullName;
+            
+            TypeDefinition copyTd = typeDef;
+            while (copyTd != null)
             {
-                //Base is a network behaviour.
-                if (copyTypeDef.BaseType != null && copyTypeDef.BaseType.FullName == CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
+                if (copyTd.FullName == nbFullName)
                     return true;
 
-                copyTypeDef = GetNextBaseClass(copyTypeDef);
+                copyTd = copyTd.GetNextBaseClass();
             }
 
             //Fall through, network behaviour not found.
@@ -57,12 +59,21 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static TypeDefinition GetNextBaseClassToProcess(TypeDefinition typeDef)
+        internal static TypeDefinition GetNextBaseClassToProcess(this TypeDefinition typeDef)
         {
             if (typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
-                return typeDef.BaseType.Resolve();
+                return typeDef.BaseType.CachedResolve();
             else
                 return null;
+        }
+
+        internal static TypeDefinition GetLastBaseClass(this TypeDefinition typeDef)
+        {
+            TypeDefinition copyTd = typeDef;
+            while (copyTd.BaseType != null)
+                copyTd = copyTd.BaseType.CachedResolve();
+
+            return copyTd;
         }
 
         /// <summary>
@@ -70,9 +81,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static TypeDefinition GetNextBaseClass(TypeDefinition typeDef)
+        internal static TypeDefinition GetNextBaseClass(this TypeDefinition typeDef)
         {
-            return (typeDef.BaseType == null) ? null : typeDef.BaseType.Resolve();
+            return (typeDef.BaseType == null) ? null : typeDef.BaseType.CachedResolve();
         }
         /// <summary>
         /// Returns if typeDef is static (abstract, sealed).
@@ -128,7 +139,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 if (copyTd.BaseType.IsType(type))
                     return true;
 
-                copyTd = GetNextBaseClass(copyTd);
+                copyTd = copyTd.GetNextBaseClass();
             }
 
             //Fall through.
@@ -204,7 +215,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
                 try
                 {
-                    baseTypeRef = baseTypeRef.Resolve().BaseType;
+                    baseTypeRef = baseTypeRef.CachedResolve().BaseType;
                 }
                 catch
                 {
@@ -237,6 +248,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return null;
         }
 
+
         /// <summary>
         /// Returns if the TypeDefinition implements TInterface.
         /// </summary>
@@ -244,6 +256,24 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="typeDef"></param>
         /// <returns></returns>
         public static bool ImplementsInterface<TInterface>(this TypeDefinition typeDef)
+        {
+            for (int i = 0; i < typeDef.Interfaces.Count; i++)
+            {
+                if (typeDef.Interfaces[i].InterfaceType.Is<TInterface>())
+                    return true;
+            }
+
+            return false;
+        }
+
+
+        /// <summary>
+        /// Returns if the TypeDefinition implements TInterface.
+        /// </summary>
+        /// <typeparam name="TInterface"></typeparam>
+        /// <param name="typeDef"></param>
+        /// <returns></returns>
+        public static bool ImplementsInterfaceRecursive<TInterface>(this TypeDefinition typeDef)
         {
             TypeDefinition climbTypeDef = typeDef;
 
@@ -255,7 +285,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 try
                 {
                     if (climbTypeDef.BaseType != null)
-                        climbTypeDef = climbTypeDef.BaseType.Resolve();
+                        climbTypeDef = climbTypeDef.BaseType.CachedResolve();
                     else
                         climbTypeDef = null;
                 }

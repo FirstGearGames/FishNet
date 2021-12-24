@@ -28,12 +28,6 @@ namespace FishNet.Tugboat
 
         [Header("Server")]
         /// <summary>
-        /// True to have server bind to all interfaces.
-        /// </summary>
-        [Tooltip("True to bind to all interfaces.")]
-        [SerializeField]
-        private bool _serverBindsAll = true;
-        /// <summary>
         /// Bind address to use.
         /// </summary>
         [Tooltip("Bind address to use.")]
@@ -80,10 +74,6 @@ namespace FishNet.Tugboat
         /// Client socket and handler.
         /// </summary>
         private Client.ClientSocket _client = new Client.ClientSocket();
-        /// <summary>
-        /// Largest MTU of available channels.
-        /// </summary>
-        private int _largestMTU = 0;
         #endregion
 
         #region Const.
@@ -96,10 +86,6 @@ namespace FishNet.Tugboat
         #region Initialization and unity.
         public override void Initialize(NetworkManager networkManager)
         {
-            base.Initialize(networkManager);
-            //Set largest MTU. Used to create a buffer.
-            _largestMTU = Mathf.Max(_reliableMTU, _unreliableMTU);
-
             base.Initialize(networkManager);
         }
 
@@ -263,7 +249,7 @@ namespace FishNet.Tugboat
         /// <returns></returns>
         public override float GetTimeout(bool asServer)
         {
-            return (float)_timeout;
+            return (asServer) ? -1f : (float)_timeout;
         }
         /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
@@ -353,15 +339,6 @@ namespace FishNet.Tugboat
         }
 
         /// <summary>
-        /// Starts the local client.
-        /// </summary>
-        /// <param name="address">Address to connect to.</param>
-        public override bool StartConnection(string address)
-        {
-            return StartClient(address);
-        }
-
-        /// <summary>
         /// Stops the local server or client.
         /// </summary>
         /// <param name="server">True to stop server.</param>
@@ -418,7 +395,7 @@ namespace FishNet.Tugboat
         /// <param name="address"></param>
         private bool StartClient(string address)
         {
-            _client.Initialize(this, _reliableMTU, _unreliableMTU);
+            _client.Initialize(this, _reliableMTU, _unreliableMTU, _timeout);
             return _client.StartConnection(address, _port, GetChannelCount(), POLL_TIMEOUT);
         }
 

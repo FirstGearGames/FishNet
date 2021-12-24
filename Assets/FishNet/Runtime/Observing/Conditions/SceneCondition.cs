@@ -18,7 +18,7 @@ namespace FishNet.Component.Observing
         ///// </summary>
         //[Tooltip("True to synchronize which scene the object was spawned in to clients. When true this object will be moved to the clients equivelant of the scene it was spawned in on the server. This setting does not continously move this object to the same scene.")]
         //[SerializeField]
-        //private bool _synchronizeScene = false;
+        //private bool _synchronizeScene;
         #endregion
 
         public void ConditionConstructor()

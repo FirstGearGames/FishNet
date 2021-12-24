@@ -31,7 +31,7 @@ namespace FishNet.Connection
         /// <summary>
         /// NetworkManager managing this class.
         /// </summary>
-        public NetworkManager NetworkManager { get; private set; } = null;
+        public NetworkManager NetworkManager { get; private set; }
         /// <summary>
         /// True if connection has loaded start scenes. Available to this connection and server.
         /// </summary>
@@ -47,7 +47,7 @@ namespace FishNet.Connection
         /// <summary>
         /// True if this connection is authenticated. Only available to server.
         /// </summary>
-        public bool Authenticated { get; private set; } = false;
+        public bool Authenticated { get; private set; }
         /// <summary>
         /// True if this connection IsValid and not Disconnecting.
         /// </summary>
@@ -75,7 +75,7 @@ namespace FishNet.Connection
         /// <summary>
         /// The first object within Objects.
         /// </summary>
-        public NetworkObject FirstObject { get; private set; } = null;
+        public NetworkObject FirstObject { get; private set; }
         /// <summary>
         /// Scenes this connection is in. Available to this connection and server.
         /// </summary>
@@ -83,7 +83,7 @@ namespace FishNet.Connection
         /// <summary>
         /// True if this connection is being disconnected. Only available to server.
         /// </summary>
-        public bool Disconnecting { get; private set; } = false;
+        public bool Disconnecting { get; private set; }
         /// <summary>
         /// Custom data associated with this connection which may be modified by the user.
         /// The value of this field are not synchronized over the network.

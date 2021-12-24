@@ -19,10 +19,6 @@ namespace FishNet.Managing.Scened
             /// Unloads scenes for connections but keeps scene loaded on server even if no connections are within it.
             /// </summary>
             KeepUnused = 1,
-            /// <summary>
-            /// Unloads scene for connections and on server ignoring conditions.
-            /// </summary>
-            ForceUnload = 2
         }
 
         /// <summary>
@@ -30,11 +26,6 @@ namespace FishNet.Managing.Scened
         /// </summary>
         [System.NonSerialized]
         public ServerUnloadModes Mode = ServerUnloadModes.UnloadUnused;
-        /// <summary>
-        /// Parameters which can be passed into a scene load. Params can be useful to link personalized data with scene load callbacks, such as a match Id.
-        /// </summary>
-        [System.NonSerialized]
-        public object[] Params = null;
     }
 
 

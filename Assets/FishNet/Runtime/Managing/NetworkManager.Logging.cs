@@ -12,7 +12,7 @@ namespace FishNet.Managing
         /// </summary>
         [Tooltip("Logging configuration to use. When empty default logging settings will be used.")]
         [SerializeField]
-        private LoggingConfiguration _logging = null;
+        private LoggingConfiguration _logging;
         #endregion
 
         #region Const.

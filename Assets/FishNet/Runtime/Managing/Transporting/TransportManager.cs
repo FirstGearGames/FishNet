@@ -14,6 +14,7 @@ namespace FishNet.Managing.Transporting
     /// <summary>
     /// Communicates with the Transport to send and receive data.
     /// </summary>
+    [DisallowMultipleComponent]
     public class TransportManager : MonoBehaviour
     {
         #region Public.
@@ -157,9 +158,20 @@ namespace FishNet.Managing.Transporting
         /// <param name="segment">Data to send.</param>
         /// <param name="nob">NetworkObject being used to send data.</param>
         /// <param name="splitLargeMessages">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
-        internal void SendToClients(byte channelId, ArraySegment<byte> segment, NetworkObject networkObject, bool splitLargeMessages = true)
+        internal void SendToClients(byte channelId, ArraySegment<byte> segment, NetworkObject networkObject, bool excludeOwner = false, bool splitLargeMessages = true)
         {
-            SendToClients(channelId, segment, networkObject.Observers, splitLargeMessages);
+            if (!excludeOwner)
+            {
+                SendToClients(channelId, segment, networkObject.Observers, splitLargeMessages);
+            }
+            else
+            {
+                foreach (NetworkConnection conn in networkObject.Observers)
+                {
+                    if (conn != networkObject.Owner)
+                        SendToClient(channelId, segment, conn, splitLargeMessages);
+                }
+            }
         }
 
         /// <summary>

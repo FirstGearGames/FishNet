@@ -19,12 +19,6 @@ namespace FishNet.Managing.Logging
         [Tooltip("True to use logging features. False to disable all logging.")]
         [SerializeField]
         private bool _loggingEnabled = true;
-        ///// <summary>
-        ///// True to write logs to disk. This only applies in builds.
-        ///// </summary>
-        //[Tooltip("True to write logs to disk. This only applies in builds.")]
-        //[SerializeField]
-        //private bool _writeLogs = false;
         /// <summary>
         /// Type of logging to use for development builds and editor.
         /// </summary>
@@ -49,7 +43,7 @@ namespace FishNet.Managing.Logging
         /// <summary>
         /// True when initialized.
         /// </summary>
-        private bool _initialized = false;
+        private bool _initialized;
         /// <summary>
         /// Highest type which can be logged.
         /// </summary>

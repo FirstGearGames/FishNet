@@ -12,7 +12,7 @@ namespace FishNet.Editing
         /// <summary>
         /// ScriptableObject to store default prefabs.
         /// </summary>
-        private static DefaultPrefabObjects _defaultPrefabs = null;
+        private static DefaultPrefabObjects _defaultPrefabs;
         #endregion
 
         /// <summary>

@@ -1,11 +1,12 @@
 ﻿using FishNet.Connection;
+using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace FishNet.Observing
+namespace FishNet.Observing 
 {
     /// <summary>
     /// Controls which clients can see and get messages for an object.
@@ -13,17 +14,54 @@ namespace FishNet.Observing
     [DisallowMultipleComponent]
     public class NetworkObserver : NetworkBehaviour
     {
+        #region Types.
+        /// <summary>
+        /// How ObserverManager conditions are used.
+        /// </summary>
+        public enum ConditionOverrideType
+        {
+            /// <summary>
+            /// Keep current conditions, add new conditions from manager.
+            /// </summary>
+            AddMissing = 1,
+            /// <summary>
+            /// Replace current conditions with manager conditions.
+            /// </summary>
+            UseManager = 2,
+            /// <summary>
+            /// Keep current conditions, ignore manager conditions.
+            /// </summary>
+            IgnoreManager = 3,
+        }
+        #endregion
+
         #region Serialized.
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("How ObserverManager conditions are used.")]
+        [SerializeField]
+        private ConditionOverrideType _overrideType = ConditionOverrideType.IgnoreManager;
+        /// <summary>
+        /// How ObserverManager conditions are used.
+        /// </summary>
+        public ConditionOverrideType OverrideType => _overrideType;
         /// <summary>
         /// 
         /// </summary>
         [Tooltip("Conditions connections must met to be added as an observer. Multiple conditions may be used.")]
         [SerializeField]
-        private List<ObserverCondition> _observerConditions = new List<ObserverCondition>();
+        internal List<ObserverCondition> _observerConditions = new List<ObserverCondition>();        
         /// <summary>
         /// Conditions connections must met to be added as an observer. Multiple conditions may be used.
         /// </summary>
-        public List<ObserverCondition> ObserverConditions => _observerConditions;
+        public IReadOnlyList<ObserverCondition> ObserverConditions => _observerConditions;
+        [APIExclude]
+        internal List<ObserverCondition> ObserverConditionsInternal
+        {
+            get => _observerConditions;
+            set => _observerConditions = value;
+        }
         #endregion
 
         #region Private.
@@ -34,15 +72,15 @@ namespace FishNet.Observing
         /// <summary>
         /// Becomes true when registered with ServerObjects as Timed observers.
         /// </summary>
-        private bool _registeredAsTimed = false;
+        private bool _registeredAsTimed;
         /// <summary>
         /// True if has timed conditions.
         /// </summary>
-        private bool _hasTimedConditions = false;
-        /// <summary>
-        /// Found renderers on and beneath this object.
-        /// </summary>
-        private Renderer[] _renderers = new Renderer[0];
+        private bool _hasTimedConditions;
+        ///// <summary>
+        ///// Found renderers on and beneath this object.
+        ///// </summary>
+        //private Renderer[] _renderers = new Renderer[0];
         #endregion
 
         private void OnEnable()
@@ -70,9 +108,9 @@ namespace FishNet.Observing
             _networkObject = networkObject;
 
             bool observerFound = false;
-            for (int i = 0; i < ObserverConditions.Count; i++)
+            for (int i = 0; i < _observerConditions.Count; i++)
             {
-                if (ObserverConditions[i] != null)
+                if (_observerConditions[i] != null)
                 {
                     observerFound = true;
 
@@ -80,15 +118,15 @@ namespace FishNet.Observing
                      * not overwritten when the condition exist more than
                      * once in the scene. Double edged sword of using scriptable
                      * objects for conditions. */
-                    ObserverConditions[i] = ObserverConditions[i].Clone();
-                    ObserverConditions[i].InitializeOnce(_networkObject);
+                    _observerConditions[i] = _observerConditions[i].Clone();
+                    _observerConditions[i].InitializeOnce(_networkObject);
                     //If timed also register as containing timed conditions.
                     if (ObserverConditions[i].Timed())
                         _hasTimedConditions = true;
                 }
                 else
                 {
-                    ObserverConditions.RemoveAt(i);
+                    _observerConditions.RemoveAt(i);
                     i--;
                 }
             }
@@ -103,7 +141,7 @@ namespace FishNet.Observing
 
 
             RegisterTimedConditions();
-            _renderers = GetComponentsInChildren<Renderer>();
+            //_renderers = GetComponentsInChildren<Renderer>();
         }
 
         /// <summary>
@@ -219,16 +257,19 @@ namespace FishNet.Observing
         /// <param name="enable"></param>
         private void SetRenderers(bool enable)
         {
-            /* Don't update renderers if server only.
-             * Nor if server and client. This is because there's
-             * no way to really know which renderers to show as
-             * host when scenes aren't the same for server 
-             * and client. */
-            if (_networkObject.IsServerOnly || (_networkObject.IsHost))
-                return;
+            /* Currently objects that are out of visibility
+             * are despawned so there is no reason to update renderers. */
+            return;
+            ///* Don't update renderers if server only.
+            // * Nor if server and client. This is because there's
+            // * no way to really know which renderers to show as
+            // * host when scenes aren't the same for server 
+            // * and client. */
+            //if (_networkObject.IsServerOnly || (_networkObject.IsHost))
+            //    return;
 
-            for (int i = 0; i < _renderers.Length; i++)
-                _renderers[i].enabled = enable;
+            //for (int i = 0; i < _renderers.Length; i++)
+            //    _renderers[i].enabled = enable;
         }
 
     }

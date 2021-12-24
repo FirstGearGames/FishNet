@@ -13,7 +13,7 @@ namespace FishNet.Component.Animating
         private SerializedProperty _synchronizeInterval;
         private SerializedProperty _smoothFloats;
         private SerializedProperty _clientAuthoritative;
-        private SerializedProperty _synchronizeToOwner;
+        private SerializedProperty _sendToOwner;
 
 
         protected virtual void OnEnable()
@@ -24,7 +24,7 @@ namespace FishNet.Component.Animating
             _smoothFloats = serializedObject.FindProperty("_smoothFloats");
 
             _clientAuthoritative = serializedObject.FindProperty("_clientAuthoritative");
-            _synchronizeToOwner = serializedObject.FindProperty("_synchronizeToOwner");
+            _sendToOwner = serializedObject.FindProperty("_sendToOwner");
         }
 
         public override void OnInspectorGUI()
@@ -57,7 +57,7 @@ namespace FishNet.Component.Animating
             if (_clientAuthoritative.boolValue == false)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_synchronizeToOwner, new GUIContent("Synchronize To Owner", "True to synchronize server results back to owner. Typically used when you are sending inputs to the server and are relying on the server response to move the transform."));
+                EditorGUILayout.PropertyField(_sendToOwner, new GUIContent("Synchronize To Owner", "True to synchronize server results back to owner. Typically used when you are sending inputs to the server and are relying on the server response to move the transform."));
                 EditorGUI.indentLevel--;
             }
             EditorGUI.indentLevel--;

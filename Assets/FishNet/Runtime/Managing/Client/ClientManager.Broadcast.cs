@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace FishNet.Managing.Client
 {
-    public partial class ClientManager
+    public partial class ClientManager : MonoBehaviour
     {
         #region Private.
         /// <summary>

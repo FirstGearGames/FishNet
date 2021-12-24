@@ -14,7 +14,7 @@ using System.Text;
 using UnityEngine;
 
 
-[assembly: InternalsVisibleTo(Constants.GENERATED_ASSEMBLY_NAME)]
+[assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
 {
     /// <summary>
@@ -37,15 +37,15 @@ namespace FishNet.Serializing
         /// <summary>
         /// Offset within the buffer when the reader was created.
         /// </summary>
-        public int Offset { get; private set; } = 0;
+        public int Offset { get; private set; }
         /// <summary>
         /// Position for the next read.
         /// </summary>
-        public int Position = 0;
+        public int Position;
         /// <summary>
         /// Total number of bytes available within the buffer.
         /// </summary>
-        public int Length { get; private set; } = 0;
+        public int Length { get; private set; }
         /// <summary>
         /// Bytes remaining to be read. This value is Length - Position.
         /// </summary>
@@ -60,7 +60,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// NetworkManager for this reader. Used to lookup objects.
         /// </summary>
-        private NetworkManager _networkManager = null;
+        private NetworkManager _networkManager;
         /// <summary>
         /// Buffer to copy Guids into.
         /// </summary>
@@ -114,6 +114,29 @@ namespace FishNet.Serializing
         {
             Initialize(new ArraySegment<byte>(bytes), networkManager);
         }
+
+
+        /// <summary>
+        /// Writes a dictionary.
+        /// </summary>
+        public Dictionary<TKey,TValue> ReadDictionary<TKey, TValue>()
+        {
+            bool isNull = ReadBoolean();
+            if (isNull)
+                return null;
+
+            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>();
+            int count = ReadInt32();
+            for (int i = 0; i < count; i++)
+            {
+                TKey key = Read<TKey>();
+                TValue value = Read<TValue>();
+                result.Add(key, value);
+            }
+
+            return result;
+        }
+
 
         /// <summary>
         /// Reads a packetId.
@@ -534,10 +557,10 @@ namespace FishNet.Serializing
             }
             else
             {
-                r = (float)(ReadByte() / 100);
-                g = (float)(ReadByte() / 100);
-                b = (float)(ReadByte() / 100);
-                a = (float)(ReadByte() / 100);
+                r = (float)(ReadByte() / 100f);
+                g = (float)(ReadByte() / 100f);
+                b = (float)(ReadByte() / 100f);
+                a = (float)(ReadByte() / 100f);
             }
             return new Color(r, g, b, a);
         }

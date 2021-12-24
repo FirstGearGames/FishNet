@@ -49,10 +49,8 @@ namespace FishNet.CodeGenerating.Helping
         internal static NetworkBehaviourRpcProcessor NetworkBehaviourRpcProcessor;
         [System.ThreadStatic]
         internal static NetworkBehaviourSyncProcessor NetworkBehaviourSyncProcessor;
-#if PREDICTION
         [System.ThreadStatic]
         internal static NetworkBehaviourPredictionProcessor NetworkBehaviourPredictionProcessor;
-#endif
         /// <summary>
         /// Logs a warning.
         /// </summary>
@@ -105,16 +103,12 @@ namespace FishNet.CodeGenerating.Helping
             QolAttributeProcessor = new QolAttributeProcessor();
             NetworkBehaviourRpcProcessor = new NetworkBehaviourRpcProcessor();
             NetworkBehaviourSyncProcessor = new NetworkBehaviourSyncProcessor();
-#if PREDICTION
             NetworkBehaviourPredictionProcessor = new NetworkBehaviourPredictionProcessor();
-#endif
 
             if (!TimeManagerHelper.ImportReferences())
                 return false;
-#if PREDICTION
             if (!NetworkBehaviourPredictionProcessor.ImportReferences())
                 return false;
-#endif
             if (!NetworkBehaviourSyncProcessor.ImportReferences())
                 return false;
             if (!GeneralHelper.ImportReferences())
@@ -204,7 +198,7 @@ namespace FishNet.CodeGenerating.Helping
 
         public static FieldReference ImportReference(SR.FieldInfo field, IGenericParameterProvider context)
         {
-            return Module.ImportReference(field,context);
+            return Module.ImportReference(field, context);
         }
 
         #endregion

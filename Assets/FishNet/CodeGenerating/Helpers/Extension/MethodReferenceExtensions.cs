@@ -36,6 +36,14 @@ namespace FishNet.CodeGenerating.Helping.Extension
         }
 
         /// <summary>
+        /// Gets a Resolve favoring cached results first.
+        /// </summary>
+        internal static MethodDefinition CachedResolve(this MethodReference methodRef)
+        {
+            return CodegenSession.GeneralHelper.GetMethodReferenceResolve(methodRef);
+        }
+
+        /// <summary>
         /// Given a method of a generic class such as ArraySegment`T.get_Count,
         /// and a generic instance such as ArraySegment`int
         /// Creates a reference to the specialized method  ArraySegment`int`.get_Count

@@ -8,7 +8,12 @@
         Array,
         List,
         NetworkBehaviour,
-        ClassOrStruct
+        ClassOrStruct,
+        Nullable,
+        Dictionary,
+        Null,
+        ByReference,
+        MultiDimensionalArray
     }
 
 }

@@ -19,7 +19,7 @@ namespace FishNet.Utility
         /// <summary>
         /// True if application is quitting.
         /// </summary>
-        private static bool _isQuitting = false;
+        private static bool _isQuitting;
 #endif
         static ApplicationState()
         {

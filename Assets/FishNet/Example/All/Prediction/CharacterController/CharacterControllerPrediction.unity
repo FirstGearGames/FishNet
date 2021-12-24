@@ -158,7 +158,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _reliableMTU: 1200
   _unreliableMTU: 1200
-  _serverBindsAll: 1
   _serverBindAddress: localhost
   _port: 7770
   _maximumClients: 4095

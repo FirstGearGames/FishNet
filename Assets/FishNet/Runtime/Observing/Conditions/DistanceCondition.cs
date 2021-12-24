@@ -29,7 +29,7 @@ namespace FishNet.Component.Observing
         [Tooltip("How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. A value of 0f will cause the object the update quickly as possible while any other value will be used as a delay.")]
         [Range(0f, 60f)]
         [SerializeField]
-        private float _updateFrequency = 0f;
+        private float _updateFrequency;
         /// <summary>
         /// How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. A value of 0f will cause the object the update quickly as possible while any other value will be used as a delay.
         /// </summary>

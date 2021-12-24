@@ -53,7 +53,7 @@ namespace FishNet.CodeGenerating.Helping
         internal CreatedSyncVar GetCreatedSyncVar(FieldDefinition originalFd, bool createMissing)
         {
             TypeReference dataTr = originalFd.FieldType;
-            TypeDefinition dataTd = dataTr.Resolve();
+            TypeDefinition dataTd = dataTr.CachedResolve();
 
             if (_createdSyncVars.TryGetValue(dataTd, out CreatedSyncVar createdSyncVar))
             {
@@ -81,12 +81,12 @@ namespace FishNet.CodeGenerating.Helping
                 MethodReference setSyncIndexMr;
                 MethodReference genericSyncVarCtor = _syncVar_Constructor_MethodRef.MakeHostInstanceGeneric(syncVarGit);
 
-                if (!CodegenSession.NetworkBehaviourSyncProcessor.SetSyncBaseMethods(_syncBase_TypeRef.Resolve(), out setSyncIndexMr, out _))
+                if (!CodegenSession.NetworkBehaviourSyncProcessor.SetSyncBaseMethods(_syncBase_TypeRef.CachedResolve(), out setSyncIndexMr, out _))
                     return null;
 
                 MethodReference setValueMr = null;
                 MethodReference getValueMr = null;
-                foreach (MethodDefinition md in SyncVar_TypeRef.Resolve().Methods)
+                foreach (MethodDefinition md in SyncVar_TypeRef.CachedResolve().Methods)
                 {
                     //GetValue.
                     if (md.Name == GETVALUE_NAME)

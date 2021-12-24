@@ -50,7 +50,6 @@ namespace FishNet.CodeGenerating.Processing
                 return modified;
             }
             CallBaseAwakeMethods(firstTypeDef);
-
             do
             {
                 /* Class was already processed. Since child most is processed first
@@ -61,12 +60,14 @@ namespace FishNet.CodeGenerating.Processing
                     break;
 
                 //Disallow nested network behaviours.
-                if (copyTypeDef.NestedTypes
-                    .Where(t => t.IsSubclassOf(CodegenSession.ObjectHelper.NetworkBehaviour_FullName))
-                    .ToList().Count > 0)
+                ICollection<TypeDefinition> nestedTds = copyTypeDef.NestedTypes;
+                foreach (TypeDefinition item in nestedTds)
                 {
-                    CodegenSession.LogError($"{copyTypeDef.FullName} contains nested NetworkBehaviours. These are not supported.");
-                    return modified;
+                    if (item.InheritsNetworkBehaviour())
+                    {
+                        CodegenSession.LogError($"{copyTypeDef.FullName} contains nested NetworkBehaviours. These are not supported.");
+                        return modified;
+                    }
                 }
 
                 /* Create NetworkInitialize before-hand so the other procesors
@@ -76,17 +77,20 @@ namespace FishNet.CodeGenerating.Processing
                 uint rpcCount;
                 childRpcCounts.TryGetValue(copyTypeDef, out rpcCount);
                 modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref rpcCount);
+                //30ms
                 /* //perf rpcCounts can be optimized by having different counts
                  * for target, observers, server, replicate, and reoncile rpcs. Since
                  * each registers to their own delegates this is possible. */
-#if PREDICTION
+
                 /* Prediction. */
                 modified |= CodegenSession.NetworkBehaviourPredictionProcessor.Process(copyTypeDef, ref rpcCount);
-#endif
+                //25ms 
+
                 /* SyncTypes. */
                 uint syncTypeStartCount;
                 childSyncTypeCounts.TryGetValue(copyTypeDef, out syncTypeStartCount);
                 modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(copyTypeDef, allProcessedSyncs, ref syncTypeStartCount);
+                //70ms
                 _processedClasses.Add(copyTypeDef);
 
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
@@ -137,7 +141,7 @@ namespace FishNet.CodeGenerating.Processing
                 foreach (MethodDefinition md in typeDef.Methods)
                 {
                     //Has RPC attribute but doesn't inherit from NB.
-                    if (CodegenSession.NetworkBehaviourRpcProcessor.GetRpcAttribute(md, out _) != null)
+                    if (CodegenSession.NetworkBehaviourRpcProcessor.GetRpcAttribute(md, false, out _) != null)
                     {
                         CodegenSession.LogError($"{typeDef.FullName} has one or more RPC attributes but does not inherit from NetworkBehaviour.");
                         error = true;
@@ -146,7 +150,7 @@ namespace FishNet.CodeGenerating.Processing
                 //Check fields for attribute.
                 foreach (FieldDefinition fd in typeDef.Fields)
                 {
-                    if (CodegenSession.NetworkBehaviourSyncProcessor.GetSyncType(fd, out _) != SyncType.Unset)
+                    if (CodegenSession.NetworkBehaviourSyncProcessor.GetSyncType(fd, false, out _) != SyncType.Unset)
                     {
                         CodegenSession.LogError($"{typeDef.FullName} has one or more SyncType attributes but does not inherit from NetworkBehaviour.");
                         error = true;
@@ -175,7 +179,7 @@ namespace FishNet.CodeGenerating.Processing
                 /* Awake will always exist because it was added previously.
                  * Get awake for copy and base of copy. */
                 MethodDefinition copyAwakeMethodDef = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
-                MethodDefinition baseAwakeMethodDef = copyTypeDef.BaseType.Resolve().GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+                MethodDefinition baseAwakeMethodDef = copyTypeDef.BaseType.CachedResolve().GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
                 MethodReference baseAwakeMethodRef = CodegenSession.ImportReference(baseAwakeMethodDef);
 
                 ILProcessor processor = copyAwakeMethodDef.Body.GetILProcessor();

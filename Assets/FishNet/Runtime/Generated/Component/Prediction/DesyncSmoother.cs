@@ -1,5 +1,4 @@
-﻿#if PREDICTION
-using FishNet;
+﻿using FishNet;
 using FishNet.Connection;
 using FishNet.Object;
 using UnityEngine;
@@ -11,11 +10,11 @@ namespace FishNet.Component.Prediction
     {
         #region Serialized.
         /// <summary>
-        /// How many ticks to smooth differences over.
+        /// How much time to smooth desyncs over.
         /// </summary>
-        [Tooltip("How many ticks to smooth differences over.")]
+        [Tooltip("How much time to smooth desyncs over.")]
         [SerializeField]
-        private byte _ticks = 3;
+        private float _duration = 0.15f;
         #endregion
 
         #region Private.
@@ -44,11 +43,11 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Local position of this transform during OnStartClient.
         /// </summary>
-        private Vector3 _startPosition = Vector3.zero;
+        private Vector3 _startPosition;
         /// <summary>
         /// Local rotation of this transform during OnStartClient.
         /// </summary>
-        private Quaternion _startRotation = Quaternion.identity;
+        private Quaternion _startRotation;
 
         private void OnDisable()
         {
@@ -106,18 +105,17 @@ namespace FishNet.Component.Prediction
         private void TimeManager_OnPostReconcile(NetworkBehaviour obj)
         {
             //Set transform back to where it was before reconcile so there's no visual disturbances.
-            Transform t;
-            (t = transform).SetPositionAndRotation(_previousPosition, _previousRotation);
+            Transform t = transform;
+            t.SetPositionAndRotation(_previousPosition, _previousRotation);
 
-            float tickDelta = (float)base.TimeManager.TickDelta;
-            float goalTime = tickDelta * (float)_ticks;
+
             float distance;
 
             //Calculate move rates based on time to complete vs distance required.
             distance = (t.localPosition - _startPosition).magnitude;
-            _positionRate = distance / goalTime;
+            _positionRate = distance / _duration;
             distance = Quaternion.Angle(t.localRotation, _startRotation);
-            _rotationRate = distance / goalTime;
+            _rotationRate = distance / _duration;
         }
 
         private void Update()
@@ -141,4 +139,3 @@ namespace FishNet.Component.Prediction
 
 
 }
-#endif

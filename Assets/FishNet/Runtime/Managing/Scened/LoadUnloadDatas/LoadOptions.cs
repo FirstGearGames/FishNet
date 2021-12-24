@@ -8,12 +8,12 @@ namespace FishNet.Managing.Scened
     public class LoadOptions
     {
         /// <summary>
-        /// True if to automatically unload the loaded scenes when they are no longer being used.
+        /// True if to automatically unload the loaded scenes when they are no longer being used by clients. This field only applies to scenes loaded for connections, not globally loaded scenes.
         /// </summary>
         [System.NonSerialized]
         public bool AutomaticallyUnload = true;
         /// <summary>
-        /// True if to only load scenes which are not yet loaded. When false a scene may load multiple times; this is known as scene stacking. Only the server is able to stack scenes; clients will load a single instance.
+        /// True if to only load scenes which are not yet loaded. When false a scene may load multiple times; this is known as scene stacking. Only the server is able to stack scenes; clients will load a single instance. Global scenes cannot be stacked.
         /// </summary>
         [System.NonSerialized]
         public bool DisallowStacking = true;

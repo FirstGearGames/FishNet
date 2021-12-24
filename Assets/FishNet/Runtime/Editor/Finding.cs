@@ -35,8 +35,8 @@ namespace FishNet.Editing
             for (int i = 0; i < guids.Length; i++)
                 objectPaths[i] = AssetDatabase.GUIDToAssetPath(guids[i]);
 
-            string runtimeName = (Constants.RUNTIME_ASSEMBLY_NAME + ".asmdef").ToLower();
-            string generatedName = (Constants.GENERATED_ASSEMBLY_NAME + ".asmdef").ToLower();
+            string runtimeName = (UtilityConstants.RUNTIME_ASSEMBLY_NAME + ".asmdef").ToLower();
+            string generatedName = (UtilityConstants.GENERATED_ASSEMBLY_NAME + ".asmdef").ToLower();
             /* Find all network managers which use Single prefab linking
              * as well all network object prefabs. */
             foreach (string item in objectPaths)

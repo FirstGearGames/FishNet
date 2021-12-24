@@ -12,18 +12,17 @@ namespace FishNet.CodeGenerating.Processing
         internal bool Process(TypeDefinition typeDef)
         {
             bool modified = false;
-
             foreach (MethodDefinition methodDef in typeDef.Methods)
             {
                 //Has RPC attribute, doesn't quality for a quality of life attribute.
-                if (CodegenSession.NetworkBehaviourRpcProcessor.GetRpcAttribute(methodDef, out _) != null)
+                if (CodegenSession.NetworkBehaviourRpcProcessor.GetRpcAttribute(methodDef,false,  out _) != null)
                     continue;
 
                 QolAttributeType qolType;
                 CustomAttribute qolAttribute = GetQOLAttribute(methodDef, out qolType);
                 if (qolAttribute == null)
                     continue;
-
+                 
                 /* This is a one time check to make sure the qolType is
                  * a supported value. Multiple methods beyond this rely on the
                  * value being supported. Rather than check in each method a
