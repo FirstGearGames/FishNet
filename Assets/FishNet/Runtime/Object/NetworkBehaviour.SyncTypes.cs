@@ -1,5 +1,6 @@
 ﻿using FishNet.Documenting;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Transporting;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
@@ -27,10 +28,10 @@ namespace FishNet.Object
             /// </summary>
             public PooledWriter[] Writers { get; private set; }
 
-            public SyncTypeWriter(ReadPermission readPermission, byte channelCount)
+            public SyncTypeWriter(ReadPermission readPermission)
             {
                 ReadPermission = readPermission;
-                Writers = new PooledWriter[channelCount];
+                Writers = new PooledWriter[TransportManager.CHANNEL_COUNT];
                 for (int i = 0; i < Writers.Length; i++)
                     Writers[i] = WriterPool.GetWriter();
             }
@@ -133,10 +134,9 @@ namespace FishNet.Object
             }
 
             //Build writers for observers and owner.
-            byte channelCount = NetworkObject.NetworkManager.TransportManager.Transport.GetChannelCount();
             _syncTypeWriters = new SyncTypeWriter[_readPermissions.Length];
             for (int i = 0; i < _syncTypeWriters.Length; i++)
-                _syncTypeWriters[i] = new SyncTypeWriter(_readPermissions[i], channelCount);
+                _syncTypeWriters[i] = new SyncTypeWriter(_readPermissions[i]);
 
             foreach (SyncBase sb in _syncVars.Values)
                 sb.PreInitialize(networkObject.NetworkManager);

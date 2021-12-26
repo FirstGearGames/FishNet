@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace FishNet.Managing.Server
 {
-    public partial class ServerManager : MonoBehaviour
+    public sealed partial class ServerManager : MonoBehaviour
     {
 
 

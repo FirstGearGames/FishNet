@@ -15,7 +15,7 @@ namespace FishNet.Managing.Transporting
     /// Communicates with the Transport to send and receive data.
     /// </summary>
     [DisallowMultipleComponent]
-    public class TransportManager : MonoBehaviour
+    public sealed class TransportManager : MonoBehaviour
     {
         #region Public.
         /// <summary>
@@ -81,6 +81,10 @@ namespace FishNet.Managing.Transporting
         /// Number of bytes required for split data. 
         /// </summary>
         public const byte SPLIT_INDICATOR_SIZE = (PACKET_ID_BYTES + SPLIT_COUNT_BYTES);
+        /// <summary>
+        /// Number of channels supported.
+        /// </summary>
+        public const byte CHANNEL_COUNT = 2;
         #endregion
 
         private void Awake()
@@ -109,8 +113,11 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         private void InitializeToServerBundles()
         {
-            int channels = Transport.GetChannelCount();
-            for (byte i = 0; i < channels; i++)
+            /* For ease of use FishNet will always have
+             * only two channels, reliable and unreliable. 
+             * Even if the transport only supports reliable
+             * also setup for unreliable. */
+            for (byte i = 0; i < CHANNEL_COUNT; i++)
             {
                 int mtu = Transport.GetMTU(i);
                 _toServerBundles.Add(new PacketBundle(_networkManager, mtu));
@@ -201,11 +208,7 @@ namespace FishNet.Managing.Transporting
         internal void SendToServer(byte channelId, ArraySegment<byte> segment, bool splitMessages = true)
         {
             if (channelId >= _toServerBundles.Count)
-            {
-                if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Channel {channelId} is out of bounds.");
-                return;
-            }
+                channelId = (byte)Channel.Reliable;
 
             //Split is needed.
             if (splitMessages && SplitRequired(channelId, segment.Count, out int requiredMessages, out int maxMessageSize))
@@ -213,17 +216,15 @@ namespace FishNet.Managing.Transporting
                 //Various conditions may trigger this to be true.
                 bool disconnectSelf = false;
                 //Client may not split packets.
-                if (_networkManager.ServerManager.LimitClientMTU)
+                int maximumClientMTU = _networkManager.ServerManager.MaximumClientMTU;
+                if (maximumClientMTU == -1)
                 {
                     disconnectSelf = true;
                 }
                 //Client can split.
                 else
-                {
-                    int maximumClientMTU = _networkManager.ServerManager.MaximumClientMTU;
-                    int allottedMTU = (maximumClientMTU == 0) ? int.MaxValue : maximumClientMTU;
-
-                    if (segment.Count > allottedMTU)
+                {                    
+                    if (segment.Count > maximumClientMTU)
                         disconnectSelf = true;
                 }
                 //If must disconnect self.
@@ -330,7 +331,7 @@ namespace FishNet.Managing.Transporting
         internal void IterateOutgoing(bool server)
         {
             OnIterateOutgoingStart?.Invoke();
-            int channelCount = Transport.GetChannelCount();
+            int channelCount = CHANNEL_COUNT;
             /* If sending from the server. */
             if (server)
             {

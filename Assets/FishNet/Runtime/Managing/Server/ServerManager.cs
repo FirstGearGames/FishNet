@@ -15,7 +15,7 @@ namespace FishNet.Managing.Server
     /// A container for server data and actions.
     /// </summary>
     [DisallowMultipleComponent]
-    public partial class ServerManager : MonoBehaviour
+    public sealed partial class ServerManager : MonoBehaviour
     {
         #region Public.
         /// <summary>
@@ -64,12 +64,12 @@ namespace FishNet.Managing.Server
         /// <summary>
         ///  
         /// </summary>
-        [Tooltip("Maximum frame rate the server may run at. This value is ignored as host.")]
+        [Tooltip("Frame rate to use while only the server is active. When both server and client are active the higher of the two frame rates will be used.")]
         [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
         /// <summary>
-        /// Maximum frame rate the server may run at. This value is ignored as host.
+        /// Frame rate to use while only the server is active. When both server and client are active the higher of the two frame rates will be used.
         /// </summary>
         internal ushort FrameRate
         {
@@ -91,27 +91,37 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("True if to automatically kick clients which send packets larger than the transport MTU.")]
+        [Tooltip("True to kick clients which send data larger than the MTU.")]
         [SerializeField]
         private bool _limitClientMTU = true;
         /// <summary>
-        /// True if to automatically kick clients which send packets larger than the transport MTU.
+        /// True to kick clients which send data larger than the MTU.
         /// </summary>
         internal bool LimitClientMTU => _limitClientMTU;
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Maximum amount of data a client may send. Use 0 for unlimited, otherwise specify an ammount. This is only applicable when LimitClientMTU is disabled; otherwise, clients are kicked immediately should they exceed MTU.")]
+        [Tooltip("When not -1 value will override the maximum amount of data a client may send. This can be greater or less than the transport MTU.")]
         //[Range(0, int.MaxValue)] //The range attribute is broken via Unity. It shows negative values when using int or higher as max value.
         [SerializeField]
         private int _maximumClientMTU;
         /// <summary>
-        /// Maximum amount of data a client may send. Use 0 for unlimited, otherwise specify an ammount. This is only applicable when LimitClientMTU is disabled; otherwise, clients are kicked immediately should they exceed MTU.
-        /// </summary>
-        internal int MaximumClientMTU
+        /// When not -1 value will override the maximum amount of data a client may send. This can be greater or less than the transport MTU.
+        /// </summary> 
+        public int MaximumClientMTU
         {
-            get => _maximumClientMTU;
-            private set => _maximumClientMTU = value;
+            get
+            {
+                if (LimitClientMTU)
+                    return -1;
+                else
+                    return _maximumClientMTU;
+            }
+            private set
+            {
+                _maximumClientMTU = value;
+            }
+
         }
         #endregion
 
@@ -141,19 +151,6 @@ namespace FishNet.Managing.Server
             {
                 _authenticator.InitializeOnce(manager);
                 _authenticator.OnAuthenticationResult += _authenticator_OnAuthenticationResult;
-            }
-
-            //If not limiting client MTU.
-            if (!LimitClientMTU)
-            {
-                //If max value is less than reliable limit.
-                int reliableMTU = NetworkManager.TransportManager.Transport.GetMTU((byte)Channel.Reliable);
-                if (MaximumClientMTU > 0 && MaximumClientMTU <= reliableMTU)
-                {
-                    MaximumClientMTU = (reliableMTU * 2);
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"Maximum Client MTU of {MaximumClientMTU} is set lower than the Maximum Reliable MTU of {reliableMTU} for the transport. Maximum Client MTU has been changed to {MaximumClientMTU}.");
-                }
             }
         }
 
@@ -258,13 +255,13 @@ namespace FishNet.Managing.Server
         /// Called when a connection state changes for the local server.
         /// </summary>
         private void Transport_OnServerConnectionState(ServerConnectionStateArgs args)
-        {            
+        {
             /* Let the client manager know the server state is changing first.
              * This gives the client an opportunity to clean-up or prepare
              * before the server completes it's actions. */
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
             Started = (args.ConnectionState == LocalConnectionStates.Started);
-            
+
             Objects.OnServerConnectionState(args);
             //If not connected then clear clients.
             if (args.ConnectionState != LocalConnectionStates.Started)
@@ -283,7 +280,7 @@ namespace FishNet.Managing.Server
 
             NetworkManager.UpdateFramerate();
             OnServerConnectionState?.Invoke(args);
-        }    
+        }
 
         /// <summary>
         /// Called when a connection state changes for a remote client.
@@ -397,7 +394,7 @@ namespace FishNet.Managing.Server
                     int expectedMessages;
                     _splitReader.GetHeader(reader, out expectedMessages);
                     //If a maximum is set. Otherwise there are no limits on how much clients may send.
-                    if (MaximumClientMTU > 0)
+                    if (MaximumClientMTU != -1)
                     {
                         /* Check to see if expected messages would exceed
                          * maximum amount allowed to be received by the client.
@@ -533,6 +530,7 @@ namespace FishNet.Managing.Server
 #if UNITY_EDITOR
         private void OnValidate()
         {
+
             MaximumClientMTU = Mathf.Clamp(MaximumClientMTU, 0, int.MaxValue);
         }
 #endif

@@ -12,8 +12,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
-#if UNITY_EDITOR
-#endif
 
 
 namespace FishNet.Managing.Timing
@@ -23,7 +21,7 @@ namespace FishNet.Managing.Timing
     /// Provides data and actions for network time and tick based systems.
     /// </summary>
     [DisallowMultipleComponent]
-    public class TimeManager : MonoBehaviour
+    public sealed class TimeManager : MonoBehaviour
     {
         #region Types.        
         private class ClientTickData

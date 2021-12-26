@@ -46,23 +46,27 @@ namespace FishNet.Object
 
 
         #region Editor.
-#if UNITY_EDITOR
         protected virtual void Reset()
         {
+#if UNITY_EDITOR
             if (!ApplicationState.IsPlaying())
                 TryAddNetworkObject();
+#endif
         }
 
         protected virtual void OnValidate()
         {
+#if UNITY_EDITOR
             if (!ApplicationState.IsPlaying())
                 TryAddNetworkObject();
+#endif
         }
         /// <summary>
         /// Tries to add the NetworkObject component.
         /// </summary>
         private void TryAddNetworkObject()
         {
+#if UNITY_EDITOR
             if (NetworkObject != null)
                 return;
             /* Manually iterate up the chain because GetComponentInParent doesn't
@@ -80,8 +84,8 @@ namespace FishNet.Object
             }
 
             NetworkObject = (result != null) ? result : transform.root.gameObject.AddComponent<NetworkObject>();
-        }
 #endif
+        }
         #endregion
     }
 

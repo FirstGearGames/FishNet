@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace FishNet.Managing.Server
 {
-    public partial class ServerManager : MonoBehaviour
+    public sealed partial class ServerManager : MonoBehaviour
     {
         /// <summary>
         /// Spawns an object over the network. Can only be called on the server.

@@ -12,7 +12,7 @@ namespace FishNet.Observing
     /// Controls which clients can see and get messages for an object.
     /// </summary>
     [DisallowMultipleComponent]
-    public class NetworkObserver : NetworkBehaviour
+    public sealed class NetworkObserver : NetworkBehaviour
     {
         #region Types.
         /// <summary>

@@ -1,6 +1,7 @@
 ﻿using FishNet.Broadcast;
 using FishNet.Managing;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Transporting;
 using FishNet.Transporting;
 using System;
 using System.Collections.Generic;
@@ -27,8 +28,7 @@ namespace FishNet.Connection
         /// </summary>
         private void InitializeBuffer()
         {
-            int channels = NetworkManager.TransportManager.Transport.GetChannelCount();
-            for (byte i = 0; i < channels; i++)
+            for (byte i = 0; i < TransportManager.CHANNEL_COUNT; i++)
             {
                 int mtu = NetworkManager.TransportManager.Transport.GetMTU(i);
                 _toClientBundles.Add(new PacketBundle(NetworkManager, mtu));
@@ -71,12 +71,14 @@ namespace FishNet.Connection
                     Debug.LogWarning($"Data cannot be sent to connection {ClientId} because it is not active.");
                 return;
             }
+            //If channel is out of bounds then default to the first channel.
             if (channel >= _toClientBundles.Count)
-            {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Channel {channel} is out of bounds.");
-                return;
-            }
+                channel = 0;
+            //{
+            //    if (NetworkManager.CanLog(LoggingType.Error))
+            //        Debug.LogError($"Channel {channel} is out of bounds.");
+            //    return;
+            //}
 
             _toClientBundles[channel].Write(segment, forceNewBuffer);
             ServerDirty();

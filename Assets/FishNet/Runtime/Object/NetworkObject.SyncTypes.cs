@@ -2,7 +2,7 @@
 
 namespace FishNet.Object
 {
-    public partial class NetworkObject : MonoBehaviour
+    public sealed partial class NetworkObject : MonoBehaviour
     {
         /// <summary>
         /// Writers dirty SyncTypes for all Networkbehaviours if their write tick has been met.

@@ -18,6 +18,11 @@ namespace FishNet.Transporting
         public NetworkManager NetworkManager { get; private set; }
         #endregion
 
+        #region Obsolete
+        [Obsolete("This method is being removed in a future version.")] //Remove on 2022/06/01.
+        public virtual byte GetChannelCount() { return 0; }
+        #endregion
+
         #region Initialization and unity.
         /// <summary>
         /// Initializes the transport. Use this instead of Awake.
@@ -208,11 +213,6 @@ namespace FishNet.Transporting
         #endregion
 
         #region Channels.
-        /// <summary>
-        /// Returns how many channels the transport supports.
-        /// </summary>
-        /// <returns>Number of channels.</returns>
-        public abstract byte GetChannelCount();
         /// <summary>
         /// Returns which channel to use by default for reliable.
         /// </summary>

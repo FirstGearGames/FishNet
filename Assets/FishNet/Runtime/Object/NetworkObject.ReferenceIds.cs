@@ -11,7 +11,7 @@ using UnityEditor;
 
 namespace FishNet.Object
 {
-    public partial class NetworkObject : MonoBehaviour
+    public sealed partial class NetworkObject : MonoBehaviour
     {
         #region Serialized.
 
@@ -69,6 +69,7 @@ namespace FishNet.Object
         /// </summary>
         internal void TryCreateSceneID()
         {
+
             if (Application.isPlaying)
                 return;
             if (gameObject == null)
@@ -160,6 +161,7 @@ namespace FishNet.Object
                 }
             }
             return false;
+
         }
 
         /// <summary>
@@ -176,13 +178,13 @@ namespace FishNet.Object
                 if (nob != null && nob != this && nob.SceneId == id)
                     return true;
             }
-
             //If here all checks pass.
             return false;
         }
 
         partial void PartialOnValidate()
         {
+
             TryCreateSceneID();
         }
         partial void PartialReset()

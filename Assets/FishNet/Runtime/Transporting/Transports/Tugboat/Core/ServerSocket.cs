@@ -32,10 +32,6 @@ namespace FishNet.Tugboat.Server
         #region Private.
         #region Configuration.
         /// <summary>
-        /// Address to bind server to.
-        /// </summary>
-        private string _address = string.Empty;
-        /// <summary>
         /// Port used by server.
         /// </summary>
         private ushort _port;
@@ -82,6 +78,10 @@ namespace FishNet.Tugboat.Server
         /// Key required to connect.
         /// </summary>
         private string _key = string.Empty;
+        /// <summary>
+        /// Poll timeout for socket.
+        /// </summary>
+        private int _pollTime;
         /// <summary>
         /// Server socket manager.
         /// </summary>
@@ -219,7 +219,7 @@ namespace FishNet.Tugboat.Server
         /// <summary>
         /// Starts the server.
         /// </summary>
-        internal bool StartConnection(string address, ushort port, int maximumClients, byte channelsCount, int pollTime)
+        internal bool StartConnection(string address, ushort port, int maximumClients, int pollTime)
         {
             if (base.GetConnectionState() != LocalConnectionStates.Stopped)
                 return false;
@@ -227,7 +227,7 @@ namespace FishNet.Tugboat.Server
             base.SetConnectionState(LocalConnectionStates.Starting, true);
 
             //Assign properties.
-            _address = address;
+            _pollTime = pollTime;
             _port = port;
             _maximumClients = maximumClients;
             ResetQueues();

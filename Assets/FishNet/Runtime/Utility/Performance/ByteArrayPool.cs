@@ -37,10 +37,11 @@ namespace FishNet.Utility.Performance
                     _concurrentByteArrays.TryDequeue(out result);
             }
 
+            int doubleMinimumLength = (minimumLength * 2);
             if (result == null)
-                result = new byte[minimumLength];
+                result = new byte[doubleMinimumLength];
             else if (result.Length < minimumLength)
-                Array.Resize(ref result, minimumLength);
+                Array.Resize(ref result, doubleMinimumLength);
 
             return result;
         }

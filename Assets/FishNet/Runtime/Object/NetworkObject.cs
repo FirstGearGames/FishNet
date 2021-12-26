@@ -8,8 +8,6 @@ using FishNet.Managing.Timing;
 using FishNet.Utility;
 using System.Collections.Generic;
 using FishNet.Utility.Performance;
-using FishNet.Observing;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -17,7 +15,7 @@ using UnityEditor;
 namespace FishNet.Object
 {
     [DisallowMultipleComponent]
-    public partial class NetworkObject : MonoBehaviour
+    public sealed partial class NetworkObject : MonoBehaviour
     {
         #region Public.
         /// <summary>
@@ -461,7 +459,7 @@ namespace FishNet.Object
 
         #region Editor.
 #if UNITY_EDITOR
-        protected virtual void OnValidate()
+        private void OnValidate()
         {
             ////Set if there are any nobs in children.
             //NetworkObject[] nobs  = GetComponentsInChildren<NetworkObject>(true);
@@ -473,7 +471,7 @@ namespace FishNet.Object
             PartialOnValidate();
         }
         partial void PartialOnValidate();
-        protected virtual void Reset()
+        private void Reset()
         {
             SerializeSceneTransformProperties();
             PartialReset();

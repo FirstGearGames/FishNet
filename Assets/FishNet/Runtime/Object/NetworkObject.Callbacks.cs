@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-    public partial class NetworkObject : MonoBehaviour
+    public sealed partial class NetworkObject : MonoBehaviour
     {
         /// <summary>
         /// Called after all data is synchronized with this NetworkObject.

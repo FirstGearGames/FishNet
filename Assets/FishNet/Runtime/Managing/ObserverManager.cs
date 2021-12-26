@@ -11,7 +11,7 @@ namespace FishNet.Managing.Observing
     /// Additional options for managing the observer system.
     /// </summary>
     [DisallowMultipleComponent]
-    public class ObserverManager : MonoBehaviour
+    public sealed class ObserverManager : MonoBehaviour
     {
         #region Serialized.
         /// <summary>

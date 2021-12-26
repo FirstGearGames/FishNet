@@ -271,6 +271,10 @@ namespace FishNet.Managing.Client
 
                 return;
             }
+            else
+            {
+                nob.SetIsNetworked(true);
+            }
             /* If not host then pre-initialize. Pre-initializing applies
              * values needed to run such as owner, network manager, and completes
              * other reference creating functions. */

@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System;
 using FishNet.Managing.Observing;
 using System.Linq;
+using FishNet.Utility.Extension;
 
 namespace FishNet.Managing
 {
@@ -24,7 +25,7 @@ namespace FishNet.Managing
     /// </summary>
     [DefaultExecutionOrder(short.MinValue)]
     [DisallowMultipleComponent]
-    public partial class NetworkManager : MonoBehaviour
+    public sealed partial class NetworkManager : MonoBehaviour
     {
         #region Types.
         /// <summary>
@@ -171,8 +172,8 @@ namespace FishNet.Managing
         #endregion
 
 
-        protected virtual void Awake()
-        {
+        private void Awake()
+        {            
             InitializeLogging();
 
             _canPersist = CanInitialize();
@@ -385,7 +386,7 @@ namespace FishNet.Managing
             if (SpawnablePrefabs == null)
                 Reset();
         }
-        protected virtual void Reset()
+        private void Reset()
         {
             if (SpawnablePrefabs == null)
             {
@@ -399,6 +400,7 @@ namespace FishNet.Managing
             }
         }
 #endif
+
         #endregion
 
     }

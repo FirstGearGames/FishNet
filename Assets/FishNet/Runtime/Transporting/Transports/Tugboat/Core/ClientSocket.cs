@@ -160,7 +160,7 @@ namespace FishNet.Tugboat.Client
         /// <param name="port"></param>
         /// <param name="channelsCount"></param>
         /// <param name="pollTime"></param>
-        internal bool StartConnection(string address, ushort port, byte channelsCount, int pollTime)
+        internal bool StartConnection(string address, ushort port, int pollTime)
         {
             if (base.GetConnectionState() != LocalConnectionStates.Stopped)
                 return false;

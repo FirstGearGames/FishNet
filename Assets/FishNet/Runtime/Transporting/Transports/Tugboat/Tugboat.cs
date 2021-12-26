@@ -1,5 +1,6 @@
 using FishNet.Managing;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Transporting;
 using FishNet.Transporting;
 using System;
 using System.Runtime.CompilerServices;
@@ -378,7 +379,7 @@ namespace FishNet.Tugboat
         {
             _server.Initialize(this, _reliableMTU, _unreliableMTU);
             string bindAddress = string.Empty;
-            return _server.StartConnection(bindAddress, _port, _maximumClients, GetChannelCount(), POLL_TIMEOUT);
+            return _server.StartConnection(bindAddress, _port, _maximumClients, POLL_TIMEOUT);
         }
 
         /// <summary>
@@ -396,7 +397,7 @@ namespace FishNet.Tugboat
         private bool StartClient(string address)
         {
             _client.Initialize(this, _reliableMTU, _unreliableMTU, _timeout);
-            return _client.StartConnection(address, _port, GetChannelCount(), POLL_TIMEOUT);
+            return _client.StartConnection(address, _port, POLL_TIMEOUT);
         }
 
         /// <summary>
@@ -426,21 +427,14 @@ namespace FishNet.Tugboat
         /// <param name="channelId"></param>
         private void SanitizeChannel(ref byte channelId)
         {
-            if (channelId < 0 || channelId >= GetChannelCount())
+            if (channelId < 0 || channelId >= TransportManager.CHANNEL_COUNT)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Channel of {channelId} is out of range of supported channels. Channel will be defaulted to reliable.");
                 channelId = GetDefaultReliableChannel();
             }
         }
-        /// <summary>
-        /// Returns how many channels the transport is using.
-        /// </summary>
-        /// <returns></returns>
-        public override byte GetChannelCount()
-        {
-            return 2;
-        }
+
         /// <summary>
         /// Returns which channel to use by default for reliable.
         /// </summary>

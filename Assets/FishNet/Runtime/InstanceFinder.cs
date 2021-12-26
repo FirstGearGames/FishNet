@@ -8,8 +8,6 @@ using FishNet.Managing.Transporting;
 using FishNet.Utility;
 using System.Linq;
 using UnityEngine;
-#if UNITY_EDITOR
-#endif
 
 namespace FishNet
 {

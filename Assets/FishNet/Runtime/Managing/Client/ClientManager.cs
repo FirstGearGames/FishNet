@@ -12,7 +12,7 @@ namespace FishNet.Managing.Client
     /// A container for local client data and actions.
     /// </summary>
     [DisallowMultipleComponent]
-    public partial class ClientManager : MonoBehaviour
+    public sealed partial class ClientManager : MonoBehaviour
     {
         #region Public.
         /// <summary>
@@ -42,12 +42,12 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.")]
+        [Tooltip("Frame rate to use while only the client is active. When both server and client are active the higher of the two frame rates will be used.")]
         [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
         /// <summary>
-        /// Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.
+        /// Frame rate to use while only the client is active. When both server and client are active the higher of the two frame rates will be used.
         /// </summary>
         internal ushort FrameRate => _frameRate;
         #endregion

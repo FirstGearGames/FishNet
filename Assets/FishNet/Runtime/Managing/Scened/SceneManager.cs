@@ -18,7 +18,7 @@ namespace FishNet.Managing.Scened
     /// Handles loading, unloading, and scene visibility for clients.
     /// </summary>
     [DisallowMultipleComponent]
-    public class SceneManager : MonoBehaviour
+    public sealed class SceneManager : MonoBehaviour
     {
 
         #region Public.
