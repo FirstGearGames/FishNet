@@ -229,10 +229,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private int _lastIncomingIterationFrame = -1;
         /// <summary>
-        /// Last frame an iteration occurred for outgoing.
-        /// </summary>
-        private int _lastOutgoingIterationFrame = -1;
-        /// <summary>
         /// True if client received Pong since last ping.
         /// </summary>
         private bool _receivedPong = true;
@@ -285,7 +281,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickFixedUpdate()
         {
-            TryIterateData(true, false);
             OnFixedUpdate?.Invoke();
         }
 
@@ -294,9 +289,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickUpdate()
         {
-            if (!Time.inFixedTimeStep)
-                TryIterateData(true, false);
-
             if (_networkManager.IsServer)
                 ServerUptime += Time.deltaTime;
 
@@ -316,10 +308,6 @@ namespace FishNet.Managing.Timing
         internal void TickLateUpdate()
         {
             OnLateUpdate?.Invoke();
-            /* Iterate outgoing after lateupdate
-             * so data is always sent out
-             * after everything processes. */
-            TryIterateData(false, false);
         }
 
 
@@ -563,7 +551,7 @@ namespace FishNet.Managing.Timing
                  * OnPreTick promises data hasn't been read yet.
                  * Therefor iterate must occur after OnPreTick.
                  * Iteration will only run once per frame. */
-                TryIterateData(true, true);
+                TryIterateData(true);
 
                 OnTick?.Invoke();
 
@@ -575,6 +563,8 @@ namespace FishNet.Managing.Timing
                 }
 
                 OnPostTick?.Invoke();
+                //Send out data.
+                TryIterateData(false);
 
                 if (_networkManager.IsClient)
                     SendAddBuffered();
@@ -590,7 +580,6 @@ namespace FishNet.Managing.Timing
             {
                 if (_networkManager.IsClient)
                     TrySendPing();
-                TryIterateData(false, true);
             }
         }
 
@@ -694,27 +683,28 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name="incoming">True to iterate incoming.</param>
         /// <param name="isTick">True if call is occuring during a tick.</param>
-        private void TryIterateData(bool incoming, bool isTick)
+        private void TryIterateData(bool incoming)
         {
-            //Only transport on tick.
-            if (!isTick)
-                return;
-
-            int frameCount = Time.frameCount;
-            int lastTickFrame = (incoming) ? _lastIncomingIterationFrame : _lastOutgoingIterationFrame;
-            //Already iterated this tick.
-            if (frameCount == lastTickFrame)
-                return;
-
             if (incoming)
             {
+                /* It's not possible for data to come in
+                 * more than once per frame but there could
+                 * be new data going out each tick, since
+                 * movement is often based off the tick system.
+                 * Because of this don't iterate incoming if
+                 * it's the same frame but the outgoing
+                 * may iterate multiple times per frame. */
+                int frameCount = Time.frameCount;
+                if (frameCount == _lastIncomingIterationFrame)
+                    return;
+                _lastIncomingIterationFrame = frameCount;
+
                 _lastIncomingIterationFrame = frameCount;
                 _networkManager.TransportManager.IterateIncoming(true);
                 _networkManager.TransportManager.IterateIncoming(false);
             }
             else
             {
-                _lastOutgoingIterationFrame = frameCount;
                 _networkManager.TransportManager.IterateOutgoing(true);
                 _networkManager.TransportManager.IterateOutgoing(false);
             }

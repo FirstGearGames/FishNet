@@ -345,7 +345,6 @@ namespace FishNet.CodeGenerating.Processing
                 CodegenSession.LogError($"Reconcile data type {reconcileDataTd.Name} does not support serialization. Use a supported type or create a custom serializer.");
                 return false;
             }
-
             //Creates fields for buffers.
             CreatedPredictionFields predictionFields;
             CreateFields(typeDef, replicateMd, reconcileMd, out predictionFields);
@@ -967,12 +966,6 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateReaderBuffer);
             processor.Emit(OpCodes.Stloc, replicateDataArrVd);
 
-            //      lastTick = _serverReceivedTick;
-            VariableDefinition lastTickVd = CodegenSession.GeneralHelper.CreateVariable(createdMd, typeof(uint));
-            processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldfld, predictionFields.ServerReceivedTick);
-            processor.Emit(OpCodes.Stloc, lastTickVd);
-
             /* Store queue count into queueCount. */
             //START //Method references for uint get_Count.
             GenericInstanceType queueDataGit;
@@ -986,9 +979,11 @@ namespace FishNet.CodeGenerating.Processing
             //      for (int i = 0; i < dataArr.Length; i++)
             //      {
             //          Data d = dataArr[i];
-            //          if (d.Tick > lastTick)
+            //          if (d.Tick > this.lastTick)
             //            _serverReplicateDatas.Add(d);
+            //            this.lastTick = d.Tick;
             //      }
+
             VariableDefinition iteratorVd = CodegenSession.GeneralHelper.CreateVariable(createdMd, typeof(int));
             Instruction iteratorComparerInst = processor.Create(OpCodes.Ldloc, iteratorVd);
             Instruction iteratorLogicInst = processor.Create(OpCodes.Nop);
@@ -999,12 +994,18 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Br_S, iteratorComparerInst);
             //Logic.
             processor.Append(iteratorLogicInst);
+
+            //Store the data tick.
+            VariableDefinition dataTickVd = CodegenSession.GeneralHelper.CreateVariable(createdMd, typeof(int));
             processor.Emit(OpCodes.Ldloc, replicateDataArrVd);
             processor.Emit(OpCodes.Ldloc, iteratorVd);
             processor.Emit(OpCodes.Ldelema, replicateDataTr);
             processor.Emit(OpCodes.Ldfld, ReplicateData_Tick_FieldRef);
-            //processor.Emit(OpCodes.Conv_U8);
-            processor.Emit(OpCodes.Ldloc, lastTickVd);
+            processor.Emit(OpCodes.Stloc, dataTickVd);
+
+            processor.Emit(OpCodes.Ldloc, dataTickVd);
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldfld, predictionFields.ServerReceivedTick);
             processor.Emit(OpCodes.Ble_S, iteratorIncreaseComparerInst);
             //Add to buffer.
             processor.Emit(OpCodes.Ldarg_0);
@@ -1016,10 +1017,7 @@ namespace FishNet.CodeGenerating.Processing
 
             //Set serverReceivedTick.
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldloc, replicateDataArrVd);
-            processor.Emit(OpCodes.Ldloc, iteratorVd);
-            processor.Emit(OpCodes.Ldelema, replicateDataTr);
-            processor.Emit(OpCodes.Ldfld, ReplicateData_Tick_FieldRef);
+            processor.Emit(OpCodes.Ldloc, dataTickVd);
             processor.Emit(OpCodes.Stfld, predictionFields.ServerReceivedTick);
             //      ; i++)
             processor.Append(iteratorIncreaseComparerInst); //(OpCodes.Ldloc, iteratorVd);
@@ -1295,7 +1293,7 @@ namespace FishNet.CodeGenerating.Processing
             OpCode ldArgOC = (dataPd.ParameterType.IsValueType) ? OpCodes.Ldarga : OpCodes.Ldarg;
             processor.Emit(ldArgOC, dataPd);
             processor.Emit(OpCodes.Ldloc, tickVd);
-            processor.Emit(OpCodes.Stfld, ReplicateData_Tick_FieldRef.CachedResolve());
+            processor.Emit(OpCodes.Stfld, ReplicateData_Tick_FieldRef.CachedResolve());            
         }
         /// <summary>
         /// Sends clients inputs to server.
@@ -1456,7 +1454,7 @@ namespace FishNet.CodeGenerating.Processing
             GenericInstanceType lstDataGit;
             GetGenericLists(replicateDataTr, out lstDataGit);
             MethodReference replicateGetCountMr = CodegenSession.GeneralHelper.List_get_Count_MethodRef.MakeHostInstanceGeneric(lstDataGit);
-            MethodReference replicateGetItemMr = CodegenSession.GeneralHelper.List_GetItem_MethodRef.MakeHostInstanceGeneric(lstDataGit);
+            MethodReference replicateGetItemMr = CodegenSession.GeneralHelper.List_get_Item_MethodRef.MakeHostInstanceGeneric(lstDataGit);
             MethodReference replicateClearMr = CodegenSession.GeneralHelper.List_Clear_MethodRef.MakeHostInstanceGeneric(lstDataGit);
 
             Instruction iteratorIncreaseInst = processor.Create(OpCodes.Ldloc, iteratorVd);
@@ -1553,7 +1551,7 @@ namespace FishNet.CodeGenerating.Processing
             GenericInstanceType lstDataGit;
             GetGenericLists(replicateDataTr, out lstDataGit);
             MethodReference dataCollectionGetCountMr = CodegenSession.GeneralHelper.List_get_Count_MethodRef.MakeHostInstanceGeneric(lstDataGit);
-            MethodReference dataCollectionGetItemMr = CodegenSession.GeneralHelper.List_GetItem_MethodRef.MakeHostInstanceGeneric(lstDataGit);
+            MethodReference dataCollectionGetItemMr = CodegenSession.GeneralHelper.List_get_Item_MethodRef.MakeHostInstanceGeneric(lstDataGit);
 
             Instruction iteratorComparerInst = processor.Create(OpCodes.Ldloc, iteratorVd);
             Instruction iteratorLogicInst = processor.Create(OpCodes.Nop);

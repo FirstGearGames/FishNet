@@ -120,7 +120,8 @@ namespace FishNet.Component.Prediction
                     SendRigidbodyState();
                 }
             }
-            else if (base.IsClient)
+
+            if (CanPredict())
             {
                 _predictedTicks++;
                 PredictVelocity(gameObject.scene.GetPhysicsScene());
@@ -139,7 +140,7 @@ namespace FishNet.Component.Prediction
 
         private void TimeManager_OnPreReconcile(NetworkBehaviour obj)
         {
-            if (base.IsOwner)
+            if (!CanPredict())
                 return;
 
             _physicsScene = gameObject.scene.GetPhysicsScene();
@@ -147,6 +148,17 @@ namespace FishNet.Component.Prediction
                 ResetRigidbodyToData();
         }
 
+        /// <summary>
+        /// Returns if prediction can be used on this rigidbody.
+        /// </summary>
+        /// <returns></returns>
+        private bool CanPredict()
+        {
+            if (base.IsServer || base.IsOwner || _predictionRatio <= 0f)
+                return false;
+
+            return true;
+        }
 
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
@@ -154,7 +166,8 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void TimeManager_OnPostReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
         {
-            PredictVelocity(ps);
+            if (CanPredict())
+                PredictVelocity(ps);
         }
 
         /// <summary>
@@ -182,68 +195,62 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void PredictVelocity(PhysicsScene ps)
         {
-            if (_predictionRatio == 0f)
-                return;
-            if (base.IsOwner)
-                return;
-            if (base.IsServer)
-                return;
             if (ps != _physicsScene)
                 return;
 
             PredictVelocity(ref _velocityBaseline, ref _lastVelocity, _rigidbody.velocity, false);
             PredictVelocity(ref _angularVelocityBaseline, ref _lastAngularVelocity, _rigidbody.angularVelocity, true);
 
-            _lastVelocity = _rigidbody.velocity;
-            _lastAngularVelocity = _rigidbody.angularVelocity;
-        }
-
-        /// <summary>
-        /// Tries to predict velocity.
-        /// </summary>
-        private void PredictVelocity(ref float? velocityBaseline, ref Vector3 lastVelocity, Vector3 velocity, bool angular)
-        {
-            float velocityDifference;
-            float directionDifference;
-
-            /* Velocity. */
-            directionDifference = (velocityBaseline != null) ?
-                Vector3.SqrMagnitude(lastVelocity.normalized - velocity.normalized) :
-                0f;
-            //If direction has changed too much then reset the baseline.
-            if (directionDifference > 0.01f)
+            /// <summary>
+            /// Tries to predict velocity.
+            /// </summary>
+            void PredictVelocity(ref float? velocityBaseline, ref Vector3 lastVelocity, Vector3 velocity, bool angular)
             {
-                velocityBaseline = null;
-            }
-            //Direction hasn't changed enough to reset baseline.
-            else
-            {
-                //Difference in velocity since last simulation.
-                velocityDifference = Vector3.Magnitude(lastVelocity - velocity);
-                //If there is no baseline.
-                if (velocityBaseline == null)
+                float velocityDifference;
+                float directionDifference;
+
+                /* Velocity. */
+                directionDifference = (velocityBaseline != null) ?
+                    Vector3.SqrMagnitude(lastVelocity.normalized - velocity.normalized) :
+                    0f;
+                //If direction has changed too much then reset the baseline.
+                if (directionDifference > 0.01f)
                 {
-                    if (velocityDifference > 0)
-                        velocityBaseline = velocityDifference;
+                    velocityBaseline = null;
                 }
-                //If there is a baseline.
+                //Direction hasn't changed enough to reset baseline.
                 else
                 {
-                    //If the difference exceeds the baseline by 10% then reset baseline so another will be calculated.
-                    if (velocityDifference > (velocityBaseline.Value * 1.1f) || velocityDifference < (velocityBaseline.Value * 0.9f))
+                    //Difference in velocity since last simulation.
+                    velocityDifference = Vector3.Magnitude(lastVelocity - velocity);
+                    //If there is no baseline.
+                    if (velocityBaseline == null)
                     {
-                        velocityBaseline = null;
+                        if (velocityDifference > 0)
+                            velocityBaseline = velocityDifference;
                     }
-                    //Velocity difference is close enough to the baseline to where it doesn't need to be reset, so use prediction.
+                    //If there is a baseline.
                     else
                     {
-                        if (!angular)
-                            _rigidbody.velocity = Vector3.Lerp(velocity, lastVelocity, _predictionRatio);
+                        //If the difference exceeds the baseline by 10% then reset baseline so another will be calculated.
+                        if (velocityDifference > (velocityBaseline.Value * 1.1f) || velocityDifference < (velocityBaseline.Value * 0.9f))
+                        {
+                            velocityBaseline = null;
+                        }
+                        //Velocity difference is close enough to the baseline to where it doesn't need to be reset, so use prediction.
                         else
-                            _rigidbody.angularVelocity = Vector3.Lerp(velocity, lastVelocity, _predictionRatio);
+                        {
+                            if (!angular)
+                                _rigidbody.velocity = Vector3.Lerp(velocity, lastVelocity, _predictionRatio);
+                            else
+                                _rigidbody.angularVelocity = Vector3.Lerp(velocity, lastVelocity, _predictionRatio);
+                        }
                     }
                 }
             }
+
+            _lastVelocity = _rigidbody.velocity;
+            _lastAngularVelocity = _rigidbody.angularVelocity;
         }
 
 
@@ -270,6 +277,9 @@ namespace FishNet.Component.Prediction
         [ObserversRpc(IncludeOwner = false, BufferLast = true)]
         private void ObserversSendRigidbodyState(RigidbodyState state, Channel channel = Channel.Unreliable)
         {
+            if (!CanPredict())
+                return;
+
             _receivedRigidbodyState = state;
             ResetRigidbodyToData();
             PhysicsScene ps = gameObject.scene.GetPhysicsScene();

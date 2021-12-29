@@ -73,18 +73,23 @@ namespace FishNet.CodeGenerating.Processing
                 /* Create NetworkInitialize before-hand so the other procesors
                  * can use it. */
                 CreateNetworkInitializeMethods(copyTypeDef);
+
+                uint rpcCount = 0;
+                /* Prediction. */
+                /* Run prediction first since prediction will modify
+                 * user data passed into prediction methods. Because of this
+                 * other RPCs should use the modified version and reader/writers
+                 * made for prediction. */
+                modified |= CodegenSession.NetworkBehaviourPredictionProcessor.Process(copyTypeDef, ref rpcCount);
+                //25ms 
+
                 /* RPCs. */
-                uint rpcCount;
                 childRpcCounts.TryGetValue(copyTypeDef, out rpcCount);
                 modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref rpcCount);
                 //30ms
                 /* //perf rpcCounts can be optimized by having different counts
                  * for target, observers, server, replicate, and reoncile rpcs. Since
                  * each registers to their own delegates this is possible. */
-
-                /* Prediction. */
-                modified |= CodegenSession.NetworkBehaviourPredictionProcessor.Process(copyTypeDef, ref rpcCount);
-                //25ms 
 
                 /* SyncTypes. */
                 uint syncTypeStartCount;

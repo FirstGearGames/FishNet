@@ -24,7 +24,7 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference Queue_Clear_MethodRef;
         internal TypeReference List_TypeRef;
         internal MethodReference List_Clear_MethodRef;
-        internal MethodReference List_GetItem_MethodRef;
+        internal MethodReference List_get_Item_MethodRef;
         internal MethodReference List_get_Count_MethodRef;
         internal MethodReference List_Add_MethodRef;
         internal MethodReference List_RemoveRange_MethodRef;
@@ -127,7 +127,7 @@ namespace FishNet.CodeGenerating.Helping
             lstMi = tmpType.GetMethod("get_Count");
             List_get_Count_MethodRef = CodegenSession.ImportReference(lstMi);
             lstMi = tmpType.GetMethod("get_Item");
-            List_GetItem_MethodRef = CodegenSession.ImportReference(lstMi);
+            List_get_Item_MethodRef = CodegenSession.ImportReference(lstMi);
             lstMi = tmpType.GetMethod("Clear");
             List_Clear_MethodRef = CodegenSession.ImportReference(lstMi);
 

@@ -413,6 +413,15 @@ namespace FishNet.Tugboat.Server
                     ArraySegment<byte> segment = outgoing.GetArraySegment();
                     DeliveryMethod dm = (outgoing.Channel == (byte)Channel.Reliable) ?
                          DeliveryMethod.ReliableOrdered : DeliveryMethod.Unreliable;
+
+                    //If over the MTU.
+                    if (outgoing.Channel == (byte)Channel.Unreliable && segment.Count > _mtus[1])
+                    {
+                        if (base.Transport.NetworkManager.CanLog(LoggingType.Warning))
+                            Debug.LogWarning($"Server is sending of {segment.Count} length on the reliable channel, while the MTU is only {_mtus[1]}. The channel has been changed to reliable for this send.");
+                        dm = DeliveryMethod.ReliableOrdered;
+                    }
+
                     //Send to all clients.
                     if (connectionId == -1)
                     {

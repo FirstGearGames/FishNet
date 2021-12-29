@@ -1,3 +1,4 @@
+using FishNet.Managing.Logging;
 using FishNet.Transporting;
 using LiteNetLib;
 using System;
@@ -254,6 +255,15 @@ namespace FishNet.Tugboat.Client
                     ArraySegment<byte> segment = outgoing.GetArraySegment();
                     DeliveryMethod dm = (outgoing.Channel == (byte)Channel.Reliable) ?
                          DeliveryMethod.ReliableOrdered : DeliveryMethod.Unreliable;
+
+                    //If over the MTU.
+                    if (outgoing.Channel == (byte)Channel.Unreliable && segment.Count > _mtus[1])
+                    {
+                        if (base.Transport.NetworkManager.CanLog(LoggingType.Warning))
+                            Debug.LogWarning($"Client is sending of {segment.Count} length on the reliable channel, while the MTU is only {_mtus[1]}. The channel has been changed to reliable for this send.");
+                        dm = DeliveryMethod.ReliableOrdered;
+                    }
+
                     peer.Send(segment.Array, segment.Offset, segment.Count, dm);
 
                     outgoing.Dispose();
