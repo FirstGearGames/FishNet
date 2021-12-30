@@ -94,7 +94,7 @@ namespace FishNet.Object
 
             if (_replicateRpcDelegates.TryGetValue(methodHash.Value, out ReplicateRpcDelegate del))
             {
-                del.Invoke(this, reader, sendingClient); 
+                del.Invoke(this, reader, sendingClient);
             }
             else
             {
@@ -129,7 +129,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="asServer">True to reset values for server, false to reset values for client.</param>
         public virtual void ClearReplicateCache(bool asServer) { }
-        
+
         /// <summary>
         /// Writes number of past inputs from buffer to writer and sends it to the server.
         /// Internal use. 
@@ -184,11 +184,15 @@ namespace FishNet.Object
             methodWriter.Write(reconcileData);
 
             PooledWriter writer;
-            if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (NetworkManager.DebugManager.ReconcileRpcLinks && _rpcLinks.TryGetValue(hash, out RpcLinkType link))
+#else
+            if (_rpcLinks.TryGetValue(rpcHash, out RpcLinkType link))
+#endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else
                 writer = CreateRpc(hash, methodWriter, PacketId.Reconcile, channel);
-            
+
             NetworkObject.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), Owner);
 
             methodWriter.Dispose();

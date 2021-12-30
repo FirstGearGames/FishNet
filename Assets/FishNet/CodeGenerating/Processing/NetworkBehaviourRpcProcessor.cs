@@ -18,6 +18,27 @@ namespace FishNet.CodeGenerating.Processing
     internal class NetworkBehaviourRpcProcessor
     {
 
+        #region Types.
+        private struct DelegateData
+        {
+            public RpcType RpcType;
+            public MethodDefinition OriginalMethodDef;
+            public MethodDefinition ReaderMethodDef;
+            public uint MethodHash;
+            public CustomAttribute RpcAttribute;
+
+            public DelegateData(RpcType rpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, uint methodHash, CustomAttribute rpcAttribute)
+            {
+                RpcType = rpcType;
+                OriginalMethodDef = originalMethodDef;
+                ReaderMethodDef = readerMethodDef;
+                MethodHash = methodHash;
+                RpcAttribute = rpcAttribute;
+            }
+        }
+
+        #endregion
+
         private List<(MethodDefinition, MethodDefinition)> _virtualRpcs = new List<(MethodDefinition createdLogicMd, MethodDefinition originalRpcMd)>();
 
         #region Const.
@@ -29,16 +50,15 @@ namespace FishNet.CodeGenerating.Processing
         private const string BUFFERED_RPC_PROPERTY_NAME = "BufferLast";
         #endregion
 
-        internal bool Process(TypeDefinition typeDef, ref uint rpcStartCount)
+        internal bool Process(TypeDefinition typeDef, ref uint rpcCount)
         {
             bool modified = false;
 
-            //Logic method definitions.
-            List<(RpcType, MethodDefinition, MethodDefinition, uint, CustomAttribute)> delegateMethodDefs = new List<(RpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, uint methodHash, CustomAttribute rpcAttribute)>();
+            List<DelegateData> delegateDatas = new List<DelegateData>();
             MethodDefinition[] startingMethodDefs = typeDef.Methods.ToArray();
             foreach (MethodDefinition methodDef in startingMethodDefs)
             {
-                if (rpcStartCount >= ObjectHelper.MAX_RPC_ALLOWANCE)
+                if (rpcCount >= ObjectHelper.MAX_RPC_ALLOWANCE)
                 {
                     CodegenSession.LogError($"{typeDef.FullName} and inherited types exceed {ObjectHelper.MAX_RPC_ALLOWANCE} RPC methods. Only {ObjectHelper.MAX_RPC_ALLOWANCE} RPC methods are supported per inheritance hierarchy.");
                     return false;
@@ -61,27 +81,26 @@ namespace FishNet.CodeGenerating.Processing
 
                 //Create methods for users method.
                 MethodDefinition writerMethodDef, readerMethodDef, logicMethodDef;
-                CreateRpcMethods(typeDef, methodDef, rpcAttribute, rpcType, rpcStartCount, out writerMethodDef, out readerMethodDef, out logicMethodDef);
+                CreateRpcMethods(typeDef, methodDef, rpcAttribute, rpcType, rpcCount, out writerMethodDef, out readerMethodDef, out logicMethodDef);
 
                 if (writerMethodDef != null && readerMethodDef != null && logicMethodDef != null)
                 {
                     modified = true;
-                    delegateMethodDefs.Add((rpcType, methodDef, readerMethodDef, rpcStartCount, rpcAttribute));
+
+                    delegateDatas.Add(new DelegateData(rpcType, methodDef, readerMethodDef, rpcCount, rpcAttribute));
                     if (logicMethodDef.IsVirtual)
                         _virtualRpcs.Add((logicMethodDef, methodDef));
 
-                    rpcStartCount++;
+                    rpcCount++;
                 }
             }
 
             if (modified)
             {
-                foreach ((RpcType rpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, uint methodHash, CustomAttribute rpcAttribute) in delegateMethodDefs)
-                {
-                    //NetworkObject.Create_____Delegate.
-                    CodegenSession.ObjectHelper.CreateRpcDelegate(originalMethodDef, readerMethodDef, rpcType, methodHash, rpcAttribute);
-
-                }
+                foreach (DelegateData data in delegateDatas)
+                    CodegenSession.ObjectHelper.CreateRpcDelegate(data.OriginalMethodDef,
+                        data.ReaderMethodDef, data.RpcType, data.MethodHash,
+                        data.RpcAttribute);
 
                 modified = true;
             }
@@ -95,7 +114,7 @@ namespace FishNet.CodeGenerating.Processing
         internal void RedirectBaseCalls()
         {
             foreach ((MethodDefinition logicMd, MethodDefinition originalMd) in _virtualRpcs)
-                RedirectBaseCall(logicMd, originalMd);            
+                RedirectBaseCall(logicMd, originalMd);
         }
 
         /// <summary>
@@ -834,7 +853,7 @@ namespace FishNet.CodeGenerating.Processing
                 // if call to base.RpcDoSomething within this.RpcDoSOmething.
                 if (CodegenSession.GeneralHelper.IsCallToMethod(instruction, out MethodDefinition calledMethod) && calledMethod.Name == originalMethodDef.Name)
                 {
-                    MethodReference baseLogicMd = createdMethodDef.DeclaringType .GetMethodInBase(createdMethodDef.Name);
+                    MethodReference baseLogicMd = createdMethodDef.DeclaringType.GetMethodInBase(createdMethodDef.Name);
                     if (baseLogicMd == null)
                     {
                         CodegenSession.LogError($"Could not find base method for {createdMethodDef.Name}.");

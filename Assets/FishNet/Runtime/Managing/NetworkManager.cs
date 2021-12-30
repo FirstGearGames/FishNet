@@ -17,6 +17,7 @@ using System;
 using FishNet.Managing.Observing;
 using System.Linq;
 using FishNet.Utility.Extension;
+using FishNet.Managing.Debugging;
 
 namespace FishNet.Managing
 {
@@ -130,6 +131,10 @@ namespace FishNet.Managing
         /// </summary>
         public Authenticator Authenticator { get; private set; }
         /// <summary>
+        /// DebugManager for this NetworkManager.
+        /// </summary>
+        public DebugManager DebugManager { get; private set; }
+        /// <summary>
         /// An empty connection reference. Used when a connection cannot be found to prevent object creation.
         /// </summary>
         [APIExclude]
@@ -173,7 +178,7 @@ namespace FishNet.Managing
 
 
         private void Awake()
-        {            
+        {
             InitializeLogging();
 
             _canPersist = CanInitialize();
@@ -189,6 +194,7 @@ namespace FishNet.Managing
             SpawnablePrefabs.InitializePrefabRange(0);
             SetDontDestroyOnLoad();
             SetRunInBackground();
+            AddDebugManager();
             AddTransportManager();
             AddServerAndClientManagers();
             AddTimeManager();
@@ -314,6 +320,18 @@ namespace FishNet.Managing
         private void SetRunInBackground()
         {
             Application.runInBackground = _runInBackground;
+        }
+
+
+        /// <summary>
+        /// Adds DebugManager.
+        /// </summary>
+        private void AddDebugManager()
+        {
+            if (gameObject.TryGetComponent<DebugManager>(out DebugManager result))
+                DebugManager = result;
+            else
+                DebugManager = gameObject.AddComponent<DebugManager>();
         }
 
         /// <summary>

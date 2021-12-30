@@ -218,21 +218,25 @@ namespace FishNet.Object
         /// Sends a RPC to observers.
         /// Internal use.
         /// </summary>
-        /// <param name="rpcHash"></param>
+        /// <param name="hash"></param>
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
         [APIExclude] //codegen this can be made internal then set public via codegen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendObserversRpc(uint rpcHash, PooledWriter methodWriter, Channel channel, bool buffered)
+        public void SendObserversRpc(uint hash, PooledWriter methodWriter, Channel channel, bool buffered)
         {
             if (!IsSpawnedWithWarning())
                 return;
 
             PooledWriter writer;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (NetworkManager.DebugManager.ObserverRpcLinks && _rpcLinks.TryGetValue(hash, out RpcLinkType link))
+#else
             if (_rpcLinks.TryGetValue(rpcHash, out RpcLinkType link))
+#endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else
-                writer = CreateRpc(rpcHash, methodWriter, PacketId.ObserversRpc, channel);
+                writer = CreateRpc(hash, methodWriter, PacketId.ObserversRpc, channel);
 
             NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), NetworkObject.Observers);
             /* If buffered then dispose of any already buffered
@@ -241,9 +245,9 @@ namespace FishNet.Object
              * anyway but better safe than sorry. */
             if (buffered)
             {
-                if (_bufferedRpcs.TryGetValue(rpcHash, out (PooledWriter pw, Channel ch) result))
+                if (_bufferedRpcs.TryGetValue(hash, out (PooledWriter pw, Channel ch) result))
                     result.pw.Dispose();
-                _bufferedRpcs[rpcHash] = (writer, channel);
+                _bufferedRpcs[hash] = (writer, channel);
             }
             //If not buffered then dispose immediately.
             else
@@ -256,13 +260,13 @@ namespace FishNet.Object
         /// Sends a RPC to target.
         /// Internal use.
         /// </summary>
-        /// <param name="rpcHash"></param>
+        /// <param name="hash"></param>
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
         /// <param name="target"></param>
         [APIExclude] //codegen this can be made internal then set public via codegen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendTargetRpc(uint rpcHash, PooledWriter methodWriter, Channel channel, NetworkConnection target)
+        public void SendTargetRpc(uint hash, PooledWriter methodWriter, Channel channel, NetworkConnection target)
         {
             if (!IsSpawnedWithWarning())
                 return;
@@ -294,10 +298,15 @@ namespace FishNet.Object
             }
 
             PooledWriter writer;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (NetworkManager.DebugManager.TargetRpcLinks && _rpcLinks.TryGetValue(hash, out RpcLinkType link))
+#else
             if (_rpcLinks.TryGetValue(rpcHash, out RpcLinkType link))
+#endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else
-                writer = CreateRpc(rpcHash, methodWriter, PacketId.TargetRpc, channel);
+                writer = CreateRpc(hash, methodWriter, PacketId.TargetRpc, channel);
 
             NetworkObject.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target);
             writer.Dispose();

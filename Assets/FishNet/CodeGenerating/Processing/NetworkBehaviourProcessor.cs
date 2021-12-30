@@ -75,6 +75,7 @@ namespace FishNet.CodeGenerating.Processing
                 CreateNetworkInitializeMethods(copyTypeDef);
 
                 uint rpcCount = 0;
+                childRpcCounts.TryGetValue(copyTypeDef, out rpcCount);
                 /* Prediction. */
                 /* Run prediction first since prediction will modify
                  * user data passed into prediction methods. Because of this
@@ -84,7 +85,6 @@ namespace FishNet.CodeGenerating.Processing
                 //25ms 
 
                 /* RPCs. */
-                childRpcCounts.TryGetValue(copyTypeDef, out rpcCount);
                 modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref rpcCount);
                 //30ms
                 /* //perf rpcCounts can be optimized by having different counts
