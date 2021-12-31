@@ -2,6 +2,7 @@ using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Transporting;
+using LiteNetLib;
 using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -15,17 +16,12 @@ namespace FishNet.Tugboat
         #region Serialized.
         [Header("Channels")]
         /// <summary>
-        /// Maximum transmission unit for the reliable channel.
-        /// </summary>
-        [Tooltip("Maximum transmission unit for the reliable channel.")]
-        [SerializeField]
-        private int _reliableMTU = 1200;
-        /// <summary>
         /// Maximum transmission unit for the unreliable channel.
         /// </summary>
         [Tooltip("Maximum transmission unit for the unreliable channel.")]
+        [Range(MINIMUM_UDP_MTU, MAXIMUM_UDP_MTU)]
         [SerializeField]
-        private int _unreliableMTU = 1200;
+        private int _unreliableMTU = 1023;
 
         [Header("Server")]
         /// <summary>
@@ -44,7 +40,7 @@ namespace FishNet.Tugboat
         /// Maximum number of players which may be connected at once.
         /// </summary>
         [Tooltip("Maximum number of players which may be connected at once.")]
-        [Range(1, 4095)]
+        [Range(1, 9999)]
         [SerializeField]
         private int _maximumClients = 4095;
 
@@ -82,6 +78,14 @@ namespace FishNet.Tugboat
         /// How long to wait before timing out a socket poll.
         /// </summary>
         private const int POLL_TIMEOUT = 1;
+        /// <summary>
+        /// Minimum UDP packet size allowed.
+        /// </summary>
+        private const int MINIMUM_UDP_MTU = 576;
+        /// <summary>
+        /// Maximum UDP packet size allowed.
+        /// </summary>
+        private const int MAXIMUM_UDP_MTU = 1023;
         #endregion
 
         #region Initialization and unity.
@@ -377,7 +381,7 @@ namespace FishNet.Tugboat
         /// </summary>
         private bool StartServer()
         {
-            _server.Initialize(this, _reliableMTU, _unreliableMTU);
+            _server.Initialize(this, _unreliableMTU);
             string bindAddress = string.Empty;
             return _server.StartConnection(bindAddress, _port, _maximumClients, POLL_TIMEOUT);
         }
@@ -396,7 +400,7 @@ namespace FishNet.Tugboat
         /// <param name="address"></param>
         private bool StartClient(string address)
         {
-            _client.Initialize(this, _reliableMTU, _unreliableMTU, _timeout);
+            _client.Initialize(this, _unreliableMTU, _timeout);
             return _client.StartConnection(address, _port, POLL_TIMEOUT);
         }
 
@@ -457,20 +461,7 @@ namespace FishNet.Tugboat
         /// <returns></returns>
         public override int GetMTU(byte channel)
         {
-            if (channel == 0)
-            {
-                return _reliableMTU;
-            }
-            else if (channel == 1)
-            {
-                return _unreliableMTU;
-            }
-            else
-            {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Channel {channel} is out of bounds.");
-                return 0;
-            }
+            return _unreliableMTU;
         }
         #endregion
 
@@ -478,8 +469,10 @@ namespace FishNet.Tugboat
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            _reliableMTU = Math.Max(0, _reliableMTU);
-            _unreliableMTU = Math.Max(0, _unreliableMTU);
+            if (_unreliableMTU < 0)
+                _unreliableMTU = MINIMUM_UDP_MTU;
+            else if (_unreliableMTU > MAXIMUM_UDP_MTU)
+                _unreliableMTU = MAXIMUM_UDP_MTU;
         }
 #endif
         #endregion

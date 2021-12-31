@@ -74,11 +74,7 @@ namespace FishNet.Connection
             //If channel is out of bounds then default to the first channel.
             if (channel >= _toClientBundles.Count)
                 channel = 0;
-            //{
-            //    if (NetworkManager.CanLog(LoggingType.Error))
-            //        Debug.LogError($"Channel {channel} is out of bounds.");
-            //    return;
-            //}
+
 
             _toClientBundles[channel].Write(segment, forceNewBuffer);
             ServerDirty();

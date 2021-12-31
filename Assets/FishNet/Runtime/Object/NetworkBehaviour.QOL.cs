@@ -2,6 +2,7 @@
 using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Timing;
+using System;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -57,10 +58,12 @@ namespace FishNet.Object
         /// True if there is an owner.
         /// </summary>
         /// </summary>
+        [Obsolete("Use Owner.IsValid instead.")] //Remove on 2022/06/01
         public bool OwnerIsValid => (NetworkObject == null) ? false : NetworkObject.OwnerIsValid;
         /// <summary>
         /// True if there is an owner and their connect is active. This will return false if there is no owner, or if the connection is disconnecting.
         /// </summary>
+        [Obsolete("Use Owner.IsActive instead.")] //Remove on 2022/06/01
         public bool OwnerIsActive => (NetworkObject == null) ? false : NetworkObject.OwnerIsActive;
         /// <summary>
         /// ClientId for this NetworkObject owner.

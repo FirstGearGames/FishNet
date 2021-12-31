@@ -17,7 +17,7 @@ namespace FishNet.Connection
         /// <summary>
         /// How many more bytes may fit into the buffer.
         /// </summary>
-        internal int Remaining => (Data.Length - Length);
+        internal int Remaining => (Size - Length);
         /// <summary>
         /// Buffer data.
         /// </summary>
@@ -26,6 +26,10 @@ namespace FishNet.Connection
         /// How many bytes currently into Data. This will include the reserve.
         /// </summary>
         internal int Length { get; private set; }
+        /// <summary>
+        /// Size of the buffer. Data.Length may exceed this value as it uses a pooled array.
+        /// </summary>
+        internal int Size { get; private set; }
         /// <summary>
         /// True if data has been written.
         /// </summary>
@@ -38,6 +42,7 @@ namespace FishNet.Connection
         internal ByteBuffer(int size, int reserve = 0)
         {
             Data = ByteArrayPool.Retrieve(size);
+            Size = size;
             _reserve = reserve;
             Reset();
         }

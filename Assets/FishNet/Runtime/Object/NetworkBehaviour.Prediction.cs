@@ -175,9 +175,9 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SendReconcileRpc<T>(uint hash, T reconcileData, Channel channel)
         {
-            if (!IsSpawnedWithWarning())
+            if (!IsSpawned)
                 return;
-            if (!OwnerIsActive)
+            if (!Owner.IsActive)
                 return;
 
             PooledWriter methodWriter = WriterPool.GetWriter();
@@ -187,7 +187,7 @@ namespace FishNet.Object
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (NetworkManager.DebugManager.ReconcileRpcLinks && _rpcLinks.TryGetValue(hash, out RpcLinkType link))
 #else
-            if (_rpcLinks.TryGetValue(rpcHash, out RpcLinkType link))
+            if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
 #endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else

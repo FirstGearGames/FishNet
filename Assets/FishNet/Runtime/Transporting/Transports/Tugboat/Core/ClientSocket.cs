@@ -2,7 +2,9 @@ using FishNet.Managing.Logging;
 using FishNet.Transporting;
 using LiteNetLib;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,7 +36,7 @@ namespace FishNet.Tugboat.Client
         /// <summary>
         /// MTU sizes for each channel.
         /// </summary>
-        private int[] _mtus = new int[0];
+        private int _mtu;
         #endregion
         #region Queues.
         /// <summary>
@@ -48,16 +50,12 @@ namespace FishNet.Tugboat.Client
         /// <summary>
         /// Outbound messages which need to be handled.
         /// </summary>
-        private ConcurrentQueue<Packet> _outgoing = new ConcurrentQueue<Packet>();
+        private Queue<Packet> _outgoing = new Queue<Packet>();
         #endregion
         /// <summary>
         /// Client socket manager.
         /// </summary>
         private NetManager _client;
-        /// <summary>
-        /// True to dequeue Outgoing.
-        /// </summary>
-        private volatile bool _canDequeueOutgoing;
         /// <summary>
         /// Token to cancel task.
         /// </summary>
@@ -76,17 +74,12 @@ namespace FishNet.Tugboat.Client
         /// Initializes this for use.
         /// </summary>
         /// <param name="t"></param>
-        internal void Initialize(Transport t, int reliableMTU, int unreliableMTU, int timeout)
+        internal void Initialize(Transport t, int unreliableMTU, int timeout)
         {
             base.Transport = t;
 
             _timeout = timeout;
-            //Set maximum MTU for each channel, and create byte buffer.
-            _mtus = new int[2]
-            {
-                reliableMTU,
-                unreliableMTU
-            };
+            _mtu = unreliableMTU;
         }
 
         /// <summary>
@@ -100,6 +93,7 @@ namespace FishNet.Tugboat.Client
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
             _client = new NetManager(listener);
+            _client.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
             //If timeout is not specified then use max value.
             if (_timeout == 0)
@@ -115,7 +109,6 @@ namespace FishNet.Tugboat.Client
 
             while (!cancelToken.IsCancellationRequested)
             {
-                DequeueOutgoing();
                 _client?.PollEvents();
                 Thread.Sleep(_pollTime);
             }
@@ -177,6 +170,7 @@ namespace FishNet.Tugboat.Client
 
             _taskCancelToken = new CancellationTokenSource();
             Task t = Task.Run(() => ThreadedSocket(_taskCancelToken.Token), _taskCancelToken.Token);
+
             return true;
         }
 
@@ -235,9 +229,6 @@ namespace FishNet.Tugboat.Client
         /// </summary>
         private void DequeueOutgoing()
         {
-            if (!_canDequeueOutgoing)
-                return;
-
             NetPeer peer = null;
             if (_client != null)
                 peer = _client.FirstPeer;
@@ -250,17 +241,20 @@ namespace FishNet.Tugboat.Client
             }
             else
             {
-                while (_outgoing.TryDequeue(out Packet outgoing))
+                int count = _outgoing.Count;
+                for (int i = 0; i < count; i++)
                 {
+                    Packet outgoing = _outgoing.Dequeue();
+
                     ArraySegment<byte> segment = outgoing.GetArraySegment();
                     DeliveryMethod dm = (outgoing.Channel == (byte)Channel.Reliable) ?
                          DeliveryMethod.ReliableOrdered : DeliveryMethod.Unreliable;
 
                     //If over the MTU.
-                    if (outgoing.Channel == (byte)Channel.Unreliable && segment.Count > _mtus[1])
+                    if (outgoing.Channel == (byte)Channel.Unreliable && segment.Count > _mtu)
                     {
                         if (base.Transport.NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"Client is sending of {segment.Count} length on the reliable channel, while the MTU is only {_mtus[1]}. The channel has been changed to reliable for this send.");
+                            Debug.LogWarning($"Client is sending of {segment.Count} length on the unreliable channel, while the MTU is only {_mtu}. The channel has been changed to reliable for this send.");
                         dm = DeliveryMethod.ReliableOrdered;
                     }
 
@@ -269,8 +263,6 @@ namespace FishNet.Tugboat.Client
                     outgoing.Dispose();
                 }
             }
-
-            _canDequeueOutgoing = false;
         }
 
         /// <summary>
@@ -278,7 +270,7 @@ namespace FishNet.Tugboat.Client
         /// </summary>
         internal void IterateOutgoing()
         {
-            _canDequeueOutgoing = true;
+            DequeueOutgoing();
         }
 
         /// <summary>

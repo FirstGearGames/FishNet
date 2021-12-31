@@ -3,6 +3,7 @@ using FishNet.Utility.Performance;
 using LiteNetLib;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace FishNet.Tugboat
 {
@@ -52,7 +53,7 @@ namespace FishNet.Tugboat
         /// <summary>
         /// Sends data to connectionId.
         /// </summary>
-        internal void Send(ref ConcurrentQueue<Packet> queue, byte channelId, ArraySegment<byte> segment, int connectionId)
+        internal void Send(ref Queue<Packet> queue, byte channelId, ArraySegment<byte> segment, int connectionId)
         {
             if (GetConnectionState() != LocalConnectionStates.Started)
                 return;
@@ -70,6 +71,20 @@ namespace FishNet.Tugboat
         {
             while (queue.TryDequeue(out Packet p))
                 p.Dispose();
+        }
+
+        /// <summary>
+        /// Clears a queue using Packet type.
+        /// </summary>
+        /// <param name="queue"></param>
+        internal void ClearPacketQueue(ref Queue<Packet> queue)
+        {
+            int count = queue.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Packet p = queue.Dequeue();
+                p.Dispose();
+            }
         }
 
         /// <summary>

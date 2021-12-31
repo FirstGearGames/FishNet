@@ -25,11 +25,17 @@ namespace FishNet.Object
         /// ComponentIndex for this NetworkBehaviour.
         /// </summary>
         public byte ComponentIndex { get; private set; }
+#if UNITY_EDITOR
+        /// <summary>
+        /// NetworkObject automatically added or discovered during edit time.
+        /// </summary>
+        [System.NonSerialized]
+        private NetworkObject _addedNetworkObject;
+#endif
         /// <summary>
         /// NetworkObject this behaviour is for.
         /// </summary>        
         public NetworkObject NetworkObject { get; private set; }
-
 
         /// <summary>
         /// Prepares this script for initialization.
@@ -67,7 +73,7 @@ namespace FishNet.Object
         private void TryAddNetworkObject()
         {
 #if UNITY_EDITOR
-            if (NetworkObject != null)
+            if (_addedNetworkObject != null)
                 return;
             /* Manually iterate up the chain because GetComponentInParent doesn't
              * work when modifying prefabs in the inspector. Unity, you're starting
@@ -83,7 +89,7 @@ namespace FishNet.Object
                     climb = climb.parent;
             }
 
-            NetworkObject = (result != null) ? result : transform.root.gameObject.AddComponent<NetworkObject>();
+            _addedNetworkObject = (result != null) ? result : transform.root.gameObject.AddComponent<NetworkObject>();            
 #endif
         }
         #endregion
