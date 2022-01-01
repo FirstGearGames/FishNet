@@ -602,7 +602,7 @@ namespace FishNet.Component.Animating
             if (ClientAuthoritative)
             {
                 //If has no owner then use latest values on server.
-                if (!base.OwnerIsValid)
+                if (!base.Owner.IsValid)
                 {
                     sendFromServer = true;
                 }

@@ -126,13 +126,13 @@ namespace FishNet.Object
         {
             /* If deinitializing and an owner exist
              * then remove object from owner. */
-            if (Deinitializing && OwnerIsValid)
+            if (Deinitializing && Owner.IsValid)
                 Owner.RemoveObject(this);
         }
 
         private void OnDestroy()
         {
-            if (OwnerIsValid)
+            if (Owner.IsValid)
                 Owner.RemoveObject(this);
             //Already being deinitialized by FishNet.
             if (Deinitializing)
@@ -161,7 +161,7 @@ namespace FishNet.Object
              * disabled, but not deinitialized. But in the scenario
              * the object is unexpectedly destroyed, which is how we
              * arrive here, the object needs to be removed from owner. */
-            if (OwnerIsValid)
+            if (Owner.IsValid)
                 Owner.RemoveObject(this);
 
             Deinitializing = true;
@@ -412,15 +412,8 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="owner"></param>
         /// <param name="allowNull"></param>
-        private void SetOwner(NetworkConnection owner, bool allowNull = false)
-        {
-            if (!allowNull && owner == null)
-            {
-                NetworkManager nm = InstanceFinder.NetworkManager;
-                if (nm != null)
-                    owner = nm.EmptyConnection;
-            }
-
+        private void SetOwner(NetworkConnection owner)
+        {            
             Owner = owner;
         }
 

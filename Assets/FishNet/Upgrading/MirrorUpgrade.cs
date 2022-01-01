@@ -349,7 +349,7 @@ namespace FishNet.Upgrading.Mirror.Editing
 
                 //If not able to find scene condition then add one.
                 if (!conditionFound)
-                    networkObserver.ObserverConditions.Add(_sceneCondition);
+                    networkObserver.ObserverConditionsInternal.Add(_sceneCondition);
             }
 
             return false;
@@ -396,7 +396,7 @@ namespace FishNet.Upgrading.Mirror.Editing
 
                 //If not able to find scene condition then add one.
                 if (!conditionFound)
-                    networkObserver.ObserverConditions.Add(_distanceCondition);
+                    networkObserver.ObserverConditionsInternal.Add(_distanceCondition);
             }
 
             return false;

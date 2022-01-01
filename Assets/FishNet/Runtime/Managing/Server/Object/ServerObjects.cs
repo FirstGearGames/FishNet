@@ -369,7 +369,7 @@ namespace FishNet.Managing.Server
 
             //Write headers first.
             everyoneWriter.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
-            if (nob.OwnerIsValid)
+            if (nob.Owner.IsValid)
                 ownerWriter.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
 
             /* Used to write latest data which must be sent to
@@ -380,7 +380,7 @@ namespace FishNet.Managing.Server
                 nb.WriteRpcLinks(tempWriter);
             //Add to everyone/owner.
             everyoneWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
-            if (nob.OwnerIsValid)
+            if (nob.Owner.IsValid)
                 ownerWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
 
             //Add most recent sync type values.
@@ -392,7 +392,7 @@ namespace FishNet.Managing.Server
                 nb.WriteSyncTypesForSpawn(tempWriter, false);
             everyoneWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
             //If owner is valid then populate owner writer as well.
-            if (nob.OwnerIsValid)
+            if (nob.Owner.IsValid)
             {
                 tempWriter.Reset();
                 foreach (NetworkBehaviour nb in nob.NetworkBehaviours)

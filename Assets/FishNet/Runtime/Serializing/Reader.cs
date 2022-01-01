@@ -855,7 +855,7 @@ namespace FishNet.Serializing
             int value = ReadInt16();
             if (value == -1)
             {
-                return _networkManager.EmptyConnection;
+                return FishNet.Managing.NetworkManager.EmptyConnection;
             }
             else
             {
@@ -870,7 +870,7 @@ namespace FishNet.Serializing
                     {
                         if (_networkManager.CanLog(LoggingType.Warning))
                             Debug.LogWarning($"Unable to find connection for read Id {value}. An empty connection will be returned.");
-                        return _networkManager.EmptyConnection;
+                        return FishNet.Managing.NetworkManager.EmptyConnection;
                     }
                 }
                 //Try client side, will only be able to fetch against local connection.

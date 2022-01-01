@@ -24,10 +24,10 @@ namespace FishNet.Object
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnStartServer();
 
-                if (OwnerIsValid)
+                if (Owner.IsValid)
                 {
                     for (int i = 0; i < NetworkBehaviours.Length; i++)
-                        NetworkBehaviours[i].OnOwnershipServer(NetworkManager.EmptyConnection);
+                        NetworkBehaviours[i].OnOwnershipServer(FishNet.Managing.NetworkManager.EmptyConnection);
                 }
             }
             //As client.
@@ -39,7 +39,7 @@ namespace FishNet.Object
                 if (IsOwner)
                 {
                     for (int i = 0; i < NetworkBehaviours.Length; i++)
-                        NetworkBehaviours[i].OnOwnershipClient(NetworkManager.EmptyConnection);
+                        NetworkBehaviours[i].OnOwnershipClient(FishNet.Managing.NetworkManager.EmptyConnection);
                 }
             }
         }

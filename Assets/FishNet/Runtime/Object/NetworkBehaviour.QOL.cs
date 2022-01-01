@@ -53,7 +53,17 @@ namespace FishNet.Object
         /// <summary>
         /// Owner of this object.
         /// </summary>
-        public NetworkConnection Owner => (NetworkObject == null) ? null : NetworkObject.Owner;
+        public NetworkConnection Owner
+        {
+            get
+            {
+                //Ensures a null Owner is never returned.
+                if (NetworkObject == null)
+                    return FishNet.Managing.NetworkManager.EmptyConnection;
+
+                return NetworkObject.Owner;
+            }
+        }
         /// <summary>
         /// True if there is an owner.
         /// </summary>

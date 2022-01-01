@@ -37,9 +37,24 @@ namespace FishNet.Object
         /// </summary>
         public bool IsOwner => (NetworkManager == null || !Owner.IsValid || !IsClient) ? false : (NetworkManager.ClientManager.Connection == Owner);
         /// <summary>
+        /// 
+        /// </summary>
+        private NetworkConnection _owner;
+        /// <summary>
         /// Owner of this object.
         /// </summary>
-        public NetworkConnection Owner { get; private set; }
+        public NetworkConnection Owner
+        {
+            get
+            {
+                //Ensures a null Owner is never returned.
+                if (_owner == null)
+                    return FishNet.Managing.NetworkManager.EmptyConnection;
+
+                return _owner;
+            }
+            private set { _owner = value; }
+        }
         /// <summary>
         /// True if there is an owner.
         /// </summary>

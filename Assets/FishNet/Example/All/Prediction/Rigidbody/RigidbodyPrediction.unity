@@ -139,7 +139,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _transportOnTick: 0
   _tickRate: 50
   _physicsMode: 1
   _maximumBufferedInputs: 15
@@ -156,12 +155,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f48f002b825cbd45a19bd96d90f9edb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _reliableMTU: 1200
-  _unreliableMTU: 1200
-  _serverBindsAll: 1
+  _unreliableMTU: 1023
   _serverBindAddress: localhost
   _port: 7770
-  _maximumClients: 4095
+  _maximumClients: 5000
   _clientAddress: localhost
   _timeout: 15
 --- !u!1 &555580081
@@ -449,6 +446,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4393252310584637056, guid: 0b650fca685f2eb41a86538aa883e4c1,
+        type: 3}
+      propertyPath: AutoStart
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7443408887813606049, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}
       propertyPath: m_RootOrder

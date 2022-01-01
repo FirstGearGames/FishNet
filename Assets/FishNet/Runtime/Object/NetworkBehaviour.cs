@@ -29,7 +29,7 @@ namespace FishNet.Object
         /// <summary>
         /// NetworkObject automatically added or discovered during edit time.
         /// </summary>
-        [System.NonSerialized]
+        [SerializeField, HideInInspector]
         private NetworkObject _addedNetworkObject;
 #endif
         /// <summary>

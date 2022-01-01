@@ -3,8 +3,6 @@ using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -16,18 +14,6 @@ namespace FishNet.Component.Transforming
     public class NetworkTransform : NetworkBehaviour
     {
         #region Types.
-        private struct TransformingData
-        {
-            public GoalData GoalData;
-            public RateData RateData;
-
-            public TransformingData(GoalData goalData, RateData rateData)
-            {
-                GoalData = goalData;
-                RateData = rateData;
-            }
-        }
-
         [System.Serializable]
         public struct SnappedAxes
         {
@@ -239,12 +225,6 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private GoalData _lastTransformValues;
 
-
-
-        private Queue<TransformingData> _transformingDatas = new Queue<TransformingData>();
-        private TransformingData? _currentTransformingData = null;
-        private bool _canMove = false;
-
         private void OnDisable()
         {
             if (_receivedClientBytes != null)
@@ -374,11 +354,6 @@ namespace FishNet.Component.Transforming
                 _serverGoalData = new GoalData(0, t.localPosition, t.localRotation, t.localScale);
             if (forClient)
                 _clientGoalData = new GoalData(0, t.localPosition, t.localRotation, t.localScale);
-
-            /* Does not matter which goal data is used. Once this is finished set one locally
-             * and use it. Might need to rework client/serverGoalData or make a server/client
-             * variant of 'current/transformingDatas'. */
-            _currentTransformingData = new TransformingData(_serverGoalData, new RateData(-1f, -1f, -1f));
         }
 
         /// <summary>
@@ -535,8 +510,6 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void MoveToTarget()
         {
-            if (!_canMove)
-                return;
             //Cannot move if neither is active.
             if (!base.IsServer && !base.IsClient)
                 return;
@@ -547,7 +520,7 @@ namespace FishNet.Component.Transforming
             if (!_clientAuthoritative && base.IsOwner && !_sendToOwner)
                 return;
             //True if not client controlled.
-            bool controlledByClient = (_clientAuthoritative && base.Owner.IsActive);
+            bool controlledByClient = (_clientAuthoritative && base.OwnerIsActive);
             //If not controlled by client and is server then no reason to move.
             if (!controlledByClient && base.IsServer)
                 return;
@@ -579,9 +552,6 @@ namespace FishNet.Component.Transforming
                 rateData = _serverRateData;
             }
 
-            goalData = _currentTransformingData.Value.GoalData;
-            rateData = _currentTransformingData.Value.RateData;
-
             //Rate to update. Changes per property.
             float rate;
 
@@ -604,20 +574,6 @@ namespace FishNet.Component.Transforming
                 t.localScale = goalData.Scale;
             else
                 t.localScale = Vector3.MoveTowards(t.localScale, goalData.Scale, rate * Time.deltaTime);
-
-            //If at goal.
-            GoalData currentTransform = new GoalData(_currentTransformingData.Value.GoalData.Tick, transform.localPosition, transform.localRotation, transform.localScale);
-            GoalData currentGoal = _currentTransformingData.Value.GoalData;
-            ChangedFull cf = ChangedFull.Unset;
-            //If at goal and theres more queue left
-            if (!HasChanged(ref currentTransform, ref currentGoal, ref cf))
-            {
-                if (_transformingDatas.Count > 0)
-                    _currentTransformingData = _transformingDatas.Dequeue();
-                else
-                    _canMove = false;
-            }
-
         }
 
         /// <summary>
@@ -626,7 +582,7 @@ namespace FishNet.Component.Transforming
         private void SendToClients()
         {
             //True if to send transform state rather than received state from client.
-            bool sendServerState = (_receivedClientBytes == null || _receivedClientBytes.Length == 0 || !base.Owner.IsValid);
+            bool sendServerState = (_receivedClientBytes == null || _receivedClientBytes.Length == 0 || !base.OwnerIsValid);
             //Channel to send rpc on.
             Channel channel = Channel.Unreliable;
             //If relaying from client.
@@ -791,7 +747,6 @@ namespace FishNet.Component.Transforming
         #region Rates.
         /// <summary>
         /// Snaps transform properties using snapping settings.
-        /// There is no reason to run this through the queue because these properties will always be snapped so the queue order does not matter.
         /// </summary>
         private void SnapProperties(ref GoalData goalData)
         {
@@ -827,8 +782,6 @@ namespace FishNet.Component.Transforming
                 _serverRateData = rd;
             if (forClient)
                 _clientRateData = rd;
-
-            _canMove = true;
         }
 
         /// <summary>
@@ -844,10 +797,7 @@ namespace FishNet.Component.Transforming
              * and the distance of change woudl also be 0; this prevents
              * the NT from moving. Only need to compare data if channel is reliable. */
             if (channel == Channel.Reliable && !HasChanged(ref oldGoalData, ref goalData, ref changedFull))
-            {
-                _canMove = true;
                 return;
-            }
 
             /* If last tick is not set then
              * use goalData tick minus INTERPOLATION.
@@ -945,10 +895,18 @@ namespace FishNet.Component.Transforming
                      * to have changed drastically. */
                     if (percentage > 0.25f)
                     {
-                        //If not yet marked as abnormal then set correction.
-                        if (!rd.AbnormalRateDetected)
+                        float c = (rd.LastUnalteredPositionRate / unalteredPositionRate);
+                        /* Sometimes stop and goes can incorrectly trigger 
+                         * an abnormal detection. Fortunately abnornalties tend
+                         * to either skip a tick or send twice in one tick.
+                         * Because of this it's fairly safe to assume that if the calculated
+                         * correction is not ~0.5f or ~2f then it's a false detection. */
+                        float allowedDifference = 0.1f;
+                        if (
+                            (c < 1f && Mathf.Abs(0.5f - c) < allowedDifference) ||
+                            (c > 1f && Mathf.Abs(2f - c) < allowedDifference))
                         {
-                            abnormalCorrection = (rd.LastUnalteredPositionRate / unalteredPositionRate);
+                            abnormalCorrection = c;
                             abnormalRateDetected = true;
                         }
                         /* If an abnormality has been marked then assume new rate
@@ -961,7 +919,6 @@ namespace FishNet.Component.Transforming
                 }
 
                 positionRate = (unalteredPositionRate * abnormalCorrection);
-                Debug.Log(unalteredPositionRate + ",  " + positionRate);
                 FixSlowRate(distance, ref positionRate);
             }
             else
@@ -991,7 +948,7 @@ namespace FishNet.Component.Transforming
             else
             {
                 scaleRate = rd.Scale;
-            }
+            }            
 
             rd.Update(positionRate, rotationRate, scaleRate, unalteredPositionRate, abnormalRateDetected);
             //Update appropriate rate.
@@ -1004,8 +961,8 @@ namespace FishNet.Component.Transforming
             //Hack00
             void FixSlowRate(float dist, ref float propertyRate)
             {
-                //if ((dist / propertyRate) > hackInterpolationDelta)
-                //propertyRate = (dist / (float)hackInterpolationDelta);
+                if ((dist / propertyRate) > hackInterpolationDelta)
+                    propertyRate = (dist / (float)hackInterpolationDelta);
             }
 
             //Returns if whole contains part.
@@ -1013,10 +970,6 @@ namespace FishNet.Component.Transforming
             {
                 return (whole & part) == part;
             }
-
-
-            if (!_canMove && _transformingDatas.Count >= _interpolation)
-                _canMove = true;
         }
         #endregion       
 
@@ -1055,9 +1008,6 @@ namespace FishNet.Component.Transforming
             //Otherwise use timed.
             else
                 SetCalculatedRates(lastTick, ref oldGoalData, ref _serverGoalData, changedFull, true, channel);
-
-            _transformingDatas.Enqueue(new TransformingData(_serverGoalData, _serverRateData));
-
             SnapProperties(ref _serverGoalData);
 
             /* If channel is reliable then this is a settled packet.
@@ -1095,9 +1045,6 @@ namespace FishNet.Component.Transforming
             ChangedFull changedFull = new ChangedFull();
             UpdateGoalData(data, ref _clientGoalData, ref changedFull);
             SetCalculatedRates(lastTick, ref oldGoalData, ref _clientGoalData, changedFull, false, channel);
-
-            _transformingDatas.Enqueue(new TransformingData(_clientGoalData, _clientRateData));
-
             SnapProperties(ref _clientGoalData);
         }
 

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace FishNet.Observing 
+namespace FishNet.Observing
 {
     /// <summary>
     /// Controls which clients can see and get messages for an object.
@@ -51,13 +51,17 @@ namespace FishNet.Observing
         /// </summary>
         [Tooltip("Conditions connections must met to be added as an observer. Multiple conditions may be used.")]
         [SerializeField]
-        internal List<ObserverCondition> _observerConditions = new List<ObserverCondition>();        
+        internal List<ObserverCondition> _observerConditions = new List<ObserverCondition>();
         /// <summary>
         /// Conditions connections must met to be added as an observer. Multiple conditions may be used.
         /// </summary>
         public IReadOnlyList<ObserverCondition> ObserverConditions => _observerConditions;
         [APIExclude]
+#if MIRROR
+        public List<ObserverCondition> ObserverConditionsInternal
+#else
         internal List<ObserverCondition> ObserverConditionsInternal
+#endif
         {
             get => _observerConditions;
             set => _observerConditions = value;

@@ -39,7 +39,7 @@ namespace FishNet.Component.Observing
              * Don't check if the object resides in the same scene
              * because thats not reliable as server might be moving
              * objects. */
-            if (base.NetworkObject.OwnerIsValid)
+            if (base.NetworkObject.Owner.IsValid)
             {
                 foreach (Scene s in base.NetworkObject.Owner.Scenes)
                 {
