@@ -114,6 +114,10 @@ namespace FishNet.Runtime
             }
         }
 
+        public static void Write___EmptyStartScenesBroadcast(this Writer write, EmptyStartScenesBroadcast value) { }
+        public static EmptyStartScenesBroadcast Read___EmptyStartScenesBroadcast(this Reader reader) { return new EmptyStartScenesBroadcast(); }
+
+
         public static void Write___FishNetu002EManagingu002EScenedu002EDatau002ELoadParams(
           this Writer writer,
           LoadParams value)

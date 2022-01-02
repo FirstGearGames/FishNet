@@ -5,6 +5,10 @@ namespace FishNet.Managing.Scened
 {
 
     /// <summary>
+    /// Sent when there are starting scenes for the client to load.
+    /// </summary>
+    public struct EmptyStartScenesBroadcast : IBroadcast { }
+    /// <summary>
     /// Sent to clients to load networked scenes.
     /// </summary>
     [APIExclude]

@@ -1026,9 +1026,9 @@ GameObject:
   m_Component:
   - component: {fileID: 4462211894982264461}
   - component: {fileID: 4462211894982264460}
+  - component: {fileID: 4462211894982264465}
   - component: {fileID: 4462211894982264463}
   - component: {fileID: 4462211894982264462}
-  - component: {fileID: 4462211894982264465}
   m_Layer: 5
   m_Name: NetworkHudCanvas
   m_TagString: Untagged
@@ -1185,9 +1185,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _transportOnTick: 0
   _tickRate: 1
-  _automaticPhysics: 1
+  _physicsMode: 0
   _maximumBufferedInputs: 15
   _targetBufferedInputs: 2
 --- !u!224 &9208822351047973834

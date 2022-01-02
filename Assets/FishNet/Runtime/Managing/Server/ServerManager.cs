@@ -443,6 +443,8 @@ namespace FishNet.Managing.Server
                      * Force an immediate disconnect. */
                     if (!Clients.TryGetValue(args.ConnectionId, out conn))
                     {
+                        if (NetworkManager.CanLog(LoggingType.Common))
+                            Debug.LogError($"ConnectionId {conn.ClientId} not found within Clients. Connection will be kicked immediately.");
                         NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
                         return;
                     }
@@ -452,6 +454,8 @@ namespace FishNet.Managing.Server
                      * does not allow to be called while not authenticated. */
                     if (!conn.Authenticated && packetId != PacketId.Broadcast)
                     {
+                        if (NetworkManager.CanLog(LoggingType.Common))
+                            Debug.LogError($"ConnectionId {conn.ClientId} send a Broadcast without being authenticated. Connection will be kicked immediately.");
                         conn.Disconnect(true);
                         return;
                     }
@@ -485,7 +489,7 @@ namespace FishNet.Managing.Server
             catch (Exception e)
             {
                 if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Client will be kicked immediately. Message: {e.Message}.");
+                    Debug.LogError($"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately. Message: {e.Message}.");
                 //Kick client immediately.
                 NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
             }
@@ -530,7 +534,6 @@ namespace FishNet.Managing.Server
 #if UNITY_EDITOR
         private void OnValidate()
         {
-
             MaximumClientMTU = Mathf.Clamp(MaximumClientMTU, 0, int.MaxValue);
         }
 #endif

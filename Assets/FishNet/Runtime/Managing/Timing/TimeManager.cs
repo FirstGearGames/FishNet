@@ -700,8 +700,8 @@ namespace FishNet.Managing.Timing
                 _lastIncomingIterationFrame = frameCount;
 
                 _lastIncomingIterationFrame = frameCount;
-                _networkManager.TransportManager.IterateIncoming(true);
                 _networkManager.TransportManager.IterateIncoming(false);
+                _networkManager.TransportManager.IterateIncoming(true);
             }
             else
             {

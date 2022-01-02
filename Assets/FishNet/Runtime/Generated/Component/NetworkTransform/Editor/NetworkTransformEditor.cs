@@ -11,6 +11,8 @@ namespace FishNet.Component.Transforming.Editing
     [CanEditMultipleObjects]
     public class NetworkTransformEditor : Editor
     {
+        private SerializedProperty _classic;
+
         private SerializedProperty _compress;
         private SerializedProperty _synchronizeParent;
         private SerializedProperty _interpolation;
@@ -26,6 +28,8 @@ namespace FishNet.Component.Transforming.Editing
 
         protected virtual void OnEnable()
         {
+            _classic = serializedObject.FindProperty("_classic");
+
             _compress = serializedObject.FindProperty("_compress");
             _synchronizeParent = serializedObject.FindProperty("_synchronizeParent");
             _interpolation = serializedObject.FindProperty("_interpolation");
@@ -49,10 +53,11 @@ namespace FishNet.Component.Transforming.Editing
             GUI.enabled = true;
 
             EditorGUILayout.HelpBox(EditingConstants.PRO_FEATURE_MESSAGE, MessageType.Info);
-
+            
             //Misc.
             EditorGUILayout.LabelField("Misc", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_classic);
             EditorGUILayout.PropertyField(_compress);
             EditorGUILayout.PropertyField(_synchronizeParent, new GUIContent("* Synchronize Parent"));
             EditorGUI.indentLevel--;

@@ -105,6 +105,12 @@ namespace FishNet.Component.Transforming
 
         #region Serialized.
         /// <summary>
+        /// True to use clasic methods to calculate move rates. This setting will be removed when NetworkTransform is finalized.
+        /// </summary>
+        [Tooltip("True to use clasic methods to calculate move rates. This setting will be removed when NetworkTransform is finalized.")]
+        [SerializeField]
+        private bool _classic = true;
+        /// <summary>
         /// True to compress values. If you find accuracy of transform properties to be less than desirable try disabling this option.
         /// </summary>
         [Tooltip("True to compress values. If you find accuracy of transform properties to be less than desirable try disabling this option.")]
@@ -799,58 +805,28 @@ namespace FishNet.Component.Transforming
             if (channel == Channel.Reliable && !HasChanged(ref oldGoalData, ref goalData, ref changedFull))
                 return;
 
-            /* If last tick is not set then
-             * use goalData tick minus INTERPOLATION.
-             * This will make the calculations think
-             * that the transform moved the distance over
-             * INTERPOLATION ticks, which will reduce the speed
-             * of movement.
-             * 
-             * For example:
-             * If tickDifference is 2 as described and
-             * TickDelta is 0.02f then TicksToTime
-             * will return 0.04f. Then the calculations
-             * will perform DISTANCE / TIME (0.04f), which
-             * in result is a lower value than if only one
-             * tick behind.
-             * 
-             * Such as, if 2 ticks is 0.04f time then 1 tick
-             * must be 0.02f time. Lets say the distance if 
-             * 1 unit.
-             * 1u / 0.04f = 25rate.
-             * 1u / 0.02f = 50rate.
-             * As demonstrated 2 ticks will result in a slower rate.
-             * This is done to generate a buffer. Later on
-             * the transform might sit the expected ticks instead of
-             * moving slow to start. This is still undecided. */
-            if (lastTick == 0)
-                lastTick = goalData.Tick - Math.Max((ushort)1, _interpolation);
             //How much time has passed between last update and current.
-            uint tickDifference = (goalData.Tick - lastTick);
-            float timePassed = base.NetworkManager.TimeManager.TicksToTime(tickDifference);
+            float timePassed;
+            if (_classic)
+            {
+                float tickDelta = (float)base.NetworkManager.TimeManager.TickDelta;
+                //Save another call to timemanager by calculating locally.
+                timePassed = tickDelta + (tickDelta * _interpolation);
+            }
+            else
+            {
+                if (lastTick == 0)
+                    lastTick = (goalData.Tick - 1);
+
+                uint tickDifference = (goalData.Tick - lastTick);
+                timePassed = base.NetworkManager.TimeManager.TicksToTime(tickDifference);
+            }            
 
             //Distance between properties.
             float distance;
             float positionRate;
             float rotationRate;
             float scaleRate;
-
-            //Hack00 notes
-            /* //Punfish
-             * Rates can be calculated wrong when two datas arrive at
-             * the same time but while 1 data has moved much differently than the
-             * previous. This is most noticeable when the second data moves less,
-             * resulting in a slower calculated move speed. As result the distance
-             * is of the first data + the second data, but only the slower move
-             * rate of the second data. This causes the object to move towards
-             * its goal very slowly. For now I'm applying a check to make sure the
-             * speed is fast enough for the object to reach its goal within
-             * the interpolation span, and if not then adjust speed accordingly.
-             * NT smoothing has more for it planned down the road which will
-             * alleviate this problem; in the mean time we use this hack. */
-            //Hack00
-            double hackInterpolationDelta = (base.TimeManager.TickDelta * (_interpolation + 1));
-
 
             RateData rd = (forServer) ? _serverRateData : _clientRateData;
             //Correction to apply towards rates when a rate change is detected as abnormal.
@@ -861,7 +837,8 @@ namespace FishNet.Component.Transforming
             //Position.
             if (ChangedFullContains(changedFull, ChangedFull.Position))
             {
-                distance = Vector3.Distance(goalData.Position, oldGoalData.Position);
+                Vector3 lastPosition = (_classic) ? transform.localPosition : oldGoalData.Position;
+                distance = Vector3.Distance(lastPosition, goalData.Position);
                 //If distance teleports assume rest do.
                 if (_enableTeleport && distance >= _teleportThreshold)
                 {
@@ -919,7 +896,6 @@ namespace FishNet.Component.Transforming
                 }
 
                 positionRate = (unalteredPositionRate * abnormalCorrection);
-                FixSlowRate(distance, ref positionRate);
             }
             else
             {
@@ -929,9 +905,9 @@ namespace FishNet.Component.Transforming
             //Rotation.
             if (ChangedFullContains(changedFull, ChangedFull.Rotation))
             {
-                distance = Quaternion.Angle(oldGoalData.Rotation, goalData.Rotation);
+                Quaternion lastRotation = (_classic) ? transform.localRotation : oldGoalData.Rotation;
+                distance = Quaternion.Angle(lastRotation, goalData.Rotation);
                 rotationRate = (distance / timePassed) * abnormalCorrection;
-                FixSlowRate(distance, ref rotationRate);
             }
             else
             {
@@ -941,9 +917,9 @@ namespace FishNet.Component.Transforming
             //Scale.
             if (ChangedFullContains(changedFull, ChangedFull.Scale))
             {
-                distance = Vector3.Distance(oldGoalData.Scale, goalData.Scale);
+                Vector3 lastScale = (_classic) ? transform.localScale : oldGoalData.Scale;
+                distance = Vector3.Distance(lastScale, goalData.Scale);
                 scaleRate = (distance / timePassed) * abnormalCorrection;
-                FixSlowRate(distance, ref scaleRate);
             }
             else
             {
@@ -956,14 +932,6 @@ namespace FishNet.Component.Transforming
                 _serverRateData = rd;
             else
                 _clientRateData = rd;
-
-
-            //Hack00
-            void FixSlowRate(float dist, ref float propertyRate)
-            {
-                if ((dist / propertyRate) > hackInterpolationDelta)
-                    propertyRate = (dist / (float)hackInterpolationDelta);
-            }
 
             //Returns if whole contains part.
             bool ChangedFullContains(ChangedFull whole, ChangedFull part)

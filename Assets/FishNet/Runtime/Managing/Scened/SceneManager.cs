@@ -3,6 +3,7 @@ using FishNet.Managing.Client;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Object;
+using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using System;
 using System.Collections;
@@ -139,6 +140,9 @@ namespace FishNet.Managing.Scened
             _clientManager.RegisterBroadcast<LoadScenesBroadcast>(OnLoadScenes);
             _clientManager.RegisterBroadcast<UnloadScenesBroadcast>(OnUnloadScenes);
             _serverManager.RegisterBroadcast<ClientScenesLoadedBroadcast>(OnClientLoadedScenes);
+
+            _clientManager.RegisterBroadcast<EmptyStartScenesBroadcast>(OnClientEmptyStartScenes);
+            _serverManager.RegisterBroadcast<EmptyStartScenesBroadcast>(OnServerEmptyStartScenes);
         }
 
         /// <summary>
@@ -197,13 +201,8 @@ namespace FishNet.Managing.Scened
             //No global scenes to load.
             if (_globalScenes.Length == 0)
             {
-                /* Send an empty broadcast to the client.
-                 * This is so client can know when they've loaded
-                 * start scenes as well. */
-                LoadScenesBroadcast msg = new LoadScenesBroadcast() { QueueData = null };
-                connection.Broadcast(msg, true);
-
-                TryInvokeLoadedStartScenes(connection, true);
+                EmptyStartScenesBroadcast msg = new EmptyStartScenesBroadcast();
+                connection.Broadcast(msg);
             }
             else
             {
@@ -221,6 +220,32 @@ namespace FishNet.Managing.Scened
 
                 connection.Broadcast(msg, true);
             }
+        }
+
+        /// <summary>
+        /// Received on client when the server has no start scenes.
+        /// </summary>
+        private void OnClientEmptyStartScenes(EmptyStartScenesBroadcast msg)
+        {
+            _clientManager.Broadcast(msg);
+        }
+        /// <summary>
+        /// Received on server when client confirms there are no start scenes.
+        /// </summary>
+        private void OnServerEmptyStartScenes(NetworkConnection conn, EmptyStartScenesBroadcast msg)
+        {
+            //Already received, shouldn't be happening again.
+            if (conn.LoadedStartScenes)
+            {
+                if (_networkManager.CanLog(LoggingType.Common))
+                    Debug.LogError($"Received multiple EmptyStartSceneBroadcast from connectionId {conn.ClientId}. Connection will be kicked immediately.");
+                _networkManager.TransportManager.Transport.StopConnection(conn.ClientId, true);
+            }
+            else
+            {
+                OnClientLoadedScenes(conn, new ClientScenesLoadedBroadcast());
+            }
+
         }
         #endregion
 
@@ -272,11 +297,14 @@ namespace FishNet.Managing.Scened
         /// <param name="msg"></param>
         private void OnClientLoadedScenes(NetworkConnection conn, ClientScenesLoadedBroadcast msg)
         {
-            foreach (SceneLookupData item in msg.SceneLookupDatas)
+            if (!Comparers.IsDefault(msg))
             {
-                Scene s = item.GetScene(out _);
-                if (!string.IsNullOrEmpty(s.name))
-                    AddConnectionToScene(conn, s);
+                foreach (SceneLookupData item in msg.SceneLookupDatas)
+                {
+                    Scene s = item.GetScene(out _);
+                    if (!string.IsNullOrEmpty(s.name))
+                        AddConnectionToScene(conn, s);
+                }
             }
 
             TryInvokeLoadedStartScenes(conn, true);
