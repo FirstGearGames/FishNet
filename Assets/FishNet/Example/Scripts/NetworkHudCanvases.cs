@@ -8,9 +8,13 @@ public class NetworkHudCanvases : MonoBehaviour
 {
     #region Public.
     /// <summary>
-    /// True to auto start server and client.
+    /// True to auto start server.
     /// </summary>
-    public bool AutoStart = true;
+    public bool AutoStartServer = true;
+    /// <summary>
+    /// True to auto start client.
+    /// </summary>
+    public bool AutoStartClient = true;
     #endregion
 
     #region Serialized.
@@ -86,12 +90,8 @@ public class NetworkHudCanvases : MonoBehaviour
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
         }
 
-        if (AutoStart)
-        {
-            OnClick_Server();
-            if (!Application.isBatchMode)
-                OnClick_Client();
-        }
+        if (AutoStartServer) OnClick_Server();
+        if (AutoStartClient && !Application.isBatchMode) OnClick_Client();
     }
 
     private void OnDestroy()
