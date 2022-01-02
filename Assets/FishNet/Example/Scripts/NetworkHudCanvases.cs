@@ -8,7 +8,7 @@ public class NetworkHudCanvases : MonoBehaviour
 {
     #region Types.
     /// <summary>
-    /// Aways the HUD will automatically start a connection.
+    /// Ways the HUD will automatically start a connection.
     /// </summary>
     private enum AutoStartType
     {
