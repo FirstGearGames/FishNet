@@ -6,14 +6,26 @@ using UnityEngine.UI;
 
 public class NetworkHudCanvases : MonoBehaviour
 {
-    #region Public.
+    #region Types.
     /// <summary>
-    /// True to auto start server and client.
+    /// Ways the HUD will automatically start a connection.
     /// </summary>
-    public bool AutoStart = true;
+    private enum AutoStartType
+    {
+        Disabled,
+        Host,
+        Server,
+        Client
+    }
     #endregion
 
     #region Serialized.
+    /// <summary>
+    /// What connections to automatically start on play.
+    /// </summary>
+    [Tooltip("What connections to automatically start on play.")]
+    [SerializeField]
+    private AutoStartType _autoStartType = AutoStartType.Disabled;
     /// <summary>
     /// Color when socket is stopped.
     /// </summary>
@@ -86,12 +98,10 @@ public class NetworkHudCanvases : MonoBehaviour
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
         }
 
-        if (AutoStart)
-        {
+        if (_autoStartType == AutoStartType.Host || _autoStartType == AutoStartType.Server)
             OnClick_Server();
-            if (!Application.isBatchMode)
-                OnClick_Client();
-        }
+        if (!Application.isBatchMode && (_autoStartType == AutoStartType.Host || _autoStartType == AutoStartType.Client))
+            OnClick_Client();
     }
 
     private void OnDestroy()
