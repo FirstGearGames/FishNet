@@ -141,7 +141,7 @@ namespace FishNet.Object
             if (sendingClient == null)
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"NetworkConnection is null. ServerRpc {methodHash} will not complete. Remainder of packet may become corrupt.");
+                    Debug.LogError($"NetworkConnection is null. ServerRpc {methodHash} on object {gameObject.name} will not complete. Remainder of packet may become corrupt.");
                 return;
             }
 
@@ -152,7 +152,7 @@ namespace FishNet.Object
             else
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"ServerRpc not found for hash {methodHash}. Remainder of packet may become corrupt.");
+                    Debug.LogWarning($"ServerRpc not found for hash {methodHash} on object {gameObject.name}. Remainder of packet may become corrupt.");
             }
         }
 
@@ -172,7 +172,7 @@ namespace FishNet.Object
             else
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"ObserversRpc not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
+                    Debug.LogWarning($"ObserversRpc not found for hash {methodHash.Value} on object {gameObject.name}. Remainder of packet may become corrupt.");
             }
         }
 
@@ -192,7 +192,7 @@ namespace FishNet.Object
             else
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"TargetRpc not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
+                    Debug.LogWarning($"TargetRpc not found for hash {methodHash.Value} on object {gameObject.name}. Remainder of packet may become corrupt.");
             }
         }
 

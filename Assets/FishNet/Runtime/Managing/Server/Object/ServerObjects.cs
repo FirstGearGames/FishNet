@@ -109,6 +109,7 @@ namespace FishNet.Managing.Server
             {
                 base.DespawnSpawnedWithoutSynchronization(true);
                 base.SceneObjects.Clear();
+                _objectIdCache.Clear();
                 _nextNetworkObjectId = 0;
             }
         }
