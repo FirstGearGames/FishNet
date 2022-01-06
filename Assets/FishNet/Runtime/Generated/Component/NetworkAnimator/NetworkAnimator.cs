@@ -415,6 +415,8 @@ namespace FishNet.Component.Animating
         public override void OnSpawnServer(NetworkConnection connection)
         {
             base.OnSpawnServer(connection);
+            if (!_isActive)
+                return;
             if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, true))
                 TargetAnimatorUpdated(connection, updatedBytes);
         }
@@ -439,6 +441,8 @@ namespace FishNet.Component.Animating
 
         private void Update()
         {
+            if (!_isActive)
+                return;
             if (base.IsClient)
             {
                 CheckSendToServer();
@@ -1054,6 +1058,8 @@ namespace FishNet.Component.Animating
         /// </summary>
         public void Play(int hash, int layer, float normalizedTime)
         {
+            if (!_isActive)
+                return;
             if (_animator.HasState(layer, hash))
             {
                 _animator.Play(hash, layer, normalizedTime);
@@ -1087,6 +1093,8 @@ namespace FishNet.Component.Animating
         /// </summary>
         public void PlayInFixedTime(int hash, int layer, float fixedTime)
         {
+            if (!_isActive)
+                return;
             if (_animator.HasState(layer, hash))
             {
                 _animator.PlayInFixedTime(hash, layer, fixedTime);
@@ -1118,6 +1126,8 @@ namespace FishNet.Component.Animating
         /// <param name="normalizedTransitionTime"></param>
         public void CrossFade(int hash, float normalizedTransitionDuration, int layer, float normalizedTimeOffset = 0.0f, float normalizedTransitionTime = 0.0f)
         {
+            if (!_isActive)
+                return;
             if (_animator.HasState(layer, hash))
             {
                 _animator.CrossFade(hash, normalizedTransitionDuration, layer, normalizedTimeOffset, normalizedTransitionTime);
@@ -1146,6 +1156,8 @@ namespace FishNet.Component.Animating
         /// <param name="normalizedTransitionTime"></param>
         public void CrossFadeInFixedTime(int hash, float fixedTransitionDuration, int layer, float fixedTimeOffset = 0.0f, float normalizedTransitionTime = 0.0f)
         {
+            if (!_isActive)
+                return;
             if (_animator.HasState(layer, hash))
             {
                 _animator.CrossFadeInFixedTime(hash, fixedTransitionDuration, layer, fixedTimeOffset, normalizedTransitionTime);
@@ -1163,7 +1175,6 @@ namespace FishNet.Component.Animating
         {
             if (!_isActive)
                 return;
-
             UpdateTrigger(hash, true);
         }
         /// <summary>
@@ -1172,9 +1183,6 @@ namespace FishNet.Component.Animating
         /// <param name="hash"></param>
         public void SetTrigger(string name)
         {
-            if (!_isActive)
-                return;
-
             SetTrigger(Animator.StringToHash(name));
         }
 
@@ -1184,9 +1192,6 @@ namespace FishNet.Component.Animating
         /// <param name="hash"></param>
         public void ResetTrigger(int hash)
         {
-            if (!_isActive)
-                return;
-
             UpdateTrigger(hash, false);
         }
         /// <summary>
@@ -1204,6 +1209,8 @@ namespace FishNet.Component.Animating
         /// <param name="set"></param>
         private void UpdateTrigger(int hash, bool set)
         {
+            if (!_isActive)
+                return;
             /* Allow triggers to run on owning client if using client authority,
              * as well when not using client authority but also not using synchronize to owner.
              * This allows clients to run animations locally while maintaining server authority. */

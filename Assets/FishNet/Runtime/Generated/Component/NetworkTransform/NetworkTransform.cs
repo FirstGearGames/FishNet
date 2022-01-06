@@ -526,7 +526,7 @@ namespace FishNet.Component.Transforming
             if (!_clientAuthoritative && base.IsOwner && !_sendToOwner)
                 return;
             //True if not client controlled.
-            bool controlledByClient = (_clientAuthoritative && base.OwnerIsActive);
+            bool controlledByClient = (_clientAuthoritative && base.Owner.IsActive);
             //If not controlled by client and is server then no reason to move.
             if (!controlledByClient && base.IsServer)
                 return;
@@ -588,7 +588,7 @@ namespace FishNet.Component.Transforming
         private void SendToClients()
         {
             //True if to send transform state rather than received state from client.
-            bool sendServerState = (_receivedClientBytes == null || _receivedClientBytes.Length == 0 || !base.OwnerIsValid);
+            bool sendServerState = (_receivedClientBytes == null || _receivedClientBytes.Length == 0 || !base.Owner.IsValid);
             //Channel to send rpc on.
             Channel channel = Channel.Unreliable;
             //If relaying from client.

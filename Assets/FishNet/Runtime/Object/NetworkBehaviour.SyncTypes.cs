@@ -98,9 +98,8 @@ namespace FishNet.Object
         {
             if (!IsServer)
                 return false;
-            if (NetworkObject.Observers.Count == 0)
-                return false;
-
+            //if (NetworkObject.Observers.Count == 0)
+            //    return false;
             bool alreadyDirtied = (isSyncObject) ? _syncObjectDirty : _syncVarDirty;
             if (isSyncObject)
                 _syncObjectDirty = true;

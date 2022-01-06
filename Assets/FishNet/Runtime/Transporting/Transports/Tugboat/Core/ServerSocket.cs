@@ -134,6 +134,7 @@ namespace FishNet.Tugboat.Server
                 {
                     DequeueCommands();
                     _server?.PollEvents();
+                    Thread.Sleep(_pollTime);
                 }
             }
             //Failed to start.
