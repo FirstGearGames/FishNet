@@ -28,7 +28,7 @@ namespace FishNet.Editing
         }
 
         /// <summary>
-        /// FInds and sets the default prefabs reference.
+        /// Finds and sets the default prefabs reference.
         /// </summary>
         internal static DefaultPrefabObjects GetDefaultPrefabsFile(out bool justPopulated)
         {

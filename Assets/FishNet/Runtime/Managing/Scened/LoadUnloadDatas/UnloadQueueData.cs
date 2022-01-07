@@ -22,7 +22,7 @@ namespace FishNet.Managing.Scened
         [System.NonSerialized]
         public NetworkConnection[] Connections;
         /// <summary>
-        /// SceneLoadData to use.
+        /// SceneUnloadData to use.
         /// </summary>
         public SceneUnloadData SceneUnloadData = null;
         /// <summary>

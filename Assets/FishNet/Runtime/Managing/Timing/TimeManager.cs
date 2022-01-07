@@ -26,25 +26,23 @@ namespace FishNet.Managing.Timing
         #region Types.        
         private class ClientTickData
         {
-            public bool UpdatesPaused;
+            public bool UpdatesPaused { get; private set; }
             public int Buffered;
             public ushort SendTicksRemaining;
 
-            public ClientTickData(int buffered)
+            public ClientTickData(ushort adjustmentInterval)
             {
-                Reset(buffered);
+                Reset(adjustmentInterval);
             }
 
-            public void Reset(int buffered)
+            public void Reset(ushort adjustmentInterval)
             {
                 UpdatesPaused = false;
-                Buffered = buffered;
-                SendTicksRemaining = 1;
+                Buffered = 0;
+                SendTicksRemaining = adjustmentInterval;
             }
             public void Pause()
             {
-                Buffered = 0;
-                SendTicksRemaining = 0;
                 UpdatesPaused = true;
             }
         }
@@ -164,13 +162,20 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public byte MaximumBufferedInputs => _maximumBufferedInputs;
         /// <summary>
-        /// Number of inputs server prefers to have buffered from clients.
+        /// 
         /// </summary>
         [Tooltip("Number of inputs server prefers to have buffered from clients.")]
         [Range(1, 100)]
         [SerializeField]
         private byte _targetBufferedInputs = 2;
-        public byte TargetBufferedInputs => _targetBufferedInputs;
+        /// <summary>
+        /// Number of inputs server prefers to have buffered from clients.
+        /// </summary>
+        public byte TargetBufferedInputs
+        {
+            get => _targetBufferedInputs;
+            private set => _targetBufferedInputs = value;
+        }
         #endregion
 
         #region Private.
@@ -241,6 +246,10 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private bool _receivedPong = true;
         /// <summary>
+        /// Last step change the client received. The value will be 0 when default, or during a step reset.
+        /// </summary>
+        private sbyte _lastStepsReceived;
+        /// <summary>
         /// Number of TimeManagers open which are using manual physics.
         /// </summary>
         private static uint _manualPhysics;
@@ -262,7 +271,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// How quickly to move AdjustedDeltaTick to DeltaTick.
         /// </summary>
-        private const double ADJUSTED_DELTA_RECOVERY_RATE = 0.000f;
+        private const double POSITIVE_STEPS_RECOVERY_RATE = 0.0001f;
         /// <summary>
         /// Ping interval in seconds.
         /// </summary>
@@ -275,6 +284,10 @@ namespace FishNet.Managing.Timing
         /// Number of steps to send which indicates client should reset their adjustedTickDelta to default.
         /// </summary>
         private const sbyte RESET_DELTA_STEPS = sbyte.MinValue;
+        /// <summary>
+        /// When steps to be sent to clients are equal to or higher than this value in either direction a reset steps will be sent.
+        /// </summary>
+        private const byte RESET_STEPS_THRESHOLD = 5;
         #endregion
 
 #if UNITY_EDITOR
@@ -307,7 +320,8 @@ namespace FishNet.Managing.Timing
             if (_networkManager.IsClient)
             {
                 ClientUptime += Time.deltaTime;
-                _adjustedTickDelta = Mathf.MoveTowards((float)_adjustedTickDelta, (float)TickDelta, Time.deltaTime * (float)ADJUSTED_DELTA_RECOVERY_RATE);
+                if (_lastStepsReceived > 0)
+                    _adjustedTickDelta = Mathf.MoveTowards((float)_adjustedTickDelta, (float)TickDelta, Time.deltaTime * (float)POSITIVE_STEPS_RECOVERY_RATE);
             }
 
             IncreaseTick();
@@ -735,7 +749,9 @@ namespace FishNet.Managing.Timing
             //Connection found.
             if (_bufferedClientInputs.TryGetValue(connection, out ClientTickData ctd))
             {
-                ctd.UpdatesPaused = false;
+                if (ctd.UpdatesPaused)
+                    ctd.Reset(_timingAdjustmentInterval);
+
                 /* Make sure count won't exceed max value.
                  * If over max value don't even bother adding. */
                 long next = (ctd.Buffered + count);
@@ -750,12 +766,12 @@ namespace FishNet.Managing.Timing
                 ClientTickData newCtd;
                 if (_tickDataCache.Count == 0)
                 {
-                    newCtd = new ClientTickData(count);
+                    newCtd = new ClientTickData(_timingAdjustmentInterval);
                 }
                 else
                 {
                     newCtd = _tickDataCache.Pop();
-                    newCtd.Reset(count);
+                    newCtd.Reset(_timingAdjustmentInterval);
                 }
 
                 _bufferedClientInputs[connection] = newCtd;
@@ -827,8 +843,10 @@ namespace FishNet.Managing.Timing
                  * send rate more, while higher steps slow it down. */
                 ctd.Buffered -= _timingAdjustmentInterval;
                 sbyte steps;
+
+                steps = (sbyte)(MathFN.ClampSByte(ctd.Buffered, (sbyte)-MaximumBufferedInputs, (sbyte)MaximumBufferedInputs) - TargetBufferedInputs);
                 Channel channel;
-                if (ctd.Buffered < (-MaximumBufferedInputs * 2))
+                if (Mathf.Abs(steps) >= RESET_STEPS_THRESHOLD)
                 {
                     channel = Channel.Reliable;
                     ctd.Pause();
@@ -837,7 +855,6 @@ namespace FishNet.Managing.Timing
                 else
                 {
                     channel = Channel.Unreliable;
-                    steps = MathFN.ClampSByte(ctd.Buffered, (sbyte)-MaximumBufferedInputs, (sbyte)MaximumBufferedInputs);
                 }
 
                 _timeAdjustment.Step = steps;
@@ -860,17 +877,24 @@ namespace FishNet.Managing.Timing
             Tick = ta.Tick + rttTicks;
 
             sbyte steps = ta.Step;
+            _lastStepsReceived = steps;
+            //No change required.
             if (steps == 0)
-                return;
-            if (steps == RESET_DELTA_STEPS)
+            {
+            }
+            //Reset.
+            else if (steps == RESET_DELTA_STEPS)
             {
                 _adjustedTickDelta = TickDelta;
-                return;
+                _lastStepsReceived = 0;
             }
-
-            double percent = (steps < 0) ? CLIENT_SPEEDUP_PERCENT : CLIENT_SLOWDOWN_PERCENT;
-            double change = (steps * (percent * TickDelta));
-            _adjustedTickDelta = MathFN.ClampDouble(_adjustedTickDelta + change, _clientTimingRange[0], _clientTimingRange[1]);
+            //Normal adjustment.
+            else
+            {
+                double percent = (steps < 0) ? CLIENT_SPEEDUP_PERCENT : CLIENT_SLOWDOWN_PERCENT;
+                double change = (steps * (percent * TickDelta));
+                _adjustedTickDelta = MathFN.ClampDouble(_adjustedTickDelta + change, _clientTimingRange[0], _clientTimingRange[1]);
+            }
         }
         #endregion
 
@@ -878,7 +902,7 @@ namespace FishNet.Managing.Timing
         #region UNITY_EDITOR
         private void OnValidate()
         {
-            _targetBufferedInputs = Math.Min(_targetBufferedInputs, _maximumBufferedInputs);
+            TargetBufferedInputs = Math.Min(TargetBufferedInputs, _maximumBufferedInputs);
             SetInitialValues();
         }
         #endregion

@@ -122,7 +122,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private const string INVALID_SCENELOADDATA = "One or more datas in SceneLoadData are invalid.This generally occurs when calling this method without specifying any scenes or when data fields are null.";
         /// <summary>
-        /// String to use when scene data used to load is invalid.
+        /// String to use when scene data used to unload is invalid.
         /// </summary>
         private const string INVALID_SCENEUNLOADDATA = "One or more datas in SceneLoadData are invalid.This generally occurs when calling this method without specifying any scenes or when data fields are null.";
         #endregion

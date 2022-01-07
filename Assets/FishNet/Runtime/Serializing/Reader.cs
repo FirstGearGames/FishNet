@@ -728,6 +728,8 @@ namespace FishNet.Serializing
             if (result == null && _networkManager.ServerManager.Started)
                 _networkManager.ServerManager.Objects.Spawned.TryGetValue(objectId, out result);
 
+            if (!result.IsSpawned)
+                Debug.LogError("Is deiniting");
             return result;
         }
 

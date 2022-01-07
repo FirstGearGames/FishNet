@@ -138,8 +138,6 @@ namespace FishNet.Connection
         /// <summary>
         /// Initializes this for use.
         /// </summary>
-        /// <param name="nm"></param>
-        /// <param name="clientId"></param>
         private void Initialize(NetworkManager nm, int clientId)
         {
             NetworkManager = nm;

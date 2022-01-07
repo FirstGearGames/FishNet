@@ -64,18 +64,17 @@ namespace FishNet.Managing.Server
         /// <summary>
         ///  
         /// </summary>
-        [Tooltip("Frame rate to use while only the server is active. When both server and client are active the higher of the two frame rates will be used.")]
+        [Tooltip("Maximum frame rate the server may run at. When as host this value runs at whichever is higher between client and server.")]
         [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
         /// <summary>
-        /// Frame rate to use while only the server is active. When both server and client are active the higher of the two frame rates will be used.
+        /// Maximum frame rate the server may run at. When as host this value runs at whichever is higher between client and server.
         /// </summary>
-        internal ushort FrameRate
-        {
-            get => _frameRate;
-            private set => _frameRate = value;
-        }
+        internal ushort FrameRate => _frameRate;
+        /// <summary>
+        /// 
+        /// </summary>
         [SerializeField]
         private bool _shareOwners = true;
         /// <summary>

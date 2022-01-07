@@ -46,9 +46,9 @@ namespace FishNet.Managing.Client
             /* If not started and client is active then deinitialize
              * client objects first. This will let the deinit calls
              * perform before the server destroys them. Ideally this
-             * would be done when the user shows intend to shutdown
+             * would be done when the user shows intent to shutdown
              * the server, but realistically planning for server socket
-             * drops is a much more universal solution. 
+             * drops is a much more universal solution.
              *
              * Calling StopConnection on the client will set it's local state
              * to Stopping which will result in a deinit. */

@@ -145,7 +145,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         /// <typeparam name="T">Type of broadcast to send.</typeparam>
         /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
-        /// <param name="channel">Channel to send on,</param>
+        /// <param name="channel">Channel to send on.</param>
         public void Broadcast<T>(T message, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             //Check local connection state.

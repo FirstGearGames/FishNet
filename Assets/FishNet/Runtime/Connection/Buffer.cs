@@ -195,10 +195,10 @@ namespace FishNet.Connection
         }
 
         /// <summary>
-        /// Gets a buffer on the specified index. Returns if successful.
+        /// Gets a buffer for the specified index. Returns true and outputs the buffer if it was successfully found.
         /// </summary>
-        /// <param name="index"></param>
-        /// <returns>True if a result was outputted.</returns>
+        /// <param name="index">Index of the buffer to retrieve.</param>
+        /// <param name="bb">Buffer retrieved from the list. Null if the specified buffer was not found.</param>
         internal bool GetBuffer(int index, out ByteBuffer bb)
         {
             bb = null;

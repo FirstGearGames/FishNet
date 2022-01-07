@@ -11,7 +11,7 @@ namespace FishNet.Managing.Server
     {
 
         /// <summary>
-        /// Parses a ServerRpc.
+        /// Parses a ReplicateRpc.
         /// </summary>
         internal void ParseReplicateRpc(PooledReader reader, NetworkConnection conn, Channel channel)
         {

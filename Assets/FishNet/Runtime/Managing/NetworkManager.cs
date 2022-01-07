@@ -91,7 +91,7 @@ namespace FishNet.Managing
         /// </summary>
         public bool IsClient => (ClientManager.Started && ClientManager.Connection.Authenticated);
         /// <summary>
-        /// True if only the client is active, and authenticated.
+        /// True if only the client is active and authenticated.
         /// </summary>
         public bool IsClientOnly => (!IsServer && IsClient);
         /// <summary>

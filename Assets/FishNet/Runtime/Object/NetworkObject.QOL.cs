@@ -13,7 +13,7 @@ namespace FishNet.Object
         /// </summary>
         public bool IsClient => NetworkManager.IsClient;
         /// <summary>
-        /// True if only the client is active, and authenticated.
+        /// True if only the client is active and authenticated.
         /// </summary>
         public bool IsClientOnly => NetworkManager.IsClientOnly;
         /// <summary>

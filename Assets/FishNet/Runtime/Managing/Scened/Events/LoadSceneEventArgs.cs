@@ -29,7 +29,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public readonly LoadQueueData QueueData;
         /// <summary>
-        /// Percentage of change completion. 1f is equal to 100 complete.
+        /// Percentage of change completion. 1f is equal to 100% complete.
         /// </summary>
         public readonly float Percent;
 

@@ -128,7 +128,14 @@ namespace FishNet.Object
         /// Clears cached replicates. This can be useful to call on server and client after teleporting.
         /// </summary>
         /// <param name="asServer">True to reset values for server, false to reset values for client.</param>
-        public virtual void ClearReplicateCache(bool asServer) { }
+        public void ClearReplicateCache(bool asServer) { InternalClearReplicateCache(asServer); }
+        /// <summary>
+        /// Clears cached replicates.
+        /// For internal use only.
+        /// </summary>
+        /// <param name="asServer"></param>
+        [APIExclude]
+        protected internal virtual void InternalClearReplicateCache(bool asServer) { }
 
         /// <summary>
         /// Writes number of past inputs from buffer to writer and sends it to the server.

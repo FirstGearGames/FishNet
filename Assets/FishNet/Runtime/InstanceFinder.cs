@@ -124,7 +124,7 @@ namespace FishNet
         /// </summary>
         public static bool IsClient => (NetworkManager == null) ? false : NetworkManager.IsClient;
         /// <summary>
-        /// True if only the client is active, and authenticated.
+        /// True if only the client is active and authenticated.
         /// </summary>
         public static bool IsClientOnly => (NetworkManager == null) ? false : NetworkManager.IsClientOnly;
         /// <summary>

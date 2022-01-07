@@ -74,7 +74,7 @@ namespace FishNet.Object
             _onStopNetworkCalled = false;
         }
         /// <summary>
-        /// Called when the network is deinitialized this object. May be called for server or client but will only be called once.
+        /// Called when the network is deinitializing this object. May be called for server or client but will only be called once.
         /// When as host or server this method will run after OnStopServer.
         /// When as client only this method will run after OnStopClient.
         /// </summary>

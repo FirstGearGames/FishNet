@@ -139,7 +139,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             SR.MethodInfo locMi;
 
-            ClearReplicateCache_Method_Name = nameof(NetworkBehaviour.ClearReplicateCache);
+            ClearReplicateCache_Method_Name = nameof(NetworkBehaviour.InternalClearReplicateCache);
 
             //GetGameObject.
             locMi = typeof(UnityEngine.Component).GetMethod("get_gameObject");
@@ -540,22 +540,21 @@ namespace FishNet.CodeGenerating.Processing
         {
             predictionReaders = null;
 
-
             //Copy current instructions and add them at the end.
             List<Instruction> replicateUserInsts = replicateMd.Body.Instructions.ToList();
             replicateMd.Body.Instructions.Clear();
             List<Instruction> reconcileUserInsts = reconcileMd.Body.Instructions.ToList();
             reconcileMd.Body.Instructions.Clear();
 
-            MethodDefinition replicateReader = null;
-            MethodDefinition reconcileReader = null;
+            MethodDefinition replicateReader;
+            MethodDefinition reconcileReader;
 
             if (!CreateReplicate())
                 return false;
             if (!CreateReconcile())
                 return false;
 
-            CreateResetReplicateMethod(typeDef, replicateMd.Parameters[0].ParameterType, predictionFields);
+            CreateClearReplicateCacheMethod(typeDef, replicateMd.Parameters[0].ParameterType, predictionFields);
             ServerCreateReplicateReader(typeDef, replicateMd, predictionFields, out replicateReader);
             ClientCreateReconcileReader(typeDef, reconcileMd, predictionFields, out reconcileReader);
             predictionReaders = new PredictionReaders(replicateReader, reconcileReader);
@@ -635,7 +634,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name=""></param>
         /// <param name=""></param>
-        private void CreateResetReplicateMethod(TypeDefinition typeDef, TypeReference dataTr, CreatedPredictionFields predictionFields)
+        private void CreateClearReplicateCacheMethod(TypeDefinition typeDef, TypeReference dataTr, CreatedPredictionFields predictionFields)
         {
             MethodDefinition md = typeDef.GetMethod(ClearReplicateCache_Method_Name);
             //Already exist when it shouldn't.
@@ -897,6 +896,31 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Callvirt, queueDataGetCountMr);
             processor.Emit(OpCodes.Stloc, queueCountVd);
 
+            /* If the queue count is 2 more than maximum
+             * buffered then dequeue an extra one. Currently
+             * the input will be lost, in a later release users
+             * will have the option to run multiple inputs
+             * per tick which this occurs. */
+            //targetBufferedInputs = base.TimeManager.TargetBufferedInputs;
+            VariableDefinition targetBufferedVd = CodegenSession.GeneralHelper.CreateVariable(replicateMd, typeof(byte));
+            processor.Emit(OpCodes.Ldarg_0); //base.
+            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TimeManager_MethodRef);
+            processor.Emit(OpCodes.Callvirt, CodegenSession.TimeManagerHelper.TargetBufferedInputs_MethodRef);
+            processor.Emit(OpCodes.Stloc, targetBufferedVd);
+            //If (queueCount > (targetBufferedInputs + 2))
+            Instruction afterDequeueInst = processor.Create(OpCodes.Nop);
+            processor.Emit(OpCodes.Ldloc, queueCountVd);
+            processor.Emit(OpCodes.Ldloc, targetBufferedVd);
+            processor.Emit(OpCodes.Ldc_I4_2);
+            processor.Emit(OpCodes.Add);
+            processor.Emit(OpCodes.Ble_S, afterDequeueInst);
+            //_buffer.Dequeue();
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateDatas);
+            processor.Emit(OpCodes.Callvirt, queueDataGetItemMr);
+            processor.Emit(OpCodes.Pop);
+            processor.Append(afterDequeueInst);
+
             //Replace with data from buffer.
             //      if (queueCount > 0)
             Instruction afterReplaceDataInst = processor.Create(OpCodes.Nop);
@@ -1044,6 +1068,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateDatas);
             processor.Emit(OpCodes.Callvirt, queueDataGetCountMr);
             processor.Emit(OpCodes.Stloc, queueCountVd);
+
             //Get number of inputs to remove. Will be positive if there are too many buffered inputs.
             //      int queueCount -= maximumBuffered.
             processor.Emit(OpCodes.Ldloc, queueCountVd);

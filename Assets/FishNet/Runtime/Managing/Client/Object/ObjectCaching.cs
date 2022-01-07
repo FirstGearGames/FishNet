@@ -16,7 +16,7 @@ namespace FishNet.Managing.Client
     {
         #region Private.
         /// <summary>
-        /// Cached objects buffer. Contains spawn and despawns.
+        /// Cached objects buffer. Contains spawns and despawns.
         /// </summary>
         private ListCache<CachedNetworkObject> _cachedObjects = new ListCache<CachedNetworkObject>(0);
         /// <summary>

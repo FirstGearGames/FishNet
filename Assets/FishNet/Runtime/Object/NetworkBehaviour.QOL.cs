@@ -27,7 +27,7 @@ namespace FishNet.Object
         /// </summary>
         public bool IsClient => (NetworkObject == null) ? false : NetworkObject.IsClient;
         /// <summary>
-        /// True if only the client is active, and authenticated.
+        /// True if only the client is active and authenticated.
         /// </summary>
         public bool IsClientOnly => (NetworkObject == null) ? false : NetworkObject.IsClientOnly;
         /// <summary>

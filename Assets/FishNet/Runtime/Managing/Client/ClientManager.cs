@@ -42,12 +42,12 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Frame rate to use while only the client is active. When both server and client are active the higher of the two frame rates will be used.")]
+        [Tooltip("Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.")]
         [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
         /// <summary>
-        /// Frame rate to use while only the client is active. When both server and client are active the higher of the two frame rates will be used.
+        /// Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.
         /// </summary>
         internal ushort FrameRate => _frameRate;
         #endregion
@@ -345,7 +345,7 @@ namespace FishNet.Managing.Client
             /* If also the server then use the servers connection
              * for the connectionId. This is to resolve host problems
              * where LocalConnection for client differs from the server Connection
-             * reference, which results in different ield values. */
+             * reference, which results in different field values. */
             else
             {
                 if (NetworkManager.ServerManager.Clients.TryGetValue(connectionId, out NetworkConnection conn))
