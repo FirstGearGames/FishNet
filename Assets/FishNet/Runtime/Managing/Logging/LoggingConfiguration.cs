@@ -66,13 +66,13 @@ namespace FishNet.Managing.Logging
         internal void InitializeOnce()
         {
             byte currentHighest = (byte)LoggingType.Off;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            currentHighest = Math.Max(currentHighest, (byte)_developmentLogging);
-#endif
-#if !UNITY_EDITOR && UNITY_SERVER
+#if UNITY_SERVER //if headless.
             currentHighest = Math.Max(currentHighest, (byte)_headlessLogging);
 #endif
-#if !UNITY_EDITOR && UNITY_SERVER
+#if UNITY_EDITOR || DEVELOPMENT_BUILD //if editor or development.
+            currentHighest = Math.Max(currentHighest, (byte)_developmentLogging);
+#endif
+#if !UNITY_EDITOR && !UNITY_SERVER //if a build.
             currentHighest = Math.Max(currentHighest, (byte)_guiLogging);
 #endif
             _highestLoggingType = (LoggingType)currentHighest;

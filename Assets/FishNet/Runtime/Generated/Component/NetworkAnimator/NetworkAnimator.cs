@@ -768,7 +768,7 @@ namespace FishNet.Component.Animating
                     if (forceAll || _ints[pd.TypeIndex] != next)
                     {
                         _writer.WriteByte(parameterIndex);
-                        _writer.WriteSingle(next, AutoPackType.Packed);
+                        _writer.WriteInt32(next, AutoPackType.Packed);
                         _ints[pd.TypeIndex] = next;
                     }
                 }

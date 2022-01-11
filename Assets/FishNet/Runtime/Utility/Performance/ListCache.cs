@@ -27,6 +27,10 @@ namespace FishNet.Utility.Performance
         /// Cache for NetworkConnectios.
         /// </summary>
         public static ListCache<NetworkConnection> NetworkConnectionCache = new ListCache<NetworkConnection>();
+        /// <summary>
+        /// Cache for ints.
+        /// </summary>
+        public static ListCache<int> IntCache = new ListCache<int>();
     }
 
     /// <summary>

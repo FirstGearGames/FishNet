@@ -236,6 +236,13 @@ namespace FishNet.CodeGenerating.Processing
                     if ((i == 0) && (rpcType == RpcType.Target) && parameterDef.Is(typeof(NetworkConnection)))
                         continue;
 
+                    if (parameterDef.ParameterType.IsGenericParameter)
+                    {
+                        CodegenSession.LogError($"RPC method{methodDef.Name} contains a generic parameter. This is currently not supported.");
+                        error = true;
+                        break;
+                    }
+
                     //Can be serialized/deserialized.
                     bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(parameterDef.ParameterType, true);
                     if (!canSerialize)

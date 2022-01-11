@@ -164,6 +164,7 @@ namespace FishNet.Object
             if (Owner.IsValid)
                 Owner.RemoveObject(this);
 
+            Observers.Clear();
             Deinitializing = true;
         }
 
@@ -227,7 +228,7 @@ namespace FishNet.Object
                     int written;
                     //Iterate all cached transforms and get networkbehaviours.
                     ListCache<NetworkBehaviour> nbCache = ListCaches.NetworkBehaviourCache;
-                    nbCache.Reset();                    
+                    nbCache.Reset();
                     written = transformCache.Written;
                     List<Transform> ts = transformCache.Collection;
                     //
@@ -265,6 +266,16 @@ namespace FishNet.Object
             //Add to connection objects if owner exist.
             if (owner != null)
                 owner.AddObject(this);
+
+
+            if (gameObject.name.Contains("GameObject") && !owner.IsLocalClient)
+            {
+                if (owner != null && owner.FirstObject != null)
+                {
+                    Debug.LogWarning(owner.FirstObject.name);
+                    Debug.Log(owner.Objects.Count + ",  " + networkManager.ClientManager.Clients.Count);
+                }
+            }
         }
 
         /// <summary>
@@ -281,7 +292,6 @@ namespace FishNet.Object
         internal void Deinitialize(bool asServer)
         {
             InvokeStopCallbacks(asServer);
-
             if (asServer)
             {
                 Deinitializing = true;
@@ -294,6 +304,8 @@ namespace FishNet.Object
 
                 RemoveClientRpcLinkIndexes();
             }
+
+            Observers.Clear();
         }
 
         ///// <summary>
@@ -388,7 +400,7 @@ namespace FishNet.Object
                     writer.WriteNetworkObject(this);
                     writer.WriteNetworkConnection(Owner);
                     //If sharing then send to all observers.
-                    if (NetworkManager.ServerManager.ShareOwners)
+                    if (NetworkManager.ServerManager.ShareIds)
                     {
                         NetworkManager.TransportManager.SendToClients((byte)Channel.Reliable, writer.GetArraySegment(), this);
                     }
@@ -413,7 +425,7 @@ namespace FishNet.Object
         /// <param name="owner"></param>
         /// <param name="allowNull"></param>
         private void SetOwner(NetworkConnection owner)
-        {            
+        {
             Owner = owner;
         }
 

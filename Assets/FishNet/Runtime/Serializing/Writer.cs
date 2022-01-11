@@ -762,6 +762,18 @@ namespace FishNet.Serializing
             WriteInt16((short)value);
         }
 
+
+        /// <summary>
+        /// Writes a short for a connectionId.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CodegenExclude]
+        public void WriteNetworkConnectionId(short id)
+        {
+            WriteInt16(id);
+        }
+
         #region Packed writers.
         /// <summary>
         /// Returns PackRate to use for value.

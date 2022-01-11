@@ -39,18 +39,23 @@ namespace FishNet.Example.Prediction.CharacterControllers
 
         #region Private.
         private CharacterController _characterController;
+        private MoveData _clientMoveData;
         #endregion
 
         private void Awake()
         {
             InstanceFinder.TimeManager.OnTick += TimeManager_OnTick;
+            InstanceFinder.TimeManager.OnUpdate += TimeManager_OnUpdate;
             _characterController = GetComponent<CharacterController>();
         }
 
         private void OnDestroy()
         {
             if (InstanceFinder.TimeManager != null)
+            {
                 InstanceFinder.TimeManager.OnTick -= TimeManager_OnTick;
+                InstanceFinder.TimeManager.OnUpdate -= TimeManager_OnUpdate;
+            }
         }
 
         private void TimeManager_OnTick()
@@ -67,6 +72,13 @@ namespace FishNet.Example.Prediction.CharacterControllers
                 ReconcileData rd = new ReconcileData(transform.position, transform.rotation);
                 Reconciliation(rd, true);
             }
+        }
+
+
+        private void TimeManager_OnUpdate()
+        {
+            if (base.IsOwner)
+                MoveWithData(_clientMoveData, Time.deltaTime);
         }
 
         private void CheckInput(out MoveData md)
@@ -89,8 +101,16 @@ namespace FishNet.Example.Prediction.CharacterControllers
         [Replicate]
         private void Move(MoveData md, bool asServer, bool replaying = false)
         {
+            if (asServer || replaying)
+                MoveWithData(md, (float)base.TimeManager.TickDelta);
+            else if (!asServer)
+                _clientMoveData = md;
+        }
+
+        private void MoveWithData(MoveData md, float delta)
+        {
             Vector3 move = new Vector3(md.Horizontal, Physics.gravity.y, md.Vertical);
-            _characterController.Move(move * _moveRate * (float)base.TimeManager.TickDelta);
+            _characterController.Move(move * _moveRate * delta);
         }
 
         [Reconcile]

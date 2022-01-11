@@ -335,12 +335,10 @@ namespace FishNet.Managing.Transporting
             /* If sending from the server. */
             if (server)
             {
-                uint sentBytes = 0;
+                //uint sentBytes = 0;
                 //Write any dirty syncTypes.
                 _networkManager.ServerManager.Objects.WriteDirtySyncTypes();
 
-                //long sentBytes = 0;
-                //uint sentPackets = 0;
                 //Run through all dirty connections to send data to.
                 foreach (NetworkConnection conn in _dirtyToClients)
                 {
@@ -359,7 +357,7 @@ namespace FishNet.Managing.Transporting
                                 {
                                     ArraySegment<byte> segment = new ArraySegment<byte>(bb.Data, 0, bb.Length);
                                     Transport.SendToClient(channel, segment, conn.ClientId);
-                                    sentBytes += (uint)segment.Count;
+                                    //sentBytes += (uint)segment.Count;
                                 }
                             }
 

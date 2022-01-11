@@ -46,25 +46,6 @@ namespace FishNet.Tugboat
 
 namespace FishNet.Tugboat.Server
 {
-    internal enum CommandTypes : byte
-    {
-        ClientWantsToStop,
-        DisconnectPeerNextIteration,
-        DisconnectPeerNow
-    }
-
-    internal struct PeerCommand
-    {
-        public readonly CommandTypes Type;
-        public readonly int ConnectionId;
-
-        public PeerCommand(CommandTypes type, int connectionId)
-        {
-            Type = type;
-            ConnectionId = connectionId;
-        }
-    }
-
 
     internal struct RemoteConnectionEvent
     {

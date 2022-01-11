@@ -27,10 +27,6 @@ namespace FishNet.Managing.Server
 
         #region Private.
         /// <summary>
-        /// Next ObjectId which may be used for NetworkObjects.
-        /// </summary>
-        private int _nextNetworkObjectId;
-        /// <summary>
         /// Cached ObjectIds which may be used when exceeding available ObjectIds.
         /// </summary>
         private Queue<int> _objectIdCache = new Queue<int>();
@@ -102,6 +98,7 @@ namespace FishNet.Managing.Server
             //If server just connected.
             if (args.ConnectionState == LocalConnectionStates.Started)
             {
+                BuildObjectIdCache();
                 SetupSceneObjects();
             }
             //Server in anything but started state.
@@ -110,7 +107,6 @@ namespace FishNet.Managing.Server
                 base.DespawnSpawnedWithoutSynchronization(true);
                 base.SceneObjects.Clear();
                 _objectIdCache.Clear();
-                _nextNetworkObjectId = 0;
             }
         }
 
@@ -141,6 +137,16 @@ namespace FishNet.Managing.Server
 
         #region ObjectIds.
         /// <summary>
+        /// Builds the ObjectId cache with all possible Ids.
+        /// </summary>
+        private void BuildObjectIdCache()
+        {
+            _objectIdCache.Clear();
+            //Build Id cache.
+            for (int i = 0; i < ushort.MaxValue; i++)
+                _objectIdCache.Enqueue(i);
+        }
+        /// <summary>
         /// Caches a NetworkObject ObjectId.
         /// </summary>
         /// <param name="nob"></param>
@@ -156,27 +162,16 @@ namespace FishNet.Managing.Server
         /// <returns></returns>
         protected internal override int GetNextNetworkObjectId()
         {
-            //Favor the cache first.
-            if (_objectIdCache.Count > 0)
+            //Either something went wrong or user actually managed to spawn ~32K networked objects.
+            if (_objectIdCache.Count == 0)
             {
-                return _objectIdCache.Dequeue();
+                if (base.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"No more available ObjectIds. How the heck did you manage to have {short.MaxValue} objects spawned at once?");
+                return -1;
             }
-            //None cached.
             else
             {
-                //Either something went wrong or user actually managed to spawn ~32K networked objects.
-                if (_nextNetworkObjectId > short.MaxValue)
-                {
-                    if (base.NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"No more available ObjectIds. How the heck did you manage to have {short.MaxValue} objects spawned at once?");
-                    return -1;
-                }
-                else
-                {
-                    int value = _nextNetworkObjectId;
-                    _nextNetworkObjectId++;
-                    return value;
-                }
+                return _objectIdCache.Dequeue();
             }
         }
         #endregion
@@ -327,7 +322,7 @@ namespace FishNet.Managing.Server
             PooledWriter headerWriter = WriterPool.GetWriter();
             headerWriter.WritePacketId(PacketId.ObjectSpawn);
             headerWriter.WriteNetworkObject(nob);
-            if (base.NetworkManager.ServerManager.ShareOwners || connection == nob.Owner)
+            if (base.NetworkManager.ServerManager.ShareIds || connection == nob.Owner)
                 headerWriter.WriteNetworkConnection(nob.Owner);
             else
                 headerWriter.WriteInt16(-1);
@@ -507,24 +502,6 @@ namespace FishNet.Managing.Server
             everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
             everyoneWriter.WriteNetworkObject(nob);
         }
-
-
-        private void __WriteDespawnAndSend(NetworkObject nob)
-        {
-            PooledWriter everyoneWriter = WriterPool.GetWriter();
-            WriteDespawn(nob, ref everyoneWriter);
-
-            ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
-            foreach (NetworkConnection conn in nob.Observers)
-            {
-                nob.InvokeOnServerDespawn(conn);
-                NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, despawnSegment, conn);
-            }
-
-            everyoneWriter.Dispose();
-        }
-
-
 
 
 

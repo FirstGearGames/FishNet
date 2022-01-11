@@ -51,7 +51,7 @@ namespace FishNet.Object
         /// <summary>
         /// Type of logging to use when the IsServer check fails.
         /// </summary>
-        public LoggingType Logging = LoggingType.Off;
+        public LoggingType Logging = LoggingType.Warning;
     }
 
     /// <summary>
@@ -63,7 +63,7 @@ namespace FishNet.Object
         /// <summary>
         /// Type of logging to use when the IsClient check fails.
         /// </summary>
-        public LoggingType Logging = LoggingType.Off;
+        public LoggingType Logging = LoggingType.Warning;
         /// <summary>
         /// True to only allow a client to run the method if they are owner of the object.
         /// </summary>

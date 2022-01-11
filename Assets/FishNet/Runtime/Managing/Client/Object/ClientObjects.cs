@@ -282,14 +282,23 @@ namespace FishNet.Managing.Client
             {
                 //If local client is owner then use localconnection reference.
                 NetworkConnection localConnection = base.NetworkManager.ClientManager.Connection;
-                NetworkConnection owner = (ownerId == localConnection.ClientId) ?
-                    localConnection : new NetworkConnection(NetworkManager, ownerId);
-
+                NetworkConnection owner;
+                //If owner is self.
+                if (ownerId == localConnection.ClientId)
+                {
+                    owner = localConnection;
+                }
+                else
+                {
+                    /* If owner cannot be found then share owners
+                     * is disabled */
+                    if (!base.NetworkManager.ClientManager.Clients.TryGetValue(ownerId, out owner))
+                        owner = NetworkManager.EmptyConnection;
+                }
                 nob.PreInitialize(NetworkManager, objectId, owner, false);
             }
 
             _objectCache.AddSpawn(nob, rpcLinks, syncValues, NetworkManager);
-            base.AddToSpawned(nob);
         }
 
         /// <summary>

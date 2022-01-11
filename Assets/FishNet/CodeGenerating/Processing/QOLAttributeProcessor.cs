@@ -111,7 +111,7 @@ namespace FishNet.CodeGenerating.Processing
 
             if (qolType == QolAttributeType.Client)
             {
-                LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Off);
+                LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
 
                 /* Since isClient also uses insert first
                  * it will be put ahead of the IsOwner check, since the
@@ -126,7 +126,7 @@ namespace FishNet.CodeGenerating.Processing
             }
             else if (qolType == QolAttributeType.Server)
             {
-                LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Off);
+                LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
                 CodegenSession.ObjectHelper.CreateIsServerCheck(processor, methodDef, logging, !inheritsNetworkBehaviour, true);
             }
         }

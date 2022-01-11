@@ -46,7 +46,21 @@ namespace FishNet.Example.Prediction.Transforms
             }
         }
 
-        public float Rate = 5f;
+        #region Serialized.
+        /// <summary>
+        /// How many units to move per second.
+        /// </summary>
+        [Tooltip("How many units to move per second.")]
+        [SerializeField]
+        private float _moveRate = 5f;
+        #endregion
+
+        #region Private.
+        /// <summary>
+        /// The last MoveData client sent.
+        /// </summary>
+        private MoveData _clientMoveData;
+        #endregion
 
         private void Awake()
         {
@@ -59,13 +73,17 @@ namespace FishNet.Example.Prediction.Transforms
              * loaded. If you are using several NetworkManagers you would want
              * to subscrube in OnStartServer/Client using base.TimeManager. */
             InstanceFinder.TimeManager.OnTick += TimeManager_OnTick;
+            InstanceFinder.TimeManager.OnUpdate += TimeManager_OnUpdate;
         }
 
         private void OnDestroy()
         {
             //Unsubscribe as well.
             if (InstanceFinder.TimeManager != null)
+            {
                 InstanceFinder.TimeManager.OnTick -= TimeManager_OnTick;
+                InstanceFinder.TimeManager.OnUpdate -= TimeManager_OnUpdate;
+            }
         }
 
         private void TimeManager_OnTick()
@@ -110,6 +128,18 @@ namespace FishNet.Example.Prediction.Transforms
             }
         }
 
+
+        private void TimeManager_OnUpdate()
+        {
+            /* Move every frame using the clients last
+             * movedata and the frames delta. This will move
+             * the client smoothly while only sending data
+             * every tick. */
+            if (base.IsOwner)
+                MoveWithData(_clientMoveData, Time.deltaTime);
+        }
+
+
         /// <summary>
         /// A simple method to get input. This doesn't have any relation to the prediction.
         /// </summary>
@@ -143,19 +173,50 @@ namespace FishNet.Example.Prediction.Transforms
         [Replicate]
         private void Move(MoveData md, bool asServer, bool replaying = false)
         {
-            Vector3 next = new Vector3(md.Horizontal, 0f, md.Vertical);
-
-            /* Sanity check, make sure MoveData only has legitimate values.
-             * You can add in your logic normally here! */
-            if (base.IsServer)
+            /* You can check if being run as server to
+             * add security checks such as normalizing
+             * the inputs. */
+            if (asServer)
             {
-                if (next.magnitude > 1f)
-                    next = next.normalized;
+                //Sanity check!
+            }
+            /* You may also use replaying to know
+             * if a client is replaying inputs rather
+             * than running them for the first time. This can
+             * be useful because you may only want to run
+             * VFX during the first input and not during
+             * replayed inputs. */
+            if (!replaying)
+            {
+                //VFX!
             }
 
             /* Run logic as if it were an offline game.
-             * It's important to use TickDelta as your deltaTime. */
-            transform.position += (new Vector3(md.Horizontal, 0f, md.Vertical) * Rate * (float)base.TimeManager.TickDelta);
+            * It's important to use TickDelta as your deltaTime
+            * when running in the simulation tick. */
+            if (asServer || replaying)
+                MoveWithData(md, (float)base.TimeManager.TickDelta);
+            /* When running as client and not
+             * replaying set the clientMoveData to what
+             * was passed in. This will be used in OnUpdate
+             * to move the client smoothly over each frame
+             * rather than at the tickDelta. This really
+             * only applies for non-physics based movement such as
+             * transform or character controller. If you were
+             * to see the rigidbody example you'd notice the
+             * movement is done in this method for both
+             * client and server, and not over time in update.
+             * While you may be able to do some sort of interpolation
+             * in update with a rigidbody, that's up to you to
+             * figure out. */
+            else if (!asServer)
+                _clientMoveData = md;
+        }
+
+        private void MoveWithData(MoveData md, float delta)
+        {
+            Vector3 move = new Vector3(md.Horizontal, 0f, md.Vertical);
+            transform.position += (move * _moveRate * delta);
         }
 
         /// <summary>
