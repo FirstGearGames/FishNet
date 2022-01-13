@@ -267,16 +267,6 @@ namespace FishNet.Object
             //Add to connection objects if owner exist.
             if (owner != null)
                 owner.AddObject(this);
-
-
-            if (gameObject.name.Contains("GameObject") && !owner.IsLocalClient)
-            {
-                if (owner != null && owner.FirstObject != null)
-                {
-                    Debug.LogWarning(owner.FirstObject.name);
-                    Debug.Log(owner.Objects.Count + ",  " + networkManager.ClientManager.Clients.Count);
-                }
-            }
         }
 
         /// <summary>
