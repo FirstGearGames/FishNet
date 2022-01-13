@@ -41,7 +41,7 @@ namespace FishNet.Object
                 return;
 
             NetworkObserver = GetComponent<NetworkObserver>();
-            NetworkManager.ObserverManager.AddDefaultConditions(this, NetworkObserver);
+            NetworkManager.ObserverManager.AddDefaultConditions(this, ref NetworkObserver);
         }
         /// <summary>
         /// Initializes this script for use.

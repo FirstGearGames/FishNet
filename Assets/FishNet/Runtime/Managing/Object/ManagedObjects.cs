@@ -123,9 +123,7 @@ namespace FishNet.Managing.Object
                 //Scene object.
                 if (nob.SceneObject)
                 {
-                    //If also server don't set inactive again, server would have already done so.
-                    if (!NetworkManager.IsServer)
-                        destroy = false;
+                    destroy = false;
                 }
                 //Not a scene object, destroy normally.
                 else
@@ -135,9 +133,7 @@ namespace FishNet.Managing.Object
                      * side only to await destruction from client side.
                      * Objects can also be destroyed if server is not
                      * active. */
-                    bool canDestroy = (!NetworkManager.IsServer || NetworkManager.ServerManager.Objects.RemoveFromPending(nob.ObjectId));
-                    if (canDestroy)
-                        destroy = true;
+                    destroy = (!NetworkManager.IsServer || NetworkManager.ServerManager.Objects.RemoveFromPending(nob.ObjectId));
                 }
             }
 

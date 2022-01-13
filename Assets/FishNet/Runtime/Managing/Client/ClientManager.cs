@@ -6,6 +6,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace FishNet.Managing.Client
@@ -63,6 +64,12 @@ namespace FishNet.Managing.Client
         /// Used to read splits.
         /// </summary>
         private SplitReader _splitReader = new SplitReader();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>
+        /// Contains the last three non-split packets to arrive. This is used for debugging.
+        /// </summary>
+        private Queue<PacketId> _incomingPacketIds = new Queue<PacketId>();
+#endif
         #endregion
 
         /// <summary>
@@ -262,6 +269,11 @@ namespace FishNet.Managing.Client
                 while (reader.Remaining > 0)
                 {
                     packetId = reader.ReadPacketId();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    _incomingPacketIds.Enqueue(packetId);
+                    if (_incomingPacketIds.Count > 5)
+                        _incomingPacketIds.Dequeue();
+#endif
                     bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
                     /* Length of data. Only available if using unreliable. Unreliable packets
                      * can arrive out of order which means object orientated messages such as RPCs may
@@ -337,7 +349,15 @@ namespace FishNet.Managing.Client
                         else
                         {
                             if (NetworkManager.CanLog(LoggingType.Error))
+                            {
                                 Debug.LogError($"Client received an unhandled PacketId of {(ushort)packetId}. Remaining data has been purged.");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                                StringBuilder sb = new StringBuilder();
+                                foreach (PacketId item in _incomingPacketIds)
+                                    sb.Insert(0, $"{item.ToString()}{Environment.NewLine}");
+                                Debug.LogError($"The last {_incomingPacketIds.Count} packets to arrive are: {Environment.NewLine}{sb.ToString()}");
+#endif
+                            }
                             return;
                         }
                     }

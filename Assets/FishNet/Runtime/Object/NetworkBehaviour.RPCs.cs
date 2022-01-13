@@ -323,7 +323,7 @@ namespace FishNet.Object
             if (!result)
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Action cannot be completed as object {gameObject.name} is not spawned.");
+                    Debug.LogWarning($"Action cannot be completed as object {gameObject.name} [Id {ObjectId}] is not spawned.");
             }
 
             return result;

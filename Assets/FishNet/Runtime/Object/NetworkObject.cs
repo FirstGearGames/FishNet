@@ -132,6 +132,7 @@ namespace FishNet.Object
 
         private void OnDestroy()
         {
+            //Does this need to be here? I'm thinking no, remove it and examine later. //todo
             if (Owner.IsValid)
                 Owner.RemoveObject(this);
             //Already being deinitialized by FishNet.

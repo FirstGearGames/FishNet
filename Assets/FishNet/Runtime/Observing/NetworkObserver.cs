@@ -160,8 +160,10 @@ namespace FishNet.Observing
             //True if all conditions are met.
             bool allConditionsMet = true;
 
+            /* Don't check if owner; owner should always be aware of their objects.
+             * Don't check if connection is host; server should know of all objects. */
             //Only check if not owner. Owner should always be aware of their objects.
-            if (connection != _networkObject.Owner)
+            if (connection != _networkObject.Owner && (_networkObject.IsClient && connection != _networkObject.LocalConnection))
             {
                 for (int i = 0; i < ObserverConditions.Count; i++)
                 {

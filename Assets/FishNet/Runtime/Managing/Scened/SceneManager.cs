@@ -730,15 +730,16 @@ namespace FishNet.Managing.Scened
                     localPhysicsMode = data.SceneLoadData.Options.LocalPhysics
                 };
 
+                /* How much percentage each scene load can be worth
+                * at maximum completion. EG: if there are two scenes
+                * 1f / 2f is 0.5f. */
+                float maximumIndexWorth = (1f / (float)loadableScenes.Count);
+
                 AsyncOperation loadAsync = UnitySceneManager.LoadSceneAsync(loadableScenes[i].Name, loadSceneParameters);
                 loadAsync.allowSceneActivation = false;
                 asyncOperations.Add(loadAsync);
                 while (loadAsync.progress < 0.9f)
                 {
-                    /* How much percentage each scene load can be worth
-                     * at maximum completion. EG: if there are two scenes
-                     * 1f / 2f is 0.5f. */
-                    float maximumIndexWorth = (1f / (float)loadableScenes.Count);
                     /* Total percent will be how much percentage is complete
                      * in total. Initialize it with a value based on how many
                      * scenes are already fully loaded. */

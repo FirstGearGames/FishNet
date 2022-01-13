@@ -25,7 +25,7 @@ namespace FishNet.Managing.Observing
         /// <summary>
         /// Adds default observer conditions to nob and returns the NetworkObserver used.
         /// </summary>
-        internal NetworkObserver AddDefaultConditions(NetworkObject nob, NetworkObserver obs)
+        internal NetworkObserver AddDefaultConditions(NetworkObject nob, ref NetworkObserver obs)
         {
             bool nullObs = (obs == null);
             /* NetworkObserver is null and there are no
