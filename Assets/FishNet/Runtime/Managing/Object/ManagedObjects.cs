@@ -167,6 +167,7 @@ namespace FishNet.Managing.Object
             //Null can occur when running as host and server already despawns such as wehen stopping.
             if (nob == null)
                 return;
+
             nob.Deinitialize(asServer);
             /* Only run if asServer, or not 
             * asServer and server isn't running. This

@@ -16,7 +16,6 @@ GameObject:
   - component: {fileID: 9144896207351220584}
   - component: {fileID: 9144896207351220583}
   - component: {fileID: 1012129365208062032}
-  - component: {fileID: 4064019803891116409}
   m_Layer: 0
   m_Name: CharacterControllerPrediction
   m_TagString: Untagged
@@ -188,19 +187,3 @@ MonoBehaviour:
     X: 0
     Y: 0
     Z: 0
---- !u!114 &4064019803891116409
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9117857247562382221}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c71fd7f855ec523429999fc4e14a1928, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _addedNetworkObject: {fileID: 9117857247562382210}
-  _overrideType: 3
-  _observerConditions:
-  - {fileID: 11400000, guid: 5f33eb0e5b83b5546822cfe42a305657, type: 2}

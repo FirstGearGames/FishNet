@@ -340,14 +340,15 @@ namespace FishNet.Managing.Transporting
                 _networkManager.ServerManager.Objects.WriteDirtySyncTypes();
 
                 //Run through all dirty connections to send data to.
-                foreach (NetworkConnection conn in _dirtyToClients)
+                for (int z = 0; z < _dirtyToClients.Count; z++)
                 {
+                    NetworkConnection conn = _dirtyToClients[z];
+                    if (conn == null || !conn.IsValid)
+                        continue;
+
                     //Get packets for every channel.
                     for (byte channel = 0; channel < channelCount; channel++)
                     {
-                        if (conn == null)
-                            continue;
-
                         if (conn.GetPacketBundle(channel, out PacketBundle pb))
                         {
                             for (int i = 0; i < pb.WrittenBuffers; i++)

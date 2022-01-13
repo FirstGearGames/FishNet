@@ -296,7 +296,8 @@ namespace FishNet.Object
                 RemoveClientRpcLinkIndexes();
             }
 
-            Observers.Clear();
+            if (asServer)
+                Observers.Clear();
         }
 
         ///// <summary>
