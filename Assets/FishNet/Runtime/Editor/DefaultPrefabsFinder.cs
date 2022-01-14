@@ -85,6 +85,8 @@ namespace FishNet.Editing
         /// <returns>True if was populated from assets.</returns>
         internal static bool PopulateDefaultPrefabs(bool log = true)
         {
+            if (_defaultPrefabs == null)
+                return false;
             if (_defaultPrefabs.GetObjectCount() > 0)
                 return false;
 
