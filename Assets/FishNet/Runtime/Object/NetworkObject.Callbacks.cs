@@ -23,6 +23,8 @@ namespace FishNet.Object
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnStartServer();
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].InvokeSyncTypeCallbacks(true);
 
                 if (Owner.IsValid)
                 {
@@ -35,6 +37,8 @@ namespace FishNet.Object
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnStartClient();
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].InvokeSyncTypeCallbacks(false);
 
                 if (IsOwner)
                 {

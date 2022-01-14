@@ -12,7 +12,16 @@ namespace FishNet.Managing.Object
     public class DefaultPrefabObjects : SinglePrefabObjects
     {
 
+        /// <summary>
+        /// Populates this DefaultPrefabObjects.
+        /// </summary>
+        internal void PopulateDefaultPrefabs(bool log = true)
+        {
 #if UNITY_EDITOR
+            base.Clear();
+            DefaultPrefabsFinder.PopulateDefaultPrefabs(log);
+#endif
+        }
         /* Try to recover invalid/null prefab errors in editor.
          * This can occur when simlinking or when the asset processor
          * doesn't function properly. */
@@ -23,14 +32,10 @@ namespace FishNet.Managing.Object
                 base.Prefabs[id] == null);
 
             if (error)
-            {
-                base.Clear();
-                DefaultPrefabsFinder.PopulateDefaultPrefabs();
-            }
+                PopulateDefaultPrefabs(false);
 
             return base.GetObject(asServer, id);
         }
-#endif
 
     }
 

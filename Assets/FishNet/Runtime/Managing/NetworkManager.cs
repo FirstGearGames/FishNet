@@ -16,8 +16,8 @@ using System.Collections.Generic;
 using System;
 using FishNet.Managing.Observing;
 using System.Linq;
-using FishNet.Utility.Extension;
 using FishNet.Managing.Debugging;
+using FishNet.Managing.Object;
 
 namespace FishNet.Managing
 {
@@ -143,6 +143,12 @@ namespace FishNet.Managing
 
         #region Serialized.
         /// <summary>
+        /// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
+        /// </summary>
+        [Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
+        [SerializeField]
+        private bool _refreshDefaultPrefabs = true;
+        /// <summary>
         /// True to have your application run while in the background.
         /// </summary>
         [Tooltip("True to have your application run while in the background.")]
@@ -180,6 +186,17 @@ namespace FishNet.Managing
         private void Awake()
         {
             InitializeLogging();
+
+#if UNITY_EDITOR
+            /* If first instance then force
+             * default prefabs to repopulate.
+             * This is only done in editor because
+             * cloning tools sometimes don't synchronize
+             * scriptable object changes, which is what
+             * the default prefabs is. */
+            if (_refreshDefaultPrefabs && SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
+                dpo.PopulateDefaultPrefabs(false);
+#endif
 
             _canPersist = CanInitialize();
             if (!_canPersist)

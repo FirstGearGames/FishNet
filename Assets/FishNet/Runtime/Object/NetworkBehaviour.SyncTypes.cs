@@ -98,8 +98,13 @@ namespace FishNet.Object
         {
             if (!IsServer)
                 return false;
-            //if (NetworkObject.Observers.Count == 0)
-            //    return false;
+            /* No reason to dirty if there are no observers.
+             * This can happen even if a client is going to see
+             * this object because the server side initializes
+             * before observers are built. */
+            if (NetworkObject.Observers.Count == 0)
+                return false;
+            
             bool alreadyDirtied = (isSyncObject) ? _syncObjectDirty : _syncVarDirty;
             if (isSyncObject)
                 _syncObjectDirty = true;

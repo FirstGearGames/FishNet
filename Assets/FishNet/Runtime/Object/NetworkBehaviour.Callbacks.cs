@@ -36,7 +36,7 @@ namespace FishNet.Object
         /// Invokes cached callbacks on SyncTypes which were held until OnStartXXXXX was called.
         /// </summary>
         /// <param name="asServer"></param>
-        private void InvokeSyncTypeCallbacks(bool asServer)
+        internal void InvokeSyncTypeCallbacks(bool asServer)
         {
             foreach (SyncBase item in _syncVars.Values)
                 item.OnStartCallback(asServer);
@@ -91,7 +91,6 @@ namespace FishNet.Object
         public virtual void OnStartServer()
         {
             OnStartServerCalled = true;
-            InvokeSyncTypeCallbacks(true);
         }
         /// <summary>
         /// Called on the server before deinitializing this object.
@@ -122,7 +121,6 @@ namespace FishNet.Object
         public virtual void OnStartClient()
         {
             OnStartClientCalled = true;
-            InvokeSyncTypeCallbacks(false);
         }
         /// <summary>
         /// Called on the client before deinitializing this object.

@@ -163,15 +163,12 @@ namespace FishNet.Object.Synchronizing
             * values must be marked as changed so when
             * there are observers, new values are sent. */
             _valuesChanged = true;
-            if (!base.Dirty())
-                return;
+            base.Dirty();
 
             ChangeData change = new ChangeData(operation, key, value);
             _changed.Add(change);
             bool asServer = true;
             InvokeOnChange(operation, key, value, asServer);
-
-            base.Dirty();
         }
 
 
