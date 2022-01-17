@@ -381,6 +381,10 @@ namespace FishNet.Component.Animating
         /// Holds client authoritative updates received to send to other clients.
         /// </summary>
         private ClientAuthoritativeUpdate _clientAuthoritativeUpdates;
+        /// <summary>
+        /// True to forceAll next timed send.
+        /// </summary>
+        private bool _forceAllOnTimed;
         #endregion
 
         #region Const.
@@ -583,8 +587,10 @@ namespace FishNet.Component.Animating
              * because there's no way the sent bytes are
              * ever going to come close to the mtu
              * when sending a single update. */
-            if (AnimatorUpdated(out ArraySegment<byte> updatedBytes))
+            if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, _forceAllOnTimed))
                 ServerAnimatorUpdated(updatedBytes);
+
+            _forceAllOnTimed = false;
         }
 
         /// <summary>
@@ -678,8 +684,10 @@ namespace FishNet.Component.Animating
             //Sending from server, send what's changed.
             else
             {
-                if (AnimatorUpdated(out ArraySegment<byte> updatedBytes))
+                if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, _forceAllOnTimed))
                     ObserversAnimatorUpdated(updatedBytes);
+
+                _forceAllOnTimed = false;
             }
         }
 
@@ -1014,6 +1022,16 @@ namespace FishNet.Component.Animating
         {
             _nextClientSendTime = 0f;
             _nextServerSendTime = 0f;
+        }
+
+        /// <summary>
+        /// Immediately sends all variables and states of layers.
+        /// This is a very bandwidth intensive operation.
+        /// </summary>
+        public void SendAll()
+        {
+            _forceAllOnTimed = true;
+            ForceSend();
         }
 
         #region Play.
