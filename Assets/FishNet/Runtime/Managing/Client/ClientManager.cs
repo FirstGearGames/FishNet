@@ -19,6 +19,10 @@ namespace FishNet.Managing.Client
     {
         #region Public.
         /// <summary>
+        /// Called after local client has authenticated.
+        /// </summary>
+        public event Action OnAuthenticated;
+        /// <summary>
         /// Called after the local client connection state changes.
         /// </summary>
         public event Action<ClientConnectionStateArgs> OnClientConnectionState;
@@ -184,20 +188,19 @@ namespace FishNet.Managing.Client
         private void Transport_OnClientConnectionState(ClientConnectionStateArgs args)
         {
             Objects.OnClientConnectionState(args);
-            Started = (args.ConnectionState == LocalConnectionStates.Started);
-            bool stopped = (args.ConnectionState == LocalConnectionStates.Stopped);
+
+            LocalConnectionStates state = args.ConnectionState;
+            Started = (state == LocalConnectionStates.Started);
 
             //Clear connection after so objects can update using current Connection value.
             if (!Started)
-            { 
+            {
                 Connection = NetworkManager.EmptyConnection;
                 Clients.Clear();
             }
 
-            if (Started && NetworkManager.CanLog(LoggingType.Common))
-                Debug.Log($"Local client is connected to the server.");
-            else if (stopped && NetworkManager.CanLog(LoggingType.Common))
-                Debug.Log($"Local client is disconnected from the server.");
+            if (NetworkManager.CanLog(LoggingType.Common))
+                Debug.Log($"Local client is {state.ToString().ToLower()}.");
 
             NetworkManager.UpdateFramerate();
             OnClientConnectionState?.Invoke(args);
@@ -423,6 +426,7 @@ namespace FishNet.Managing.Client
 
             //Mark as authenticated.
             Connection.ConnectionAuthenticated();
+            OnAuthenticated?.Invoke();
             /* Register scene objects for all scenes
              * after being authenticated. This is done after
              * authentication rather than when the connection

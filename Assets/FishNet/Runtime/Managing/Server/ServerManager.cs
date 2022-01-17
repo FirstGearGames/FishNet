@@ -264,23 +264,16 @@ namespace FishNet.Managing.Server
              * This gives the client an opportunity to clean-up or prepare
              * before the server completes it's actions. */
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
-            Started = (args.ConnectionState == LocalConnectionStates.Started);
+            LocalConnectionStates state = args.ConnectionState;
+            Started = (state == LocalConnectionStates.Started);
 
             Objects.OnServerConnectionState(args);
             //If not connected then clear clients.
-            if (args.ConnectionState != LocalConnectionStates.Started)
+            if (!Started)
                 Clients.Clear();
 
-            if (args.ConnectionState == LocalConnectionStates.Started)
-            {
-                if (NetworkManager.CanLog(LoggingType.Common))
-                    Debug.Log("Server has been started.");
-            }
-            else if (args.ConnectionState == LocalConnectionStates.Stopped)
-            {
-                if (NetworkManager.CanLog(LoggingType.Common))
-                    Debug.Log("Server has been stopped.");
-            }
+            if (NetworkManager.CanLog(LoggingType.Common))
+                Debug.Log($"Server is {state.ToString().ToLower()}.");
 
             NetworkManager.UpdateFramerate();
             OnServerConnectionState?.Invoke(args);

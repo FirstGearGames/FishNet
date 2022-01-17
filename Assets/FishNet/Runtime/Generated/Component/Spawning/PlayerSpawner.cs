@@ -15,7 +15,7 @@ namespace FishNet.Component.Spawning
     {
         #region Public.
         /// <summary>
-        /// Called when server spawns a player.
+        /// Called on the server when a player is spawned.
         /// </summary>
         public event Action<NetworkObject> OnSpawned;
         #endregion

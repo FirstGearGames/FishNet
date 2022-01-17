@@ -721,19 +721,17 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteNetworkBehaviour(NetworkBehaviour nb)
         {
-            /* There's no reason to assume a null NetworkBehaviour will be
-             * written since currently they cannot be modified at runtime. */
             if (nb == null)
             {
-                if (NetworkManager.StaticCanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkBehaviour is null.");
                 WriteNetworkObject(null);
+                WriteByte(0);
             }
             else if (!nb.IsSpawned)
             {
                 if (NetworkManager.StaticCanLog(LoggingType.Warning))
                     Debug.LogWarning($"NetworkObject on GameObject {nb.name} is not spawned.");
                 WriteNetworkObject(null);
+                WriteByte(0);
             }
             else
             {
