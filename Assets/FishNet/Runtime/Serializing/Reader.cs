@@ -306,16 +306,15 @@ namespace FishNet.Serializing
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe ushort ReadUInt16()
+        public ushort ReadUInt16()
         {
             //if (Remaining < 2)
             //    LogEndOfStream();
 
-            ushort result;
-            fixed (byte* pByte = &_buffer[Position])
-                result = (ushort)((*pByte) | *(pByte + 1) << 8);
+            ushort result = 0;
+            result |= _buffer[Position++];
+            result |= (ushort)(_buffer[Position++] << 8);
 
-            Position += 2;
             return result;
         }
 
@@ -329,18 +328,17 @@ namespace FishNet.Serializing
         /// Reads an int32.
         /// </summary>
         /// <returns></returns>        
-        public unsafe uint ReadUInt32(AutoPackType packType = AutoPackType.Packed)
+        public uint ReadUInt32(AutoPackType packType = AutoPackType.Packed)
         {
             if (packType == AutoPackType.Packed)
                 return (uint)ReadPackedWhole();
-            //if (Remaining < 4)
-            //    LogEndOfStream();
 
-            uint result;
-            fixed (byte* pByte = &_buffer[Position])
-                result = (uint)((*pByte) | *(pByte + 1) << 8 | *(pByte + 2) << 16 | *(pByte + 3) << 24);
+            uint result = 0;
+            result |= _buffer[Position++];
+            result |= (uint)_buffer[Position++] << 8;
+            result |= (uint)_buffer[Position++] << 16;
+            result |= (uint)_buffer[Position++] << 24;
 
-            Position += 4;
             return result;
         }
         /// <summary>
@@ -354,22 +352,23 @@ namespace FishNet.Serializing
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe ulong ReadUInt64(AutoPackType packType = AutoPackType.Packed)
+        public ulong ReadUInt64(AutoPackType packType = AutoPackType.Packed)
         {
             if (packType == AutoPackType.Packed)
                 return (ulong)ReadPackedWhole();
             //if (Remaining < 8)
             //    LogEndOfStream();
 
-            ulong result;
-            fixed (byte* pByte = &_buffer[Position])
-            {
-                int p1 = (*pByte) | (*(pByte + 1) << 8) | (*(pByte + 2) << 16) | (*(pByte + 3) << 24);
-                int p2 = (*(pByte + 4)) | (*(pByte + 5) << 8) | (*(pByte + 6) << 16) | (*(pByte + 7) << 24);
-                result = ((uint)p1 | ((ulong)p2 << 32));
-            }
+            ulong result = 0;
+            result |= _buffer[Position++];
+            result |= (ulong)_buffer[Position++] << 8;
+            result |= (ulong)_buffer[Position++] << 16;
+            result |= (ulong)_buffer[Position++] << 24;
+            result |= (ulong)_buffer[Position++] << 32;
+            result |= (ulong)_buffer[Position++] << 40;
+            result |= (ulong)_buffer[Position++] << 48;
+            result |= (ulong)_buffer[Position++] << 56;
 
-            Position += 8;
             return result;
         }
         /// <summary>

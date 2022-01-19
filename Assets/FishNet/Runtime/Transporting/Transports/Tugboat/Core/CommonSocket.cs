@@ -53,13 +53,13 @@ namespace FishNet.Tugboat
         /// <summary>
         /// Sends data to connectionId.
         /// </summary>
-        internal void Send(ref Queue<Packet> queue, byte channelId, ArraySegment<byte> segment, int connectionId)
+        internal void Send(ref Queue<Packet> queue, byte channelId, ArraySegment<byte> segment, int connectionId, int mtu)
         {
             if (GetConnectionState() != LocalConnectionStates.Started)
                 return;
 
             //ConnectionId isn't used from client to server.
-            Packet outgoing = new Packet(connectionId, segment, channelId);
+            Packet outgoing = new Packet(connectionId, segment, channelId, mtu);
             queue.Enqueue(outgoing);
         }
 
@@ -90,11 +90,13 @@ namespace FishNet.Tugboat
         /// <summary>
         /// Called when data is received.
         /// </summary>
-        internal virtual void Listener_NetworkReceiveEvent(ref ConcurrentQueue<Packet> queue,  NetPeer fromPeer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+        internal virtual void Listener_NetworkReceiveEvent(ref ConcurrentQueue<Packet> queue,  NetPeer fromPeer, NetPacketReader reader, DeliveryMethod deliveryMethod, int mtu)
         {
             //Set buffer.
             int dataLen = reader.AvailableBytes;
-            byte[] data = ByteArrayPool.Retrieve(dataLen, true);
+            //Prefer to max out returned array to mtu to reduce chance of resizing.
+            int arraySize = Math.Max(dataLen, mtu);
+            byte[] data = ByteArrayPool.Retrieve(arraySize);
             reader.GetBytes(data, dataLen);
             //Id.
             int id = fromPeer.Id;

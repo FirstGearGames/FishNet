@@ -20,9 +20,11 @@ namespace FishNet.Tugboat
             Channel = channel;
         }
 
-        public Packet(int sender, ArraySegment<byte> segment, byte channel)
+        public Packet(int sender, ArraySegment<byte> segment, byte channel, int mtu)
         {
-            Data = ByteArrayPool.Retrieve(segment.Count, true);
+            //Prefer to max out returned array to mtu to reduce chance of resizing.
+            int arraySize = Math.Max(segment.Count, mtu);
+            Data = ByteArrayPool.Retrieve(arraySize);
             Buffer.BlockCopy(segment.Array, segment.Offset, Data, 0, segment.Count);
             ConnectionId = sender;
             Length = segment.Count;
@@ -36,7 +38,7 @@ namespace FishNet.Tugboat
 
         public void Dispose()
         {
-            ByteArrayPool.Store(Data, true);
+            ByteArrayPool.Store(Data);
         }
 
     }

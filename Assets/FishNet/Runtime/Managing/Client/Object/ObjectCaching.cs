@@ -5,6 +5,7 @@ using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace FishNet.Managing.Client
 {
@@ -172,6 +173,7 @@ namespace FishNet.Managing.Client
     /// <summary>
     /// A cached network object which exist in world but has not been Initialized yet.
     /// </summary>
+    [Preserve]
     internal class CachedNetworkObject
     {
         /// <summary>

@@ -75,10 +75,6 @@ namespace FishNet.Tugboat
 
         #region Const.
         /// <summary>
-        /// How long to wait before timing out a socket poll.
-        /// </summary>
-        private const int POLL_TIMEOUT = 1;
-        /// <summary>
         /// Minimum UDP packet size allowed.
         /// </summary>
         private const int MINIMUM_UDP_MTU = 576;
@@ -383,7 +379,7 @@ namespace FishNet.Tugboat
         {
             _server.Initialize(this, _unreliableMTU);
             string bindAddress = string.Empty;
-            return _server.StartConnection(bindAddress, _port, _maximumClients, POLL_TIMEOUT);
+            return _server.StartConnection(bindAddress, _port, _maximumClients);
         }
 
         /// <summary>
@@ -401,7 +397,7 @@ namespace FishNet.Tugboat
         private bool StartClient(string address)
         {
             _client.Initialize(this, _unreliableMTU, _timeout);
-            return _client.StartConnection(address, _port, POLL_TIMEOUT);
+            return _client.StartConnection(address, _port);
         }
 
         /// <summary>

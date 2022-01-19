@@ -3,7 +3,6 @@ using FishNet.Transporting;
 using FishNet.Utility.Performance;
 using LiteNetLib;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -77,17 +76,9 @@ namespace FishNet.Tugboat.Server
         /// </summary>
         private string _key = string.Empty;
         /// <summary>
-        /// Poll timeout for socket.
-        /// </summary>
-        private int _pollTime;
-        /// <summary>
         /// Server socket manager.
         /// </summary>
         private NetManager _server;
-        /// <summary>
-        /// Token to cancel task.
-        /// </summary>
-        private CancellationTokenSource _taskCancelToken;
         /// <summary>
         /// Locks the NetManager to stop it.
         /// </summary>
@@ -96,7 +87,7 @@ namespace FishNet.Tugboat.Server
 
         ~ServerSocket()
         {
-            StopServer();
+            StopConnection();
         }
 
         /// <summary>
@@ -113,7 +104,7 @@ namespace FishNet.Tugboat.Server
         /// Threaded operation to process server actions.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ThreadedSocket(CancellationToken cancelToken)
+        private void ThreadedSocket()
         {
             EventBasedNetListener listener = new EventBasedNetListener();
             listener.ConnectionRequestEvent += Listener_ConnectionRequestEvent;
@@ -129,33 +120,15 @@ namespace FishNet.Tugboat.Server
             if (startResult)
             {
                 _localConnectionStates.Enqueue(LocalConnectionStates.Started);
-
-                //Loop long as the server is running.
-                while (!cancelToken.IsCancellationRequested)
-                {
-                    _server?.PollEvents();
-                    Thread.Sleep(_pollTime);
-                }
             }
             //Failed to start.
             else
             {
                 if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Server failed to start. This usually occurs when the specified port is unavailable, be it closed or already in use.");
+
+                StopConnection();
             }
-
-            StopServer();
-        }
-
-        /// <summary>
-        /// Sets local connection as stopped and ends task.
-        /// </summary>
-        private void StopServer()
-        {
-            if (_taskCancelToken != null && !_taskCancelToken.IsCancellationRequested)
-                _taskCancelToken.Cancel();
-
-            StopSocketOnThread();
         }
 
         /// <summary>
@@ -163,6 +136,9 @@ namespace FishNet.Tugboat.Server
         /// </summary>
         private void StopSocketOnThread()
         {
+            if (_server == null)
+                return;
+
             Task t = Task.Run(() =>
             {
                 lock (_stopLock)
@@ -210,7 +186,7 @@ namespace FishNet.Tugboat.Server
         /// <summary>
         /// Starts the server.
         /// </summary>
-        internal bool StartConnection(string address, ushort port, int maximumClients, int pollTime)
+        internal bool StartConnection(string address, ushort port, int maximumClients)
         {
             if (base.GetConnectionState() != LocalConnectionStates.Stopped)
                 return false;
@@ -218,13 +194,11 @@ namespace FishNet.Tugboat.Server
             base.SetConnectionState(LocalConnectionStates.Starting, true);
 
             //Assign properties.
-            _pollTime = pollTime;
             _port = port;
             _maximumClients = maximumClients;
             ResetQueues();
 
-            _taskCancelToken = new CancellationTokenSource();
-            Task t = Task.Run(() => ThreadedSocket(_taskCancelToken.Token), _taskCancelToken.Token);
+            Task t = Task.Run(() => ThreadedSocket());
 
             return true;
         }
@@ -238,7 +212,7 @@ namespace FishNet.Tugboat.Server
                 return false;
 
             base.SetConnectionState(LocalConnectionStates.Stopping, true);
-            StopServer();
+            StopSocketOnThread();
             return true;
         }
 
@@ -325,7 +299,7 @@ namespace FishNet.Tugboat.Server
             }
             else
             {
-                base.Listener_NetworkReceiveEvent(ref _incoming, fromPeer, reader, deliveryMethod);
+                base.Listener_NetworkReceiveEvent(ref _incoming, fromPeer, reader, deliveryMethod, _mtu);
             }
         }
 
@@ -373,7 +347,7 @@ namespace FishNet.Tugboat.Server
             {
                 List<int> collection = _disconnectingNext.Collection;
                 for (int i = 0; i < count; i++)
-                    _disconnectingNow.AddValue(collection[i]);                    
+                    _disconnectingNow.AddValue(collection[i]);
 
                 _disconnectingNext.Reset();
             }
@@ -393,7 +367,7 @@ namespace FishNet.Tugboat.Server
             }
             else
             {
-                
+
                 int count = _outgoing.Count;
                 for (int i = 0; i < count; i++)
                 {
@@ -423,7 +397,7 @@ namespace FishNet.Tugboat.Server
                         NetPeer peer = GetNetPeer(connectionId, true);
                         //If peer is found.
                         if (peer != null)
-                                peer.Send(segment.Array, segment.Offset, segment.Count, dm);
+                            peer.Send(segment.Array, segment.Offset, segment.Count, dm);
                     }
 
                     outgoing.Dispose();
@@ -459,10 +433,13 @@ namespace FishNet.Tugboat.Server
                 ResetQueues();
                 //If stopped try to kill task.
                 if (localState == LocalConnectionStates.Stopped)
-                    StopServer();
-                return;
+                {
+                    StopSocketOnThread();
+                    return;
+                }
             }
 
+            _server?.PollEvents();
             //Handle connection and disconnection events.
             while (_remoteConnectionEvents.TryDequeue(out RemoteConnectionEvent connectionEvent))
             {
@@ -495,7 +472,7 @@ namespace FishNet.Tugboat.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId)
         {
-            Send(ref _outgoing, channelId, segment, connectionId);
+            Send(ref _outgoing, channelId, segment, connectionId, _mtu);
         }
 
         /// <summary>

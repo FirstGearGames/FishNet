@@ -159,7 +159,7 @@ MonoBehaviour:
   _serverBindAddress: localhost
   _port: 9091
   _maximumClients: 4095
-  _clientAddress: 174.106.192.44
+  _clientAddress: localhost
   _timeout: 15
 --- !u!114 &192429406
 MonoBehaviour:

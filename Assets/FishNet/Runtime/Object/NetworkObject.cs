@@ -191,7 +191,7 @@ namespace FishNet.Object
                 //If there are no child nobs then get NetworkBehaviours normally.
                 if (ChildNetworkObjects.Count == 0)
                 {
-                    NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>(true);
+                    NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>();
                 }
                 //There are child nobs.
                 else

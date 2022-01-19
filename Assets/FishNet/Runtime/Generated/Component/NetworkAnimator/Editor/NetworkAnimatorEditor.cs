@@ -14,7 +14,7 @@ namespace FishNet.Component.Animating
         private SerializedProperty _smoothFloats;
         private SerializedProperty _clientAuthoritative;
         private SerializedProperty _sendToOwner;
-
+        private SerializedProperty _ignoredParameters;
 
         protected virtual void OnEnable()
         {
@@ -25,14 +25,17 @@ namespace FishNet.Component.Animating
 
             _clientAuthoritative = serializedObject.FindProperty("_clientAuthoritative");
             _sendToOwner = serializedObject.FindProperty("_sendToOwner");
+
+            _ignoredParameters = serializedObject.FindProperty("_ignoredParameters");
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+            NetworkAnimator na = (NetworkAnimator)target;
 
             GUI.enabled = false;
-            EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkAnimator)target), typeof(NetworkAnimator), false);
+            EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(na), typeof(NetworkAnimator), false);
             GUI.enabled = true;
 
             //Animator
@@ -63,7 +66,38 @@ namespace FishNet.Component.Animating
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
+            DrawParameters(na);
+
             serializedObject.ApplyModifiedProperties();
+        }
+
+
+        private void DrawParameters(NetworkAnimator na)
+        {
+            return;
+            Animator animator = na.Animator;
+            if (animator == null)
+                return;
+            if (animator.runtimeAnimatorController == null)
+                return;
+
+            //Create a parameter detail for each parameter that can be synchronized.
+            foreach (AnimatorControllerParameter item in animator.parameters)
+            {
+                int count = 0;
+                if (!animator.IsParameterControlledByCurve(item.name))
+                {
+                    count++;
+                    //Over 250 parameters; who would do this!?
+                    if (count >= 240)
+                    {
+                        Debug.LogError($"Parameter {item.name} exceeds the allowed 240 parameter count and is being ignored.");
+                        continue;
+                    }
+
+                    string parameterName = item.name;
+                }
+            }
         }
     }
 

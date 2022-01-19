@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace FishNet.Utility.Performance
@@ -14,28 +13,16 @@ namespace FishNet.Utility.Performance
         /// Stored byte arrays.
         /// </summary>
         private static Queue<byte[]> _byteArrays = new Queue<byte[]>();
-        /// <summary>
-        /// Stored concurrent byte arrays.
-        /// </summary>
-        private static ConcurrentQueue<byte[]> _concurrentByteArrays = new ConcurrentQueue<byte[]>();
 
         /// <summary>
         /// Returns a byte array which will be of at lesat minimum length. The returns array must manually be stored.
         /// </summary>
-        public static byte[] Retrieve(int minimumLength, bool useConcurrent = false)
+        public static byte[] Retrieve(int minimumLength)
         {
             byte[] result = null;
 
-            if (!useConcurrent)
-            {
-                if (_byteArrays.Count > 0)
-                    result = _byteArrays.Dequeue();
-            }
-            else
-            {
-                if (_concurrentByteArrays.Count > 0)
-                    _concurrentByteArrays.TryDequeue(out result);
-            }
+            if (_byteArrays.Count > 0)
+                result = _byteArrays.Dequeue();
 
             int doubleMinimumLength = (minimumLength * 2);
             if (result == null)
@@ -49,12 +36,9 @@ namespace FishNet.Utility.Performance
         /// <summary>
         /// Stores a byte array for re-use.
         /// </summary>
-        public static void Store(byte[] buffer, bool useConcurrent = false)
+        public static void Store(byte[] buffer)
         {
-            if (!useConcurrent)
-                _byteArrays.Enqueue(buffer);
-            else
-                _concurrentByteArrays.Enqueue(buffer);
+            _byteArrays.Enqueue(buffer);
         }
 
     }

@@ -213,6 +213,9 @@ namespace FishNet.Component.Animating
         }
         #endregion
 
+        [SerializeField, HideInInspector]
+        private List<string> _ignoredParameters = new List<string>();
+
         #region Serialized.
         /// <summary>
         /// The animator component to synchronize.
@@ -497,7 +500,7 @@ namespace FishNet.Component.Animating
                     //Over 250 parameters; who would do this!?
                     if (_parameterDetails.Count == 240)
                     {
-                        Debug.LogError($"Parameter {item.name} exceeds the allowed 250 parameter count and is being ignored.");
+                        Debug.LogError($"Parameter {item.name} exceeds the allowed 240 parameter count and is being ignored.");
                         continue;
                     }
 
