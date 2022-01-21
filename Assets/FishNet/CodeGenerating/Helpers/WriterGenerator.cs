@@ -90,6 +90,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="classTypeRef"></param>
         private MethodReference CreateNetworkBehaviourWriterMethodReference(TypeReference objectTr)
         {
+            objectTr = CodegenSession.ImportReference(objectTr.Resolve());
             //All NetworkBehaviour types will simply WriteNetworkBehaviour/ReadNetworkBehaviour.
             //Create generated reader/writer class. This class holds all generated reader/writers.
             CodegenSession.GeneralHelper.GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_CLASS_NAME, null);

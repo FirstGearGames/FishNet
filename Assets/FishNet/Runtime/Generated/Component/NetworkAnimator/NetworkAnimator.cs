@@ -10,7 +10,6 @@ using UnityEngine;
 
 namespace FishNet.Component.Animating
 {
-
     public class NetworkAnimator : NetworkBehaviour
     {
         #region Types.
@@ -213,8 +212,14 @@ namespace FishNet.Component.Animating
         }
         #endregion
 
+        #region Public.
+        /// <summary>
+        /// Parameters which will not be synchronized.
+        /// Internal use only.
+        /// </summary>
         [SerializeField, HideInInspector]
-        private List<string> _ignoredParameters = new List<string>();
+        internal List<string> IgnoredParameters = new List<string>();
+        #endregion
 
         #region Serialized.
         /// <summary>
@@ -495,7 +500,8 @@ namespace FishNet.Component.Animating
             //Create a parameter detail for each parameter that can be synchronized.
             foreach (AnimatorControllerParameter item in _animator.parameters)
             {
-                if (!_animator.IsParameterControlledByCurve(item.name))
+                bool isIgnored = (IgnoredParameters.Contains(item.name));
+                if (!isIgnored && !_animator.IsParameterControlledByCurve(item.name))
                 {
                     //Over 250 parameters; who would do this!?
                     if (_parameterDetails.Count == 240)

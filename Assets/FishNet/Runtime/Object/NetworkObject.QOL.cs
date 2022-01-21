@@ -9,6 +9,11 @@ namespace FishNet.Object
     {
         #region Public.
         /// <summary>
+        /// True if this object has been initialized on the client side.
+        /// This is set true right before client callbacks.
+        /// </summary>
+        public bool ClientInitialized { get; private set; }
+        /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
         public bool IsClient => NetworkManager.IsClient;
@@ -35,7 +40,17 @@ namespace FishNet.Object
         /// <summary>
         /// True if the local client is the owner of this object.
         /// </summary>
-        public bool IsOwner => (NetworkManager == null || !Owner.IsValid || !IsClient) ? false : (NetworkManager.ClientManager.Connection == Owner);
+        public bool IsOwner
+        {
+            get
+            {
+                if (NetworkManager == null || !Owner.IsValid || !IsClient || !ClientInitialized)
+                    return false;
+
+                return Owner.IsLocalClient;
+            }
+        }
+        
         /// <summary>
         /// 
         /// </summary>

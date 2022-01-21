@@ -1,5 +1,8 @@
 ﻿#if UNITY_EDITOR
+using FishNet.Editing;
+using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEngine;
 
 namespace FishNet.Component.Animating
@@ -7,14 +10,15 @@ namespace FishNet.Component.Animating
 
     [CustomEditor(typeof(NetworkAnimator), true)]
     [CanEditMultipleObjects]
-    public class FlexNetworkAnimatorEditor : Editor
+    public class NetworkAnimatorEditor : Editor
     {
         private SerializedProperty _animator;
         private SerializedProperty _synchronizeInterval;
         private SerializedProperty _smoothFloats;
         private SerializedProperty _clientAuthoritative;
         private SerializedProperty _sendToOwner;
-        private SerializedProperty _ignoredParameters;
+        private RuntimeAnimatorController _lastRuntimeAnimatorController;
+        private AnimatorController _lastAnimatorController;
 
         protected virtual void OnEnable()
         {
@@ -25,8 +29,6 @@ namespace FishNet.Component.Animating
 
             _clientAuthoritative = serializedObject.FindProperty("_clientAuthoritative");
             _sendToOwner = serializedObject.FindProperty("_sendToOwner");
-
-            _ignoredParameters = serializedObject.FindProperty("_ignoredParameters");
         }
 
         public override void OnInspectorGUI()
@@ -37,6 +39,8 @@ namespace FishNet.Component.Animating
             GUI.enabled = false;
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(na), typeof(NetworkAnimator), false);
             GUI.enabled = true;
+
+            EditorGUILayout.HelpBox(EditingConstants.PRO_FEATURE_MESSAGE, MessageType.Info);
 
             //Animator
             EditorGUILayout.LabelField("Animator", EditorStyles.boldLabel);
@@ -74,32 +78,99 @@ namespace FishNet.Component.Animating
 
         private void DrawParameters(NetworkAnimator na)
         {
-            return;
             Animator animator = na.Animator;
             if (animator == null)
                 return;
-            if (animator.runtimeAnimatorController == null)
-                return;
+            //if (Application.isPlaying)
+            //    return;
 
-            //Create a parameter detail for each parameter that can be synchronized.
-            foreach (AnimatorControllerParameter item in animator.parameters)
+            RuntimeAnimatorController runtimeController = animator.runtimeAnimatorController;
+            if (runtimeController == null)
             {
-                int count = 0;
-                if (!animator.IsParameterControlledByCurve(item.name))
+                na.IgnoredParameters.Clear();
+                return;
+            }
+
+            /* If runtime controller changed 
+             * or editor controller is null
+             * then get new editor controller. */
+            if (runtimeController != _lastRuntimeAnimatorController || _lastAnimatorController == null)
+                _lastAnimatorController = (AnimatorController)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(animator.runtimeAnimatorController), typeof(AnimatorController));
+            _lastRuntimeAnimatorController = runtimeController;
+
+            EditorGUILayout.LabelField("* Synchronized Parameters", EditorStyles.boldLabel);
+
+            Color defaultColor = GUI.backgroundColor;
+            float width = Screen.width;
+            float spacePerEntry = 125f;
+            //Buttons seem to be longer than spacePerEntry. Why, because who knows...
+            float extraSpaceJustBecause = 60;
+            float spacer = 20f;
+            width -= spacer;
+            int entriesPerWidth = Mathf.Max(1, Mathf.FloorToInt(width / (spacePerEntry + extraSpaceJustBecause)));
+
+            List<AnimatorControllerParameter> aps = new List<AnimatorControllerParameter>();
+            //Create a parameter detail for each parameter that can be synchronized.
+            int count = 0;
+            foreach (AnimatorControllerParameter item in _lastAnimatorController.parameters)
+            {
+                count++;
+                //Over 240 parameters; who would do this!?
+                if (count >= 240)
+                    continue;
+
+                aps.Add(item);
+            }
+
+            int apsCount = aps.Count;
+            for (int i = 0; i < apsCount; i++)
+            {
+                using (GUILayout.HorizontalScope hs = new GUILayout.HorizontalScope())
                 {
-                    count++;
-                    //Over 250 parameters; who would do this!?
-                    if (count >= 240)
+                    GUILayout.Space(spacer);
+                    int z = 0;
+                    while (z < entriesPerWidth && (z + i < apsCount))
                     {
-                        Debug.LogError($"Parameter {item.name} exceeds the allowed 240 parameter count and is being ignored.");
-                        continue;
+                        //If this z+i would exceed entries then break.
+                        if (z + i >= apsCount)
+                            break;
+
+                        AnimatorControllerParameter item = aps[i + z];
+                        string parameterName = item.name;
+                        bool ignored = na.IgnoredParameters.Contains(parameterName);
+
+                        Color c = (ignored) ? Color.gray : Color.green;
+                        GUI.backgroundColor = c;
+                        if (GUILayout.Button(item.name, GUILayout.Width(spacePerEntry)))
+                        {
+                            if (Application.isPlaying)
+                            {
+                                Debug.Log("Synchronized parameters may not be changed while playing.");
+                            }
+                            else
+                            {
+                                if (ignored)
+                                    na.IgnoredParameters.Remove(parameterName);
+                                else
+                                    na.IgnoredParameters.Add(parameterName);
+                            }
+                        }
+
+                        z++;
                     }
 
-                    string parameterName = item.name;
+                    i += (z - 1);
                 }
+
+                GUI.backgroundColor = defaultColor;
             }
         }
+
+
+
     }
 
 }
+
+
 #endif

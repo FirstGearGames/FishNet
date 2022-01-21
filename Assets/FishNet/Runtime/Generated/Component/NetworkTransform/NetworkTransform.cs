@@ -224,6 +224,10 @@ namespace FishNet.Component.Transforming
 
         #region Private.
         /// <summary>
+        /// Datas to move towards.
+        /// </summary>
+        private Queue<GoalData> _goalDataQueue = new Queue<GoalData>();
+        /// <summary>
         /// NetworkBehaviour this transform is a child of.
         /// </summary>
         private NetworkBehaviour _parentBehaviour;
@@ -268,8 +272,6 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private TransformData _lastReceivedTransformData;
         #endregion
-
-        private Queue<GoalData> _goalDataQueue = new Queue<GoalData>();
 
         private void OnDisable()
         {
@@ -728,7 +730,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void MoveToTarget(float deltaOverride = -1f)
         {
-            if (!_queueReady && _currentGoalData.Transforms.ExtrapolationState != TransformData.ExtrapolateState.Active)
+            if (!_queueReady)// && _currentGoalData.Transforms.ExtrapolationState == TransformData.ExtrapolateState.Disabled)
                 return;
             //Cannot move if neither is active.
             if (!base.IsServer && !base.IsClient)
@@ -808,14 +810,26 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-                    _queueReady = false;
                     //Can extrapolate.
                     if (td.ExtrapolationState == TransformData.ExtrapolateState.Available)
                     {
-                        rd.TimeRemaining = (_extrapolation * base.TimeManager.TickRate);
+                        rd.TimeRemaining = (float)(_extrapolation * base.TimeManager.TickDelta);
                         td.ExtrapolationState = TransformData.ExtrapolateState.Active;
                         if (leftOver > 0f)
                             MoveToTarget(leftOver);
+                    }
+                    //Ran out of extrapolate.
+                    else if (td.ExtrapolationState == TransformData.ExtrapolateState.Active)
+                    {
+                        rd.TimeRemaining = (float)(_extrapolation * base.TimeManager.TickDelta);
+                        td.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
+                        if (leftOver > 0f)
+                            MoveToTarget(leftOver);
+                    }
+                    //Extrapolation has ended or was never enabled.
+                    else
+                    {
+                        _queueReady = false;
                     }
                 }
             }
@@ -1057,7 +1071,7 @@ namespace FishNet.Component.Transforming
              * and the distance of change woudl also be 0; this prevents
              * the NT from moving. Only need to compare data if channel is reliable. */
             ref TransformData td = ref nextGoalData.Transforms;
-            if (channel == Channel.Reliable && !HasChanged(ref prevTransformData,ref td, ref changedFull))
+            if (channel == Channel.Reliable && !HasChanged(ref prevTransformData, ref td, ref changedFull))
                 return;
 
             //How much time has passed between last update and current.
@@ -1181,12 +1195,17 @@ namespace FishNet.Component.Transforming
         }
         #endregion       
 
+        /// <summary>
+        /// Sets extrapolation data for next.
+        /// </summary>
         private void SetExtrapolation(ref TransformData prev, ref TransformData next, Channel channel)
         {
-            if (channel == Channel.Reliable)
+            if (_extrapolation == 0 || channel == Channel.Reliable
+                || next.Position == prev.Position)
+            {
                 next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
-            if (next.Position == prev.Position)
                 return;
+            }
 
             Vector3 offet = (next.Position - prev.Position) * _extrapolation;
             next.ExtrapolatedPosition = (next.Position + offet);
@@ -1249,24 +1268,21 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void DataReceived(ArraySegment<byte> data, Channel channel, bool asServer)
         {
-            TransformData lastTd = _lastReceivedTransformData;
             //Tick from last goal data.
-            uint lastTick = lastTd.Tick;
+            uint lastTick = _lastReceivedTransformData.Tick;
             ChangedFull changedFull = ChangedFull.Unset;
 
             GoalData gd = new GoalData();
             ref TransformData td = ref gd.Transforms;
-            UpdateTransformData(data, ref lastTd, ref td, ref changedFull);
-            SetExtrapolation(ref lastTd, ref td, channel);
+            UpdateTransformData(data, ref _lastReceivedTransformData, ref td, ref changedFull);
+            SetExtrapolation(ref _lastReceivedTransformData, ref td, channel);
             //If server only teleport.
             if (asServer && !base.IsClient)
                 SetInstantRates(ref gd.Rates);
             //Otherwise use timed.
             else
-                SetCalculatedRates(lastTick, ref lastTd, ref gd, changedFull, channel);
+                SetCalculatedRates(lastTick, ref _lastReceivedTransformData, ref gd, changedFull, channel);
             SnapProperties(ref td);
-
-            _lastReceivedTransformData.Update(ref td);
 
             /* If channel is reliable then this is a settled packet.
              * Reset last received tick so next starting move eases
@@ -1274,26 +1290,36 @@ namespace FishNet.Component.Transforming
             if (channel == Channel.Reliable)
                 td.Tick = 0;
 
-            lastTd.Update(ref td);
+            _lastReceivedTransformData.Update(ref td);
 
             gd.SetIsDefault(false);
             gd.ReceivedTick = base.TimeManager.LocalTick;
-            if (!_currentGoalData.IsDefault)
-                _goalDataQueue.Enqueue(gd);
-            else
-                _currentGoalData = gd;
 
             /* If extrapolating then immediately break the extrapolation
-             * in favor of newest results. This will bypass
-             * rebuilding the buffer but for now it will do. */
+            * in favor of newest results. This will keep the buffer
+            * at 0 until the transform settles but the only other option is
+            * to stop the movement, which would defeat purpose of extrapolation,
+            * or slow down the transform while buffer rebuilds. Neither choice
+            * is great but later on I might try slowing down the transform slightly
+            * to give the buffer a chance to rebuild. */
             if (_currentGoalData.Transforms.ExtrapolationState == TransformData.ExtrapolateState.Active)
             {
-                _currentGoalData = gd;
                 _queueReady = true;
+                _currentGoalData = gd;
             }
+            /* If queue isn't started and its buffered enough
+             * to satisfy interpolation then set ready
+             * and set current data. */
             else if (!_queueReady && _goalDataQueue.Count >= _interpolation)
             {
                 _queueReady = true;
+                _currentGoalData = _goalDataQueue.Dequeue();
+            }
+            /* If here then there's not enough in buffer to begin
+             * so add onto the buffer. */
+            else
+            {
+                _goalDataQueue.Enqueue(gd);
             }
         }
 

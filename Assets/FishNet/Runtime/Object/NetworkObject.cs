@@ -8,6 +8,7 @@ using FishNet.Managing.Timing;
 using FishNet.Utility;
 using System.Collections.Generic;
 using FishNet.Utility.Performance;
+using System.Runtime.CompilerServices;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -21,7 +22,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if this NetworkObject was active during edit. Will be true if placed in scene during edit, and was in active state on run.
         /// </summary>
-        internal bool ActiveDuringEdit = false;
+        internal bool ActiveDuringEdit;
         /// <summary>
         /// Returns if this object was placed in the scene during edit-time.
         /// </summary>
@@ -173,6 +174,7 @@ namespace FishNet.Object
         /// PreInitializes this script.
         /// </summary>
         /// <param name="networkManager"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void PreInitialize(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
             Deinitializing = false;
@@ -330,6 +332,7 @@ namespace FishNet.Object
         /// Gives ownership to newOwner.
         /// </summary>
         /// <param name="newOwner"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void GiveOwnership(NetworkConnection newOwner, bool asServer)
         {
             /* Additional asServer checks. */
