@@ -20,6 +20,7 @@ namespace FishNet.CodeGenerating.Processing
         #region Reflection references.
         private MethodReference SyncVarExtensions_Dirty_MethodRef;
         private MethodReference SyncBase_Dirty_MethodRef;
+        private TypeDefinition SyncBase_TypeDef;
         #endregion
 
         #region Private.
@@ -48,6 +49,7 @@ namespace FishNet.CodeGenerating.Processing
         internal bool ImportReferences()
         {
             System.Type syncBaseType = typeof(SyncBase);
+            SyncBase_TypeDef = CodegenSession.ImportReference(syncBaseType).Resolve();
             foreach (System.Reflection.MethodInfo mi in syncBaseType.GetMethods())
             {
                 if (mi.Name == nameof(SyncBase.Dirty))
@@ -81,7 +83,6 @@ namespace FishNet.CodeGenerating.Processing
             {
                 CustomAttribute syncAttribute;
                 SyncType st = GetSyncType(fd, true, out syncAttribute);
-
                 //Not a sync type field.
                 if (st == SyncType.Unset)
                     continue;
@@ -153,15 +154,19 @@ namespace FishNet.CodeGenerating.Processing
         internal SyncType GetSyncType(FieldDefinition fieldDef, bool validate, out CustomAttribute syncAttribute)
         {
             syncAttribute = null;
+            //If the generated field for syncvars ignore it.
             if (fieldDef.Name.StartsWith(SYNCVAR_PREFIX))
                 return SyncType.Unset;
 
             bool syncObject;
-            syncAttribute = GetSyncTypeAttribute(fieldDef, out syncObject);
+            bool error;
+            syncAttribute = GetSyncTypeAttribute(fieldDef, out syncObject, out error);
+            //Do not perform further checks if an error occurred.
+            if (error)
+                return SyncType.Unset;
             /* If if attribute is null the code must progress
              * to throw errors when user creates a sync type
              * without using the attribute. */
-
             if (!validate)
             {
                 return (syncAttribute == null) ? SyncType.Unset : SyncType.Custom;
@@ -174,8 +179,12 @@ namespace FishNet.CodeGenerating.Processing
                  * should exist. */
                 if (syncAttribute == null)
                 {
-                    if (fieldDef.FieldType.CachedResolve().GetLastBaseClass().ImplementsInterface<ISyncType>())
+                    //   if (fieldDef.Name == "_test")
+                    //Debug.Log("Checking " + fieldDef.FieldType.CachedResolve().GetLastBaseClass().Name);
+                    TypeDefinition foundSyncBaseTd = fieldDef.FieldType.CachedResolve().GetClassInInheritance(SyncBase_TypeDef);
+                    if (foundSyncBaseTd != null && foundSyncBaseTd.ImplementsInterface<ISyncType>())
                         CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} is a SyncType but is missing the [SyncVar] or [SyncObject] attribute.");
+                        
                     return SyncType.Unset;
                 }
                 
@@ -394,11 +403,11 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="fieldDef"></param>
         /// <returns></returns>
-        private CustomAttribute GetSyncTypeAttribute(FieldDefinition fieldDef, out bool syncObject)
+        private CustomAttribute GetSyncTypeAttribute(FieldDefinition fieldDef, out bool syncObject, out bool error)
         {
             CustomAttribute foundAttribute = null;
             //Becomes true if an error occurred during this process.
-            bool error = false;
+            error = false;
             syncObject = false;
 
             foreach (CustomAttribute customAttribute in fieldDef.CustomAttributes)

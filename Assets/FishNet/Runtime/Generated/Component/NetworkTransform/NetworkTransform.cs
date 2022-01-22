@@ -78,22 +78,27 @@ namespace FishNet.Component.Transforming
             Z4 = 32,
             Nested = 64
         }
-        private struct GoalData
+        private class GoalData
         {
             public uint ReceivedTick;
             public bool IsDefault { get; private set; }
-            public RateData Rates;
-            public TransformData Transforms;
+            public RateData Rates = new RateData();
+            public TransformData Transforms = new TransformData();
 
+            public GoalData() { }
+            public void Reset()
+            {
+                ReceivedTick = 0;
+                IsDefault = false;
+                Transforms.Reset();
+                Rates.Reset();
+            }
             public void SetIsDefault(bool value)
             {
                 IsDefault = value;
             }
         }
-        private GoalData _currentGoalData = new GoalData();
-        private bool _queueReady = false;
-
-        private struct RateData
+        private class RateData
         {
             public float Position;
             public float Rotation;
@@ -102,6 +107,22 @@ namespace FishNet.Component.Transforming
             public bool AbnormalRateDetected;
             public float TimeRemaining;
 
+            public RateData() { }
+
+            public void Reset()
+            {
+                Position = 0f;
+                Rotation = 0f;
+                Scale = 0f;
+                LastUnalteredPositionRate = 0f;
+                AbnormalRateDetected = false;
+                TimeRemaining = 0f;
+            }
+
+            public void Update(RateData rd)
+            {
+                Update(rd.Position, rd.Rotation, rd.Scale, rd.LastUnalteredPositionRate, rd.AbnormalRateDetected, rd.TimeRemaining);
+            }
 
             /// <summary>
             /// Updates rates.
@@ -117,13 +138,13 @@ namespace FishNet.Component.Transforming
             }
         }
 
-        private struct TransformData
+        private class TransformData
         {
-            public enum ExtrapolateState
+            public enum ExtrapolateState : byte
             {
-                Disabled,
-                Available,
-                Active
+                Disabled = 0,
+                Available = 1,
+                Active = 2
             }
             public uint Tick;
             public Vector3 Position;
@@ -132,8 +153,19 @@ namespace FishNet.Component.Transforming
             public Vector3 ExtrapolatedPosition;
             public ExtrapolateState ExtrapolationState;
             public NetworkBehaviour ParentBehaviour;
+            public TransformData() { }
 
-            public void Update(ref TransformData copy)
+            public void Reset()
+            {
+                Tick = 0;
+                Position = Vector3.zero;
+                Rotation = Quaternion.identity;
+                Scale = Vector3.zero;
+                ExtrapolatedPosition = Vector3.zero;
+                ExtrapolationState = ExtrapolateState.Disabled;
+                ParentBehaviour = null;
+            }
+            public void Update(TransformData copy)
             {
                 Update(copy.Tick, copy.Position, copy.Rotation, copy.Scale, copy.ExtrapolatedPosition, copy.ParentBehaviour);
             }
@@ -224,10 +256,6 @@ namespace FishNet.Component.Transforming
 
         #region Private.
         /// <summary>
-        /// Datas to move towards.
-        /// </summary>
-        private Queue<GoalData> _goalDataQueue = new Queue<GoalData>();
-        /// <summary>
         /// NetworkBehaviour this transform is a child of.
         /// </summary>
         private NetworkBehaviour _parentBehaviour;
@@ -266,12 +294,33 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Last TransformData to be sent.
         /// </summary>
-        private TransformData _lastSentTransformData;
+        private TransformData _lastSentTransformData = new TransformData();
         /// <summary>
         /// Last TransformData to be received.
         /// </summary>
-        private TransformData _lastReceivedTransformData;
+        private TransformData _lastReceivedTransformData = new TransformData();
+        /// <summary>
+        /// Last RateData to be calculated from LastReceivedTransformData.
+        /// </summary>
+        private RateData _lastCalculatedRateData = new RateData();
+        /// <summary>
+        /// GoalDatas to move towards.
+        /// </summary>
+        private Queue<GoalData> _goalDataQueue = new Queue<GoalData>();
+        /// <summary>
+        /// Current GoalData being used.
+        /// </summary>
+        private GoalData _currentGoalData = new GoalData();
+        /// <summary>
+        /// True if queue can be read. While true objects will move to CurrentGoalData.
+        /// </summary>
+        private bool _queueReady = false;
+        /// <summary>
+        /// Cache of GoalDatas to prevent allocations.
+        /// </summary>
+        private static Stack<GoalData> _goalDataCache = new Stack<GoalData>();
         #endregion
+
 
         private void OnDisable()
         {
@@ -292,6 +341,27 @@ namespace FishNet.Component.Transforming
              * ticks or send non-auth/non-owner to
              * clients in tick. */
             ChangeTickSubscription(true);
+        }
+
+        public override void OnSpawnServer(NetworkConnection connection)
+        {
+            base.OnSpawnServer(connection);
+            if (_synchronizeParent)
+            {
+                /* Can send under the following conditions.
+                 *  Client auth and not owner. No need to send parent changes to owner when client auth.
+                 *  
+                 *  Not client auth and send to owner. Everyone will get changes in this scenario.
+                 * 
+                 *  Not client auth, not send to owner, and not owner.
+                 *      This should send to everyone but owner.
+                 */
+                bool canSend = (_clientAuthoritative && connection != base.Owner) ||
+                    (!_clientAuthoritative && _sendToOwner) ||
+                    (!_clientAuthoritative && !_sendToOwner && connection != Owner);
+                if (canSend)
+                    TargetSetParent(connection, _parentBehaviour);
+            }
         }
 
         public override void OnStartClient()
@@ -400,14 +470,14 @@ namespace FishNet.Component.Transforming
             Transform t = transform;
             NetworkBehaviour parentBehaviour = null;
             //If there is a parent try to output the behaviour on it.
-            if (transform.parent != null)
+            if (_synchronizeParent && transform.parent != null)
             {
                 transform.parent.TryGetComponent<NetworkBehaviour>(out parentBehaviour);
                 if (parentBehaviour == null)
                     LogInvalidParent();
             }
             _lastReceivedTransformData.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, parentBehaviour);
-            SetInstantRates(ref _currentGoalData.Rates);
+            SetInstantRates(_currentGoalData.Rates);
             _currentGoalData.SetIsDefault(true);
         }
 
@@ -579,7 +649,7 @@ namespace FishNet.Component.Transforming
         /// Deerializes a received packet.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void DeserializePacket(ArraySegment<byte> data, ref TransformData prevTransformData, ref TransformData nextTransformData, ref ChangedFull changedFull)
+        private void DeserializePacket(ArraySegment<byte> data, TransformData prevTransformData, TransformData nextTransformData, ref ChangedFull changedFull)
         {
             using (PooledReader r = ReaderPool.GetReader(data, base.NetworkManager))
             {
@@ -730,7 +800,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void MoveToTarget(float deltaOverride = -1f)
         {
-            if (!_queueReady)// && _currentGoalData.Transforms.ExtrapolationState == TransformData.ExtrapolateState.Disabled)
+            if (!_queueReady)
                 return;
             //Cannot move if neither is active.
             if (!base.IsServer && !base.IsClient)
@@ -752,14 +822,17 @@ namespace FishNet.Component.Transforming
              * Any checks which would stop it from moving be it client
              * auth and owner, or server controlled and server, ect,
              * would have already been run. */
-            ref TransformData td = ref _currentGoalData.Transforms;
-            ref RateData rd = ref _currentGoalData.Rates;
+            TransformData td = _currentGoalData.Transforms;
+            RateData rd = _currentGoalData.Rates;
 
             //Set parent.
-            if (td.ParentBehaviour != null)
-                transform.SetParent(td.ParentBehaviour.transform);
-            else
-                transform.SetParent(null);
+            if (_synchronizeParent)
+            {
+                if (td.ParentBehaviour != null)
+                    transform.SetParent(td.ParentBehaviour.transform);
+                else
+                    transform.SetParent(null);
+            }
 
             float multiplier = 1f;
             int queueCount = _goalDataQueue.Count;
@@ -803,6 +876,8 @@ namespace FishNet.Component.Transforming
                 //If more in buffer then run next buffer.
                 if (queueCount > 0)
                 {
+                    _currentGoalData.Reset();
+                    _goalDataCache.Push(_currentGoalData);
                     _currentGoalData = _goalDataQueue.Dequeue();
                     if (leftOver > 0f)
                         MoveToTarget(leftOver);
@@ -829,7 +904,13 @@ namespace FishNet.Component.Transforming
                     //Extrapolation has ended or was never enabled.
                     else
                     {
-                        _queueReady = false;
+                        /* If everything matches up then end queue.
+                        * Otherwise let it play out until stuff
+                        * aligns. Generally the time remaining is enough
+                        * but every once in awhile something goes funky
+                        * and it's thrown off. */
+                        if (!HasChanged(td))
+                            _queueReady = false;
                     }
                 }
             }
@@ -858,7 +939,7 @@ namespace FishNet.Component.Transforming
             //Sending server transform state.
             else
             {
-                ChangedDelta changed = GetChanged(ref _lastSentTransformData);
+                ChangedDelta changed = GetChanged(_lastSentTransformData);
 
                 //If no change.
                 if (changed == ChangedDelta.Unset)
@@ -905,7 +986,7 @@ namespace FishNet.Component.Transforming
             //Channel to send on.
             Channel channel = Channel.Unreliable;
             //Values changed since last check.
-            ChangedDelta changed = GetChanged(ref _lastSentTransformData);
+            ChangedDelta changed = GetChanged(_lastSentTransformData);
 
             //If no change.
             if (changed == ChangedDelta.Unset)
@@ -940,10 +1021,20 @@ namespace FishNet.Component.Transforming
 
         #region GetChanged.
         /// <summary>
+        /// Returns if the transform differs from td.
+        /// </summary>
+        private bool HasChanged(TransformData td)
+        {
+            bool changed = (td.Position != transform.localPosition ||
+                td.Rotation != transform.localRotation ||
+                td.Scale != transform.localScale);
+
+            return changed;
+        }
+        /// <summary>
         /// Returns if there is any change between two datas.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HasChanged(ref TransformData a, ref TransformData b, ref ChangedFull changedFull)
+        private bool HasChanged(TransformData a, TransformData b, ref ChangedFull changedFull)
         {
             bool hasChanged = false;
 
@@ -974,7 +1065,7 @@ namespace FishNet.Component.Transforming
         /// Gets transform values that have changed against goalData.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ChangedDelta GetChanged(ref TransformData transformData)
+        private ChangedDelta GetChanged(TransformData transformData)
         {
             return GetChanged(ref transformData.Position, ref transformData.Rotation, ref transformData.Scale, transformData.ParentBehaviour);
         }
@@ -1026,7 +1117,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Snaps transform properties using snapping settings.
         /// </summary>
-        private void SnapProperties(ref TransformData transformData)
+        private void SnapProperties(TransformData transformData)
         {
             Transform t = transform;
             //Position.
@@ -1053,7 +1144,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets move rates which will occur instantly.
         /// </summary>
-        private void SetInstantRates(ref RateData rd)
+        private void SetInstantRates(RateData rd)
         {
             rd.Update(-1f, -1f, -1f, -1f, false, -1f);
         }
@@ -1062,7 +1153,7 @@ namespace FishNet.Component.Transforming
         /// Sets move rates which will occur over time.
         /// </summary>
         // 
-        private void SetCalculatedRates(uint lastTick, ref TransformData prevTransformData, ref GoalData nextGoalData, ChangedFull changedFull, Channel channel)
+        private void SetCalculatedRates(uint lastTick, RateData prevRateData, TransformData prevTransformData, GoalData nextGoalData, ChangedFull changedFull, bool forServer, Channel channel)
         {
             /* Only update rates if data has changed.
              * When data comes in reliably for eventual consistency
@@ -1070,9 +1161,12 @@ namespace FishNet.Component.Transforming
              * unreliable packet. When this happens no change has occurred
              * and the distance of change woudl also be 0; this prevents
              * the NT from moving. Only need to compare data if channel is reliable. */
-            ref TransformData td = ref nextGoalData.Transforms;
-            if (channel == Channel.Reliable && !HasChanged(ref prevTransformData, ref td, ref changedFull))
+            TransformData td = nextGoalData.Transforms;
+            if (channel == Channel.Reliable && !HasChanged(prevTransformData, td, ref changedFull))
+            {
+                nextGoalData.Rates.Update(prevRateData);
                 return;
+            }
 
             //How much time has passed between last update and current.
             if (lastTick == 0)
@@ -1087,7 +1181,7 @@ namespace FishNet.Component.Transforming
             float rotationRate;
             float scaleRate;
 
-            ref RateData rd = ref nextGoalData.Rates;
+            RateData rd = nextGoalData.Rates;
             //Correction to apply towards rates when a rate change is detected as abnormal.
             float abnormalCorrection = 1f;
             bool abnormalRateDetected = false;
@@ -1101,7 +1195,7 @@ namespace FishNet.Component.Transforming
                 //If distance teleports assume rest do.
                 if (_enableTeleport && distance >= _teleportThreshold)
                 {
-                    SetInstantRates(ref rd);
+                    SetInstantRates(rd);
                     return;
                 }
 
@@ -1154,6 +1248,7 @@ namespace FishNet.Component.Transforming
                     }
                 }
 
+                abnormalCorrection = 1f;
                 positionRate = (unalteredPositionRate * abnormalCorrection);
             }
             else
@@ -1195,13 +1290,10 @@ namespace FishNet.Component.Transforming
         }
         #endregion       
 
-        /// <summary>
-        /// Sets extrapolation data for next.
-        /// </summary>
-        private void SetExtrapolation(ref TransformData prev, ref TransformData next, Channel channel)
+        private void SetExtrapolation(TransformData prev, TransformData next, Channel channel)
         {
-            if (_extrapolation == 0 || channel == Channel.Reliable
-                || next.Position == prev.Position)
+            if (_extrapolation == 0 || channel == Channel.Reliable ||
+                next.Position == prev.Position)
             {
                 next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
                 return;
@@ -1268,32 +1360,36 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void DataReceived(ArraySegment<byte> data, Channel channel, bool asServer)
         {
-            //Tick from last goal data.
-            uint lastTick = _lastReceivedTransformData.Tick;
-            ChangedFull changedFull = ChangedFull.Unset;
+            TransformData prevTd = _lastReceivedTransformData;
+            RateData prevRd = _lastCalculatedRateData;
+            ChangedFull changedFull = new ChangedFull();
 
-            GoalData gd = new GoalData();
-            ref TransformData td = ref gd.Transforms;
-            UpdateTransformData(data, ref _lastReceivedTransformData, ref td, ref changedFull);
-            SetExtrapolation(ref _lastReceivedTransformData, ref td, channel);
+            GoalData nextGd = GetCachedGoalData();
+            TransformData nextTd = nextGd.Transforms;
+            UpdateTransformData(data, prevTd, nextTd, ref changedFull);
+            SetExtrapolation(prevTd, nextTd, channel);
+
             //If server only teleport.
             if (asServer && !base.IsClient)
-                SetInstantRates(ref gd.Rates);
+                SetInstantRates(nextGd.Rates);
             //Otherwise use timed.
             else
-                SetCalculatedRates(lastTick, ref _lastReceivedTransformData, ref gd, changedFull, channel);
-            SnapProperties(ref td);
+                SetCalculatedRates(prevTd.Tick, prevRd, prevTd, nextGd, changedFull, true, channel);
+            SnapProperties(nextTd);
+
+            _lastReceivedTransformData.Update(nextTd);
 
             /* If channel is reliable then this is a settled packet.
              * Reset last received tick so next starting move eases
              * in. */
             if (channel == Channel.Reliable)
-                td.Tick = 0;
+                nextTd.Tick = 0;
 
-            _lastReceivedTransformData.Update(ref td);
+            prevTd.Update(nextTd);
+            prevRd.Update(nextGd.Rates);
 
-            gd.SetIsDefault(false);
-            gd.ReceivedTick = base.TimeManager.LocalTick;
+            nextGd.SetIsDefault(false);
+            nextGd.ReceivedTick = base.TimeManager.LocalTick;
 
             /* If extrapolating then immediately break the extrapolation
             * in favor of newest results. This will keep the buffer
@@ -1305,32 +1401,83 @@ namespace FishNet.Component.Transforming
             if (_currentGoalData.Transforms.ExtrapolationState == TransformData.ExtrapolateState.Active)
             {
                 _queueReady = true;
-                _currentGoalData = gd;
+                _currentGoalData = nextGd;
             }
             /* If queue isn't started and its buffered enough
              * to satisfy interpolation then set ready
-             * and set current data. */
-            else if (!_queueReady && _goalDataQueue.Count >= _interpolation)
+             * and set current data.
+             * 
+             * Also if reliable then begin moving. */
+            else if (!_queueReady && _goalDataQueue.Count >= _interpolation
+                || channel == Channel.Reliable)
             {
                 _queueReady = true;
-                _currentGoalData = _goalDataQueue.Dequeue();
+                if (_goalDataQueue.Count > 0)
+                    _currentGoalData = _goalDataQueue.Dequeue();
+                else
+                    _currentGoalData = nextGd;
             }
             /* If here then there's not enough in buffer to begin
              * so add onto the buffer. */
             else
             {
-                _goalDataQueue.Enqueue(gd);
+                _goalDataQueue.Enqueue(nextGd);
             }
+        }
+
+        /// <summary>
+        /// Immediately sets the parent of this NetworkTransform for a single connection.
+        /// </summary>
+        [TargetRpc]
+        private void TargetSetParent(NetworkConnection conn, NetworkBehaviour parent)
+        {
+            /* Same checks on sending end, just making sure
+             * something hasn't changed since packet was sent. */
+            if (!_synchronizeParent)
+                return;
+
+            /* Can be received if
+             *  Client auth and not owner. 
+             * 
+             *  Server auth and send to owner, since all clients should get this.
+             *  
+             *  Server auth, dont send to owner, and not owner.
+             */ 
+            bool canReceive = (_clientAuthoritative && !base.IsOwner) ||
+                (!_clientAuthoritative && _sendToOwner) ||
+                (!_clientAuthoritative && !_sendToOwner && !base.IsOwner);
+
+            if (!canReceive)
+                return;
+
+            _parentBehaviour = parent;
+            _lastReceivedTransformData.ParentBehaviour = parent;
+
+            if (parent != null)
+                transform.SetParent(parent.transform);
+            else
+                transform.SetParent(null);
         }
 
         /// <summary>
         /// Updates a TransformData from packetData.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdateTransformData(ArraySegment<byte> packetData, ref TransformData prevTransformData, ref TransformData nextTransformData, ref ChangedFull changedFull)
+        private void UpdateTransformData(ArraySegment<byte> packetData, TransformData prevTransformData, TransformData nextTransformData, ref ChangedFull changedFull)
         {
-            DeserializePacket(packetData, ref prevTransformData, ref nextTransformData, ref changedFull);
+            DeserializePacket(packetData, prevTransformData, nextTransformData, ref changedFull);
             nextTransformData.Tick = base.TimeManager.LastPacketTick;
+        }
+
+        /// <summary>
+        /// Returns a GoalData from the cache.
+        /// </summary>
+        /// <returns></returns>
+        private GoalData GetCachedGoalData()
+        {
+            GoalData result = (_goalDataCache.Count > 0) ? _goalDataCache.Pop() : new GoalData();
+            result.Reset();
+            return result;
         }
     }
 

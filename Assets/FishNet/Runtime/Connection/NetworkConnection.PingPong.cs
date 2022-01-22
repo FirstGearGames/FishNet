@@ -50,7 +50,13 @@ namespace FishNet.Connection
         /// <returns>True to respond to ping, false to kick connection.</returns>
         internal bool CanPingPong()
         {
-            uint currentTick = InstanceFinder.TimeManager.Tick;
+            /* Only check ping conditions in build. Editors are prone to pausing which can
+             * improperly kick clients. */
+#if UNITY_EDITOR
+            return true;
+#else
+            TimeManager tm = (NetworkManager == null) ? InstanceFinder.TimeManager : NetworkManager.TimeManager;
+            uint currentTick = tm.Tick;
             uint difference = (currentTick - _lastPingTick);
             _lastPingTick = currentTick;
 
@@ -75,6 +81,7 @@ namespace FishNet.Connection
                 _excessivePingCount = Mathf.Max(0f, _excessivePingCount - 0.5f);
                 return true;
             }
+#endif
         }
     }
 

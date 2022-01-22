@@ -104,7 +104,7 @@ namespace FishNet.Object
                      * being opened then cancel build and request user to open and save
                      * scene. */
                     if (BuildPipeline.isBuildingPlayer)
-                        throw new InvalidOperationException($"Scene {gameObject.scene.path} needs to be opened and resaved before building, because the scene object {gameObject.name} has no valid sceneId yet.");
+                        throw new InvalidOperationException($"Networked GameObject {gameObject.name} in scene {gameObject.scene.path} is missing a SceneId. Open the scene, select the Fish-Networking menu, and choose Rebuild SceneIds. If the problem persist ensures {gameObject.name} does not have any missing script references on it's prefab or in the scene. Also ensure that you have any prefab changes for the object applied.");
 
                     ulong shiftedHash = (ulong)scenePathHash << 32;
                     ulong randomId = 0;

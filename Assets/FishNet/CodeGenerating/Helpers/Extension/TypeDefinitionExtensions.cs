@@ -17,7 +17,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         internal static bool InheritsNetworkBehaviour(this TypeDefinition typeDef)
         {
             string nbFullName = CodegenSession.ObjectHelper.NetworkBehaviour_FullName;
-            
+
             TypeDefinition copyTd = typeDef;
             while (copyTd != null)
             {
@@ -75,6 +75,51 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
             return copyTd;
         }
+
+        /// <summary>
+        /// Searches for a type in current and inherited types.
+        /// </summary>
+        internal static TypeDefinition GetClassInInheritance(this TypeDefinition typeDef, string typeFullName)
+        {
+            TypeDefinition copyTd = typeDef;
+            do
+            {
+                if (copyTd.FullName == typeFullName)
+                    return copyTd;
+
+                if (copyTd.BaseType != null)
+                    copyTd = copyTd.BaseType.CachedResolve();
+                else
+                    copyTd = null;
+
+            } while (copyTd != null);
+
+            //Not found.
+            return null;
+        }
+
+        /// <summary>
+        /// Searches for a type in current and inherited types.
+        /// </summary>
+        internal static TypeDefinition GetClassInInheritance(this TypeDefinition typeDef, TypeDefinition targetTypeDef)
+        {
+            TypeDefinition copyTd = typeDef;
+            do
+            {
+                if (copyTd == targetTypeDef)
+                    return copyTd;
+
+                if (copyTd.BaseType != null)
+                    copyTd = copyTd.BaseType.CachedResolve();
+                else
+                    copyTd = null;
+
+            } while (copyTd != null);
+
+            //Not found.
+            return null;
+        }
+
 
         /// <summary>
         /// Gets the next base type for typeDef.

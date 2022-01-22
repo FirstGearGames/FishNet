@@ -189,7 +189,6 @@ namespace FishNet.Managing.Client
         {
             Objects.OnClientConnectionState(args);
 
-            string msg;
             LocalConnectionStates state = args.ConnectionState;
             Started = (state == LocalConnectionStates.Started);
 
