@@ -97,9 +97,12 @@ namespace FishNet.Editing
                     _defaultPrefabs.AddObject(nob);
             }
 
+             _defaultPrefabs.Sort();
+
+            int entriesAdded = _defaultPrefabs.GetObjectCount();
             //Only print if some were added.
-            if (log && _defaultPrefabs.GetObjectCount() > 0)
-                Debug.Log($"Default prefabs was populated with {_defaultPrefabs.GetObjectCount()} prefabs.");
+            if (log && entriesAdded > 0)
+                Debug.Log($"Default prefabs was populated with {entriesAdded} prefabs.");
 
             EditorUtility.SetDirty(_defaultPrefabs);
             return true;

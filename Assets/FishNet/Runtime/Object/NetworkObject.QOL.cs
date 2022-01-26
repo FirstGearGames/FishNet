@@ -1,5 +1,7 @@
-﻿using FishNet.Connection;
+﻿using FishNet.Component.ColliderRollback;
+using FishNet.Connection;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Timing;
 using System;
 using UnityEngine;
 
@@ -92,6 +94,14 @@ namespace FishNet.Object
         /// The local connection of the client calling this method.
         /// </summary>
         public NetworkConnection LocalConnection => (NetworkManager == null) ? new NetworkConnection() : NetworkManager.ClientManager.Connection;
+        /// <summary>
+        /// TimeManager for this object.
+        /// </summary>
+        public TimeManager TimeManager => (NetworkManager == null) ? null : NetworkManager.TimeManager;
+        /// <summary>
+        /// RollbackManager for this object.
+        /// </summary>
+        public RollbackManager RollbackManager => (NetworkManager == null) ? null : NetworkManager.RollbackManager;
         #endregion
 
         /// <summary>

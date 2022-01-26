@@ -211,7 +211,7 @@ namespace FishNet.Tugboat.Server
             if (_server == null || base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
                 return false;
 
-            base.SetConnectionState(LocalConnectionStates.Stopping, true);
+            _localConnectionStates.Enqueue(LocalConnectionStates.Stopping);
             StopSocketOnThread();
             return true;
         }

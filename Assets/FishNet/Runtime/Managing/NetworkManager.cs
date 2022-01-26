@@ -217,6 +217,7 @@ namespace FishNet.Managing
             AddTimeManager();
             AddSceneManager();
             AddObserverManager();
+            AddRollbackManager();
             InitializeComponents();
 
             _instances.Add(this);
@@ -239,6 +240,7 @@ namespace FishNet.Managing
             SceneManager.InitializeOnce(this);
             ServerManager.InitializeOnce(this);
             ClientManager.InitializeOnce(this);
+            RollbackManager.InitializeOnce(this);
         }
 
         /// <summary>
@@ -395,6 +397,7 @@ namespace FishNet.Managing
             else
                 ObserverManager = gameObject.AddComponent<ObserverManager>();
         }
+
 
         /// <summary>
         /// Adds and assigns NetworkServer and NetworkClient if they are not already setup.

@@ -1,4 +1,5 @@
-﻿using FishNet.Connection;
+﻿using FishNet.Component.ColliderRollback;
+using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Timing;
@@ -22,6 +23,10 @@ namespace FishNet.Object
         /// TimeManager for this object.
         /// </summary>
         public TimeManager TimeManager => (NetworkObject == null) ? null : NetworkObject.TimeManager;
+        /// <summary>
+        /// RollbackManager for this object.
+        /// </summary>
+        public RollbackManager RollbackManager => (NetworkObject == null) ? null : NetworkObject.RollbackManager;
         /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>

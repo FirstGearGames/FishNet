@@ -49,10 +49,6 @@ namespace FishNet.Object
         /// NetworkManager for this object.
         /// </summary>
         public NetworkManager NetworkManager { get; private set; }
-        /// <summary>
-        /// TimeManager for this object.
-        /// </summary>
-        public TimeManager TimeManager => (NetworkManager == null) ? null : NetworkManager.TimeManager;
         #endregion
 
         #region Serialized.

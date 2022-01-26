@@ -109,6 +109,21 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public uint Tick { get; private set; }
         /// <summary>
+        /// Percentage of how much into next tick the time is.
+        /// </summary>
+        public byte TickPercent
+        {
+            get
+            {
+                if (_networkManager == null)
+                    return 0;
+
+                double delta = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
+                double percent = (_elapsedTickTime / delta) * 100;
+                return (byte)Mathf.Clamp((float)percent, 0, 100);
+            }
+        }
+        /// <summary>
         /// DeltaTime for TickRate.
         /// </summary>
         [HideInInspector]
@@ -871,7 +886,7 @@ namespace FishNet.Managing.Timing
             //Don't adjust timing on server.
             if (_networkManager.IsServer)
                 return;
-
+            
             //Add half of rtt onto tick.
             uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
             Tick = ta.Tick + rttTicks;

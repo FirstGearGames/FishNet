@@ -500,8 +500,7 @@ namespace FishNet.Component.Animating
             //Create a parameter detail for each parameter that can be synchronized.
             foreach (AnimatorControllerParameter item in _animator.parameters)
             {
-                bool isIgnored = (IgnoredParameters.Contains(item.name));
-                if (!isIgnored && !_animator.IsParameterControlledByCurve(item.name))
+                if (!_animator.IsParameterControlledByCurve(item.name))
                 {
                     //Over 250 parameters; who would do this!?
                     if (_parameterDetails.Count == 240)

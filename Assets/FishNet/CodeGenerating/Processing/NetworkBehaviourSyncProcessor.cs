@@ -271,10 +271,19 @@ namespace FishNet.CodeGenerating.Processing
                 foreach (Instruction item in instructions)
                 {
                     //This token references the type.
-                    if (item.OpCode == OpCodes.Ldtoken && item.Operand is TypeDefinition td)
+                    if (item.OpCode == OpCodes.Ldtoken)                        
                     {
-                        serializedDataTypeRef = CodegenSession.ImportReference(td);
-                        canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(serializedDataTypeRef, true);
+                        TypeReference importedTr = null;
+                        if (item.Operand is TypeDefinition td)
+                            importedTr = CodegenSession.ImportReference(td);
+                        else if (item.Operand is TypeReference tr)
+                            importedTr = CodegenSession.ImportReference(tr);
+
+                        if (importedTr != null)
+                        {
+                            serializedDataTypeRef = importedTr;
+                            canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(serializedDataTypeRef, true);
+                        }
                     }
                 }
             }

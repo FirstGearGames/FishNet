@@ -199,7 +199,7 @@ namespace FishNet.Component.Transforming
         /// How many ticks to interpolate.
         /// </summary>
         [Tooltip("How many ticks to interpolate.")]
-        [Range(1, 256)]
+        [Range(1, MAX_INTERPOLATION)]
         [SerializeField]
         private ushort _interpolation = 2;
         /// <summary>
@@ -321,6 +321,13 @@ namespace FishNet.Component.Transforming
         private static Stack<GoalData> _goalDataCache = new Stack<GoalData>();
         #endregion
 
+        #region Const.
+        /// <summary>
+        /// Maximum possible interpolation value.
+        /// </summary>
+        public const ushort MAX_INTERPOLATION = 250;
+        #endregion
+
 
         private void OnDisable()
         {
@@ -428,8 +435,6 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void TimeManager_OnTick()
         {
-            UpdateParentBehaviour();
-
             if (base.IsServer)
                 SendToClients();
             if (base.IsClient)
@@ -755,43 +760,6 @@ namespace FishNet.Component.Transforming
             bool UpdateFlagBContains(UpdateFlagB whole, UpdateFlagB part)
             {
                 return (whole & part) == part;
-            }
-        }
-
-        /// <summary>
-        /// Updates the ParentBehaviour field when able to.
-        /// </summary>
-        private void UpdateParentBehaviour()
-        {
-            if (!_synchronizeParent)
-                return;
-            /* The field ParentBehaviour is only used by
-             * the sending connection. When moving the ParentBehaviour
-             * is deserialized into the TransformData, meaning the field
-             * varient is never used on connections which do not control
-             * the object. It's probably very similar in performance,
-             * possibly even more efficient to just run the parent change
-             * checks versus checking if those checks can be checked in the
-             * first place. check. */
-
-            Transform parent = transform.parent;
-            //No parent.
-            if (parent == null)
-            {
-                _parentBehaviour = null;
-                _parentTransform = null;
-            }
-            //Has a parent, see if eligible.
-            else
-            {
-                //No change.
-                if (_parentTransform == parent)
-                    return;
-
-                _parentTransform = parent;
-                parent.TryGetComponent<NetworkBehaviour>(out _parentBehaviour);
-                if (_parentBehaviour == null)
-                    LogInvalidParent();
             }
         }
 
@@ -1292,16 +1260,7 @@ namespace FishNet.Component.Transforming
 
         private void SetExtrapolation(TransformData prev, TransformData next, Channel channel)
         {
-            if (_extrapolation == 0 || channel == Channel.Reliable ||
-                next.Position == prev.Position)
-            {
-                next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
-                return;
-            }
-
-            Vector3 offet = (next.Position - prev.Position) * _extrapolation;
-            next.ExtrapolatedPosition = (next.Position + offet);
-            next.ExtrapolationState = TransformData.ExtrapolateState.Available;
+            next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
         }
         /// <summary>
         /// Updates clients with transform data.
