@@ -150,7 +150,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// How many times per second the server will simulate. This does not limit server frame rate.
         /// </summary>
-        public ushort TickRate => _tickRate;
+        public ushort TickRate { get => _tickRate; private set => _tickRate = value; }
 
 
         [Header("Prediction")]
@@ -449,18 +449,8 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void SetInitialValues()
         {
-            TickDelta = (1d / TickRate);
-            _adjustedTickDelta = TickDelta;
-            //Update every x seconds.
-            _timingAdjustmentInterval = (ushort)(TickRate * ADJUST_TIMING_INTERVAL);
-
+            SetTickRate(TickRate);
             SetAutomaticSimulation(PhysicsMode);
-
-            _clientTimingRange = new double[]
-            {
-                TickDelta * (1f - CLIENT_TIMING_PERCENT_RANGE),
-                TickDelta * (1f + CLIENT_TIMING_PERCENT_RANGE)
-            };
         }
 
         /// <summary>
@@ -886,7 +876,7 @@ namespace FishNet.Managing.Timing
             //Don't adjust timing on server.
             if (_networkManager.IsServer)
                 return;
-            
+
             //Add half of rtt onto tick.
             uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
             Tick = ta.Tick + rttTicks;
@@ -913,6 +903,23 @@ namespace FishNet.Managing.Timing
         }
         #endregion
 
+        /// <summary>
+        /// Sets the TickRate to use. This value is not synchronized, it must be set on client and server independently.
+        /// </summary>
+        /// <param name="value">New TickRate to use.</param>
+        public void SetTickRate(ushort value)
+        {
+            TickRate = value;
+            TickDelta = (1d / TickRate);
+            _adjustedTickDelta = TickDelta;
+            //Update every x seconds.
+            _timingAdjustmentInterval = (ushort)(TickRate * ADJUST_TIMING_INTERVAL);
+            _clientTimingRange = new double[]
+            {
+                TickDelta * (1f - CLIENT_TIMING_PERCENT_RANGE),
+                TickDelta * (1f + CLIENT_TIMING_PERCENT_RANGE)
+            };
+        }
 
         #region UNITY_EDITOR
         private void OnValidate()

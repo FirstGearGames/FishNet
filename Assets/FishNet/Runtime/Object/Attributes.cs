@@ -16,6 +16,10 @@ namespace FishNet.Object
         /// True to only allow the owning client to call this RPC.
         /// </summary>
         public bool RequireOwnership = true;
+        /// <summary>
+        /// True to also run the RPC logic locally.
+        /// </summary>
+        public bool RunLocally = false;
     }
 
     /// <summary>
@@ -33,13 +37,23 @@ namespace FishNet.Object
         /// RPC will be sent on the same channel as the original RPC, and immediately before the OnSpawnServer override.
         /// </summary>
         public bool BufferLast = false;
+        /// <summary>
+        /// True to also run the RPC logic locally.
+        /// </summary>
+        public bool RunLocally = false;
     }
 
     /// <summary>
     /// TargetRpc methods will send messages to a single client.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class TargetRpcAttribute : Attribute { }
+    public class TargetRpcAttribute : Attribute 
+    {
+        /// <summary>
+        /// True to also run the RPC logic locally.
+        /// </summary>
+        public bool RunLocally = false;
+    }
 
     /// <summary>
     /// Prevents a method from running if server is not active.

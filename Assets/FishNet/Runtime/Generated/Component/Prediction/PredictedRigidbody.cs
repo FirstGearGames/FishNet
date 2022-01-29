@@ -34,7 +34,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         [Tooltip("How much to predict movement. A Value of 1f will result in this object moving at the same rate as it's last known value. A value of 0f will disable the prediction.")]
         [Range(0f, 1f)]
-        [SerializeField]
+        //[SerializeField]
         private float _predictionRatio = 0.9f;
         #endregion
 
@@ -123,7 +123,7 @@ namespace FishNet.Component.Prediction
 
             if (CanPredict())
             {
-                _predictedTicks++;
+                //_predictedTicks++;
                 PredictVelocity(gameObject.scene.GetPhysicsScene());
             }
         }
@@ -134,6 +134,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void InitializeOnce()
         {
+            _predictionRatio = 1f;
             _rigidbody = GetComponent<Rigidbody>();
         }
 

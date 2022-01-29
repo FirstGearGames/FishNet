@@ -362,7 +362,7 @@ namespace FishNet.Managing.Server
             //If over MTU kick client immediately.
             if (segment.Count > channelMtu)
             {
-                NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                ExceededMTUKick();
                 return;
             }
 
@@ -385,7 +385,7 @@ namespace FishNet.Managing.Server
                      * they exceeded MTU. This immediately results in a kick. */
                     if (LimitClientMTU)
                     {
-                        NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                        ExceededMTUKick();
                         return;
                     }
 
@@ -399,11 +399,11 @@ namespace FishNet.Managing.Server
                          * This is a quick way to kick the client without
                          * having to join messages. */
                         int mtu = NetworkManager.TransportManager.Transport.GetMTU((byte)args.Channel);
-                        int maxAllowedSplits = Mathf.CeilToInt(MaximumClientMTU / mtu);
+                        int maxAllowedSplits = Mathf.CeilToInt((float)MaximumClientMTU / (float)mtu);
                         //Too many messages will come in, kick client immediately.
                         if (expectedMessages > maxAllowedSplits)
                         {
-                            NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                            ExceededMTUKick();
                             return;
                         }
                     }
@@ -492,6 +492,15 @@ namespace FishNet.Managing.Server
                 NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
             }
 #endif
+
+            //Kicks connection for exceeding MTU.
+            void ExceededMTUKick()
+            {
+                NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                if (NetworkManager.CanLog(LoggingType.Common))
+                    Debug.Log($"ConnectionId {args.ConnectionId} sent a message larger than allowed amount. Connection will be kicked immediately.");
+            }
+
         }
 
         /// <summary>

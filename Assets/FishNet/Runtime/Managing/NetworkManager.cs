@@ -18,6 +18,8 @@ using FishNet.Managing.Observing;
 using System.Linq;
 using FishNet.Managing.Debugging;
 using FishNet.Managing.Object;
+using FishNet.Transporting;
+using FishNet.Utility.Extension;
 
 namespace FishNet.Managing
 {
@@ -141,6 +143,13 @@ namespace FishNet.Managing
         public static NetworkConnection EmptyConnection { get; private set; } = new NetworkConnection();
         #endregion
 
+        #region Internal.
+        /// <summary>
+        /// Starting index for RpcLinks.
+        /// </summary>
+        internal static ushort StartingRpcLinkIndex;
+        #endregion
+
         #region Serialized.
         /// <summary>
         /// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
@@ -186,6 +195,8 @@ namespace FishNet.Managing
         private void Awake()
         {
             InitializeLogging();
+            if (StartingRpcLinkIndex == 0)
+                StartingRpcLinkIndex = (ushort)(EnumFN.GetHighestValue<PacketId>() + 1);
 
 #if UNITY_EDITOR
             /* If first instance then force
@@ -260,6 +271,13 @@ namespace FishNet.Managing
                 frameRate = ServerManager.FrameRate;
             else
                 frameRate = MAXIMUM_FRAMERATE;
+
+            /* Make sure framerate isn't set to 9999 on server.
+             * If it is then default to tick rate. */
+#if UNITY_SERVER
+            if (frameRate == MAXIMUM_FRAMERATE)
+                frameRate = TimeManager.TickRate;
+#endif
 
             Application.targetFrameRate = frameRate;
         }
@@ -417,7 +435,7 @@ namespace FishNet.Managing
                 ClientManager = gameObject.AddComponent<ClientManager>();
         }
 
-        #region Editor.
+#region Editor.
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -439,7 +457,7 @@ namespace FishNet.Managing
         }
 #endif
 
-        #endregion
+#endregion
 
     }
 

@@ -1,4 +1,5 @@
 using FishNet.Managing.Logging;
+using FishNet.Managing.Server;
 using FishNet.Transporting;
 using FishNet.Utility.Performance;
 using LiteNetLib;
@@ -41,9 +42,13 @@ namespace FishNet.Tugboat.Server
         /// </summary>
         private int _maximumClients;
         /// <summary>
-        /// MTU sizes for each channel.
+        /// MTU size per packet.
         /// </summary>
         private int _mtu;
+        /// <summary>
+        /// Maximum data a client may send per tick.
+        /// </summary>
+        private int _totalMtu;
         #endregion
         #region Queues.
         /// <summary>
@@ -98,6 +103,20 @@ namespace FishNet.Tugboat.Server
         {
             base.Transport = t;
             _mtu = unreliableMTU;
+            ServerManager sm = t.NetworkManager.ServerManager;
+
+            //Set total amount of data a client may send per tick.
+            if (sm.LimitClientMTU)
+            { 
+                _totalMtu = _mtu;
+            }
+            else
+            {
+                int max = sm.MaximumClientMTU;
+                if (max <= 0)
+                    max = int.MaxValue;
+                _totalMtu = max;
+            }
         }
 
         /// <summary>
@@ -112,7 +131,7 @@ namespace FishNet.Tugboat.Server
             listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
-            _server = new NetManager(listener);
+            _server = new NetManager(listener, _totalMtu);
             _server.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
             bool startResult = _server.Start(_port);
 
@@ -439,7 +458,7 @@ namespace FishNet.Tugboat.Server
                 }
             }
 
-            _server?.PollEvents();
+            _server?.PollEvents(base.Transport.NetworkManager.TimeManager.Tick);
             //Handle connection and disconnection events.
             while (_remoteConnectionEvents.TryDequeue(out RemoteConnectionEvent connectionEvent))
             {

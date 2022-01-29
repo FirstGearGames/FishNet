@@ -435,6 +435,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void TimeManager_OnTick()
         {
+            
             if (base.IsServer)
                 SendToClients();
             if (base.IsClient)
@@ -763,6 +764,8 @@ namespace FishNet.Component.Transforming
             }
         }
 
+        
+
         /// <summary>
         /// Moves to a GoalData. Automatically determins if to use data from server or client.
         /// </summary>
@@ -853,25 +856,7 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-                    //Can extrapolate.
-                    if (td.ExtrapolationState == TransformData.ExtrapolateState.Available)
-                    {
-                        rd.TimeRemaining = (float)(_extrapolation * base.TimeManager.TickDelta);
-                        td.ExtrapolationState = TransformData.ExtrapolateState.Active;
-                        if (leftOver > 0f)
-                            MoveToTarget(leftOver);
-                    }
-                    //Ran out of extrapolate.
-                    else if (td.ExtrapolationState == TransformData.ExtrapolateState.Active)
-                    {
-                        rd.TimeRemaining = (float)(_extrapolation * base.TimeManager.TickDelta);
-                        td.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
-                        if (leftOver > 0f)
-                            MoveToTarget(leftOver);
-                    }
-                    //Extrapolation has ended or was never enabled.
-                    else
-                    {
+                    
                         /* If everything matches up then end queue.
                         * Otherwise let it play out until stuff
                         * aligns. Generally the time remaining is enough
@@ -879,7 +864,7 @@ namespace FishNet.Component.Transforming
                         * and it's thrown off. */
                         if (!HasChanged(td))
                             _queueReady = false;
-                    }
+                        
                 }
             }
 
@@ -1260,7 +1245,10 @@ namespace FishNet.Component.Transforming
 
         private void SetExtrapolation(TransformData prev, TransformData next, Channel channel)
         {
+            //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
+
+            
         }
         /// <summary>
         /// Updates clients with transform data.
@@ -1401,7 +1389,7 @@ namespace FishNet.Component.Transforming
              *  Server auth and send to owner, since all clients should get this.
              *  
              *  Server auth, dont send to owner, and not owner.
-             */ 
+             */
             bool canReceive = (_clientAuthoritative && !base.IsOwner) ||
                 (!_clientAuthoritative && _sendToOwner) ||
                 (!_clientAuthoritative && !_sendToOwner && !base.IsOwner);

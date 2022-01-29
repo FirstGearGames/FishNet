@@ -82,6 +82,17 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name="sceneLookupDatas">Scenes to load by SceneLookupDatas.</param>
         public SceneLoadData(SceneLookupData[] sceneLookupDatas) : this(sceneLookupDatas, null) { }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="scene">Scene to load.</param>
+        /// <param name="movedNetworkObjects">NetworkObjects to move to the first specified scene.</param>
+        public SceneLoadData(Scene scene, NetworkObject[] movedNetworkObjects)
+        {
+            SceneLookupData data = SceneLookupData.CreateData(scene);
+            Construct(new SceneLookupData[] { data }, movedNetworkObjects);
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -89,10 +100,8 @@ namespace FishNet.Managing.Scened
         /// <param name="movedNetworkObjects">NetworkObjects to move to the first specified scene.</param>
         public SceneLoadData(Scene[] scenes, NetworkObject[] movedNetworkObjects)
         {
-            SceneLookupDatas = SceneLookupData.CreateData(scenes);
-            if (movedNetworkObjects == null)
-                movedNetworkObjects = new NetworkObject[0];
-            MovedNetworkObjects = movedNetworkObjects;
+            SceneLookupData[] datas = SceneLookupData.CreateData(scenes);
+            Construct(datas, movedNetworkObjects);
         }
         /// <summary>
         /// 
@@ -104,10 +113,8 @@ namespace FishNet.Managing.Scened
             for (int i = 0; i < sceneNames.Length; i++)
                 sceneNames[i] = Path.GetFileNameWithoutExtension(sceneNames[i]);
 
-            SceneLookupDatas = SceneLookupData.CreateData(sceneNames);
-            if (movedNetworkObjects == null)
-                movedNetworkObjects = new NetworkObject[0];
-            MovedNetworkObjects = movedNetworkObjects;
+            SceneLookupData[] datas = SceneLookupData.CreateData(sceneNames);
+            Construct(datas, movedNetworkObjects);
         }
         /// <summary>
         /// 
@@ -116,10 +123,8 @@ namespace FishNet.Managing.Scened
         /// <param name="movedNetworkObjects">NetworkObjects to move to the first specified scene.</param>
         public SceneLoadData(int[] sceneHandles, NetworkObject[] movedNetworkObjects)
         {
-            SceneLookupDatas = SceneLookupData.CreateData(sceneHandles);
-            if (movedNetworkObjects == null)
-                movedNetworkObjects = new NetworkObject[0];
-            MovedNetworkObjects = movedNetworkObjects;
+            SceneLookupData[] datas = SceneLookupData.CreateData(sceneHandles);
+            Construct(datas, movedNetworkObjects);
         }
         /// <summary>
         /// 
@@ -128,8 +133,15 @@ namespace FishNet.Managing.Scened
         /// <param name="movedNetworkObjects">NetworkObjects to move to the first specified scene.</param>
         public SceneLoadData(SceneLookupData[] sceneLookupDatas, NetworkObject[] movedNetworkObjects)
         {
-            SceneLookupDatas = sceneLookupDatas;
+            Construct(sceneLookupDatas, movedNetworkObjects);
+        }
 
+        /// <summary>
+        /// Called at the end of every constructor.
+        /// </summary>
+        private void Construct(SceneLookupData[] datas, NetworkObject[] movedNetworkObjects)
+        {
+            SceneLookupDatas = datas;
             if (movedNetworkObjects == null)
                 movedNetworkObjects = new NetworkObject[0];
             MovedNetworkObjects = movedNetworkObjects;

@@ -152,6 +152,8 @@ namespace FishNet.Tugboat
         public override void HandleServerConnectionState(ServerConnectionStateArgs connectionStateArgs)
         {
             OnServerConnectionState?.Invoke(connectionStateArgs);
+            LocalConnectionStates state = connectionStateArgs.ConnectionState;
+            UpdateClientTimeout();
         }
         /// <summary>
         /// Handles a ConnectionStateArgs for a remote client.
@@ -396,10 +398,20 @@ namespace FishNet.Tugboat
         /// <param name="address"></param>
         private bool StartClient(string address)
         {
-            _client.Initialize(this, _unreliableMTU, _timeout);
+            _client.Initialize(this, _unreliableMTU);
+            UpdateClientTimeout();
             return _client.StartConnection(address, _port);
         }
 
+        /// <summary>
+        /// Updates clients timeout values.
+        /// </summary>
+        private void UpdateClientTimeout()
+        {
+            //If server is running set timeout to max. This is for host only.
+            int timeout = (GetConnectionState(true) != LocalConnectionStates.Stopped) ? int.MaxValue : _timeout;
+            _client.UpdateTimeout(timeout);
+        }
         /// <summary>
         /// Stops the client.
         /// </summary>

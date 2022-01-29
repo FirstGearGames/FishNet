@@ -45,9 +45,10 @@ namespace FishNet.CodeGenerating.Processing
         private const string LOGIC_PREFIX = "RpcLogic___";
         private const string WRITER_PREFIX = "RpcWriter___";
         private const string READER_PREFIX = "RpcReader___";
-        private const string REQUIRE_OWNERSHIP_TEXT = "RequireOwnership";
-        private const string INCLUDE_OWNER_TEXT = "IncludeOwner";
-        private const string BUFFERED_RPC_PROPERTY_NAME = "BufferLast";
+        private const string REQUIREOWNERSHIP_NAME = "RequireOwnership";
+        private const string RUNLOCALLY_NAME = "RunLocally";
+        private const string INCLUDEOWNER_NAME = "IncludeOwner";
+        private const string BUFFERLAST_NAME = "BufferLast";
         #endregion
 
         internal bool Process(TypeDefinition typeDef, ref uint rpcCount)
@@ -270,24 +271,25 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="rpcAttribute"></param>
         /// <returns></returns>
         private void CreateRpcMethods(TypeDefinition typeDef, MethodDefinition originalMethodDef, CustomAttribute rpcAttribute, RpcType rpcType, uint allRpcCount,
-            out MethodDefinition writerMethodDef, out MethodDefinition readerMethodDef, out MethodDefinition logicMethodDef)
+            out MethodDefinition writerMd, out MethodDefinition readerMd, out MethodDefinition logicMd)
         {
-            writerMethodDef = null;
-            readerMethodDef = null;
-            logicMethodDef = null;
+            writerMd = null;
+            readerMd = null;
+            logicMd = null;
 
             List<ParameterDefinition> serializedParameters = new List<ParameterDefinition>();
-            writerMethodDef = CreateRpcWriterMethod(typeDef, originalMethodDef, serializedParameters, rpcAttribute, rpcType, allRpcCount);
-            if (writerMethodDef == null)
+            writerMd = CreateRpcWriterMethod(typeDef, originalMethodDef, serializedParameters, rpcAttribute, rpcType, allRpcCount);
+            if (writerMd == null)
                 return;
-            logicMethodDef = CreateRpcLogicMethod(typeDef, originalMethodDef, serializedParameters, rpcType);
-            if (logicMethodDef == null)
+            logicMd = CreateRpcLogicMethod(typeDef, originalMethodDef, serializedParameters, rpcType);
+            if (logicMd == null)
                 return;
-            readerMethodDef = CreateRpcReaderMethod(typeDef, originalMethodDef, serializedParameters, logicMethodDef, rpcAttribute, rpcType);
-            if (readerMethodDef == null)
+            readerMd = CreateRpcReaderMethod(typeDef, originalMethodDef, serializedParameters, logicMd, rpcAttribute, rpcType);
+            if (readerMd == null)
                 return;
 
-            RedirectRpcMethod(originalMethodDef, writerMethodDef);
+            bool runLocally = rpcAttribute.GetField(RUNLOCALLY_NAME, false);
+            RedirectRpcMethod(originalMethodDef, writerMd, logicMd, runLocally);
         }
 
         /// <summary>
@@ -533,7 +535,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             ILProcessor createdProcessor = createdMethodDef.Body.GetILProcessor();
 
-            bool requireOwnership = rpcAttribute.GetField(REQUIRE_OWNERSHIP_TEXT, true);
+            bool requireOwnership = rpcAttribute.GetField(REQUIREOWNERSHIP_NAME, true);
             //Create PooledReader parameter.
             ParameterDefinition readerParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdMethodDef, CodegenSession.ReaderHelper.PooledReader_TypeRef);
 
@@ -605,7 +607,7 @@ namespace FishNet.CodeGenerating.Processing
             if (rpcType == RpcType.Observers)
             {
                 //If to not include owner then don't call logic if owner.
-                bool includeOwner = rpcAttribute.GetField(INCLUDE_OWNER_TEXT, true);
+                bool includeOwner = rpcAttribute.GetField(INCLUDEOWNER_NAME, true);
                 if (!includeOwner)
                 {
                     //Create return if owner.
@@ -762,7 +764,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="rpcAttribute"></param>
         private void CreateServerRpcConditionsForClient(ILProcessor createdProcessor, MethodDefinition methodDef, CustomAttribute rpcAttribute)
         {
-            bool requireOwnership = rpcAttribute.GetField(REQUIRE_OWNERSHIP_TEXT, true);
+            bool requireOwnership = rpcAttribute.GetField(REQUIREOWNERSHIP_NAME, true);
             //If (!base.IsOwner);
             if (requireOwnership)
                 CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdProcessor, LoggingType.Warning, false, true);
@@ -876,21 +878,32 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary> 
         /// Redirects calls from the original Rpc method to the writer method.
         /// </summary>
-        /// <param name="originalMethodDef"></param>
-        /// <param name="writerMethodDef"></param>
-        private void RedirectRpcMethod(MethodDefinition originalMethodDef, MethodDefinition writerMethodDef)
+        /// <param name="originalMd"></param>
+        /// <param name="writerMd"></param>
+        private void RedirectRpcMethod(MethodDefinition originalMd, MethodDefinition writerMd, MethodDefinition logicMd, bool runLocally)
         {
-            ILProcessor originalProcessor = originalMethodDef.Body.GetILProcessor();
-            originalMethodDef.Body.Instructions.Clear();
+            ILProcessor originalProcessor = originalMd.Body.GetILProcessor();
+            originalMd.Body.Instructions.Clear();
 
             originalProcessor.Emit(OpCodes.Ldarg_0); //this.
             //Parameters.
-            foreach (ParameterDefinition pd in originalMethodDef.Parameters)
+            foreach (ParameterDefinition pd in originalMd.Parameters)
                 originalProcessor.Emit(OpCodes.Ldarg, pd);
 
             //Call method.
-            MethodReference writerMethodRef = CodegenSession.ImportReference(writerMethodDef);
+            MethodReference writerMethodRef = CodegenSession.ImportReference(writerMd);
             originalProcessor.Emit(OpCodes.Call, writerMethodRef);
+
+            if (runLocally)
+            {
+                originalProcessor.Emit(OpCodes.Ldarg_0); //this.
+                //Parameters.
+                foreach (ParameterDefinition pd in originalMd.Parameters)
+                    originalProcessor.Emit(OpCodes.Ldarg, pd);
+                originalProcessor.Emit(OpCodes.Call, logicMd);
+            }
+
+
             originalProcessor.Emit(OpCodes.Ret);
         }
 
@@ -916,7 +929,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
             //Also add if buffered.
-            bool bufferLast = rpcAttribute.GetField(BUFFERED_RPC_PROPERTY_NAME, false);
+            bool bufferLast = rpcAttribute.GetField(BUFFERLAST_NAME, false);
             int buffered = (bufferLast) ? 1 : 0;
             processor.Emit(OpCodes.Ldc_I4, buffered);
             //Call NetworkBehaviour.

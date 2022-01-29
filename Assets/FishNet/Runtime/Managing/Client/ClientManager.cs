@@ -83,8 +83,7 @@ namespace FishNet.Managing.Client
         internal void InitializeOnce(NetworkManager manager)
         {
             NetworkManager = manager;
-            Objects = new ClientObjects(manager);
-            InitializeOnceRpcLinks();
+            Objects = new ClientObjects(manager);            
             /* Unsubscribe before subscribing.
              * Shouldn't be an issue but better safe than sorry. */
             SubscribeToEvents(false);
@@ -304,7 +303,7 @@ namespace FishNet.Managing.Client
                          * that use them. */
                         Objects.IterateObjectCache();
                         //Then process packet normally.
-                        if ((ushort)packetId >= _startingLinkIndex)
+                        if ((ushort)packetId >= NetworkManager.StartingRpcLinkIndex)
                         {
                             Objects.ParseRpcLink(reader, (ushort)packetId, args.Channel);
                         }

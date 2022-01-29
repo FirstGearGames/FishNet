@@ -66,12 +66,20 @@ namespace FishNet.Tugboat.Client
         /// Initializes this for use.
         /// </summary>
         /// <param name="t"></param>
-        internal void Initialize(Transport t, int unreliableMTU, int timeout)
+        internal void Initialize(Transport t, int unreliableMTU)
         {
             base.Transport = t;
-
-            _timeout = timeout;
             _mtu = unreliableMTU;
+        }
+
+        /// <summary>
+        /// Updates the Timeout value.
+        /// </summary>
+        internal void UpdateTimeout(int timeout)
+        {
+            _timeout = timeout;
+            if (_client != null)
+                _client.DisconnectTimeout = timeout;
         }
 
         /// <summary>
