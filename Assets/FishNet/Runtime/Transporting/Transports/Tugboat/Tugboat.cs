@@ -57,7 +57,7 @@ namespace FishNet.Tugboat
         /// How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.
         /// </summary>
         [Tooltip("How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.")]
-        [Range(0, 1800)]
+        [Range(0, MAX_TIMEOUT)]
         [SerializeField]
         private ushort _timeout = 15;
         #endregion
@@ -74,6 +74,7 @@ namespace FishNet.Tugboat
         #endregion
 
         #region Const.
+        private const ushort MAX_TIMEOUT = 1800;
         /// <summary>
         /// Minimum UDP packet size allowed.
         /// </summary>
@@ -409,7 +410,7 @@ namespace FishNet.Tugboat
         private void UpdateClientTimeout()
         {
             //If server is running set timeout to max. This is for host only.
-            int timeout = (GetConnectionState(true) != LocalConnectionStates.Stopped) ? int.MaxValue : _timeout;
+            int timeout = (GetConnectionState(true) != LocalConnectionStates.Stopped) ? MAX_TIMEOUT : _timeout;
             _client.UpdateTimeout(timeout);
         }
         /// <summary>

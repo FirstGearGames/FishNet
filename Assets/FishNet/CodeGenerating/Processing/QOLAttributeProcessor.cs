@@ -120,7 +120,7 @@ namespace FishNet.CodeGenerating.Processing
                 bool requireOwnership = qolAttribute.GetField("RequireOwnership", false);
                 //If (!base.IsOwner);
                 if (requireOwnership)
-                    CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(processor, logging, true, true);
+                    CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(processor, logging, false, true);
 
                 CodegenSession.ObjectHelper.CreateIsClientCheck(processor, methodDef, logging, inheritsNetworkBehaviour, true);
             }
