@@ -113,7 +113,7 @@ namespace FishNet.Managing.Server
                 if (requireAuthentication && !connection.Authenticated)
                 {
                     if (NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"ClientId {connection.ClientId} sent broadcast {typeof(T).Name} which requires authentication, but client was not authenticated. Client has been disconnected.");
+                        Debug.LogWarning($"ConnectionId {connection.ClientId} sent broadcast {typeof(T).Name} which requires authentication, but client was not authenticated. Client has been disconnected.");
                     NetworkManager.TransportManager.Transport.StopConnection(connection.ClientId, true);
                     return;
                 }

@@ -45,9 +45,8 @@ namespace LiteNetLib.Utils
 
         protected virtual SubscribeDelegate GetCallbackFromData(NetDataReader reader)
         {
-            var hash = reader.GetULong();
-            SubscribeDelegate action;
-            if (!_callbacks.TryGetValue(hash, out action))
+            ulong hash = reader.GetULong();
+            if (!_callbacks.TryGetValue(hash, out var action))
             {
                 throw new ParseException("Undefined packet in NetDataReader");
             }
@@ -126,10 +125,10 @@ namespace LiteNetLib.Utils
             peer.Send(_netDataWriter, options);
         }
 
-        public void SendNetSerializable<T>(NetPeer peer, T packet, DeliveryMethod options) where T : INetSerializable
+        public void SendNetSerializable<T>(NetPeer peer, ref T packet, DeliveryMethod options) where T : INetSerializable
         {
             _netDataWriter.Reset();
-            WriteNetSerializable(_netDataWriter, packet);
+            WriteNetSerializable(_netDataWriter, ref packet);
             peer.Send(_netDataWriter, options);
         }
 
@@ -140,10 +139,10 @@ namespace LiteNetLib.Utils
             manager.SendToAll(_netDataWriter, options);
         }
 
-        public void SendNetSerializable<T>(NetManager manager, T packet, DeliveryMethod options) where T : INetSerializable
+        public void SendNetSerializable<T>(NetManager manager, ref T packet, DeliveryMethod options) where T : INetSerializable
         {
             _netDataWriter.Reset();
-            WriteNetSerializable(_netDataWriter, packet);
+            WriteNetSerializable(_netDataWriter, ref packet);
             manager.SendToAll(_netDataWriter, options);
         }
 
@@ -153,26 +152,10 @@ namespace LiteNetLib.Utils
             _netSerializer.Serialize(writer, packet);
         }
 
-        public void WriteNetSerializable<T>(NetDataWriter writer, T packet) where T : INetSerializable
+        public void WriteNetSerializable<T>(NetDataWriter writer, ref T packet) where T : INetSerializable
         {
             WriteHash<T>(writer);
             packet.Serialize(writer);
-        }
-
-        public byte[] Write<T>(T packet) where T : class, new()
-        {
-            _netDataWriter.Reset();
-            WriteHash<T>(_netDataWriter);
-            _netSerializer.Serialize(_netDataWriter, packet);
-            return _netDataWriter.CopyData();
-        }
-
-        public byte[] WriteNetSerializable<T>(T packet) where T : INetSerializable
-        {
-            _netDataWriter.Reset();
-            WriteHash<T>(_netDataWriter);
-            packet.Serialize(_netDataWriter);
-            return _netDataWriter.CopyData();
         }
 
         /// <summary>
@@ -255,7 +238,7 @@ namespace LiteNetLib.Utils
         }
 
         public void SubscribeNetSerializable<T, TUserData>(
-            Action<T, TUserData> onReceive, 
+            Action<T, TUserData> onReceive,
             Func<T> packetConstructor) where T : INetSerializable
         {
             _callbacks[GetHash<T>()] = (reader, userData) =>

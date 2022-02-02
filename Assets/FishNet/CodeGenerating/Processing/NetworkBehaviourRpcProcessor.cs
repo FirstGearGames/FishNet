@@ -22,14 +22,16 @@ namespace FishNet.CodeGenerating.Processing
         private struct DelegateData
         {
             public RpcType RpcType;
+            public bool RunLocally;
             public MethodDefinition OriginalMethodDef;
             public MethodDefinition ReaderMethodDef;
             public uint MethodHash;
             public CustomAttribute RpcAttribute;
 
-            public DelegateData(RpcType rpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, uint methodHash, CustomAttribute rpcAttribute)
+            public DelegateData(RpcType rpcType, bool runLocally, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, uint methodHash, CustomAttribute rpcAttribute)
             {
                 RpcType = rpcType;
+                RunLocally = runLocally;
                 OriginalMethodDef = originalMethodDef;
                 ReaderMethodDef = readerMethodDef;
                 MethodHash = methodHash;
@@ -82,14 +84,15 @@ namespace FishNet.CodeGenerating.Processing
 
                 //Create methods for users method.
                 MethodDefinition writerMethodDef, readerMethodDef, logicMethodDef;
-                CreateRpcMethods(typeDef, methodDef, rpcAttribute, rpcType, rpcCount, out writerMethodDef, out readerMethodDef, out logicMethodDef);
+                bool runLocally;
+                bool createResult = CreateRpcMethods(typeDef, methodDef, rpcAttribute, rpcType, rpcCount, out writerMethodDef, out readerMethodDef, out logicMethodDef, out runLocally);
 
-                if (writerMethodDef != null && readerMethodDef != null && logicMethodDef != null)
+                if (createResult)
                 {
                     modified = true;
 
-                    delegateDatas.Add(new DelegateData(rpcType, methodDef, readerMethodDef, rpcCount, rpcAttribute));
-                    if (logicMethodDef.IsVirtual)
+                    delegateDatas.Add(new DelegateData(rpcType, runLocally, methodDef, readerMethodDef, rpcCount, rpcAttribute));
+                    if (logicMethodDef != null && logicMethodDef.IsVirtual)
                         _virtualRpcs.Add((logicMethodDef, methodDef));
 
                     rpcCount++;
@@ -99,7 +102,7 @@ namespace FishNet.CodeGenerating.Processing
             if (modified)
             {
                 foreach (DelegateData data in delegateDatas)
-                    CodegenSession.ObjectHelper.CreateRpcDelegate(data.OriginalMethodDef,
+                    CodegenSession.ObjectHelper.CreateRpcDelegate(data.RunLocally, data.OriginalMethodDef,
                         data.ReaderMethodDef, data.RpcType, data.MethodHash,
                         data.RpcAttribute);
 
@@ -269,27 +272,31 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="originalMethodDef"></param>
         /// <param name="rpcAttribute"></param>
-        /// <returns></returns>
-        private void CreateRpcMethods(TypeDefinition typeDef, MethodDefinition originalMethodDef, CustomAttribute rpcAttribute, RpcType rpcType, uint allRpcCount,
-            out MethodDefinition writerMd, out MethodDefinition readerMd, out MethodDefinition logicMd)
+        /// <returns>True if successful.</returns>
+        private bool CreateRpcMethods(TypeDefinition typeDef, MethodDefinition originalMethodDef, CustomAttribute rpcAttribute, RpcType rpcType, uint allRpcCount,
+            out MethodDefinition writerMd, out MethodDefinition readerMd, out MethodDefinition logicMd, out bool runLocally)
         {
             writerMd = null;
             readerMd = null;
             logicMd = null;
+            runLocally = rpcAttribute.GetField(RUNLOCALLY_NAME, false);
+            bool intentionallyNull;
 
             List<ParameterDefinition> serializedParameters = new List<ParameterDefinition>();
             writerMd = CreateRpcWriterMethod(typeDef, originalMethodDef, serializedParameters, rpcAttribute, rpcType, allRpcCount);
             if (writerMd == null)
-                return;
-            logicMd = CreateRpcLogicMethod(typeDef, originalMethodDef, serializedParameters, rpcType);
-            if (logicMd == null)
-                return;
-            readerMd = CreateRpcReaderMethod(typeDef, originalMethodDef, serializedParameters, logicMd, rpcAttribute, rpcType);
-            if (readerMd == null)
-                return;
+                return false;
 
-            bool runLocally = rpcAttribute.GetField(RUNLOCALLY_NAME, false);
+            logicMd = CreateRpcLogicMethod(typeDef, runLocally, originalMethodDef, serializedParameters, rpcType, out intentionallyNull);
+            if (!intentionallyNull && logicMd == null)
+                return false;
+
+            readerMd = CreateRpcReaderMethod(typeDef, originalMethodDef, serializedParameters, logicMd, rpcAttribute, rpcType, out intentionallyNull);
+            if (!intentionallyNull && readerMd == null)
+                return false;
+
             RedirectRpcMethod(originalMethodDef, writerMd, logicMd, runLocally);
+            return true;
         }
 
         /// <summary>
@@ -357,7 +364,8 @@ namespace FishNet.CodeGenerating.Processing
             /* Creates basic ServerRpc and ClientRpc
              * conditions such as if requireOwnership ect..
              * or if (!base.isClient) */
-            CreateClientRpcConditionsForServer(createdProcessor, createdMethodDef);
+           
+                CreateClientRpcConditionsForServer(createdProcessor, createdMethodDef);
 
             /* Parameters which won't be serialized, such as channel.
              * It's safe to add parameters which are null or
@@ -425,7 +433,8 @@ namespace FishNet.CodeGenerating.Processing
             /* Creates basic ServerRpc
              * conditions such as if requireOwnership ect..
              * or if (!base.isClient) */
-            CreateServerRpcConditionsForClient(createdProcessor, createdMethodDef, rpcAttribute);
+           
+                CreateServerRpcConditionsForClient(createdProcessor, createdMethodDef, rpcAttribute);
             //Parameters which won't be serialized, such as channel.
             HashSet<ParameterDefinition> nonserializedParameters = new HashSet<ParameterDefinition>();
             //The network connection parameter might be added as null, this is okay.
@@ -492,8 +501,12 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="originalMethodDef"></param>
         /// <param name="rpcAttribute"></param>
         /// <returns></returns>
-        private MethodDefinition CreateRpcReaderMethod(TypeDefinition typeDef, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, MethodDefinition logicMethodDef, CustomAttribute rpcAttribute, RpcType rpcType)
+        private MethodDefinition CreateRpcReaderMethod(TypeDefinition typeDef, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, MethodDefinition logicMethodDef, CustomAttribute rpcAttribute, RpcType rpcType, out bool intentionallyNull)
         {
+            intentionallyNull = false;
+
+           
+
             StringBuilder sb = new StringBuilder();
             foreach (ParameterDefinition pd in originalMethodDef.Parameters)
                 sb.Append(pd.ParameterType.Name);
@@ -804,8 +817,12 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="originalMethodDef"></param>
         /// <returns></returns>
-        private MethodDefinition CreateRpcLogicMethod(TypeDefinition typeDef, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, RpcType rpcType)
+        private MethodDefinition CreateRpcLogicMethod(TypeDefinition typeDef, bool runLocally, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, RpcType rpcType, out bool intentionallyNull)
         {
+            intentionallyNull = false;
+
+           
+
             string methodName = $"{LOGIC_PREFIX}{originalMethodDef.Name}";
             /* If method already exist then just return it. This
              * can occur when a method needs to be rebuilt due to

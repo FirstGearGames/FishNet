@@ -45,10 +45,6 @@ namespace FishNet.Tugboat.Server
         /// MTU size per packet.
         /// </summary>
         private int _mtu;
-        /// <summary>
-        /// Maximum data a client may send per tick.
-        /// </summary>
-        private int _totalMtu;
         #endregion
         #region Queues.
         /// <summary>
@@ -72,6 +68,10 @@ namespace FishNet.Tugboat.Server
         /// </summary>
         private ListCache<int> _disconnectingNow = new ListCache<int>();
         /// <summary>
+        /// PossibleAttackEvents which need to be handled.
+        /// </summary>
+        private ConcurrentQueue<int> _possibleAttackEvents = new ConcurrentQueue<int>();
+        /// <summary>
         /// ConnectionEvents which need to be handled.
         /// </summary>
         private ConcurrentQueue<RemoteConnectionEvent> _remoteConnectionEvents = new ConcurrentQueue<RemoteConnectionEvent>();
@@ -88,6 +88,10 @@ namespace FishNet.Tugboat.Server
         /// Locks the NetManager to stop it.
         /// </summary>
         private readonly object _stopLock = new object();
+        /// <summary>
+        /// Attack response type to use.
+        /// </summary>
+        private AttackResponseType _attackResponseType;
         #endregion
 
         ~ServerSocket()
@@ -103,20 +107,6 @@ namespace FishNet.Tugboat.Server
         {
             base.Transport = t;
             _mtu = unreliableMTU;
-            ServerManager sm = t.NetworkManager.ServerManager;
-
-            //Set total amount of data a client may send per tick.
-            if (sm.LimitClientMTU)
-            { 
-                _totalMtu = _mtu;
-            }
-            else
-            {
-                int max = sm.MaximumClientMTU;
-                if (max <= 0)
-                    max = int.MaxValue;
-                _totalMtu = max;
-            }
         }
 
         /// <summary>
@@ -127,12 +117,15 @@ namespace FishNet.Tugboat.Server
         {
             EventBasedNetListener listener = new EventBasedNetListener();
             listener.ConnectionRequestEvent += Listener_ConnectionRequestEvent;
+            if (_attackResponseType != AttackResponseType.Disabled)
+                listener.PossibleAttackEvent += Listener_PossibleAttackEvent;
             listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
             listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
-            _server = new NetManager(listener, _totalMtu);
+            _server = new NetManager(listener, null, _attackResponseType);
             _server.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
+
             bool startResult = _server.Start(_port);
 
             //If started succcessfully.
@@ -148,6 +141,15 @@ namespace FishNet.Tugboat.Server
 
                 StopConnection();
             }
+        }
+
+        /// <summary>
+        /// Called when the server suspects a client may be performing an attack.
+        /// </summary>
+        /// <param name="peer"></param>
+        private void Listener_PossibleAttackEvent(NetPeer peer)
+        {
+            _possibleAttackEvents.Enqueue(peer.Id);
         }
 
         /// <summary>
@@ -205,7 +207,7 @@ namespace FishNet.Tugboat.Server
         /// <summary>
         /// Starts the server.
         /// </summary>
-        internal bool StartConnection(string address, ushort port, int maximumClients)
+        internal bool StartConnection(ushort port, int maximumClients, AttackResponseType attackResponseType)
         {
             if (base.GetConnectionState() != LocalConnectionStates.Stopped)
                 return false;
@@ -215,6 +217,7 @@ namespace FishNet.Tugboat.Server
             //Assign properties.
             _port = port;
             _maximumClients = maximumClients;
+            _attackResponseType = attackResponseType;
             ResetQueues();
 
             Task t = Task.Run(() => ThreadedSocket());
@@ -282,6 +285,7 @@ namespace FishNet.Tugboat.Server
             base.ClearPacketQueue(ref _outgoing);
             _disconnectingNext.Reset();
             _disconnectingNow.Reset();
+            while (_possibleAttackEvents.TryDequeue(out _)) ;
             while (_remoteConnectionEvents.TryDequeue(out _)) ;
         }
 
@@ -306,10 +310,8 @@ namespace FishNet.Tugboat.Server
         /// Called when data is received from a peer.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Listener_NetworkReceiveEvent(NetPeer fromPeer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+        private void Listener_NetworkReceiveEvent(NetPeer fromPeer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod)
         {
-            int channelId = (deliveryMethod == DeliveryMethod.ReliableOrdered) ?
-                0 : 1;
             //If over the MTU.
             if (reader.AvailableBytes > _mtu)
             {
@@ -386,7 +388,6 @@ namespace FishNet.Tugboat.Server
             }
             else
             {
-
                 int count = _outgoing.Count;
                 for (int i = 0; i < count; i++)
                 {
@@ -459,6 +460,21 @@ namespace FishNet.Tugboat.Server
             }
 
             _server?.PollEvents(base.Transport.NetworkManager.TimeManager.Tick);
+
+            bool canLogWarning = base.Transport.NetworkManager.CanLog(LoggingType.Warning);
+            //Go through attack events first.
+            while (_possibleAttackEvents.TryDequeue(out int connectionId))
+            {
+                if (canLogWarning)
+                {
+                    string msg = string.Empty;
+                    if (_attackResponseType == AttackResponseType.WarnAndKick)
+                        msg = " Client will be kicked.";
+
+                    Debug.LogWarning($"ConnectionId {connectionId} may be performing an attack.{msg}");
+                }
+            }
+
             //Handle connection and disconnection events.
             while (_remoteConnectionEvents.TryDequeue(out RemoteConnectionEvent connectionEvent))
             {

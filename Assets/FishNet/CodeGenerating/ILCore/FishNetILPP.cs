@@ -5,7 +5,6 @@ using FishNet.CodeGenerating.Processing;
 using FishNet.Serializing.Helping;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
-using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,7 +12,7 @@ using Unity.CompilationPipeline.Common.ILPostProcessing;
 using UnityEngine;
 
 namespace FishNet.CodeGenerating.ILCore
-{
+{ 
     public class FishNetILPP : ILPostProcessor
     {
         #region Const.
@@ -65,9 +64,6 @@ namespace FishNet.CodeGenerating.ILCore
 
             bool modified = false;
 
-            //System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-            //stopwatch.Restart();
-
             if (IsFishNetAssembly(compiledAssembly))
             {
                 //Not used...
@@ -82,17 +78,17 @@ namespace FishNet.CodeGenerating.ILCore
                 //before 226ms, after 17ms                   
                 modified |= CreateDeclaredDelegates();
                 //before 5ms, after 5ms
-                modified |= CreateDeclaredSerializers(); 
+                modified |= CreateDeclaredSerializers();
                 //before 30ms, after 26ms
-                modified |= CreateIBroadcast(); 
+                modified |= CreateIBroadcast();
                 //before 140ms, after 10ms
                 modified |= CreateQOLAttributes();
                 //before 75ms, after 6ms
-                modified |= CreateNetworkBehaviours(); 
+                modified |= CreateNetworkBehaviours();
                 //before 260ms, after 215ms 
                 modified |= CreateGenericReadWriteDelegates();
                 //before 52ms, after 27ms
-                  
+
                 //Total at once
                 //before 761, after 236ms
             }
@@ -207,13 +203,13 @@ namespace FishNet.CodeGenerating.ILCore
                     //Reached NetworkBehaviour class.
                     if (climbTd.FullName == networkBehaviourFullName)
                         break;
-                     
+
                     ///* Check initial class as well all types within
                     // * the class. Then check all of it's base classes. */
                     if (climbTd.ImplementsInterface<IBroadcast>())
                         typeDefs.Add(climbTd);
                     //7ms
-                     
+
                     //Add nested. Only going to go a single layer deep.
                     foreach (TypeDefinition nestedTypeDef in td.NestedTypes)
                     {
@@ -221,8 +217,8 @@ namespace FishNet.CodeGenerating.ILCore
                             typeDefs.Add(nestedTypeDef);
                     }
                     //0ms
- 
-                    climbTd = climbTd.GetNextBaseClass(); 
+
+                    climbTd = climbTd.GetNextBaseClass();
                     //this + name check 40ms
                 } while (climbTd != null);
 
@@ -393,7 +389,7 @@ namespace FishNet.CodeGenerating.ILCore
                         //Increase baseCount with RPCs found here.
                         childCount += copyCount;
 
-                        copyTd = copyTd.GetNextBaseClassToProcess(); 
+                        copyTd = copyTd.GetNextBaseClassToProcess();
                     } while (copyTd != null);
                 }
 
@@ -451,7 +447,7 @@ namespace FishNet.CodeGenerating.ILCore
         {
             bool modified = false;
             modified |= CodegenSession.WriterHelper.CreateGenericDelegates();
-            modified |= CodegenSession.ReaderHelper.CreateGenericDelegates(); 
+            modified |= CodegenSession.ReaderHelper.CreateGenericDelegates();
 
             return modified;
         }

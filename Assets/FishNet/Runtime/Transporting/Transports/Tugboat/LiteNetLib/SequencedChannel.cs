@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace LiteNetLib
 {
@@ -39,25 +39,21 @@ namespace LiteNetLib
             }
             else
             {
-                lock (OutgoingQueue)
+                while (OutgoingQueue.TryDequeue(out var packet))
                 {
-                    while (OutgoingQueue.Count > 0)
-                    {
-                        NetPacket packet = OutgoingQueue.Dequeue();
-                        _localSequence = (_localSequence + 1) % NetConstants.MaxSequence;
-                        packet.Sequence = (ushort)_localSequence;
-                        packet.ChannelId = _id;
-                        Peer.SendUserData(packet);
+                    _localSequence = (_localSequence + 1) % NetConstants.MaxSequence;
+                    packet.Sequence = (ushort)_localSequence;
+                    packet.ChannelId = _id;
+                    Peer.SendUserData(packet);
 
-                        if (_reliable && OutgoingQueue.Count == 0)
-                        {
-                            _lastPacketSendTime = DateTime.UtcNow.Ticks;
-                            _lastPacket = packet;
-                        }
-                        else
-                        {
-                            Peer.NetManager.NetPacketPool.Recycle(packet);
-                        }
+                    if (_reliable && OutgoingQueue.Count == 0)
+                    {
+                        _lastPacketSendTime = DateTime.UtcNow.Ticks;
+                        _lastPacket = packet;
+                    }
+                    else
+                    {
+                        Peer.NetManager.NetPacketPool.Recycle(packet);
                     }
                 }
             }
@@ -86,7 +82,7 @@ namespace LiteNetLib
             bool packetProcessed = false;
             if (packet.Sequence < NetConstants.MaxSequence && relative > 0)
             {
-                if (Peer.NetManager.EnableStatistics) 
+                if (Peer.NetManager.EnableStatistics)
                 {
                     Peer.Statistics.AddPacketLoss(relative - 1);
                     Peer.NetManager.Statistics.AddPacketLoss(relative - 1);
@@ -94,8 +90,9 @@ namespace LiteNetLib
 
                 _remoteSequence = packet.Sequence;
                 Peer.NetManager.CreateReceiveEvent(
-                    packet, 
-                    _reliable ? DeliveryMethod.ReliableSequenced : DeliveryMethod.Sequenced, 
+                    packet,
+                    _reliable ? DeliveryMethod.ReliableSequenced : DeliveryMethod.Sequenced,
+                    (byte)(packet.ChannelId / NetConstants.ChannelTypeCount),
                     NetConstants.ChanneledHeaderSize,
                     Peer);
                 packetProcessed = true;

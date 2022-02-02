@@ -1,5 +1,6 @@
 ﻿using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Object;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using MonoFN.Collections.Generic;
@@ -91,6 +92,8 @@ namespace FishNet.CodeGenerating.Processing
                  * for target, observers, server, replicate, and reoncile rpcs. Since
                  * each registers to their own delegates this is possible. */
 
+               
+
                 /* SyncTypes. */
                 uint syncTypeStartCount;
                 childSyncTypeCounts.TryGetValue(copyTypeDef, out syncTypeStartCount);
@@ -165,6 +168,8 @@ namespace FishNet.CodeGenerating.Processing
 
             return error;
         }
+
+       
 
         /// <summary>
         /// Gets the top-most parent away method.

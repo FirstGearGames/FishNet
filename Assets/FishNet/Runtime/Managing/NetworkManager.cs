@@ -435,7 +435,7 @@ namespace FishNet.Managing
                 ClientManager = gameObject.AddComponent<ClientManager>();
         }
 
-#region Editor.
+        #region Editor.
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -457,7 +457,7 @@ namespace FishNet.Managing
         }
 #endif
 
-#endregion
+        #endregion
 
     }
 

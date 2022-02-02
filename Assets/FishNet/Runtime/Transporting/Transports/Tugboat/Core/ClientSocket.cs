@@ -107,6 +107,7 @@ namespace FishNet.Tugboat.Client
             _client.Connect(_address, _port, string.Empty);
         }
 
+
         /// <summary>
         /// Stops the socket on a new thread.
         /// </summary>
@@ -198,7 +199,7 @@ namespace FishNet.Tugboat.Client
         /// <summary>
         /// Called when data is received from a peer.
         /// </summary>
-        private void Listener_NetworkReceiveEvent(NetPeer fromPeer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+        private void Listener_NetworkReceiveEvent(NetPeer fromPeer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod)
         {
             base.Listener_NetworkReceiveEvent(ref _incoming, fromPeer, reader, deliveryMethod, _mtu);
         }

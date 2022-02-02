@@ -25,6 +25,16 @@ namespace FishNet.Tugboat
 
         [Header("Server")]
         /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("How the server should respond when it suspects a client is performing an attack.")]
+        [SerializeField]
+        private AttackResponseType _attackResponseType = AttackResponseType.WarnAndKick;
+        /// <summary>
+        /// How the server should respond when it suspects a client is performing an attack.
+        /// </summary>
+        public AttackResponseType AttackResponseType => _attackResponseType;
+        /// <summary>
         /// Bind address to use.
         /// </summary>
         [Tooltip("Bind address to use.")]
@@ -381,8 +391,7 @@ namespace FishNet.Tugboat
         private bool StartServer()
         {
             _server.Initialize(this, _unreliableMTU);
-            string bindAddress = string.Empty;
-            return _server.StartConnection(bindAddress, _port, _maximumClients);
+            return _server.StartConnection(_port, _maximumClients, AttackResponseType);
         }
 
         /// <summary>

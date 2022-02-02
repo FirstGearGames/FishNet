@@ -46,7 +46,7 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference NetworkBehaviour_IsClient_MethodRef;
         internal MethodReference NetworkBehaviour_IsOwner_MethodRef;
         internal MethodReference NetworkBehaviour_IsServer_MethodRef;
-        internal MethodReference NetworkBehaviour_IsHost_MethodRef;               
+        internal MethodReference NetworkBehaviour_IsHost_MethodRef;
         internal MethodReference InstanceFinder_IsServer_MethodRef;
         private MethodReference InstanceFinder_IsClient_MethodRef;
         //Misc.
@@ -242,8 +242,15 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="originalMethodDef"></param>
         /// <param name="readerMethodDef"></param>
         /// <param name="rpcType"></param>
-        internal void CreateRpcDelegate(MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, RpcType rpcType, uint methodHash, CustomAttribute rpcAttribute)
+        internal void CreateRpcDelegate(bool runLocally, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, RpcType rpcType, uint methodHash, CustomAttribute rpcAttribute)
         {
+            bool isServerRpc = (rpcType == RpcType.Server);
+            //Remove code not needed.
+            if (isServerRpc && BuildInformation.RemoveServerLogic)
+                return;
+            else if (!isServerRpc && BuildInformation.RemoveClientLogic)
+                return;
+
             MethodDefinition methodDef = originalMethodDef.DeclaringType.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
@@ -298,7 +305,7 @@ namespace FishNet.CodeGenerating.Helping
             //If !base.IsOwner endIf.
             instructions.Add(processor.Create(OpCodes.Call, NetworkBehaviour_IsOwner_MethodRef));
             if (retIfOwner)
-                instructions.Add(processor.Create(OpCodes.Brfalse, endIf));            
+                instructions.Add(processor.Create(OpCodes.Brfalse, endIf));
             else
                 instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
             //If logging is not disabled.
@@ -393,7 +400,7 @@ namespace FishNet.CodeGenerating.Helping
                     );
             }
             //Add return.
-            instructions.AddRange(CreateRetDefault(processor, methodDef));
+            instructions.AddRange(CreateRetDefault(methodDef));
             //After if statement, jumped to when successful check.
             instructions.Add(endIf);
 
@@ -443,7 +450,7 @@ namespace FishNet.CodeGenerating.Helping
                     );
             }
             //Add return.
-            instructions.AddRange(CreateRetDefault(processor, methodDef));
+            instructions.AddRange(CreateRetDefault(methodDef));
             //After if statement, jumped to when successful check.
             instructions.Add(endIf);
 
@@ -464,8 +471,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="methodDef"></param>
         /// <returns></returns>
-        private List<Instruction> CreateRetDefault(ILProcessor processor, MethodDefinition methodDef)
+        public List<Instruction> CreateRetDefault(MethodDefinition methodDef)
         {
+            ILProcessor processor = methodDef.Body.GetILProcessor();
             List<Instruction> instructions = new List<Instruction>();
             //If requires a value return.
             if (methodDef.ReturnType != methodDef.Module.TypeSystem.Void)

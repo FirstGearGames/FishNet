@@ -140,6 +140,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e123f937d4b4f94c9cb6cc03944f786, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _addedNetworkObject: {fileID: 201277550}
   _jumpForce: 40
   _moveRate: 15
 --- !u!114 &201277550
@@ -155,7 +156,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 2
+  _prefabId: 10
   _scenePathHash: 0
   _sceneId: 0
   _sceneNetworkObjects:
@@ -195,8 +196,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 488cbbb5dbf987046bc461419b8565f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _addedNetworkObject: {fileID: 201277550}
   _sendInterval: 1
-  _predictionRatio: 0.9
 --- !u!1 &303449598207636365
 GameObject:
   m_ObjectHideFlags: 0
@@ -450,4 +451,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37c39a68e17740c4ea2b1fb940e5cd53, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _addedNetworkObject: {fileID: 201277550}
   _duration: 0.15

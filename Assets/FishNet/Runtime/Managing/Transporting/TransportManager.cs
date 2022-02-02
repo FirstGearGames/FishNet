@@ -213,29 +213,15 @@ namespace FishNet.Managing.Transporting
             //Split is needed.
             if (splitMessages && SplitRequired(channelId, segment.Count, out int requiredMessages, out int maxMessageSize))
             {
-                //Various conditions may trigger this to be true.
-                bool disconnectSelf = false;
-                //Client may not split packets.
-                int maximumClientMTU = _networkManager.ServerManager.MaximumClientMTU;
-                if (maximumClientMTU == -1)
-                {
-                    disconnectSelf = true;
-                }
-                //Client can split.
-                else
-                {                    
-                    if (segment.Count > maximumClientMTU)
-                        disconnectSelf = true;
-                }
-                //If must disconnect self.
-                if (disconnectSelf)
-                {
-                    if (_networkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"Client attempted to send a packet size of {segment.Count} which would exceed the MTU, and settings do not allow this. To allow clients to exceed MTU add a ServerManager component to your NetworkManager and adjust MaximumClientMTU.");
+                //Client is not allowed to send data sizes beyond MTU.
+                //if (_networkManager.ServerManager.LimitClientMTU) //todo uncomment and finish
+                //{
+                //    if (_networkManager.CanLog(LoggingType.Error))
+                //        Debug.LogError($"Local client attempted to send a packet size of {segment.Count} which would exceed the MTU, and settings do not allow this. To allow clients to send packets beyond MTU add a ServerManager component to your NetworkManager uncheck LimitClientMTU.");
 
-                    _networkManager.ClientManager.StopConnection();
-                    return;
-                }
+                //    _networkManager.ClientManager.StopConnection();
+                //    return;
+                //}
 
                 //If here split can be sent.
                 SendSplitData(null, ref segment, requiredMessages, maxMessageSize);

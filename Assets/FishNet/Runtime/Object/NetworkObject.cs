@@ -348,7 +348,7 @@ namespace FishNet.Object
                 if (newOwner != null && newOwner.IsActive && !newOwner.LoadedStartScenes)
                 {
                     if (NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Ownership has been transfered to ClientId {newOwner.ClientId} but this is not recommended until after they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+                        Debug.LogWarning($"Ownership has been transfered to ConnectionId {newOwner.ClientId} but this is not recommended until after they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
                 }
             }
 

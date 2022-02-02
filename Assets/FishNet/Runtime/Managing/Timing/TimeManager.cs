@@ -459,9 +459,17 @@ namespace FishNet.Managing.Timing
         /// <param name="automatic"></param>
         private void SetAutomaticSimulation(PhysicsMode mode)
         {
+            string savedFixedTime = "SavedFixedTimeFN";
             //Do not automatically simulate.
             if (mode == PhysicsMode.TimeManager)
             {
+#if UNITY_EDITOR
+                //Preserve user tick rate.
+                PlayerPrefs.SetFloat(savedFixedTime, Time.fixedDeltaTime);
+                //Let the player know.
+                if (Time.fixedDeltaTime != (float)TickDelta)
+                    Debug.LogWarning("Time.fixedDeltaTime is being overriden with TickDelta");
+#endif
                 Time.fixedDeltaTime = (float)TickDelta;
                 /* Only check this if network manager
                  * is not null. It would be null via
@@ -487,6 +495,16 @@ namespace FishNet.Managing.Timing
             //Automatically simulate.
             else
             {
+#if UNITY_EDITOR
+                float savedTime = PlayerPrefs.GetFloat(savedFixedTime, -1f);
+                if (savedTime != -1f && Time.fixedDeltaTime != savedTime)
+                {
+                    Debug.LogWarning("Time.fixedDeltaTime has been set back to user values.");
+                    Time.fixedDeltaTime = savedTime;
+                }
+
+                PlayerPrefs.DeleteKey(savedFixedTime);
+#endif
                 Physics.autoSimulation = true;
 #if !UNITY_2020_2_OR_NEWER
                 Physics2D.autoSimulation = true;
@@ -652,14 +670,19 @@ namespace FishNet.Managing.Timing
             SynchronizeTick(arg1);
         }
 
+        #region TicksToTime float. 
         /// <summary>
         /// Converts current ticks to time.
         /// </summary>
+        /// <param name="useLocalTick">True to use the LocalTick, false to use Tick.</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float TicksToTime()
+        public float TicksToTime(bool useLocalTick = true)
         {
-            return TicksToTime(LocalTick);
+            if (useLocalTick)
+                return TicksToTime(LocalTick);
+            else
+                return TicksToTime(Tick);
         }
         /// <summary>
         /// Converts a number ticks to time.
@@ -673,14 +696,14 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Converts time passed from currentTick to previous. Value will be negative if previousTick is larger than currentTick.
         /// </summary>
-        /// <param name="currentTick"></param>
-        /// <param name="previousTick"></param>
+        /// <param name="currentTick">The current tick.</param>
+        /// <param name="previousTick">The previous tick.</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float TicksToTime(uint currentTick, uint previousTick)
         {
-            float multiplier;
-            float result;
+            double multiplier;
+            double result;
             if (currentTick >= previousTick)
             {
                 multiplier = 1f;
@@ -692,17 +715,69 @@ namespace FishNet.Managing.Timing
                 result = TicksToTime(previousTick - currentTick);
             }
 
-            return result * multiplier;
+            return (float)(result * multiplier);
         }
+        #endregion//Remove on 2022/06/01 in favor of AllowStacking.
+
+        #region TicksToTimeDouble. //Remove on 2022/06/01 and change TicksToTime to return double.
+        /// <summary>
+        /// Converts current ticks to time.
+        /// </summary>
+        /// <param name="useLocalTick">True to use the LocalTick, false to use Tick.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double TicksToTimeDouble(bool useLocalTick = true)
+        {
+            if (useLocalTick)
+                return TicksToTimeDouble(LocalTick);
+            else
+                return TicksToTimeDouble(Tick);
+        }
+        /// <summary>
+        /// Converts a number ticks to time.
+        /// </summary>
+        /// <param name="ticks">Ticks to convert.</param>
+        /// <returns></returns>
+        public double TicksToTimeDouble(uint ticks)
+        {
+            return (TickDelta * ticks);
+        }
+        /// <summary>
+        /// Converts time passed from currentTick to previous. Value will be negative if previousTick is larger than currentTick.
+        /// </summary>
+        /// <param name="currentTick">The current tick.</param>
+        /// <param name="previousTick">The previous tick.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double TicksToTimeDouble(uint currentTick, uint previousTick)
+        {
+            double multiplier;
+            double result;
+            if (currentTick >= previousTick)
+            {
+                multiplier = 1f;
+                result = TicksToTimeDouble(currentTick - previousTick);
+            }
+            else
+            {
+                multiplier = -1f;
+                result = TicksToTimeDouble(previousTick - currentTick);
+            }
+
+            return (result * multiplier);
+        }
+        #endregion 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
         /// <summary>
         /// Converts time to ticks.
         /// </summary>
         /// <param name="time">Time to convert.</param>
         /// <returns></returns>
-        public uint TimeToTicks(float time, TickRounding rounding = TickRounding.RoundNearest)
+        public uint TimeToTicks(double time, TickRounding rounding = TickRounding.RoundNearest)
         {
-            double result = ((double)time / TickDelta);
+            double result = (time / TickDelta);
 
             if (rounding == TickRounding.RoundNearest)
                 return (uint)Math.Round(result);
