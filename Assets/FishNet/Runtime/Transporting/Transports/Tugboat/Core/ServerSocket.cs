@@ -81,6 +81,10 @@ namespace FishNet.Tugboat.Server
         /// </summary>
         private string _key = string.Empty;
         /// <summary>
+        /// How long in seconds until client times from server.
+        /// </summary>
+        private int _timeout;
+        /// <summary>
         /// Server socket manager.
         /// </summary>
         private NetManager _server;
@@ -110,6 +114,16 @@ namespace FishNet.Tugboat.Server
         }
 
         /// <summary>
+        /// Updates the Timeout value as seconds.
+        /// </summary>
+        internal void UpdateTimeout(int timeout)
+        {
+            _timeout = timeout;
+            base.UpdateTimeout(_server, timeout);
+        }
+
+
+        /// <summary>
         /// Threaded operation to process server actions.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -125,6 +139,8 @@ namespace FishNet.Tugboat.Server
 
             _server = new NetManager(listener, null, _attackResponseType);
             _server.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
+
+            UpdateTimeout(_timeout);
 
             bool startResult = _server.Start(_port);
 

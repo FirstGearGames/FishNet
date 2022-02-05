@@ -155,7 +155,7 @@ namespace FishNet.Managing
         /// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
         /// </summary>
         [Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
-        [SerializeField]
+        [SerializeField] 
         private bool _refreshDefaultPrefabs = true;
         /// <summary>
         /// True to have your application run while in the background.
@@ -444,6 +444,9 @@ namespace FishNet.Managing
         }
         private void Reset()
         {
+            if (Application.isPlaying)
+                return;
+
             if (SpawnablePrefabs == null)
             {
                 SpawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);

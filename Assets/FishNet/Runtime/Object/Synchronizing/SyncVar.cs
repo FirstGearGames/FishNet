@@ -71,6 +71,15 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
+        /// Called when the SyncType has been registered, but not yet initialized over the network.
+        /// </summary>
+        protected override void Registered()
+        {
+            base.Registered();
+            _initialValue = _value;
+        }
+
+        /// <summary>
         /// Sets initial values to next.
         /// </summary>
         /// <param name="next"></param>
@@ -254,8 +263,9 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public override void Reset()
         {
-            _value = _initialValue;
             base.Reset();
+            _value = _initialValue;
+            _previousClientValue = _initialValue;            
         }
     }
 }

@@ -1274,6 +1274,8 @@ namespace LiteNetLib
                             "[UPDATE] Disconnect by timeout: {0} > {1}",
                             _timeSinceLastPacket,
                             NetManager.DisconnectTimeout);
+
+                        UnityEngine.Debug.Log(_timeSinceLastPacket + ",  " +  NetManager.DisconnectTimeout);
                         NetManager.DisconnectPeerForce(this, DisconnectReason.Timeout, 0, null);
                         return;
                     }

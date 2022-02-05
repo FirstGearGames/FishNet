@@ -49,11 +49,10 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Populates this DefaultPrefabObjects.
         /// </summary>
-        internal void PopulateDefaultPrefabs(bool log = true)
+        internal void PopulateDefaultPrefabs(bool log = true, bool clear = true)
         {
 #if UNITY_EDITOR
-            base.Clear();
-            DefaultPrefabsFinder.PopulateDefaultPrefabs(log);
+            DefaultPrefabsFinder.PopulateDefaultPrefabs(log, clear);
 #endif
         }
         /* Try to recover invalid/null prefab errors in editor.

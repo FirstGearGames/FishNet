@@ -88,7 +88,13 @@ namespace FishNet.Object.Synchronizing.Internal
             NetworkBehaviour = nb;
             SyncIndex = index;
             NetworkBehaviour.RegisterSyncType(this, SyncIndex);
+            Registered();
         }
+
+        /// <summary>
+        /// Called when the SyncType has been registered, but not yet initialized over the network.
+        /// </summary>
+        protected virtual void Registered() { }
 
         /// <summary>
         /// PreInitializes this for use with the network.

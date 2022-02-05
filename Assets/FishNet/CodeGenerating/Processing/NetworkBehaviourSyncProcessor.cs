@@ -702,37 +702,37 @@ namespace FishNet.CodeGenerating.Processing
 
             MethodDefinition injectionMethodDef;
             ILProcessor processor;
-            List<Instruction> instructions = new List<Instruction>();
+            List<Instruction> insts = new List<Instruction>();
 
             /* Initialize with attribute settings. */
             injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             processor = injectionMethodDef.Body.GetILProcessor();
             //
 
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)writePermissions));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)readPermissions));
-            instructions.Add(processor.Create(OpCodes.Ldc_R4, sendRate));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4_1)); //true for syncObject.
-            instructions.Add(processor.Create(OpCodes.Call, initializeInstanceMr));
-            processor.InsertFirst(instructions);
+            insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+            insts.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)writePermissions));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)readPermissions));
+            insts.Add(processor.Create(OpCodes.Ldc_R4, sendRate));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
+            insts.Add(processor.Create(OpCodes.Ldc_I4_1)); //true for syncObject.
+            insts.Add(processor.Create(OpCodes.Call, initializeInstanceMr));
+            processor.InsertFirst(insts);
 
-            instructions.Clear();
+            insts.Clear();
             /* Set NetworkBehaviour and SyncIndex to use. */
             injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
             processor = injectionMethodDef.Body.GetILProcessor();
             //
             uint hash = (uint)syncCount;
             //uint hash = originalFieldDef.FullName.GetStableHash32();
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
-            instructions.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMr));
+            insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+            insts.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
+            insts.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
+            insts.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMr));
 
-            processor.InsertLast(instructions);
+            processor.InsertLast(insts);
 
             return true;
         }
@@ -769,24 +769,24 @@ namespace FishNet.CodeGenerating.Processing
 
             MethodDefinition injectionMethodDef;
             ILProcessor processor;
-            List<Instruction> instructions = new List<Instruction>();
+            List<Instruction> insts = new List<Instruction>();
 
             /* Initialize with attribute settings. */
             injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             processor = injectionMethodDef.Body.GetILProcessor();
 
             //InitializeInstance.
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)writePermissions));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)readPermissions));
-            instructions.Add(processor.Create(OpCodes.Ldc_R4, sendRate));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4_1)); //true for syncObject.
-            instructions.Add(processor.Create(OpCodes.Call, initializeInstanceMr));
-            processor.InsertFirst(instructions);
+            insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+            insts.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)writePermissions));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)readPermissions));
+            insts.Add(processor.Create(OpCodes.Ldc_R4, sendRate));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
+            insts.Add(processor.Create(OpCodes.Ldc_I4_1)); //true for syncObject.
+            insts.Add(processor.Create(OpCodes.Call, initializeInstanceMr));
+            processor.InsertFirst(insts);
 
-            instructions.Clear();
+            insts.Clear();
             /* Set NetworkBehaviour and SyncIndex to use. */
             injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
             processor = injectionMethodDef.Body.GetILProcessor();
@@ -794,13 +794,13 @@ namespace FishNet.CodeGenerating.Processing
             //SetSyncIndex.
             uint hash = (uint)syncCount;
             //uint hash = originalFieldDef.FullName.GetStableHash32();
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
-            instructions.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMr));
+            insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+            insts.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
+            insts.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
+            insts.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMr));
 
-            processor.InsertLast(instructions);
+            processor.InsertLast(insts);
 
             return true;
         }
@@ -837,28 +837,34 @@ namespace FishNet.CodeGenerating.Processing
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
 
-            List<Instruction> instructions = new List<Instruction>();
+            List<Instruction> insts = new List<Instruction>();
 
             /* Initialize with attribute settings. */
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)writePermissions));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)readPermissions));
-            instructions.Add(processor.Create(OpCodes.Ldc_R4, sendRate));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
-            instructions.Add(processor.Create(OpCodes.Ldc_I4_1)); //true for syncObject.
-            instructions.Add(processor.Create(OpCodes.Call, initializeInstanceMr));
+            insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+            insts.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)writePermissions));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)readPermissions));
+            insts.Add(processor.Create(OpCodes.Ldc_R4, sendRate));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
+            insts.Add(processor.Create(OpCodes.Ldc_I4_1)); //true for syncObject.
+            insts.Add(processor.Create(OpCodes.Call, initializeInstanceMr));
+            processor.InsertFirst(insts);
+
+            insts.Clear();
+            /* Set NetworkBehaviour and SyncIndex to use. */
+            injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
+            processor = injectionMethodDef.Body.GetILProcessor();
 
             //Set NetworkBehaviour and SyncIndex to use.
             uint hash = (uint)syncCount;
             //uint hash = originalFieldDef.FullName.GetStableHash32();
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
-            instructions.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMr));
+            insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+            insts.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
+            insts.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
+            insts.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMr));
 
-            processor.InsertFirst(instructions);
+            processor.InsertFirst(insts);
 
             return true;
         }
@@ -913,6 +919,12 @@ namespace FishNet.CodeGenerating.Processing
                 insts.Add(processor.Create(OpCodes.Newobj, gitActionCtorMr));
                 insts.Add(processor.Create(OpCodes.Callvirt, genericAddMr));
             }
+            processor.InsertFirst(insts);
+
+            insts.Clear();
+            /* Set NetworkBehaviour and SyncIndex to use. */
+            injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
+            processor = injectionMethodDef.Body.GetILProcessor();
 
             uint hash = (uint)syncCount;
             //uint hash = originalFieldDef.FullName.GetStableHash32();

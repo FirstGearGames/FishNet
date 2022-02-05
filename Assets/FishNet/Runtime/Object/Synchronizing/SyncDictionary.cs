@@ -100,6 +100,10 @@ namespace FishNet.Object.Synchronizing
 
         #region Private.
         /// <summary>
+        /// Initial values for the dictionary.
+        /// </summary>
+        private IDictionary<TKey, TValue> _initialValues = new Dictionary<TKey, TValue>();
+        /// <summary>
         /// Changed data which will be sent next tick.
         /// </summary>
         private readonly List<ChangeData> _changed = new List<ChangeData>();
@@ -137,6 +141,15 @@ namespace FishNet.Object.Synchronizing
             return (collection as Dictionary<TKey, TValue>);
         }
 
+        /// <summary>
+        /// Called when the SyncType has been registered, but not yet initialized over the network.
+        /// </summary>
+        protected override void Registered()
+        {
+            base.Registered();
+            foreach (KeyValuePair<TKey, TValue> item in Collection)
+                _initialValues[item.Key] = item.Value;
+        }
 
         /// <summary>
         /// Adds an operation and invokes callback locally.
@@ -339,7 +352,14 @@ namespace FishNet.Object.Synchronizing
         {
             base.Reset();
             _changed.Clear();
+            Collection.Clear();
             ClientHostCollection.Clear();
+
+            foreach (KeyValuePair<TKey,TValue> item in _initialValues)
+            {
+                Collection[item.Key] = item.Value;
+                ClientHostCollection[item.Key] = item.Value;
+            }
         }
 
 

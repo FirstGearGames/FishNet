@@ -164,6 +164,8 @@ namespace FishNet.Object
 
             Observers.Clear();
             Deinitializing = true;
+
+            //Don't need to reset sync types if object is being destroyed.
         }
 
         /// <summary>
@@ -294,6 +296,8 @@ namespace FishNet.Object
                 RemoveClientRpcLinkIndexes();
             }
 
+            if (SceneObject)
+                ResetSyncTypes();
             if (asServer)
                 Observers.Clear();
         }

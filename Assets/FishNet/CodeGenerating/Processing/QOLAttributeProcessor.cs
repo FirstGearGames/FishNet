@@ -109,12 +109,14 @@ namespace FishNet.CodeGenerating.Processing
             TypeDefinition typeDef = methodDef.DeclaringType;
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
+            //True to use InstanceFInder.
+            bool useStatic = (methodDef.IsStatic|| !inheritsNetworkBehaviour);
+
             if (qolType == QolAttributeType.Client)
             {
-                if (BuildInformation.RemoveClientLogic)
+                if (BuildInformation.IsServerOnlyBuild)
                 {
-                   
-                }
+                                    }
                 else
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
@@ -125,29 +127,25 @@ namespace FishNet.CodeGenerating.Processing
                     bool requireOwnership = qolAttribute.GetField("RequireOwnership", false);
                     //If (!base.IsOwner);
                     if (requireOwnership)
-                        CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(processor, logging, false, true);
+                        CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(methodDef, logging, false, true);
 
-                    if (BuildInformation.CheckIsClient)
-                    {
-                        CodegenSession.ObjectHelper.CreateIsClientCheck(processor, methodDef, logging, inheritsNetworkBehaviour, true);
-                    }
+                    
+                        CodegenSession.ObjectHelper.CreateIsClientCheck(methodDef, logging, useStatic, true);
                 }
             }
             else if (qolType == QolAttributeType.Server)
             {
-                if (BuildInformation.RemoveServerLogic)
-                {
-                   
+                if (BuildInformation.IsClientOnlyBuild)
+                { 
+                    
                 }
                 else
                 {
-                    if (BuildInformation.CheckIsServer)
-                    {
+                    
                         LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
-                        CodegenSession.ObjectHelper.CreateIsServerCheck(processor, methodDef, logging, !inheritsNetworkBehaviour, true);
-                    }
+                        CodegenSession.ObjectHelper.CreateIsServerCheck(methodDef, logging, useStatic, true);
+                        
                 }
-
             }
         }
 

@@ -91,8 +91,8 @@ namespace FishNet.CodeGenerating.Processing
                 /* //perf rpcCounts can be optimized by having different counts
                  * for target, observers, server, replicate, and reoncile rpcs. Since
                  * each registers to their own delegates this is possible. */
-
-               
+                
+                
 
                 /* SyncTypes. */
                 uint syncTypeStartCount;
@@ -169,7 +169,7 @@ namespace FishNet.CodeGenerating.Processing
             return error;
         }
 
-       
+        
 
         /// <summary>
         /// Gets the top-most parent away method.

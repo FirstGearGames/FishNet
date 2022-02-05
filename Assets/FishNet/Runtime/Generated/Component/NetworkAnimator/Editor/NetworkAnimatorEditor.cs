@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-namespace FishNet.Component.Animating
+namespace FishNet.Component.Animating.Editing
 {
 
     [CustomEditor(typeof(NetworkAnimator), true)]

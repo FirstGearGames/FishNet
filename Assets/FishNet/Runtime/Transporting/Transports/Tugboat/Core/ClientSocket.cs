@@ -73,13 +73,12 @@ namespace FishNet.Tugboat.Client
         }
 
         /// <summary>
-        /// Updates the Timeout value.
+        /// Updates the Timeout value as seconds.
         /// </summary>
         internal void UpdateTimeout(int timeout)
         {
             _timeout = timeout;
-            if (_client != null)
-                _client.DisconnectTimeout = timeout;
+            base.UpdateTimeout(_client, timeout);
         }
 
         /// <summary>
@@ -95,12 +94,7 @@ namespace FishNet.Tugboat.Client
             _client = new NetManager(listener);
             _client.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
-            //If timeout is not specified then use max value.
-            if (_timeout == 0)
-                _client.DisconnectTimeout = int.MaxValue;
-            //Otherwise convert users seconds to ms.
-            else
-                _client.DisconnectTimeout = Math.Min(int.MaxValue, (_timeout * 1000));
+            UpdateTimeout(_timeout);
 
             _localConnectionStates.Enqueue(LocalConnectionStates.Starting);
             _client.Start();
@@ -158,10 +152,13 @@ namespace FishNet.Tugboat.Client
         /// <summary>
         /// Stops the local socket.
         /// </summary>
-        internal bool StopConnection()
+        internal bool StopConnection(DisconnectInfo? info = null)
         {
             if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
                 return false;
+
+            if (info != null && base.Transport.NetworkManager.CanLog(LoggingType.Common))
+                Debug.Log($"Local client disconnect reason: {info.Value.Reason}.");
 
             base.SetConnectionState(LocalConnectionStates.Stopping, false);
             StopSocketOnThread();
@@ -185,7 +182,7 @@ namespace FishNet.Tugboat.Client
         /// </summary>
         private void Listener_PeerDisconnectedEvent(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            StopConnection();
+            StopConnection(disconnectInfo);
         }
 
         /// <summary>

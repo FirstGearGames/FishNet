@@ -348,12 +348,14 @@ namespace FishNet.Object
 
 
         /// <summary>
-        /// Resets all SyncVars for this NetworkBehaviour.
+        /// Resets all SyncTypes for this NetworkBehaviour.
         /// </summary>
         internal void ResetSyncTypes()
         {
-            foreach (SyncBase sb in _syncVars.Values)
-                sb.Reset();
+            foreach (SyncBase item in _syncVars.Values)
+                item.Reset();
+            foreach (SyncBase item in _syncObjects.Values)
+                item.Reset();
         }
 
         /// <summary>

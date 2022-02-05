@@ -119,7 +119,7 @@ namespace FishNet.Managing.Client
         private void ParseBroadcast(PooledReader reader)
         {
             ushort key = reader.ReadUInt16();
-
+            int length = reader.ReadInt32();
             // try to invoke the handler for that message
             if (_broadcastHandlers.TryGetValue(key, out HashSet<ServerBroadcastDelegate> handlers))
             {
@@ -134,8 +134,7 @@ namespace FishNet.Managing.Client
             }
             else
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Broadcast not found for key {key}.");
+                reader.Skip(length);
             }
         }
 

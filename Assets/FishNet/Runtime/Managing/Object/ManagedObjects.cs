@@ -34,14 +34,16 @@ namespace FishNet.Managing.Object
         protected Dictionary<ulong, NetworkObject> SceneObjects = new Dictionary<ulong, NetworkObject>();
         #endregion
 
-        public ManagedObjects()
+        /// <summary>
+        /// Subscribes to SceneManager.SceneLoaded event.
+        /// </summary>
+        /// <param name="subscribe"></param>
+        internal void SubscribeToSceneLoaded(bool subscribe)
         {
+            if (subscribe)
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
-        }
-
-        ~ManagedObjects()
-        {
-            SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+            else
+                SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
         }
 
         /// <summary>

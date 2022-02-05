@@ -7,6 +7,16 @@ namespace FishNet.CodeGenerating.Helping.Extension
     internal static class MethodDefinitionExtensions
     {
         /// <summary>
+        /// Clears the method content and returns ret.
+        /// </summary>
+        internal static void ClearMethodWithRet(this MethodDefinition md)
+        {
+            md.Body.Instructions.Clear();
+            ILProcessor processor = md.Body.GetILProcessor();
+            CodegenSession.ObjectHelper.CreateRetDefault(md);
+        }
+
+        /// <summary>
         /// Returns the ParameterDefinition index from end of parameters.
         /// </summary>
         /// <param name="md"></param>

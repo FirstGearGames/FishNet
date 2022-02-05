@@ -110,7 +110,7 @@ namespace FishNet.Connection
         }
         public override int GetHashCode()
         {
-            return base.GetHashCode();
+            return ClientId;
         }
         public static bool operator ==(NetworkConnection a, NetworkConnection b)
         {

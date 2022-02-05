@@ -66,7 +66,7 @@ namespace FishNet.Example.Scened
                 ver * _moveRate * Time.deltaTime);
 
             transform.position += transform.TransformDirection(direction);
-            transform.Rotate(new Vector3(0f, hor * 0.5f, 0f));
+            transform.Rotate(new Vector3(0f, hor * 100f * Time.deltaTime, 0f));
         }
 
     }

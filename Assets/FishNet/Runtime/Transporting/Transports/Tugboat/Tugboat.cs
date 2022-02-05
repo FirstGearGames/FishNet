@@ -67,7 +67,7 @@ namespace FishNet.Tugboat
         /// How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.
         /// </summary>
         [Tooltip("How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.")]
-        [Range(0, MAX_TIMEOUT)]
+        [Range(0, MAX_TIMEOUT_SECONDS)]
         [SerializeField]
         private ushort _timeout = 15;
         #endregion
@@ -84,7 +84,7 @@ namespace FishNet.Tugboat
         #endregion
 
         #region Const.
-        private const ushort MAX_TIMEOUT = 1800;
+        private const ushort MAX_TIMEOUT_SECONDS = 1800;
         /// <summary>
         /// Minimum UDP packet size allowed.
         /// </summary>
@@ -164,7 +164,7 @@ namespace FishNet.Tugboat
         {
             OnServerConnectionState?.Invoke(connectionStateArgs);
             LocalConnectionStates state = connectionStateArgs.ConnectionState;
-            UpdateClientTimeout();
+            UpdateTimeout();
         }
         /// <summary>
         /// Handles a ConnectionStateArgs for a remote client.
@@ -391,6 +391,7 @@ namespace FishNet.Tugboat
         private bool StartServer()
         {
             _server.Initialize(this, _unreliableMTU);
+            UpdateTimeout();
             return _server.StartConnection(_port, _maximumClients, AttackResponseType);
         }
 
@@ -409,18 +410,20 @@ namespace FishNet.Tugboat
         private bool StartClient(string address)
         {
             _client.Initialize(this, _unreliableMTU);
-            UpdateClientTimeout();
+            UpdateTimeout();
             return _client.StartConnection(address, _port);
         }
 
         /// <summary>
         /// Updates clients timeout values.
         /// </summary>
-        private void UpdateClientTimeout()
+        private void UpdateTimeout()
         {
             //If server is running set timeout to max. This is for host only.
-            int timeout = (GetConnectionState(true) != LocalConnectionStates.Stopped) ? MAX_TIMEOUT : _timeout;
+            //int timeout = (GetConnectionState(true) != LocalConnectionStates.Stopped) ? MAX_TIMEOUT_SECONDS : _timeout;
+            int timeout = (Application.isEditor) ? MAX_TIMEOUT_SECONDS : _timeout;
             _client.UpdateTimeout(timeout);
+            _server.UpdateTimeout(timeout);
         }
         /// <summary>
         /// Stops the client.

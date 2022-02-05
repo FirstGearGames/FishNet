@@ -746,7 +746,6 @@ namespace FishNet.Managing.Scened
                     float totalPercent = (i * maximumIndexWorth);
                     //Add this scenes progress onto total percent.
                     totalPercent += Mathf.Lerp(0f, maximumIndexWorth, loadAsync.progress);
-
                     //Dispatch with total percent.
                     InvokeOnScenePercentChange(data, totalPercent);
                     yield return null;

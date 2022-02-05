@@ -203,30 +203,11 @@ namespace FishNet.CodeGenerating.Helping
             List<Instruction> insts = new List<Instruction>();
             insts.Add(processor.Create(OpCodes.Ldarg_0));
 
-            //uint methodHash = originalMethodDef.FullName.GetStableHash32();
             insts.Add(processor.Create(OpCodes.Ldc_I4, (int)methodHash));
 
             /* Create delegate and call NetworkBehaviour method. */
             insts.Add(processor.Create(OpCodes.Ldnull));
             insts.Add(processor.Create(OpCodes.Ldftn, readerMethodDef));
-            ////Server.
-            //if (rpcType == RpcType.Server)
-            //{
-            //    insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ServerRpcDelegateDelegateConstructor_MethodRef));
-            //    insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_RegisterServerRpc_MethodRef));
-            //}
-            ////Observers.
-            //else if (rpcType == RpcType.Observers)
-            //{
-            //    insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef));
-            //    insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_RegisterObserversRpc_MethodRef));
-            //}
-            ////Target
-            //else if (rpcType == RpcType.Target)
-            //{
-            //    insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef));
-            //    insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_RegisterTargetRpc_MethodRef));
-            //}
 
             /* Has to be done last. This allows the NetworkBehaviour to
              * initialize it's fields first. */
@@ -242,16 +223,11 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="originalMethodDef"></param>
         /// <param name="readerMethodDef"></param>
         /// <param name="rpcType"></param>
-        internal void CreateRpcDelegate(bool runLocally, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, RpcType rpcType, uint methodHash, CustomAttribute rpcAttribute)
+        internal void CreateRpcDelegate(bool runLocally, TypeDefinition typeDef, MethodDefinition readerMethodDef, RpcType rpcType, uint methodHash, CustomAttribute rpcAttribute)
         {
-            bool isServerRpc = (rpcType == RpcType.Server);
-            //Remove code not needed.
-            if (isServerRpc && BuildInformation.RemoveServerLogic)
-                return;
-            else if (!isServerRpc && BuildInformation.RemoveClientLogic)
-                return;
+            
 
-            MethodDefinition methodDef = originalMethodDef.DeclaringType.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
+            MethodDefinition methodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             List<Instruction> insts = new List<Instruction>();
@@ -293,12 +269,13 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="retIfOwner">True if to ret when owner, false to ret when not owner.</param>
         /// <returns>Returns Ret instruction.</returns>
-        internal Instruction CreateLocalClientIsOwnerCheck(ILProcessor processor, LoggingType loggingType, bool retIfOwner, bool insertFirst)
+        internal Instruction CreateLocalClientIsOwnerCheck(MethodDefinition methodDef, LoggingType loggingType, bool retIfOwner, bool insertFirst)
         {
             List<Instruction> instructions = new List<Instruction>();
             /* This is placed after the if check.
              * Should the if check pass then code
              * jumps to this instruction. */
+            ILProcessor processor = methodDef.Body.GetILProcessor();
             Instruction endIf = processor.Create(OpCodes.Nop);
 
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //argument: this
@@ -370,11 +347,12 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="retInstruction"></param>
         /// <param name="warn"></param>
-        internal void CreateIsClientCheck(ILProcessor processor, MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst)
+        internal void CreateIsClientCheck(MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst)
         {
             /* This is placed after the if check.
              * Should the if check pass then code
              * jumps to this instruction. */
+            ILProcessor processor = methodDef.Body.GetILProcessor();
             Instruction endIf = processor.Create(OpCodes.Nop);
 
             List<Instruction> instructions = new List<Instruction>();
@@ -421,11 +399,12 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="warn"></param>
-        internal void CreateIsServerCheck(ILProcessor processor, MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst)
+        internal void CreateIsServerCheck(MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst)
         {
             /* This is placed after the if check.
             * Should the if check pass then code
             * jumps to this instruction. */
+            ILProcessor processor = methodDef.Body.GetILProcessor();
             Instruction endIf = processor.Create(OpCodes.Nop);
 
             List<Instruction> instructions = new List<Instruction>();

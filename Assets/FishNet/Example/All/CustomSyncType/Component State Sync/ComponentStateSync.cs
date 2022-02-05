@@ -121,9 +121,10 @@ namespace FishNet.Example.ComponentStateSync
         /// </summary>
         public override void WriteFull(PooledWriter writer)
         {
-            if (GetState() == _initialState)
-                return;
-
+            /* Always write full for this custom sync type.
+             * It would be difficult to know if the
+             * state has changed given it's a boolean, and
+             * may or may not be true/false after pooling is added. */
             WriteDelta(writer, false);
         }
 
@@ -149,14 +150,6 @@ namespace FishNet.Example.ComponentStateSync
                 Component.enabled = nextValue;
 
             OnChange?.Invoke(Component, prevValue, nextValue, asServer);
-        }
-
-        /// <summary>
-        /// Resets to initialized values.
-        /// </summary>
-        public override void Reset()
-        {
-            base.Reset();
         }
 
         /// <summary>

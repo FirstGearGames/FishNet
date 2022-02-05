@@ -76,6 +76,12 @@ namespace FishNet.Managing.Client
 #endif
         #endregion
 
+        private void OnDestroy()
+        {
+            Objects?.SubscribeToSceneLoaded(false);
+        }
+
+
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
@@ -83,7 +89,8 @@ namespace FishNet.Managing.Client
         internal void InitializeOnce(NetworkManager manager)
         {
             NetworkManager = manager;
-            Objects = new ClientObjects(manager);            
+            Objects = new ClientObjects(manager);
+            Objects.SubscribeToSceneLoaded(true);
             /* Unsubscribe before subscribing.
              * Shouldn't be an issue but better safe than sorry. */
             SubscribeToEvents(false);

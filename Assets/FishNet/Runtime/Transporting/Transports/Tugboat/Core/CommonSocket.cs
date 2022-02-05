@@ -64,6 +64,17 @@ namespace FishNet.Tugboat
         }
 
         /// <summary>
+        /// Updates the timeout for NetManager.
+        /// </summary>
+        protected void UpdateTimeout(NetManager netManager, int timeout)
+        {
+            if (netManager == null)
+                return;
+            
+            timeout = (timeout == 0) ? int.MaxValue : Math.Min(int.MaxValue, (timeout * 1000));
+            netManager.DisconnectTimeout = timeout;
+        }
+        /// <summary>
         /// Clears a queue using Packet type.
         /// </summary>
         /// <param name="queue"></param>

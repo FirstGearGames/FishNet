@@ -109,6 +109,11 @@ namespace FishNet.Managing.Server
         private SplitReader _splitReader = new SplitReader();
         #endregion
 
+        private void OnDestroy()
+        {            
+            Objects?.SubscribeToSceneLoaded(false);
+        }
+
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
@@ -117,6 +122,7 @@ namespace FishNet.Managing.Server
         {
             NetworkManager = manager;
             Objects = new ServerObjects(manager);
+            Objects.SubscribeToSceneLoaded(true);
             InitializeRpcLinks();
             //Unsubscribe first incase already subscribed.
             SubscribeToTransport(false);

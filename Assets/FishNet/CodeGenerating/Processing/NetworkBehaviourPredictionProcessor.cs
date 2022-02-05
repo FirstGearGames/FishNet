@@ -1710,7 +1710,7 @@ namespace FishNet.CodeGenerating.Processing
              * unreliably. It's possible they will arrive after
              * an owner change. */
             //      if (!base.IsOwner) return;
-            CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(processor, LoggingType.Off, false, false);
+            CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdMd, LoggingType.Off, false, false); 
 
             //uint receivedTick = data.DATA_TICK_FIELD_NAME.
             VariableDefinition receivedTickVd = CodegenSession.GeneralHelper.CreateVariable(createdMd, typeof(uint));

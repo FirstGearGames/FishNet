@@ -130,6 +130,7 @@ namespace FishNet.Managing.Server
         private void ParseBroadcast(PooledReader reader, NetworkConnection conn)
         {
             ushort key = reader.ReadUInt16();
+            int length = reader.ReadInt32();
 
             // try to invoke the handler for that message
             if (_broadcastHandlers.TryGetValue(key, out HashSet<ClientBroadcastDelegate> handlers))
@@ -142,6 +143,10 @@ namespace FishNet.Managing.Server
                     reader.Position = readerStartPosition;
                     handler.Invoke(conn, reader);
                 }
+            }
+            else
+            {
+                reader.Skip(length);
             }
         }
 

@@ -83,10 +83,12 @@ namespace FishNet.Editing
         /// Finds all NetworkObjects in project and adds them to defaultPrefabs.
         /// </summary>
         /// <returns>True if was populated from assets.</returns>
-        internal static bool PopulateDefaultPrefabs(bool log = true)
+        internal static bool PopulateDefaultPrefabs(bool log = true, bool clear = false)
         {
             if (_defaultPrefabs == null)
                 return false;
+            if (clear)
+                _defaultPrefabs.Clear();
             if (_defaultPrefabs.GetObjectCount() > 0)
                 return false;
 

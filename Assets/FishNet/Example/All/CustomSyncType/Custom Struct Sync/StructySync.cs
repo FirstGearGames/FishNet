@@ -73,6 +73,10 @@ namespace FishNet.Example.CustomSyncObject
 
         #region Private.
         /// <summary>
+        /// Initial value when initialized.
+        /// </summary>
+        private Structy _initialValue;
+        /// <summary>
         /// Value this SyncType is for, which is Structy.
         /// </summary>
         private Structy _value = new Structy();
@@ -92,6 +96,13 @@ namespace FishNet.Example.CustomSyncObject
         /// </summary>
         private bool _valuesChanged;
         #endregion
+
+
+        protected override void Registered()
+        {
+            base.Registered();
+            _initialValue = _value;
+        }
 
         /// <summary>
         /// Adds an operation and invokes locally.
@@ -228,8 +239,8 @@ namespace FishNet.Example.CustomSyncObject
         {
             base.Reset();
             _changed.Clear();
-            _value = default(Structy);
-            _clientValue = default(Structy);
+            _value = _initialValue;
+            _clientValue = _initialValue;
             _valuesChanged = false;
         }
 

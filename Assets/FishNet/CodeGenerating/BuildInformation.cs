@@ -8,11 +8,11 @@ public class BuildInformation
     /// <summary>
     /// True to remove server only logic.
     /// </summary>
-    public static bool RemoveServerLogic => (IsBuilding && !IsHeadless && !IsDevelopment);
+    public static bool IsClientOnlyBuild => (IsBuilding && !IsHeadless && !IsDevelopment);
     /// <summary>
     /// True to remove client only logic.
     /// </summary>
-    public static bool RemoveClientLogic => (IsBuilding && IsHeadless);
+    public static bool IsServerOnlyBuild => (IsBuilding && IsHeadless);
     /// <summary>
     /// True to include IsClient checks.
     /// </summary>
