@@ -10,7 +10,9 @@
 
 1. License Grant to the Software. FirstGearGames grants to you a worldwide, non-exclusive, no-charge, and royalty-free license to reproduce, modify, and use the Software for developed game, or other content with Software.
 
-1.1 Exclusions. Other products of like Software (eg: networking solutions) may not use, reverse engineer, or implement Software in part or full. Exclusions do not apply to parts of Software which are governed by a third-party license, nor to content or works created specifically to be used with Software, such as tools, add-ons, games, or improvements for Software.
+1.1 Exclusions. Other products of like Software (eg: networking solutions) may not use, reverse engineer, or implement Software in part or full. Other products not of like Software, such as add-ons, tools, or assets may be created specifically to be used with Software in it's original, unmodified form.
+
+1.2 Exclusions do not apply to parts of Software which are governed by a third-party license, nor to games developed with Software.
 
 2. Trademarks. You are not granted any right or license under this License to use any trademarks, service marks, trade names, products names, or branding of FirstGearGames or its affiliates (“Trademarks”).
 
