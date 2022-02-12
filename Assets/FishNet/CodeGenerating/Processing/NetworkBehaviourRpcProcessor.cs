@@ -113,6 +113,20 @@ namespace FishNet.CodeGenerating.Processing
             return modified;
         }
 
+
+        /// <summary>
+        /// Returns the method name with parameter types included within the name.
+        /// </summary>
+        private string GetMethodNameAsParameters(MethodDefinition methodDef)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(methodDef.Name);
+            foreach (ParameterDefinition pd in methodDef.Parameters)
+                sb.Append(pd.ParameterType.FullName);
+
+            return sb.ToString();
+        }
+
         /// <summary>
         /// Redirects base calls for overriden RPCs.
         /// </summary>
@@ -210,17 +224,17 @@ namespace FishNet.CodeGenerating.Processing
                 //Misc failing conditions.
                 else
                 {
-                    //Check if is overloaded.
-                    TypeDefinition td = methodDef.DeclaringType;
-                    foreach (MethodDefinition md in td.GetMethods())
-                    {
-                        if (md != methodDef && md.Name == methodDef.Name)
-                        {
-                            CodegenSession.LogError($"{methodDef.Name} RPC method cannot be overloaded. This feature will be provided in a later release.");
-                            error = true;
-                            break;
-                        }
-                    }
+                    ////Check if is overloaded.
+                    //TypeDefinition td = methodDef.DeclaringType;
+                    //foreach (MethodDefinition md in td.GetMethods())
+                    //{
+                    //    if (md != methodDef && md.Name == methodDef.Name)
+                    //    {
+                    //        CodegenSession.LogError($"{methodDef.Name} RPC method cannot be overloaded. This feature will be provided in a later release.");
+                    //        error = true;
+                    //        break;
+                    //    }
+                    //}
                 }
                 //TargetRpc but missing correct parameters.
                 if (rpcType == RpcType.Target)
@@ -332,7 +346,7 @@ namespace FishNet.CodeGenerating.Processing
 
             
 
-            string methodName = $"{WRITER_PREFIX}{originalMethodDef.Name}";
+            string methodName = $"{WRITER_PREFIX}{GetMethodNameAsParameters(originalMethodDef)}";
             /* If method already exist then clear it. This
              * can occur when a method needs to be rebuilt due to
              * inheritence, and renumbering the RPC method names. */
@@ -445,9 +459,9 @@ namespace FishNet.CodeGenerating.Processing
             //uint methodHash = originalMethodDef.FullName.GetStableHash32();
             /* Call the method on NetworkBehaviour responsible for sending out the rpc. */
             if (rpcType == RpcType.Observers)
-                CreateSendObserversRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, rpcAttribute);
+                CreateSendObserversRpc(createdMd, methodHash, pooledWriterVariableDef, channelVariableDef, rpcAttribute);
             else if (rpcType == RpcType.Target)
-                CreateSendTargetRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef, targetConnectionParameterDef);
+                CreateSendTargetRpc(createdMd, methodHash, pooledWriterVariableDef, channelVariableDef, targetConnectionParameterDef);
 
             //Dispose of writer.
             createdProcessor.Add(CodegenSession.WriterHelper.DisposePooledWriter(createdMd, pooledWriterVariableDef));
@@ -491,7 +505,7 @@ namespace FishNet.CodeGenerating.Processing
             uint methodHash = allRpcCount;
             //uint methodHash = originalMethodDef.FullName.GetStableHash32();
             //Call the method on NetworkBehaviour responsible for sending out the rpc.
-            CreateSendServerRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef);
+            CreateSendServerRpc(createdMd, methodHash, pooledWriterVariableDef, channelVariableDef);
             //Dispose of writer.
             createdProcessor.Add(CodegenSession.WriterHelper.DisposePooledWriter(createdMd, pooledWriterVariableDef));
 
@@ -539,10 +553,7 @@ namespace FishNet.CodeGenerating.Processing
                 return null;
             }
 
-            StringBuilder sb = new StringBuilder();
-            foreach (ParameterDefinition pd in originalMethodDef.Parameters)
-                sb.Append(pd.ParameterType.Name);
-            string methodName = $"{READER_PREFIX}{originalMethodDef.Name}{sb.ToString()}";
+            string methodName = $"{READER_PREFIX}{GetMethodNameAsParameters(originalMethodDef)}";
             /* If method already exist then just return it. This
              * can occur when a method needs to be rebuilt due to
              * inheritence, and renumbering the RPC method names. 
@@ -857,7 +868,7 @@ namespace FishNet.CodeGenerating.Processing
 
             
 
-            string methodName = $"{LOGIC_PREFIX}{originalMethodDef.Name}";
+            string methodName = $"{LOGIC_PREFIX}{GetMethodNameAsParameters(originalMethodDef)}";
             /* If method already exist then just return it. This
              * can occur when a method needs to be rebuilt due to
              * inheritence, and renumbering the RPC method names. 
@@ -966,8 +977,9 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="writerVariableDef"></param>
         /// <param name="channel"></param>
-        private void CreateSendServerRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
+        private void CreateSendServerRpc(MethodDefinition methodDef, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
         {
+            ILProcessor processor = methodDef.Body.GetILProcessor();
             CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
             //Call NetworkBehaviour.
             processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SendServerRpc_MethodRef);
@@ -976,12 +988,27 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates a call to SendObserversRpc on NetworkBehaviour.
         /// </summary>
-        private void CreateSendObserversRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, CustomAttribute rpcAttribute)
+        private void CreateSendObserversRpc(MethodDefinition methodDef, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, CustomAttribute rpcAttribute)
         {
+            ILProcessor processor = methodDef.Body.GetILProcessor();
             CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
             //Also add if buffered.
             bool bufferLast = rpcAttribute.GetField(BUFFERLAST_NAME, false);
             int buffered = (bufferLast) ? 1 : 0;
+
+            //Warn user if any values are byref.
+            bool usedByref = false;
+            foreach (ParameterDefinition item in methodDef.Parameters)
+            {
+                if (item.IsIn)
+                {
+                    usedByref = true;
+                    break;
+                }
+            }
+            if (usedByref)
+                CodegenSession.LogWarning($"Method {methodDef.FullName} takes an argument by reference. While this is supported, using BufferLast in addition to by reference arguements will buffer the value as it was serialized, not as it is when sending buffered.");
+
             processor.Emit(OpCodes.Ldc_I4, buffered);
             //Call NetworkBehaviour.
             processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SendObserversRpc_MethodRef);
@@ -989,8 +1016,9 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates a call to SendTargetRpc on NetworkBehaviour.
         /// </summary>
-        private void CreateSendTargetRpc(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, ParameterDefinition targetConnectionParameterDef)
+        private void CreateSendTargetRpc(MethodDefinition methodDef, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, ParameterDefinition targetConnectionParameterDef)
         {
+            ILProcessor processor = methodDef.Body.GetILProcessor();
             CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef);
             //Reference to NetworkConnection that RPC is going to.
             processor.Emit(OpCodes.Ldarg, targetConnectionParameterDef);

@@ -137,7 +137,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="instructions"></param>
         public static void InsertBeforeReturns(this ILProcessor processor, List<Instruction> instructions)
         {
-            if (processor.Body.Method.ReturnType != CodegenSession.Module.TypeSystem.Void)
+            if (processor.Body.Method.ReturnType.FullName != CodegenSession.Module.TypeSystem.Void.FullName)
             {
                 CodegenSession.LogError($"Cannot insert instructions before returns on {processor.Body.Method.FullName} because it does not return void.");
                 return;

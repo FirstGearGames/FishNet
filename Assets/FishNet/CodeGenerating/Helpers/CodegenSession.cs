@@ -52,6 +52,12 @@ namespace FishNet.CodeGenerating.Helping
         [System.ThreadStatic]
         internal static NetworkBehaviourPredictionProcessor NetworkBehaviourPredictionProcessor;
         /// <summary>
+        /// SyncVars that are being accessed from an assembly other than the currently being processed one.
+        /// </summary>
+        [System.ThreadStatic]
+        internal static List<FieldDefinition> DifferentAssemblySyncVars;
+
+        /// <summary>
         /// Logs a warning.
         /// </summary>
         /// <param name="msg"></param>
@@ -104,6 +110,7 @@ namespace FishNet.CodeGenerating.Helping
             NetworkBehaviourRpcProcessor = new NetworkBehaviourRpcProcessor();
             NetworkBehaviourSyncProcessor = new NetworkBehaviourSyncProcessor();
             NetworkBehaviourPredictionProcessor = new NetworkBehaviourPredictionProcessor();
+            DifferentAssemblySyncVars = new List<FieldDefinition>();
 
             if (!TimeManagerHelper.ImportReferences())
                 return false;

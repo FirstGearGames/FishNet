@@ -4,6 +4,7 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
@@ -110,7 +111,7 @@ namespace FishNet.Managing.Server
         #endregion
 
         private void OnDestroy()
-        {            
+        {
             Objects?.SubscribeToSceneLoaded(false);
         }
 
@@ -288,7 +289,7 @@ namespace FishNet.Managing.Server
                 {
                     /* If client's connection is found then clean
                      * them up from server. */
-                    if (Clients.TryGetValue(args.ConnectionId, out NetworkConnection conn))
+                    if (Clients.TryGetValueIL2CPP(args.ConnectionId, out NetworkConnection conn))
                     {
                         conn.SetDisconnecting(true);
                         OnRemoteConnectionState?.Invoke(conn, args);
@@ -397,7 +398,7 @@ namespace FishNet.Managing.Server
 
                     /* Connection isn't available. This should never happen.
                      * Force an immediate disconnect. */
-                    if (!Clients.TryGetValue(args.ConnectionId, out conn))
+                    if (!Clients.TryGetValueIL2CPP(args.ConnectionId, out conn))
                     {
                         if (NetworkManager.CanLog(LoggingType.Common))
                             Debug.LogError($"ConnectionId {conn.ClientId} not found within Clients. Connection will be kicked immediately.");
@@ -493,8 +494,7 @@ namespace FishNet.Managing.Server
              * they are authenticated. This is important because when the client becomes
              * authenticated they set their LocalConnection using Clients field in ClientManager,
              * which is set after getting Ids. */
-            if (ShareIds)
-                BroadcastClientConnectionChange(true, connection);
+            BroadcastClientConnectionChange(true, connection);
             SendAuthenticated(connection);
 
             OnAuthenticationResult?.Invoke(connection, true);
@@ -550,7 +550,7 @@ namespace FishNet.Managing.Server
                         Connected = connected,
                         Id = conn.ClientId
                     };
-                    Broadcast(conn, changeMsg);
+                    Broadcast(conn, changeMsg, true, Channel.Reliable);
                 }
             }
 

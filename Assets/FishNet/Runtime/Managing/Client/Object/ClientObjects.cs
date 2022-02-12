@@ -116,7 +116,7 @@ namespace FishNet.Managing.Client
             for (int i = 0; i < nobCount; i++)
             {
                 NetworkObject nob = networkObjects[i];
-                if (nob.SceneObject)
+                if (nob.SceneObject && nob.IsNetworked)
                 {
                     base.AddToSceneObjects(nob);
                     //Only run if not also server, as this already ran on server.
@@ -292,7 +292,7 @@ namespace FishNet.Managing.Client
                 {
                     /* If owner cannot be found then share owners
                      * is disabled */
-                    if (!base.NetworkManager.ClientManager.Clients.TryGetValue(ownerId, out owner))
+                    if (!base.NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(ownerId, out owner))
                         owner = NetworkManager.EmptyConnection;
                 }
                 nob.PreInitialize(NetworkManager, objectId, owner, false);
@@ -308,7 +308,7 @@ namespace FishNet.Managing.Client
         internal void CacheDespawn(PooledReader reader)
         {
             int objectId = reader.ReadNetworkObjectId();
-            if (base.Spawned.TryGetValue(objectId, out NetworkObject nob))
+            if (base.Spawned.TryGetValueIL2CPP(objectId, out NetworkObject nob))
                 _objectCache.AddDespawn(nob);
         }
 
@@ -332,7 +332,7 @@ namespace FishNet.Managing.Client
         {
             ulong sceneId = reader.ReadUInt64(AutoPackType.Unpacked);
             NetworkObject nob;
-            base.SceneObjects.TryGetValue(sceneId, out nob);
+            base.SceneObjects.TryGetValueIL2CPP(sceneId, out nob);
             //If found in scene objects.
             if (nob != null)
             {
@@ -398,7 +398,7 @@ namespace FishNet.Managing.Client
                 //If host then find server instantiated object.
                 else
                 {
-                    NetworkManager.ServerManager.Objects.Spawned.TryGetValue(objectId, out result);
+                    NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
                 }
             }
 

@@ -34,6 +34,7 @@ namespace FishNet.CodeGenerating.Processing
         internal const string NETWORKINITIALIZE_EARLY_INTERNAL_NAME = "NetworkInitialize___Early";
         internal const string NETWORKINITIALIZE_LATE_INTERNAL_NAME = "NetworkInitialize__Late";
         private MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
+        private MethodAttributes PROTECTED_VIRTUAL_ATTRIBUTES = (MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig);
         #endregion
 
         internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, Dictionary<TypeDefinition, uint> childSyncTypeCounts, Dictionary<TypeDefinition, uint> childRpcCounts)
@@ -313,7 +314,32 @@ namespace FishNet.CodeGenerating.Processing
         /// <returns>True if successful.</returns>
         private bool CreateOrModifyAwakeMethods(TypeDefinition typeDef)
         {
+            //First check if any are public, if so that's the attribute all of them will use.
+            bool usePublic = false;
+
             TypeDefinition copyTypeDef = typeDef;
+            do
+            {
+                MethodDefinition tmpMd = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+                //Exist, make it public virtual.
+                if (tmpMd != null)
+                {
+                    //Uses public.
+                    if (tmpMd.Attributes.HasFlag(MethodAttributes.Public))
+                    {
+                        usePublic = true;
+                        break;
+                    }
+                }
+                copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
+
+            } while (copyTypeDef != null);
+
+
+            MethodAttributes attributes = (usePublic) ? PUBLIC_VIRTUAL_ATTRIBUTES : PROTECTED_VIRTUAL_ATTRIBUTES;
+
+            //Now update all scopes/create methods.
+            copyTypeDef = typeDef;
             do
             {
                 MethodDefinition tmpMd = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
@@ -326,11 +352,14 @@ namespace FishNet.CodeGenerating.Processing
                         return false;
                     }
                     tmpMd.Attributes = PUBLIC_VIRTUAL_ATTRIBUTES;
+
+                    tmpMd.Attributes = attributes;
                 }
                 //Does not exist, add it.
                 else
                 {
                     tmpMd = new MethodDefinition(ObjectHelper.AWAKE_METHOD_NAME, PUBLIC_VIRTUAL_ATTRIBUTES, CodegenSession.Module.TypeSystem.Void);
+                    tmpMd = new MethodDefinition(ObjectHelper.AWAKE_METHOD_NAME, attributes, CodegenSession.Module.TypeSystem.Void);
                     copyTypeDef.Methods.Add(tmpMd);
                     ILProcessor processor = tmpMd.Body.GetILProcessor();
                     processor.Emit(OpCodes.Ret);
@@ -343,6 +372,7 @@ namespace FishNet.CodeGenerating.Processing
 
             return true;
         }
+
 
 
         /// <summary>

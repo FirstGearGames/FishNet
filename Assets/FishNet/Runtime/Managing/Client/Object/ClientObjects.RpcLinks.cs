@@ -4,6 +4,7 @@ using FishNet.Object;
 using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -47,7 +48,7 @@ namespace FishNet.Managing.Client
             }
 
             //Link index isn't stored.
-            if (!_rpcLinks.TryGetValue(index, out RpcLink link))
+            if (!_rpcLinks.TryGetValueIL2CPP(index, out RpcLink link))
             {
                 /* Like other reliable communications the object
                 * should never be missing. */
@@ -67,7 +68,7 @@ namespace FishNet.Managing.Client
             }
 
             //Found NetworkObject for link.
-            if (Spawned.TryGetValue(link.ObjectId, out NetworkObject nob))
+            if (Spawned.TryGetValueIL2CPP(link.ObjectId, out NetworkObject nob))
             {
                 NetworkBehaviour nb = nob.NetworkBehaviours[link.ComponentIndex];
                 if (link.RpcType == RpcType.Target)

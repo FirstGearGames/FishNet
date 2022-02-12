@@ -4,6 +4,7 @@ using FishNet.Managing.Server;
 using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -410,7 +411,7 @@ namespace FishNet.Managing.Client
             //If only a client then make a new connection.
             if (!NetworkManager.IsServer)
             {
-                Clients.TryGetValue(connectionId, out Connection);
+                Clients.TryGetValueIL2CPP(connectionId, out Connection);
             }
             /* If also the server then use the servers connection
              * for the connectionId. This is to resolve host problems
@@ -418,7 +419,7 @@ namespace FishNet.Managing.Client
              * reference, which results in different field values. */
             else
             {
-                if (NetworkManager.ServerManager.Clients.TryGetValue(connectionId, out NetworkConnection conn))
+                if (NetworkManager.ServerManager.Clients.TryGetValueIL2CPP(connectionId, out NetworkConnection conn))
                 {
                     Connection = conn;
                 }

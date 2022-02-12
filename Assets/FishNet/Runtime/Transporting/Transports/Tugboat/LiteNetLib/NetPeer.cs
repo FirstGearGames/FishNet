@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using FishNet.Utility.Extension;
 using LiteNetLib.Utils;
 
 namespace LiteNetLib
@@ -853,7 +854,7 @@ namespace LiteNetLib
                 //Get needed array from dictionary
                 ushort packetFragId = p.FragmentId;
                 byte packetChannelId = p.ChannelId;
-                if (!_holdedFragments.TryGetValue(packetFragId, out var incomingFragments))
+                if (!_holdedFragments.TryGetValueIL2CPP(packetFragId, out var incomingFragments))
                 {
                     incomingFragments = new IncomingFragments
                     {
@@ -1354,7 +1355,7 @@ namespace LiteNetLib
             {
                 if (packet.IsFragmented)
                 {
-                    _deliveredFragments.TryGetValue(packet.FragmentId, out ushort fragCount);
+                    _deliveredFragments.TryGetValueIL2CPP(packet.FragmentId, out ushort fragCount);
                     fragCount++;
                     if (fragCount == packet.FragmentsTotal)
                     {

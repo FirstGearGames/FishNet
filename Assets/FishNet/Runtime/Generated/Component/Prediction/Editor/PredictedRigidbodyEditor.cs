@@ -4,16 +4,16 @@ using UnityEngine;
 
 namespace FishNet.Component.Prediction.Editing
 {
-    [CustomEditor(typeof(PredictedRigidbody), true)]
+    [CustomEditor(typeof(PredictedRigidbodyBase), true)]
     [CanEditMultipleObjects]
-    public class PredictedRigidbodyEditor : Editor
+    public class PredictedRigidbodyBaseEditor : Editor
     {
         public override void OnInspectorGUI()
         {
 
             serializedObject.Update();
 
-            EditorGUILayout.HelpBox("This component is still in development and may not behave properly.", MessageType.Warning);
+            EditorGUILayout.HelpBox("Place this component on your objects which hold visuals. Visuals should be a child of your rigidbody object.", MessageType.Info);
 
             SerializedProperty p = serializedObject.GetIterator();
             do

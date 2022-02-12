@@ -6,6 +6,7 @@ using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Constant;
+using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -722,10 +723,10 @@ namespace FishNet.Serializing
              * use a fake host connection like some lesser solutions the client
              * has to always be treated as it's own entity. */
             if (_networkManager.ClientManager.Started)
-                _networkManager.ClientManager.Objects.Spawned.TryGetValue(objectId, out result);
+                _networkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
             //If not found on client and server is running then try server.
             if (result == null && _networkManager.ServerManager.Started)
-                _networkManager.ServerManager.Objects.Spawned.TryGetValue(objectId, out result);
+                _networkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
 
             /* Do not error if not found because packet could
              * have been sent unreliably and arrived after the object
@@ -756,10 +757,10 @@ namespace FishNet.Serializing
              * use a fake host connection like some lesser solutions the client
              * has to always be treated as it's own entity. */
             if (_networkManager.ClientManager.Started)
-                _networkManager.ClientManager.Objects.Spawned.TryGetValue(objectId, out result);
+                _networkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
             //If not found on client and server is running then try server.
             if (result == null && _networkManager.ServerManager.Started)
-                _networkManager.ServerManager.Objects.Spawned.TryGetValue(objectId, out result);
+                _networkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
 
             /* Do not error if not found because packet could
              * have been sent unreliably and arrived after the object
@@ -876,7 +877,7 @@ namespace FishNet.Serializing
                 //Prefer server.
                 if (_networkManager.IsServer)
                 {
-                    if (_networkManager.ServerManager.Clients.TryGetValue((int)value, out NetworkConnection result))
+                    if (_networkManager.ServerManager.Clients.TryGetValueIL2CPP((int)value, out NetworkConnection result))
                     {
                         return result;
                     }

@@ -40,7 +40,11 @@ namespace FishNet.Component.Animating.Editing
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(na), typeof(NetworkAnimator), false);
             GUI.enabled = true;
 
-            EditorGUILayout.HelpBox(EditingConstants.PRO_FEATURE_MESSAGE, MessageType.Info);
+            
+#pragma warning disable CS0162 // Unreachable code detected
+                EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_UNLOCKED_TEXT, MessageType.None);
+#pragma warning restore CS0162 // Unreachable code detected
+
 
             //Animator
             EditorGUILayout.LabelField("Animator", EditorStyles.boldLabel);

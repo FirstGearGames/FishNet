@@ -4,6 +4,7 @@ using FishNet.Managing.Logging;
 using FishNet.Object.Delegating;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -145,7 +146,7 @@ namespace FishNet.Object
                 return;
             }
 
-            if (_serverRpcDelegates.TryGetValue(methodHash, out ServerRpcDelegate data))
+            if (_serverRpcDelegates.TryGetValueIL2CPP(methodHash, out ServerRpcDelegate data))
             {
                 data.Invoke(this, reader, channel, sendingClient);
             }
@@ -165,7 +166,7 @@ namespace FishNet.Object
             if (methodHash == null)
                 methodHash = ReadRpcHash(reader);
 
-            if (_observersRpcDelegates.TryGetValue(methodHash.Value, out ClientRpcDelegate del))
+            if (_observersRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ClientRpcDelegate del))
             {
                 del.Invoke(this, reader, channel);
             }
@@ -185,7 +186,7 @@ namespace FishNet.Object
             if (methodHash == null)
                 methodHash = ReadRpcHash(reader);
 
-            if (_targetRpcDelegates.TryGetValue(methodHash.Value, out ClientRpcDelegate del))
+            if (_targetRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ClientRpcDelegate del))
             {
                 del.Invoke(this, reader, channel);
             }
@@ -230,9 +231,9 @@ namespace FishNet.Object
 
             PooledWriter writer;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (NetworkManager.DebugManager.ObserverRpcLinks && _rpcLinks.TryGetValue(hash, out RpcLinkType link))
+            if (NetworkManager.DebugManager.ObserverRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
 #else
-            if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
+            if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
 #endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else
@@ -245,7 +246,7 @@ namespace FishNet.Object
              * anyway but better safe than sorry. */
             if (buffered)
             {
-                if (_bufferedRpcs.TryGetValue(hash, out (PooledWriter pw, Channel ch) result))
+                if (_bufferedRpcs.TryGetValueIL2CPP(hash, out (PooledWriter pw, Channel ch) result))
                     result.pw.Dispose();
                 _bufferedRpcs[hash] = (writer, channel);
             }
@@ -300,9 +301,9 @@ namespace FishNet.Object
             PooledWriter writer;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (NetworkManager.DebugManager.TargetRpcLinks && _rpcLinks.TryGetValue(hash, out RpcLinkType link))
+            if (NetworkManager.DebugManager.TargetRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
 #else
-            if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
+            if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
 #endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else

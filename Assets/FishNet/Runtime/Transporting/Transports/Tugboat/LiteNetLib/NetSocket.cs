@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using FishNet.Utility.Extension;
 
 namespace LiteNetLib
 {
@@ -238,7 +239,7 @@ namespace LiteNetLib
                 }
 
                 NativeAddr nativeAddr = new NativeAddr(addrBuffer, addrSize);
-                if (!_nativeAddrMap.TryGetValue(nativeAddr, out endPoint))
+                if (!_nativeAddrMap.TryGetValueIL2CPP(nativeAddr, out endPoint))
                     endPoint = new NativeEndPoint(addrBuffer);
 
                 //All ok!

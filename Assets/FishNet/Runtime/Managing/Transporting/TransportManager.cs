@@ -265,14 +265,22 @@ namespace FishNet.Managing.Transporting
             byte channelId = (byte)Channel.Reliable;
             PooledWriter headerWriter = WriterPool.GetWriter();
             headerWriter.WritePacketId(PacketId.Split);
-            headerWriter.WriteInt32(requiredMessages, AutoPackType.Unpacked);
+            headerWriter.WriteInt32(requiredMessages);
             ArraySegment<byte> headerSegment = headerWriter.GetArraySegment();
 
             int writeIndex = 0;
+            bool firstWrite = true;
             //Send to connection until everything is written.
             while (writeIndex < segment.Count)
             {
-                int chunkSize = Mathf.Min(segment.Count - writeIndex, maxMessageSize);
+                bool wasFirst = firstWrite;
+                int headerReduction = 0;
+                if (firstWrite)
+                { 
+                    headerReduction = headerSegment.Count;
+                    firstWrite = false;
+                }
+                int chunkSize = Mathf.Min(segment.Count - writeIndex - headerReduction, maxMessageSize);
                 //Make a new array segment for the chunk that is getting split.
                 ArraySegment<byte> splitSegment = new ArraySegment<byte>(
                     segment.Array, segment.Offset + writeIndex, chunkSize);

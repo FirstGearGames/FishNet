@@ -5,6 +5,7 @@ using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -302,7 +303,7 @@ namespace FishNet.Managing.Scened
                 foreach (SceneLookupData item in msg.SceneLookupDatas)
                 {
                     Scene s = item.GetScene(out _);
-                    if (!string.IsNullOrEmpty(s.name))
+                    if (s.IsValid())
                         AddConnectionToScene(conn, s);
                 }
             }
@@ -560,7 +561,8 @@ namespace FishNet.Managing.Scened
 
             /* Scene queue data scenes.
             * All scenes in the scene queue data whether they will be loaded or not. */
-            List<string> requestedLoadScenes = new List<string>();
+            List<string> requestedLoadSceneNames = new List<string>();
+            List<int> requestedLoadSceneHandles = new List<int>();
 
             /* Make a null filled array. This will be populated
              * using loaded scenes, or already loaded (eg cannot be loaded) scenes. */
@@ -575,6 +577,17 @@ namespace FishNet.Managing.Scened
             for (int i = 0; i < data.SceneLoadData.SceneLookupDatas.Length; i++)
             {
                 SceneLookupData sld = data.SceneLoadData.SceneLookupDatas[i];
+                //Scene to load.
+                bool byHandle;
+                Scene s = sld.GetScene(out byHandle);
+                //If found then add it to requestedLoadScenes.
+                if (s.IsValid())
+                { 
+                    requestedLoadSceneNames.Add(s.name);
+                    if (byHandle)
+                        requestedLoadSceneHandles.Add(s.handle);
+                }
+
                 if (CanLoadScene(data, sld))
                 {
                     //Don't load if as host, server side would have loaded already.
@@ -587,7 +600,6 @@ namespace FishNet.Managing.Scened
                     /* If here then scene cannot be loaded, which
                      * can only happen if the scene already exists.
                      * Find the scene using sld and set to datas. */
-                    Scene s = sld.GetScene(out _);
                     /* Set at the index of i. This way should the current
                      * SLD not be the first scene it won't fill the
                      * first slot in broadcastLookupDatas. This is important
@@ -658,7 +670,10 @@ namespace FishNet.Managing.Scened
                     /* Scene is in one of the scenes being loaded.
                     * This can occur when trying to load additional clients
                     * into an existing scene. */
-                    if (requestedLoadScenes.Contains(s.name))
+                    if (requestedLoadSceneNames.Contains(s.name))
+                        continue;
+                    //Same as above but using handles.
+                    if (requestedLoadSceneHandles.Contains(s.handle))
                         continue;
                     /* Cannot unload global scenes. If
                      * replace scenes was used for a global
@@ -671,7 +686,7 @@ namespace FishNet.Managing.Scened
                         continue;
 
                     HashSet<NetworkConnection> conns;
-                    if (SceneConnections.TryGetValue(s, out conns))
+                    if (SceneConnections.TryGetValueIL2CPP(s, out conns))
                     {
                         //Still has clients in scene.
                         if (conns != null && conns.Count > 0)
@@ -956,7 +971,7 @@ namespace FishNet.Managing.Scened
                 _clientManager.Broadcast(msg);
             }
 
-            InvokeOnSceneLoadEnd(data, requestedLoadScenes, loadedScenes);
+            InvokeOnSceneLoadEnd(data, requestedLoadSceneNames, loadedScenes);
         }
 
 
@@ -1201,7 +1216,7 @@ namespace FishNet.Managing.Scened
         /// <returns></returns>
         internal bool InSceneConnections(NetworkConnection conn, Scene scene)
         {
-            if (!SceneConnections.TryGetValue(scene, out HashSet<NetworkConnection> hs))
+            if (!SceneConnections.TryGetValueIL2CPP(scene, out HashSet<NetworkConnection> hs))
                 return false;
             else
                 return hs.Contains(conn);
@@ -1216,7 +1231,7 @@ namespace FishNet.Managing.Scened
         {
             HashSet<NetworkConnection> hs;
             //Scene doesn't have any connections yet.
-            bool inSceneConnections = SceneConnections.TryGetValue(scene, out hs);
+            bool inSceneConnections = SceneConnections.TryGetValueIL2CPP(scene, out hs);
             if (!inSceneConnections)
                 hs = new HashSet<NetworkConnection>();
 
@@ -1304,7 +1319,7 @@ namespace FishNet.Managing.Scened
         {
             HashSet<NetworkConnection> hs;
             //No hashset for scene, so no connections are in scene.
-            if (!SceneConnections.TryGetValue(scene, out hs))
+            if (!SceneConnections.TryGetValueIL2CPP(scene, out hs))
                 return;
 
             List<NetworkConnection> connectionsRemoved = new List<NetworkConnection>();
@@ -1346,7 +1361,7 @@ namespace FishNet.Managing.Scened
         {
             HashSet<NetworkConnection> hs;
             //No hashset for scene, so no connections are in scene.
-            if (!SceneConnections.TryGetValue(scene, out hs))
+            if (!SceneConnections.TryGetValueIL2CPP(scene, out hs))
                 return;
 
             //On each connection remove them from specified scene.
@@ -1571,7 +1586,7 @@ namespace FishNet.Managing.Scened
         {
             for (int i = 0; i < scenes.Count; i++)
             {
-                if (SceneConnections.TryGetValue(scenes[i], out _))
+                if (SceneConnections.TryGetValueIL2CPP(scenes[i], out _))
                 {
                     scenes.RemoveAt(i);
                     i--;

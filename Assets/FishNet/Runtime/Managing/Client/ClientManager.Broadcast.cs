@@ -4,8 +4,10 @@ using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Managing.Client
@@ -36,11 +38,10 @@ namespace FishNet.Managing.Client
         public void RegisterBroadcast<T>(Action<T> handler) where T : struct, IBroadcast
         {
             ushort key = typeof(T).FullName.GetStableHash16();
-
             /* Create delegate and add for
              * handler method. */
             HashSet<ServerBroadcastDelegate> handlers;
-            if (!_broadcastHandlers.TryGetValue(key, out handlers))
+            if (!_broadcastHandlers.TryGetValueIL2CPP(key, out handlers))
             {
                 handlers = new HashSet<ServerBroadcastDelegate>();
                 _broadcastHandlers.Add(key, handlers);
@@ -52,7 +53,7 @@ namespace FishNet.Managing.Client
              * This is so we can unregister the target later. */
             int handlerHashCode = handler.GetHashCode();
             HashSet<(int, ServerBroadcastDelegate)> targetHashCodes;
-            if (!_handlerTargets.TryGetValue(key, out targetHashCodes))
+            if (!_handlerTargets.TryGetValueIL2CPP(key, out targetHashCodes))
             {
                 targetHashCodes = new HashSet<(int, ServerBroadcastDelegate)>();
                 _handlerTargets.Add(key, targetHashCodes);
@@ -69,13 +70,12 @@ namespace FishNet.Managing.Client
         public void UnregisterBroadcast<T>(Action<T> handler) where T : struct, IBroadcast
         {
             ushort key = typeof(T).FullName.GetStableHash16();
-
             /* If key is found for T then look for
              * the appropriate handler to remove. */
-            if (_broadcastHandlers.TryGetValue(key, out HashSet<ServerBroadcastDelegate> handlers))
+            if (_broadcastHandlers.TryGetValueIL2CPP(key, out HashSet<ServerBroadcastDelegate> handlers))
             {
                 HashSet<(int, ServerBroadcastDelegate)> targetHashCodes;
-                if (_handlerTargets.TryGetValue(key, out targetHashCodes))
+                if (_handlerTargets.TryGetValueIL2CPP(key, out targetHashCodes))
                 {
                     int handlerHashCode = handler.GetHashCode();
                     ServerBroadcastDelegate result = null;
@@ -114,14 +114,13 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Parses a received broadcast.
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="connectionId"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ParseBroadcast(PooledReader reader)
         {
             ushort key = reader.ReadUInt16();
             int length = reader.ReadInt32();
             // try to invoke the handler for that message
-            if (_broadcastHandlers.TryGetValue(key, out HashSet<ServerBroadcastDelegate> handlers))
+            if (_broadcastHandlers.TryGetValueIL2CPP(key, out HashSet<ServerBroadcastDelegate> handlers))
             {
                 int readerStartPosition = reader.Position;
                 /* //muchlater resetting the position could be better by instead reading once and passing in

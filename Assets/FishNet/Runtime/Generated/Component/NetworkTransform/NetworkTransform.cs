@@ -433,7 +433,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Called when a tick occurs.
         /// </summary>
-        private void TimeManager_OnTick()
+        private void TimeManager_OnPostTick()
         {
             
             if (base.IsServer)
@@ -462,9 +462,9 @@ namespace FishNet.Component.Transforming
 
             _subscribedToTicks = subscribe;
             if (subscribe)
-                base.NetworkManager.TimeManager.OnTick += TimeManager_OnTick;
+                base.NetworkManager.TimeManager.OnPostTick += TimeManager_OnPostTick;
             else
-                base.NetworkManager.TimeManager.OnTick -= TimeManager_OnTick;
+                base.NetworkManager.TimeManager.OnPostTick -= TimeManager_OnPostTick;
         }
 
 
@@ -987,6 +987,16 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Returns if there is any change between two datas.
         /// </summary>
+        private bool HasChanged(TransformData a, TransformData b)
+        {
+            return (a.Position != b.Position) ||
+                (a.Rotation != b.Rotation) ||
+                (a.Scale != b.Scale) ||
+                (a.ParentBehaviour != b.ParentBehaviour);
+        }
+        /// <summary>
+        /// Returns if there is any change between two datas and outputs what has changed.
+        /// </summary>
         private bool HasChanged(TransformData a, TransformData b, ref ChangedFull changedFull)
         {
             bool hasChanged = false;
@@ -1105,8 +1115,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets move rates which will occur over time.
         /// </summary>
-        // 
-        private void SetCalculatedRates(uint lastTick, RateData prevRateData, TransformData prevTransformData, GoalData nextGoalData, ChangedFull changedFull, bool forServer, Channel channel)
+        private void SetCalculatedRates(uint lastTick, RateData prevRd, TransformData prevTd, GoalData nextGd, ChangedFull changedFull, bool hasChanged, Channel channel)
         {
             /* Only update rates if data has changed.
              * When data comes in reliably for eventual consistency
@@ -1114,27 +1123,27 @@ namespace FishNet.Component.Transforming
              * unreliable packet. When this happens no change has occurred
              * and the distance of change woudl also be 0; this prevents
              * the NT from moving. Only need to compare data if channel is reliable. */
-            TransformData td = nextGoalData.Transforms;
-            if (channel == Channel.Reliable && !HasChanged(prevTransformData, td, ref changedFull))
+            TransformData td = nextGd.Transforms;
+            if (channel == Channel.Reliable && !hasChanged)
             {
-                nextGoalData.Rates.Update(prevRateData);
+                nextGd.Rates.Update(prevRd);
                 return;
             }
 
             //How much time has passed between last update and current.
             if (lastTick == 0)
-                lastTick = (nextGoalData.Transforms.Tick - 1);
+                lastTick = (nextGd.Transforms.Tick - 1);
 
             uint tickDifference = (td.Tick - lastTick);
             float timePassed = base.NetworkManager.TimeManager.TicksToTime(tickDifference);
 
             //Distance between properties.
             float distance;
-            float positionRate;
-            float rotationRate;
-            float scaleRate;
+            float positionRate = 0f;
+            float rotationRate = 0f;
+            float scaleRate = 0f;
 
-            RateData rd = nextGoalData.Rates;
+            RateData rd = nextGd.Rates;
             //Correction to apply towards rates when a rate change is detected as abnormal.
             float abnormalCorrection = 1f;
             bool abnormalRateDetected = false;
@@ -1143,7 +1152,7 @@ namespace FishNet.Component.Transforming
             //Position.
             if (ChangedFullContains(changedFull, ChangedFull.Position))
             {
-                Vector3 lastPosition = prevTransformData.Position;
+                Vector3 lastPosition = prevTd.Position;
                 distance = Vector3.Distance(lastPosition, td.Position);
                 //If distance teleports assume rest do.
                 if (_enableTeleport && distance >= _teleportThreshold)
@@ -1201,37 +1210,31 @@ namespace FishNet.Component.Transforming
                     }
                 }
 
-                abnormalCorrection = 1f;
+                //abnormalCorrection = 1f;
                 positionRate = (unalteredPositionRate * abnormalCorrection);
             }
-            else
-            {
-                positionRate = rd.Position;
-            }
+            if (positionRate == 0f)
+                positionRate = prevRd.Position;
 
             //Rotation.
             if (ChangedFullContains(changedFull, ChangedFull.Rotation))
             {
-                Quaternion lastRotation = prevTransformData.Rotation;
+                Quaternion lastRotation = prevTd.Rotation;
                 distance = Quaternion.Angle(lastRotation, td.Rotation);
-                rotationRate = (distance / timePassed) * abnormalCorrection;
+                rotationRate = (distance / timePassed) * abnormalCorrection;                
             }
-            else
-            {
-                rotationRate = rd.Rotation;
-            }
+            if (rotationRate == 0f)
+                rotationRate = prevRd.Rotation;
 
             //Scale.
             if (ChangedFullContains(changedFull, ChangedFull.Scale))
             {
-                Vector3 lastScale = prevTransformData.Scale;
+                Vector3 lastScale = prevTd.Scale;
                 distance = Vector3.Distance(lastScale, td.Scale);
                 scaleRate = (distance / timePassed) * abnormalCorrection;
             }
-            else
-            {
-                scaleRate = rd.Scale;
-            }
+            if (scaleRate == 0f)
+                scaleRate = prevRd.Scale;
 
             rd.Update(positionRate, rotationRate, scaleRate, unalteredPositionRate, abnormalRateDetected, timePassed);
 
@@ -1316,16 +1319,16 @@ namespace FishNet.Component.Transforming
             UpdateTransformData(data, prevTd, nextTd, ref changedFull);
             SetExtrapolation(prevTd, nextTd, channel);
 
+            bool hasChanged = HasChanged(prevTd, nextTd);
             //If server only teleport.
             if (asServer && !base.IsClient)
                 SetInstantRates(nextGd.Rates);
             //Otherwise use timed.
             else
-                SetCalculatedRates(prevTd.Tick, prevRd, prevTd, nextGd, changedFull, true, channel);
+                SetCalculatedRates(prevTd.Tick, prevRd, prevTd, nextGd, changedFull, hasChanged, channel);
             SnapProperties(nextTd);
 
             _lastReceivedTransformData.Update(nextTd);
-
             /* If channel is reliable then this is a settled packet.
              * Reset last received tick so next starting move eases
              * in. */
@@ -1360,7 +1363,14 @@ namespace FishNet.Component.Transforming
             {
                 _queueReady = true;
                 if (_goalDataQueue.Count > 0)
+                {
                     _currentGoalData = _goalDataQueue.Dequeue();
+                    /* If is reliable and has changed then also
+ * enqueue latest. */
+                    if (hasChanged)
+                        _goalDataQueue.Enqueue(nextGd);
+
+                }
                 else
                     _currentGoalData = nextGd;
             }

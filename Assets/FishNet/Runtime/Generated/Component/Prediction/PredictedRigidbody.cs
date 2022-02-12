@@ -1,16 +1,14 @@
 ﻿using FishNet.Documenting;
-using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Transporting;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Component.Prediction
 {
-    /// <summary>
-    /// //TODO THIS IS A WORK IN PROGRESS.
-    /// </summary>
+
     [APIExclude]
-    public class PredictedRigidbody : NetworkBehaviour
+    public class PredictedRigidbody : PredictedRigidbodyBase
     {
         #region Type.
         public struct RigidbodyState
@@ -24,25 +22,14 @@ namespace FishNet.Component.Prediction
 
         #region Serialized.
         /// <summary>
-        /// How often to synchronize values from server to clients.
+        /// Rigidbody to predict.
         /// </summary>
-        [Tooltip("How often to synchronize values from server to clients.")]
+        [Tooltip("Rigidbody to predict.")]
         [SerializeField]
-        private float _sendInterval = 1f;
-        /// <summary>
-        /// How much to predict movement. A Value of 1f will result in this object moving at the same rate as it's last known value. A value of 0f will disable the prediction.
-        /// </summary>
-        [Tooltip("How much to predict movement. A Value of 1f will result in this object moving at the same rate as it's last known value. A value of 0f will disable the prediction.")]
-        [Range(0f, 1f)]
-        //[SerializeField]
-        private float _predictionRatio = 0.9f;
+        private Rigidbody _rigidbody;
         #endregion
 
         #region Private.
-        /// <summary>
-        /// Rigidbodies to predict.
-        /// </summary>
-        private Rigidbody _rigidbody;
         /// <summary>
         /// Last SpectatorMotorState received from the server.
         /// </summary>
@@ -67,109 +54,74 @@ namespace FishNet.Component.Prediction
         /// PhysicsScene for this object when OnPreReconcile is called.
         /// </summary>
         private PhysicsScene _physicsScene;
-        /// <summary>
-        /// Next tick to send data.
-        /// </summary>
-        private uint _nextSendTick;
-        /// <summary>
-        /// Number of ticks prediction occurred since last replay.
-        /// </summary>
-        private uint _predictedTicks;
+
         #endregion
 
-        private void Awake()
+        protected override void Awake()
         {
-            InitializeOnce();
+            base.Awake();
         }
 
-        private void OnEnable()
+        protected override void Update()
         {
-            InstanceFinder.TimeManager.OnPostTick += TimeManager_OnPostTick;
+            base.Update();
         }
 
-        private void OnDisable()
+        protected override void TimeManager_OnPostTick()
         {
-            if (base.TimeManager != null)
-                base.TimeManager.OnPostTick -= TimeManager_OnPostTick;
-        }
-
-        public override void OnStartClient()
-        {
-            base.OnStartClient();
-            base.TimeManager.OnPreReconcile += TimeManager_OnPreReconcile;
-            base.TimeManager.OnPostReplicateReplay += TimeManager_OnPostReplicateReplay;
-        }
-
-        public override void OnStopClient()
-        {
-            base.OnStopClient();
-            base.TimeManager.OnPreReconcile -= TimeManager_OnPreReconcile;
-            base.TimeManager.OnPostReplicateReplay -= TimeManager_OnPostReplicateReplay;
-
-        }
-
-        private void TimeManager_OnPostTick()
-        {
-            if (base.IsServer)
-            {
-
-                if (base.TimeManager.LocalTick >= _nextSendTick || base.TransformMayChange())
-                {
-                    uint ticksRequired = base.TimeManager.TimeToTicks(_sendInterval, TickRounding.RoundUp);
-                    _nextSendTick += ticksRequired;
-                    SendRigidbodyState();
-                }
-            }
+            base.TimeManager_OnPostTick();
 
             if (CanPredict())
-            {
-                //_predictedTicks++;
                 PredictVelocity(gameObject.scene.GetPhysicsScene());
-            }
         }
-
 
         /// <summary>
-        /// Initializes this script for use.
+        /// Called before reconcile begins.
         /// </summary>
-        private void InitializeOnce()
+        protected override void TimeManager_OnPreReconcile(NetworkBehaviour obj)
         {
-            _predictionRatio = 1f;
-            _rigidbody = GetComponent<Rigidbody>();
-        }
+            base.TimeManager_OnPreReconcile(obj);
 
-
-        private void TimeManager_OnPreReconcile(NetworkBehaviour obj)
-        {
             if (!CanPredict())
                 return;
 
             _physicsScene = gameObject.scene.GetPhysicsScene();
             if (_physicsScene == obj.gameObject.scene.GetPhysicsScene())
+            {
+                base.SetPreviousStates();
                 ResetRigidbodyToData();
-        }
-
-        /// <summary>
-        /// Returns if prediction can be used on this rigidbody.
-        /// </summary>
-        /// <returns></returns>
-        private bool CanPredict()
-        {
-            if (base.IsServer || base.IsOwner || _predictionRatio <= 0f)
-                return false;
-
-            return true;
+            }
         }
 
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
         /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
         /// </summary>
-        private void TimeManager_OnPostReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
+        protected override void TimeManager_OnPostReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
         {
-            if (CanPredict())
+            base.TimeManager_OnPostReplicateReplay(ps, ps2d);
+
+            if (base.CanPredict())
                 PredictVelocity(ps);
         }
+
+        /// <summary>
+        /// Called after performing a reconcile on a NetworkBehaviour.
+        /// </summary>
+        protected override void TimeManager_OnPostReconcile(NetworkBehaviour obj)
+        {
+            base.TimeManager_OnPostReconcile(obj);
+
+            if (!CanPredict())
+                return;
+
+            if (_physicsScene == gameObject.scene.GetPhysicsScene())
+            {
+                base.SetTransformMoveRates();
+                base.ResetToTransformPrevious();
+            }
+        }
+
 
         /// <summary>
         /// Resets the rigidbody to last known data.
@@ -180,8 +132,8 @@ namespace FishNet.Component.Prediction
                 return;
 
             //Update transform and rigidbody.
-            transform.position = _receivedRigidbodyState.Value.Position;
-            transform.rotation = _receivedRigidbodyState.Value.Rotation;
+            _rigidbody.transform.position = _receivedRigidbodyState.Value.Position;
+            _rigidbody.transform.rotation = _receivedRigidbodyState.Value.Rotation;
             _rigidbody.velocity = _receivedRigidbodyState.Value.Velocity;
             _rigidbody.angularVelocity = _receivedRigidbodyState.Value.AngularVelocity;
             //Set prediction defaults.
@@ -192,63 +144,19 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
-        /// Tries to predict velocity.
+        /// Sets the next predicted velocity on the rigidbody.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PredictVelocity(PhysicsScene ps)
         {
             if (ps != _physicsScene)
                 return;
 
-            PredictVelocity(ref _velocityBaseline, ref _lastVelocity, _rigidbody.velocity, false);
-            PredictVelocity(ref _angularVelocityBaseline, ref _lastAngularVelocity, _rigidbody.angularVelocity, true);
-
-            /// <summary>
-            /// Tries to predict velocity.
-            /// </summary>
-            void PredictVelocity(ref float? velocityBaseline, ref Vector3 lastVelocity, Vector3 velocity, bool angular)
-            {
-                float velocityDifference;
-                float directionDifference;
-
-                /* Velocity. */
-                directionDifference = (velocityBaseline != null) ?
-                    Vector3.SqrMagnitude(lastVelocity.normalized - velocity.normalized) :
-                    0f;
-                //If direction has changed too much then reset the baseline.
-                if (directionDifference > 0.01f)
-                {
-                    velocityBaseline = null;
-                }
-                //Direction hasn't changed enough to reset baseline.
-                else
-                {
-                    //Difference in velocity since last simulation.
-                    velocityDifference = Vector3.Magnitude(lastVelocity - velocity);
-                    //If there is no baseline.
-                    if (velocityBaseline == null)
-                    {
-                        if (velocityDifference > 0)
-                            velocityBaseline = velocityDifference;
-                    }
-                    //If there is a baseline.
-                    else
-                    {
-                        //If the difference exceeds the baseline by 10% then reset baseline so another will be calculated.
-                        if (velocityDifference > (velocityBaseline.Value * 1.1f) || velocityDifference < (velocityBaseline.Value * 0.9f))
-                        {
-                            velocityBaseline = null;
-                        }
-                        //Velocity difference is close enough to the baseline to where it doesn't need to be reset, so use prediction.
-                        else
-                        {
-                            if (!angular)
-                                _rigidbody.velocity = Vector3.Lerp(velocity, lastVelocity, _predictionRatio);
-                            else
-                                _rigidbody.angularVelocity = Vector3.Lerp(velocity, lastVelocity, _predictionRatio);
-                        }
-                    }
-                }
-            }
+            Vector3 result;
+            if (base.PredictVector3Velocity(ref _velocityBaseline, ref _lastVelocity, _rigidbody.velocity, out result))
+                _rigidbody.velocity = result;
+            if (base.PredictVector3Velocity(ref _angularVelocityBaseline, ref _lastAngularVelocity, _rigidbody.angularVelocity, out result))
+                _rigidbody.angularVelocity = result;
 
             _lastVelocity = _rigidbody.velocity;
             _lastAngularVelocity = _rigidbody.angularVelocity;
@@ -258,7 +166,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Sends current states of this object to client.
         /// </summary>
-        private void SendRigidbodyState()
+        protected override void SendRigidbodyState()
         {
             RigidbodyState state = new RigidbodyState
             {
@@ -281,12 +189,13 @@ namespace FishNet.Component.Prediction
             if (!CanPredict())
                 return;
 
+            base.SetPreviousStates();
+
             _receivedRigidbodyState = state;
             ResetRigidbodyToData();
-            PhysicsScene ps = gameObject.scene.GetPhysicsScene();
-            for (int i = 0; i < _predictedTicks; i++)
-                PredictVelocity(ps);
-            _predictedTicks = 0;
+
+            base.SetTransformMoveRates();
+            base.ResetToTransformPrevious();
         }
 
     }

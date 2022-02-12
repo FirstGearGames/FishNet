@@ -1,7 +1,9 @@
 ﻿using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Observing;
+using FishNet.Utility.Extension;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Component.Observing
@@ -54,13 +56,14 @@ namespace FishNet.Component.Observing
         /// </summary>
         /// <param name="connection"></param>
         /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool ConditionMet(NetworkConnection connection, out bool notProcessed)
         {
             if (_updateFrequency > 0f)
             {
                 float nextAllowedUpdate;
                 float currentTime = Time.time;
-                if (!_timedUpdates.TryGetValue(connection, out nextAllowedUpdate))
+                if (!_timedUpdates.TryGetValueIL2CPP(connection, out nextAllowedUpdate))
                 {
                     _timedUpdates[connection] = (currentTime + _updateFrequency);
                 }

@@ -116,7 +116,8 @@ namespace FishNet.CodeGenerating.Processing
             {
                 if (BuildInformation.IsServerOnlyBuild)
                 {
-                                    }
+                    
+                }
                 else
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);

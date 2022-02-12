@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using FishNet.Utility.Extension;
 using LiteNetLib.Layers;
 using LiteNetLib.Utils;
 
@@ -319,7 +320,7 @@ namespace LiteNetLib
         private bool TryGetPeer(IPEndPoint endPoint, out NetPeer peer)
         {
             _peersLock.EnterReadLock();
-            bool result = _peersDict.TryGetValue(endPoint, out peer);
+            bool result = _peersDict.TryGetValueIL2CPP(endPoint, out peer);
             _peersLock.ExitReadLock();
             return result;
         }
@@ -726,7 +727,7 @@ namespace LiteNetLib
             else
             {
                 _peersLock.EnterUpgradeableReadLock();
-                if (_peersDict.TryGetValue(request.RemoteEndPoint, out netPeer))
+                if (_peersDict.TryGetValueIL2CPP(request.RemoteEndPoint, out netPeer))
                 {
                     //already have peer
                     _peersLock.ExitUpgradeableReadLock();
@@ -834,7 +835,7 @@ namespace LiteNetLib
             ConnectionRequest req;
             lock (_requestsDict)
             {
-                if (_requestsDict.TryGetValue(remoteEndPoint, out req))
+                if (_requestsDict.TryGetValueIL2CPP(remoteEndPoint, out req))
                 {
                     req.UpdateRequest(connRequest);
                     return;
@@ -857,7 +858,7 @@ namespace LiteNetLib
 
             if (_ntpRequests.Count > 0)
             {
-                if (_ntpRequests.TryGetValue(remoteEndPoint, out var request))
+                if (_ntpRequests.TryGetValueIL2CPP(remoteEndPoint, out var request))
                 {
                     if (packet.Size < 48)
                     {
@@ -929,7 +930,7 @@ namespace LiteNetLib
 
             //Check normal packets
             _peersLock.EnterReadLock();
-            bool peerFound = _peersDict.TryGetValue(remoteEndPoint, out var netPeer);
+            bool peerFound = _peersDict.TryGetValueIL2CPP(remoteEndPoint, out var netPeer);
             _peersLock.ExitReadLock();
 
             switch (packet.Property)
@@ -1439,7 +1440,7 @@ namespace LiteNetLib
 
             byte connectionNumber = 0;
             _peersLock.EnterUpgradeableReadLock();
-            if (_peersDict.TryGetValue(target, out var peer))
+            if (_peersDict.TryGetValueIL2CPP(target, out var peer))
             {
                 switch (peer.ConnectionState)
                 {

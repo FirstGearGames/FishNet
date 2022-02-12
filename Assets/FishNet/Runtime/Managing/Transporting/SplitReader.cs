@@ -32,7 +32,7 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         internal void GetHeader(PooledReader reader, out int expectedMessages)
         {
-            expectedMessages = reader.ReadInt32(AutoPackType.Unpacked);
+            expectedMessages = reader.ReadInt32();
         }
 
         /// <summary>
@@ -42,12 +42,7 @@ namespace FishNet.Managing.Transporting
         {
             //New tick which means new split.
             if (tick != _tick)
-            {
-                _tick = tick;
-                _receivedMessages = 0;
-                _expectedMessages = expectedMessages;
-                _writer.Reset();
-            }
+                Reset(tick, expectedMessages);
 
             /* Empty remainder of reader into the writer.
              * It does not matter if parts of the reader
@@ -67,9 +62,23 @@ namespace FishNet.Managing.Transporting
         internal ArraySegment<byte> GetFullMessage()
         {
             if (_receivedMessages < _expectedMessages)
+            {
                 return default(ArraySegment<byte>);
+            }
             else
-                return _writer.GetArraySegment();
+            {
+                ArraySegment<byte> segment = _writer.GetArraySegment();
+                Reset();
+                return segment;
+            }
+        }
+
+        private void Reset(uint tick = 0, int expectedMessages = 0)
+        {
+            _tick = tick;
+            _receivedMessages = 0;
+            _expectedMessages = expectedMessages;
+            _writer.Reset();
         }
 
     }

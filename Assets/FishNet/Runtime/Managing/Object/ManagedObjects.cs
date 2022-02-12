@@ -2,8 +2,10 @@
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -216,10 +218,11 @@ namespace FishNet.Managing.Object
         /// </summary>
         /// <param name="objectId"></param>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal NetworkObject GetSpawnedNetworkObject(int objectId)
         {
             NetworkObject r;
-            if (!Spawned.TryGetValue(objectId, out r))
+            if (!Spawned.TryGetValueIL2CPP(objectId, out r))
             {
                 if (NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Spawned NetworkObject not found for ObjectId {objectId}.");

@@ -5,6 +5,7 @@ using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -161,7 +162,7 @@ namespace FishNet.Object
                 byte index = reader.ReadByte();
                 if (isSyncObject)
                 {
-                    if (_syncObjects.TryGetValue(index, out SyncBase sb))
+                    if (_syncObjects.TryGetValueIL2CPP(index, out SyncBase sb))
                     {
                         sb.Read(reader);
                     }

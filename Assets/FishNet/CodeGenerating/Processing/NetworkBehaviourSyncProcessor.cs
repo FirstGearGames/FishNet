@@ -373,6 +373,12 @@ namespace FishNet.CodeGenerating.Processing
                 return false;
             }
 
+            if (CodegenSession.Module != typeDef.Module)
+            {                
+                CodegenSession.DifferentAssemblySyncVars.Add(fieldDef);
+                return false;
+            }
+
             FieldDefinition syncVarFd;
             MethodReference accessorSetValueMr;
             MethodReference accessorGetValueMr;

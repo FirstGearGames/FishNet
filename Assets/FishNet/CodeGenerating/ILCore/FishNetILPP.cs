@@ -8,6 +8,7 @@ using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
 using UnityEngine;
 
@@ -91,6 +92,28 @@ namespace FishNet.CodeGenerating.ILCore
 
                 //Total at once
                 //before 761, after 236ms
+
+                /* If there are warnings about SyncVars being in different assemblies.
+                 * This is awful ... codegen would need to be reworked to save
+                 * syncvars across all assemblies so that scripts referencing them from
+                 * another assembly can have it's instructions changed. This however is an immense
+                 * amount of work so it will have to be put on hold, for... a long.. long while. */
+                if (CodegenSession.DifferentAssemblySyncVars.Count > 0)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine($"Assembly {CodegenSession.Module.Name} has inherited access to SyncVars in different assemblies. When accessing SyncVars across assemblies be sure to use Get/Set methods withinin the inherited assembly script to change SyncVars. Accessible fields are:");
+
+                    //foreach ((TypeDefinition td, FieldDefinition fd) item in CodegenSession.DifferentAssemblySyncVars)
+                    //{ 
+                    // //   sb.AppendLine($"Field {item.fd.Name} within {item.fd.DeclaringType.FullName} in assembly {item.fd.Module.Name} is accessible.");
+                    //}
+                    foreach (FieldDefinition item in CodegenSession.DifferentAssemblySyncVars)
+                        sb.AppendLine($"   - Field {item.Name} within {item.DeclaringType.FullName} in assembly {item.Module.Name}.");
+
+                    CodegenSession.LogWarning("v------- IMPORTANT -------v");
+                    CodegenSession.LogWarning(sb.ToString());
+                    CodegenSession.DifferentAssemblySyncVars.Clear();
+                }
             }
 
             //CodegenSession.LogWarning($"Assembly {compiledAssembly.Name} took {stopwatch.ElapsedMilliseconds}.");

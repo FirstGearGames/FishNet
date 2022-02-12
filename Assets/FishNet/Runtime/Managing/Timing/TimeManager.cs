@@ -46,7 +46,7 @@ namespace FishNet.Managing.Timing
                 UpdatesPaused = true;
             }
         }
-        #endregion
+        #endregion      
 
         #region Public.
         /// <summary>
@@ -303,6 +303,10 @@ namespace FishNet.Managing.Timing
         /// When steps to be sent to clients are equal to or higher than this value in either direction a reset steps will be sent.
         /// </summary>
         private const byte RESET_STEPS_THRESHOLD = 5;
+        /// <summary>
+        /// Playerprefs string to load and save user fixed time.
+        /// </summary>
+        private const string SAVED_FIXED_TIME_TEXT = "SavedFixedTimeFN";
         #endregion
 
 #if UNITY_EDITOR
@@ -310,9 +314,14 @@ namespace FishNet.Managing.Timing
         {
             //If closing/stopping.
             if (ApplicationState.IsQuitting())
+            { 
                 _manualPhysics = 0;
+                UnsetSimulationSettings();
+            }
             else if (PhysicsMode == PhysicsMode.TimeManager)
+            { 
                 _manualPhysics = Math.Max(0, _manualPhysics - 1);
+            }
         }
 #endif
 
@@ -450,25 +459,37 @@ namespace FishNet.Managing.Timing
         private void SetInitialValues()
         {
             SetTickRate(TickRate);
-            SetAutomaticSimulation(PhysicsMode);
+            SetSimulationSettings(PhysicsMode);
+        }
+
+        /// <summary>
+        /// Sets simulation settings to Unity defaults.
+        /// </summary>
+        private void UnsetSimulationSettings()
+        {
+            Physics.autoSimulation = true;
+            Physics2D.autoSimulation = true;
+
+            float simulationTime = PlayerPrefs.GetFloat(SAVED_FIXED_TIME_TEXT, float.MinValue);
+            if (simulationTime != float.MinValue)
+                Time.fixedDeltaTime = simulationTime;
         }
 
         /// <summary>
         /// Updates automaticSimulation modes.
         /// </summary>
         /// <param name="automatic"></param>
-        private void SetAutomaticSimulation(PhysicsMode mode)
-        {
-            string savedFixedTime = "SavedFixedTimeFN";
+        private void SetSimulationSettings(PhysicsMode mode)
+        {            
             //Do not automatically simulate.
             if (mode == PhysicsMode.TimeManager)
             {
 #if UNITY_EDITOR
                 //Preserve user tick rate.
-                PlayerPrefs.SetFloat(savedFixedTime, Time.fixedDeltaTime);
+                PlayerPrefs.SetFloat(SAVED_FIXED_TIME_TEXT, Time.fixedDeltaTime);
                 //Let the player know.
                 if (Time.fixedDeltaTime != (float)TickDelta)
-                    Debug.LogWarning("Time.fixedDeltaTime is being overriden with TickDelta");
+                    Debug.LogWarning("Time.fixedDeltaTime is being overriden with TimeManager.TickDelta");
 #endif
                 Time.fixedDeltaTime = (float)TickDelta;
                 /* Only check this if network manager
@@ -496,14 +517,14 @@ namespace FishNet.Managing.Timing
             else
             {
 #if UNITY_EDITOR
-                float savedTime = PlayerPrefs.GetFloat(savedFixedTime, -1f);
-                if (savedTime != -1f && Time.fixedDeltaTime != savedTime)
+                float savedTime = PlayerPrefs.GetFloat(SAVED_FIXED_TIME_TEXT, float.MinValue);
+                if (savedTime != float.MinValue && Time.fixedDeltaTime != savedTime)
                 {
                     Debug.LogWarning("Time.fixedDeltaTime has been set back to user values.");
                     Time.fixedDeltaTime = savedTime;
                 }
 
-                PlayerPrefs.DeleteKey(savedFixedTime);
+                PlayerPrefs.DeleteKey(SAVED_FIXED_TIME_TEXT);
 #endif
                 Physics.autoSimulation = true;
 #if !UNITY_2020_2_OR_NEWER
@@ -643,7 +664,7 @@ namespace FishNet.Managing.Timing
             //If not started then remove from buffered inputs.
             if (arg2.ConnectionState != RemoteConnectionStates.Started)
             {
-                if (_bufferedClientInputs.TryGetValue(arg1, out ClientTickData ctd))
+                if (_bufferedClientInputs.TryGetValueIL2CPP(arg1, out ClientTickData ctd))
                 {
                     _tickDataCache.Push(ctd);
                     _bufferedClientInputs.Remove(arg1);
@@ -827,7 +848,7 @@ namespace FishNet.Managing.Timing
         private ClientTickData AddToBuffered(NetworkConnection connection, int count = 1)
         {
             //Connection found.
-            if (_bufferedClientInputs.TryGetValue(connection, out ClientTickData ctd))
+            if (_bufferedClientInputs.TryGetValueIL2CPP(connection, out ClientTickData ctd))
             {
                 if (ctd.UpdatesPaused)
                     ctd.Reset(_timingAdjustmentInterval);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FishNet.Utility.Extension;
+using System;
 using System.Collections.Generic;
 
 namespace LiteNetLib.Utils
@@ -46,7 +47,7 @@ namespace LiteNetLib.Utils
         protected virtual SubscribeDelegate GetCallbackFromData(NetDataReader reader)
         {
             ulong hash = reader.GetULong();
-            if (!_callbacks.TryGetValue(hash, out var action))
+            if (!_callbacks.TryGetValueIL2CPP(hash, out var action))
             {
                 throw new ParseException("Undefined packet in NetDataReader");
             }

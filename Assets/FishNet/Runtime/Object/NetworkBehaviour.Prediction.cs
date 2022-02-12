@@ -5,6 +5,7 @@ using FishNet.Object.Prediction.Delegating;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Constant;
+using FishNet.Utility.Extension;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -92,7 +93,7 @@ namespace FishNet.Object
                 return;
             }
 
-            if (_replicateRpcDelegates.TryGetValue(methodHash.Value, out ReplicateRpcDelegate del))
+            if (_replicateRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReplicateRpcDelegate del))
             {
                 del.Invoke(this, reader, sendingClient);
             }
@@ -113,7 +114,7 @@ namespace FishNet.Object
             if (methodHash == null)
                 methodHash = ReadRpcHash(reader);
 
-            if (_reconcileRpcDelegates.TryGetValue(methodHash.Value, out ReconcileRpcDelegate del))
+            if (_reconcileRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReconcileRpcDelegate del))
             {
                 del.Invoke(this, reader);
             }
@@ -164,7 +165,7 @@ namespace FishNet.Object
             methodWriter.WriteToEnd(replicateBuffer, offset);
 
             PooledWriter writer;
-            //if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
+            //if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
             //writer = CreateLinkedRpc(link, methodWriter, Channel.Unreliable);
             //else //todo add support for -> server rpc links.
             writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
@@ -192,9 +193,9 @@ namespace FishNet.Object
 
             PooledWriter writer;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (NetworkManager.DebugManager.ReconcileRpcLinks && _rpcLinks.TryGetValue(hash, out RpcLinkType link))
+            if (NetworkManager.DebugManager.ReconcileRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
 #else
-            if (_rpcLinks.TryGetValue(hash, out RpcLinkType link))
+            if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
 #endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else

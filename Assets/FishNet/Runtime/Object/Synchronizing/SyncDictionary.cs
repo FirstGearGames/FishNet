@@ -2,6 +2,7 @@
 using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
+using FishNet.Utility.Extension;
 using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
@@ -416,6 +417,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="item">Item to use.</param>
         /// <returns>True if found.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
             return TryGetValue(item.Key, out TValue value) && EqualityComparer<TValue>.Default.Equals(value, item.Value);
@@ -485,9 +487,10 @@ namespace FishNet.Object.Synchronizing
         /// <param name="key">Key to use.</param>
         /// <param name="value">Variable to output to.</param>
         /// <returns>True if able to output value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetValue(TKey key, out TValue value)
         {
-            return Collection.TryGetValue(key, out value);
+            return Collection.TryGetValueIL2CPP(key, out value);
         }
 
         /// <summary>

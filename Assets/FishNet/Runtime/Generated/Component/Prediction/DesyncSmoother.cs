@@ -41,13 +41,13 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private float _rotationRate = -1f;
         /// <summary>
-        /// Local position of this transform during OnStartClient.
+        /// Local position of transform when instantiated.
         /// </summary>
-        private Vector3 _startPosition;
+        private Vector3 _instantiatedPosition;
         /// <summary>
-        /// Local rotation of this transform during OnStartClient.
+        /// Local rotation of transform when instantiated.
         /// </summary>
-        private Quaternion _startRotation;
+        private Quaternion _instantiatedRotation;
 
         private void OnDisable()
         {
@@ -58,8 +58,8 @@ namespace FishNet.Component.Prediction
         {
             base.OnStartClient();
             Transform t = transform;
-            _startPosition = t.localPosition;
-            _startRotation = t.localRotation;
+            _instantiatedPosition = t.localPosition;
+            _instantiatedRotation = t.localRotation;
         }
 
         public override void OnOwnershipClient(NetworkConnection prevOwner)
@@ -112,9 +112,9 @@ namespace FishNet.Component.Prediction
             float distance;
 
             //Calculate move rates based on time to complete vs distance required.
-            distance = (t.localPosition - _startPosition).magnitude;
+            distance = (t.localPosition - _instantiatedPosition).magnitude;
             _positionRate = distance / _duration;
-            distance = Quaternion.Angle(t.localRotation, _startRotation);
+            distance = Quaternion.Angle(t.localRotation, _instantiatedRotation);
             _rotationRate = distance / _duration;
         }
 
@@ -123,15 +123,15 @@ namespace FishNet.Component.Prediction
             //If position should move.
             if (_positionRate > 0f)
             {
-                transform.localPosition = Vector3.MoveTowards(transform.localPosition, _startPosition, _positionRate * Time.deltaTime);
-                if (transform.localPosition == _startPosition)
+                transform.localPosition = Vector3.MoveTowards(transform.localPosition, _instantiatedPosition, _positionRate * Time.deltaTime);
+                if (transform.localPosition == _instantiatedPosition)
                     _positionRate = -1f;
             }
             //If rotation should move.
             if (_rotationRate > 0f)
             {
-                transform.localRotation = Quaternion.RotateTowards(transform.localRotation, _startRotation, _rotationRate * Time.deltaTime);
-                if (transform.localRotation == _startRotation)
+                transform.localRotation = Quaternion.RotateTowards(transform.localRotation, _instantiatedRotation, _rotationRate * Time.deltaTime);
+                if (transform.localRotation == _instantiatedRotation)
                     _rotationRate = -1f;
             }
         }

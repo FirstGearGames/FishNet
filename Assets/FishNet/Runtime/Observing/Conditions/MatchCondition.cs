@@ -1,8 +1,9 @@
 ﻿using FishNet.Connection;
-using FishNet.Object;
 using FishNet.Observing;
+using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Component.Observing
@@ -35,7 +36,7 @@ namespace FishNet.Component.Observing
         public void AddToMatch(int match, NetworkConnection conn)
         {
             HashSet<NetworkConnection> result;
-            if (!Matches.TryGetValue(match, out result))
+            if (!_matches.TryGetValueIL2CPP(match, out result))
             {
                 result = new HashSet<NetworkConnection>();
                 _matches.Add(match, result);
@@ -51,7 +52,7 @@ namespace FishNet.Component.Observing
         public void AddToMatch(int match, NetworkConnection[] conns)
         {
             HashSet<NetworkConnection> result;
-            if (!Matches.TryGetValue(match, out result))
+            if (!_matches.TryGetValueIL2CPP(match, out result))
             {
                 result = new HashSet<NetworkConnection>();
                 _matches.Add(match, result);
@@ -68,7 +69,7 @@ namespace FishNet.Component.Observing
         public void AddToMatch(int match, List<NetworkConnection> conns)
         {
             HashSet<NetworkConnection> result;
-            if (!Matches.TryGetValue(match, out result))
+            if (!_matches.TryGetValueIL2CPP(match, out result))
             {
                 result = new HashSet<NetworkConnection>();
                 _matches.Add(match, result);
@@ -85,7 +86,7 @@ namespace FishNet.Component.Observing
             return null;
             //return a cache from conn/conns. iterate through one method.
         }
-            #endregion
+        #endregion
 
         #region Remove from match.
         /// <summary>
@@ -93,9 +94,10 @@ namespace FishNet.Component.Observing
         /// </summary>
         /// <param name="match">Match to remove conn from.</param>
         /// <param name="conn">Connection to remove from match.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveFromMatch(int match, NetworkConnection conn)
         {
-            if (Matches.TryGetValue(match, out HashSet<NetworkConnection> results))
+            if (_matches.TryGetValueIL2CPP(match, out HashSet<NetworkConnection> results))
             {
                 results.Remove(conn);
 
@@ -108,9 +110,10 @@ namespace FishNet.Component.Observing
         /// </summary>
         /// <param name="match">Match to remove conns from.</param>
         /// <param name="conns">Connections to remove from match.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveFromMatch(int match, NetworkConnection[] conns)
         {
-            if (Matches.TryGetValue(match, out HashSet<NetworkConnection> results))
+            if (_matches.TryGetValueIL2CPP(match, out HashSet<NetworkConnection> results))
             {
                 for (int i = 0; i < conns.Length; i++)
                     results.Remove(conns[i]);
@@ -124,9 +127,10 @@ namespace FishNet.Component.Observing
         /// </summary>
         /// <param name="match">Match to remove conns from.</param>
         /// <param name="conns">Connections to remove from match.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveFromMatch(int match, List<NetworkConnection> conns)
         {
-            if (Matches.TryGetValue(match, out HashSet<NetworkConnection> results))
+            if (_matches.TryGetValueIL2CPP(match, out HashSet<NetworkConnection> results))
             {
                 for (int i = 0; i < conns.Count; i++)
                     results.Remove(conns[i]);

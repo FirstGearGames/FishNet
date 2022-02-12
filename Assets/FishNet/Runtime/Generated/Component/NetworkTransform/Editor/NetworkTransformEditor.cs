@@ -48,8 +48,11 @@ namespace FishNet.Component.Transforming.Editing
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkTransform)target), typeof(NetworkTransform), false);
             GUI.enabled = true;
 
-            EditorGUILayout.HelpBox(EditingConstants.PRO_FEATURE_MESSAGE, MessageType.Info);
             
+#pragma warning disable CS0162 // Unreachable code detected
+                EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_UNLOCKED_TEXT, MessageType.None);
+#pragma warning restore CS0162 // Unreachable code detected
+
             //Misc.
             EditorGUILayout.LabelField("Misc", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
