@@ -314,12 +314,12 @@ namespace FishNet.Managing.Timing
         {
             //If closing/stopping.
             if (ApplicationState.IsQuitting())
-            { 
+            {
                 _manualPhysics = 0;
                 UnsetSimulationSettings();
             }
             else if (PhysicsMode == PhysicsMode.TimeManager)
-            { 
+            {
                 _manualPhysics = Math.Max(0, _manualPhysics - 1);
             }
         }
@@ -468,7 +468,11 @@ namespace FishNet.Managing.Timing
         private void UnsetSimulationSettings()
         {
             Physics.autoSimulation = true;
-            Physics2D.autoSimulation = true;
+#if !UNITY_2020_2_OR_NEWER
+            Physics2D.autoSimulation = false;
+#else
+            Physics2D.simulationMode = SimulationMode2D.FixedUpdate;
+#endif
 
             float simulationTime = PlayerPrefs.GetFloat(SAVED_FIXED_TIME_TEXT, float.MinValue);
             if (simulationTime != float.MinValue)
@@ -480,7 +484,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name="automatic"></param>
         private void SetSimulationSettings(PhysicsMode mode)
-        {            
+        {
             //Do not automatically simulate.
             if (mode == PhysicsMode.TimeManager)
             {
