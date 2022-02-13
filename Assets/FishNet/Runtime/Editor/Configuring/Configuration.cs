@@ -47,7 +47,7 @@ namespace FishNet.Configuring.Editing
         /// <summary>
         /// File name for configuration disk data.
         /// </summary>
-        private const string CONFIG_FILE_NAME = "Config.json";
+        private const string CONFIG_FILE_NAME = "FishNet.Config.json";
         /// <summary>
         /// Used to compare if ConfigurationData has changed.
         /// </summary>
@@ -94,10 +94,10 @@ namespace FishNet.Configuring.Editing
         /// </summary>
         private static bool SetConfigurationPath(bool error)
         {
-            string runtimePath = Finding.GetFishNetRuntimePath(error);
-            if (runtimePath != string.Empty)
+            string appPath = Application.dataPath;
+            if (appPath != string.Empty)
             {
-                _configurationFilePath = Path.Combine(runtimePath, CONFIG_FILE_NAME);
+                _configurationFilePath = Path.Combine(appPath, CONFIG_FILE_NAME);
                 return true;
             }
             else
@@ -185,7 +185,7 @@ namespace FishNet.Configuring.Editing
             Configuration.CopyTo(_comparerConfiguration);
 
             GUILayout.BeginVertical();
-            GUILayout.BeginScrollView(scrollPos, GUILayout.Width(800), GUILayout.Height(800));
+            GUILayout.BeginScrollView(Vector2.zero, GUILayout.Width(500), GUILayout.Height(800));
 
             GUILayout.Space(10f);
 
@@ -208,10 +208,6 @@ namespace FishNet.Configuring.Editing
             if (Configuration.HasChanged(_comparerConfiguration))
                 SaveConfiguration();
         }
-
-        Vector2 scrollPos;
-
-        //scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.Width(800), GUILayout.Height(800))
     }
 }
 #endif
