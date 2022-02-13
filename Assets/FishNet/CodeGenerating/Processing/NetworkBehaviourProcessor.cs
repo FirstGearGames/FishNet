@@ -92,7 +92,7 @@ namespace FishNet.CodeGenerating.Processing
                 /* //perf rpcCounts can be optimized by having different counts
                  * for target, observers, server, replicate, and reoncile rpcs. Since
                  * each registers to their own delegates this is possible. */
-                
+
                 
 
                 /* SyncTypes. */

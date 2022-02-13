@@ -26,7 +26,7 @@ namespace FishNet.Utility.Extension
             value = default(TValue);
             return false;
 #else
-            return dict.TryGetValueIL2CPP(key, out value);
+            return dict.TryGetValue(key, out value);
 #endif
         }
 

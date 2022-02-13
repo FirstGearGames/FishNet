@@ -105,20 +105,15 @@ namespace FishNet.CodeGenerating.Processing
         private void CreateAttributeMethod(MethodDefinition methodDef, CustomAttribute qolAttribute, QolAttributeType qolType)
         {
             bool inheritsNetworkBehaviour = methodDef.DeclaringType.InheritsNetworkBehaviour();
-
             TypeDefinition typeDef = methodDef.DeclaringType;
-            ILProcessor processor = methodDef.Body.GetILProcessor();
 
             //True to use InstanceFInder.
-            bool useStatic = (methodDef.IsStatic|| !inheritsNetworkBehaviour);
+            bool useStatic = (methodDef.IsStatic || !inheritsNetworkBehaviour);
 
             if (qolType == QolAttributeType.Client)
             {
-                if (BuildInformation.IsServerOnlyBuild)
-                {
-                    
-                }
-                else
+                
+                if (!BuildInformation.StripBuild)
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
                     /* Since isClient also uses insert first
@@ -126,27 +121,27 @@ namespace FishNet.CodeGenerating.Processing
                      * codegen processes it after IsOwner. EG... 
                      * IsOwner will be added first, then IsClient will be added first over IsOwner. */
                     bool requireOwnership = qolAttribute.GetField("RequireOwnership", false);
+                    if (requireOwnership && useStatic)
+                    {
+                        CodegenSession.LogError($"Method {methodDef.Name} has a [Client] attribute which requires ownership but the method may not use this attribute. Either the method is static, or the script does not inherit from NetworkBehaviour.");
+                        return;
+                    }
                     //If (!base.IsOwner);
                     if (requireOwnership)
                         CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(methodDef, logging, false, true);
-
-                    
+                    //Otherwise normal IsClient check.
+                    else
                         CodegenSession.ObjectHelper.CreateIsClientCheck(methodDef, logging, useStatic, true);
                 }
             }
             else if (qolType == QolAttributeType.Server)
             {
-                if (BuildInformation.IsClientOnlyBuild)
-                { 
-                    
-                }
-                else
+                
+                if (!BuildInformation.StripBuild)
                 {
-                    
-                        LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
-                        CodegenSession.ObjectHelper.CreateIsServerCheck(methodDef, logging, useStatic, true);
-                        
-                }
+                    LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
+                    CodegenSession.ObjectHelper.CreateIsServerCheck(methodDef, logging, useStatic, true);
+                }              
             }
         }
 

@@ -15,7 +15,7 @@ namespace FishNet.Utility.Editing
         /// <summary>
         /// Rebuilds sceneIds for open scenes.
         /// </summary>
-        [MenuItem("Fish-Networking/Rebuild SceneIds")]
+        [MenuItem("Fish-Networking/Rebuild SceneIds", false, 2)]
         static void RebuildSceneIds()
         {
             int generatedCount = 0;

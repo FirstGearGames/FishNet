@@ -547,7 +547,7 @@ namespace FishNet.CodeGenerating.Processing
             intentionallyNull = false;
 
             bool isServerRpc = (rpcType == RpcType.Server);
-            if ((isServerRpc && BuildInformation.IsClientOnlyBuild) || (!isServerRpc && BuildInformation.IsServerOnlyBuild))
+            if ((isServerRpc && BuildInformation.IsGuiReleaseBuild) || (!isServerRpc && BuildInformation.IsServerOnlyBuild))
             {
                 intentionallyNull = true;
                 return null;
