@@ -78,7 +78,7 @@ namespace FishNet.Serializing
                 return;
             }
             else
-            { 
+            {
                 WriteBoolean(false);
             }
 
@@ -298,7 +298,14 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt32(int value, AutoPackType packType = AutoPackType.Packed) => WriteUInt32((uint)value, packType);
+        public void WriteInt32(int value, AutoPackType packType = AutoPackType.Packed)
+        {
+            if (packType == AutoPackType.Packed)
+                WritePackedWhole(ZigZagEncode((ulong)value));
+            else
+                WriteUInt32((uint)value, packType);
+        }
+
         /// <summary>
         /// Writes a uint32.
         /// </summary>
@@ -325,7 +332,14 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt64(long value, AutoPackType packType = AutoPackType.Packed) => WriteUInt64((ulong)value, packType);
+        public void WriteInt64(long value, AutoPackType packType = AutoPackType.Packed)
+        {
+            if (packType == AutoPackType.Packed)
+                WritePackedWhole(ZigZagEncode((ulong)value));
+            else
+                WriteUInt64((ulong)value, packType);
+        }
+
         /// <summary>
         /// Writes a uint64.
         /// </summary>
@@ -774,23 +788,16 @@ namespace FishNet.Serializing
 
         #region Packed writers.
         /// <summary>
-        /// Returns PackRate to use for value.
+        /// ZigZag encode an integer. Move the sign bit to the right.
         /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
         [CodegenExclude]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PackRate GetPackRate(ulong value)
+        public ulong ZigZagEncode(ulong value)
         {
-            if (value <= byte.MaxValue)
-                return PackRate.OneByte;
-            else if (value <= ushort.MaxValue)
-                return PackRate.TwoBytes;
-            else if (value <= uint.MaxValue)
-                return PackRate.FourBytes;
-            else
-                return PackRate.EightBytes;
+            if (value >> 63 > 0)
+                return ~(value << 1) | 1;
+            return value << 1;
         }
+
         /// <summary>
         /// Writes a packed whole number.
         /// </summary>
@@ -798,44 +805,13 @@ namespace FishNet.Serializing
         [CodegenExclude]
         public void WritePackedWhole(ulong value)
         {
-            PackRate pr = GetPackRate(value);
-            /* PackRate returns how many bytes data can fit into.
-             * So need to add one extra for the packRate byte, which specifies
-             * how many bytes data will use. */
-            int neededLength = ((byte)pr + 1);
-            if (Position + neededLength > _buffer.Length)
-                DoubleBuffer(neededLength);
-            //Add packrate.
-            _buffer[Position++] = (byte)pr;
-
-            if (pr == PackRate.OneByte)
+            do
             {
-                _buffer[Position++] = (byte)value;
-            }
-            else if (value <= ushort.MaxValue)
-            {
-                _buffer[Position++] = (byte)value;
-                _buffer[Position++] = (byte)(value >> 8);
-            }
-            else if (value <= uint.MaxValue)
-            {
-                _buffer[Position++] = (byte)value;
-                _buffer[Position++] = (byte)(value >> 8);
-                _buffer[Position++] = (byte)(value >> 16);
-                _buffer[Position++] = (byte)(value >> 24);
-            }
-            else
-            {
-                _buffer[Position++] = (byte)value;
-                _buffer[Position++] = (byte)(value >> 8);
-                _buffer[Position++] = (byte)(value >> 16);
-                _buffer[Position++] = (byte)(value >> 24);
-                _buffer[Position++] = (byte)(value >> 32);
-                _buffer[Position++] = (byte)(value >> 40);
-                _buffer[Position++] = (byte)(value >> 48);
-                _buffer[Position++] = (byte)(value >> 56);
-            }
-
+                _buffer[Position] = (byte)(value & 0x7F);
+                value >>= 7;
+                if (value > 0) _buffer[Position] |= 0x80;
+                Position++;
+            } while (value > 0);
             Length = Math.Max(Length, Position);
         }
         #endregion

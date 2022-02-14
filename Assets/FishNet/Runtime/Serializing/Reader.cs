@@ -120,7 +120,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes a dictionary.
         /// </summary>
-        public Dictionary<TKey,TValue> ReadDictionary<TKey, TValue>()
+        public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>()
         {
             bool isNull = ReadBoolean();
             if (isNull)
@@ -342,11 +342,17 @@ namespace FishNet.Serializing
 
             return result;
         }
+
         /// <summary>
         /// Reads a uint32.
         /// </summary>
         /// <returns></returns>
-        public int ReadInt32(AutoPackType packType = AutoPackType.Packed) => (int)ReadUInt32(packType);
+        public int ReadInt32(AutoPackType packType = AutoPackType.Packed)
+        {
+            if (packType == AutoPackType.Packed)
+                return (int)(long)ZigZagDecode(ReadPackedWhole());
+            return (int)ReadUInt32(packType);
+        }
 
         /// <summary>
         /// Reads an int64.
@@ -372,11 +378,17 @@ namespace FishNet.Serializing
 
             return result;
         }
+
         /// <summary>
         /// Reads a uint64.
         /// </summary>
         /// <returns></returns>
-        public long ReadInt64(AutoPackType packType = AutoPackType.Packed) => (long)ReadUInt64(packType);
+        public long ReadInt64(AutoPackType packType = AutoPackType.Packed)
+        {
+            if (packType == AutoPackType.Packed)
+                return (long)ZigZagDecode(ReadPackedWhole());
+            return (long)ReadUInt64(packType);
+        }
 
         /// <summary>
         /// Reads a single.
@@ -461,7 +473,6 @@ namespace FishNet.Serializing
         /// Reads bytes and size and copies results into target. Returns -1 if null was written.
         /// </summary>
         /// <returns>Bytes read.</returns>
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CodegenExclude]
         public int ReadBytesAndSize(ref byte[] target)
@@ -665,7 +676,6 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="count"></param>
         /// <returns></returns>
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CodegenExclude]
         public byte[] ReadBytesAllocated(int count)
@@ -679,7 +689,6 @@ namespace FishNet.Serializing
         /// Reads a Guid.
         /// </summary>
         /// <returns></returns>
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public System.Guid ReadGuid()
         {
@@ -929,7 +938,18 @@ namespace FishNet.Serializing
         }
 
 
-        #region Packed readers.        
+        #region Packed readers.
+        /// <summary>
+        /// ZigZag decode an integer. Move the sign bit back to the left.
+        /// </summary>
+        public ulong ZigZagDecode(ulong value)
+        {
+            ulong sign = value << 63;
+            if (sign > 0)
+                return ~(value >> 1) | sign;
+            return value >> 1;
+        }
+
         /// <summary>
         /// Reads a packed whole number.
         /// </summary>
@@ -939,30 +959,16 @@ namespace FishNet.Serializing
             //if (Remaining < 1)
             //    LogEndOfStream();
 
-            PackRate pr = (PackRate)_buffer[Position++];
-
-            if (pr == PackRate.OneByte)
+            int bits = 0;
+            ulong result = 0;
+            byte data;
+            do
             {
-                return ReadByte();
-            }
-            else if (pr == PackRate.TwoBytes)
-            {
-                return ReadUInt16();
-            }
-            else if (pr == PackRate.FourBytes)
-            {
-                return ReadUInt32(AutoPackType.Unpacked);
-            }
-            else if (pr == PackRate.EightBytes)
-            {
-                return ReadUInt64(AutoPackType.Unpacked);
-            }
-            else
-            {
-                if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Unhandled PackRate of {pr}.");
-                return 0;
-            }
+                data = ReadByte();
+                result |= (ulong)(data & 0x7F) << bits;
+                bits += 7;
+            } while ((data & 0x80) > 0);
+            return result;
         }
         #endregion
 
@@ -993,7 +999,7 @@ namespace FishNet.Serializing
 
             return count;
         }
-     
+
         /// <summary>
         /// Reads any supported type.
         /// </summary>
