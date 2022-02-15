@@ -960,14 +960,30 @@ namespace FishNet.Serializing
             //    LogEndOfStream();
 
             int bits = 0;
+            int extraBytes = -1;
             ulong result = 0;
             byte data;
             do
             {
                 data = ReadByte();
-                result |= (ulong)(data & 0x7F) << bits;
-                bits += 7;
-            } while ((data & 0x80) > 0);
+                if (bits < 28)
+                {
+                    result |= (ulong)(data & 0x7F) << bits;
+                    bits += 7;
+                }
+                else if (bits == 28)
+                {
+                    result |= (ulong)(data & 0xF) << bits;
+                    extraBytes = (data & 0xF0) >> 4;
+                    bits += 4;
+                }
+                else
+                {
+                    result |= (ulong)(data & 0xFF) << bits;
+                    extraBytes--;
+                    bits += 8;
+                }
+            } while ((extraBytes == -1 && (data & 0x80) > 0) || extraBytes > 0);
             return result;
         }
         #endregion

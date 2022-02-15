@@ -805,12 +805,41 @@ namespace FishNet.Serializing
         [CodegenExclude]
         public void WritePackedWhole(ulong value)
         {
+            int bytes = 0;
             do
             {
-                _buffer[Position] = (byte)(value & 0x7F);
-                value >>= 7;
-                if (value > 0) _buffer[Position] |= 0x80;
-                Position++;
+                if (bytes < 4)
+                {
+                    _buffer[Position] = (byte)(value & 0x7F); // Store 7 bits in early bytes
+                    value >>= 7;
+                    if (value > 0) _buffer[Position] |= 0x80;
+                    Position++;
+                    bytes++;
+                }
+                else if (bytes == 4)
+                {
+                    _buffer[Position] = (byte)(value & 0xF); // Store 4 bits in byte 4
+                    value >>= 4;
+                    int extraBytes = 0;
+                    if (value > 0xFFFFFF)
+                        extraBytes = 4;
+                    else if (value > 0xFFFF)
+                        extraBytes = 3;
+                    else if (value > 0xFF)
+                        extraBytes = 2;
+                    else if (value > 0)
+                        extraBytes = 1;
+                    _buffer[Position] |= (byte)(extraBytes << 4);
+                    Position++;
+                    bytes++;
+                }
+                else
+                {
+                    _buffer[Position] = (byte)(value & 0xFF); // Store 8 bits in late bytes
+                    value >>= 8;
+                    Position++;
+                    // bytes++;
+                }
             } while (value > 0);
             Length = Math.Max(Length, Position);
         }
