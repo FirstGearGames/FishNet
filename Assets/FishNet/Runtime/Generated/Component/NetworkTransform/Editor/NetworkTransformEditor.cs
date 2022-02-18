@@ -50,7 +50,7 @@ namespace FishNet.Component.Transforming.Editing
 
             
 #pragma warning disable CS0162 // Unreachable code detected
-                EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_UNLOCKED_TEXT, MessageType.None);
+                EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_LOCKED_TEXT, MessageType.Warning);
 #pragma warning restore CS0162 // Unreachable code detected
 
             //Misc.

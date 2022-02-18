@@ -314,12 +314,12 @@ namespace FishNet.Managing.Timing
         {
             //If closing/stopping.
             if (ApplicationState.IsQuitting())
-            {
+            { 
                 _manualPhysics = 0;
                 UnsetSimulationSettings();
             }
             else if (PhysicsMode == PhysicsMode.TimeManager)
-            {
+            { 
                 _manualPhysics = Math.Max(0, _manualPhysics - 1);
             }
         }
@@ -484,7 +484,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name="automatic"></param>
         private void SetSimulationSettings(PhysicsMode mode)
-        {
+        {            
             //Do not automatically simulate.
             if (mode == PhysicsMode.TimeManager)
             {

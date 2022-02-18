@@ -279,7 +279,9 @@ namespace FishNet.Managing.Server
 
                     OnRemoteConnectionState?.Invoke(conn, args);
 
-                    if (Authenticator != null)
+                    /* If there is an authenticator
+                     * and the transport is not a local transport. */
+                    if (Authenticator != null && !NetworkManager.TransportManager.IsLocalTransport(args.ConnectionId))
                         Authenticator.OnRemoteConnection(conn);
                     else
                         ClientAuthenticated(conn);
@@ -342,7 +344,7 @@ namespace FishNet.Managing.Server
             //FishNet internally splits packets so nothing should ever arrive over MTU.
             int channelMtu = NetworkManager.TransportManager.Transport.GetMTU((byte)args.Channel);
             //If over MTU kick client immediately.
-            if (segment.Count > channelMtu)
+            if (segment.Count > channelMtu && !NetworkManager.TransportManager.IsLocalTransport(args.ConnectionId))
             {
                 ExceededMTUKick();
                 return;

@@ -1276,7 +1276,7 @@ namespace LiteNetLib
                             _timeSinceLastPacket,
                             NetManager.DisconnectTimeout);
 
-                        UnityEngine.Debug.Log(_timeSinceLastPacket + ",  " +  NetManager.DisconnectTimeout);
+                        //UnityEngine.Debug.Log(_timeSinceLastPacket + ",  " +  NetManager.DisconnectTimeout);
                         NetManager.DisconnectPeerForce(this, DisconnectReason.Timeout, 0, null);
                         return;
                     }

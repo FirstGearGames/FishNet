@@ -546,12 +546,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             intentionallyNull = false;
 
-            bool isServerRpc = (rpcType == RpcType.Server);
-            if ((isServerRpc && BuildInformation.IsGuiReleaseBuild) || (!isServerRpc && BuildInformation.IsServerOnlyBuild))
-            {
-                intentionallyNull = true;
-                return null;
-            }
+            
 
             string methodName = $"{READER_PREFIX}{GetMethodNameAsParameters(originalMethodDef)}";
             /* If method already exist then just return it. This

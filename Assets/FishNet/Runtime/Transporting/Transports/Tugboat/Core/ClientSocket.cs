@@ -282,7 +282,7 @@ namespace FishNet.Tugboat.Client
             {
                 dataArgs.Data = incoming.GetArraySegment();
                 dataArgs.Channel = (Channel)incoming.Channel;
-                base.Transport.HandleClientReceivedDataArgs(dataArgs);
+                base.Transport.HandleClientReceivedData(dataArgs);
                 //Dispose of packet.
                 incoming.Dispose();
             }

@@ -281,7 +281,8 @@ namespace FishNet.Component.Prediction
             distance = Vector3.Distance(_previousPosition, transform.position);
             _positionMoveRate = (distance / tickDelta);
             distance = Quaternion.Angle(_previoustRotation, transform.rotation);
-            _rotationMoveRate = (distance / tickDelta);
+            if (distance > 0f)
+                _rotationMoveRate = (distance / tickDelta);
         }
 
 

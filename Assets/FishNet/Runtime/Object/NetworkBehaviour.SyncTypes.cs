@@ -265,7 +265,7 @@ namespace FishNet.Object
                             /* Channel for syncVar is beyond available channels in transport.
                              * Use default reliable. */
                             if (channel >= _syncTypeWriters[i].Writers.Length)
-                                channel = NetworkObject.NetworkManager.TransportManager.Transport.GetDefaultReliableChannel();
+                                channel = (byte)Channel.Reliable;
 
                             writer = _syncTypeWriters[i].Writers[channel];
                             break;

@@ -197,11 +197,18 @@ namespace FishNet.Configuring.Editing
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(20f);
-
             Configuration.StripReleaseBuilds = EditorGUILayout.ToggleLeft("* Strip Release Builds", Configuration.StripReleaseBuilds);
-
-
             GUILayout.EndHorizontal();
+
+            if (Configuration.StripReleaseBuilds)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(40f);
+                GUILayout.Box("NOTICE: development builds will not have code stripped. Additionally, if you plan to run as host disable code stripping.", GUILayout.Width(170f));
+                GUILayout.EndHorizontal();
+            }
+
+
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
 

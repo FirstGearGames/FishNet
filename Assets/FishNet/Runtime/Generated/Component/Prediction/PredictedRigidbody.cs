@@ -149,6 +149,8 @@ namespace FishNet.Component.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PredictVelocity(PhysicsScene ps)
         {
+            if (base.PredictionRatio <= 0f)
+                return;
             if (ps != _physicsScene)
                 return;
 
@@ -170,8 +172,8 @@ namespace FishNet.Component.Prediction
         {
             RigidbodyState state = new RigidbodyState
             {
-                Position = transform.position,
-                Rotation = transform.rotation,
+                Position = _rigidbody.transform.position,
+                Rotation = _rigidbody.transform.rotation,
                 Velocity = _rigidbody.velocity,
                 AngularVelocity = _rigidbody.angularVelocity
             };

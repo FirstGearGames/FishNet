@@ -142,9 +142,24 @@ namespace FishNet.Managing.Server
         private void BuildObjectIdCache()
         {
             _objectIdCache.Clear();
+
+            /* Shuffle Ids to make it more difficult
+             * for clients to track spawned object
+             * count. */
+            List<int> shuffledCache = new List<int>();
+            for (int i = 0; i < short.MaxValue; i++)
+                shuffledCache.Add(i);
+            /* Only shuffle when NOT in editor and not
+             * development build.
+             * Debugging could be easier when Ids are ordered. */
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+            shuffledCache.Shuffle();
+#endif
+            //Add shuffled to objectIdCache.
             //Build Id cache.
-            for (int i = 0; i < ushort.MaxValue; i++)
-                _objectIdCache.Enqueue(i);
+            int cacheCount = shuffledCache.Count;
+            for (int i = 0; i < cacheCount; i++)
+                _objectIdCache.Enqueue(shuffledCache[i]);            
         }
         /// <summary>
         /// Caches a NetworkObject ObjectId.
@@ -174,9 +189,9 @@ namespace FishNet.Managing.Server
                 return _objectIdCache.Dequeue();
             }
         }
-        #endregion
+#endregion
 
-        #region Initializing Objects In Scenes.
+#region Initializing Objects In Scenes.
         /// <summary>
         /// Called when a scene loads on the server.
         /// </summary>
@@ -241,9 +256,9 @@ namespace FishNet.Managing.Server
                 nob.Initialize(true);
             }
         }
-        #endregion    
+#endregion
 
-        #region Spawning.
+#region Spawning.
         /// <summary>
         /// Spawns an object over the network.
         /// </summary>
@@ -400,9 +415,9 @@ namespace FishNet.Managing.Server
             headerWriter.Dispose();
             tempWriter.Dispose();
         }
-        #endregion
+#endregion
 
-        #region Despawning.
+#region Despawning.
         internal void AddToPending(NetworkObject nob)
         {
             _pendingDestroy[nob.ObjectId] = nob;
@@ -506,7 +521,7 @@ namespace FishNet.Managing.Server
 
 
     }
-    #endregion
+#endregion
 
 
 

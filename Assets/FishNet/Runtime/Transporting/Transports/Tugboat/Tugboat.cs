@@ -96,9 +96,9 @@ namespace FishNet.Tugboat
         #endregion
 
         #region Initialization and unity.
-        public override void Initialize(NetworkManager networkManager)
+        public override void Initialize(NetworkManager networkManager, int transportIndex)
         {
-            base.Initialize(networkManager);
+            base.Initialize(networkManager, transportIndex);
         }
 
         protected void OnDestroy()
@@ -163,7 +163,6 @@ namespace FishNet.Tugboat
         public override void HandleServerConnectionState(ServerConnectionStateArgs connectionStateArgs)
         {
             OnServerConnectionState?.Invoke(connectionStateArgs);
-            LocalConnectionStates state = connectionStateArgs.ConnectionState;
             UpdateTimeout();
         }
         /// <summary>
@@ -211,7 +210,7 @@ namespace FishNet.Tugboat
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
         /// <param name="receivedDataArgs"></param>
-        public override void HandleClientReceivedDataArgs(ClientReceivedDataArgs receivedDataArgs)
+        public override void HandleClientReceivedData(ClientReceivedDataArgs receivedDataArgs)
         {
             OnClientReceivedData?.Invoke(receivedDataArgs);
         }
@@ -223,7 +222,7 @@ namespace FishNet.Tugboat
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
         /// <param name="receivedDataArgs"></param>
-        public override void HandleServerReceivedDataArgs(ServerReceivedDataArgs receivedDataArgs)
+        public override void HandleServerReceivedData(ServerReceivedDataArgs receivedDataArgs)
         {
             OnServerReceivedData?.Invoke(receivedDataArgs);
         }
@@ -456,23 +455,8 @@ namespace FishNet.Tugboat
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Channel of {channelId} is out of range of supported channels. Channel will be defaulted to reliable.");
-                channelId = GetDefaultReliableChannel();
+                channelId = 0;
             }
-        }
-
-        /// <summary>
-        /// Returns which channel to use by default for reliable.
-        /// </summary>
-        public override byte GetDefaultReliableChannel()
-        {
-            return 0;
-        }
-        /// <summary>
-        /// Returns which channel to use by default for unreliable.
-        /// </summary>
-        public override byte GetDefaultUnreliableChannel()
-        {
-            return 1;
         }
         /// <summary>
         /// Gets the MTU for a channel. This should take header size into consideration.

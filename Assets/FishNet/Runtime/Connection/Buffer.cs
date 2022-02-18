@@ -85,7 +85,7 @@ namespace FishNet.Connection
     internal class PacketBundle
     {
         /// <summary>
-        /// True if data hsa been written.
+        /// True if data has been written.
         /// </summary>
         internal bool HasData => _buffers[0].HasData;
         /// <summary>

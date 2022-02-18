@@ -65,6 +65,7 @@ namespace FishNet.CodeGenerating.Helping
         #region Const.
         internal const uint MAX_RPC_ALLOWANCE = ushort.MaxValue;
         internal const string AWAKE_METHOD_NAME = "Awake";
+        internal const string DISABLE_LOGGING_TEXT = "This message may be disabled by setting the Logging field in your attribute to LoggingType.Off";
         #endregion
 
         internal bool ImportReferences()
@@ -164,10 +165,12 @@ namespace FishNet.CodeGenerating.Helping
                     NetworkBehaviour_Owner_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkBehaviour.LocalConnection))
                     NetworkBehaviour_LocalConnection_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+#pragma warning disable CS0618 // Type or member is obsolete
                 else if (pi.Name == nameof(NetworkBehaviour.OwnerIsValid))
                     NetworkBehaviour_OwnerIsValid_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkBehaviour.OwnerIsActive))
                     NetworkBehaviour_OwnerIsActive_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+#pragma warning restore CS0618 // Type or member is obsolete
                 //Misc.
                 else if (pi.Name == nameof(NetworkBehaviour.TimeManager))
                     NetworkBehaviour_TimeManager_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
@@ -289,8 +292,8 @@ namespace FishNet.CodeGenerating.Helping
             if (loggingType != LoggingType.Off)
             {
                 string msg = (retIfOwner) ?
-                    "Cannot complete action because you are the owner of this object." :
-                    "Cannot complete action because you are not the owner of this object.";
+                    $"Cannot complete action because you are the owner of this object. {DISABLE_LOGGING_TEXT}." :
+                    $"Cannot complete action because you are not the owner of this object. {DISABLE_LOGGING_TEXT}.";
 
                 instructions.AddRange(
                     CodegenSession.GeneralHelper.CreateDebugWithCanLogInstructions(processor, msg, loggingType, false, true)

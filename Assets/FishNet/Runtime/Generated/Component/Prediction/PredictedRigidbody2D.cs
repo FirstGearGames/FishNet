@@ -149,8 +149,11 @@ namespace FishNet.Component.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PredictVelocity(PhysicsScene2D ps)
         {
+            if (base.PredictionRatio <= 0f)
+                return;
             if (ps != _physicsScene2D)
                 return;
+
             Vector3 v3Result;
             if (base.PredictVector3Velocity(ref _velocityBaseline, ref _lastVelocity, _rigidbody2D.velocity, out v3Result))
                 _rigidbody2D.velocity = v3Result;
@@ -170,8 +173,8 @@ namespace FishNet.Component.Prediction
         {
             Rigidbody2DState state = new Rigidbody2DState
             {
-                Position = transform.position,
-                Rotation = transform.rotation,
+                Position = _rigidbody2D.transform.position,
+                Rotation = _rigidbody2D.transform.rotation,
                 Velocity = _rigidbody2D.velocity,
                 AngularVelocity = _rigidbody2D.angularVelocity
             };

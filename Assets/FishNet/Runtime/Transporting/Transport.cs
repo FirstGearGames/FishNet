@@ -16,6 +16,10 @@ namespace FishNet.Transporting
         /// NetworkManager for this transport.
         /// </summary>
         public NetworkManager NetworkManager { get; private set; }
+        /// <summary>
+        /// Index this transport belongs to when using multiple transports at once.
+        /// </summary>
+        public int Index { get; private set; }
         #endregion
 
         #region Obsolete
@@ -27,9 +31,19 @@ namespace FishNet.Transporting
         /// <summary>
         /// Initializes the transport. Use this instead of Awake.
         /// </summary>
+        [Obsolete("This method is being replaced with Initialize(networkManager, transportIndex) to support multiple transports at once.")]  //Remove on 2022/06/01 in favor of AllowStacking.
         public virtual void Initialize(NetworkManager networkManager)
         {
             NetworkManager = networkManager;
+        }
+        /// <summary>
+        /// Initializes the transport. Use this instead of Awake.
+        /// <paramref name="transportIndex"/>Index this transport belongs to when using multiple transports at once.</param>
+        /// </summary>
+        public virtual void Initialize(NetworkManager networkManager, int transportIndex)
+        {
+            NetworkManager = networkManager;
+            Index = transportIndex;
         }
         #endregion
 
@@ -104,7 +118,7 @@ namespace FishNet.Transporting
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
         /// <param name="receivedDataArgs">Data being handled.</param>
-        public abstract void HandleClientReceivedDataArgs(ClientReceivedDataArgs receivedDataArgs);
+        public abstract void HandleClientReceivedData(ClientReceivedDataArgs receivedDataArgs);
         /// <summary>
         /// Called when the server receives data.
         /// </summary>
@@ -113,7 +127,7 @@ namespace FishNet.Transporting
         /// Handles a ServerReceivedDataArgs.
         /// </summary>
         /// <param name="receivedDataArgs">Data being handled.</param>
-        public abstract void HandleServerReceivedDataArgs(ServerReceivedDataArgs receivedDataArgs);
+        public abstract void HandleServerReceivedData(ServerReceivedDataArgs receivedDataArgs);
         #endregion
 
         #region Iterating.
@@ -131,14 +145,16 @@ namespace FishNet.Transporting
 
         #region Configuration.
         /// <summary>
+        /// Returns if the transport is only run locally, offline.
+        /// While true several security checks are disabled.
+        /// </summary>
+        public virtual bool IsLocalTransport(int connectionid) => false;
+        /// <summary>
         /// How long in seconds until either the server or client socket must go without data before being timed out.
         /// </summary>
         /// <param name="asServer">True to get the timeout for the server socket, false for the client socket.</param>
         /// <returns></returns>
-        public virtual float GetTimeout(bool asServer)
-        {
-            return -1f;
-        }
+        public virtual float GetTimeout(bool asServer) => -1f;
         /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
         /// </summary>
@@ -217,12 +233,14 @@ namespace FishNet.Transporting
         /// Returns which channel to use by default for reliable.
         /// </summary>
         /// <returns>Channel as byte.</returns>
-        public abstract byte GetDefaultReliableChannel();
+        [Obsolete("This method will be removed. Reliable will always be 0, and unreliable always 1.")]
+        public virtual byte GetDefaultReliableChannel() { return 0; }  //Remove on 2022/06/01.
         /// <summary>
         /// Returns which channel to use by default for unreliable.
         /// </summary>
         /// <returns>Channel as byte.</returns>
-        public abstract byte GetDefaultUnreliableChannel();
+        [Obsolete("This method will be removed. Reliable will always be 0, and unreliable always 1.")]
+        public virtual byte GetDefaultUnreliableChannel() { return 1; } //Remove on 2022/06/01.
         /// <summary>
         /// Gets the MTU for a channel.
         /// </summary>

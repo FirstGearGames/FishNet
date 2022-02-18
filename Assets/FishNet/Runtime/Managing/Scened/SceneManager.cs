@@ -136,14 +136,39 @@ namespace FishNet.Managing.Scened
 
         private void Start()
         {
-            _networkManager.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
             //No need to unregister since managers are on the same object.
+            _networkManager.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
+            _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
             _clientManager.RegisterBroadcast<LoadScenesBroadcast>(OnLoadScenes);
             _clientManager.RegisterBroadcast<UnloadScenesBroadcast>(OnUnloadScenes);
             _serverManager.RegisterBroadcast<ClientScenesLoadedBroadcast>(OnClientLoadedScenes);
 
             _clientManager.RegisterBroadcast<EmptyStartScenesBroadcast>(OnClientEmptyStartScenes);
             _serverManager.RegisterBroadcast<EmptyStartScenesBroadcast>(OnServerEmptyStartScenes);
+        }
+
+        /// <summary>
+        /// Called when the server connection state changes.
+        /// </summary>
+        private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
+        {
+            //If server isn't started.
+            if (obj.ConnectionState != LocalConnectionStates.Started)
+                ResetValues();
+
+        }
+        /// <summary>
+        /// Resets as if first use.
+        /// </summary>
+        private void ResetValues()
+        {
+            SceneConnections.Clear();
+            _globalScenes = new string[0];
+            _globalSceneLoadData = new SceneLoadData();
+            _queuedOperations.Clear();
+            _manualUnloadScenes.Clear();
+            _sceneQueueStartInvoked = false;
+            _movingObjects.Clear();
         }
 
         /// <summary>
@@ -425,7 +450,8 @@ namespace FishNet.Managing.Scened
                 else if (_queuedOperations[0] is UnloadQueueData)
                     yield return StartCoroutine(__UnloadScenes());
 
-                _queuedOperations.RemoveAt(0);
+                if (_queuedOperations.Count > 0)
+                    _queuedOperations.RemoveAt(0);
             }
 
             TryInvokeOnQueueEnd();
@@ -582,7 +608,7 @@ namespace FishNet.Managing.Scened
                 Scene s = sld.GetScene(out byHandle);
                 //If found then add it to requestedLoadScenes.
                 if (s.IsValid())
-                { 
+                {
                     requestedLoadSceneNames.Add(s.name);
                     if (byHandle)
                         requestedLoadSceneHandles.Add(s.handle);

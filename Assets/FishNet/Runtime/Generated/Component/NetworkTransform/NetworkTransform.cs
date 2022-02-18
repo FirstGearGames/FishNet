@@ -234,18 +234,36 @@ namespace FishNet.Component.Transforming
         [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
         [SerializeField]
         private bool _sendToOwner = true;
+        ///// <summary>
+        ///// True to synchronize position. Even while checked only changed values are sent.
+        ///// </summary>
+        //[Tooltip("True to synchronize position. Even while checked only changed values are sent.")]
+        //[SerializeField]
+        //private bool _synchronizePosition = true;
         /// <summary>
         /// Axes to snap on position.
         /// </summary>
         [Tooltip("Axes to snap on position.")]
         [SerializeField]
         private SnappedAxes _positionSnapping = new SnappedAxes();
+        ///// <summary>
+        ///// True to synchronize rotation. Even while checked only changed values are sent.
+        ///// </summary>
+        //[Tooltip("True to synchronize rotation. Even while checked only changed values are sent.")]
+        //[SerializeField]
+        //private bool _synchronizeRotation = true;
         /// <summary>
         /// Axes to snap on rotation.
         /// </summary>
         [Tooltip("Axes to snap on rotation.")]
         [SerializeField]
         private SnappedAxes _rotationSnapping = new SnappedAxes();
+        ///// <summary>
+        ///// True to synchronize scale. Even while checked only changed values are sent.
+        ///// </summary>
+        //[Tooltip("True to synchronize scale. Even while checked only changed values are sent.")]
+        //[SerializeField]
+        //private bool _synchronizeScale = true;
         /// <summary>
         /// Axes to snap on scale.
         /// </summary>
@@ -1221,7 +1239,7 @@ namespace FishNet.Component.Transforming
             {
                 Quaternion lastRotation = prevTd.Rotation;
                 distance = Quaternion.Angle(lastRotation, td.Rotation);
-                rotationRate = (distance / timePassed) * abnormalCorrection;                
+                rotationRate = (distance / timePassed) * abnormalCorrection;
             }
             if (rotationRate == 0f)
                 rotationRate = prevRd.Rotation;

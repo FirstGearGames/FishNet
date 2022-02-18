@@ -15,7 +15,7 @@ namespace FishNet.Managing.Transporting
     /// Communicates with the Transport to send and receive data.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class TransportManager : MonoBehaviour
+    public sealed partial class TransportManager : MonoBehaviour
     {
         #region Public.
         /// <summary>
@@ -95,7 +95,7 @@ namespace FishNet.Managing.Transporting
             if (Transport == null && !gameObject.TryGetComponent<Transport>(out Transport))
                 Transport = gameObject.AddComponent<FishNet.Tugboat.Tugboat>();
 
-            Transport.Initialize(_networkManager);
+            Transport.Initialize(_networkManager, 0);
             InitializeToServerBundles();
         }
 
@@ -276,7 +276,7 @@ namespace FishNet.Managing.Transporting
                 bool wasFirst = firstWrite;
                 int headerReduction = 0;
                 if (firstWrite)
-                { 
+                {
                     headerReduction = headerSegment.Count;
                     firstWrite = false;
                 }

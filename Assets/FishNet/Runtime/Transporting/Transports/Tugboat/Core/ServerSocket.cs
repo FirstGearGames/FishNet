@@ -280,7 +280,7 @@ namespace FishNet.Tugboat.Server
                 try
                 {
                     peer.Disconnect();
-                    base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, connectionId));
+                    base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, connectionId, base.Transport.Index));
                 }
                 catch
                 {
@@ -495,7 +495,7 @@ namespace FishNet.Tugboat.Server
             while (_remoteConnectionEvents.TryDequeue(out RemoteConnectionEvent connectionEvent))
             {
                 RemoteConnectionStates state = (connectionEvent.Connected) ? RemoteConnectionStates.Started : RemoteConnectionStates.Stopped;
-                base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(state, connectionEvent.ConnectionId));
+                base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(state, connectionEvent.ConnectionId, base.Transport.Index));
             }
 
             ServerReceivedDataArgs dataArgs = new ServerReceivedDataArgs();
@@ -509,7 +509,7 @@ namespace FishNet.Tugboat.Server
                     dataArgs.Data = incoming.GetArraySegment();
                     dataArgs.Channel = (Channel)incoming.Channel;
                     dataArgs.ConnectionId = incoming.ConnectionId;
-                    base.Transport.HandleServerReceivedDataArgs(dataArgs);
+                    base.Transport.HandleServerReceivedData(dataArgs);
                 }
 
                 incoming.Dispose();
