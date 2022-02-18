@@ -803,48 +803,48 @@ namespace FishNet.Serializing
         [CodegenExclude]
         public void WritePackedWhole(ulong value)
         {
-            if (value < 128)
+            if (value < 0x80UL)
             {
                 _buffer[Position++] = (byte)(value & 0x7F);
             }
-            else if (value < 16384)
+            else if (value < 0x4000UL)
             {
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)((value >> 7) & 0x7F);
             }
-            else if (value < 2097152)
+            else if (value < 0x200000UL)
             {
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)((value >> 14) & 0x7F);
             }
-            else if (value < 268435456)
+            else if (value < 0x10000000UL)
             {
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
                 _buffer[Position++] = (byte)((value >> 21) & 0x7F);
             }
-            else if (value < 4294967296)
+            else if (value < 0x100000000UL)
             {
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F)); 
+                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
                 _buffer[Position++] = (byte)((value >> 28) & 0x0F);
             }
-            else if (value < 1099511627776)
+            else if (value < 0x10000000000UL)
             {
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F)); 
+                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
                 _buffer[Position++] = (byte)(0x10 | ((value >> 28) & 0x0F));
                 _buffer[Position++] = (byte)((value >> 32) & 0xFF);
             }
-            else if (value < 281474976710656)
+            else if (value < 0x1000000000000UL)
             {
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F)); 
+                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
@@ -852,9 +852,9 @@ namespace FishNet.Serializing
                 _buffer[Position++] = (byte)((value >> 32) & 0xFF);
                 _buffer[Position++] = (byte)((value >> 40) & 0xFF);
             }
-            else if (value < 72057594037927936)
+            else if (value < 0x100000000000000UL)
             {
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F)); 
+                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
@@ -865,7 +865,7 @@ namespace FishNet.Serializing
             }
             else
             {
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F)); 
+                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
