@@ -13,13 +13,15 @@ using FishNet.Editing;
 using System.IO;
 using System.Collections;
 using Mirror;
-using MirrorNetworkProximityChecker = Mirror.NetworkProximityChecker;
 using MirrorExperimentalNetworkTransformBase = Mirror.Experimental.NetworkTransformBase;
 using MirrorExperimentalNetworkTransformChild = Mirror.Experimental.NetworkTransformChild;
 using MirrorNetworkTransformBase = Mirror.NetworkTransformBase;
 using MirrorNetworkTransformChild = Mirror.NetworkTransformChild;
 using MirrorNetworkAnimator = Mirror.NetworkAnimator;
+#if !MIRROR_57_0_OR_NEWER
+using MirrorNetworkProximityChecker = Mirror.NetworkProximityChecker;
 using MirrorNetworkSceneChecker = Mirror.NetworkSceneChecker;
+#endif
 
 #if FGG_ASSETS
 using FlexNetworkAnimator = FirstGearGames.Mirrors.Assets.FlexNetworkAnimators.FlexNetworkAnimator;
@@ -99,7 +101,7 @@ namespace FishNet.Upgrading.Mirror.Editing
         private void Awake()
         {
             gameObject.name = OBJECT_NAME_PREFIX;
-            Debug.Log($"{gameObject.name} is working. Please wait until this object is removed from your hierarchy.");            
+            Debug.Log($"{gameObject.name} is working. Please wait until this object is removed from your hierarchy.");
             EditorApplication.update += EditorUpdate;
         }
 
@@ -162,7 +164,7 @@ namespace FishNet.Upgrading.Mirror.Editing
             {
                 changedThisFrame = true;
                 _changed = true;
-                _replacedNetworkTransforms++;                
+                _replacedNetworkTransforms++;
             }
             if (IterateNetworkAnimator(go))
             {
@@ -312,6 +314,7 @@ namespace FishNet.Upgrading.Mirror.Editing
 
         private bool IterateSceneChecker(GameObject go)
         {
+#if !MIRROR_57_0_OR_NEWER
             if (_sceneCondition == null)
                 return false;
 
@@ -352,6 +355,7 @@ namespace FishNet.Upgrading.Mirror.Editing
                     networkObserver.ObserverConditionsInternal.Add(_sceneCondition);
             }
 
+#endif
             return false;
         }
 
@@ -359,6 +363,7 @@ namespace FishNet.Upgrading.Mirror.Editing
 
         private bool IterateProximityChecker(GameObject go)
         {
+#if !MIRROR_57_0_OR_NEWER
             if (_distanceCondition == null)
                 return false;
 
@@ -398,6 +403,7 @@ namespace FishNet.Upgrading.Mirror.Editing
                 if (!conditionFound)
                     networkObserver.ObserverConditionsInternal.Add(_distanceCondition);
             }
+#endif
 
             return false;
         }

@@ -23,8 +23,24 @@ namespace FishNet.Transporting
         #endregion
 
         #region Obsolete
+        /// <summary>
+        /// Returns the number of supported channels
+        /// </summary>
+        /// <returns></returns>
         [Obsolete("This method is being removed in a future version.")] //Remove on 2022/06/01.
         public virtual byte GetChannelCount() { return 0; }
+        /// <summary>
+        /// Returns which channel to use by default for reliable.
+        /// </summary>
+        /// <returns>Channel as byte.</returns>
+        [Obsolete("This method will be removed. Reliable will always be 0, and unreliable always 1.")]
+        public virtual byte GetDefaultReliableChannel() { return 0; }  //Remove on 2022/06/01.
+        /// <summary>
+        /// Returns which channel to use by default for unreliable.
+        /// </summary>
+        /// <returns>Channel as byte.</returns>
+        [Obsolete("This method will be removed. Reliable will always be 0, and unreliable always 1.")]
+        public virtual byte GetDefaultUnreliableChannel() { return 1; } //Remove on 2022/06/01.
         #endregion
 
         #region Initialization and unity.
@@ -229,18 +245,6 @@ namespace FishNet.Transporting
         #endregion
 
         #region Channels.
-        /// <summary>
-        /// Returns which channel to use by default for reliable.
-        /// </summary>
-        /// <returns>Channel as byte.</returns>
-        [Obsolete("This method will be removed. Reliable will always be 0, and unreliable always 1.")]
-        public virtual byte GetDefaultReliableChannel() { return 0; }  //Remove on 2022/06/01.
-        /// <summary>
-        /// Returns which channel to use by default for unreliable.
-        /// </summary>
-        /// <returns>Channel as byte.</returns>
-        [Obsolete("This method will be removed. Reliable will always be 0, and unreliable always 1.")]
-        public virtual byte GetDefaultUnreliableChannel() { return 1; } //Remove on 2022/06/01.
         /// <summary>
         /// Gets the MTU for a channel.
         /// </summary>
