@@ -71,6 +71,14 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public event SyncDictionaryChanged OnChange;
         /// <summary>
+        /// Collection of objects.
+        /// </summary>
+        public readonly IDictionary<TKey, TValue> Collection;
+        /// <summary>
+        /// Copy of objects on client portion when acting as a host.
+        /// </summary>
+        public readonly IDictionary<TKey, TValue> ClientHostCollection;
+        /// <summary>
         /// Number of objects in the collection.
         /// </summary>
         public int Count => Collection.Count;
@@ -86,17 +94,6 @@ namespace FishNet.Object.Synchronizing
         public ICollection<TValue> Values => Collection.Values;
         [APIExclude]
         IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Collection.Values;
-        #endregion
-
-        #region Protected.
-        /// <summary>
-        /// Collection of objects.
-        /// </summary>
-        protected readonly IDictionary<TKey, TValue> Collection;
-        /// <summary>
-        /// Copy of objects on client portion when acting as a host.
-        /// </summary>
-        protected readonly IDictionary<TKey, TValue> ClientHostCollection;
         #endregion
 
         #region Private.
@@ -127,7 +124,9 @@ namespace FishNet.Object.Synchronizing
         public SyncIDictionary(IDictionary<TKey, TValue> objects)
         {
             this.Collection = objects;
-            this.ClientHostCollection = objects;
+            //Add to clienthostcollection.
+            foreach (KeyValuePair<TKey, TValue> item in objects)
+                this.ClientHostCollection[item.Key] = item.Value;
         }
 
         /// <summary>
@@ -336,9 +335,9 @@ namespace FishNet.Object.Synchronizing
                 else
                 {
                     if (base.NetworkBehaviour.OnStartClientCalled)
-                        OnChange.Invoke(operation,  key, value, asServer);
+                        OnChange.Invoke(operation, key, value, asServer);
                     else
-                        _clientOnChanges.Add(new CachedOnChange(operation,  key, value));
+                        _clientOnChanges.Add(new CachedOnChange(operation, key, value));
                 }
 
             }
@@ -356,7 +355,7 @@ namespace FishNet.Object.Synchronizing
             Collection.Clear();
             ClientHostCollection.Clear();
 
-            foreach (KeyValuePair<TKey,TValue> item in _initialValues)
+            foreach (KeyValuePair<TKey, TValue> item in _initialValues)
             {
                 Collection[item.Key] = item.Value;
                 ClientHostCollection[item.Key] = item.Value;
