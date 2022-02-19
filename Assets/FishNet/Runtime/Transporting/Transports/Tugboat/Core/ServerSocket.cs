@@ -509,7 +509,7 @@ namespace FishNet.Tugboat.Server
                     dataArgs.Data = incoming.GetArraySegment();
                     dataArgs.Channel = (Channel)incoming.Channel;
                     dataArgs.ConnectionId = incoming.ConnectionId;
-                    base.Transport.HandleServerReceivedData(dataArgs);
+                    base.Transport.HandleServerReceivedDataArgs(dataArgs);
                 }
 
                 incoming.Dispose();

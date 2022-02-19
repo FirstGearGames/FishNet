@@ -210,7 +210,7 @@ namespace FishNet.Tugboat
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
         /// <param name="receivedDataArgs"></param>
-        public override void HandleClientReceivedData(ClientReceivedDataArgs receivedDataArgs)
+        public override void HandleClientReceivedDataArgs(ClientReceivedDataArgs receivedDataArgs)
         {
             OnClientReceivedData?.Invoke(receivedDataArgs);
         }
@@ -222,7 +222,7 @@ namespace FishNet.Tugboat
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
         /// <param name="receivedDataArgs"></param>
-        public override void HandleServerReceivedData(ServerReceivedDataArgs receivedDataArgs)
+        public override void HandleServerReceivedDataArgs(ServerReceivedDataArgs receivedDataArgs)
         {
             OnServerReceivedData?.Invoke(receivedDataArgs);
         }
