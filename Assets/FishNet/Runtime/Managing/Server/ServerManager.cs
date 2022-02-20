@@ -266,22 +266,32 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void Transport_OnRemoteConnectionState(RemoteConnectionStateArgs args)
         {
-            //If connection state is for a remote client.
-            if (args.ConnectionId >= 0)
+            //Sanity check to make sure transports are following proper types/ranges.
+            int id = args.ConnectionId;
+            int maxIdValue = short.MaxValue;
+            if (id < 0 || id > maxIdValue)
+            {
+                NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"The transport you are using supplied an invalid connection Id of {id}. Connection Id values must range between 0 and {maxIdValue}. The client has been disconnected.");
+                return;
+            }
+            //Valid Id.
+            else
             {
                 //If started then add to authenticated clients.
                 if (args.ConnectionState == RemoteConnectionStates.Started)
                 {
                     if (NetworkManager.CanLog(LoggingType.Common))
-                        Debug.Log($"Remote connection started for Id {args.ConnectionId}.");
-                    NetworkConnection conn = new NetworkConnection(NetworkManager, args.ConnectionId);
+                        Debug.Log($"Remote connection started for Id {id}.");
+                    NetworkConnection conn = new NetworkConnection(NetworkManager, id);
                     Clients.Add(args.ConnectionId, conn);
 
                     OnRemoteConnectionState?.Invoke(conn, args);
 
                     /* If there is an authenticator
                      * and the transport is not a local transport. */
-                    if (Authenticator != null && !NetworkManager.TransportManager.IsLocalTransport(args.ConnectionId))
+                    if (Authenticator != null && !NetworkManager.TransportManager.IsLocalTransport(id))
                         Authenticator.OnRemoteConnection(conn);
                     else
                         ClientAuthenticated(conn);
@@ -291,17 +301,17 @@ namespace FishNet.Managing.Server
                 {
                     /* If client's connection is found then clean
                      * them up from server. */
-                    if (Clients.TryGetValueIL2CPP(args.ConnectionId, out NetworkConnection conn))
+                    if (Clients.TryGetValueIL2CPP(id, out NetworkConnection conn))
                     {
                         conn.SetDisconnecting(true);
                         OnRemoteConnectionState?.Invoke(conn, args);
-                        Clients.Remove(args.ConnectionId);
+                        Clients.Remove(id);
                         Objects.ClientDisconnected(conn);
                         BroadcastClientConnectionChange(false, conn);
                         conn.Reset();
 
                         if (NetworkManager.CanLog(LoggingType.Common))
-                            Debug.Log($"Remote connection stopped for Id {args.ConnectionId}.");
+                            Debug.Log($"Remote connection stopped for Id {id}.");
                     }
                 }
             }

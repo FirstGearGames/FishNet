@@ -105,7 +105,7 @@ namespace FishNet.Object
              * before observers are built. */
             if (NetworkObject.Observers.Count == 0)
                 return false;
-            
+
             bool alreadyDirtied = (isSyncObject) ? _syncObjectDirty : _syncVarDirty;
             if (isSyncObject)
                 _syncObjectDirty = true;
@@ -351,12 +351,15 @@ namespace FishNet.Object
         /// <summary>
         /// Resets all SyncTypes for this NetworkBehaviour.
         /// </summary>
-        internal void ResetSyncTypes()
+        internal void ResetSyncTypes(bool asServer)
         {
-            foreach (SyncBase item in _syncVars.Values)
-                item.Reset();
-            foreach (SyncBase item in _syncObjects.Values)
-                item.Reset();
+            if (asServer || (!asServer && !IsServer))
+            {
+                foreach (SyncBase item in _syncVars.Values)
+                    item.Reset();
+                foreach (SyncBase item in _syncObjects.Values)
+                    item.Reset();
+            }
         }
 
         /// <summary>

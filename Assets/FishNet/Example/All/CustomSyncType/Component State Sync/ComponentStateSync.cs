@@ -38,13 +38,6 @@ namespace FishNet.Example.ComponentStateSync
         public event StateChanged OnChange;
         #endregion
 
-        #region Private.
-        /// <summary>
-        /// Initial state of the component.
-        /// </summary>
-        private bool _initialState;
-        #endregion
-
         /// <summary>
         /// Initializes this StateSync with a component.
         /// </summary>
@@ -52,7 +45,6 @@ namespace FishNet.Example.ComponentStateSync
         public void Initialize(T component)
         {
             Component = component;
-            _initialState = Component.enabled;
         }
 
         /// <summary>

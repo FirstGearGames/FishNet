@@ -297,7 +297,7 @@ namespace FishNet.Object
             }
 
             if (SceneObject)
-                ResetSyncTypes();
+                ResetSyncTypes(asServer);
             if (asServer)
                 Observers.Clear();
         }

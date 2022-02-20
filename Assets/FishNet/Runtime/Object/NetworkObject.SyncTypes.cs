@@ -23,12 +23,12 @@ namespace FishNet.Object
         /// <summary>
         /// Resets SyncTypes for all NetworkBehaviours.
         /// </summary>
-        internal void ResetSyncTypes()
+        internal void ResetSyncTypes(bool asServer)
         {
             NetworkBehaviour[] nbs = NetworkBehaviours;
             int count = nbs.Length;
             for (int i = 0; i < count; i++)
-                nbs[i].ResetSyncTypes();
+                nbs[i].ResetSyncTypes(asServer);
         }
     }
 

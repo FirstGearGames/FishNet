@@ -77,7 +77,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
-        public readonly IDictionary<TKey, TValue> ClientHostCollection;
+        public readonly IDictionary<TKey, TValue> ClientHostCollection = new Dictionary<TKey, TValue>();
         /// <summary>
         /// Number of objects in the collection.
         /// </summary>
@@ -335,9 +335,9 @@ namespace FishNet.Object.Synchronizing
                 else
                 {
                     if (base.NetworkBehaviour.OnStartClientCalled)
-                        OnChange.Invoke(operation, key, value, asServer);
+                        OnChange.Invoke(operation,  key, value, asServer);
                     else
-                        _clientOnChanges.Add(new CachedOnChange(operation, key, value));
+                        _clientOnChanges.Add(new CachedOnChange(operation,  key, value));
                 }
 
             }
@@ -355,7 +355,7 @@ namespace FishNet.Object.Synchronizing
             Collection.Clear();
             ClientHostCollection.Clear();
 
-            foreach (KeyValuePair<TKey, TValue> item in _initialValues)
+            foreach (KeyValuePair<TKey,TValue> item in _initialValues)
             {
                 Collection[item.Key] = item.Value;
                 ClientHostCollection[item.Key] = item.Value;

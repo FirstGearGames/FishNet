@@ -679,9 +679,8 @@ namespace FishNet.Serializing
         public void WriteGameObject(GameObject go)
         {
             if (go == null)
-            {
-                //Write -1, indicating null.
-                WriteInt32(-1);
+            { 
+                WriteNetworkObject(null);
             }
             else
             {

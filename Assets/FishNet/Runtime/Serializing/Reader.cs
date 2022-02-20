@@ -696,10 +696,7 @@ namespace FishNet.Serializing
         public GameObject ReadGameObject()
         {
             NetworkObject nob = ReadNetworkObject();
-            if (nob == null)
-                throw new ArgumentException($"NetworkObject is null.");
-            else
-                return nob.gameObject;
+            return (nob == null) ? null : nob.gameObject;
         }
 
         /// <summary>
