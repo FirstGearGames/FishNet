@@ -61,8 +61,8 @@ namespace FishNet.Serializing
         public static void WriteVector2(this Writer writer, Vector2 value) => writer.WriteVector2(value);
         public static void WriteVector3(this Writer writer, Vector3 value) => writer.WriteVector3(value);
         public static void WriteVector4(this Writer writer, Vector4 value) => writer.WriteVector4(value);
-        public static void WriteVector2Int(this Writer writer, Vector2Int value) => writer.WriteVector2Int(value);
-        public static void WriteVector3Int(this Writer writer, Vector3Int value) => writer.WriteVector3Int(value);
+        public static void WriteVector2Int(this Writer writer, Vector2Int value, AutoPackType packType = AutoPackType.Packed) => writer.WriteVector2Int(value, packType);
+        public static void WriteVector3Int(this Writer writer, Vector3Int value, AutoPackType packType = AutoPackType.Packed) => writer.WriteVector3Int(value, packType);
         public static void WriteColor(this Writer writer, Color value, AutoPackType packType) => writer.WriteColor(value, packType);
         public static void WriteColor32(this Writer writer, Color32 value) => writer.WriteColor32(value);
         public static void WriteQuaternion(this Writer writer, Quaternion value) => writer.WriteQuaternion(value);

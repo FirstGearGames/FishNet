@@ -505,10 +505,10 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteVector2Int(Vector2Int value)
+        public void WriteVector2Int(Vector2Int value, AutoPackType packType = AutoPackType.Packed)
         {
-            WriteInt32(value.x);
-            WriteInt32(value.y);
+            WriteInt32(value.x, packType);
+            WriteInt32(value.y, packType);
         }
 
         /// <summary>
@@ -516,11 +516,11 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteVector3Int(Vector3Int value)
+        public void WriteVector3Int(Vector3Int value, AutoPackType packType = AutoPackType.Packed)
         {
-            WriteInt32(value.x);
-            WriteInt32(value.y);
-            WriteInt32(value.z);
+            WriteInt32(value.x, packType);
+            WriteInt32(value.y, packType);
+            WriteInt32(value.z, packType);
         }
 
         /// <summary>
@@ -942,7 +942,10 @@ namespace FishNet.Serializing
             System.Type type = typeof(T);
             if ((type == typeof(int) || type == typeof(uint) ||
                 type == typeof(long) || type == typeof(ulong)) ||
-                type == typeof(Color))
+                type == typeof(Color) ||
+                type == typeof(Vector2Int) ||
+                type == typeof(Vector3Int)
+                )
             {
                 packType = AutoPackType.Packed;
                 return true;
