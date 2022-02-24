@@ -70,9 +70,7 @@ namespace FishNet.Object.Synchronizing
             public bool MoveNext()
             {
                 if (++_index >= _list.Count)
-                {
                     return false;
-                }
                 Current = _list[_index];
                 return true;
             }
@@ -209,11 +207,20 @@ namespace FishNet.Object.Synchronizing
             * values must be marked as changed so when
             * there are observers, new values are sent. */
             _valuesChanged = true;
-            base.Dirty();
-            ChangeData change = new ChangeData(operation, index, next);
-            _changed.Add(change);
-            bool asServer = true;
 
+            /* If unable to dirty then do not add to changed.
+             * A dirty may fail if the server is not started
+             * or if there's no observers. Changed doesn't need
+             * to be populated in this situations because clients
+             * will get the full collection on spawn. If we
+             * were to also add to changed clients would get the full
+             * collection as well the changed, which would double results. */
+            if (base.Dirty())
+            {
+                ChangeData change = new ChangeData(operation, index, next);
+                _changed.Add(change);
+            }
+            bool asServer = true;
             InvokeOnChange(operation, index, prev, next, asServer);
         }
 

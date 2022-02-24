@@ -176,10 +176,20 @@ namespace FishNet.Object.Synchronizing
             * values must be marked as changed so when
             * there are observers, new values are sent. */
             _valuesChanged = true;
-            base.Dirty();
 
-            ChangeData change = new ChangeData(operation, key, value);
-            _changed.Add(change);
+            /* If unable to dirty then do not add to changed.
+             * A dirty may fail if the server is not started
+             * or if there's no observers. Changed doesn't need
+             * to be populated in this situations because clients
+             * will get the full collection on spawn. If we
+             * were to also add to changed clients would get the full
+             * collection as well the changed, which would double results. */
+            if (base.Dirty())
+            {
+                ChangeData change = new ChangeData(operation, key, value);
+                _changed.Add(change);
+            }
+
             bool asServer = true;
             InvokeOnChange(operation, key, value, asServer);
         }
@@ -335,9 +345,9 @@ namespace FishNet.Object.Synchronizing
                 else
                 {
                     if (base.NetworkBehaviour.OnStartClientCalled)
-                        OnChange.Invoke(operation,  key, value, asServer);
+                        OnChange.Invoke(operation, key, value, asServer);
                     else
-                        _clientOnChanges.Add(new CachedOnChange(operation,  key, value));
+                        _clientOnChanges.Add(new CachedOnChange(operation, key, value));
                 }
 
             }
@@ -355,7 +365,7 @@ namespace FishNet.Object.Synchronizing
             Collection.Clear();
             ClientHostCollection.Clear();
 
-            foreach (KeyValuePair<TKey,TValue> item in _initialValues)
+            foreach (KeyValuePair<TKey, TValue> item in _initialValues)
             {
                 Collection[item.Key] = item.Value;
                 ClientHostCollection[item.Key] = item.Value;
