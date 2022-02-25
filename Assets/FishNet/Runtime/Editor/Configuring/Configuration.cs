@@ -244,16 +244,10 @@ namespace FishNet.Configuring.Editing
             GUILayout.Space(5f);
 
             GUILayout.BeginVertical();
-
-            var oldLabelWidth = EditorGUIUtility.labelWidth;
-            var oldPopupWidth = EditorStyles.popup.fixedWidth;
-            EditorGUIUtility.labelWidth = 190;
-            EditorStyles.popup.fixedWidth = 110;
             
-            Configuration.SpawnCompression = (QuaternionCompression)EditorGUILayout.EnumPopup("Quaternion spawn compression", Configuration.SpawnCompression);
-            Configuration.SyncCompression = (QuaternionCompression)EditorGUILayout.EnumPopup("Quaternion sync compression", Configuration.SyncCompression);
-            EditorGUIUtility.labelWidth = oldLabelWidth;
-            EditorStyles.popup.fixedWidth = oldPopupWidth;
+            Configuration.SpawnCompression = (QuaternionCompression)EditorGUILayout.EnumPopup("Quat. spawn compression", Configuration.SpawnCompression, GUILayout.Width(290));
+            Configuration.SyncCompression = (QuaternionCompression)EditorGUILayout.EnumPopup("Quat. sync compression", Configuration.SyncCompression, GUILayout.Width(290));
+
             GUILayout.EndVertical();
             GUILayout.Space(5f);
             
