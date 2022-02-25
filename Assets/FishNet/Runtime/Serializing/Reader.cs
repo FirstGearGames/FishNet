@@ -14,6 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
+using static FishNet.Serializing.Helping.Quaternions;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
@@ -583,7 +584,56 @@ namespace FishNet.Serializing
         public Quaternion ReadQuaternion()
         {
             uint result = ReadUInt32(AutoPackType.Unpacked);
-            return Quaternions.Decompress(result);
+            return Quaternions.Decompress32(result);
+        }
+
+        /// <summary>
+        /// Reads a Quaternion.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Quaternion64 ReadQuaternion64()
+        {
+            ulong result = ReadUInt64(AutoPackType.Unpacked);
+            return Quaternions.Decompress64(result);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Quaternion128 ReadQuaternion128()
+        {
+            return new Quaternion128(
+                ReadSingle(),
+                ReadSingle(),
+                ReadSingle(),
+                ReadSingle()
+            );
+        }
+
+
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Quaternion ReadQuaternionSpawn()
+        {
+        #if FN_QUAT_SPAWN_32
+            return ReadQuaternion();
+        #elif FN_QUAT_SPAWN_64
+            return QuaternionConverter.Q64toQ(ReadQuaternion64());
+        #else
+            return QuaternionConverter.Q128toQ(ReadQuaternion128());
+        #endif
+        }
+
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Quaternion ReadQuaternionSync()
+        {
+        #if FN_QUAT_SYNC_32
+            return ReadQuaternion();
+        #elif FN_QUAT_SYNC_64
+            return QuaternionConverter.Q64toQ(ReadQuaternion64());
+        #else
+            return QuaternionConverter.Q128toQ(ReadQuaternion128());
+        #endif
         }
 
         /// <summary>

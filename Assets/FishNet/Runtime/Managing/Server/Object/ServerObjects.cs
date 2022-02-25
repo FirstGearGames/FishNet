@@ -361,7 +361,7 @@ namespace FishNet.Managing.Server
                     if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Position))
                         headerWriter.WriteVector3(nob.transform.position);
                     if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Rotation))
-                        headerWriter.WriteQuaternion(nob.transform.rotation);
+                        headerWriter.WriteQuaternionSpawn(nob.transform.rotation);
                     if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalScale))
                         headerWriter.WriteVector3(nob.transform.localScale);
                 }
@@ -374,7 +374,7 @@ namespace FishNet.Managing.Server
                  * from the prefab. Odds are position will be changed,
                  * and possibly rotation, but not too likely scale. */
                 headerWriter.WriteVector3(nob.transform.position);
-                headerWriter.WriteQuaternion(nob.transform.rotation);
+                headerWriter.WriteQuaternionSpawn(nob.transform.rotation);
                 headerWriter.WriteVector3(nob.transform.localScale);
             }
 

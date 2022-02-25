@@ -1,7 +1,10 @@
 ﻿#if UNITY_EDITOR
 using FishNet.Editing;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+
 using UnityEditor;
 using UnityEngine;
 
@@ -9,13 +12,12 @@ namespace FishNet.Configuring.Editing
 {
     internal static class ConfigurationExtension
     {
-
         /// <summary>
         /// Returns if a differs from b.
         /// </summary>
         public static bool HasChanged(this ConfigurationEditor.ConfigurationData a, ConfigurationEditor.ConfigurationData b)
         {
-            return (a.StripReleaseBuilds != b.StripReleaseBuilds);
+            return (a.StripReleaseBuilds != b.StripReleaseBuilds || a.SpawnCompression != b.SpawnCompression || a.SyncCompression != b.SyncCompression);
         }
         /// <summary>
         /// Copies all values from source to target.
@@ -23,16 +25,30 @@ namespace FishNet.Configuring.Editing
         public static void CopyTo(this ConfigurationEditor.ConfigurationData source, ConfigurationEditor.ConfigurationData target)
         {
             target.StripReleaseBuilds = source.StripReleaseBuilds;
+            target.SpawnCompression = source.SpawnCompression;
+            target.SyncCompression = source.SyncCompression;
         }
     }
 
     [InitializeOnLoad]
     internal class ConfigurationEditor : EditorWindow
     {
+        public enum QuaternionCompression
+        {
+            Compress32,
+            Compress64,
+            Uncompressed
+        }
+
         #region Types.
         public class ConfigurationData
         {
             public bool StripReleaseBuilds = false;
+
+            public QuaternionCompression SpawnCompression = QuaternionCompression.Compress32;
+
+            public QuaternionCompression SyncCompression = QuaternionCompression.Compress32;
+
         }
         #endregion
 
@@ -132,6 +148,8 @@ namespace FishNet.Configuring.Editing
             {
                 Debug.LogError($"There was a problem loading Fish-Networking configuration. Message: {ex.Message}.");
             }
+
+            SetDefineSymbols(Configuration);
         }
 
         /// <summary>
@@ -175,6 +193,36 @@ namespace FishNet.Configuring.Editing
             //window.maxSize = new Vector2(x, y);
         }
 
+        private static readonly string[] FN_CONFIG_SYMBOLS = new string[]
+        {
+            "FN_QUAT_SPAWN_32", "FN_QUAT_SPAWN_64", "FN_QUAT_SYNC_32", "FN_QUAT_SYNC_64"
+        };
+
+        static void SetDefineSymbols(ConfigurationData data)
+        {
+            List<string> symbols = new List<string>();
+
+            string definesString = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            List<string> allDefines = definesString.Split(';').ToList();
+
+            allDefines = allDefines.Except(FN_CONFIG_SYMBOLS).ToList();
+
+
+            if (data.SpawnCompression == QuaternionCompression.Compress32)
+                allDefines.Add("FN_QUAT_SPAWN_32");
+            if (data.SpawnCompression == QuaternionCompression.Compress64)
+                allDefines.Add("FN_QUAT_SPAWN_64");
+            
+            if (data.SyncCompression == QuaternionCompression.Compress32)
+                allDefines.Add("FN_QUAT_SYNC_32");
+            if (data.SyncCompression == QuaternionCompression.Compress64)
+                allDefines.Add("FN_QUAT_SYNC_64");
+            
+            PlayerSettings.SetScriptingDefineSymbolsForGroup(
+                EditorUserBuildSettings.selectedBuildTargetGroup,
+                string.Join(";", allDefines.ToArray()));
+        }
+
         private void OnGUI()
         {
             if (_reloadFile)
@@ -185,7 +233,7 @@ namespace FishNet.Configuring.Editing
             Configuration.CopyTo(_comparerConfiguration);
 
             GUILayout.BeginVertical();
-            GUILayout.BeginScrollView(Vector2.zero, GUILayout.Width(500), GUILayout.Height(800));
+            GUILayout.BeginScrollView(Vector2.zero, GUILayout.Width(700), GUILayout.Height(800));
 
             GUILayout.Space(10f);
 
@@ -195,6 +243,20 @@ namespace FishNet.Configuring.Editing
             GUILayout.EndHorizontal();
             GUILayout.Space(5f);
 
+            GUILayout.BeginVertical();
+
+            var oldLabelWidth = EditorGUIUtility.labelWidth;
+            var oldPopupWidth = EditorStyles.popup.fixedWidth;
+            EditorGUIUtility.labelWidth = 190;
+            EditorStyles.popup.fixedWidth = 110;
+            
+            Configuration.SpawnCompression = (QuaternionCompression)EditorGUILayout.EnumPopup("Quaternion spawn compression", Configuration.SpawnCompression);
+            Configuration.SyncCompression = (QuaternionCompression)EditorGUILayout.EnumPopup("Quaternion sync compression", Configuration.SyncCompression);
+            EditorGUIUtility.labelWidth = oldLabelWidth;
+            EditorStyles.popup.fixedWidth = oldPopupWidth;
+            GUILayout.EndVertical();
+            GUILayout.Space(5f);
+            
             GUILayout.BeginHorizontal();
             GUILayout.Space(20f);
             Configuration.StripReleaseBuilds = EditorGUILayout.ToggleLeft("* Strip Release Builds", Configuration.StripReleaseBuilds);
@@ -215,6 +277,7 @@ namespace FishNet.Configuring.Editing
             if (Configuration.HasChanged(_comparerConfiguration))
                 SaveConfiguration();
         }
+
     }
 }
 #endif

@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+using static FishNet.Serializing.Helping.Quaternions;
+
 namespace FishNet.Serializing
 {
 
@@ -65,7 +67,9 @@ namespace FishNet.Serializing
         public static void WriteVector3Int(this Writer writer, Vector3Int value, AutoPackType packType = AutoPackType.Packed) => writer.WriteVector3Int(value, packType);
         public static void WriteColor(this Writer writer, Color value, AutoPackType packType) => writer.WriteColor(value, packType);
         public static void WriteColor32(this Writer writer, Color32 value) => writer.WriteColor32(value);
-        public static void WriteQuaternion(this Writer writer, Quaternion value) => writer.WriteQuaternion(value);
+        public static void WriteQuaternion32(this Writer writer, Quaternion value) => writer.WriteQuaternion(value);
+        public static void WriteQuaternion64(this Writer writer, Quaternion64 value) => writer.WriteQuaternion64(value);
+        public static void WriteQuaternion128(this Writer writer, Quaternion128 value) => writer.WriteQuaternion128(value);
         public static void WriteRect(this Writer writer, Rect value) => writer.WriteRect(value);
         public static void WritePlane(this Writer writer, Plane value) => writer.WritePlane(value);
         public static void WriteRay(this Writer writer, Ray value) => writer.WriteRay(value);

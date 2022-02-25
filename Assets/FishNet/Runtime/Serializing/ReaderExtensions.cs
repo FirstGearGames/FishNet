@@ -6,6 +6,8 @@ using FishNet.Transporting;
 using System;
 using UnityEngine;
 
+using static FishNet.Serializing.Helping.Quaternions;
+
 namespace FishNet.Serializing
 {
     /// <summary>
@@ -39,13 +41,15 @@ namespace FishNet.Serializing
         public static decimal ReadDecimal(this Reader reader) => reader.ReadDecimal();
         public static string ReadString(this Reader reader) => reader.ReadString();
         public static Vector2 ReadVector2(this Reader reader) => reader.ReadVector2();
-        public static Vector3 ReadVector3(this Reader reader) => reader.ReadVector3();
+        public static Vector3 ReadVector3(this Reader reader) => reader.ReadVector3(); 
         public static Vector4 ReadVector4(this Reader reader) => reader.ReadVector4();
         public static Vector2Int ReadVector2Int(this Reader reader, AutoPackType packType = AutoPackType.Packed) => reader.ReadVector2Int(packType);
         public static Vector3Int ReadVector3Int(this Reader reader, AutoPackType packType = AutoPackType.Packed) => reader.ReadVector3Int(packType);
         public static Color ReadColor(this Reader reader, AutoPackType packType = AutoPackType.Packed) => reader.ReadColor(packType);
         public static Color32 ReadColor32(this Reader reader) => reader.ReadColor32();
-        public static Quaternion ReadQuaternion(this Reader reader) => reader.ReadQuaternion();
+        public static Quaternion ReadQuaternion32(this Reader reader) => reader.ReadQuaternion();
+        public static Quaternion64 ReadQuaternion64(this Reader reader) => reader.ReadQuaternion64();
+        public static Quaternion128 ReadQuaternion128(this Reader reader) => reader.ReadQuaternion128();
         public static Rect ReadRect(this Reader reader) => reader.ReadRect();
         public static Plane ReadPlane(this Reader reader) => reader.ReadPlane();
         public static Ray ReadRay(this Reader reader) => reader.ReadRay();

@@ -593,7 +593,7 @@ namespace FishNet.Component.Transforming
             if (ChangedContains(changed, ChangedDelta.Rotation))
             {
                 flagsA |= UpdateFlagA.Rotation;
-                writer.WriteQuaternion(t.localRotation);
+                writer.WriteQuaternionSync(t.localRotation);
             }
 
             if (ChangedContains(changed, ChangedDelta.Extended))
@@ -709,7 +709,7 @@ namespace FishNet.Component.Transforming
                 //Rotation.
                 if (UpdateFlagAContains(flagsA, UpdateFlagA.Rotation))
                 {
-                    nextTransformData.Rotation = r.ReadQuaternion();
+                    nextTransformData.Rotation = r.ReadQuaternionSync();
                     changedFull |= ChangedFull.Rotation;
                 }
                 else
@@ -990,7 +990,7 @@ namespace FishNet.Component.Transforming
             }
         }
 
-        #region GetChanged.
+#region GetChanged.
         /// <summary>
         /// Returns if the transform differs from td.
         /// </summary>
@@ -1092,9 +1092,9 @@ namespace FishNet.Component.Transforming
 
             return changed;
         }
-        #endregion
+#endregion
 
-        #region Rates.
+#region Rates.
         /// <summary>
         /// Snaps transform properties using snapping settings.
         /// </summary>
@@ -1262,7 +1262,7 @@ namespace FishNet.Component.Transforming
                 return (whole & part) == part;
             }
         }
-        #endregion       
+#endregion
 
         private void SetExtrapolation(TransformData prev, TransformData next, Channel channel)
         {

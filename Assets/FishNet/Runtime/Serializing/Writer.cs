@@ -12,6 +12,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
+using static FishNet.Serializing.Helping.Quaternions;
+
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
 {
@@ -570,7 +572,7 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
-        /// Writes a Quaternion.
+        /// Writes a Quaternion, 4 bytes.
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -579,7 +581,7 @@ namespace FishNet.Serializing
             if (Position + 4 > _buffer.Length)
                 DoubleBuffer(4);
 
-            uint result = Quaternions.Compress(value);
+            uint result = Quaternions.Compress32(value);
             _buffer[Position++] = (byte)result;
             _buffer[Position++] = (byte)(result >> 8);
             _buffer[Position++] = (byte)(result >> 16);
@@ -588,6 +590,68 @@ namespace FishNet.Serializing
             Length = Math.Max(Length, Position);
         }
 
+        /// <summary>
+        /// Writes a Quaternion, 8 bytes.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteQuaternion64(Quaternion64 value)
+        {
+            if (Position + 8 > _buffer.Length)
+                DoubleBuffer(8);
+
+            ulong result = Quaternions.Compress64(value);
+            _buffer[Position++] = (byte)result;
+            _buffer[Position++] = (byte)(result >> 8);
+            _buffer[Position++] = (byte)(result >> 16);
+            _buffer[Position++] = (byte)(result >> 24);
+            _buffer[Position++] = (byte)(result >> 32);
+            _buffer[Position++] = (byte)(result >> 40);
+            _buffer[Position++] = (byte)(result >> 48);
+            _buffer[Position++] = (byte)(result >> 56);
+            
+            Length = Math.Max(Length, Position);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteQuaternion128(Quaternion128 value)
+        {
+            if (Position + 16 > _buffer.Length)
+                DoubleBuffer(16);
+
+            WriteSingle(value.x);
+            WriteSingle(value.y);
+            WriteSingle(value.z);
+            WriteSingle(value.w);
+        }
+
+        
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteQuaternionSpawn(Quaternion value)
+        {
+        #if FN_QUAT_SPAWN_32
+            WriteQuaternion(value);
+        #elif FN_QUAT_SPAWN_64
+            WriteQuaternion64(QuaternionConverter.QtoQ64(value));
+        #else
+            WriteQuaternion128(QuaternionConverter.QtoQ128(value));
+        #endif
+        }
+
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteQuaternionSync(Quaternion value)
+        {
+        #if FN_QUAT_SYNC_32
+            WriteQuaternion(value);
+        #elif FN_QUAT_SYNC_64
+            WriteQuaternion64(QuaternionConverter.QtoQ64(value));
+        #else
+            WriteQuaternion128(QuaternionConverter.QtoQ128(value));
+        #endif
+        }
+        
         /// <summary>
         /// Writes a rect.
         /// </summary>
@@ -771,7 +835,7 @@ namespace FishNet.Serializing
             WriteInt16(id);
         }
 
-        #region Packed writers.
+#region Packed writers.
         /// <summary>
         /// Returns PackRate to use for value.
         /// </summary>
@@ -837,9 +901,9 @@ namespace FishNet.Serializing
 
             Length = Math.Max(Length, Position);
         }
-        #endregion
+#endregion
 
-        #region Nullables.
+#region Nullables.
         ///// <summary>
         ///// Writes a nullable int.
         ///// </summary>
@@ -853,9 +917,9 @@ namespace FishNet.Serializing
 
         //    WriteInt32(value.Value);
         //}
-        #endregion
+#endregion
 
-        #region Generators.
+#region Generators.
         /// <summary>
         /// Writes to the end of value starting at offset.
         /// </summary>
@@ -961,7 +1025,7 @@ namespace FishNet.Serializing
                 return false;
             }
         }
-        #endregion
+#endregion
 
     }
 }
