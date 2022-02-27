@@ -759,7 +759,6 @@ namespace FishNet.Serializing
             WriteInt16((short)value);
         }
 
-
         /// <summary>
         /// Writes a short for a connectionId.
         /// </summary>

@@ -69,6 +69,15 @@ namespace FishNet.CodeGenerating.Processing
                 }
 
                 RpcType rpcType;
+                //CHANGE THIS TO GetRpcAttributes
+                /* Make observersRpc ignore conn parameter if also
+                 * target rpc. generate reader/writers for each method
+                 * normally. check rpcType on each returned result.
+                 * process each returned result. 
+                 *
+                 * Figure out a way to tell CreateRpcMethods that an observer rpc may
+                 * also be a target rpc.
+                 */
                 CustomAttribute rpcAttribute = GetRpcAttribute(md, true, out rpcType);
                 if (rpcAttribute == null)
                     continue;
@@ -160,6 +169,59 @@ namespace FishNet.CodeGenerating.Processing
             return count;
         }
 
+        /// <summary>
+        /// Gets all Rpc attributes on a method.
+        /// </summary>
+        /// <returns></returns>
+        private List<(RpcType, CustomAttribute)> GetRpcAttributes(MethodDefinition methodDef, bool validate)
+        {
+            List<(RpcType, CustomAttribute)> results = new List<(RpcType, CustomAttribute)>();
+
+            bool hasTargetRpc = false;
+            bool hasObserversRpc = false;
+
+            foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
+            {
+                RpcType rpcType = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute);
+                if (rpcType != RpcType.None)
+                {
+                    results.Add((rpcType, customAttribute));
+                    if (validate)
+                    {
+                        if (rpcType == RpcType.Target)
+                            hasTargetRpc = true;
+                        else if (rpcType == RpcType.Observers)
+                            hasObserversRpc = true;
+                    }
+                }
+            }
+
+            if (validate)
+            {
+                bool invalidRpcCount = false;
+                //More than 2 are never allowed.
+                if (results.Count > 2)
+                    invalidRpcCount = true;
+                //If 2 then make sure they are target and observer.
+                else if (results.Count == 2)
+                    invalidRpcCount = (!hasTargetRpc || !hasObserversRpc);
+
+                if (invalidRpcCount)
+                {
+                    CodegenSession.LogError($"{methodDef.Name} RPC method has an unsupported Rpc attribute combination. Only ObserversRpc and TargetRpc may be used together.");
+                }
+
+                //Check each attribute.
+                foreach ((RpcType RpcType, CustomAttribute CustomAttribute) item in results)
+                {
+                    if (!IsRpcMethodValid(methodDef, item.RpcType))
+                        return null;
+                }
+            }
+
+            //Fall through, success.
+            return results;
+        }
 
         /// <summary>
         /// Returns the RPC attribute on a method, if one exist. Otherwise returns null.
@@ -182,7 +244,7 @@ namespace FishNet.CodeGenerating.Processing
                 RpcType tmpRpcType = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute);
                 if (tmpRpcType != RpcType.None)
                 {
-                    rpcType = tmpRpcType;
+                    rpcType |= tmpRpcType;
                     rpcAttribute = customAttribute;
                     foundAttributes++;
                 }
@@ -190,86 +252,17 @@ namespace FishNet.CodeGenerating.Processing
 
             if (validate && rpcAttribute != null)
             {
-
-                //A rpc attribute already exist.
+                /* A RPC attribute already exist. Only Observers and Target
+                 * attributes are allowed to stack, so make sure these are
+                 * what are being used. */
                 if (foundAttributes > 1)
                 {
                     CodegenSession.LogError($"{methodDef.Name} RPC method cannot have multiple RPC attributes.");
                     error = true;
                 }
-                //Virtual method.
-                //else if (methodDef.Attributes.HasFlag(MethodAttributes.Virtual))
-                //{
-                //    CodegenSession.LogError($"{methodDef.Name} RPC method cannot be virtual.");
-                //    error = true;
-                //}
-                //Static method.
-                else if (methodDef.IsStatic)
-                {
-                    CodegenSession.LogError($"{methodDef.Name} RPC method cannot be static.");
+
+                if (!IsRpcMethodValid(methodDef, rpcType))
                     error = true;
-                }
-                //Abstract method.
-                else if (methodDef.IsAbstract)
-                {
-                    CodegenSession.LogError($"{methodDef.Name} RPC method cannot be abstract.");
-                    error = true;
-                }
-                //Non void return.
-                else if (methodDef.ReturnType != methodDef.Module.TypeSystem.Void)
-                {
-                    CodegenSession.LogError($"{methodDef.Name} RPC method must return void.");
-                    error = true;
-                }
-                //Misc failing conditions.
-                else
-                {
-                    ////Check if is overloaded.
-                    //TypeDefinition td = methodDef.DeclaringType;
-                    //foreach (MethodDefinition md in td.GetMethods())
-                    //{
-                    //    if (md != methodDef && md.Name == methodDef.Name)
-                    //    {
-                    //        CodegenSession.LogError($"{methodDef.Name} RPC method cannot be overloaded. This feature will be provided in a later release.");
-                    //        error = true;
-                    //        break;
-                    //    }
-                    //}
-                }
-                //TargetRpc but missing correct parameters.
-                if (rpcType == RpcType.Target)
-                {
-                    if (methodDef.Parameters.Count == 0 || !methodDef.Parameters[0].Is(typeof(NetworkConnection)))
-                    {
-                        CodegenSession.LogError($"Target RPC {methodDef.Name} must have a NetworkConnection as the first parameter.");
-                        error = true;
-                    }
-                }
-
-                //Make sure all parameters can be serialized.
-                for (int i = 0; i < methodDef.Parameters.Count; i++)
-                {
-                    ParameterDefinition parameterDef = methodDef.Parameters[i];
-
-                    //If NetworkConnection, TargetRpc, and first parameter.
-                    if ((i == 0) && (rpcType == RpcType.Target) && parameterDef.Is(typeof(NetworkConnection)))
-                        continue;
-
-                    if (parameterDef.ParameterType.IsGenericParameter)
-                    {
-                        CodegenSession.LogError($"RPC method{methodDef.Name} contains a generic parameter. This is currently not supported.");
-                        error = true;
-                        break;
-                    }
-
-                    //Can be serialized/deserialized.
-                    bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(parameterDef.ParameterType, true);
-                    if (!canSerialize)
-                    {
-                        CodegenSession.LogError($"RPC method {methodDef.Name} parameter type {parameterDef.ParameterType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
-                        error = true;
-                    }
-                }
             }
 
             //If an error occurred then reset results.
@@ -280,6 +273,92 @@ namespace FishNet.CodeGenerating.Processing
             }
 
             return rpcAttribute;
+        }
+
+        /// <summary>
+        /// Returns if a RpcMethod has valid serialization and setup.
+        /// </summary>
+        /// <param name="methodDef"></param>
+        /// <param name="rpcType"></param>
+        /// <returns></returns>
+        private bool IsRpcMethodValid(MethodDefinition methodDef, RpcType rpcType)
+        {
+            //Virtual method.
+            //else if (methodDef.Attributes.HasFlag(MethodAttributes.Virtual))
+            //{
+            //    CodegenSession.LogError($"{methodDef.Name} RPC method cannot be virtual.");
+            //    error = true;
+            //}
+            //Static method.
+            if (methodDef.IsStatic)
+            {
+                CodegenSession.LogError($"{methodDef.Name} RPC method cannot be static.");
+                return false;
+            }
+            //Abstract method.
+            else if (methodDef.IsAbstract)
+            {
+                CodegenSession.LogError($"{methodDef.Name} RPC method cannot be abstract.");
+                return false;
+            }
+            //Non void return.
+            else if (methodDef.ReturnType != methodDef.Module.TypeSystem.Void)
+            {
+                CodegenSession.LogError($"{methodDef.Name} RPC method must return void.");
+                return false;
+            }
+            //Misc failing conditions.
+            else
+            {
+                ////Check if is overloaded.
+                //TypeDefinition td = methodDef.DeclaringType;
+                //foreach (MethodDefinition md in td.GetMethods())
+                //{
+                //    if (md != methodDef && md.Name == methodDef.Name)
+                //    {
+                //        CodegenSession.LogError($"{methodDef.Name} RPC method cannot be overloaded. This feature will be provided in a later release.");
+                //        error = true;
+                //        break;
+                //    }
+                //}
+            }
+            //TargetRpc but missing correct parameters.
+            if (rpcType == RpcType.Target)
+            {
+                if (methodDef.Parameters.Count == 0 || !methodDef.Parameters[0].Is(typeof(NetworkConnection)))
+                {
+                    CodegenSession.LogError($"Target RPC {methodDef.Name} must have a NetworkConnection as the first parameter.");
+                    return false;
+                }
+            }
+
+            //Make sure all parameters can be serialized.
+            for (int i = 0; i < methodDef.Parameters.Count; i++)
+            {
+                ParameterDefinition parameterDef = methodDef.Parameters[i];
+
+                //If NetworkConnection, TargetRpc, and first parameter.
+                if ((i == 0) && (rpcType == RpcType.Target) && parameterDef.Is(typeof(NetworkConnection)))
+                    continue;
+
+                if (parameterDef.ParameterType.IsGenericParameter)
+                {
+                    CodegenSession.LogError($"RPC method{methodDef.Name} contains a generic parameter. This is currently not supported.");
+                    return false;
+                }
+
+                //Can be serialized/deserialized.
+                bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(parameterDef.ParameterType, true);
+                if (!canSerialize)
+                {
+                    CodegenSession.LogError($"RPC method {methodDef.Name} parameter type {parameterDef.ParameterType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
+                    return false;
+                }
+
+            }
+
+            //Fall through, success.
+            return true;
         }
 
         /// <summary>
@@ -943,7 +1022,7 @@ namespace FishNet.CodeGenerating.Processing
             originalMd.Body.Instructions.Clear();
 
             originalProcessor.Emit(OpCodes.Ldarg_0); //this.
-            //Parameters.
+                                                     //Parameters.
             foreach (ParameterDefinition pd in originalMd.Parameters)
                 originalProcessor.Emit(OpCodes.Ldarg, pd);
 
@@ -954,7 +1033,7 @@ namespace FishNet.CodeGenerating.Processing
             if (runLocally)
             {
                 originalProcessor.Emit(OpCodes.Ldarg_0); //this.
-                //Parameters.
+                                                         //Parameters.
                 foreach (ParameterDefinition pd in originalMd.Parameters)
                     originalProcessor.Emit(OpCodes.Ldarg, pd);
                 originalProcessor.Emit(OpCodes.Call, logicMd);
@@ -1027,7 +1106,7 @@ namespace FishNet.CodeGenerating.Processing
         private void CreateSendRpcCommon(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
         {
             processor.Emit(OpCodes.Ldarg_0); // argument: this
-            //Hash argument. 
+                                             //Hash argument. 
             processor.Emit(OpCodes.Ldc_I4, (int)methodHash);
             //reference to PooledWriter.
             processor.Emit(OpCodes.Ldloc, writerVariableDef);

@@ -73,7 +73,7 @@ namespace FishNet.CodeGenerating.Helping
         internal void CreateInstancedStaticWrite(MethodReference writeMethodRef)
         {
             if (_generatedReaderWriterClassTypeDef == null)
-                _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, WriterGenerator.GENERATED_TYPE_ATTRIBUTES, WriterGenerator.GENERATED_CLASS_NAME, null);
+                _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, WriterGenerator.GENERATED_TYPE_ATTRIBUTES, WriterGenerator.GENERATED_WRITERS_CLASS_NAME, null);
 
             MethodDefinition writeMethodDef = writeMethodRef.CachedResolve();
             MethodDefinition createdMethodDef = new MethodDefinition($"Static___{writeMethodRef.Name}",
@@ -123,7 +123,7 @@ namespace FishNet.CodeGenerating.Helping
             bool created;
 
             if (_generatedReaderWriterClassTypeDef == null)
-                _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out created, WriterGenerator.GENERATED_TYPE_ATTRIBUTES, WriterGenerator.GENERATED_CLASS_NAME, null);
+                _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out created, WriterGenerator.GENERATED_TYPE_ATTRIBUTES, WriterGenerator.GENERATED_WRITERS_CLASS_NAME, null);
             /* If constructor isn't set then try to get or create it
              * and also add it to methods if were created. */
             if (_generatedReaderWriterOnLoadMethodDef == null)

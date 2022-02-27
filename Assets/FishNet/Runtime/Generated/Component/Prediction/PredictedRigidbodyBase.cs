@@ -28,6 +28,10 @@ namespace FishNet.Component.Prediction
 
         #region Private
         /// <summary>
+        /// True if subscribed to events.
+        /// </summary>
+        private bool _subscribed = false;
+        /// <summary>
         /// Next tick to send data.
         /// </summary>
         private uint _nextSendTick;
@@ -81,22 +85,20 @@ namespace FishNet.Component.Prediction
         public override void OnStartClient()
         {
             base.OnStartClient();
-            base.TimeManager.OnPreReconcile += TimeManager_OnPreReconcile;
-            base.TimeManager.OnPostReplicateReplay += TimeManager_OnPostReplicateReplay;
-            base.TimeManager.OnPostReconcile += TimeManager_OnPostReconcile;
+            ChangeSubscriptions(true);
         }
 
         public override void OnStopClient()
         {
             base.OnStopClient();
-            base.TimeManager.OnPreReconcile -= TimeManager_OnPreReconcile;
-            base.TimeManager.OnPostReplicateReplay -= TimeManager_OnPostReplicateReplay;
-            base.TimeManager.OnPostReconcile -= TimeManager_OnPostReconcile;
+            ChangeSubscriptions(false);
         }
 
         public override void OnStopNetwork()
         {
             base.OnStopNetwork();
+            if (base.TimeManager == null)
+                return;
             base.TimeManager.OnPostTick -= TimeManager_OnPostTick;
         }
 
@@ -116,6 +118,34 @@ namespace FishNet.Component.Prediction
                 }
             }
         }
+
+        /// <summary>
+        /// Subscribes to events needed to function.
+        /// </summary>
+        /// <param name="subscribe"></param>
+        private void ChangeSubscriptions(bool subscribe)
+        {
+            if (base.TimeManager == null)
+                return;
+            if (subscribe == _subscribed)
+                return;
+
+            if (subscribe)
+            {
+                base.TimeManager.OnPreReconcile += TimeManager_OnPreReconcile;
+                base.TimeManager.OnPostReplicateReplay += TimeManager_OnPostReplicateReplay;
+                base.TimeManager.OnPostReconcile += TimeManager_OnPostReconcile;
+            }
+            else
+            {
+                base.TimeManager.OnPreReconcile -= TimeManager_OnPreReconcile;
+                base.TimeManager.OnPostReplicateReplay -= TimeManager_OnPostReplicateReplay;
+                base.TimeManager.OnPostReconcile -= TimeManager_OnPostReconcile;
+            }
+
+            _subscribed = subscribe;
+        }
+
 
 
         /// <summary>

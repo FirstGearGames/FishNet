@@ -12,7 +12,7 @@ namespace FishNet.CodeGenerating.Helping
     {
 
         #region Const.
-        internal const string GENERATED_CLASS_NAME = WriterGenerator.GENERATED_CLASS_NAME;
+        internal const string GENERATED_READERS_CLASS_NAME = "GeneratedReaders___FN";
         public const TypeAttributes GENERATED_TYPE_ATTRIBUTES = WriterGenerator.GENERATED_TYPE_ATTRIBUTES;
         private const string READ_PREFIX = "Read___";
         #endregion
@@ -223,8 +223,8 @@ namespace FishNet.CodeGenerating.Helping
 
             /* Try to get instanced first for collection element type, if it doesn't exist then try to
              * get/or make a one. */
-            MethodReference keyWriteMr = CodegenSession.WriterHelper.GetOrCreateFavoredWriteMethodReference(keyTr, true);
-            MethodReference valueWriteMr = CodegenSession.WriterHelper.GetOrCreateFavoredWriteMethodReference(valueTr, true);
+            MethodReference keyWriteMr = CodegenSession.ReaderHelper.GetOrCreateFavoredReadMethodReference(keyTr, true);
+            MethodReference valueWriteMr = CodegenSession.ReaderHelper.GetOrCreateFavoredReadMethodReference(valueTr, true);
             if (keyWriteMr == null || valueWriteMr == null)
                 return null;
 
@@ -232,10 +232,7 @@ namespace FishNet.CodeGenerating.Helping
             AddToStaticReaders(objectTr, createdReaderMd);
 
             ILProcessor processor = createdReaderMd.Body.GetILProcessor();
-
-            //MethodReference genericReadMr = CodegenSession.ReaderHelper.Reader_ReadDictionary_MethodRef.MakeHostInstanceGeneric(genericInstance);
             GenericInstanceMethod genericInstanceMethod = CodegenSession.ReaderHelper.Reader_ReadDictionary_MethodRef.MakeGenericMethod(new TypeReference[] { keyTr, valueTr });
-
 
             ParameterDefinition readerPd = createdReaderMd.Parameters[0];
             processor.Emit(OpCodes.Ldarg, readerPd);
@@ -463,7 +460,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             string methodName = $"{READ_PREFIX}{objectTypeRef.FullName}{nameExtension}s";
             // create new reader for this type
-            TypeDefinition readerTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_CLASS_NAME, null);
+            TypeDefinition readerTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_READERS_CLASS_NAME, null);
             MethodDefinition readerMethodDef = readerTypeDef.AddMethod(methodName,
                     MethodAttributes.Public |
                     MethodAttributes.Static |

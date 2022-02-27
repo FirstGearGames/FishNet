@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using MultipassTransport = Multipass.Multipass;
 
 namespace FishNet.Managing.Server
 {
@@ -155,6 +156,16 @@ namespace FishNet.Managing.Server
         /// <param name="sendDisconnectMessage">True to send a disconnect message to all clients first.</param>
         public bool StopConnection(bool sendDisconnectMessage)
         {
+            Transport t = NetworkManager.TransportManager.Transport;
+            if (t is MultipassTransport)
+            {
+                string transportName = t.GetType().Name;
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"StopConnection cannot be called on ServerManager when using {transportName}. Access {transportName} directly and call StopServerConnection(sendDisconnectMessage, transportIndex).");
+
+                return false;
+            }
+
             if (sendDisconnectMessage)
             {
                 PooledWriter writer = WriterPool.GetWriter();
@@ -170,14 +181,26 @@ namespace FishNet.Managing.Server
             }
 
             //Return stop connection result.
-            return NetworkManager.TransportManager.Transport.StopConnection(true);
+            return t.StopConnection(true);
         }
+
         /// <summary>
         /// Starts the local server connection.
         /// </summary>
-        public void StartConnection()
+        public bool StartConnection()
         {
-            NetworkManager.TransportManager.Transport.StartConnection(true);
+            Transport t = NetworkManager.TransportManager.Transport;
+            if (t is MultipassTransport)
+            {
+                string transportName = t.GetType().Name;
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"StartConnection cannot be called on ServerManager when using {transportName}. Access {transportName} directly and call StartConnection(transportIndex).");
+
+                return false;
+            }
+
+            //Success fall through.
+            return t.StartConnection(true);
         }
 
         /// <summary>

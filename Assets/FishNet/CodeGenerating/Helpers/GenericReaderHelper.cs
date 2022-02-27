@@ -76,7 +76,7 @@ namespace FishNet.CodeGenerating.Helping
             * now is the first entry. That would mean the class was just
             * generated. */
             if (_generatedReaderWriterClassTypeDef == null)
-                _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, ReaderGenerator.GENERATED_TYPE_ATTRIBUTES, ReaderGenerator.GENERATED_CLASS_NAME, null);
+                _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, ReaderGenerator.GENERATED_TYPE_ATTRIBUTES, ReaderGenerator.GENERATED_READERS_CLASS_NAME, null);
             /* If constructor isn't set then try to get or create it
              * and also add it to methods if were created. */
             if (_generatedReaderWriterOnLoadMethodDef == null)

@@ -4,6 +4,7 @@ using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Utility.Extension;
 using JetBrains.Annotations;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -77,7 +78,8 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
-        public readonly IDictionary<TKey, TValue> ClientHostCollection = new Dictionary<TKey, TValue>();
+        [Obsolete("This field is being removed in a future version. Use Collection instead.")] //Remove on 2022/06/01
+        public IDictionary<TKey, TValue> ClientHostCollection => Collection;
         /// <summary>
         /// Number of objects in the collection.
         /// </summary>
@@ -124,9 +126,6 @@ namespace FishNet.Object.Synchronizing
         public SyncIDictionary(IDictionary<TKey, TValue> objects)
         {
             this.Collection = objects;
-            //Add to clienthostcollection.
-            foreach (KeyValuePair<TKey, TValue> item in objects)
-                this.ClientHostCollection[item.Key] = item.Value;
         }
 
         /// <summary>
@@ -134,11 +133,10 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="asServer">True if returning the server value, false if client value. The values will only differ when running as host. While asServer is true the most current values on server will be returned, and while false the latest values received by client will be returned.</param>
         /// <returns>The used collection.</returns>
+        [Obsolete("This method is being removed in a future version. Use Collection instead.")] //Remove on 2022/06/01
         public Dictionary<TKey, TValue> GetCollection(bool asServer)
         {
-            bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
-            IDictionary<TKey, TValue> collection = (asClientAndHost) ? ClientHostCollection : Collection;
-            return (collection as Dictionary<TKey, TValue>);
+            return (Collection as Dictionary<TKey, TValue>);
         }
 
         /// <summary>
@@ -282,13 +280,11 @@ namespace FishNet.Object.Synchronizing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void Read(PooledReader reader)
         {
-            bool asServer = false;
             /* When !asServer don't make changes if server is running.
             * This is because changes would have already been made on
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
-            bool asClientAndHost = (!asServer && base.NetworkBehaviour.IsServer);
-            IDictionary<TKey, TValue> objects = (asClientAndHost) ? ClientHostCollection : Collection;
+            IDictionary<TKey, TValue> objects = Collection;
 
             int changes = (int)reader.ReadUInt32();
             for (int i = 0; i < changes; i++)
@@ -363,13 +359,9 @@ namespace FishNet.Object.Synchronizing
             base.Reset();
             _changed.Clear();
             Collection.Clear();
-            ClientHostCollection.Clear();
 
             foreach (KeyValuePair<TKey, TValue> item in _initialValues)
-            {
                 Collection[item.Key] = item.Value;
-                ClientHostCollection[item.Key] = item.Value;
-            }
         }
 
 

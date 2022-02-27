@@ -43,10 +43,17 @@ namespace FishNet.Editing
             //If not found then try to create file.
             if (_defaultPrefabs == null)
             {
-                DefaultPrefabObjects dpo = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
-                //Get save directory.
-                string savePath = Finding.GetFishNetRuntimePath(true);
-                AssetDatabase.CreateAsset(dpo, Path.Combine(savePath, $"{nameof(DefaultPrefabObjects)}.asset"));
+                if (DefaultPrefabObjects.CanAutomate)
+                {
+                    DefaultPrefabObjects dpo = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
+                    //Get save directory.
+                    string savePath = Finding.GetFishNetRuntimePath(true);
+                    AssetDatabase.CreateAsset(dpo, Path.Combine(savePath, $"{nameof(DefaultPrefabObjects)}.asset"));
+                }
+                else
+                {
+                    Debug.LogError($"Cannot create DefaultPrefabs because auto create is blocked.");
+                }
             }
 
             //If still null.
@@ -87,6 +94,8 @@ namespace FishNet.Editing
         {
             if (_defaultPrefabs == null)
                 return false;
+            if (!DefaultPrefabObjects.CanAutomate)
+                return false;
             if (clear)
                 _defaultPrefabs.Clear();
             if (_defaultPrefabs.GetObjectCount() > 0)
@@ -99,7 +108,7 @@ namespace FishNet.Editing
                     _defaultPrefabs.AddObject(nob);
             }
 
-             _defaultPrefabs.Sort();
+            _defaultPrefabs.Sort();
 
             int entriesAdded = _defaultPrefabs.GetObjectCount();
             //Only print if some were added.

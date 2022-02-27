@@ -11,7 +11,7 @@ namespace FishNet.CodeGenerating.Helping
 
 
         #region Const.
-        public const string GENERATED_CLASS_NAME = "GeneratedReadersAndWriters";
+        internal const string GENERATED_WRITERS_CLASS_NAME = "GeneratedWriters___FN";
         public const TypeAttributes GENERATED_TYPE_ATTRIBUTES = (TypeAttributes.BeforeFieldInit | TypeAttributes.Class | TypeAttributes.AnsiClass |
             TypeAttributes.Public | TypeAttributes.AutoClass | TypeAttributes.Abstract | TypeAttributes.Sealed);
         private const string WRITE_PREFIX = "Write___";
@@ -93,7 +93,7 @@ namespace FishNet.CodeGenerating.Helping
             objectTr = CodegenSession.ImportReference(objectTr.Resolve());
             //All NetworkBehaviour types will simply WriteNetworkBehaviour/ReadNetworkBehaviour.
             //Create generated reader/writer class. This class holds all generated reader/writers.
-            CodegenSession.GeneralHelper.GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_CLASS_NAME, null);
+            CodegenSession.GeneralHelper.GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_WRITERS_CLASS_NAME, null);
 
             MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
             AddToStaticWriters(objectTr, createdWriterMd);
@@ -373,7 +373,6 @@ namespace FishNet.CodeGenerating.Helping
             AddToStaticWriters(objectTr, createdWriterMd);
 
             ILProcessor processor = createdWriterMd.Body.GetILProcessor();
-
             GenericInstanceMethod genericInstanceMethod = CodegenSession.WriterHelper.Writer_WriteDictionary_MethodRef.MakeGenericMethod(new TypeReference[] { keyTr, valueTr });
 
             ParameterDefinition writerPd = createdWriterMd.Parameters[0];
@@ -469,7 +468,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             string methodName = $"{WRITE_PREFIX}{objectTypeRef.FullName}{nameExtension}";
             // create new writer for this type
-            TypeDefinition writerTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_CLASS_NAME, null);
+            TypeDefinition writerTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_WRITERS_CLASS_NAME, null);
 
             MethodDefinition writerMethodDef = writerTypeDef.AddMethod(methodName,
                     MethodAttributes.Public |

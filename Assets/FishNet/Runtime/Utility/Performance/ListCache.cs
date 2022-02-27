@@ -121,6 +121,15 @@ namespace FishNet.Utility.Performance
             foreach (T item in values)
                 AddValue(item);
         }
+        /// <summary>
+        /// Adds values to Collection.
+        /// </summary>
+        /// <param name="value"></param>
+        public void AddValues(ISet<T> values)
+        {
+            foreach (T item in values)
+                AddValue(item);
+        }
 
         /// <summary>
         /// Resets cache.

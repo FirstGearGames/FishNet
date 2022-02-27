@@ -126,8 +126,9 @@ namespace FishNet.Serializing
             if (isNull)
                 return null;
 
-            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>();
             int count = ReadInt32();
+
+            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>(count);            
             for (int i = 0; i < count; i++)
             {
                 TKey key = Read<TKey>();

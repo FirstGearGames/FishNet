@@ -400,7 +400,6 @@ namespace FishNet.Managing.Transporting
             OnIterateOutgoingEnd?.Invoke();
         }
 
-
         #region Editor.
 #if UNITY_EDITOR
         private void OnValidate()

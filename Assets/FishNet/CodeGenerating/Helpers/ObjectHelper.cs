@@ -22,8 +22,9 @@ namespace FishNet.CodeGenerating.Helping
         #region Reflection references.
         //Fullnames.
         internal string NetworkBehaviour_FullName;
-        internal string IBroadcast_FullName;
-        internal string SyncList_FullName;
+        internal string SyncList_Name;
+        internal string SyncDictionary_Name;
+        internal string SyncHashSet_Name;
         //Prediction.
         internal MethodReference NetworkBehaviour_TransformMayChange_MethodRef;
         internal MethodReference NetworkBehaviour_SendReplicateRpc_MethodRef;
@@ -76,15 +77,24 @@ namespace FishNet.CodeGenerating.Helping
             CodegenSession.ImportReference(networkBehaviourType);
 
             Type ibroadcastType = typeof(IBroadcast);
-            CodegenSession.ImportReference(ibroadcastType);
-            IBroadcast_FullName = ibroadcastType.FullName;
 
-            Type syncListType = typeof(SyncList<>);
-            CodegenSession.ImportReference(syncListType);
-            SyncList_FullName = syncListType.FullName;
+            Type tmpType;
+            /* SyncObject names. */
+            //SyncList.
+            tmpType = typeof(SyncList<>);
+            CodegenSession.ImportReference(tmpType);
+            SyncList_Name = tmpType.Name;
+            //SyncDictionary.
+            tmpType = typeof(SyncDictionary<,>);
+            CodegenSession.ImportReference(tmpType);
+            SyncDictionary_Name = tmpType.Name;
+            //SyncHashSet.
+            tmpType = typeof(SyncHashSet<>);
+            CodegenSession.ImportReference(tmpType);
+            SyncHashSet_Name = tmpType.Name;
 
             //Dictionary.Add(ushort, SyncBase).
-            System.Type dictType = typeof(Dictionary<ushort, SyncBase>);
+            Type dictType = typeof(Dictionary<ushort, SyncBase>);
             TypeReference dictTypeRef = CodegenSession.ImportReference(dictType);
             //Dictionary_Add_UShort_SyncBase_MethodRef = dictTypeRef.CachedResolve().GetMethod("add_Item", )
             foreach (MethodDefinition item in dictTypeRef.CachedResolve().Methods)

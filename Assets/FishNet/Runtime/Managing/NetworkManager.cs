@@ -155,8 +155,8 @@ namespace FishNet.Managing
         /// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
         /// </summary>
         [Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
-        [SerializeField] 
-        private bool _refreshDefaultPrefabs = true;
+        [SerializeField]
+        private bool _refreshDefaultPrefabs = false;
         /// <summary>
         /// True to have your application run while in the background.
         /// </summary>
@@ -194,6 +194,8 @@ namespace FishNet.Managing
 
         private void Awake()
         {
+            if (SpawnablePrefabs == null)
+                SetDefaultPrefabs();
             InitializeLogging();
             if (StartingRpcLinkIndex == 0)
                 StartingRpcLinkIndex = (ushort)(EnumFN.GetHighestValue<PacketId>() + 1);
@@ -206,7 +208,11 @@ namespace FishNet.Managing
              * scriptable object changes, which is what
              * the default prefabs is. */
             if (_refreshDefaultPrefabs && SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
+            {
+                DefaultPrefabObjects.CanAutomate = false;
                 dpo.PopulateDefaultPrefabs(false);
+                DefaultPrefabObjects.CanAutomate = true;
+            }
 #endif
 
             _canPersist = CanInitialize();
@@ -446,7 +452,14 @@ namespace FishNet.Managing
         {
             if (Application.isPlaying)
                 return;
+            if (PlayModeTracker.QuitRecently(3f))
+                return;
+            SetDefaultPrefabs();
+        }
 
+        private void SetDefaultPrefabs()
+        {
+            
             if (SpawnablePrefabs == null)
             {
                 SpawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);

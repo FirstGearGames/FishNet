@@ -1,5 +1,4 @@
-﻿using FishNet;
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Object;
 using UnityEngine;
 
@@ -74,12 +73,17 @@ namespace FishNet.Component.Prediction
         /// <param name="subscribe"></param>
         private void ChangeSubscriptions(bool subscribe)
         {
-            if (subscribe && !_subscribed)
+            if (base.TimeManager == null)
+                return;
+            if (subscribe == _subscribed)
+                return;
+
+            if (subscribe)
             {
                 base.TimeManager.OnPreReconcile += TimeManager_OnPreReconcile;
                 base.TimeManager.OnPostReconcile += TimeManager_OnPostReconcile;
             }
-            else if (!subscribe && _subscribed)
+            else
             {
                 base.TimeManager.OnPreReconcile -= TimeManager_OnPreReconcile;
                 base.TimeManager.OnPostReconcile -= TimeManager_OnPostReconcile;

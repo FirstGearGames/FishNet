@@ -31,6 +31,10 @@ namespace FishNet.Managing.Editing
 
             NetworkManager networkManager = (NetworkManager)target;
 
+            GUI.enabled = false;
+            EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(networkManager), typeof(NetworkManager), false);
+            GUI.enabled = true;
+
             //EditorGUILayout.BeginVertical(GUI.skin.box);
             //EditorGUILayout.EndVertical();
 

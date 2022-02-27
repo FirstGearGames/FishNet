@@ -92,9 +92,9 @@ namespace FishNet.CodeGenerating.Processing
                     if (TryCreateSyncVar(syncTypeStartCount, allProcessedSyncs, typeDef, fd, syncAttribute))
                         syncTypeStartCount++;
                 }
-                else if (st == SyncType.List)
+                else if (st == SyncType.List || st == SyncType.HashSet)
                 {
-                    if (TryCreateSyncList(syncTypeStartCount, allProcessedSyncs, typeDef, fd, syncAttribute))
+                    if (TryCreateSyncList_SyncHashSet(syncTypeStartCount, allProcessedSyncs, typeDef, fd, syncAttribute, st))
                         syncTypeStartCount++;
                 }
                 else if (st == SyncType.Dictionary)
@@ -217,13 +217,17 @@ namespace FishNet.CodeGenerating.Processing
                         return SyncType.Unset;
                     }
 
-                    if (fieldDef.FieldType.Name == typeof(SyncList<>).Name)
+                    if (fieldDef.FieldType.Name == CodegenSession.ObjectHelper.SyncList_Name)
                     {
                         return SyncType.List;
                     }
-                    else if (fieldDef.FieldType.Name == typeof(SyncDictionary<,>).Name)
+                    else if (fieldDef.FieldType.Name == CodegenSession.ObjectHelper.SyncDictionary_Name)
                     {
                         return SyncType.Dictionary;
+                    }
+                    else if (fieldDef.FieldType.Name == CodegenSession.ObjectHelper.SyncHashSet_Name)
+                    {
+                        return SyncType.HashSet;
                     }
                     //Custom types must also implement ICustomSync.
                     else if (fieldDef.FieldType.CachedResolve().ImplementsInterfaceRecursive<ICustomSync>())
@@ -305,7 +309,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Tries to create a SyncList.
         /// </summary>
-        private bool TryCreateSyncList(uint syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncAttribute)
+        private bool TryCreateSyncList_SyncHashSet(uint syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncAttribute, SyncType syncType)
         {
             //Import fieldType to module.
             TypeReference fieldTypeTr = CodegenSession.ImportReference(originalFieldDef.FieldType);
@@ -321,9 +325,9 @@ namespace FishNet.CodeGenerating.Processing
                 return false;
             }
 
-            bool result = InitializeSyncList(syncTypeCount, typeDef, originalFieldDef, syncAttribute);
+            bool result = InitializeSyncList_SyncHashSet(syncTypeCount, typeDef, originalFieldDef, syncAttribute);
             if (result)
-                allProcessedSyncs.Add((SyncType.List, null));
+                allProcessedSyncs.Add((syncType, null));
             return result;
         }
 
@@ -745,11 +749,10 @@ namespace FishNet.CodeGenerating.Processing
 
 
 
-
         /// <summary>
         /// Initializes a SyncList.
         /// </summary>
-        internal bool InitializeSyncList(uint syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute attribute)
+        internal bool InitializeSyncList_SyncHashSet(uint syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute attribute)
         {
             float sendRate = 0.1f;
             WritePermission writePermissions = WritePermission.ServerOnly;

@@ -7,6 +7,7 @@
         Variable,
         List,
         Dictionary,
+        HashSet,
         Custom
     }
 

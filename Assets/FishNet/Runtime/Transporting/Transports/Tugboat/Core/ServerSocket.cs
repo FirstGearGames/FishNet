@@ -506,9 +506,11 @@ namespace FishNet.Tugboat.Server
                 NetPeer peer = GetNetPeer(incoming.ConnectionId, true);
                 if (peer != null)
                 {
-                    dataArgs.Data = incoming.GetArraySegment();
-                    dataArgs.Channel = (Channel)incoming.Channel;
-                    dataArgs.ConnectionId = incoming.ConnectionId;
+                    dataArgs.Update(incoming.GetArraySegment(),
+                        (Channel)incoming.Channel,
+                        incoming.ConnectionId,
+                        base.Transport.Index);
+
                     base.Transport.HandleServerReceivedDataArgs(dataArgs);
                 }
 

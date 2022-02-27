@@ -1,6 +1,7 @@
 using FishNet.Documenting;
 using FishNet.Object.Helping;
 using System.Collections.Generic;
+using UnityEngine;
 #if UNITY_EDITOR
 using FishNet.Editing;
 using UnityEditor;
@@ -14,6 +15,11 @@ namespace FishNet.Managing.Object
     //[CreateAssetMenu(fileName = "New DefaultPrefabObjects", menuName = "FishNet/Spawnable Prefabs/Default Prefab Objects")]
     public class DefaultPrefabObjects : SinglePrefabObjects
     {
+        /// <summary>
+        /// True if this can be automatically populated.
+        /// </summary>
+        internal static bool CanAutomate = true;
+
         /// <summary>
         /// Sorts prefabs by name and path hashcode.
         /// </summary>
@@ -49,6 +55,20 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Populates this DefaultPrefabObjects.
         /// </summary>
+        internal void AutoPopulateDefaultPrefabs(bool log = true, bool clear = true)
+        {
+            if (!CanAutomate)
+            {
+                Debug.Log("Auto populating DefaultPrefabs is blocked.");
+                return;
+            }
+
+            PopulateDefaultPrefabs(log, clear);
+        }
+
+        /// <summary>
+        /// Populates this DefaultPrefabObjects.
+        /// </summary>
         internal void PopulateDefaultPrefabs(bool log = true, bool clear = true)
         {
 #if UNITY_EDITOR
@@ -65,7 +85,7 @@ namespace FishNet.Managing.Object
                 base.Prefabs[id] == null);
 
             if (error)
-                PopulateDefaultPrefabs(false);
+                AutoPopulateDefaultPrefabs(false);
 
             return base.GetObject(asServer, id);
         }
