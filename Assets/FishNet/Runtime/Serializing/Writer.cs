@@ -130,6 +130,17 @@ namespace FishNet.Serializing
             Position += count;
             Length = Math.Max(Length, Position);
         }
+        
+        /// <summary>
+        /// Ensure a number of bytes to be available in the buffer from current position.
+        /// </summary>
+        /// <param name="count"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Ensure(int count)
+        {
+            if (Position + count > _buffer.Length)
+                DoubleBuffer(count);
+        }
 
         /// <summary>
         /// Sends a packetId.
@@ -805,21 +816,25 @@ namespace FishNet.Serializing
         {
             if (value < 0x80UL)
             {
+                Ensure(1);
                 _buffer[Position++] = (byte)(value & 0x7F);
             }
             else if (value < 0x4000UL)
             {
+                Ensure(2);
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)((value >> 7) & 0x7F);
             }
             else if (value < 0x200000UL)
             {
+                Ensure(3);
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)((value >> 14) & 0x7F);
             }
             else if (value < 0x10000000UL)
             {
+                Ensure(4);
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
@@ -827,6 +842,7 @@ namespace FishNet.Serializing
             }
             else if (value < 0x100000000UL)
             {
+                Ensure(5);
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
@@ -835,6 +851,7 @@ namespace FishNet.Serializing
             }
             else if (value < 0x10000000000UL)
             {
+                Ensure(6);
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
@@ -844,6 +861,7 @@ namespace FishNet.Serializing
             }
             else if (value < 0x1000000000000UL)
             {
+                Ensure(7);
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
@@ -854,6 +872,7 @@ namespace FishNet.Serializing
             }
             else if (value < 0x100000000000000UL)
             {
+                Ensure(8);
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
@@ -865,6 +884,7 @@ namespace FishNet.Serializing
             }
             else
             {
+                Ensure(9);
                 _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
                 _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
