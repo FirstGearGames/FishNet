@@ -81,11 +81,18 @@ namespace FishNet.Component.Animating.Editing
 
         private void DrawParameters(NetworkAnimator na)
         {
+            EditorGUILayout.LabelField("* Synchronized Parameters", EditorStyles.boldLabel);
+
+            if (Application.isPlaying)
+            {
+                EditorGUILayout.HelpBox("This feature can only be configured while out of play mode.", MessageType.Info);
+                return;
+            }
+            if (na == null)
+                return;
             Animator animator = na.Animator;
             if (animator == null)
                 return;
-            //if (Application.isPlaying)
-            //    return;
 
             RuntimeAnimatorController runtimeController = animator.runtimeAnimatorController;
             if (runtimeController == null)
@@ -100,8 +107,6 @@ namespace FishNet.Component.Animating.Editing
             if (runtimeController != _lastRuntimeAnimatorController || _lastAnimatorController == null)
                 _lastAnimatorController = (AnimatorController)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(animator.runtimeAnimatorController), typeof(AnimatorController));
             _lastRuntimeAnimatorController = runtimeController;
-
-            EditorGUILayout.LabelField("* Synchronized Parameters", EditorStyles.boldLabel);
 
             Color defaultColor = GUI.backgroundColor;
             float width = Screen.width;

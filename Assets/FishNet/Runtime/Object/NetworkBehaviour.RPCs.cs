@@ -340,31 +340,31 @@ namespace FishNet.Object
             PooledWriter writer = WriterPool.GetWriter();
             writer.WritePacketId(packetId);
             writer.WriteNetworkBehaviour(this);
-            //Only write length if unreliable.
-            if (channel == Channel.Unreliable)
-                WriteUnreliableLength(writer, methodWriter.Length + _rpcHashSize);
+            ////Only write length if unreliable.
+            //if (channel == Channel.Unreliable)
+            //    WriteUnreliableLength(writer, methodWriter.Length + _rpcHashSize);
             //Hash and data.
             WriteRpcHash(hash, writer);
             writer.WriteArraySegment(methodWriter.GetArraySegment());
             return writer;
         }
 
-        /// <summary>
-        /// Writes length to a writer for an unreliable packet.
-        /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="length"></param>
-        private void WriteUnreliableLength(PooledWriter writer, int length)
-        {
-            /* Length over short.MaxValue will just
-             * dump the packet. It's unrealistic that someone
-             * would ever send this much data
-             * unreliably. */
-            if (length > short.MaxValue)
-                writer.WriteInt16(-2);
-            else
-                writer.WriteInt16((short)length);
-        }
+        ///// <summary>
+        ///// Writes length to a writer for an unreliable packet.
+        ///// </summary>
+        ///// <param name="writer"></param>
+        ///// <param name="length"></param>
+        //private void WriteUnreliableLength(PooledWriter writer, int length)
+        //{
+        //    /* Length over short.MaxValue will just
+        //     * dump the packet. It's unrealistic that someone
+        //     * would ever send this much data
+        //     * unreliably. */
+        //    if (length > short.MaxValue)
+        //        writer.WriteInt16(-2);
+        //    else
+        //        writer.WriteInt16((short)length);
+        //}
 
 
         /// <summary>

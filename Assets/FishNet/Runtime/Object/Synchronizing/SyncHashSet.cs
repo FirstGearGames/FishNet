@@ -411,7 +411,7 @@ namespace FishNet.Object.Synchronizing
         public void ExceptWith(IEnumerable<T> other)
         {
             //Again, removing from self is a clear.
-            if (other == this)
+            if (other == Collection)
             {
                 Clear();
             }
@@ -484,7 +484,7 @@ namespace FishNet.Object.Synchronizing
         public void SymmetricExceptWith(IEnumerable<T> other)
         {
             //If calling except on self then that is the same as a clear.
-            if (other == this)
+            if (other == Collection)
             {
                 Clear();
             }
@@ -497,7 +497,7 @@ namespace FishNet.Object.Synchronizing
 
         public void UnionWith(IEnumerable<T> other)
         {
-            if (other == this)
+            if (other == Collection)
                 return;
 
             foreach (T item in other)

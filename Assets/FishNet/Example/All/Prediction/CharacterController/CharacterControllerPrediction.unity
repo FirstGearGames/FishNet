@@ -156,6 +156,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _unreliableMTU: 1023
+  _attackResponseType: 1
   _serverBindAddress: localhost
   _port: 9091
   _maximumClients: 4095
@@ -459,6 +460,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4393252310584637056, guid: 0b650fca685f2eb41a86538aa883e4c1,
+        type: 3}
+      propertyPath: _autoStartType
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7443408887813606049, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}
       propertyPath: m_RootOrder
@@ -518,6 +524,12 @@ PrefabInstance:
         type: 3}
       propertyPath: _spawnablePrefabs
       value: 
+      objectReference: {fileID: 11400000, guid: ec64eb18c93ab344892891f33edbf82a,
+        type: 2}
+    - target: {fileID: 7443408887813606050, guid: 0b650fca685f2eb41a86538aa883e4c1,
+        type: 3}
+      propertyPath: _refreshDefaultPrefabs
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}

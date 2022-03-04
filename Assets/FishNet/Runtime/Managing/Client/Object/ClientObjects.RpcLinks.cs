@@ -1,5 +1,6 @@
 ﻿using FishNet.Managing.Logging;
 using FishNet.Managing.Object;
+using FishNet.Managing.Utility;
 using FishNet.Object;
 using FishNet.Object.Helping;
 using FishNet.Serializing;
@@ -32,41 +33,17 @@ namespace FishNet.Managing.Client
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ParseRpcLink(PooledReader reader, ushort index, Channel channel)
         {
-            int dataLength;
-            if (channel == Channel.Reliable)
-            {
-                dataLength = (int)UnreliablePacketLength.ReliableOrBroadcast;
-            }
-            else
-            {
-                //If length is specified then read it.
-                if (reader.Remaining >= 2)
-                    dataLength = reader.ReadInt16();
-                //Not enough data remaining to specify, purge data.
-                else
-                    dataLength = (int)UnreliablePacketLength.PurgeRemaiming;
-            }
+            int dataLength = Packets.GetPacketLength(ushort.MaxValue, reader, channel);
 
             //Link index isn't stored.
             if (!_rpcLinks.TryGetValueIL2CPP(index, out RpcLink link))
             {
                 /* Like other reliable communications the object
-                * should never be missing. */
-                if (channel == Channel.Reliable)
-                {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"RPCLink of Id {index} could not be found. The remaining packet has been purged.");
-                    reader.Skip(reader.Remaining);
-                }
-                //If unreliable just purge data for object.
-                else
-                {
-                    SkipDataLength((PacketId)index, reader, dataLength);
-                }
-
+                * should never be missing.*/
+                SkipDataLength(index, reader, dataLength);
                 return;
             }
-
+            else
             //Found NetworkObject for link.
             if (Spawned.TryGetValueIL2CPP(link.ObjectId, out NetworkObject nob))
             {
@@ -81,16 +58,7 @@ namespace FishNet.Managing.Client
             //Could not find NetworkObject.
             else
             {
-                //Reliable should never be out of order/missing.
-                if (channel == Channel.Reliable)
-                {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"ObjectId {link.ObjectId} for RPCLink {index} could not be found.");
-                }
-                else
-                {
-                    SkipDataLength((PacketId)index, reader, dataLength);
-                }
+                SkipDataLength(index, reader, dataLength, link.ObjectId);
             }
         }
 

@@ -6,6 +6,7 @@ using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -101,12 +102,19 @@ namespace FishNet.Managing.Scened
         private HashSet<Scene> _manualUnloadScenes = new HashSet<Scene>();
         /// <summary>
         /// Scene containing moved objects when changing single scene. On client this will contain all objects moved until the server destroys them.
-        /// Mirror only sends spawn messages once per-client, per server side scene load. If a scene load is performed only for specific connections
+        /// The network only sends spawn messages once per-client, per server side scene load. If a scene load is performed only for specific connections
         /// then the server is not resetting their single scene, but rather the single scene for those connections only. Because of this, any objects
         /// which are to be moved will not receive a second respawn message, as they are never destroyed on server, only on client.
         /// While on server only this scene contains objects being moved temporarily, before being moved to the new scene.
         /// </summary>
         private Scene _movedObjectsScene;
+        /// <summary>
+        /// Scene containing objects awaiting to be destroyed by the client-host.
+        /// This is required when unloading scenes where the client-host has visibility.
+        /// Otherwise the objects would become destroyed when the scene unloads on the server
+        /// which would cause missing networkobjects on clients when receiving despawn messages.
+        /// </summary>
+        private Scene _delayedDestroyScene;
         /// <summary>
         /// Becomes true when when a scene first successfully begins to load or unload. Value is reset to false when the scene queue is emptied.
         /// </summary>
@@ -751,6 +759,7 @@ namespace FishNet.Managing.Scened
             /* Unloading scenes. */
             for (int i = 0; i < unloadableScenes.Count; i++)
             {
+                MoveClientHostObjects(unloadableScenes[i], asServer);
                 //Unload one at a time.
                 AsyncOperation async = UnitySceneManager.UnloadSceneAsync(unloadableScenes[i]);
                 while (!async.isDone)
@@ -1177,6 +1186,7 @@ namespace FishNet.Managing.Scened
                 //Begin unloading.
                 foreach (Scene s in unloadableScenes)
                 {
+                    MoveClientHostObjects(s, asServer);
                     /* Remove from manualUnloadedScenes.
                      * Scene may not be in this collection
                      * but removing is one call vs checking
@@ -1235,6 +1245,76 @@ namespace FishNet.Managing.Scened
         #endregion
 
         /// <summary>
+        /// Moves objects to despawnLater in scene if they are visible to the clientHost.
+        /// </summary>
+        /// <param name="scene"></param>
+        private void MoveClientHostObjects(Scene scene, bool asServer)
+        {
+            /* The asServer isn't really needed. I could only call
+             * this method when asServer is true. But for the sake
+             * of preventing user-error (me being the user this time)
+             * I've included it into the parameters. */
+            if (!asServer)
+                return;
+            //Don't need to perform if not host.
+            if (!_networkManager.IsClient)
+                return;
+
+            NetworkConnection clientConn = _networkManager.ClientManager.Connection;
+            /* It would be nice to see if the client wasn't even in the scene
+             * here using SceneConnections but it's possible that the scene had been
+             * wiped from SceneConnections earlier depending on how scenes are
+             * loaded or unloaded. Instead we must iterate through spawned objects. */
+
+            ListCache<NetworkObject> movingNobs = ListCaches.NetworkObjectCache;
+            movingNobs.Reset();
+            /* Rather than a get all networkobjects in scene
+             * let's iterate the spawned objects instead. I imagine
+             * in most scenarios iterating spawned would be faster.
+             * That's a long one! */
+            foreach (NetworkObject nob in _networkManager.ServerManager.Objects.Spawned.Values)
+            {
+                //Not in the scene being destroyed.
+                if (nob.gameObject.scene != scene)
+                    continue;
+                //ClientHost doesn't have visibility.
+                if (!nob.Observers.Contains(clientConn))
+                    continue;
+
+                /* If here nob is in the same being
+                 * destroyed and clientHost has visiblity. */
+                movingNobs.AddValue(nob);
+            }
+
+            int count = movingNobs.Written;
+            if (count > 0)
+            {
+                Scene moveScene = GetDelayedDestroyScene();
+                List<NetworkObject> collection = movingNobs.Collection;
+
+                for (int i = 0; i < count; i++)
+                {
+                    NetworkObject nob = collection[i];
+                    /* Force as not a scene object
+                     * so that it becomes destroyed
+                     * rather than disabled. */
+                    nob.ClearRuntimeSceneObject();
+                    /* If the object is already being despawned then
+                     *just disable and move it. Otherwise despawn it
+                    * on the server then move it. */
+                    //Not deinitializing, despawn it then.
+                    if (!nob.Deinitializing)
+                        nob.Despawn();
+                    else
+                        nob.gameObject.SetActive(false);
+
+                    UnitySceneManager.MoveGameObjectToScene(nob.gameObject, moveScene);
+                }
+            }
+
+        }
+
+        /// <summary>
         /// Returns if a connection is in a scene using SceneConnections.
         /// </summary>
         /// <param name="conn"></param>
@@ -1249,11 +1329,30 @@ namespace FishNet.Managing.Scened
         }
 
         /// <summary>
+        /// Adds the owner of nob to the gameObjects scene if there are no global scenes.
+        /// </summary>
+        internal void AddOwnerToDefaultScene(NetworkObject nob)
+        {
+            //No owner.
+            if (!nob.Owner.IsValid)
+            {
+                if (_networkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"NetworkObject {nob.name} does not have an owner.");
+                return;
+            }
+            //Won't add to default if there are globals.
+            if (_globalScenes != null && _globalScenes.Length > 0)
+                return;
+
+            AddConnectionToScene(nob.Owner, nob.gameObject.scene);
+        }
+
+        /// <summary>
         /// Adds a connection to a scene. This will always be called one connection at a time because connections are only added after they invidually validate loading the scene.
         /// </summary>
         /// <param name="sceneName"></param>
         /// <param name="conn"></param>
-        internal void AddConnectionToScene(NetworkConnection conn, Scene scene)
+        private void AddConnectionToScene(NetworkConnection conn, Scene scene)
         {
             HashSet<NetworkConnection> hs;
             //Scene doesn't have any connections yet.
@@ -1632,6 +1731,20 @@ namespace FishNet.Managing.Scened
 
             return _movedObjectsScene;
         }
+
+        /// <summary>
+        /// Returns the DelayedDestroyScene.
+        /// </summary>
+        /// <returns></returns>
+        private Scene GetDelayedDestroyScene()
+        {
+            //Create moved objects scene. It will probably be used eventually. If not, no harm either way.
+            if (string.IsNullOrEmpty(_delayedDestroyScene.name))
+                _delayedDestroyScene = UnityEngine.SceneManagement.SceneManager.CreateScene("DelayedDestroy");
+
+            return _delayedDestroyScene;
+        }
+
 
         #region Sanity checks.
         /// <summary>

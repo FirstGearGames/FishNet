@@ -63,6 +63,21 @@ namespace FishNet.Object
         private List<NetworkObject> _sceneNetworkObjects = new List<NetworkObject>();
 #endif
 
+        /// <summary>
+        /// Removes SceneObject state.
+        /// This may only be called at runtime.
+        /// </summary>
+        internal void ClearRuntimeSceneObject()
+        {
+            if (!Application.isPlaying)
+            {
+                Debug.LogError($"ClearRuntimeSceneObject may only be called at runtime.");
+                return;
+            }
+
+            SceneId = 0;
+        }
+
 #if UNITY_EDITOR
         /// <summary>
         /// Tries to generate a SceneId.

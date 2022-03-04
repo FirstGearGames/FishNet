@@ -329,7 +329,7 @@ namespace FishNet.Managing.Client
                         }
                         else if (packetId == PacketId.Broadcast)
                         {
-                            ParseBroadcast(reader);
+                            ParseBroadcast(reader, args.Channel);
                         }
                         else if (packetId == PacketId.PingPong)
                         {

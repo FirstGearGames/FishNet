@@ -73,6 +73,8 @@ namespace FishNet.Object
         private void TryAddNetworkObject()
         {
 #if UNITY_EDITOR
+            if (Application.isPlaying)
+                return;
             if (_addedNetworkObject != null)
                 return;
             /* Manually iterate up the chain because GetComponentInParent doesn't

@@ -598,13 +598,26 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
+        /// Marks an index as dirty.
+        /// While using this operation previous value will be the same as next.
+        /// </summary>
+        /// <param name="index"></param>
+        public void Dirty(int index)
+        {
+            bool asServer = true;
+
+            T value = Collection[index];
+            if (asServer)
+                AddOperation(SyncListOperation.Set, index, value, value);
+        }
+        /// <summary>
         /// Sets value at index.
         /// </summary>
         /// <param name="index"></param>
         /// <param name="value"></param>
-        public void Set(int index, T value)
+        public void Set(int index, T value, bool force = true)
         {
-            Set(index, value, true, true);
+            Set(index, value, true, force);
         }
         private void Set(int index, T value, bool asServer, bool force)
         {

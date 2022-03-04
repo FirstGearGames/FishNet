@@ -134,15 +134,26 @@ namespace FishNet.Observing
                     i--;
                 }
             }
+
             //No observers specified 
             if (!observerFound)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkObserver exist on {gameObject.name} but there are no observer conditions. This script has been removed.");
-                Destroy(this);
+                /* Print warning and remove component if not using
+                 * IgnoreManager. This is because other overrides would
+                 * suggest conditions should be added in someway, but
+                 * none are specified.
+                 * 
+                 * Where-as no conditions with ignore manager would
+                 * make sense if the manager had conditions, but you wanted
+                 * this object global visible, thus no conditions. */
+                if (OverrideType != ConditionOverrideType.IgnoreManager)
+                {
+                    if (NetworkManager.CanLog(LoggingType.Warning))
+                        Debug.LogWarning($"NetworkObserver exist on {gameObject.name} but there are no observer conditions. This script has been removed.");
+                    Destroy(this);
+                }
                 return;
             }
-
 
             RegisterTimedConditions();
         }

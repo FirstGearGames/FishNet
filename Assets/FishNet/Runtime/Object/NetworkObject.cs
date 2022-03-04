@@ -97,7 +97,7 @@ namespace FishNet.Object
                     //Disallow child network objects for now.
                     if (parentNob != null)
                     {
-                        if (InstanceFinder.NetworkManager.CanLog(LoggingType.Common))
+                        if (IsNetworked && InstanceFinder.NetworkManager.CanLog(LoggingType.Common))
                             Debug.Log($"NetworkObject removed from object {gameObject.name}, child of {start.name}. This message is informative only and may be ignored.");
                         Destroy(this);
                     }
@@ -384,10 +384,7 @@ namespace FishNet.Object
             {
                 //Rebuild for new owner first so they get change messages.
                 if (activeNewOwner)
-                {
-                    NetworkManager.SceneManager.AddConnectionToScene(newOwner, gameObject.scene);
                     RebuildObservers(newOwner);
-                }
 
                 using (PooledWriter writer = WriterPool.GetWriter())
                 {

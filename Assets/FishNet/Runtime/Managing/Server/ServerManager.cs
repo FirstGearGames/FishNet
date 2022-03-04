@@ -462,7 +462,7 @@ namespace FishNet.Managing.Server
                     }
                     else if (packetId == PacketId.Broadcast)
                     {
-                        ParseBroadcast(reader, conn);
+                        ParseBroadcast(reader, conn, args.Channel);
                     }
                     else if (packetId == PacketId.PingPong)
                     {

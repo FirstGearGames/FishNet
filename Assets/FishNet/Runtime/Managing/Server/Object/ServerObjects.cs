@@ -301,10 +301,6 @@ namespace FishNet.Managing.Server
              * be sent. */
             networkObject.SetIsNetworked(true);
             SetupWithoutSynchronization(networkObject, ownerConnection);
-
-            //If there is an owner then try to add them to the networkObjects scene.
-            if (ownerConnection != null && ownerConnection.IsActive)
-                base.NetworkManager.SceneManager.AddConnectionToScene(ownerConnection, networkObject.gameObject.scene);
             //Also rebuild observers for the object so it spawns for others.
             RebuildObservers(networkObject);
         }

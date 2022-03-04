@@ -194,8 +194,10 @@ namespace FishNet.Managing
 
         private void Awake()
         {
+#if UNITY_EDITOR
             if (SpawnablePrefabs == null)
                 SetDefaultPrefabs();
+#endif
             InitializeLogging();
             if (StartingRpcLinkIndex == 0)
                 StartingRpcLinkIndex = (ushort)(EnumFN.GetHighestValue<PacketId>() + 1);

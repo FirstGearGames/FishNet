@@ -28,6 +28,12 @@ namespace FishNet.Component.Spawning
         [SerializeField]
         private NetworkObject _playerPrefab;
         /// <summary>
+        /// True to add player to the active scene when no global scenes are specified through the SceneManager.
+        /// </summary>
+        [Tooltip("True to add player to the active scene when no global scenes are specified through the SceneManager.")]
+        [SerializeField]
+        private bool _addToDefaultScene = true;
+        /// <summary>
         /// Areas in which players may spawn.
         /// </summary>
         [Tooltip("Areas in which players may spawn.")]
@@ -92,6 +98,11 @@ namespace FishNet.Component.Spawning
 
             NetworkObject nob = Instantiate(_playerPrefab, position, rotation);
             _networkManager.ServerManager.Spawn(nob.gameObject, conn);
+
+            //If there are no global scenes 
+            if (_addToDefaultScene)
+                _networkManager.SceneManager.AddOwnerToDefaultScene(nob);
+
             OnSpawned?.Invoke(nob);
         }
 

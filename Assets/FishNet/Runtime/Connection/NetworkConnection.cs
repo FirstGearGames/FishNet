@@ -289,6 +289,7 @@ namespace FishNet.Connection
         {
             return Scenes.Remove(scene);
         }
+
     }
 
 

@@ -237,22 +237,36 @@ namespace FishNet.Managing.Object
         /// <param name="packetId"></param>
         /// <param name="reader"></param>
         /// <param name="dataLength"></param>
-        protected internal void SkipDataLength(PacketId packetId, PooledReader reader, int dataLength)
+        protected internal void SkipDataLength(ushort packetId, PooledReader reader, int dataLength, int rpcLinkObjectId = -1)
         {
             /* -1 means length wasn't set, which would suggest a reliable packet.
             * Object should never be missing for reliable packets since spawns
             * and despawns are reliable in order. */
-            if (dataLength == (int)UnreliablePacketLength.ReliableOrBroadcast)
+            if (dataLength == (int)MissingObjectPacketLength.Reliable)
             {
+                string msg;
+                bool isRpcLink = (packetId >= NetworkManager.StartingRpcLinkIndex);
+                if (isRpcLink)
+                {
+                    msg = (rpcLinkObjectId == -1) ?
+                        $"RPCLink of Id {packetId} could not be found. Remaining data will be purged." :
+                        $"ObjectId {rpcLinkObjectId} for RPCLink {packetId} could not be found.";
+                }
+                else
+                {
+                    msg = $"NetworkBehaviour could not be found for {packetId}. Remaining data will be purged.";
+                }
+
                 /* Default logging for server is errors only. Use error on client and warning
                  * on servers to reduce chances of allocation attacks. */
 #if DEVELOPMENT_BUILD || UNITY_EDITOR || !UNITY_SERVER
                 if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"NetworkBehaviour could not be found for {packetId}.");
+                    Debug.LogError(msg);
 #else
                 if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkBehaviour could not be found for {packetId}.");
+                    Debug.LogWarning(msg);
 #endif
+                reader.Skip(reader.Remaining);
             }
             /* If length is known then is unreliable packet. It's possible
              * this packetId arrived before or after the object was spawned/destroyed.
@@ -264,7 +278,7 @@ namespace FishNet.Managing.Object
             }
             /* -2 indicates the length is very long. Don't even try saving
              * the packet, user shouldn't be sending this much data over unreliable. */
-            else if (dataLength == (int)UnreliablePacketLength.PurgeRemaiming)
+            else if (dataLength == (int)MissingObjectPacketLength.PurgeRemaiming)
             {
                 reader.Skip(reader.Remaining);
             }

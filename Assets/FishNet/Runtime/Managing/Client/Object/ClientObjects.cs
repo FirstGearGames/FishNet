@@ -159,37 +159,29 @@ namespace FishNet.Managing.Client
         /// Parses a received syncVar.
         /// </summary>
         /// <param name="reader"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ParseSyncType(PooledReader reader, bool isSyncObject, Channel channel)
         {
             //cleanup this is unique to synctypes where length comes first.
             //this will change once I tidy up synctypes.
-            PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
+            ushort packetId = (isSyncObject) ? (ushort)PacketId.SyncObject : (ushort)PacketId.SyncVar;
+            NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength(packetId, reader, channel);
 
-            int startPosition = reader.Position;
-            NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             if (nb != null)
             {
-                /* Length of data to be read.
-                 * This must be known since multiple packet
-                 * types can arrive in one message, and since synctype
-                 * lengths may vary. */
+                /* Length of data to be read for syncvars.
+                 * This is important because syncvars are never
+                 * a set length and data must be read through completion.
+                 * The only way to know where completion of syncvar is, versus
+                 * when another packet starts is by including the length. */
                 int length = reader.ReadInt32();
                 if (length > 0)
                     nb.OnSyncType(reader, length, isSyncObject);
             }
             else
             {
-                if (dataLength == -1)
-                {
-                    if (NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"NetworkBehaviour could not be found for SyncType.");
-                }
-                else
-                {
-                    reader.Position = startPosition;
-                    reader.Skip(Math.Min(dataLength, reader.Remaining));
-                }
+                SkipDataLength(packetId, reader, dataLength);
             }
         }
 
@@ -201,12 +193,12 @@ namespace FishNet.Managing.Client
         internal void ParseReconcileRpc(PooledReader reader, Channel channel)
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
-            int dataLength = Packets.GetPacketLength(PacketId.Reconcile, reader, channel);
+            int dataLength = Packets.GetPacketLength((ushort)PacketId.Reconcile, reader, channel);
             
             if (nb != null)
                 nb.OnReconcileRpc(null, reader, channel);
             else
-                SkipDataLength(PacketId.ObserversRpc, reader, dataLength);
+                SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
         }
 
         /// <summary>
@@ -217,24 +209,27 @@ namespace FishNet.Managing.Client
         internal void ParseObserversRpc(PooledReader reader, Channel channel)
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
-            int dataLength = Packets.GetPacketLength(PacketId.ObserversRpc, reader, channel);
+            int dataLength = Packets.GetPacketLength((ushort)PacketId.ObserversRpc, reader, channel);
+
             if (nb != null)
                 nb.OnObserversRpc(null, reader, channel);
             else
-                SkipDataLength(PacketId.ObserversRpc, reader, dataLength);
+                SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
         }
         /// <summary>
         /// Parses a TargetRpc.
         /// </summary>
         /// <param name="reader"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ParseTargetRpc(PooledReader reader, Channel channel)
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
-            int dataLength = Packets.GetPacketLength(PacketId.TargetRpc, reader, channel);
+            int dataLength = Packets.GetPacketLength((ushort)PacketId.TargetRpc, reader, channel);
+
             if (nb != null)
                 nb.OnTargetRpc(null, reader, channel);
             else
-                SkipDataLength(PacketId.TargetRpc, reader, dataLength);
+                SkipDataLength((ushort)PacketId.TargetRpc, reader, dataLength);
         }
 
         /// <summary>

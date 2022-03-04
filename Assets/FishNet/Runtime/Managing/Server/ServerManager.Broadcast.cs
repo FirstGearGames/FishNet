@@ -2,6 +2,7 @@
 using FishNet.Broadcast.Helping;
 using FishNet.Connection;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Utility;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
@@ -130,10 +131,10 @@ namespace FishNet.Managing.Server
         /// Parses a received broadcast.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ParseBroadcast(PooledReader reader, NetworkConnection conn)
+        private void ParseBroadcast(PooledReader reader, NetworkConnection conn, Channel channel)
         {
             ushort key = reader.ReadUInt16();
-            int length = reader.ReadInt32();
+            int dataLength = Packets.GetPacketLength((ushort)PacketId.Broadcast, reader, channel);
 
             // try to invoke the handler for that message
             if (_broadcastHandlers.TryGetValueIL2CPP(key, out HashSet<ClientBroadcastDelegate> handlers))
@@ -149,7 +150,7 @@ namespace FishNet.Managing.Server
             }
             else
             {
-                reader.Skip(length);
+                reader.Skip(dataLength);
             }
         }
 
