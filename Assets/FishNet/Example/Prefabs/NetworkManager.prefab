@@ -11,10 +11,6 @@ GameObject:
   - component: {fileID: 7443408887813606049}
   - component: {fileID: 7443408887813606050}
   - component: {fileID: 7443408887813606060}
-  - component: {fileID: 7075035371906910996}
-  - component: {fileID: -1731238836896792762}
-  - component: {fileID: 4168025688868122703}
-  - component: {fileID: 6162404776507762708}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -70,64 +66,6 @@ MonoBehaviour:
   _playerPrefab: {fileID: 0}
   _addToDefaultScene: 1
   _spawns: []
---- !u!114 &7075035371906910996
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408887813606051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 34e4a322dca349547989b14021da4e23, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Transport: {fileID: -1731238836896792762}
---- !u!114 &-1731238836896792762
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408887813606051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 314b449d3505bd24487ba69b61c2fda5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _transports:
-  - {fileID: 4168025688868122703}
-  - {fileID: 6162404776507762708}
---- !u!114 &4168025688868122703
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408887813606051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91f4cf5273666764789e6f8bada05e3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &6162404776507762708
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408887813606051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f48f002b825cbd45a19bd96d90f9edb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _unreliableMTU: 1023
-  _attackResponseType: 1
-  _port: 7770
-  _maximumClients: 4095
-  _clientAddress: localhost
-  _timeout: 15
 --- !u!1001 &2130063410
 PrefabInstance:
   m_ObjectHideFlags: 0
