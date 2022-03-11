@@ -295,6 +295,12 @@ namespace FishNet.CodeGenerating.Processing
                 CodegenSession.LogError($"{methodDef.Name} RPC method cannot be static.");
                 return false;
             }
+            //Is generic type.
+            else if (methodDef.HasGenericParameters)
+            {
+                CodegenSession.LogError($"{methodDef.Name} RPC method cannot contain generic parameters.");
+                return false;
+            }
             //Abstract method.
             else if (methodDef.IsAbstract)
             {

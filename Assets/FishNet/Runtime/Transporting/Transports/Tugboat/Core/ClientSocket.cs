@@ -1,16 +1,12 @@
 using FishNet.Managing.Logging;
-using FishNet.Transporting;
 using LiteNetLib;
 using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace FishNet.Tugboat.Client
+namespace FishNet.Transporting.Tugboat.Client
 {
     public class ClientSocket : CommonSocket
     {
@@ -38,11 +34,11 @@ namespace FishNet.Tugboat.Client
         /// <summary>
         /// Changes to the sockets local connection state.
         /// </summary>
-        private ConcurrentQueue<LocalConnectionStates> _localConnectionStates = new ConcurrentQueue<LocalConnectionStates>();
+        private Queue<LocalConnectionStates> _localConnectionStates = new Queue<LocalConnectionStates>();
         /// <summary>
         /// Inbound messages which need to be handled.
         /// </summary>
-        private ConcurrentQueue<Packet> _incoming = new ConcurrentQueue<Packet>();
+        private Queue<Packet> _incoming = new Queue<Packet>();
         /// <summary>
         /// Outbound messages which need to be handled.
         /// </summary>
@@ -171,7 +167,7 @@ namespace FishNet.Tugboat.Client
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ResetQueues()
         {
-            while (_localConnectionStates.TryDequeue(out _)) ;
+            _localConnectionStates.Clear();
             base.ClearPacketQueue(ref _incoming);
             base.ClearPacketQueue(ref _outgoing);
         }
@@ -198,7 +194,7 @@ namespace FishNet.Tugboat.Client
         /// </summary>
         private void Listener_NetworkReceiveEvent(NetPeer fromPeer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod)
         {
-            base.Listener_NetworkReceiveEvent(ref _incoming, fromPeer, reader, deliveryMethod, _mtu);
+            base.Listener_NetworkReceiveEvent(_incoming, fromPeer, reader, deliveryMethod, _mtu);
         }
 
         /// <summary>
@@ -255,11 +251,13 @@ namespace FishNet.Tugboat.Client
         /// </summary>
         internal void IterateIncoming()
         {
+            _client?.PollEvents();
+
             /* Run local connection states first so we can begin
             * to read for data at the start of the frame, as that's
             * where incoming is read. */
-            while (_localConnectionStates.TryDequeue(out LocalConnectionStates state))
-                base.SetConnectionState(state, false);
+            while (_localConnectionStates.Count > 0)
+                base.SetConnectionState(_localConnectionStates.Dequeue(), false);
 
             //Not yet started, cannot continue.
             LocalConnectionStates localState = base.GetConnectionState();
@@ -274,14 +272,13 @@ namespace FishNet.Tugboat.Client
                 }
             }
 
-            _client?.PollEvents();
-
             /* Incoming. */
-            ClientReceivedDataArgs dataArgs = new ClientReceivedDataArgs();
-            while (_incoming.TryDequeue(out Packet incoming))
+            while (_incoming.Count > 0)
             {
-                dataArgs.Data = incoming.GetArraySegment();
-                dataArgs.Channel = (Channel)incoming.Channel;
+                Packet incoming = _incoming.Dequeue();
+                ClientReceivedDataArgs dataArgs = new ClientReceivedDataArgs(
+                    incoming.GetArraySegment(),
+                    (Channel)incoming.Channel, base.Transport.Index);
                 base.Transport.HandleClientReceivedDataArgs(dataArgs);
                 //Dispose of packet.
                 incoming.Dispose();

@@ -1,6 +1,7 @@
 ﻿using MonoFN.Cecil;
 using System;
 using System.Linq;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
@@ -103,6 +104,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         internal static TypeDefinition GetClassInInheritance(this TypeDefinition typeDef, TypeDefinition targetTypeDef)
         {
+            if (typeDef == null)
+                return null;
+
             TypeDefinition copyTd = typeDef;
             do
             {

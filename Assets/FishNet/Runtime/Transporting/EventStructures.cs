@@ -35,18 +35,10 @@ namespace FishNet.Transporting
         }
         public ServerReceivedDataArgs(ArraySegment<byte> data, Channel channel, int connectionId, int transportIndex)
         {
-            TransportIndex = transportIndex;
             Data = data;
             Channel = channel;
             ConnectionId = connectionId;
-        }
-
-        public void Update(ArraySegment<byte> data, Channel channel, int connectionId, int transportIndex)
-        {
             TransportIndex = transportIndex;
-            Data = data;
-            Channel = channel;
-            ConnectionId = connectionId;
         }
     }
 

@@ -1273,6 +1273,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _playerPrefab: {fileID: 611616139817875448, guid: bf5f023b4017a5e41a9815ec5745df3d,
     type: 3}
+  _addToDefaultScene: 0
   _spawns: []
 --- !u!4 &7443408887680269496
 Transform:

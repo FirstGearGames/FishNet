@@ -1,13 +1,12 @@
 using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
-using FishNet.Transporting;
 using LiteNetLib;
 using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace FishNet.Tugboat
+namespace FishNet.Transporting.Tugboat
 {
     [DisallowMultipleComponent]
     public class Tugboat : Transport
@@ -34,12 +33,6 @@ namespace FishNet.Tugboat
         /// How the server should respond when it suspects a client is performing an attack.
         /// </summary>
         public AttackResponseType AttackResponseType => _attackResponseType;
-        /// <summary>
-        /// Bind address to use.
-        /// </summary>
-        [Tooltip("Bind address to use.")]
-        [SerializeField]
-        private string _serverBindAddress = "localhost";
         /// <summary>
         /// Port to use.
         /// </summary>
@@ -310,7 +303,7 @@ namespace FishNet.Tugboat
         /// <param name="address"></param>
         public override void SetServerBindAddress(string address)
         {
-            _serverBindAddress = address;
+            
         }
         /// <summary>
         /// Gets which address the server will bind to.
@@ -318,7 +311,7 @@ namespace FishNet.Tugboat
         /// <param name="address"></param>
         public override string GetServerBindAddress()
         {
-            return _serverBindAddress;
+            return "localhost";
         }
         /// <summary>
         /// Sets which port to use.

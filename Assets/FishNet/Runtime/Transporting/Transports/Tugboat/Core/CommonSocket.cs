@@ -1,11 +1,10 @@
-﻿using FishNet.Transporting;
-using FishNet.Utility.Performance;
+﻿using FishNet.Utility.Performance;
 using LiteNetLib;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace FishNet.Tugboat
+namespace FishNet.Transporting.Tugboat
 {
 
     public abstract class CommonSocket
@@ -101,7 +100,7 @@ namespace FishNet.Tugboat
         /// <summary>
         /// Called when data is received.
         /// </summary>
-        internal virtual void Listener_NetworkReceiveEvent(ref ConcurrentQueue<Packet> queue,  NetPeer fromPeer, NetPacketReader reader, DeliveryMethod deliveryMethod, int mtu)
+        internal virtual void Listener_NetworkReceiveEvent(Queue<Packet> queue,  NetPeer fromPeer, NetPacketReader reader, DeliveryMethod deliveryMethod, int mtu)
         {
             //Set buffer.
             int dataLen = reader.AvailableBytes;

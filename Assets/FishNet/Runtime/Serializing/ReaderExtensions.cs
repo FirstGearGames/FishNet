@@ -45,7 +45,7 @@ namespace FishNet.Serializing
         public static Vector3Int ReadVector3Int(this Reader reader, AutoPackType packType = AutoPackType.Packed) => reader.ReadVector3Int(packType);
         public static Color ReadColor(this Reader reader, AutoPackType packType = AutoPackType.Packed) => reader.ReadColor(packType);
         public static Color32 ReadColor32(this Reader reader) => reader.ReadColor32();
-        public static Quaternion ReadQuaternion(this Reader reader) => reader.ReadQuaternion();
+        public static Quaternion ReadQuaternion(this Reader reader, AutoPackType packType = AutoPackType.Packed) => reader.ReadQuaternion(packType);
         public static Rect ReadRect(this Reader reader) => reader.ReadRect();
         public static Plane ReadPlane(this Reader reader) => reader.ReadPlane();
         public static Ray ReadRay(this Reader reader) => reader.ReadRay();

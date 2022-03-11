@@ -194,11 +194,12 @@ namespace FishNet.Managing
 
         private void Awake()
         {
+            InitializeLogging();
 #if UNITY_EDITOR
             if (SpawnablePrefabs == null)
                 SetDefaultPrefabs();
 #endif
-            InitializeLogging();
+
             if (StartingRpcLinkIndex == 0)
                 StartingRpcLinkIndex = (ushort)(EnumFN.GetHighestValue<PacketId>() + 1);
 
@@ -257,6 +258,7 @@ namespace FishNet.Managing
             TimeManager.InitializeOnce(this);
             TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
             SceneManager.InitializeOnce(this);
+            TransportManager.InitializeOnce(this);
             ServerManager.InitializeOnce(this);
             ClientManager.InitializeOnce(this);
             RollbackManager.InitializeOnce(this);

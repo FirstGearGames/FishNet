@@ -1,6 +1,6 @@
 ﻿using FishNet.Transporting;
+using FishNet.Transporting.Multipass;
 using UnityEngine;
-using MultipassTransport = Multipass.Multipass;
 
 namespace FishNet.Managing.Transporting
 {
@@ -24,7 +24,7 @@ namespace FishNet.Managing.Transporting
         public Transport GetTransport<T>()
         {
             //If using multipass try to find the correct transport.
-            if (Transport is MultipassTransport mp)
+            if (Transport is Multipass mp)
             {
                 return mp.GetTransport<T>();
             }

@@ -49,6 +49,12 @@ namespace FishNet.Example.Prediction.CharacterControllers
             _characterController = GetComponent<CharacterController>();
         }
 
+        public override void OnStartClient()
+        {
+            base.OnStartClient();            
+            _characterController.enabled = (base.IsServer || base.IsOwner);
+        }
+
         private void OnDestroy()
         {
             if (InstanceFinder.TimeManager != null)

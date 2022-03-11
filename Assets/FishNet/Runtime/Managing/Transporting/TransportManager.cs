@@ -87,13 +87,16 @@ namespace FishNet.Managing.Transporting
         public const byte CHANNEL_COUNT = 2;
         #endregion
 
-        private void Awake()
+        /// <summary>
+        /// Initializes this script for use.
+        /// </summary>
+        internal void InitializeOnce(NetworkManager manager)
         {
-            _networkManager = GetComponent<NetworkManager>();
+            _networkManager = manager;
             /* If transport isn't specified then add default
              * transport. */
             if (Transport == null && !gameObject.TryGetComponent<Transport>(out Transport))
-                Transport = gameObject.AddComponent<FishNet.Tugboat.Tugboat>();
+                Transport = gameObject.AddComponent<FishNet.Transporting.Tugboat.Tugboat>();
 
             Transport.Initialize(_networkManager, 0);
             InitializeToServerBundles();

@@ -78,7 +78,7 @@ namespace FishNet.Serializing
                 return;
             }
             else
-            { 
+            {
                 WriteBoolean(false);
             }
 
@@ -574,18 +574,31 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteQuaternion(Quaternion value)
+        public void WriteQuaternion(Quaternion value, AutoPackType packType = AutoPackType.Packed)
         {
-            if (Position + 4 > _buffer.Length)
-                DoubleBuffer(4);
+            if (packType == AutoPackType.Packed)
+            {
+                if (Position + 4 > _buffer.Length)
+                    DoubleBuffer(4);
 
-            uint result = Quaternions.Compress(value);
-            _buffer[Position++] = (byte)result;
-            _buffer[Position++] = (byte)(result >> 8);
-            _buffer[Position++] = (byte)(result >> 16);
-            _buffer[Position++] = (byte)(result >> 24);
+                uint result = Quaternions.Compress(value);
+                _buffer[Position++] = (byte)result;
+                _buffer[Position++] = (byte)(result >> 8);
+                _buffer[Position++] = (byte)(result >> 16);
+                _buffer[Position++] = (byte)(result >> 24);
 
-            Length = Math.Max(Length, Position);
+                Length = Math.Max(Length, Position);
+            }
+            else
+            {
+                if (Position + 16 > _buffer.Length)
+                    DoubleBuffer(16);
+
+                WriteSingle(value.w);
+                WriteSingle(value.x);
+                WriteSingle(value.y);
+                WriteSingle(value.z);
+            }
         }
 
         /// <summary>
@@ -679,7 +692,7 @@ namespace FishNet.Serializing
         public void WriteGameObject(GameObject go)
         {
             if (go == null)
-            { 
+            {
                 WriteNetworkObject(null);
             }
             else
@@ -901,7 +914,7 @@ namespace FishNet.Serializing
         /// <param name="value"></param>
         public void Write<T>(T value)
         {
-            if (IsDefaultAutoPack<T>(out AutoPackType packType))
+            if (IsAutoPackType<T>(out AutoPackType packType))
             {
                 Action<Writer, T, AutoPackType> del = GenericWriter<T>.WriteAutoPack;
                 if (del == null)
@@ -932,19 +945,14 @@ namespace FishNet.Serializing
         /// <summary>
         /// Returns if T takes AutoPackType argument.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="packType"></param>
+        /// <param name="packType">Outputs the default pack type for T.</param>
         /// <returns></returns>
-        internal static bool IsDefaultAutoPack<T>(out AutoPackType packType)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsAutoPackType<T>(out AutoPackType packType)
         {
             //performance bench this against using a hash lookup.
             System.Type type = typeof(T);
-            if ((type == typeof(int) || type == typeof(uint) ||
-                type == typeof(long) || type == typeof(ulong)) ||
-                type == typeof(Color) ||
-                type == typeof(Vector2Int) ||
-                type == typeof(Vector3Int)
-                )
+            if (WriterExtensions.DefaultPackedTypes.Contains(type))
             {
                 packType = AutoPackType.Packed;
                 return true;

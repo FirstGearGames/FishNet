@@ -301,18 +301,21 @@ namespace FishNet.Object.Synchronizing
                 {
                     key = reader.Read<TKey>();
                     value = reader.Read<TValue>();
-                    objects[key] = value;
+                    if (!base.NetworkManager.IsServer)
+                        objects[key] = value;
                 }
                 //Clear.
                 else if (operation == SyncDictionaryOperation.Clear)
                 {
-                    objects.Clear();
+                    if (!base.NetworkManager.IsServer)
+                        objects.Clear();
                 }
                 //Remove.
                 else if (operation == SyncDictionaryOperation.Remove)
                 {
                     key = reader.Read<TKey>();
-                    objects.Remove(key);
+                    if (!base.NetworkManager.IsServer)
+                        objects.Remove(key);
                 }
 
                 InvokeOnChange(operation, key, value, false);

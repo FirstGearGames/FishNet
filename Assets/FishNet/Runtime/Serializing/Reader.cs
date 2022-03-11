@@ -120,7 +120,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes a dictionary.
         /// </summary>
-        public Dictionary<TKey,TValue> ReadDictionary<TKey, TValue>()
+        public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>()
         {
             bool isNull = ReadBoolean();
             if (isNull)
@@ -128,7 +128,7 @@ namespace FishNet.Serializing
 
             int count = ReadInt32();
 
-            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>(count);            
+            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>(count);
             for (int i = 0; i < count; i++)
             {
                 TKey key = Read<TKey>();
@@ -581,10 +581,19 @@ namespace FishNet.Serializing
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Quaternion ReadQuaternion()
+        public Quaternion ReadQuaternion(AutoPackType packType = AutoPackType.Packed)
         {
-            uint result = ReadUInt32(AutoPackType.Unpacked);
-            return Quaternions.Decompress(result);
+            if (packType == AutoPackType.Packed)
+            {
+                uint result = ReadUInt32(AutoPackType.Unpacked);
+                return Quaternions.Decompress(result);
+            }
+            else
+            {
+                return new Quaternion(
+                    ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle()
+                    );
+            }
         }
 
         /// <summary>
@@ -991,7 +1000,7 @@ namespace FishNet.Serializing
 
             return count;
         }
-     
+
         /// <summary>
         /// Reads any supported type.
         /// </summary>
@@ -999,7 +1008,7 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public T Read<T>()
         {
-            if (IsDefaultAutoPack<T>(out AutoPackType packType))
+            if (IsAutoPackType<T>(out AutoPackType packType))
             {
                 Func<Reader, AutoPackType, T> del = GenericReader<T>.ReadAutoPack;
                 if (del == null)
@@ -1033,10 +1042,10 @@ namespace FishNet.Serializing
         /// <summary>
         /// Returns if T takes AutoPackType argument.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="packType"></param>
+        /// <param name="packType">Outputs the default pack type for T.</param>
         /// <returns></returns>
-        internal bool IsDefaultAutoPack<T>(out AutoPackType packType) => Writer.IsDefaultAutoPack<T>(out packType);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsAutoPackType<T>(out AutoPackType packType) => Writer.IsAutoPackType<T>(out packType);
         #endregion
     }
 }

@@ -1,14 +1,14 @@
 using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Serializing;
-using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace Multipass
+namespace FishNet.Transporting.Multipass
 {
     public class Multipass : Transport
     {
@@ -27,6 +27,11 @@ namespace Multipass
         #endregion
 
         #region Public.
+        /// <summary>
+        /// While true server actions such as starting or stopping the server will run on all transport.
+        /// </summary>
+        [Tooltip("While true server actions such as starting or stopping the server will run on all transport.")]
+        public bool GlobalServerActions = true;
         /// <summary>
         /// 
         /// </summary>
@@ -155,8 +160,6 @@ namespace Multipass
             //Initialize each transport.
             foreach (Transport t in Transports)
                 t.Shutdown();
-
-            TryResetClientIds(true);
         }
 
 
@@ -259,7 +262,10 @@ namespace Multipass
                 return LocalConnectionStates.Stopped;
             }
 
-            return GetConnectionState(server, ClientTransport.Index);
+            if (IsClientTransportSetWithError("GetConnectionState"))
+                return GetConnectionState(server, ClientTransport.Index);
+            else
+                return LocalConnectionStates.Stopped;
         }
         /// <summary>
         /// Gets the current local ConnectionState of the transport on index.
@@ -324,6 +330,7 @@ namespace Multipass
         /// <param name="connectionStateArgs"></param>
         private void Multipass_OnRemoteConnectionState(RemoteConnectionStateArgs connectionStateArgs)
         {
+            Debug.Log("A " + connectionStateArgs.ConnectionState + ",  " + connectionStateArgs.ConnectionId + ",  " + connectionStateArgs.TransportIndex);
             /* When starting Multipass needs to get a new
             * connectionId to be used within FN. This is the 'ClientId'
              * that is passed around for ownership, rpcs, ect.
@@ -450,6 +457,42 @@ namespace Multipass
         #endregion
 
         #region Configuration.
+        /// <summary>
+        /// Returns if GlobalServerActions is true and if not logs an error.
+        /// </summary>
+        /// <returns></returns>
+        private bool UseGlobalServerActionsWithError(string methodText)
+        {
+            if (!GlobalServerActions)
+            {
+                if (base.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Method {methodText} is not supported while GlobalServerActions is false.");
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Returns if ClientTransport is set and if not logs an error.
+        /// </summary>
+        /// <param name="methodText"></param>
+        /// <returns></returns>
+        private bool IsClientTransportSetWithError(string methodText)
+        {
+            if (ClientTransport == null)
+            {
+                if (base.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"ClientTransport is not set. Use SetClientTransport before calling {methodText}.");
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
         /// <summary>
         /// Populates the availableIds collection.
         /// </summary>
@@ -654,14 +697,29 @@ namespace Multipass
         /// <param name="server">True to start server.</param>
         public override bool StartConnection(bool server)
         {
+            //Server.
             if (server)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"This method is not supported for server. Use StartConnection(server, transportIndex) instead.");
-                return false;
-            }
+                if (!UseGlobalServerActionsWithError("StartConnection"))
+                    return false;
 
-            return StartConnection(server, ClientTransport.Index);
+                bool success = true;
+                for (int i = 0; i < Transports.Count; i++)
+                {
+                    if (!StartConnection(true, i))
+                        success = false;
+                }
+
+                return success;
+            }
+            //Client.
+            else
+            {
+                if (IsClientTransportSetWithError("StartConnection"))
+                    return StartConnection(false, ClientTransport.Index);
+                else
+                    return false;
+            }
         }
 
         /// <summary>
@@ -671,9 +729,16 @@ namespace Multipass
         public bool StartConnection(bool server, int index)
         {
             if (server)
+            { 
                 return StartServer(index);
+            }
             else
-                return StartClient();
+            {
+                if (IsClientTransportSetWithError("StartConnection"))
+                    return StartClient();
+                else
+                    return false;
+            }
         }
 
 
@@ -683,14 +748,29 @@ namespace Multipass
         /// <param name="server">True to stop server.</param>
         public override bool StopConnection(bool server)
         {
+            //Server
             if (server)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"This method is not supported for server. Use StopConnection(server, transportIndex) instead.");
-                return false;
-            }
+                if (!UseGlobalServerActionsWithError("StopConnection"))
+                    return false;
 
-            return StopConnection(server, ClientTransport.Index);
+                bool success = true;
+                for (int i = 0; i < Transports.Count; i++)
+                {
+                    if (!StopConnection(true, i))
+                        success = false;
+                }
+
+                return success;
+            }
+            //Client.
+            else
+            {
+                if (IsClientTransportSetWithError("StopConnection"))
+                    return StopConnection(false, ClientTransport.Index);
+                else
+                    return false;
+            }
         }
         /// <summary>
         /// Stops the local server or client on transport of index.
@@ -699,9 +779,16 @@ namespace Multipass
         public bool StopConnection(bool server, int index)
         {
             if (server)
+            {
                 return StopServer(index);
+            }
             else
-                return StopClient();
+            {
+                if (IsClientTransportSetWithError("StopConnection"))
+                    return StopClient();
+                else
+                    return false;
+            }
         }
 
         /// <summary>
@@ -719,23 +806,19 @@ namespace Multipass
         /// </summary>
         /// <param name="sendDisconnectMessage">True to send a disconnect message to connections before stopping them.</param>
         /// <param name="transportIndex">Index of transport to stop on.</param>
-        public void StopServerConnection(bool sendDisconnectMessage, int transportIndex)
+        public bool StopServerConnection(bool sendDisconnectMessage, int transportIndex)
         {
             if (sendDisconnectMessage)
             {
-                PooledWriter writer = WriterPool.GetWriter();
-                writer.WritePacketId(PacketId.Disconnect);
-                ArraySegment<byte> segment = writer.GetArraySegment();
-
-                byte channel = (byte)Channel.Reliable;
-                Transport t = _transports[transportIndex];
-                Dictionary<int, int> dict = _transportToMultipass[transportIndex];
-                //Iterate connectionIds on the transport(not multipassIds).
-                foreach (int item in dict.Keys)
-                    t.SendToClient(channel, segment, item);
+                //Get connectionIds as ServerManager knows them.
+                int[] multipassIds = _transportToMultipass[transportIndex].Keys.ToArray();
+                //Tell serve manager to write disconnect for those ids.
+                base.NetworkManager.ServerManager.SendDisconnectMessages(multipassIds);
+                //Iterate outgoing on transport which is being stopped.
+                _transports[transportIndex].IterateOutgoing(true);
             }
 
-            StopConnection(true, transportIndex);
+            return StopConnection(true, transportIndex);
         }
 
         /// <summary>
@@ -782,13 +865,6 @@ namespace Multipass
         /// <returns>True if there were no blocks. A true response does not promise a socket will or has connected.</returns>
         private bool StartClient()
         {
-            if (ClientTransport == null)
-            {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Cannot start client because ClientTransport is null. Use SetClientTransport first.");
-                return false;
-            }
-
             return ClientTransport.StartConnection(false);
         }
 
@@ -797,13 +873,6 @@ namespace Multipass
         /// </summary>
         private bool StopClient()
         {
-            if (ClientTransport == null)
-            {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Cannot start client because ClientTransport is null. Use SetClientTransport first.");
-                return false;
-            }
-
             return ClientTransport.StopConnection(false);
         }
 

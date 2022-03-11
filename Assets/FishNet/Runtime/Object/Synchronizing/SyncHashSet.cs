@@ -267,18 +267,21 @@ namespace FishNet.Object.Synchronizing
                 if (operation == SyncHashSetOperation.Add)
                 {
                     next = reader.Read<T>();
-                    collection.Add(next);
+                    if (!base.NetworkManager.IsServer)
+                        collection.Add(next);
                 }
                 //Clear.
                 else if (operation == SyncHashSetOperation.Clear)
                 {
-                    collection.Clear();
+                    if (!base.NetworkManager.IsServer)
+                        collection.Clear();
                 }
                 //Remove.
                 else if (operation == SyncHashSetOperation.Remove)
                 {
                     next = reader.Read<T>();
-                    collection.Remove(next);
+                    if (!base.NetworkManager.IsServer)
+                        collection.Remove(next);
                 }
 
                 InvokeOnChange(operation, next, false);

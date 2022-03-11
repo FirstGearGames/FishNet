@@ -4,13 +4,14 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Transporting.Multipass;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
-using MultipassTransport = Multipass.Multipass;
 
 namespace FishNet.Managing.Server
 {
@@ -156,32 +157,46 @@ namespace FishNet.Managing.Server
         /// <param name="sendDisconnectMessage">True to send a disconnect message to all clients first.</param>
         public bool StopConnection(bool sendDisconnectMessage)
         {
-            Transport t = NetworkManager.TransportManager.Transport;
-            if (t is MultipassTransport)
-            {
-                string transportName = t.GetType().Name;
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"StopConnection cannot be called on ServerManager when using {transportName}. Access {transportName} directly and call StopServerConnection(sendDisconnectMessage, transportIndex).");
-
-                return false;
-            }
-
             if (sendDisconnectMessage)
-            {
-                PooledWriter writer = WriterPool.GetWriter();
-                writer.WritePacketId(PacketId.Disconnect);
-                ArraySegment<byte> segment = writer.GetArraySegment();
-                //Send segment to each client, authenticated or not.
-                foreach (NetworkConnection conn in Clients.Values)
-                    conn.SendToClient((byte)Channel.Reliable, segment);
-                //Recycle writer.
-                writer.Dispose();
-                //Force an out iteration.
-                NetworkManager.TransportManager.IterateOutgoing(true);
-            }
+                SendDisconnectMessages(Clients.Values.ToList(), true);
 
             //Return stop connection result.
-            return t.StopConnection(true);
+            return NetworkManager.TransportManager.Transport.StopConnection(true);
+        }
+
+        /// <summary>
+        /// Sends a disconnect messge to connectionIds.
+        /// This does not iterate outgoing automatically.
+        /// </summary>
+        /// <param name="connectionIds"></param>
+        internal void SendDisconnectMessages(int[] connectionIds)
+        {
+            List<NetworkConnection> conns = new List<NetworkConnection>();
+            foreach (int item in connectionIds)
+            {
+                if (Clients.TryGetValueIL2CPP(item, out NetworkConnection c))
+                    conns.Add(c);
+            }
+
+            if (conns.Count > 0)
+                SendDisconnectMessages(conns, false);
+        }
+        /// <summary>
+        /// Sends a disconnect message to all clients and immediately iterates outgoing.
+        /// </summary>
+        private void SendDisconnectMessages(List<NetworkConnection> conns, bool iterate)
+        {
+            PooledWriter writer = WriterPool.GetWriter();
+            writer.WritePacketId(PacketId.Disconnect);
+            ArraySegment<byte> segment = writer.GetArraySegment();
+            //Send segment to each client, authenticated or not.
+            foreach (NetworkConnection c in conns)
+                c.SendToClient((byte)Channel.Reliable, segment);
+            //Recycle writer.
+            writer.Dispose();
+
+            if (iterate)
+                NetworkManager.TransportManager.IterateOutgoing(true);
         }
 
         /// <summary>
@@ -189,18 +204,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         public bool StartConnection()
         {
-            Transport t = NetworkManager.TransportManager.Transport;
-            if (t is MultipassTransport)
-            {
-                string transportName = t.GetType().Name;
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"StartConnection cannot be called on ServerManager when using {transportName}. Access {transportName} directly and call StartConnection(transportIndex).");
-
-                return false;
-            }
-
-            //Success fall through.
-            return t.StartConnection(true);
+            return NetworkManager.TransportManager.Transport.StartConnection(true);
         }
 
         /// <summary>

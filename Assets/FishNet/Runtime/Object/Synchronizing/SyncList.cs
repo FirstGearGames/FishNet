@@ -318,26 +318,30 @@ namespace FishNet.Object.Synchronizing
                 {
                     next = reader.Read<T>();
                     index = collection.Count;
-                    collection.Add(next);
+                    if (!base.NetworkManager.IsServer)
+                        collection.Add(next);
                 }
                 //Clear.
                 else if (operation == SyncListOperation.Clear)
                 {
-                    collection.Clear();
+                    if (!base.NetworkManager.IsServer)
+                        collection.Clear();
                 }
                 //Insert.
                 else if (operation == SyncListOperation.Insert)
                 {
                     index = (int)reader.ReadUInt32();
                     next = reader.Read<T>();
-                    collection.Insert(index, next);
+                    if (!base.NetworkManager.IsServer)
+                        collection.Insert(index, next);
                 }
                 //RemoveAt.
                 else if (operation == SyncListOperation.RemoveAt)
                 {
                     index = (int)reader.ReadUInt32();
                     prev = collection[index];
-                    collection.RemoveAt(index);
+                    if (!base.NetworkManager.IsServer)
+                        collection.RemoveAt(index);
                 }
                 //Set
                 else if (operation == SyncListOperation.Set)
@@ -345,7 +349,8 @@ namespace FishNet.Object.Synchronizing
                     index = (int)reader.ReadUInt32();
                     next = reader.Read<T>();
                     prev = collection[index];
-                    collection[index] = next;
+                    if (!base.NetworkManager.IsServer)
+                        collection[index] = next;
                 }
 
 

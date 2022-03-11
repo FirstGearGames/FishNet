@@ -18,6 +18,22 @@ namespace FishNet.Serializing
     public static class WriterExtensions
     {
 
+        /// <summary>
+        /// Types which are are set to auto pack by default.
+        /// </summary>
+        internal static HashSet<System.Type> DefaultPackedTypes = new HashSet<System.Type>();
+
+        static WriterExtensions()
+        {
+            DefaultPackedTypes.Add(typeof(int));
+            DefaultPackedTypes.Add(typeof(uint));
+            DefaultPackedTypes.Add(typeof(long));
+            DefaultPackedTypes.Add(typeof(ulong));
+            DefaultPackedTypes.Add(typeof(Color));
+            DefaultPackedTypes.Add(typeof(Vector2Int));
+            DefaultPackedTypes.Add(typeof(Vector3Int));
+            DefaultPackedTypes.Add(typeof(Quaternion));
+        }
 
         /// <summary>
         /// Writes value to dst without error checking.
@@ -65,7 +81,7 @@ namespace FishNet.Serializing
         public static void WriteVector3Int(this Writer writer, Vector3Int value, AutoPackType packType = AutoPackType.Packed) => writer.WriteVector3Int(value, packType);
         public static void WriteColor(this Writer writer, Color value, AutoPackType packType) => writer.WriteColor(value, packType);
         public static void WriteColor32(this Writer writer, Color32 value) => writer.WriteColor32(value);
-        public static void WriteQuaternion(this Writer writer, Quaternion value) => writer.WriteQuaternion(value);
+        public static void WriteQuaternion(this Writer writer, Quaternion value, AutoPackType packType = AutoPackType.Packed) => writer.WriteQuaternion(value, packType);
         public static void WriteRect(this Writer writer, Rect value) => writer.WriteRect(value);
         public static void WritePlane(this Writer writer, Plane value) => writer.WritePlane(value);
         public static void WriteRay(this Writer writer, Ray value) => writer.WriteRay(value);

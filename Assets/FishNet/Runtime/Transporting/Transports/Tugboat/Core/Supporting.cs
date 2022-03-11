@@ -1,7 +1,7 @@
 ﻿using FishNet.Utility.Performance;
 using System;
 
-namespace FishNet.Tugboat
+namespace FishNet.Transporting.Tugboat
 {
 
 
@@ -46,7 +46,7 @@ namespace FishNet.Tugboat
 
 }
 
-namespace FishNet.Tugboat.Server
+namespace FishNet.Transporting.Tugboat.Server
 {
 
     internal struct RemoteConnectionEvent
