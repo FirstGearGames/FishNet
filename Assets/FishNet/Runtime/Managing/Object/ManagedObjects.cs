@@ -152,6 +152,19 @@ namespace FishNet.Managing.Object
         }
 
         /// <summary>
+        /// Updates NetworkBehaviours on nob.
+        /// </summary>
+        /// <param name="asServer"></param>
+        protected void UpdateNetworkBehaviours(NetworkObject nob, bool asServer)
+        {
+            //Would have already been done on server side.
+            if (!asServer && NetworkManager.IsServer)
+                return;
+
+            nob.UpdateNetworkBehaviours();
+        }
+
+        /// <summary>
         /// Despawns Spawned NetworkObjects. Scene objects will be disabled, others will be destroyed.
         /// </summary>
         protected virtual void DespawnSpawnedWithoutSynchronization(bool asServer)

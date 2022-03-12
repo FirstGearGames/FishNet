@@ -37,9 +37,18 @@ namespace FishNet.Object
         /// </summary>
         internal bool Deinitializing { get; private set; } = true;
         /// <summary>
+        /// 
+        /// </summary>
+        [SerializeField, HideInInspector]
+        private NetworkBehaviour[] _networkBehaviours;
+        /// <summary>
         /// NetworkBehaviours within the root and children of this object.
         /// </summary>
-        public NetworkBehaviour[] NetworkBehaviours { get; private set; }
+        public NetworkBehaviour[] NetworkBehaviours
+        {
+            get => _networkBehaviours;
+            private set => _networkBehaviours = value;
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -186,64 +195,82 @@ namespace FishNet.Object
              * The method called is dependent on NetworkManager being set. */
             AddDefaultNetworkObserverConditions();
 
-            if (NetworkBehaviours == null || NetworkBehaviours.Length == 0)
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].PreInitialize();
+
+            /* NetworkObserver uses some information from
+             * NetworkBehaviour so it must be preinitialized
+             * after NetworkBehaviours are. */
+            if (asServer)
+                PreInitializeObservers();
+
+            //Add to connection objects if owner exist.
+            if (owner != null)
+                owner.AddObject(this);
+        }
+
+        /// <summary>
+        /// Updates NetworkBehaviours and initializes them with serialized values.
+        /// </summary>
+        internal void UpdateNetworkBehaviours()
+        {            
+            NetworkBehaviours = null;
+
+            //If there are no child nobs then get NetworkBehaviours normally.
+            if (ChildNetworkObjects.Count == 0)
             {
-                //If there are no child nobs then get NetworkBehaviours normally.
-                if (ChildNetworkObjects.Count == 0)
-                {
-                    NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>();
-                }
-                //There are child nobs.
-                else
-                {
-                    //Transforms which can be searched for networkbehaviours.
-                    ListCache<Transform> transformCache = ListCaches.TransformCache;
-                    transformCache.Reset();
+                NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>();
+            }
+            //There are child nobs.
+            else
+            {
+                //Transforms which can be searched for networkbehaviours.
+                ListCache<Transform> transformCache = ListCaches.TransformCache;
+                transformCache.Reset();
 
-                    transformCache.AddValue(transform);
+                transformCache.AddValue(transform);
 
-                    for (int z = 0; z < transformCache.Written; z++)
+                for (int z = 0; z < transformCache.Written; z++)
+                {
+                    Transform currentT = transformCache.Collection[z];
+                    for (int i = 0; i < currentT.childCount; i++)
                     {
-                        Transform currentT = transformCache.Collection[z];
-                        for (int i = 0; i < currentT.childCount; i++)
+                        Transform t = currentT.GetChild(i);
+                        bool hasNob = false;
+                        for (int x = 0; x < ChildNetworkObjects.Count; x++)
                         {
-                            Transform t = currentT.GetChild(i);
-                            bool hasNob = false;
-                            for (int x = 0; x < ChildNetworkObjects.Count; x++)
+                            if (ChildNetworkObjects[x].transform == t)
                             {
-                                if (ChildNetworkObjects[x].transform == t)
-                                {
-                                    hasNob = true;
-                                    break;
-                                }
+                                hasNob = true;
+                                break;
                             }
-
-                            /* If the transform being checked 
-                             * does not have a network object then
-                             * add it to the cache. */
-                            if (!hasNob)
-                                transformCache.AddValue(t);
                         }
+
+                        /* If the transform being checked 
+                         * does not have a network object then
+                         * add it to the cache. */
+                        if (!hasNob)
+                            transformCache.AddValue(t);
                     }
-
-                    int written;
-                    //Iterate all cached transforms and get networkbehaviours.
-                    ListCache<NetworkBehaviour> nbCache = ListCaches.NetworkBehaviourCache;
-                    nbCache.Reset();
-                    written = transformCache.Written;
-                    List<Transform> ts = transformCache.Collection;
-                    //
-                    for (int i = 0; i < written; i++)
-                        nbCache.AddValues(ts[i].GetNetworkBehaviours());
-
-                    //Copy to array.
-                    written = nbCache.Written;
-                    List<NetworkBehaviour> nbs = nbCache.Collection;
-                    NetworkBehaviours = new NetworkBehaviour[written];
-                    //
-                    for (int i = 0; i < written; i++)
-                        NetworkBehaviours[i] = nbs[i];
                 }
+
+                int written;
+                //Iterate all cached transforms and get networkbehaviours.
+                ListCache<NetworkBehaviour> nbCache = ListCaches.NetworkBehaviourCache;
+                nbCache.Reset();
+                written = transformCache.Written;
+                List<Transform> ts = transformCache.Collection;
+                //
+                for (int i = 0; i < written; i++)
+                    nbCache.AddValues(ts[i].GetNetworkBehaviours());
+
+                //Copy to array.
+                written = nbCache.Written;
+                List<NetworkBehaviour> nbs = nbCache.Collection;
+                NetworkBehaviours = new NetworkBehaviour[written];
+                //
+                for (int i = 0; i < written; i++)
+                    NetworkBehaviours[i] = nbs[i];
             }
 
             //Check and initialize found network behaviours.
@@ -255,18 +282,8 @@ namespace FishNet.Object
             else
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].PreInitialize(this, (byte)i);
+                    NetworkBehaviours[i].OfflineInitialize(this, (byte)i);
             }
-
-            /* NetworkObserver uses some information from
-             * NetworkBehaviour so it must be preinitialized
-             * after NetworkBehaviours are. */
-            if (asServer)
-                PreInitializeObservers();
-
-            //Add to connection objects if owner exist.
-            if (owner != null)
-                owner.AddObject(this);
         }
 
         /// <summary>
@@ -464,13 +481,13 @@ namespace FishNet.Object
             ////Start at index 1 as 0 would be this nob.
             //for (int i = 1; i < nobs.Length; i++)
             //    ChildNetworkObjects.Add(nobs[i]);
-
             PartialOnValidate();
         }
         partial void PartialOnValidate();
         private void Reset()
         {
             SerializeSceneTransformProperties();
+            UpdateNetworkBehaviours();
             PartialReset();
         }
         partial void PartialReset();

@@ -274,6 +274,10 @@ namespace FishNet.Component.Transforming
 
         #region Private.
         /// <summary>
+        /// True if the last DataReceived was on the reliable channel. Default to true so initial values do not extrapolate.
+        /// </summary>
+        private bool _lastReceiveReliable = true;
+        /// <summary>
         /// NetworkBehaviour this transform is a child of.
         /// </summary>
         private NetworkBehaviour _parentBehaviour;
@@ -835,7 +839,7 @@ namespace FishNet.Component.Transforming
             //Position.
             rate = rd.Position;
 
-            Vector3 posGoal = (td.ExtrapolationState == TransformData.ExtrapolateState.Active) ? td.ExtrapolatedPosition : td.Position;
+            Vector3 posGoal = (td.ExtrapolationState == TransformData.ExtrapolateState.Active && !_lastReceiveReliable) ? td.ExtrapolatedPosition : td.Position;
             if (rate == -1f)
                 t.localPosition = td.Position;
             else
@@ -1347,6 +1351,8 @@ namespace FishNet.Component.Transforming
             SnapProperties(nextTd);
 
             _lastReceivedTransformData.Update(nextTd);
+
+            _lastReceiveReliable = (channel == Channel.Reliable);
             /* If channel is reliable then this is a settled packet.
              * Reset last received tick so next starting move eases
              * in. */

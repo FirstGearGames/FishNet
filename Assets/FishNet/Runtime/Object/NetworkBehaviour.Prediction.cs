@@ -89,7 +89,7 @@ namespace FishNet.Object
             if (sendingClient == null)
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"NetworkConnection is null. Replicate {methodHash} will not complete. Remainder of packet may become corrupt.");
+                    Debug.LogError($"NetworkConnection is null. Replicate {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name} will not complete. Remainder of packet may become corrupt.");
                 return;
             }
 
@@ -100,7 +100,7 @@ namespace FishNet.Object
             else
             {
                 if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Replicate not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
+                    Debug.LogWarning($"Replicate not found for hash {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
             }
         }
 

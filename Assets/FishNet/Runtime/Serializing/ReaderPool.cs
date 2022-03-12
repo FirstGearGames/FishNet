@@ -1,6 +1,7 @@
 using FishNet.Managing;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace FishNet.Serializing
 {
@@ -30,6 +31,7 @@ namespace FishNet.Serializing
         /// Get the next reader in the pool
         /// <para>If pool is empty, creates a new Reader</para>
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PooledReader GetReader(byte[] bytes, NetworkManager networkManager)
         {
             return GetReader(new ArraySegment<byte>(bytes), networkManager);

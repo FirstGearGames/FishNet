@@ -105,6 +105,7 @@ namespace FishNet.Managing.Object
                     continue;
 
                 _prefabs[i].SetPrefabId((short)i);
+                _prefabs[i].UpdateNetworkBehaviours();
             }
         }
 

@@ -116,6 +116,7 @@ namespace FishNet.Managing.Client
             for (int i = 0; i < nobCount; i++)
             {
                 NetworkObject nob = networkObjects[i];
+                base.UpdateNetworkBehaviours(nob, false);
                 if (nob.SceneObject && nob.IsNetworked)
                 {
                     base.AddToSceneObjects(nob);

@@ -22,61 +22,83 @@ namespace FishNet.Object
         /// </summary>
         public bool IsSpawned => (NetworkObject != null && NetworkObject.IsSpawned);
         /// <summary>
+        /// 
+        /// </summary>
+        [SerializeField, HideInInspector]
+        private byte _componentIndexCache = byte.MaxValue;
+        /// <summary>
         /// ComponentIndex for this NetworkBehaviour.
         /// </summary>
-        public byte ComponentIndex { get; private set; }
+        public byte ComponentIndex
+        {
+            get => _componentIndexCache;
+            private set => _componentIndexCache = value;
+        }
 #if UNITY_EDITOR
         /// <summary>
         /// NetworkObject automatically added or discovered during edit time.
         /// </summary>
         [SerializeField, HideInInspector]
         private NetworkObject _addedNetworkObject;
-#endif
+#endif 
+        /// <summary>
+        /// 
+        /// </summary>
+        [SerializeField, HideInInspector]
+        private NetworkObject _networkObjectCache;
         /// <summary>
         /// NetworkObject this behaviour is for.
         /// </summary>        
-        public NetworkObject NetworkObject { get; private set; }
+        public NetworkObject NetworkObject
+        {
+            get => _networkObjectCache;
+            private set => _networkObjectCache = value;
+        }
 
         /// <summary>
         /// Prepares this script for initialization.
         /// </summary>
         /// <param name="networkObject"></param>
         /// <param name="componentIndex"></param>
-        internal void PreInitialize(NetworkObject networkObject, byte componentIndex)
+        internal void PreInitialize()
         {
-            NetworkObject = networkObject;
-            ComponentIndex = componentIndex;
-            PreInitializeSyncTypes(networkObject);
+            PreInitializeSyncTypes(NetworkObject);
             PreInitializeRpcLinks();
         }
 
+        internal void OfflineInitialize(NetworkObject nob, byte componentIndex)
+        {
+            NetworkObject = nob;
+            ComponentIndex = componentIndex;
+        }
 
         #region Editor.
         protected virtual void Reset()
         {
 #if UNITY_EDITOR
-            if (!ApplicationState.IsPlaying())
-                TryAddNetworkObject();
+            TryAddNetworkObject();
 #endif
         }
 
         protected virtual void OnValidate()
         {
 #if UNITY_EDITOR
-            if (!ApplicationState.IsPlaying())
-                TryAddNetworkObject();
+            TryAddNetworkObject();
 #endif
         }
+
         /// <summary>
         /// Tries to add the NetworkObject component.
         /// </summary>
-        private void TryAddNetworkObject()
+        private NetworkObject TryAddNetworkObject()
         {
 #if UNITY_EDITOR
             if (Application.isPlaying)
-                return;
+                return NetworkObject;
             if (_addedNetworkObject != null)
-                return;
+            {
+                return _addedNetworkObject;
+            }
             /* Manually iterate up the chain because GetComponentInParent doesn't
              * work when modifying prefabs in the inspector. Unity, you're starting
              * to suck a lot right now. */
@@ -91,7 +113,8 @@ namespace FishNet.Object
                     climb = climb.parent;
             }
 
-            _addedNetworkObject = (result != null) ? result : transform.root.gameObject.AddComponent<NetworkObject>();            
+            _addedNetworkObject = (result != null) ? result : transform.root.gameObject.AddComponent<NetworkObject>();
+            return _addedNetworkObject;
 #endif
         }
         #endregion

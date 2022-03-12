@@ -230,6 +230,7 @@ namespace FishNet.Managing.Server
                 //Only setup if a scene object and not initialzied.
                 if (nob.SceneObject && nob.Deinitializing)
                 {
+                    base.UpdateNetworkBehaviours(nob, true);
                     base.AddToSceneObjects(nob);
                     /* If was active in the editor (before hitting play), or currently active
                      * then PreInitialize without synchronizing to clients. There is no reason
