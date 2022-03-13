@@ -190,19 +190,17 @@ namespace FishNet.Object
                 IsClient = isActive;
         }
         /// <summary>
-        /// PreInitializes this script.
+        /// Initializes this script. This is only called once even when as host.
         /// </summary>
         /// <param name="networkManager"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void PreInitialize(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
+        internal void InitializeOnce(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
             Deinitializing = false;
             NetworkManager = networkManager;
             //Set QOL references.
             TimeManager = networkManager.TimeManager;
             RollbackManager = networkManager.RollbackManager;
-            //Set active status true for client or server.
-            SetActiveStatus(true, asServer);
 
             SetOwner(owner);
             ObjectId = objectId;
@@ -214,13 +212,13 @@ namespace FishNet.Object
             AddDefaultNetworkObserverConditions();
 
             for (int i = 0; i < NetworkBehaviours.Length; i++)
-                NetworkBehaviours[i].PreInitialize();
+                NetworkBehaviours[i].InitializeOnce();
 
             /* NetworkObserver uses some information from
              * NetworkBehaviour so it must be preinitialized
              * after NetworkBehaviours are. */
             if (asServer)
-                PreInitializeObservers();
+                InitializeOnceObservers();
 
             //Add to connection objects if owner exist.
             if (owner != null)

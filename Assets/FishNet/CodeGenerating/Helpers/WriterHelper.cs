@@ -257,6 +257,10 @@ namespace FishNet.CodeGenerating.Helping
         {
             //Try to get existing writer, if not present make one.
             MethodReference writeMethodRef = GetFavoredWriteMethodReference(typeRef, favorInstanced);
+
+            if (typeRef.Name.Contains("InputActionMap"))
+                Debug.Log(typeRef.FullName + ",  " + typeRef.Module.Name + ",  " + (writeMethodRef == null));
+
             if (writeMethodRef == null)
                 writeMethodRef = CodegenSession.WriterGenerator.CreateWriter(typeRef);
             if (writeMethodRef == null)

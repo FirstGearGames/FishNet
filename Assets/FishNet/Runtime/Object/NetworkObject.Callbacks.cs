@@ -10,12 +10,15 @@ namespace FishNet.Object
         /// </summary>
         private void InitializeCallbacks(bool asServer)
         {
-            /* When invoking OnOwnership here previous owner will
+            /* Note: When invoking OnOwnership here previous owner will
              * always be an empty connection, since the object is just
              * now initializing. */
 
             if (!asServer)
                 ClientInitialized = true;
+
+            //Set that client or server is active before callbacks.
+            SetActiveStatus(true, asServer);
 
             //Invoke OnStartNetwork.
             for (int i = 0; i < NetworkBehaviours.Length; i++)

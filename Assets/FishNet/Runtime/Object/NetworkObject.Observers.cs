@@ -44,9 +44,9 @@ namespace FishNet.Object
             NetworkManager.ObserverManager.AddDefaultConditions(this, ref NetworkObserver);
         }
         /// <summary>
-        /// Initializes this script for use.
+        /// Initializes NetworkObserver. This will only call once even as host.
         /// </summary>
-        private void PreInitializeObservers()
+        private void InitializeOnceObservers()
         {
             if (_networkObserverInitiliazed)
                 return;

@@ -251,7 +251,7 @@ namespace FishNet.Managing.Server
             if (nob.IsNetworked)
             {
                 int objectId = GetNextNetworkObjectId();
-                nob.PreInitialize(NetworkManager, objectId, ownerConnection, true);
+                nob.InitializeOnce(NetworkManager, objectId, ownerConnection, true);
                 base.AddToSpawned(nob);
                 nob.gameObject.SetActive(true);
                 nob.Initialize(true);

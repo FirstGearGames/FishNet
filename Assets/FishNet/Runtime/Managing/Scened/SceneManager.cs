@@ -116,6 +116,11 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private Scene _delayedDestroyScene;
         /// <summary>
+        /// A scene to be set as the active scene where there are no global scenes.
+        /// This is used to prevent connection scenes and MovedObjectsScene from becoming the active scene.
+        /// </summary>
+        private Scene _fallbackActiveScene;
+        /// <summary>
         /// Becomes true when when a scene first successfully begins to load or unload. Value is reset to false when the scene queue is emptied.
         /// </summary>
         private bool _sceneQueueStartInvoked;
@@ -926,17 +931,19 @@ namespace FishNet.Managing.Scened
             }
 
             /* Set active scene. */
-            if ((replaceScenes != ReplaceOption.None) && loadedScenes.Count > 0)
-            {
-                /* Set active scene.
-                * If networked, since all clients will be changing.
-                * Or if connectionsAndClientOnly. 
-                * 
-                * Cannot change active scene if client host because new objects will spawn
-                * into the single scene intended for only certain connections; this will break observers. */
-                if ((data.ScopeType == SceneScopeTypes.Global && !asHost) || data.ScopeType == SceneScopeTypes.Connections && !asServer)
-                    UnitySceneManager.SetActiveScene(loadedScenes[0]);
-            }
+            //if (asServer)
+            //{
+                //Set will default to global or fallbackactivescene.
+                SetActiveScene();
+            //}
+            ////Setting for client, which isn't also host.
+            //else if (!asHost)
+            //{
+            //    //If any scenes were replaced then set to first loaded.
+            //    if ((replaceScenes != ReplaceOption.None) && loadedScenes.Count > 0)
+            //        UnitySceneManager.SetActiveScene(loadedScenes[0]);
+            //}
+
 
             //Only the server needs to find scene handles to send to client. Client will send these back to the server.
             if (asServer)
@@ -1720,6 +1727,35 @@ namespace FishNet.Managing.Scened
         }
 
         /// <summary>
+        /// Sets the first global scene as the active scene.
+        /// If a global scene is not available then FallbackActiveScene is used.
+        /// </summary>
+        private void SetActiveScene()
+        {
+            Scene s = default;
+            if (_globalScenes != null && _globalScenes.Length > 0)
+                s = GetScene(_globalScenes[0]);
+
+            //If scene still isn't set use fallback.
+            if (string.IsNullOrEmpty(s.name))
+                s = GetFallbackActiveScene();
+
+            UnitySceneManager.SetActiveScene(s);
+        }
+
+        /// <summary>
+        /// Returns the FallbackActiveScene.
+        /// </summary>
+        /// <returns></returns>
+        private Scene GetFallbackActiveScene()
+        {
+            if (string.IsNullOrEmpty(_fallbackActiveScene.name))
+                _fallbackActiveScene = UnitySceneManager.CreateScene("FallbackActiveScene");
+
+            return _fallbackActiveScene;
+        }
+
+        /// <summary>
         /// Returns the MovedObejctsScene.
         /// </summary>
         /// <returns></returns>
@@ -1727,7 +1763,7 @@ namespace FishNet.Managing.Scened
         {
             //Create moved objects scene. It will probably be used eventually. If not, no harm either way.
             if (string.IsNullOrEmpty(_movedObjectsScene.name))
-                _movedObjectsScene = UnityEngine.SceneManagement.SceneManager.CreateScene("MovedObjectsHolder");
+                _movedObjectsScene = UnitySceneManager.CreateScene("MovedObjectsHolder");
 
             return _movedObjectsScene;
         }

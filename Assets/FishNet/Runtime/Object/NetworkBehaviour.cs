@@ -52,14 +52,14 @@ namespace FishNet.Object
         public NetworkObject NetworkObject => _networkObjectCache;
 
         /// <summary>
-        /// Prepares this script for initialization.
+        /// Initializes this script. This will only run once even as host.
         /// </summary>
         /// <param name="networkObject"></param>
         /// <param name="componentIndex"></param>
-        internal void PreInitialize()
+        internal void InitializeOnce()
         {
-            PreInitializeSyncTypes(_networkObjectCache);
-            PreInitializeRpcLinks();
+            InitializeOnceSyncTypes();
+            InitializeOnceRpcLinks();
         }
 
 
@@ -76,6 +76,9 @@ namespace FishNet.Object
         protected virtual void Reset()
         {
 #if UNITY_EDITOR
+            if (Application.isPlaying)
+                return;
+
             NetworkObject nob = TryAddNetworkObject();
             nob.UpdateNetworkBehaviours();
 #endif
@@ -84,6 +87,9 @@ namespace FishNet.Object
         protected virtual void OnValidate()
         {
 #if UNITY_EDITOR
+            if (Application.isPlaying)
+                return;
+
             NetworkObject nob = TryAddNetworkObject();
             //If componentIndex has not been set.
             if (ComponentIndex == byte.MaxValue)
@@ -97,12 +103,9 @@ namespace FishNet.Object
         private NetworkObject TryAddNetworkObject()
         {
 #if UNITY_EDITOR
-            if (Application.isPlaying)
-                return _networkObjectCache;
-            if (_addedNetworkObject != null)
-            {
+            if (Application.isPlaying || _addedNetworkObject != null)
                 return _addedNetworkObject;
-            }
+
             /* Manually iterate up the chain because GetComponentInParent doesn't
              * work when modifying prefabs in the inspector. Unity, you're starting
              * to suck a lot right now. */
@@ -123,7 +126,7 @@ namespace FishNet.Object
             return null;
 #endif
         }
-#endregion
+        #endregion
     }
 
 

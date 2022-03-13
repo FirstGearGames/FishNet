@@ -40,9 +40,9 @@ namespace FishNet.Object
         #endregion
 
         /// <summary>
-        /// Prepares this script for initialization.
+        /// Initializes RpcLinks. This will only call once even as host.
         /// </summary>
-        private void PreInitializeRpcLinks()
+        private void InitializeOnceRpcLinks()
         {
             if (IsServer)
             {

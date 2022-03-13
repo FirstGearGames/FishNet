@@ -295,7 +295,10 @@ namespace FishNet.CodeGenerating.Helping
             if (writeMethodRef == null)
                 return null;
 
-            MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
+            if (objectTr.Name.Contains("InputActionMap"))
+                UnityEngine.Debug.Log("CreatingArray " + objectTr.Name);
+
+                MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
             AddToStaticWriters(objectTr, createdWriterMd);
 
             ILProcessor processor = createdWriterMd.Body.GetILProcessor();

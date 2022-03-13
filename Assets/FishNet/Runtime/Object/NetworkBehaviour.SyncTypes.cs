@@ -119,11 +119,9 @@ namespace FishNet.Object
         }
 
         /// <summary>
-        /// Prepares this script for initialization.
+        /// Initializes SyncTypes. This will only call once even as host.
         /// </summary>
-        /// <param name="networkObject"></param>
-        /// <param name="componentIndex"></param>
-        private void PreInitializeSyncTypes(NetworkObject networkObject)
+        private void InitializeOnceSyncTypes()
         {
             if (_readPermissions == null)
             {
