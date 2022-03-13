@@ -18,27 +18,27 @@ namespace FishNet.Object
         /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
-        public bool IsClient => NetworkManager.IsClient;
+        public bool IsClient { get; private set; }
         /// <summary>
         /// True if only the client is active and authenticated.
         /// </summary>
-        public bool IsClientOnly => NetworkManager.IsClientOnly;
+        public bool IsClientOnly => (IsClient && !IsServer);
         /// <summary>
         /// True if server is active.
         /// </summary>
-        public bool IsServer => NetworkManager.IsServer;
+        public bool IsServer { get; private set; }
         /// <summary>
         /// True if only the server is active.
         /// </summary>
-        public bool IsServerOnly => NetworkManager.IsServerOnly;
+        public bool IsServerOnly => (IsServer && !IsClient);
         /// <summary>
         /// True if client and server are active.
         /// </summary>
-        public bool IsHost => NetworkManager.IsHost;
+        public bool IsHost => (IsClient && IsServer);
         /// <summary>
         /// True if client nor server are active.
         /// </summary>
-        public bool IsOffline => NetworkManager.IsOffline;
+        public bool IsOffline => (!IsClient && !IsServer);
         /// <summary>
         /// True if the local client is the owner of this object.
         /// </summary>
@@ -46,8 +46,28 @@ namespace FishNet.Object
         {
             get
             {
-                if (NetworkManager == null || !Owner.IsValid || !IsClient || !ClientInitialized)
+                /* ClientInitialized becomes true when this
+                 * NetworkObject has been initialized on the client side.
+                 *
+                 * This value is used to prevent IsOwner from returning true
+                 * when running as host.
+                 * 
+                 * EG: server will set owner when it spawns the object.
+                 * If IsOwner is checked before the object spawns on the
+                 * client-host then it would also return true, since the
+                 * Owner reference would be the same as what was set by server.
+                 * This is however bad when the client hasn't initialized the object
+                 * yet because it gives a false sense of initialization.
+                 * 
+                 * Wait for client-host being initialized before potentially
+                 * returning true. */
+                if (!ClientInitialized)
                     return false;
+
+                ////perf see how this can be removed.
+                ////ClientInitialized is only used for this.
+                //if (!IsClient || !ClientInitialized || !Owner.IsValid || (NetworkManager == null))
+                //    return false;
 
                 return Owner.IsLocalClient;
             }
@@ -97,11 +117,11 @@ namespace FishNet.Object
         /// <summary>
         /// TimeManager for this object.
         /// </summary>
-        public TimeManager TimeManager => (NetworkManager == null) ? null : NetworkManager.TimeManager;
+        public TimeManager TimeManager { get; private set; }
         /// <summary>
         /// RollbackManager for this object.
         /// </summary>
-        public RollbackManager RollbackManager => (NetworkManager == null) ? null : NetworkManager.RollbackManager;
+        public RollbackManager RollbackManager { get; private set; }
         #endregion
 
         /// <summary>

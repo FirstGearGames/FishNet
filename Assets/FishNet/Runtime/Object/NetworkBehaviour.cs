@@ -20,7 +20,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if this NetworkBehaviour is initialized for the network.
         /// </summary>
-        public bool IsSpawned => (NetworkObject != null && NetworkObject.IsSpawned);
+        public bool IsSpawned => _networkObjectCache.IsSpawned;
         /// <summary>
         /// 
         /// </summary>
@@ -48,12 +48,8 @@ namespace FishNet.Object
         private NetworkObject _networkObjectCache;
         /// <summary>
         /// NetworkObject this behaviour is for.
-        /// </summary>        
-        public NetworkObject NetworkObject
-        {
-            get => _networkObjectCache;
-            private set => _networkObjectCache = value;
-        }
+        /// </summary>
+        public NetworkObject NetworkObject => _networkObjectCache;
 
         /// <summary>
         /// Prepares this script for initialization.
@@ -62,13 +58,17 @@ namespace FishNet.Object
         /// <param name="componentIndex"></param>
         internal void PreInitialize()
         {
-            PreInitializeSyncTypes(NetworkObject);
+            PreInitializeSyncTypes(_networkObjectCache);
             PreInitializeRpcLinks();
         }
 
-        internal void OfflineInitialize(NetworkObject nob, byte componentIndex)
+
+        /// <summary>
+        /// Serializes information about components.
+        /// </summary>
+        internal void SerializeComponents(NetworkObject nob, byte componentIndex)
         {
-            NetworkObject = nob;
+            _networkObjectCache = nob;
             ComponentIndex = componentIndex;
         }
 
@@ -76,14 +76,18 @@ namespace FishNet.Object
         protected virtual void Reset()
         {
 #if UNITY_EDITOR
-            TryAddNetworkObject();
+            NetworkObject nob = TryAddNetworkObject();
+            nob.UpdateNetworkBehaviours();
 #endif
         }
 
         protected virtual void OnValidate()
         {
 #if UNITY_EDITOR
-            TryAddNetworkObject();
+            NetworkObject nob = TryAddNetworkObject();
+            //If componentIndex has not been set.
+            if (ComponentIndex == byte.MaxValue)
+                nob.UpdateNetworkBehaviours();
 #endif
         }
 
@@ -94,7 +98,7 @@ namespace FishNet.Object
         {
 #if UNITY_EDITOR
             if (Application.isPlaying)
-                return NetworkObject;
+                return _networkObjectCache;
             if (_addedNetworkObject != null)
             {
                 return _addedNetworkObject;
@@ -115,9 +119,11 @@ namespace FishNet.Object
 
             _addedNetworkObject = (result != null) ? result : transform.root.gameObject.AddComponent<NetworkObject>();
             return _addedNetworkObject;
+#else
+            return null;
 #endif
         }
-        #endregion
+#endregion
     }
 
 

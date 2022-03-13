@@ -1,6 +1,7 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Transporting;
 using FishNet.Object.Delegating;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -47,8 +48,9 @@ namespace FishNet.Object
         /// </summary>
         internal void OnSendBufferedRpcs(NetworkConnection conn)
         {
+            TransportManager tm = _networkObjectCache.NetworkManager.TransportManager;
             foreach ((PooledWriter writer, Channel ch) in _bufferedRpcs.Values)
-                NetworkObject.NetworkManager.TransportManager.SendToClient((byte)ch, writer.GetArraySegment(), conn);
+                tm.SendToClient((byte)ch, writer.GetArraySegment(), conn);
         }
 
         /// <summary>
@@ -141,7 +143,7 @@ namespace FishNet.Object
 
             if (sendingClient == null)
             {
-                if (NetworkObject.NetworkManager.CanLog(LoggingType.Error))
+                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"NetworkConnection is null. ServerRpc {methodHash} on object {gameObject.name} [id {ObjectId}] will not complete. Remainder of packet may become corrupt.");
                 return;
             }
@@ -152,7 +154,7 @@ namespace FishNet.Object
             }
             else
             {
-                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
+                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"ServerRpc not found for hash {methodHash} on object {gameObject.name} [id {ObjectId}]. Remainder of packet may become corrupt.");
             }
         }
@@ -172,7 +174,7 @@ namespace FishNet.Object
             }
             else
             {
-                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
+                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"ObserversRpc not found for hash {methodHash.Value} on object {gameObject.name} [id {ObjectId}] . Remainder of packet may become corrupt.");
             }
         }
@@ -192,7 +194,7 @@ namespace FishNet.Object
             }
             else
             {
-                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
+                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"TargetRpc not found for hash {methodHash.Value} on object {gameObject.name} [id {ObjectId}] . Remainder of packet may become corrupt.");
             }
         }
@@ -212,7 +214,7 @@ namespace FishNet.Object
                 return;
 
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.ServerRpc, channel);
-            NetworkObject.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
+            _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
             writer.Dispose();
         }
         /// <summary>
@@ -239,7 +241,7 @@ namespace FishNet.Object
             else
                 writer = CreateRpc(hash, methodWriter, PacketId.ObserversRpc, channel);
 
-            NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), NetworkObject.Observers);
+            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers);
             /* If buffered then dispose of any already buffered
              * writers and replace with new one. Writers should
              * automatically dispose when references are lost
@@ -277,7 +279,7 @@ namespace FishNet.Object
              * are very low and I'd rather keep the complexity out of codegen. */
             if (target == null)
             {
-                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
+                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Action cannot be completed as no Target is specified.");
                 return;
             }
@@ -285,14 +287,14 @@ namespace FishNet.Object
             {
                 /* If not using observers, sending to owner,
                  * or observers contains target. */
-                //bool canSendTotarget = (!NetworkObject.UsingObservers ||
-                //    NetworkObject.OwnerId == target.ClientId ||
-                //    NetworkObject.Observers.Contains(target));
-                bool canSendTotarget = NetworkObject.OwnerId == target.ClientId || NetworkObject.Observers.Contains(target);
+                //bool canSendTotarget = (!_networkObjectCache.UsingObservers ||
+                //    _networkObjectCache.OwnerId == target.ClientId ||
+                //    _networkObjectCache.Observers.Contains(target));
+                bool canSendTotarget = _networkObjectCache.OwnerId == target.ClientId || _networkObjectCache.Observers.Contains(target);
 
                 if (!canSendTotarget)
                 {
-                    if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
+                    if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
                         Debug.LogWarning($"Action cannot be completed as Target is not an observer for object {gameObject.name} [id {ObjectId}].");
                     return;
                 }
@@ -309,7 +311,7 @@ namespace FishNet.Object
             else
                 writer = CreateRpc(hash, methodWriter, PacketId.TargetRpc, channel);
 
-            NetworkObject.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target);
+            _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target);
             writer.Dispose();
         }
 
@@ -323,7 +325,7 @@ namespace FishNet.Object
             bool result = this.IsSpawned;
             if (!result)
             {
-                if (NetworkObject.NetworkManager.CanLog(LoggingType.Warning))
+                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Action cannot be completed as object {gameObject.name} [Id {ObjectId}] is not spawned.");
             }
 

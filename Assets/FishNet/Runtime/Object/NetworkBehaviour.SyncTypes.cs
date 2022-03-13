@@ -103,7 +103,7 @@ namespace FishNet.Object
              * This can happen even if a client is going to see
              * this object because the server side initializes
              * before observers are built. */
-            if (NetworkObject.Observers.Count == 0)
+            if (_networkObjectCache.Observers.Count == 0)
                 return false;
 
             bool alreadyDirtied = (isSyncObject) ? _syncObjectDirty : _syncVarDirty;
@@ -113,7 +113,7 @@ namespace FishNet.Object
                 _syncVarDirty = true;
 
             if (!alreadyDirtied)
-                NetworkObject.NetworkManager.ServerManager.Objects.SetDirtySyncType(this, isSyncObject);
+                _networkObjectCache.NetworkManager.ServerManager.Objects.SetDirtySyncType(this, isSyncObject);
 
             return true;
         }
@@ -144,9 +144,9 @@ namespace FishNet.Object
                 _syncTypeWriters[i] = new SyncTypeWriter(_readPermissions[i]);
 
             foreach (SyncBase sb in _syncVars.Values)
-                sb.PreInitialize(networkObject.NetworkManager);
+                sb.PreInitialize(_networkObjectCache.NetworkManager);
             foreach (SyncBase sb in _syncObjects.Values)
-                sb.PreInitialize(networkObject.NetworkManager);
+                sb.PreInitialize(_networkObjectCache.NetworkManager);
         }
 
 
@@ -224,7 +224,7 @@ namespace FishNet.Object
             /* True if writers have been reset for this check.
              * For perf writers are only reset when data is to be written. */
             bool writersReset = false;
-            uint tick = NetworkObject.NetworkManager.TimeManager.Tick;
+            uint tick = _networkObjectCache.NetworkManager.TimeManager.Tick;
 
             //True if a syncvar is found to still be dirty.
             bool dirtyFound = false;
@@ -252,7 +252,7 @@ namespace FishNet.Object
                     byte channel = (byte)sb.Channel;
                     sb.ResetDirty();
                     //If ReadPermission is owner but no owner skip this syncvar write.
-                    if (sb.Settings.ReadPermission == ReadPermission.OwnerOnly && !NetworkObject.Owner.IsValid)
+                    if (sb.Settings.ReadPermission == ReadPermission.OwnerOnly && !_networkObjectCache.Owner.IsValid)
                         continue;
 
                     dataWritten = true;
@@ -316,7 +316,7 @@ namespace FishNet.Object
                                 // with unreliable lengths and what not. */
 
                                 dataWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
-
+                                
                                 //If unreliable write packet length.
                                 if ((Channel)channel == Channel.Unreliable)
                                 {
@@ -332,10 +332,10 @@ namespace FishNet.Object
                                 //If sending to observers.
                                 bool excludeOwnerPermission = (_syncTypeWriters[i].ReadPermission == ReadPermission.ExcludeOwner);
                                 if (excludeOwnerPermission || _syncTypeWriters[i].ReadPermission == ReadPermission.Observers)
-                                    NetworkObject.NetworkManager.TransportManager.SendToClients((byte)channel, headerWriter.GetArraySegment(), NetworkObject, excludeOwnerPermission);
+                                    _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, headerWriter.GetArraySegment(), _networkObjectCache, excludeOwnerPermission);
                                 //Sending only to owner.
                                 else
-                                    NetworkObject.NetworkManager.TransportManager.SendToClient(channel, headerWriter.GetArraySegment(), NetworkObject.Owner);
+                                    _networkObjectCache.NetworkManager.TransportManager.SendToClient(channel, headerWriter.GetArraySegment(), _networkObjectCache.Owner);
                             }
                         }
                     }
@@ -385,7 +385,7 @@ namespace FishNet.Object
                         if (!forOwner && sb.Settings.ReadPermission == ReadPermission.OwnerOnly)
                         {
                             //If there is an owner then skip.
-                            if (NetworkObject.Owner.IsValid)
+                            if (_networkObjectCache.Owner.IsValid)
                                 continue;
                         }
 

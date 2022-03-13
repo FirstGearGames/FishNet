@@ -63,7 +63,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Returns if this connection is for the local client.
         /// </summary>
-        public bool IsLocalClient => (NetworkManager != null) ? (NetworkManager.ClientManager.Connection == this) : false;
+        public bool IsLocalClient => (NetworkManager == null) ? false : (NetworkManager.ClientManager.Connection == this);
         /// <summary>
         /// 
         /// </summary>

@@ -14,47 +14,47 @@ namespace FishNet.Object
         /// <summary>
         /// True if the NetworkObject for this NetworkBehaviour is deinitializing.
         /// </summary>
-        public bool Deinitializing => (NetworkObject == null) ? true : NetworkObject.Deinitializing;
+        public bool Deinitializing => _networkObjectCache.Deinitializing;
         /// <summary>
         /// NetworkManager for this object.
         /// </summary>
-        public NetworkManager NetworkManager => (NetworkObject == null) ? null : NetworkObject.NetworkManager;
+        public NetworkManager NetworkManager => _networkObjectCache.NetworkManager;
         /// <summary>
         /// TimeManager for this object.
         /// </summary>
-        public TimeManager TimeManager => (NetworkObject == null) ? null : NetworkObject.TimeManager;
+        public TimeManager TimeManager => _networkObjectCache.TimeManager;
         /// <summary>
         /// RollbackManager for this object.
         /// </summary>
-        public RollbackManager RollbackManager => (NetworkObject == null) ? null : NetworkObject.RollbackManager;
+        public RollbackManager RollbackManager => _networkObjectCache.RollbackManager;
         /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
-        public bool IsClient => (NetworkObject == null) ? false : NetworkObject.IsClient;
+        public bool IsClient => _networkObjectCache.IsClient;
         /// <summary>
         /// True if only the client is active and authenticated.
         /// </summary>
-        public bool IsClientOnly => (NetworkObject == null) ? false : NetworkObject.IsClientOnly;
+        public bool IsClientOnly => _networkObjectCache.IsClientOnly;
         /// <summary>
         /// True if server is active.
         /// </summary>
-        public bool IsServer => (NetworkObject == null) ? false : NetworkObject.IsServer;
+        public bool IsServer => _networkObjectCache.IsServer;
         /// <summary>
         /// True if only the server is active.
         /// </summary>
-        public bool IsServerOnly => (NetworkObject == null) ? false : NetworkObject.IsServerOnly;
+        public bool IsServerOnly => _networkObjectCache.IsServerOnly;
         /// <summary>
         /// True if client and server are active.
         /// </summary>
-        public bool IsHost => (NetworkObject == null) ? false : NetworkObject.IsHost;
+        public bool IsHost => _networkObjectCache.IsHost;
         /// <summary>
         /// True if client nor server are active.
         /// </summary>
-        public bool IsOffline => (NetworkObject == null) ? true : NetworkObject.IsOffline;
+        public bool IsOffline => _networkObjectCache.IsOffline;
         /// <summary>
         /// True if the local client is the owner of this object.
         /// </summary>
-        public bool IsOwner => (NetworkObject == null) ? false : NetworkObject.IsOwner;
+        public bool IsOwner => _networkObjectCache.IsOwner;
         /// <summary>
         /// Owner of this object.
         /// </summary>
@@ -63,10 +63,10 @@ namespace FishNet.Object
             get
             {
                 //Ensures a null Owner is never returned.
-                if (NetworkObject == null)
+                if (_networkObjectCache == null)
                     return FishNet.Managing.NetworkManager.EmptyConnection;
 
-                return NetworkObject.Owner;
+                return _networkObjectCache.Owner;
             }
         }
         /// <summary>
@@ -74,24 +74,24 @@ namespace FishNet.Object
         /// </summary>
         /// </summary>
         [Obsolete("Use Owner.IsValid instead.")] //Remove on 2022/06/01
-        public bool OwnerIsValid => (NetworkObject == null) ? false : NetworkObject.OwnerIsValid;
+        public bool OwnerIsValid => _networkObjectCache.OwnerIsValid;
         /// <summary>
         /// True if there is an owner and their connect is active. This will return false if there is no owner, or if the connection is disconnecting.
         /// </summary>
         [Obsolete("Use Owner.IsActive instead.")] //Remove on 2022/06/01
-        public bool OwnerIsActive => (NetworkObject == null) ? false : NetworkObject.OwnerIsActive;
+        public bool OwnerIsActive => _networkObjectCache.OwnerIsActive;
         /// <summary>
         /// ClientId for this NetworkObject owner.
         /// </summary>
-        public int OwnerId => (NetworkObject == null) ? -1 : NetworkObject.OwnerId;
+        public int OwnerId => _networkObjectCache.OwnerId;
         /// <summary>
-        /// Unique Id for this NetworkObject. This does not represent the object owner.
+        /// Unique Id for this _networkObjectCache. This does not represent the object owner.
         /// </summary>
-        public int ObjectId => (NetworkObject == null) ? -1 : NetworkObject.ObjectId;
+        public int ObjectId => _networkObjectCache.ObjectId;
         /// <summary>
         /// The local connection of the client calling this method.
         /// </summary>
-        public NetworkConnection LocalConnection => (NetworkObject == null) ? new NetworkConnection() : NetworkObject.LocalConnection;
+        public NetworkConnection LocalConnection => _networkObjectCache.LocalConnection;
         /// <summary>
         /// Returns if a connection is the owner of this object.
         /// Internal use.
@@ -100,15 +100,15 @@ namespace FishNet.Object
         /// <returns></returns>
         public bool CompareOwner(NetworkConnection connection)
         {
-            return (NetworkObject.Owner == connection);
+            return (_networkObjectCache.Owner == connection);
         }
         /// <summary>
-        /// Despawns this NetworkObject. Can only be called on the server.
+        /// Despawns this _networkObjectCache. Can only be called on the server.
         /// </summary>
         public void Despawn()
         {
             if (!IsNetworkObjectNull(true))
-                NetworkObject.Despawn();
+                _networkObjectCache.Despawn();
         }
         /// <summary>
         /// Spawns an object over the network. Can only be called on the server.
@@ -119,7 +119,7 @@ namespace FishNet.Object
         {
             if (IsNetworkObjectNull(true))
                 return;
-            NetworkObject.Spawn(go, ownerConnection);
+            _networkObjectCache.Spawn(go, ownerConnection);
         }
         /// <summary>
         /// Returns if NetworkObject is null.
@@ -128,7 +128,7 @@ namespace FishNet.Object
         /// <returns></returns>
         private bool IsNetworkObjectNull(bool warn)
         {
-            bool isNull = (NetworkObject == null);
+            bool isNull = (_networkObjectCache == null);
             if (isNull && warn)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
@@ -142,7 +142,7 @@ namespace FishNet.Object
         /// </summary>
         public void RemoveOwnership()
         {
-            NetworkObject?.GiveOwnership(null, true);
+            _networkObjectCache?.GiveOwnership(null, true);
         }
         /// <summary>
         /// Gives ownership to newOwner.
@@ -150,7 +150,7 @@ namespace FishNet.Object
         /// <param name="newOwner"></param>
         public void GiveOwnership(NetworkConnection newOwner)
         {
-            NetworkObject?.GiveOwnership(newOwner, true);
+            _networkObjectCache?.GiveOwnership(newOwner, true);
         }
     }
 

@@ -174,9 +174,21 @@ namespace FishNet.Object
             Observers.Clear();
             Deinitializing = true;
 
+            SetActiveStatus(false, true);
+            SetActiveStatus(false, false);
             //Don't need to reset sync types if object is being destroyed.
         }
 
+        /// <summary>
+        /// Sets IsClient or IsServer to isActive.
+        /// </summary>
+        private void SetActiveStatus(bool isActive, bool server)
+        {
+            if (server)
+                IsServer = isActive;
+            else
+                IsClient = isActive;
+        }
         /// <summary>
         /// PreInitializes this script.
         /// </summary>
@@ -186,6 +198,12 @@ namespace FishNet.Object
         {
             Deinitializing = false;
             NetworkManager = networkManager;
+            //Set QOL references.
+            TimeManager = networkManager.TimeManager;
+            RollbackManager = networkManager.RollbackManager;
+            //Set active status true for client or server.
+            SetActiveStatus(true, asServer);
+
             SetOwner(owner);
             ObjectId = objectId;
 
@@ -213,7 +231,7 @@ namespace FishNet.Object
         /// Updates NetworkBehaviours and initializes them with serialized values.
         /// </summary>
         internal void UpdateNetworkBehaviours()
-        {            
+        {
             NetworkBehaviours = null;
 
             //If there are no child nobs then get NetworkBehaviours normally.
@@ -282,7 +300,7 @@ namespace FishNet.Object
             else
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OfflineInitialize(this, (byte)i);
+                    NetworkBehaviours[i].SerializeComponents(this, (byte)i);
             }
         }
 
@@ -313,10 +331,14 @@ namespace FishNet.Object
                 RemoveClientRpcLinkIndexes();
             }
 
-            if (SceneObject)
-                ResetSyncTypes(asServer);
+            //if (SceneObject)
+            //This needs to be done even if not scene object to support pooling.
+            ResetSyncTypes(asServer);
+
             if (asServer)
                 Observers.Clear();
+
+            SetActiveStatus(false, asServer);
         }
 
         ///// <summary>

@@ -13,6 +13,7 @@ namespace FishNet.Object
             /* When invoking OnOwnership here previous owner will
              * always be an empty connection, since the object is just
              * now initializing. */
+
             if (!asServer)
                 ClientInitialized = true;
 
@@ -98,6 +99,11 @@ namespace FishNet.Object
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].InvokeOnNetwork(false);
             }
+
+            if (asServer)
+                IsServer = false;
+            else
+                IsClient = false;
         }
 
         /// <summary>
