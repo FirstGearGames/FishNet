@@ -664,18 +664,39 @@ namespace FishNet.CodeGenerating.Processing
             ParameterDefinition asServerPd = md.Parameters[0];
 
             Instruction afterAsServerInst = processor.Create(OpCodes.Nop);
+            Instruction resetTicksInst = processor.Create(OpCodes.Nop);
+
             processor.Emit(OpCodes.Ldarg, asServerPd);
             processor.Emit(OpCodes.Brfalse_S, afterAsServerInst);
             //Clear on server replicates.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateDatas);
             processor.Emit(OpCodes.Callvirt, queueClearMr);
-            processor.Emit(OpCodes.Ret);
+            processor.Emit(OpCodes.Br_S, resetTicksInst);
             processor.Append(afterAsServerInst);
             //Clear on client replicates.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ClientReplicateDatas);
             processor.Emit(OpCodes.Callvirt, lstClearMr);
+
+            processor.Append(resetTicksInst);
+            /* Reset last ticks. */
+            //
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldc_I4_0);
+            processor.Emit(OpCodes.Stfld, predictionFields.ClientReconcileTick);
+            //
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldc_I4_0);
+            processor.Emit(OpCodes.Stfld, predictionFields.ClientReplicateTick);
+            //
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldc_I4_0);
+            processor.Emit(OpCodes.Stfld, predictionFields.ServerReceivedTick);
+            //
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldc_I4_0);
+            processor.Emit(OpCodes.Stfld, predictionFields.ServerReplicateTick);
             processor.Emit(OpCodes.Ret);
         }
         /// <summary>

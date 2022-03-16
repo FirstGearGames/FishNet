@@ -103,7 +103,11 @@ namespace FishNet.Object
         /// Called on the server after ownership has changed.
         /// </summary>
         /// <param name="prevOwner">Previous owner of this object.</param>
-        public virtual void OnOwnershipServer(NetworkConnection prevOwner) { }
+        public virtual void OnOwnershipServer(NetworkConnection prevOwner) 
+        {
+            //When switching ownership always clear replicate cache on server.
+            InternalClearReplicateCache(true);
+        }
         /// <summary>
         /// Called on the server after a spawn message for this object has been sent to clients.
         /// Useful for sending remote calls or data to clients.
@@ -133,7 +137,12 @@ namespace FishNet.Object
         /// Called on the client after gaining or losing ownership.
         /// </summary>
         /// <param name="prevOwner">Previous owner of this object.</param>
-        public virtual void OnOwnershipClient(NetworkConnection prevOwner) { }
+        public virtual void OnOwnershipClient(NetworkConnection prevOwner)
+        {
+            //If losing or gaining ownership then clear replicate cache.
+            if (IsOwner || prevOwner == LocalConnection)
+                InternalClearReplicateCache(false);
+        }
 
     }
 

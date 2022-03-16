@@ -262,12 +262,12 @@ namespace FishNet.Managing.Object
                 if (isRpcLink)
                 {
                     msg = (rpcLinkObjectId == -1) ?
-                        $"RPCLink of Id {packetId} could not be found. Remaining data will be purged." :
-                        $"ObjectId {rpcLinkObjectId} for RPCLink {packetId} could not be found.";
+                        $"RPCLink of Id {(PacketId)packetId} could not be found. Remaining data will be purged." :
+                        $"ObjectId {rpcLinkObjectId} for RPCLink {(PacketId)packetId} could not be found.";
                 }
                 else
                 {
-                    msg = $"NetworkBehaviour could not be found for {packetId}. Remaining data will be purged.";
+                    msg = $"NetworkBehaviour could not be found for packetId {(PacketId)packetId}. Remaining data will be purged.";
                 }
 
                 /* Default logging for server is errors only. Use error on client and warning

@@ -142,7 +142,7 @@ namespace FishNet.Object
         /// </summary>
         public void RemoveOwnership()
         {
-            _networkObjectCache?.GiveOwnership(null, true);
+            _networkObjectCache.GiveOwnership(null, true);
         }
         /// <summary>
         /// Gives ownership to newOwner.
@@ -150,7 +150,7 @@ namespace FishNet.Object
         /// <param name="newOwner"></param>
         public void GiveOwnership(NetworkConnection newOwner)
         {
-            _networkObjectCache?.GiveOwnership(newOwner, true);
+            _networkObjectCache.GiveOwnership(newOwner, true);
         }
     }
 
