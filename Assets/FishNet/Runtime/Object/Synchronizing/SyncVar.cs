@@ -1,6 +1,5 @@
 ﻿using FishNet.Documenting;
 using FishNet.Object.Helping;
-using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
@@ -8,7 +7,6 @@ using FishNet.Transporting;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {

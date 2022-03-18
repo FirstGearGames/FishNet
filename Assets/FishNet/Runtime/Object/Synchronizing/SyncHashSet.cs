@@ -70,6 +70,10 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public readonly ISet<T> Collection;
         /// <summary>
+        /// Copy of objects on client portion when acting as a host.
+        /// </summary>
+        public readonly ISet<T> ClientHostCollection = new HashSet<T>();
+        /// <summary>
         /// Number of objects in the collection.
         /// </summary>
         public int Count => Collection.Count;
@@ -116,6 +120,9 @@ namespace FishNet.Object.Synchronizing
         {
             this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
             this.Collection = collection;
+            //Add each in collection to clienthostcollection.
+            foreach (T item in collection)
+                ClientHostCollection.Add(item);
         }
 
         /// <summary>
@@ -132,9 +139,11 @@ namespace FishNet.Object.Synchronizing
         /// Gets the collection being used within this SyncList.
         /// </summary>
         /// <returns></returns>
-        public HashSet<T> GetCollection()
+        public HashSet<T> GetCollection(bool asServer)
         {
-            return (Collection as HashSet<T>);
+            bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
+            ISet<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
+            return (collection as HashSet<T>);
         }
 
         /// <summary>
@@ -255,7 +264,7 @@ namespace FishNet.Object.Synchronizing
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
             bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
-            ISet<T> collection = Collection;
+            ISet<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
 
             int changes = (int)reader.ReadUInt32();
             for (int i = 0; i < changes; i++)
@@ -267,21 +276,18 @@ namespace FishNet.Object.Synchronizing
                 if (operation == SyncHashSetOperation.Add)
                 {
                     next = reader.Read<T>();
-                    if (!base.NetworkManager.IsServer)
-                        collection.Add(next);
+                    collection.Add(next);
                 }
                 //Clear.
                 else if (operation == SyncHashSetOperation.Clear)
                 {
-                    if (!base.NetworkManager.IsServer)
-                        collection.Clear();
+                    collection.Clear();
                 }
                 //Remove.
                 else if (operation == SyncHashSetOperation.Remove)
                 {
                     next = reader.Read<T>();
-                    if (!base.NetworkManager.IsServer)
-                        collection.Remove(next);
+                    collection.Remove(next);
                 }
 
                 InvokeOnChange(operation, next, false);
@@ -325,9 +331,13 @@ namespace FishNet.Object.Synchronizing
             base.Reset();
             _changed.Clear();
             Collection.Clear();
+            ClientHostCollection.Clear();
 
             foreach (T item in _initialValues)
+            {
                 Collection.Add(item);
+                ClientHostCollection.Add(item);
+            }
         }
 
         /// <summary>
@@ -343,7 +353,11 @@ namespace FishNet.Object.Synchronizing
             bool result = Collection.Add(item);
             //Only process if remove was successful.
             if (result && asServer)
+            {
+                if (base.NetworkManager == null)
+                    ClientHostCollection.Add(item);
                 AddOperation(SyncHashSetOperation.Add, item);
+            }
 
             return result;
         }
@@ -368,7 +382,11 @@ namespace FishNet.Object.Synchronizing
         {
             Collection.Clear();
             if (asServer)
+            {
+                if (base.NetworkManager == null)
+                    ClientHostCollection.Clear();
                 AddOperation(SyncHashSetOperation.Clear, default);
+            }
         }
 
         /// <summary>
@@ -395,7 +413,11 @@ namespace FishNet.Object.Synchronizing
             bool result = Collection.Remove(item);
             //Only process if remove was successful.
             if (result && asServer)
+            {
+                if (base.NetworkManager == null)
+                    ClientHostCollection.Remove(item);
                 AddOperation(SyncHashSetOperation.Remove, item);
+            }
 
             return result;
         }
@@ -438,20 +460,28 @@ namespace FishNet.Object.Synchronizing
 
         private void IntersectWith(ISet<T> other)
         {
-            if (_listCache == null)
-                _listCache = new ListCache<T>();
-            else
-                _listCache.Reset();
+            Intersect(Collection);
+            if (base.NetworkManager == null)
+                Intersect(ClientHostCollection);
 
-            _listCache.AddValues(Collection);
-
-            int count = _listCache.Written;
-            for (int i = 0; i < count; i++)
+            void Intersect(ISet<T> collection)
             {
-                T entry = _listCache.Collection[i];
-                if (!other.Contains(entry))
-                    Remove(entry);
+                if (_listCache == null)
+                    _listCache = new ListCache<T>();
+                else
+                    _listCache.Reset();
+
+                _listCache.AddValues(collection);
+
+                int count = _listCache.Written;
+                for (int i = 0; i < count; i++)
+                {
+                    T entry = _listCache.Collection[i];
+                    if (!other.Contains(entry))
+                        Remove(entry);
+                }
             }
+
         }
 
         public bool IsProperSubsetOf(IEnumerable<T> other)
@@ -476,7 +506,8 @@ namespace FishNet.Object.Synchronizing
 
         public bool Overlaps(IEnumerable<T> other)
         {
-            return Collection.Overlaps(other);
+            bool result = Collection.Overlaps(other);
+            return result;
         }
 
         public bool SetEquals(IEnumerable<T> other)
@@ -524,6 +555,8 @@ namespace FishNet.Object.Synchronizing
         public void CopyTo(T[] array, int index)
         {
             Collection.CopyTo(array, index);
+            if (base.NetworkManager == null)
+                ClientHostCollection.CopyTo(array, index);
         }
     }
 }
