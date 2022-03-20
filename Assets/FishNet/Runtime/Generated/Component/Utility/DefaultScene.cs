@@ -2,7 +2,9 @@
 using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Scened;
+using FishNet.Managing.Transporting;
 using FishNet.Transporting;
+using FishNet.Transporting.Multipass;
 using FishNet.Utility;
 using System.IO;
 using UnityEngine;
@@ -107,6 +109,12 @@ public class DefaultScene : MonoBehaviour
          * join it when connecting. */
         if (obj.ConnectionState == LocalConnectionStates.Started)
         {
+            /* A server besides this one is already started,
+             * no need to load start scenes again. */
+            if (!InstanceFinder.ServerManager.OneServerStarted())
+                return;
+
+            //If here can load scene.
             SceneLoadData sld = new SceneLoadData(GetSceneName(_onlineScene));
             sld.ReplaceScenes = _replaceScenes;
             InstanceFinder.SceneManager.LoadGlobalScenes(sld);

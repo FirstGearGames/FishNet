@@ -291,7 +291,7 @@ namespace FishNet.Managing.Client
                     if (!base.NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(ownerId, out owner))
                         owner = NetworkManager.EmptyConnection;
                 }
-                nob.InitializeOnce(NetworkManager, objectId, owner, false);
+                nob.InitializeOnceInternal(NetworkManager, objectId, owner, false);
             }
 
             _objectCache.AddSpawn(nob, rpcLinks, syncValues, NetworkManager);

@@ -189,7 +189,7 @@ namespace FishNet.Managing.Client
         }
 
         /// <summary>
-        /// Called when a connection state changes local server or client, or a remote client.
+        /// Called when a connection state changes for local client.
         /// </summary>
         /// <param name="args"></param>
         private void Transport_OnClientConnectionState(ClientConnectionStateArgs args)

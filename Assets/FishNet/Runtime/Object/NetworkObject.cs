@@ -194,7 +194,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="networkManager"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InitializeOnce(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
+        internal void InitializeOnceInternal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
             Deinitializing = false;
             NetworkManager = networkManager;
@@ -212,7 +212,7 @@ namespace FishNet.Object
             AddDefaultNetworkObserverConditions();
 
             for (int i = 0; i < NetworkBehaviours.Length; i++)
-                NetworkBehaviours[i].InitializeOnce();
+                NetworkBehaviours[i].InitializeOnceInternal();
 
             /* NetworkObserver uses some information from
              * NetworkBehaviour so it must be preinitialized
@@ -235,7 +235,7 @@ namespace FishNet.Object
             //If there are no child nobs then get NetworkBehaviours normally.
             if (ChildNetworkObjects.Count == 0)
             {
-                NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>();
+                NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>(true);
             }
             //There are child nobs.
             else

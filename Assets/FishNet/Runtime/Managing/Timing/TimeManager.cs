@@ -417,7 +417,8 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
         {
-            if (obj.ConnectionState != LocalConnectionStates.Started)
+            //If not started and no servers are started.
+            if (!_networkManager.ServerManager.AnyServerStarted())
             {
                 foreach (ClientTickData item in _bufferedClientInputs.Values)
                     _tickDataCache.Push(item);

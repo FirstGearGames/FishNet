@@ -56,12 +56,11 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="networkObject"></param>
         /// <param name="componentIndex"></param>
-        internal void InitializeOnce()
+        internal void InitializeOnceInternal()
         {
             InitializeOnceSyncTypes();
             InitializeOnceRpcLinks();
         }
-
 
         /// <summary>
         /// Serializes information about components.
@@ -72,7 +71,7 @@ namespace FishNet.Object
             ComponentIndex = componentIndex;
         }
 
-        #region Editor.
+#region Editor.
         protected virtual void Reset()
         {
 #if UNITY_EDITOR
@@ -126,7 +125,7 @@ namespace FishNet.Object
             return null;
 #endif
         }
-        #endregion
+#endregion
     }
 
 

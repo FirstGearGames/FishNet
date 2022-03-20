@@ -165,8 +165,8 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
         {
-            //If server isn't started.
-            if (obj.ConnectionState != LocalConnectionStates.Started)
+            //If no servers are started.
+            if (!_networkManager.ServerManager.AnyServerStarted())
                 ResetValues();
 
         }

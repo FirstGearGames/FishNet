@@ -330,7 +330,6 @@ namespace FishNet.Transporting.Multipass
         /// <param name="connectionStateArgs"></param>
         private void Multipass_OnRemoteConnectionState(RemoteConnectionStateArgs connectionStateArgs)
         {
-            Debug.Log("A " + connectionStateArgs.ConnectionState + ",  " + connectionStateArgs.ConnectionId + ",  " + connectionStateArgs.TransportIndex);
             /* When starting Multipass needs to get a new
             * connectionId to be used within FN. This is the 'ClientId'
              * that is passed around for ownership, rpcs, ect.

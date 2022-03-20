@@ -95,18 +95,29 @@ namespace FishNet.Managing.Server
         /// <param name="args"></param>
         internal void OnServerConnectionState(ServerConnectionStateArgs args)
         {
+
             //If server just connected.
             if (args.ConnectionState == LocalConnectionStates.Started)
             {
-                BuildObjectIdCache();
-                SetupSceneObjects();
+                /* If there's no servers started besides the one
+                 * that just started then build Ids and setup scene objects. */
+                if (base.NetworkManager.ServerManager.OneServerStarted())
+                {
+                    BuildObjectIdCache();
+                    SetupSceneObjects();
+                }
             }
             //Server in anything but started state.
             else
             {
-                base.DespawnSpawnedWithoutSynchronization(true);
-                base.SceneObjects.Clear();
-                _objectIdCache.Clear();
+                //If no servers are started then reset.
+                if (!base.NetworkManager.ServerManager.AnyServerStarted())
+                {
+                    base.DespawnSpawnedWithoutSynchronization(true);
+                    base.SceneObjects.Clear();
+                    _objectIdCache.Clear();
+                    base.NetworkManager.ServerManager.Clients.Clear();
+                }
             }
         }
 
@@ -159,7 +170,7 @@ namespace FishNet.Managing.Server
             //Build Id cache.
             int cacheCount = shuffledCache.Count;
             for (int i = 0; i < cacheCount; i++)
-                _objectIdCache.Enqueue(shuffledCache[i]);            
+                _objectIdCache.Enqueue(shuffledCache[i]);
         }
         /// <summary>
         /// Caches a NetworkObject ObjectId.
@@ -189,9 +200,9 @@ namespace FishNet.Managing.Server
                 return _objectIdCache.Dequeue();
             }
         }
-#endregion
+        #endregion
 
-#region Initializing Objects In Scenes.
+        #region Initializing Objects In Scenes.
         /// <summary>
         /// Called when a scene loads on the server.
         /// </summary>
@@ -251,15 +262,15 @@ namespace FishNet.Managing.Server
             if (nob.IsNetworked)
             {
                 int objectId = GetNextNetworkObjectId();
-                nob.InitializeOnce(NetworkManager, objectId, ownerConnection, true);
+                nob.InitializeOnceInternal(NetworkManager, objectId, ownerConnection, true);
                 base.AddToSpawned(nob);
                 nob.gameObject.SetActive(true);
                 nob.Initialize(true);
             }
         }
-#endregion
+        #endregion
 
-#region Spawning.
+        #region Spawning.
         /// <summary>
         /// Spawns an object over the network.
         /// </summary>
@@ -412,9 +423,9 @@ namespace FishNet.Managing.Server
             headerWriter.Dispose();
             tempWriter.Dispose();
         }
-#endregion
+        #endregion
 
-#region Despawning.
+        #region Despawning.
         internal void AddToPending(NetworkObject nob)
         {
             _pendingDestroy[nob.ObjectId] = nob;
@@ -518,7 +529,7 @@ namespace FishNet.Managing.Server
 
 
     }
-#endregion
+    #endregion
 
 
 

@@ -273,13 +273,9 @@ namespace FishNet.Managing.Server
              * This gives the client an opportunity to clean-up or prepare
              * before the server completes it's actions. */
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
-            LocalConnectionStates state = args.ConnectionState;
-            Started = (state == LocalConnectionStates.Started);
-
             Objects.OnServerConnectionState(args);
-            //If not connected then clear clients.
-            if (!Started)
-                Clients.Clear();
+            Started = AnyServerStarted();
+            LocalConnectionStates state = args.ConnectionState;            
 
             if (NetworkManager.CanLog(LoggingType.Common))
                 Debug.Log($"Server is {state.ToString().ToLower()}.");

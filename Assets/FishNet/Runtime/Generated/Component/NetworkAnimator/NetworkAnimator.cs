@@ -309,7 +309,11 @@ namespace FishNet.Component.Animating
         /// </summary>
         private bool _isActive
         {
-            get { return (_animator != null && _animator.enabled); }
+            get 
+            {
+                bool failedChecks = (_layerWeights == null || _animator == null || !_animator.enabled);
+                return !failedChecks;
+            }
         }
         /// <summary>
         /// Float valeus to smooth towards.
@@ -453,8 +457,6 @@ namespace FishNet.Component.Animating
 
         private void Update()
         {
-            if (!_isActive)
-                return;
             if (base.IsClient)
             {
                 CheckSendToServer();
@@ -586,11 +588,12 @@ namespace FishNet.Component.Animating
             //Cannot send to server if not client authoritative or don't have authority.
             if (!ClientAuthoritative || !base.IsOwner)
                 return;
-
             //Not enough time passed to send.
             if (Time.time < _nextClientSendTime)
                 return;
             _nextClientSendTime = Time.time + _synchronizeInterval;
+            if (!_isActive)
+                return;
 
             /* If there are updated parameters to send.
              * Don't really need to worry about mtu here
@@ -608,13 +611,15 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void CheckSendToClients()
         {
-            if (!_isActive)
-                return;
             //Cannot send to clients if not server.
             if (!base.IsServer)
                 return;
             //Not enough time passed to send.
             if (Time.time < _nextServerSendTime)
+                return;
+            _nextServerSendTime = Time.time + _synchronizeInterval;
+            //Not active.
+            if (!_isActive)
                 return;
 
             bool sendFromServer;
@@ -671,7 +676,6 @@ namespace FishNet.Component.Animating
                 sendFromServer = true;
             }
 
-            _nextServerSendTime = Time.time + _synchronizeInterval;
             /* If client authoritative then use what was received from clients
              * if data exist. */
             if (!sendFromServer)
@@ -710,29 +714,32 @@ namespace FishNet.Component.Animating
             //Don't need to smooth on authoritative client.
             if (!_canSmoothFloats)
                 return;
+            //Not active.
+            if (!_isActive)
+                return;
+            //Nothing to smooth.
+            if (_smoothedFloats.Count == 0)
+                return;
 
-            if (_smoothedFloats.Count > 0)
+            float deltaTime = Time.deltaTime;
+
+            List<int> finishedEntries = new List<int>();
+
+            /* Cycle through each target float and move towards it.
+                * Once at a target float mark it to be removed from floatTargets. */
+            foreach (KeyValuePair<int, SmoothedFloat> item in _smoothedFloats)
             {
-                float deltaTime = Time.deltaTime;
+                float current = _animator.GetFloat(item.Key);
+                float next = Mathf.MoveTowards(current, item.Value.Target, item.Value.Rate * deltaTime);
+                _animator.SetFloat(item.Key, next);
 
-                List<int> finishedEntries = new List<int>();
-
-                /* Cycle through each target float and move towards it.
-                    * Once at a target float mark it to be removed from floatTargets. */
-                foreach (KeyValuePair<int, SmoothedFloat> item in _smoothedFloats)
-                {
-                    float current = _animator.GetFloat(item.Key);
-                    float next = Mathf.MoveTowards(current, item.Value.Target, item.Value.Rate * deltaTime);
-                    _animator.SetFloat(item.Key, next);
-
-                    if (next == item.Value.Target)
-                        finishedEntries.Add(item.Key);
-                }
-
-                //Remove finished entries from dictionary.
-                for (int i = 0; i < finishedEntries.Count; i++)
-                    _smoothedFloats.Remove(finishedEntries[i]);
+                if (next == item.Value.Target)
+                    finishedEntries.Add(item.Key);
             }
+
+            //Remove finished entries from dictionary.
+            for (int i = 0; i < finishedEntries.Count; i++)
+                _smoothedFloats.Remove(finishedEntries[i]);
         }
 
         /// <summary>
