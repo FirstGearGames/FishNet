@@ -307,11 +307,11 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Returns if the animator is exist and is active.
         /// </summary>
-        private bool _isActive
+        private bool _isAnimatorEnabled
         {
-            get 
+            get
             {
-                bool failedChecks = (_layerWeights == null || _animator == null || !_animator.enabled);
+                bool failedChecks = (_animator == null || !_animator.enabled);
                 return !failedChecks;
             }
         }
@@ -431,7 +431,7 @@ namespace FishNet.Component.Animating
         public override void OnSpawnServer(NetworkConnection connection)
         {
             base.OnSpawnServer(connection);
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return;
             if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, true))
                 TargetAnimatorUpdated(connection, updatedBytes);
@@ -457,6 +457,10 @@ namespace FishNet.Component.Animating
 
         private void Update()
         {
+            //One check rather than per each method.
+            if (!_isAnimatorEnabled)
+                return;
+
             if (base.IsClient)
             {
                 CheckSendToServer();
@@ -481,7 +485,7 @@ namespace FishNet.Component.Animating
             if (!ApplicationState.IsPlaying())
                 return;
 
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
             {
                 Debug.LogWarning("Animator is null or not enabled; unable to initialize for animator. Use SetAnimator if animator was changed or enable the animator.");
                 return;
@@ -504,6 +508,7 @@ namespace FishNet.Component.Animating
             {
                 bool process = !_animator.IsParameterControlledByCurve(item.name);
                 
+
                 if (process)
                 {
                     //Over 250 parameters; who would do this!?
@@ -580,8 +585,6 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void CheckSendToServer()
         {
-            if (!_isActive)
-                return;
             //Cannot send to server if is server or not client.
             if (base.IsServer || !base.IsClient)
                 return;
@@ -592,8 +595,6 @@ namespace FishNet.Component.Animating
             if (Time.time < _nextClientSendTime)
                 return;
             _nextClientSendTime = Time.time + _synchronizeInterval;
-            if (!_isActive)
-                return;
 
             /* If there are updated parameters to send.
              * Don't really need to worry about mtu here
@@ -618,9 +619,6 @@ namespace FishNet.Component.Animating
             if (Time.time < _nextServerSendTime)
                 return;
             _nextServerSendTime = Time.time + _synchronizeInterval;
-            //Not active.
-            if (!_isActive)
-                return;
 
             bool sendFromServer;
             //If client authoritative.
@@ -714,9 +712,6 @@ namespace FishNet.Component.Animating
             //Don't need to smooth on authoritative client.
             if (!_canSmoothFloats)
                 return;
-            //Not active.
-            if (!_isActive)
-                return;
             //Nothing to smooth.
             if (_smoothedFloats.Count == 0)
                 return;
@@ -748,6 +743,10 @@ namespace FishNet.Component.Animating
         /// <returns></returns>
         private bool AnimatorUpdated(out ArraySegment<byte> updatedBytes, bool forceAll = false)
         {
+            updatedBytes = default;
+            //Something isn't setup right.
+            if (_layerWeights == null)
+                return false;
             //Reset the writer.
             _writer.Reset();
 
@@ -875,7 +874,6 @@ namespace FishNet.Component.Animating
             //Nothing to update.
             if (_writer.Position == 0)
             {
-                updatedBytes = default;
                 return false;
             }
             else
@@ -891,7 +889,9 @@ namespace FishNet.Component.Animating
         /// <param name="changedParameters"></param>
         private void ApplyParametersUpdated(ref ArraySegment<byte> updatedParameters)
         {
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
+                return;
+            if (_layerWeights == null)
                 return;
             if (updatedParameters.Count == 0)
                 return;
@@ -1021,7 +1021,7 @@ namespace FishNet.Component.Animating
             stateHash = 0;
             normalizedTime = 0f;
 
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return false;
 
             AnimatorStateInfo st = _animator.GetCurrentAnimatorStateInfo(layerIndex);
@@ -1093,7 +1093,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         public void Play(int hash, int layer, float normalizedTime)
         {
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return;
             if (_animator.HasState(layer, hash))
             {
@@ -1128,7 +1128,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         public void PlayInFixedTime(int hash, int layer, float fixedTime)
         {
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return;
             if (_animator.HasState(layer, hash))
             {
@@ -1161,7 +1161,7 @@ namespace FishNet.Component.Animating
         /// <param name="normalizedTransitionTime"></param>
         public void CrossFade(int hash, float normalizedTransitionDuration, int layer, float normalizedTimeOffset = 0.0f, float normalizedTransitionTime = 0.0f)
         {
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return;
             if (_animator.HasState(layer, hash))
             {
@@ -1191,7 +1191,7 @@ namespace FishNet.Component.Animating
         /// <param name="normalizedTransitionTime"></param>
         public void CrossFadeInFixedTime(int hash, float fixedTransitionDuration, int layer, float fixedTimeOffset = 0.0f, float normalizedTransitionTime = 0.0f)
         {
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return;
             if (_animator.HasState(layer, hash))
             {
@@ -1208,7 +1208,7 @@ namespace FishNet.Component.Animating
         /// <param name="hash"></param>
         public void SetTrigger(int hash)
         {
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return;
             UpdateTrigger(hash, true);
         }
@@ -1244,7 +1244,7 @@ namespace FishNet.Component.Animating
         /// <param name="set"></param>
         private void UpdateTrigger(int hash, bool set)
         {
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return;
             /* Allow triggers to run on owning client if using client authority,
              * as well when not using client authority but also not using synchronize to owner.
@@ -1310,7 +1310,7 @@ namespace FishNet.Component.Animating
         [ServerRpc]
         private void ServerAnimatorUpdated(ArraySegment<byte> data)
         {
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return;
             if (!ClientAuthoritative)
                 return;
@@ -1324,7 +1324,7 @@ namespace FishNet.Component.Animating
         /// <param name="data"></param>
         private void ServerDataReceived(ref ArraySegment<byte> data)
         {
-            if (!_isActive)
+            if (!_isAnimatorEnabled)
                 return;
             //If also server, client host, then do nothing. Animations already ran on server.
             if (base.IsServer)
