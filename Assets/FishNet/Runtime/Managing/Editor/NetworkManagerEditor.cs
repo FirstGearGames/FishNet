@@ -15,6 +15,9 @@ namespace FishNet.Managing.Editing
         private SerializedProperty _persistence;
         private SerializedProperty _spawnablePrefabs;
 
+        private SerializedProperty _incomingIterationOrder;
+        private SerializedProperty _outgoingIterationOrder;
+
         private void OnEnable()
         {
             _logging = serializedObject.FindProperty("_logging");
@@ -23,6 +26,9 @@ namespace FishNet.Managing.Editing
             _dontDestroyOnLoad = serializedObject.FindProperty("_dontDestroyOnLoad");
             _persistence = serializedObject.FindProperty("_persistence");
             _spawnablePrefabs = serializedObject.FindProperty("_spawnablePrefabs");
+
+            _incomingIterationOrder = serializedObject.FindProperty("_incomingIterationOrder");
+            _outgoingIterationOrder = serializedObject.FindProperty("_outgoingIterationOrder");
         }
 
         public override void OnInspectorGUI()
@@ -67,11 +73,21 @@ namespace FishNet.Managing.Editing
                     {
                         if (networkManager.SpawnablePrefabs != null && networkManager.SpawnablePrefabs is DefaultPrefabObjects dpo)
                             dpo.PopulateDefaultPrefabs(true, true);
-                    }      
+                    }
                 }
 
             }
             EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
+
+
+            EditorGUILayout.LabelField("Experimental", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_incomingIterationOrder);
+            EditorGUILayout.PropertyField(_outgoingIterationOrder);
+            EditorGUILayout.Space();
+            EditorGUI.indentLevel--;
+
 
             serializedObject.ApplyModifiedProperties();
         }

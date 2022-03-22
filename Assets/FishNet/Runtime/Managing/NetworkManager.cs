@@ -32,6 +32,14 @@ namespace FishNet.Managing
     {
         #region Types.
         /// <summary>
+        /// Which socket to iterate data on first when as host.
+        /// </summary>
+        public enum HostIterationOrder
+        {
+            ServerFirst,
+            ClientFirst
+        }
+        /// <summary>
         /// How to persist with multiple NetworkManagers.
         /// </summary>
         public enum PersistenceType
@@ -175,6 +183,26 @@ namespace FishNet.Managing
         [Tooltip("How to persist when other NetworkManagers are introduced.")]
         [SerializeField]
         private PersistenceType _persistence = PersistenceType.DestroyNewest;
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Whether client or server should iterate incoming data first when running as host.")]
+        [SerializeField]
+        private HostIterationOrder _incomingIterationOrder = HostIterationOrder.ClientFirst;
+        /// <summary>
+        /// Whether client or server should iterate incoming data first when running as host.
+        /// </summary>
+        internal HostIterationOrder IncomingIterationOrder => _incomingIterationOrder;
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Whether client or server should iterate outgoing data first when running as host.")]
+        [SerializeField]
+        private HostIterationOrder _outgoingIterationOrder = HostIterationOrder.ServerFirst;
+        /// <summary>
+        /// Whether client or server should iterate incoming data first when running as host.
+        /// </summary>
+        internal HostIterationOrder OutgoingIterationOrder => _outgoingIterationOrder;
         #endregion
 
         #region Private.
