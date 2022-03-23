@@ -87,7 +87,7 @@ namespace FishNet.Managing.Client
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void InitializeOnce(NetworkManager manager)
+        internal void InitializeOnceInternal(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ClientObjects(manager);
@@ -189,7 +189,7 @@ namespace FishNet.Managing.Client
         }
 
         /// <summary>
-        /// Called when a connection state changes for local client.
+        /// Called when a connection state changes for the local client.
         /// </summary>
         /// <param name="args"></param>
         private void Transport_OnClientConnectionState(ClientConnectionStateArgs args)
@@ -207,11 +207,7 @@ namespace FishNet.Managing.Client
             }
 
             if (NetworkManager.CanLog(LoggingType.Common))
-            {
-                Transport t = NetworkManager.TransportManager.GetTransport(args.TransportIndex);
-                string tName = (t == null) ? "Unknown" : t.GetType().Name;
-                Debug.Log($"Local client is {state.ToString().ToLower()} for {tName}.");
-            }
+                Debug.Log($"Local client is {state.ToString().ToLower()}.");
 
             NetworkManager.UpdateFramerate();
             OnClientConnectionState?.Invoke(args);
@@ -431,6 +427,7 @@ namespace FishNet.Managing.Client
                 {
                     if (NetworkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"Unable to lookup LocalConnection for {connectionId} as host.");
+
                     Connection = new NetworkConnection(NetworkManager, connectionId);
                 }
             }

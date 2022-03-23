@@ -101,7 +101,16 @@ namespace FishNet.Serializing
         /// <param name="networkManager"></param>
         internal void Initialize(ArraySegment<byte> bytes, NetworkManager networkManager)
         {
-            _buffer = bytes.Array;
+            if (bytes.Array == null)
+            {
+                if (_buffer == null)
+                    _buffer = new byte[0];
+            }
+            else
+            {
+                _buffer = bytes.Array;
+            }
+
             Position = bytes.Offset;
             Offset = bytes.Offset;
             Length = bytes.Count;
@@ -214,7 +223,7 @@ namespace FishNet.Serializing
         /// <param name="count"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BlockCopy(ref byte[] target, int targetOffset, int count)
-        {            
+        {
             Buffer.BlockCopy(_buffer, Position, target, targetOffset, count);
             Position += count;
         }
@@ -714,29 +723,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject ReadNetworkObject()
         {
-            int objectId = ReadInt16();
-            if (objectId == -1)
-                return null;
-
-            NetworkObject result = null;
-            /* Try to get the object client side first if client
-             * is running. When acting as a host generally the object
-             * will be available in the server and client list
-             * but there can be occasions where the server side
-             * deinitializes the object, making it unavailable, while
-             * it is still available in the client side. Since FishNet doesn't
-             * use a fake host connection like some lesser solutions the client
-             * has to always be treated as it's own entity. */
-            if (NetworkManager.ClientManager.Started)
-                NetworkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
-            //If not found on client and server is running then try server.
-            if (result == null && NetworkManager.ServerManager.Started)
-                NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
-
-            /* Do not error if not found because packet could
-             * have been sent unreliably and arrived after the object
-             * was destroyed. //improvement opportunity. */
-            return result;
+            return ReadNetworkObject(out _);
         }
 
 
@@ -748,29 +735,48 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject ReadNetworkObject(out int objectId)
         {
+            bool isSpawned = ReadBoolean();
             objectId = ReadInt16();
+            /* -1 indicates that the object
+             * is null or no PrefabId is set.
+             * PrefabIds are set in Awake within
+             * the NetworkManager so that should
+             * never happen so long as nob isn't null. */
             if (objectId == -1)
                 return null;
 
-            NetworkObject result = null;
-            /* Try to get the object client side first if client
-             * is running. When acting as a host generally the object
-             * will be available in the server and client list
-             * but there can be occasions where the server side
-             * deinitializes the object, making it unavailable, while
-             * it is still available in the client side. Since FishNet doesn't
-             * use a fake host connection like some lesser solutions the client
-             * has to always be treated as it's own entity. */
-            if (NetworkManager.ClientManager.Started)
-                NetworkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
-            //If not found on client and server is running then try server.
-            if (result == null && NetworkManager.ServerManager.Started)
-                NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
+            bool isServer = NetworkManager.ServerManager.Started;
+            bool isClient = NetworkManager.ClientManager.Started;
 
-            /* Do not error if not found because packet could
-             * have been sent unreliably and arrived after the object
-             * was destroyed. //improvement opportunity. */
-            return result;
+            //Is spawned.
+            if (isSpawned)
+            {
+                NetworkObject result = null;
+                /* Try to get the object client side first if client
+                 * is running. When acting as a host generally the object
+                 * will be available in the server and client list
+                 * but there can be occasions where the server side
+                 * deinitializes the object, making it unavailable, while
+                 * it is still available in the client side. Since FishNet doesn't
+                 * use a fake host connection like some lesser solutions the client
+                 * has to always be treated as it's own entity. */
+                if (isClient)
+                    NetworkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
+                //If not found on client and server is running then try server.
+                if (result == null && isServer)
+                    NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
+
+                return result;
+            }
+            //Not spawned.
+            else
+            {
+
+                //Only look up asServer if not client, otherwise use client.
+                bool asServer = !isClient;
+                //Look up prefab.
+                return NetworkManager.SpawnablePrefabs.GetObject(asServer, objectId);
+            }
         }
 
         /// <summary>
@@ -782,15 +788,14 @@ namespace FishNet.Serializing
         public NetworkBehaviour ReadNetworkBehaviour(out int objectId, out byte componentIndex)
         {
             NetworkObject nob = ReadNetworkObject(out objectId);
+            componentIndex = ReadByte();
+
             if (nob == null)
             {
-                //Clear out the byte even if nob is null.
-                componentIndex = ReadByte();
                 return null;
             }
             else
             {
-                componentIndex = ReadByte();
                 if (componentIndex < 0 || componentIndex >= nob.NetworkBehaviours.Length)
                 {
                     if (NetworkManager.CanLog(LoggingType.Error))
@@ -811,28 +816,9 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkBehaviour ReadNetworkBehaviour()
         {
-            NetworkObject nob = ReadNetworkObject();
-            if (nob == null)
-            {
-                //Clear out the byte even if nob is null.
-                ReadByte();
-                return null;
-            }
-            else
-            {
-                byte componentIndex = ReadByte();
-                if (componentIndex < 0 || componentIndex >= nob.NetworkBehaviours.Length)
-                {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name}, id {nob.ObjectId}. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
-                    return null;
-                }
-                else
-                {
-                    return nob.NetworkBehaviours[componentIndex];
-                }
-            }
+            return ReadNetworkBehaviour(out _, out _);
         }
+
 
         /// <summary>
         /// Writes a transport channel.
@@ -863,6 +849,8 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int ReadNetworkObjectId()
         {
+            //Clear spawned.
+            ReadBoolean();
             return ReadInt16();
         }
 
@@ -951,6 +939,7 @@ namespace FishNet.Serializing
         /// Reads a packed whole number.
         /// </summary>
         [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong ReadPackedWhole()
         {
             byte data = ReadByte();

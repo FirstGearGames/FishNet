@@ -156,7 +156,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _unreliableMTU: 1023
-  _serverBindAddress: localhost
+  _attackResponseType: 1
   _port: 7770
   _maximumClients: 4095
   _clientAddress: localhost
@@ -505,7 +505,8 @@ PrefabInstance:
         type: 3}
       propertyPath: _spawnablePrefabs
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 11400000, guid: ec64eb18c93ab344892891f33edbf82a,
+        type: 2}
     - target: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}
       propertyPath: m_Name

@@ -1,5 +1,6 @@
 ﻿using FishNet.Managing;
 using FishNet.Serializing;
+using System;
 
 namespace FishNet.Object.Synchronizing.Internal
 {
@@ -16,8 +17,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Sets index for the SyncType.
         /// </summary>
-        /// <param name="index"></param>
-        void SetSyncIndex(NetworkBehaviour networkBehaviour, uint index);
+        void SetRegistered();
         /// <summary>
         /// PreInitializes this for use with the network.
         /// </summary>

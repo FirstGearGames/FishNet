@@ -234,36 +234,36 @@ namespace FishNet.Component.Transforming
         [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
         [SerializeField]
         private bool _sendToOwner = true;
-        ///// <summary>
-        ///// True to synchronize position. Even while checked only changed values are sent.
-        ///// </summary>
-        //[Tooltip("True to synchronize position. Even while checked only changed values are sent.")]
-        //[SerializeField]
-        //private bool _synchronizePosition = true;
+        /// <summary>
+        /// True to synchronize position. Even while checked only changed values are sent.
+        /// </summary>
+        [Tooltip("True to synchronize position. Even while checked only changed values are sent.")]
+        [SerializeField]
+        private bool _synchronizePosition = true;
         /// <summary>
         /// Axes to snap on position.
         /// </summary>
         [Tooltip("Axes to snap on position.")]
         [SerializeField]
         private SnappedAxes _positionSnapping = new SnappedAxes();
-        ///// <summary>
-        ///// True to synchronize rotation. Even while checked only changed values are sent.
-        ///// </summary>
-        //[Tooltip("True to synchronize rotation. Even while checked only changed values are sent.")]
-        //[SerializeField]
-        //private bool _synchronizeRotation = true;
+        /// <summary>
+        /// True to synchronize rotation. Even while checked only changed values are sent.
+        /// </summary>
+        [Tooltip("True to synchronize rotation. Even while checked only changed values are sent.")]
+        [SerializeField]
+        private bool _synchronizeRotation = true;
         /// <summary>
         /// Axes to snap on rotation.
         /// </summary>
         [Tooltip("Axes to snap on rotation.")]
         [SerializeField]
         private SnappedAxes _rotationSnapping = new SnappedAxes();
-        ///// <summary>
-        ///// True to synchronize scale. Even while checked only changed values are sent.
-        ///// </summary>
-        //[Tooltip("True to synchronize scale. Even while checked only changed values are sent.")]
-        //[SerializeField]
-        //private bool _synchronizeScale = true;
+        /// <summary>
+        /// True to synchronize scale. Even while checked only changed values are sent.
+        /// </summary>
+        [Tooltip("True to synchronize scale. Even while checked only changed values are sent.")]
+        [SerializeField]
+        private bool _synchronizeScale = true;
         /// <summary>
         /// Axes to snap on scale.
         /// </summary>
@@ -544,60 +544,67 @@ namespace FishNet.Component.Transforming
             float maxValue = (short.MaxValue - 1);
 
             Transform t = transform;
-            //PositionX
-            if (ChangedContains(changed, ChangedDelta.PositionX))
+            /* Position. */
+            if (_synchronizePosition)
             {
-                original = t.localPosition.x;
-                compressed = original * multiplier;
-                if (compress && Math.Abs(compressed) <= maxValue)
+                //PositionX
+                if (ChangedContains(changed, ChangedDelta.PositionX))
                 {
-                    flagsA |= UpdateFlagA.X2;
-                    writer.WriteInt16((short)compressed);
+                    original = t.localPosition.x;
+                    compressed = original * multiplier;
+                    if (compress && Math.Abs(compressed) <= maxValue)
+                    {
+                        flagsA |= UpdateFlagA.X2;
+                        writer.WriteInt16((short)compressed);
+                    }
+                    else
+                    {
+                        flagsA |= UpdateFlagA.X4;
+                        writer.WriteSingle(original);
+                    }
                 }
-                else
+                //PositionY
+                if (ChangedContains(changed, ChangedDelta.PositionY))
                 {
-                    flagsA |= UpdateFlagA.X4;
-                    writer.WriteSingle(original);
+                    original = t.localPosition.y;
+                    compressed = original * multiplier;
+                    if (compress && Math.Abs(compressed) <= maxValue)
+                    {
+                        flagsA |= UpdateFlagA.Y2;
+                        writer.WriteInt16((short)compressed);
+                    }
+                    else
+                    {
+                        flagsA |= UpdateFlagA.Y4;
+                        writer.WriteSingle(original);
+                    }
                 }
-            }
-            //PositionY
-            if (ChangedContains(changed, ChangedDelta.PositionY))
-            {
-                original = t.localPosition.y;
-                compressed = original * multiplier;
-                if (compress && Math.Abs(compressed) <= maxValue)
+                //PositionZ
+                if (ChangedContains(changed, ChangedDelta.PositionZ))
                 {
-                    flagsA |= UpdateFlagA.Y2;
-                    writer.WriteInt16((short)compressed);
-                }
-                else
-                {
-                    flagsA |= UpdateFlagA.Y4;
-                    writer.WriteSingle(original);
-                }
-            }
-            //PositionZ
-            if (ChangedContains(changed, ChangedDelta.PositionZ))
-            {
-                original = t.localPosition.z;
-                compressed = original * multiplier;
-                if (compress && Math.Abs(compressed) <= maxValue)
-                {
-                    flagsA |= UpdateFlagA.Z2;
-                    writer.WriteInt16((short)compressed);
-                }
-                else
-                {
-                    flagsA |= UpdateFlagA.Z4;
-                    writer.WriteSingle(original);
+                    original = t.localPosition.z;
+                    compressed = original * multiplier;
+                    if (compress && Math.Abs(compressed) <= maxValue)
+                    {
+                        flagsA |= UpdateFlagA.Z2;
+                        writer.WriteInt16((short)compressed);
+                    }
+                    else
+                    {
+                        flagsA |= UpdateFlagA.Z4;
+                        writer.WriteSingle(original);
+                    }
                 }
             }
 
-            //Rotation.
-            if (ChangedContains(changed, ChangedDelta.Rotation))
+            /* Rotation. */
+            if (_synchronizeRotation)
             {
-                flagsA |= UpdateFlagA.Rotation;
-                writer.WriteQuaternion(t.localRotation);
+                if (ChangedContains(changed, ChangedDelta.Rotation))
+                {
+                    flagsA |= UpdateFlagA.Rotation;
+                    writer.WriteQuaternion(t.localRotation);
+                }
             }
 
             if (ChangedContains(changed, ChangedDelta.Extended))
@@ -606,52 +613,56 @@ namespace FishNet.Component.Transforming
                 int startIndexB = writer.Position;
                 writer.Reserve(1);
 
-                //ScaleX
-                if (ChangedContains(changed, ChangedDelta.ScaleX))
+                /* Scale. */
+                if (_synchronizeScale)
                 {
-                    original = t.localScale.x;
-                    compressed = original * multiplier;
-                    if (compress && Math.Abs(compressed) <= maxValue)
+                    //ScaleX
+                    if (ChangedContains(changed, ChangedDelta.ScaleX))
                     {
-                        flagsB |= UpdateFlagB.X2;
-                        writer.WriteInt16((short)compressed);
+                        original = t.localScale.x;
+                        compressed = original * multiplier;
+                        if (compress && Math.Abs(compressed) <= maxValue)
+                        {
+                            flagsB |= UpdateFlagB.X2;
+                            writer.WriteInt16((short)compressed);
+                        }
+                        else
+                        {
+                            flagsB |= UpdateFlagB.X4;
+                            writer.WriteSingle(original);
+                        }
                     }
-                    else
+                    //ScaleY
+                    if (ChangedContains(changed, ChangedDelta.ScaleY))
                     {
-                        flagsB |= UpdateFlagB.X4;
-                        writer.WriteSingle(original);
+                        original = t.localScale.y;
+                        compressed = original * multiplier;
+                        if (compress && Math.Abs(compressed) <= maxValue)
+                        {
+                            flagsB |= UpdateFlagB.Y2;
+                            writer.WriteInt16((short)compressed);
+                        }
+                        else
+                        {
+                            flagsB |= UpdateFlagB.Y4;
+                            writer.WriteSingle(original);
+                        }
                     }
-                }
-                //ScaleY
-                if (ChangedContains(changed, ChangedDelta.ScaleY))
-                {
-                    original = t.localScale.y;
-                    compressed = original * multiplier;
-                    if (compress && Math.Abs(compressed) <= maxValue)
+                    //ScaleZ
+                    if (ChangedContains(changed, ChangedDelta.ScaleZ))
                     {
-                        flagsB |= UpdateFlagB.Y2;
-                        writer.WriteInt16((short)compressed);
-                    }
-                    else
-                    {
-                        flagsB |= UpdateFlagB.Y4;
-                        writer.WriteSingle(original);
-                    }
-                }
-                //ScaleZ
-                if (ChangedContains(changed, ChangedDelta.ScaleZ))
-                {
-                    original = t.localScale.z;
-                    compressed = original * multiplier;
-                    if (compress && Math.Abs(compressed) <= maxValue)
-                    {
-                        flagsB |= UpdateFlagB.Z2;
-                        writer.WriteInt16((short)compressed);
-                    }
-                    else
-                    {
-                        flagsB |= UpdateFlagB.Z4;
-                        writer.WriteSingle(original);
+                        original = t.localScale.z;
+                        compressed = original * multiplier;
+                        if (compress && Math.Abs(compressed) <= maxValue)
+                        {
+                            flagsB |= UpdateFlagB.Z2;
+                            writer.WriteInt16((short)compressed);
+                        }
+                        else
+                        {
+                            flagsB |= UpdateFlagB.Z4;
+                            writer.WriteSingle(original);
+                        }
                     }
                 }
 

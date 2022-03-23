@@ -283,13 +283,13 @@ namespace FishNet.Managing
         /// </summary>
         private void InitializeComponents()
         {
-            TimeManager.InitializeOnce(this);
+            TimeManager.InitializeOnceInternal(this);
             TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
-            SceneManager.InitializeOnce(this);
-            TransportManager.InitializeOnce(this);
-            ServerManager.InitializeOnce(this);
-            ClientManager.InitializeOnce(this);
-            RollbackManager.InitializeOnce(this);
+            SceneManager.InitializeOnceInternal(this);
+            TransportManager.InitializeOnceInternal(this);
+            ServerManager.InitializeOnceInternal(this);
+            ClientManager.InitializeOnceInternal(this);
+            RollbackManager.InitializeOnceInternal(this);
         }
 
         /// <summary>

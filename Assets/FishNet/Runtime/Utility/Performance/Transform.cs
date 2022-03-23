@@ -1,8 +1,6 @@
 ﻿using FishNet.Object;
-using FishNet.Utility.Performance;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace FishNet.Utility.Performance
 {
@@ -30,9 +28,9 @@ namespace FishNet.Utility.Performance
         /// <summary>
         /// Gets all transforms on transform and it's children.
         /// </summary>
-        public static List<Transform> GetTransformsInChildrenNonAlloc(this Transform t)
+        public static List<Transform> GetTransformsInChildrenNonAlloc(this Transform t, bool includeInactive = false)
         {
-            t.GetComponentsInChildren<Transform>(true, _transformList);
+            t.GetComponentsInChildren<Transform>(includeInactive, _transformList);
             return _transformList;
         }
 

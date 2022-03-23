@@ -14,7 +14,6 @@ namespace FishNet.Managing.Editing
         private SerializedProperty _dontDestroyOnLoad;
         private SerializedProperty _persistence;
         private SerializedProperty _spawnablePrefabs;
-
         private SerializedProperty _incomingIterationOrder;
         private SerializedProperty _outgoingIterationOrder;
 
@@ -26,7 +25,6 @@ namespace FishNet.Managing.Editing
             _dontDestroyOnLoad = serializedObject.FindProperty("_dontDestroyOnLoad");
             _persistence = serializedObject.FindProperty("_persistence");
             _spawnablePrefabs = serializedObject.FindProperty("_spawnablePrefabs");
-
             _incomingIterationOrder = serializedObject.FindProperty("_incomingIterationOrder");
             _outgoingIterationOrder = serializedObject.FindProperty("_outgoingIterationOrder");
         }
@@ -73,7 +71,7 @@ namespace FishNet.Managing.Editing
                     {
                         if (networkManager.SpawnablePrefabs != null && networkManager.SpawnablePrefabs is DefaultPrefabObjects dpo)
                             dpo.PopulateDefaultPrefabs(true, true);
-                    }
+                    }      
                 }
 
             }
@@ -87,7 +85,6 @@ namespace FishNet.Managing.Editing
             EditorGUILayout.PropertyField(_outgoingIterationOrder);
             EditorGUILayout.Space();
             EditorGUI.indentLevel--;
-
 
             serializedObject.ApplyModifiedProperties();
         }

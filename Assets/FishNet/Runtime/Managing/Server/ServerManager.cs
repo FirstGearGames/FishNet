@@ -4,7 +4,6 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using FishNet.Transporting.Multipass;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
 using System;
@@ -121,7 +120,7 @@ namespace FishNet.Managing.Server
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void InitializeOnce(NetworkManager manager)
+        internal void InitializeOnceInternal(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ServerObjects(manager);
@@ -277,8 +276,8 @@ namespace FishNet.Managing.Server
             Started = AnyServerStarted();
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
             Objects.OnServerConnectionState(args);
-            
-            LocalConnectionStates state = args.ConnectionState;            
+
+            LocalConnectionStates state = args.ConnectionState;
 
             if (NetworkManager.CanLog(LoggingType.Common))
             {

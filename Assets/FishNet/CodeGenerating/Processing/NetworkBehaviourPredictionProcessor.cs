@@ -916,24 +916,16 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateDatas);
             processor.Emit(OpCodes.Callvirt, queueDataGetCountMr);
             processor.Emit(OpCodes.Stloc, queueCountVd);
-
+            processor.DebugLog(queueCountVd);
             /* If the queue count is 2 more than maximum
              * buffered then dequeue an extra one. Currently
              * the input will be lost, in a later release users
              * will have the option to run multiple inputs
              * per tick which this occurs. */
-            //targetBufferedInputs = base.TimeManager.TargetBufferedInputs;
-            VariableDefinition targetBufferedVd = CodegenSession.GeneralHelper.CreateVariable(replicateMd, typeof(byte));
-            processor.Emit(OpCodes.Ldarg_0); //base.
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TimeManager_MethodRef);
-            processor.Emit(OpCodes.Callvirt, CodegenSession.TimeManagerHelper.TargetBufferedInputs_MethodRef);
-            processor.Emit(OpCodes.Stloc, targetBufferedVd);
-            //If (queueCount > (targetBufferedInputs + 2))
+            //If (queueCount > 3)
             Instruction afterDequeueInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Ldloc, queueCountVd);
-            processor.Emit(OpCodes.Ldloc, targetBufferedVd);
-            processor.Emit(OpCodes.Ldc_I4_2);
-            processor.Emit(OpCodes.Add);
+            processor.Emit(OpCodes.Ldc_I4_3);
             processor.Emit(OpCodes.Ble_S, afterDequeueInst);
             //_buffer.Dequeue();
             processor.Emit(OpCodes.Ldarg_0);

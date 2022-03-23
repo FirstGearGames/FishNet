@@ -8,7 +8,6 @@ using FishNet.Transporting;
 using FishNet.Utility;
 using FishNet.Utility.Extension;
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
@@ -23,30 +22,23 @@ namespace FishNet.Managing.Timing
     [DisallowMultipleComponent]
     public sealed class TimeManager : MonoBehaviour
     {
-        #region Types.        
-        private class ClientTickData
-        {
-            public bool UpdatesPaused { get; private set; }
-            public int Buffered;
-            public ushort SendTicksRemaining;
-
-            public ClientTickData(ushort adjustmentInterval)
-            {
-                Reset(adjustmentInterval);
-            }
-
-            public void Reset(ushort adjustmentInterval)
-            {
-                UpdatesPaused = false;
-                Buffered = 0;
-                SendTicksRemaining = adjustmentInterval;
-            }
-            public void Pause()
-            {
-                UpdatesPaused = true;
-            }
-        }
-        #endregion      
+        //#region Types.
+        //public enum BufferPurgeType
+        //{
+        //    /// <summary>
+        //    /// Run an additional input per tick when buffered inputs are higher than normal.
+        //    /// This prevents clients from sending excessive inputs but may briefly disrupt clients synchronization if their timing is drastically off.
+        //    /// Use this option for more secure prediction.
+        //    /// </summary>
+        //    Discard = 0,
+        //    /// <summary>
+        //    /// Run an additional input per tick when buffered inputs are higher than normal.
+        //    /// This is useful for keeping the client synchronized with the server by processing inputs that would normally be discarded.
+        //    /// However, by running extra buffered inputs the client has a better opportunity to cheat.
+        //    /// </summary>
+        //    Run = 1
+        //}
+        //#endregion
 
         #region Public.
         /// <summary>
@@ -139,7 +131,6 @@ namespace FishNet.Managing.Timing
         #endregion
 
         #region Serialized.
-        [Header("Timing")]
         /// <summary>
         /// 
         /// </summary>
@@ -152,8 +143,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public ushort TickRate { get => _tickRate; private set => _tickRate = value; }
 
-
-        [Header("Prediction")]
         /// <summary>
         /// 
         /// </summary>
@@ -173,24 +162,8 @@ namespace FishNet.Managing.Timing
         private byte _maximumBufferedInputs = 15;
         /// <summary>
         /// Maximum number of buffered inputs which will be accepted from client before old inputs are discarded.
-        /// This is exposed until automatic state control is implemented.
         /// </summary>
         public byte MaximumBufferedInputs => _maximumBufferedInputs;
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("Number of inputs server prefers to have buffered from clients.")]
-        [Range(1, 100)]
-        [SerializeField]
-        private byte _targetBufferedInputs = 2;
-        /// <summary>
-        /// Number of inputs server prefers to have buffered from clients.
-        /// </summary>
-        public byte TargetBufferedInputs
-        {
-            get => _targetBufferedInputs;
-            private set => _targetBufferedInputs = value;
-        }
         #endregion
 
         #region Private.
@@ -233,21 +206,9 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private double _adjustedTickDelta;
         /// <summary>
-        /// Broadcast cache sent to clients for a step change.
-        /// </summary>
-        private TimingAdjustmentBroadcast _timeAdjustment = new TimingAdjustmentBroadcast();
-        /// <summary>
         /// Range which client timing may reside within.
         /// </summary>
         private double[] _clientTimingRange;
-        /// <summary>
-        /// How many inputs are buffered per client.
-        /// </summary>
-        private Dictionary<NetworkConnection, ClientTickData> _bufferedClientInputs = new Dictionary<NetworkConnection, ClientTickData>();
-        /// <summary>
-        /// ClientTickData cache to prevent garbage allocation.
-        /// </summary>
-        private Stack<ClientTickData> _tickDataCache = new Stack<ClientTickData>();
         /// <summary>
         /// How many ticks to wait for each timing update to clients.
         /// </summary>
@@ -296,10 +257,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private const byte ADJUST_TIMING_INTERVAL = 2;
         /// <summary>
-        /// Number of steps to send which indicates client should reset their adjustedTickDelta to default.
-        /// </summary>
-        private const sbyte RESET_DELTA_STEPS = sbyte.MinValue;
-        /// <summary>
         /// When steps to be sent to clients are equal to or higher than this value in either direction a reset steps will be sent.
         /// </summary>
         private const byte RESET_STEPS_THRESHOLD = 5;
@@ -309,17 +266,30 @@ namespace FishNet.Managing.Timing
         private const string SAVED_FIXED_TIME_TEXT = "SavedFixedTimeFN";
         #endregion
 
+        /// <summary>
+        /// Ticks that have passed on client since the last time server sent an UpdateTicksBroadcast.
+        /// </summary>
+        private uint _clientTicks = 0;
+        /// <summary>
+        /// Last Tick the server sent out UpdateTicksBroadcast.
+        /// </summary>
+        private uint _lastUpdateTicks = 0;
+        /// <summary>
+        /// How many ticks should pass before server sends UpdateTicksBroadcast.
+        /// </summary>
+        private uint _updateTicksGoal => (uint)(TickRate * 2);
+
 #if UNITY_EDITOR
         private void OnDisable()
         {
             //If closing/stopping.
             if (ApplicationState.IsQuitting())
-            { 
+            {
                 _manualPhysics = 0;
                 UnsetSimulationSettings();
             }
             else if (PhysicsMode == PhysicsMode.TimeManager)
-            { 
+            {
                 _manualPhysics = Math.Max(0, _manualPhysics - 1);
             }
         }
@@ -364,16 +334,14 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        internal void InitializeOnce(NetworkManager networkManager)
+        internal void InitializeOnceInternal(NetworkManager networkManager)
         {
             _networkManager = networkManager;
             SetInitialValues();
-            _networkManager.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
             _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
             _networkManager.ServerManager.OnAuthenticationResult += ServerManager_OnAuthenticationResult;
-            _networkManager.ClientManager.RegisterBroadcast<TimingAdjustmentBroadcast>(OnTimingAdjustmentBroadcast);
-            _networkManager.ServerManager.RegisterBroadcast<AddBufferedBroadcast>(OnAddBufferedBroadcast);
+            _networkManager.ClientManager.RegisterBroadcast<UpdateTicksBroadcast>(OnUpdateTicksBroadcast);
 
             AddNetworkLoops();
         }
@@ -417,12 +385,9 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
         {
-            //If not started and no servers are started.
+            //If no servers are running.
             if (!_networkManager.ServerManager.AnyServerStarted())
             {
-                foreach (ClientTickData item in _bufferedClientInputs.Values)
-                    _tickDataCache.Push(item);
-                _bufferedClientInputs.Clear();
                 ServerUptime = 0f;
                 Tick = 0;
             }
@@ -485,7 +450,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name="automatic"></param>
         private void SetSimulationSettings(PhysicsMode mode)
-        {            
+        {
             //Do not automatically simulate.
             if (mode == PhysicsMode.TimeManager)
             {
@@ -645,7 +610,7 @@ namespace FishNet.Managing.Timing
                 TryIterateData(false);
 
                 if (_networkManager.IsClient)
-                    SendAddBuffered();
+                    _clientTicks++;
                 if (_networkManager.IsServer)
                     SendTimingAdjustment();
 
@@ -662,22 +627,6 @@ namespace FishNet.Managing.Timing
         }
 
         /// <summary>
-        /// Called when a client connection state changes with the server.
-        /// </summary>
-        private void ServerManager_OnRemoteConnectionState(NetworkConnection arg1, RemoteConnectionStateArgs arg2)
-        {
-            //If not started then remove from buffered inputs.
-            if (arg2.ConnectionState != RemoteConnectionStates.Started)
-            {
-                if (_bufferedClientInputs.TryGetValueIL2CPP(arg1, out ClientTickData ctd))
-                {
-                    _tickDataCache.Push(ctd);
-                    _bufferedClientInputs.Remove(arg1);
-                }
-            }
-        }
-
-        /// <summary>
         /// Called when a client authentication result occurs.
         /// </summary>
         /// <param name="arg1"></param>
@@ -687,12 +636,6 @@ namespace FishNet.Managing.Timing
             if (!authenticated)
                 return;
 
-            /* Start buffered at 0 and let client accumulate
-             * buffered. Set ticks remaining to how many
-             * ticks should pass for buffer to be at desired
-             * amount. */
-            ClientTickData ctd = AddToBuffered(arg1, 0);
-            ctd.SendTicksRemaining = _timingAdjustmentInterval;
             SynchronizeTick(arg1);
         }
 
@@ -795,7 +738,6 @@ namespace FishNet.Managing.Timing
         #endregion 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-
         /// <summary>
         /// Converts time to ticks.
         /// </summary>
@@ -837,7 +779,7 @@ namespace FishNet.Managing.Timing
                 /* This will be true if to iterate first first
                  * resulting in the first TransportManager.Iterate
                  * being called for server, and the second for client. */
-                bool a = (_networkManager.IncomingIterationOrder == NetworkManager.HostIterationOrder.ServerFirst);                
+                bool a = (_networkManager.IncomingIterationOrder == NetworkManager.HostIterationOrder.ServerFirst);
                 _networkManager.TransportManager.IterateIncoming(a);
                 _networkManager.TransportManager.IterateIncoming(!a);
             }
@@ -850,71 +792,19 @@ namespace FishNet.Managing.Timing
         }
 
 
-        #region Timing adjusting.
-        /// <summary>
-        /// Sets number of inputs buffered for a connection.
-        /// </summary>
-        private ClientTickData AddToBuffered(NetworkConnection connection, int count = 1)
-        {
-            //Connection found.
-            if (_bufferedClientInputs.TryGetValueIL2CPP(connection, out ClientTickData ctd))
-            {
-                if (ctd.UpdatesPaused)
-                    ctd.Reset(_timingAdjustmentInterval);
-
-                /* Make sure count won't exceed max value.
-                 * If over max value don't even bother adding. */
-                long next = (ctd.Buffered + count);
-                if (next < int.MaxValue)
-                    ctd.Buffered = (int)next;
-
-                return ctd;
-            }
-            //Not found, make new entry.
-            else
-            {
-                ClientTickData newCtd;
-                if (_tickDataCache.Count == 0)
-                {
-                    newCtd = new ClientTickData(_timingAdjustmentInterval);
-                }
-                else
-                {
-                    newCtd = _tickDataCache.Pop();
-                    newCtd.Reset(_timingAdjustmentInterval);
-                }
-
-                _bufferedClientInputs[connection] = newCtd;
-                return newCtd;
-            }
-        }
-
-        /// <summary>
-        /// Called when the server receives an AddBufferedBroadcast.
-        /// </summary>
-        private void OnAddBufferedBroadcast(NetworkConnection connection, AddBufferedBroadcast msg)
-        {
-            AddToBuffered(connection, 1);
-        }
-
-        /// <summary>
-        /// Sends an AddBuffered broadcast to the server.
-        /// </summary>
-        private void SendAddBuffered()
-        {
-            AddBufferedBroadcast ab = new AddBufferedBroadcast();
-            _networkManager.ClientManager.Broadcast<AddBufferedBroadcast>(ab, Channel.Unreliable);
-        }
-
+        #region Timing adjusting.    
         /// <summary>
         /// Sends a reliable timing adjustment to conn with no step change.
         /// </summary>
         /// <param name="conn"></param>
         private void SynchronizeTick(NetworkConnection conn)
         {
-            _timeAdjustment.Tick = Tick;
-            _timeAdjustment.Step = 0;
-            _networkManager.ServerManager.Broadcast(conn, _timeAdjustment, true, Channel.Reliable);
+            SynchronizeTickBroadcast msg = new SynchronizeTickBroadcast()
+            {
+                //Can use Tick = Tick but using LocalTick for less confusion.
+                Tick = LocalTick
+            };
+            _networkManager.ServerManager.Broadcast(conn, msg, true, Channel.Reliable);
         }
 
         /// <summary>
@@ -922,53 +812,12 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void SendTimingAdjustment()
         {
-            /* set ticks remaining to interval.
-             * when ticks remaining is 0 then
-             * remove interval. if client is sending 1
-             * per tick as expected then they should have sent exactly
-             * interval by the time ticks remaining is 0. 
-             * That is assuming all went well. */
-            foreach (KeyValuePair<NetworkConnection, ClientTickData> item in _bufferedClientInputs)
+            //If 2 seconds have passed since last send.
+            uint tick = Tick;
+            if (tick - _lastUpdateTicks >= _updateTicksGoal)
             {
-                ClientTickData ctd = item.Value;
-
-                /* If client step updates are paused then
-                 * do not proceed. */
-                if (ctd.UpdatesPaused)
-                    continue;
-
-                ctd.SendTicksRemaining--;
-                if (ctd.SendTicksRemaining > 0)
-                    continue;
-
-                ctd.SendTicksRemaining = _timingAdjustmentInterval;
-
-                _timeAdjustment.Tick = Tick;
-
-                /* If value is 1 or less then increase
-                 * clients send rate. Ideally there will be two+ in queue
-                 * before processing; this is where the - 2 comes from.
-                 * 1 in queue would result in -1 step, where 0 in queue
-                 * would result in -2 step. Lesser steps speed up client
-                 * send rate more, while higher steps slow it down. */
-                ctd.Buffered -= _timingAdjustmentInterval;
-                sbyte steps;
-
-                steps = (sbyte)(MathFN.ClampSByte(ctd.Buffered, (sbyte)-MaximumBufferedInputs, (sbyte)MaximumBufferedInputs) - TargetBufferedInputs);
-                Channel channel;
-                if (Mathf.Abs(steps) >= RESET_STEPS_THRESHOLD)
-                {
-                    channel = Channel.Reliable;
-                    ctd.Pause();
-                    steps = RESET_DELTA_STEPS;
-                }
-                else
-                {
-                    channel = Channel.Unreliable;
-                }
-
-                _timeAdjustment.Step = steps;
-                _networkManager.ServerManager.Broadcast(item.Key, _timeAdjustment, true, channel);
+                _networkManager.ServerManager.Broadcast(new UpdateTicksBroadcast(), true, Channel.Unreliable);
+                _lastUpdateTicks = tick;
             }
         }
 
@@ -976,35 +825,35 @@ namespace FishNet.Managing.Timing
         /// Called on client when server sends StepChange.
         /// </summary>
         /// <param name="ta"></param>
-        private void OnTimingAdjustmentBroadcast(TimingAdjustmentBroadcast ta)
+        private void OnUpdateTicksBroadcast(UpdateTicksBroadcast ut)
         {
             //Don't adjust timing on server.
             if (_networkManager.IsServer)
                 return;
 
-            //Add half of rtt onto tick.
-            uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
-            Tick = ta.Tick + rttTicks;
+            uint expected = (uint)(TickRate * 2);
+            long difference;
+            //If ticking too fast.
+            if (_clientTicks > expected)
+                difference = (long)(_clientTicks - expected);
+            //Not ticking fast enough.
+            else
+                difference = (long)((expected - _clientTicks) * -1);
 
-            sbyte steps = ta.Step;
-            _lastStepsReceived = steps;
-            //No change required.
-            if (steps == 0)
-            {
-            }
-            //Reset.
-            else if (steps == RESET_DELTA_STEPS)
+            //If difference is unusually off then reset timings.
+            if (Mathf.Abs(difference) >= RESET_STEPS_THRESHOLD)
             {
                 _adjustedTickDelta = TickDelta;
-                _lastStepsReceived = 0;
             }
-            //Normal adjustment.
             else
             {
+                sbyte steps = (sbyte)Mathf.Clamp(difference, sbyte.MinValue, sbyte.MaxValue);
                 double percent = (steps < 0) ? CLIENT_SPEEDUP_PERCENT : CLIENT_SLOWDOWN_PERCENT;
                 double change = (steps * (percent * TickDelta));
+               
                 _adjustedTickDelta = MathFN.ClampDouble(_adjustedTickDelta + change, _clientTimingRange[0], _clientTimingRange[1]);
             }
+            _clientTicks = 0;
         }
         #endregion
 
@@ -1029,7 +878,6 @@ namespace FishNet.Managing.Timing
         #region UNITY_EDITOR
         private void OnValidate()
         {
-            TargetBufferedInputs = Math.Min(TargetBufferedInputs, _maximumBufferedInputs);
             SetInitialValues();
         }
         #endregion

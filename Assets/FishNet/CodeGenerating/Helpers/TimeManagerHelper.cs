@@ -13,7 +13,6 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference LocalTick_MethodRef;
         internal MethodReference TickDelta_MethodRef;
         internal MethodReference MaximumBufferedInputs_MethodRef;
-        internal MethodReference TargetBufferedInputs_MethodRef;
         internal MethodReference PhysicsMode_MethodRef;
         internal MethodReference InvokeOnReconcile_MethodRef;
         internal MethodReference InvokeOnReplicateReplay_MethodRef;
@@ -30,8 +29,6 @@ namespace FishNet.CodeGenerating.Helping
                     LocalTick_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(TimeManager.MaximumBufferedInputs))
                     MaximumBufferedInputs_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
-                else if (pi.Name == nameof(TimeManager.TargetBufferedInputs))
-                    TargetBufferedInputs_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(TimeManager.PhysicsMode))
                     PhysicsMode_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(TimeManager.TickDelta))

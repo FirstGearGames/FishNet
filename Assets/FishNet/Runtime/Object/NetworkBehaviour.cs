@@ -62,6 +62,7 @@ namespace FishNet.Object
             InitializeOnceRpcLinks();
         }
 
+
         /// <summary>
         /// Serializes information about components.
         /// </summary>
@@ -71,7 +72,7 @@ namespace FishNet.Object
             ComponentIndex = componentIndex;
         }
 
-#region Editor.
+        #region Editor.
         protected virtual void Reset()
         {
 #if UNITY_EDITOR
@@ -125,7 +126,7 @@ namespace FishNet.Object
             return null;
 #endif
         }
-#endregion
+        #endregion
     }
 
 

@@ -1,5 +1,6 @@
 ﻿using FishNet.Documenting;
 using FishNet.Object.Helping;
+using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
@@ -7,6 +8,7 @@ using FishNet.Transporting;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
@@ -62,10 +64,10 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public SyncVar(WritePermission writePermission, ReadPermission readPermission, float sendRate, Channel channel, T value)
+        public SyncVar(NetworkBehaviour nb, uint syncIndex, WritePermission writePermission, ReadPermission readPermission, float sendRate, Channel channel, T value)
         {
             SetInitialValues(value);
-            base.InitializeInstance(writePermission, readPermission, sendRate, channel, false);
+            base.InitializeInstance(nb, syncIndex, writePermission, readPermission, sendRate, channel, false);
         }
 
         /// <summary>
@@ -102,6 +104,8 @@ namespace FishNet.Object.Synchronizing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetValue(T nextValue, bool calledByUser)
         {
+            if (base.NetworkManager == null)
+                return;
             bool isServer = base.NetworkBehaviour.IsServer;
             bool isClient = base.NetworkBehaviour.IsClient;
             /* If not client or server then set skipChecks

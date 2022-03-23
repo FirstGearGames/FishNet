@@ -21,7 +21,7 @@ namespace FishNet.Managing.Server
             //If using multipass check all transports.
             if (tm.Transport is Multipass mp)
             {
-
+                
                 foreach (Transport t in mp.Transports)
                 {
                     //Another transport is started, no need to load start scenes again.
@@ -38,6 +38,7 @@ namespace FishNet.Managing.Server
 
             return (startedCount == 1);
         }
+
         /// <summary>
         /// Returns true if any server socket is in the started state.
         /// </summary>
