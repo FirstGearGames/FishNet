@@ -18,6 +18,25 @@ namespace FishNet.Managing.Transporting
         #endregion
 
         /// <summary>
+        /// Gets transport on index.
+        /// Commonly index will be 0 unless using Multipass.
+        /// </summary>
+        /// <returns></returns>
+        public Transport GetTransport(int index)
+        {
+            //If using multipass try to find the correct transport.
+            if (Transport is Multipass mp)
+            {
+                return mp.GetTransport(index);
+            }
+            //Not using multipass.
+            else
+            {
+                return Transport;
+            }
+        }
+
+        /// <summary>
         /// Gets transport of type T.
         /// </summary>
         /// <returns>Returns the found transport which is of type T. Returns null if not found.</returns>

@@ -147,8 +147,10 @@ namespace FishNet.Managing.Server
         /// </summary>
         internal void StartForHeadless()
         {
-            if (_startOnHeadless && Application.isBatchMode)
-                NetworkManager.TransportManager.Transport.StartConnection(true);
+#if UNITY_SERVER
+            if (_startOnHeadless)
+                StartConnection();
+#endif
         }
 
         /// <summary>
@@ -272,13 +274,18 @@ namespace FishNet.Managing.Server
             /* Let the client manager know the server state is changing first.
              * This gives the client an opportunity to clean-up or prepare
              * before the server completes it's actions. */
+            Started = AnyServerStarted();
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
             Objects.OnServerConnectionState(args);
-            Started = AnyServerStarted();
+            
             LocalConnectionStates state = args.ConnectionState;            
 
             if (NetworkManager.CanLog(LoggingType.Common))
-                Debug.Log($"Server is {state.ToString().ToLower()}.");
+            {
+                Transport t = NetworkManager.TransportManager.GetTransport(args.TransportIndex);
+                string tName = (t == null) ? "Unknown" : t.GetType().Name;
+                Debug.Log($"Local Server is {state.ToString().ToLower()} for {tName}.");
+            }
 
             NetworkManager.UpdateFramerate();
             OnServerConnectionState?.Invoke(args);

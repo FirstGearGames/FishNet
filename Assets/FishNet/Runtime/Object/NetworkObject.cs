@@ -108,7 +108,7 @@ namespace FishNet.Object
                     {
                         if (IsNetworked && InstanceFinder.NetworkManager.CanLog(LoggingType.Common))
                             Debug.Log($"NetworkObject removed from object {gameObject.name}, child of {start.name}. This message is informative only and may be ignored.");
-                        Destroy(this);
+                        DestroyImmediate(this);
                     }
                 }
             }
@@ -231,6 +231,18 @@ namespace FishNet.Object
         internal void UpdateNetworkBehaviours()
         {
             NetworkBehaviours = null;
+
+            ///* Make sure there are no parent nobs, if there are
+            // * they need to be responsible for initializing
+            // * networkbehaviours. This will change when nested nobs are
+            // * supported. */ //This isn't needed atm with recent changes but keeping it around anyway for now.
+            //Transform parentTransform = transform.parent;
+            //if (parentTransform != null && parentTransform != transform)
+            //{
+            //    //One or more parents have a nob.
+            //    if (parentTransform.GetComponentInParent<NetworkObject>() != null)
+            //        return;
+            //}
 
             //If there are no child nobs then get NetworkBehaviours normally.
             if (ChildNetworkObjects.Count == 0)

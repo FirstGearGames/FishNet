@@ -508,7 +508,6 @@ namespace FishNet.Component.Animating
             {
                 bool process = !_animator.IsParameterControlledByCurve(item.name);
                 
-
                 if (process)
                 {
                     //Over 250 parameters; who would do this!?

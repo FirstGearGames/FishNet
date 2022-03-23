@@ -207,7 +207,11 @@ namespace FishNet.Managing.Client
             }
 
             if (NetworkManager.CanLog(LoggingType.Common))
-                Debug.Log($"Local client is {state.ToString().ToLower()}.");
+            {
+                Transport t = NetworkManager.TransportManager.GetTransport(args.TransportIndex);
+                string tName = (t == null) ? "Unknown" : t.GetType().Name;
+                Debug.Log($"Local client is {state.ToString().ToLower()} for {tName}.");
+            }
 
             NetworkManager.UpdateFramerate();
             OnClientConnectionState?.Invoke(args);
