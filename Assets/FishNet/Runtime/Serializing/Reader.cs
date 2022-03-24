@@ -7,6 +7,7 @@ using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Constant;
 using FishNet.Utility.Extension;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -687,7 +688,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[] ReadBytesAllocated(int count)
         {
-            byte[] bytes = new byte[count];
+            byte[] bytes = ByteArrayPool.Retrieve(count);
             ReadBytes(ref bytes, count);
             return bytes;
         }

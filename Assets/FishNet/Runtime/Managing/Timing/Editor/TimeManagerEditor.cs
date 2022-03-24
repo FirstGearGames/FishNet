@@ -41,7 +41,7 @@ namespace FishNet.Managing.Timing.Editing
             EditorGUILayout.LabelField("Physics", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_physicsMode);
-            if (_physicsMode.intValue == (int)FishNet.Managing.Timing.PhysicsMode.Unity)
+            if (_physicsMode.intValue != (int)FishNet.Managing.Timing.PhysicsMode.TimeManager)
                 EditorGUILayout.HelpBox("If you are using physics interactions be sure to change the PhysicsMode to TimeManager and implement physics within the TimeManager tick events.", MessageType.None);
             EditorGUI.indentLevel--;
 

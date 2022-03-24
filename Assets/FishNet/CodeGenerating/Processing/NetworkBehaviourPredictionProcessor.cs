@@ -916,7 +916,6 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateDatas);
             processor.Emit(OpCodes.Callvirt, queueDataGetCountMr);
             processor.Emit(OpCodes.Stloc, queueCountVd);
-            processor.DebugLog(queueCountVd);
             /* If the queue count is 2 more than maximum
              * buffered then dequeue an extra one. Currently
              * the input will be lost, in a later release users

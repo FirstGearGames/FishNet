@@ -425,7 +425,7 @@ namespace FishNet.Managing.Timing
         private void SetInitialValues()
         {
             SetTickRate(TickRate);
-            SetSimulationSettings(PhysicsMode);
+            InitializePhysicsMode(PhysicsMode);
         }
 
         /// <summary>
@@ -435,7 +435,7 @@ namespace FishNet.Managing.Timing
         {
             Physics.autoSimulation = true;
 #if !UNITY_2020_2_OR_NEWER
-            Physics2D.autoSimulation = false;
+            Physics2D.autoSimulation = true;
 #else
             Physics2D.simulationMode = SimulationMode2D.FixedUpdate;
 #endif
@@ -446,13 +446,18 @@ namespace FishNet.Managing.Timing
         }
 
         /// <summary>
-        /// Updates automaticSimulation modes.
+        /// Initializes physics mode when starting.
         /// </summary>
         /// <param name="automatic"></param>
-        private void SetSimulationSettings(PhysicsMode mode)
+        private void InitializePhysicsMode(PhysicsMode mode)
         {
+            //Disable.
+            if (mode == PhysicsMode.Disabled)
+            {
+                SetPhysicsMode(mode);
+            }
             //Do not automatically simulate.
-            if (mode == PhysicsMode.TimeManager)
+            else if (mode == PhysicsMode.TimeManager)
             {
 #if UNITY_EDITOR
                 //Preserve user tick rate.
@@ -476,12 +481,7 @@ namespace FishNet.Managing.Timing
                     _manualPhysics++;
                 }
 
-                Physics.autoSimulation = false;
-#if !UNITY_2020_2_OR_NEWER
-                Physics2D.autoSimulation = false;
-#else
-                Physics2D.simulationMode = SimulationMode2D.Script;
-#endif
+                SetPhysicsMode(mode);
             }
             //Automatically simulate.
             else
@@ -496,6 +496,29 @@ namespace FishNet.Managing.Timing
 
                 PlayerPrefs.DeleteKey(SAVED_FIXED_TIME_TEXT);
 #endif
+                SetPhysicsMode(mode);
+            }
+        }
+
+        /// <summary>
+        /// Updates physics based on which physics mode to use.
+        /// </summary>
+        /// <param name="enabled"></param>
+        public void SetPhysicsMode(PhysicsMode mode)
+        {
+            //Disable.
+            if (mode == PhysicsMode.Disabled || mode == PhysicsMode.TimeManager)
+            {
+                Physics.autoSimulation = false;
+#if !UNITY_2020_2_OR_NEWER
+                Physics2D.autoSimulation = false;
+#else
+                Physics2D.simulationMode = SimulationMode2D.Script;
+#endif
+            }
+            //Automatically simulate.
+            else
+            {
                 Physics.autoSimulation = true;
 #if !UNITY_2020_2_OR_NEWER
                 Physics2D.autoSimulation = true;

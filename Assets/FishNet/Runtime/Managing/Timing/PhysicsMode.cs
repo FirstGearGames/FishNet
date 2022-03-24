@@ -8,11 +8,15 @@
         /// <summary>
         /// Unity performs physics every FixedUpdate.
         /// </summary>
-        Unity,
+        Unity = 0,
         /// <summary>
         /// TimeManager performs physics each tick.
         /// </summary>
-        TimeManager
+        TimeManager = 1,
+        /// <summary>
+        /// Physics will be disabled.
+        /// </summary>
+        Disabled = 2
     }
 
 
