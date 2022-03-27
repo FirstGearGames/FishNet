@@ -141,7 +141,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &493205443
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -235,6 +235,8 @@ MonoBehaviour:
   _sceneId: 3451281725001314093
   _sceneNetworkObjects:
   - {fileID: 493205447}
+  _networkBehaviours:
+  - {fileID: 493205448}
   SceneTransformProperties:
     Position: {x: -4.44, y: -0.47, z: -5.99}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
@@ -253,7 +255,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c71fd7f855ec523429999fc4e14a1928, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 493205447}
+  _networkObjectCache: {fileID: 493205447}
   _overrideType: 3
   _observerConditions:
   - {fileID: 11400000, guid: 2033f54fd2794464bae08fa5a55c8996, type: 2}
@@ -1160,7 +1164,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d3606bfdac5a4743890fc1a5ecd8f24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _autoStartType: 0
+  _autoStartType: 1
   _stoppedColor: {r: 0.25490198, g: 0.25490198, b: 0.25490198, a: 1}
   _changingColor: {r: 0.78431374, g: 0.6862745, b: 0, a: 1}
   _startedColor: {r: 0, g: 0.5882353, b: 0.64705884, a: 1}
@@ -1274,7 +1278,7 @@ MonoBehaviour:
   _playerPrefab: {fileID: 611616139817875448, guid: bf5f023b4017a5e41a9815ec5745df3d,
     type: 3}
   _addToDefaultScene: 0
-  _spawns: []
+  Spawns: []
 --- !u!4 &7443408887680269496
 Transform:
   m_ObjectHideFlags: 0
@@ -1329,6 +1333,8 @@ MonoBehaviour:
   _runInBackground: 1
   _dontDestroyOnLoad: 1
   _persistence: 0
+  _incomingIterationOrder: 1
+  _outgoingIterationOrder: 0
 --- !u!114 &7443408887680269500
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1344,7 +1350,6 @@ MonoBehaviour:
   _tickRate: 30
   _physicsMode: 0
   _maximumBufferedInputs: 15
-  _targetBufferedInputs: 2
 --- !u!114 &7443408887680269501
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1359,7 +1364,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _unreliableMTU: 1023
   _attackResponseType: 1
-  _serverBindAddress: localhost
   _port: 7770
   _maximumClients: 4095
   _clientAddress: localhost

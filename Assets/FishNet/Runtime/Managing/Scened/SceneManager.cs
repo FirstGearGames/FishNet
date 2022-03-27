@@ -128,6 +128,12 @@ namespace FishNet.Managing.Scened
         /// Objects being moved from MovedObjects scene to another. 
         /// </summary>
         private List<GameObject> _movingObjects = new List<GameObject>();
+        /// <summary>
+        /// How many scene load confirmations the server is expecting from a client.
+        /// Unloads do not need to be checked because server does not require confirmation for those.
+        /// This is used to prevent attacks.
+        /// </summary>
+        private Dictionary<NetworkConnection, int> _pendingClientSceneChanges = new Dictionary<NetworkConnection, int>();
         #endregion
 
         #region Consts.
@@ -237,6 +243,8 @@ namespace FishNet.Managing.Scened
         /// <param name="obj"></param>
         internal void OnClientAuthenticated(NetworkConnection connection)
         {
+            AddPendingLoad(connection);
+
             //No global scenes to load.
             if (_globalScenes.Length == 0)
             {
@@ -284,7 +292,6 @@ namespace FishNet.Managing.Scened
             {
                 OnClientLoadedScenes(conn, new ClientScenesLoadedBroadcast());
             }
-
         }
         #endregion
 
@@ -295,6 +302,7 @@ namespace FishNet.Managing.Scened
         /// <param name="conn"></param> //finish.
         private void ClientDisconnected(NetworkConnection conn)
         {
+            _pendingClientSceneChanges.Remove(conn);
             /* Remove connection from all scenes. While doing so check
              * if scene should be unloaded provided there are no more clients
              * in the scene, and it's set to automatically unload. This situation is a bit
@@ -336,6 +344,28 @@ namespace FishNet.Managing.Scened
         /// <param name="msg"></param>
         private void OnClientLoadedScenes(NetworkConnection conn, ClientScenesLoadedBroadcast msg)
         {
+            int pendingLoads;
+            _pendingClientSceneChanges.TryGetValueIL2CPP(conn, out pendingLoads);
+
+            //There's no loads or unloads pending, kick client.
+            if (pendingLoads == 0)
+            {
+                if (_networkManager.CanLog(LoggingType.Common))
+                    Debug.LogError($"Received excessive ClientScenesLoadedBroadcast from connectionId {conn.ClientId}. Connection will be kicked immediately.");
+                _networkManager.TransportManager.Transport.StopConnection(conn.ClientId, true);
+
+                return;
+            }
+            //If there is a load pending then update pending count.
+            else
+            {
+                pendingLoads--;
+                if (pendingLoads == 0)
+                    _pendingClientSceneChanges.Remove(conn);
+                else
+                    _pendingClientSceneChanges[conn] = pendingLoads;
+            }
+
             if (!Comparers.IsDefault(msg))
             {
                 foreach (SceneLookupData item in msg.SceneLookupDatas)
@@ -941,19 +971,7 @@ namespace FishNet.Managing.Scened
             }
 
             /* Set active scene. */
-            //if (asServer)
-            //{
-                //Set will default to global or fallbackactivescene.
-                SetActiveScene();
-            //}
-            ////Setting for client, which isn't also host.
-            //else if (!asHost)
-            //{
-            //    //If any scenes were replaced then set to first loaded.
-            //    if ((replaceScenes != ReplaceOption.None) && loadedScenes.Count > 0)
-            //        UnitySceneManager.SetActiveScene(loadedScenes[0]);
-            //}
-
+            SetActiveScene();
 
             //Only the server needs to find scene handles to send to client. Client will send these back to the server.
             if (asServer)
@@ -998,11 +1016,14 @@ namespace FishNet.Managing.Scened
                 //If networked scope then send to all.
                 if (data.ScopeType == SceneScopeTypes.Global)
                 {
+                    NetworkConnection[] conns = _serverManager.Clients.Values.ToArray();
+                    AddPendingLoad(conns);
                     _serverManager.Broadcast(msg, true);
                 }
                 //If connections scope then only send to connections.
                 else if (data.ScopeType == SceneScopeTypes.Connections)
                 {
+                    AddPendingLoad(data.Connections);
                     for (int i = 0; i < data.Connections.Length; i++)
                     {
                         if (data.Connections[i].Authenticated)
@@ -1025,7 +1046,6 @@ namespace FishNet.Managing.Scened
 
             InvokeOnSceneLoadEnd(data, requestedLoadSceneNames, loadedScenes);
         }
-
 
         /// <summary>
         /// Received on client when connection scenes must be loaded.
@@ -1133,7 +1153,7 @@ namespace FishNet.Managing.Scened
 
             /* Some actions should not run as client if server is also active.
             * This is to keep things from running twice. */
-            bool asHost = (!data.AsServer && _networkManager.IsServer);
+            bool asClientHost = (!data.AsServer && _networkManager.IsServer);
             ///True if running asServer.
             bool asServer = data.AsServer;
 
@@ -1143,7 +1163,7 @@ namespace FishNet.Managing.Scened
              * While asHost scenes will possibly not exist because
              * server side has already unloaded them. But rest of
              * the unload should continue. */
-            if (scenes.Length == 0 && !asHost)
+            if (scenes.Length == 0 && !asClientHost)
             {
                 if (_networkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"No scenes were found to unload.");
@@ -1176,25 +1196,23 @@ namespace FishNet.Managing.Scened
                 }
             }
 
+
             /* This will contain all scenes which can be unloaded.
              * The collection will be modified through various checks. */
             List<Scene> unloadableScenes = scenes.ToList();
-            if (!asHost)
-            {
-                /* If asServer and KeepUnused then clear all unloadables.
-                 * The clients will still unload the scenes. */
-                if (asServer && data.SceneUnloadData.Options.Mode == UnloadOptions.ServerUnloadModes.KeepUnused)
-                    unloadableScenes.Clear();
-                /* Check to remove global scenes unloadableScenes.
-                 * This will need to be done if scenes are being unloaded
-                 * for connections. Global scenes cannot be unloaded as
-                 * connection. */
-                if (data.ScopeType == SceneScopeTypes.Connections)
-                    RemoveGlobalScenes(unloadableScenes);
-                //If set to unload unused only.
-                if (data.SceneUnloadData.Options.Mode == UnloadOptions.ServerUnloadModes.UnloadUnused)
-                    RemoveOccupiedScenes(unloadableScenes);
-            }
+            /* If asServer and KeepUnused then clear all unloadables.
+             * The clients will still unload the scenes. */
+            if ((asServer || asClientHost) && data.SceneUnloadData.Options.Mode == UnloadOptions.ServerUnloadModes.KeepUnused)
+                unloadableScenes.Clear();
+            /* Check to remove global scenes unloadableScenes.
+             * This will need to be done if scenes are being unloaded
+             * for connections. Global scenes cannot be unloaded as
+             * connection. */
+            if (data.ScopeType == SceneScopeTypes.Connections)
+                RemoveGlobalScenes(unloadableScenes);
+            //If set to unload unused only.
+            if (data.SceneUnloadData.Options.Mode == UnloadOptions.ServerUnloadModes.UnloadUnused)
+                RemoveOccupiedScenes(unloadableScenes);
 
             //If there are scenes to unload.
             if (unloadableScenes.Count > 0)
@@ -1737,6 +1755,33 @@ namespace FishNet.Managing.Scened
         }
 
         /// <summary>
+        /// Adds a pending load for a connection.
+        /// </summary>
+        private void AddPendingLoad(NetworkConnection conn)
+        {
+            AddPendingLoad(new NetworkConnection[] { conn });
+        }
+        /// <summary>
+        /// Adds a pending load for a connection.
+        /// </summary>
+        private void AddPendingLoad(NetworkConnection[] conns)
+        {
+            foreach (NetworkConnection c in conns)
+            {
+                /* Make sure connection is active. This should always be true
+                 * but perhaps disconnect happened as scene was loading on server
+                * therefor it cannot be sent to the client. 
+                * Also only authenticated clients can load scenes. */
+                if (!c.IsActive || !c.Authenticated)
+                    continue;
+
+                if (_pendingClientSceneChanges.TryGetValue(c, out int result))
+                    _pendingClientSceneChanges[c] = (result + 1);
+                else
+                    _pendingClientSceneChanges[c] = 1;
+            }
+        }
+        /// <summary>
         /// Sets the first global scene as the active scene.
         /// If a global scene is not available then FallbackActiveScene is used.
         /// </summary>
@@ -1746,11 +1791,15 @@ namespace FishNet.Managing.Scened
             if (_globalScenes != null && _globalScenes.Length > 0)
                 s = GetScene(_globalScenes[0]);
 
-            //If scene still isn't set use fallback.
-            if (string.IsNullOrEmpty(s.name))
+            /* If scene isn't set from global then make
+             * sure currently active isn't the movedobjectscene.
+             * If it is, then use the fallback scene. */
+            if (string.IsNullOrEmpty(s.name) && UnitySceneManager.GetActiveScene() == _movedObjectsScene)
                 s = GetFallbackActiveScene();
 
-            UnitySceneManager.SetActiveScene(s);
+            //If was changed then update active scene.
+            if (!string.IsNullOrEmpty(s.name))
+                UnitySceneManager.SetActiveScene(s);
         }
 
         /// <summary>

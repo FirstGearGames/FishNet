@@ -1,4 +1,5 @@
 ﻿using FishNet.Connection;
+using FishNet.Managing.Logging;
 using FishNet.Managing.Scened;
 using FishNet.Object;
 using System.Collections.Generic;
@@ -65,7 +66,7 @@ namespace FishNet.Example.Scened
         private Dictionary<NetworkConnection, float> _triggeredTimes = new Dictionary<NetworkConnection, float>();
 
 
-        [Server]
+        [Server(Logging = LoggingType.Off)]
         private void OnTriggerEnter(Collider other)
         {
             if (!_onTriggerEnter)
@@ -74,7 +75,7 @@ namespace FishNet.Example.Scened
             LoadScene(other.GetComponent<NetworkObject>());
         }
 
-        [Server]
+        [Server(Logging = LoggingType.Off)]
         private void OnTriggerExit(Collider other)
         {
             if (_onTriggerEnter)

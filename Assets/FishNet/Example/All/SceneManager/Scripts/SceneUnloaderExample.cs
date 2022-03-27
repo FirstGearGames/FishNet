@@ -1,4 +1,5 @@
-﻿using FishNet.Managing.Scened;
+﻿using FishNet.Managing.Logging;
+using FishNet.Managing.Scened;
 using FishNet.Object;
 using UnityEngine;
 
@@ -36,7 +37,7 @@ namespace FishNet.Example.Scened
         private bool _onTriggerEnter = true;
 
 
-        [Server]
+        [Server(Logging = LoggingType.Off)]
         private void OnTriggerEnter(Collider other)
         {
             if (!_onTriggerEnter)
@@ -45,7 +46,7 @@ namespace FishNet.Example.Scened
             UnloadScenes(other.gameObject.GetComponent<NetworkObject>());
         }
 
-        [Server]
+        [Server(Logging = LoggingType.Off)]
         private void OnTriggerExit(Collider other)
         {
             if (_onTriggerEnter)

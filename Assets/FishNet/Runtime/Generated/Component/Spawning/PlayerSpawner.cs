@@ -3,6 +3,7 @@ using FishNet.Managing;
 using FishNet.Object;
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace FishNet.Component.Spawning
 {
@@ -37,8 +38,8 @@ namespace FishNet.Component.Spawning
         /// Areas in which players may spawn.
         /// </summary>
         [Tooltip("Areas in which players may spawn.")]
-        [SerializeField]
-        private Transform[] _spawns = new Transform[0];
+        [FormerlySerializedAs("_spawns")]
+        public Transform[] Spawns = new Transform[0];
         #endregion
 
         #region Private.
@@ -115,13 +116,13 @@ namespace FishNet.Component.Spawning
         private void SetSpawn(Transform prefab, out Vector3 pos, out Quaternion rot)
         {
             //No spawns specified.
-            if (_spawns.Length == 0)
+            if (Spawns.Length == 0)
             {
                 SetSpawnUsingPrefab(prefab, out pos, out rot);
                 return;
             }
 
-            Transform result = _spawns[_nextSpawn];
+            Transform result = Spawns[_nextSpawn];
             if (result == null)
             {
                 SetSpawnUsingPrefab(prefab, out pos, out rot);
@@ -134,7 +135,7 @@ namespace FishNet.Component.Spawning
 
             //Increase next spawn and reset if needed.
             _nextSpawn++;
-            if (_nextSpawn >= _spawns.Length)
+            if (_nextSpawn >= Spawns.Length)
                 _nextSpawn = 0;
         }
 
