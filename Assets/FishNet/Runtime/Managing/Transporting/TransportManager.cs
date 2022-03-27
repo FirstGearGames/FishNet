@@ -90,7 +90,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        internal void InitializeOnce(NetworkManager manager)
+        internal void InitializeOnceInternal(NetworkManager manager)
         {
             _networkManager = manager;
             /* If transport isn't specified then add default

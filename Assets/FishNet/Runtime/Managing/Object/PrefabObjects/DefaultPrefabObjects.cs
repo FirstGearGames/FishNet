@@ -21,6 +21,12 @@ namespace FishNet.Managing.Object
         internal static bool CanAutomate = true;
 
         /// <summary>
+        /// True if this refreshed while playing.
+        /// </summary>
+        [System.NonSerialized]
+        private bool _refreshedWhilePlaying = false;
+
+        /// <summary>
         /// Sorts prefabs by name and path hashcode.
         /// </summary>
         internal void Sort()
@@ -84,8 +90,12 @@ namespace FishNet.Managing.Object
             bool error = (id >= base.Prefabs.Count ||
                 base.Prefabs[id] == null);
 
-            if (error)
+            if (error && !_refreshedWhilePlaying)
+            {
+                //This prevents the list from trying to populate several times before exiting play mode.
+                _refreshedWhilePlaying = true;
                 AutoPopulateDefaultPrefabs(false);
+            }
 
             return base.GetObject(asServer, id);
         }

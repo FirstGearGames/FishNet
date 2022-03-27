@@ -28,6 +28,10 @@ namespace FishNet.Managing.Scened
         /// </summary>
         [System.NonSerialized]
         public LocalPhysicsMode LocalPhysics = LocalPhysicsMode.None;
+        /// <summary>
+        /// True if scenes should be loaded using addressables.
+        /// </summary>
+        public bool Addressables = false;
     }
 
 

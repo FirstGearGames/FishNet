@@ -16,9 +16,30 @@ namespace FishNet.Object
         /// </summary>
         public bool ClientInitialized { get; private set; }
         /// <summary>
+        /// 
+        /// </summary>
+        private bool _isClient;
+        /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
-        public bool IsClient { get; private set; }
+        public bool IsClient
+        {
+            /* This needs to use a special check when
+             * player is acting as host. Clients won't
+             * set IsClient until they receive the spawn message
+             * but the user may expect this true after client
+             * gains observation but before client gets spawn. */
+            get
+            {
+                if (IsServer)
+                    return (NetworkManager == null) ? false : NetworkManager.IsClient;
+                else
+                    return _isClient;
+            }
+
+            private set => _isClient = value;
+        }
+        
         /// <summary>
         /// True if only the client is active and authenticated.
         /// </summary>

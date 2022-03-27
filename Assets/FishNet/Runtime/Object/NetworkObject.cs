@@ -4,7 +4,6 @@ using UnityEngine;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Managing.Logging;
-using FishNet.Managing.Timing;
 using FishNet.Utility;
 using System.Collections.Generic;
 using FishNet.Utility.Performance;
@@ -230,77 +229,78 @@ namespace FishNet.Object
         /// </summary>
         internal void UpdateNetworkBehaviours()
         {
-            NetworkBehaviours = null;
+            //NetworkBehaviours = null;
 
-            ///* Make sure there are no parent nobs, if there are
-            // * they need to be responsible for initializing
-            // * networkbehaviours. This will change when nested nobs are
-            // * supported. */ //This isn't needed atm with recent changes but keeping it around anyway for now.
-            //Transform parentTransform = transform.parent;
-            //if (parentTransform != null && parentTransform != transform)
+            /////* Make sure there are no parent nobs, if there are
+            //// * they need to be responsible for initializing
+            //// * networkbehaviours. This will change when nested nobs are
+            //// * supported. */ //This isn't needed atm with recent changes but keeping it around anyway for now.
+            ////Transform parentTransform = transform.parent;
+            ////if (parentTransform != null && parentTransform != transform)
+            ////{
+            ////    //One or more parents have a nob.
+            ////    if (parentTransform.GetComponentInParent<NetworkObject>() != null)
+            ////        return;
+            ////}
+
+            ////If there are no child nobs then get NetworkBehaviours normally.
+            //if (ChildNetworkObjects.Count == 0)
             //{
-            //    //One or more parents have a nob.
-            //    if (parentTransform.GetComponentInParent<NetworkObject>() != null)
-            //        return;
+            //    NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>(true);
+            //}
+            ////There are child nobs.
+            //else
+            //{
+            //    //Transforms which can be searched for networkbehaviours.
+            //    ListCache<Transform> transformCache = ListCaches.TransformCache;
+            //    transformCache.Reset();
+
+            //    transformCache.AddValue(transform);
+
+            //    for (int z = 0; z < transformCache.Written; z++)
+            //    {
+            //        Transform currentT = transformCache.Collection[z];
+            //        for (int i = 0; i < currentT.childCount; i++)
+            //        {
+            //            Transform t = currentT.GetChild(i);
+            //            bool hasNob = false;
+            //            for (int x = 0; x < ChildNetworkObjects.Count; x++)
+            //            {
+            //                if (ChildNetworkObjects[x].transform == t)
+            //                {
+            //                    hasNob = true;
+            //                    break;
+            //                }
+            //            }
+
+            //            /* If the transform being checked 
+            //             * does not have a network object then
+            //             * add it to the cache. */
+            //            if (!hasNob)
+            //                transformCache.AddValue(t);
+            //        }
+            //    }
+
+            //    int written;
+            //    //Iterate all cached transforms and get networkbehaviours.
+            //    ListCache<NetworkBehaviour> nbCache = ListCaches.NetworkBehaviourCache;
+            //    nbCache.Reset();
+            //    written = transformCache.Written;
+            //    List<Transform> ts = transformCache.Collection;
+            //    //
+            //    for (int i = 0; i < written; i++)
+            //        nbCache.AddValues(ts[i].GetNetworkBehaviours());
+
+            //    //Copy to array.
+            //    written = nbCache.Written;
+            //    List<NetworkBehaviour> nbs = nbCache.Collection;
+            //    NetworkBehaviours = new NetworkBehaviour[written];
+            //    //
+            //    for (int i = 0; i < written; i++)
+            //        NetworkBehaviours[i] = nbs[i];
             //}
 
-            //If there are no child nobs then get NetworkBehaviours normally.
-            if (ChildNetworkObjects.Count == 0)
-            {
-                NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>(true);
-            }
-            //There are child nobs.
-            else
-            {
-                //Transforms which can be searched for networkbehaviours.
-                ListCache<Transform> transformCache = ListCaches.TransformCache;
-                transformCache.Reset();
-
-                transformCache.AddValue(transform);
-
-                for (int z = 0; z < transformCache.Written; z++)
-                {
-                    Transform currentT = transformCache.Collection[z];
-                    for (int i = 0; i < currentT.childCount; i++)
-                    {
-                        Transform t = currentT.GetChild(i);
-                        bool hasNob = false;
-                        for (int x = 0; x < ChildNetworkObjects.Count; x++)
-                        {
-                            if (ChildNetworkObjects[x].transform == t)
-                            {
-                                hasNob = true;
-                                break;
-                            }
-                        }
-
-                        /* If the transform being checked 
-                         * does not have a network object then
-                         * add it to the cache. */
-                        if (!hasNob)
-                            transformCache.AddValue(t);
-                    }
-                }
-
-                int written;
-                //Iterate all cached transforms and get networkbehaviours.
-                ListCache<NetworkBehaviour> nbCache = ListCaches.NetworkBehaviourCache;
-                nbCache.Reset();
-                written = transformCache.Written;
-                List<Transform> ts = transformCache.Collection;
-                //
-                for (int i = 0; i < written; i++)
-                    nbCache.AddValues(ts[i].GetNetworkBehaviours());
-
-                //Copy to array.
-                written = nbCache.Written;
-                List<NetworkBehaviour> nbs = nbCache.Collection;
-                NetworkBehaviours = new NetworkBehaviour[written];
-                //
-                for (int i = 0; i < written; i++)
-                    NetworkBehaviours[i] = nbs[i];
-            }
-
+            NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>(true);
             //Check and initialize found network behaviours.
             if (NetworkBehaviours.Length > byte.MaxValue)
             {

@@ -4,6 +4,7 @@ using FishNet.Managing.Transporting;
 using FishNet.Object;
 using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Managing.Server
@@ -21,7 +22,7 @@ namespace FishNet.Managing.Server
             //If using multipass check all transports.
             if (tm.Transport is Multipass mp)
             {
-
+                
                 foreach (Transport t in mp.Transports)
                 {
                     //Another transport is started, no need to load start scenes again.
@@ -38,6 +39,7 @@ namespace FishNet.Managing.Server
 
             return (startedCount == 1);
         }
+
         /// <summary>
         /// Returns true if any server socket is in the started state.
         /// </summary>
@@ -78,6 +80,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="go">GameObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
         {
             if (go == null)
@@ -88,8 +91,27 @@ namespace FishNet.Managing.Server
             }
 
             NetworkObject nob = go.GetComponent<NetworkObject>();
+            Spawn(nob, ownerConnection);
+        }
+
+
+        /// <summary>
+        /// Spawns an object over the network. Can only be called on the server.
+        /// </summary>
+        /// <param name="nob">MetworkObject instance to spawn.</param>
+        /// <param name="ownerConnection">Connection to give ownership to.</param>
+        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
+        {
+            if (nob == null)
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"NetworkObject cannot be spawned because it is null.");
+                return;
+            }
+
             Objects.Spawn(nob, ownerConnection);
         }
+
 
         /// <summary>
         /// Despawns an object over the network. Can only be called on the server.

@@ -19,8 +19,11 @@ namespace FishNet.Component.Transforming.Editing
         private SerializedProperty _teleportThreshold;
         private SerializedProperty _clientAuthoritative;
         private SerializedProperty _sendToOwner;
+        private SerializedProperty _synchronizePosition;
         private SerializedProperty _positionSnapping;
+        private SerializedProperty _synchronizeRotation;
         private SerializedProperty _rotationSnapping;
+        private SerializedProperty _synchronizeScale;
         private SerializedProperty _scaleSnapping;
 
 
@@ -34,14 +37,16 @@ namespace FishNet.Component.Transforming.Editing
             _teleportThreshold = serializedObject.FindProperty("_teleportThreshold");
             _clientAuthoritative = serializedObject.FindProperty("_clientAuthoritative");
             _sendToOwner = serializedObject.FindProperty("_sendToOwner");
+            _synchronizePosition = serializedObject.FindProperty("_synchronizePosition");
             _positionSnapping = serializedObject.FindProperty("_positionSnapping");
+            _synchronizeRotation = serializedObject.FindProperty("_synchronizeRotation");
             _rotationSnapping = serializedObject.FindProperty("_rotationSnapping");
+            _synchronizeScale = serializedObject.FindProperty("_synchronizeScale");
             _scaleSnapping = serializedObject.FindProperty("_scaleSnapping");
         }
 
         public override void OnInspectorGUI()
         {
-
             serializedObject.Update();
 
             GUI.enabled = false;
@@ -89,13 +94,34 @@ namespace FishNet.Component.Transforming.Editing
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
-            //Snapping.
-            EditorGUILayout.LabelField("Snapping.", EditorStyles.boldLabel);
-            EditorGUI.indentLevel += 2;
-            EditorGUILayout.PropertyField(_positionSnapping);
-            EditorGUILayout.PropertyField(_rotationSnapping);
-            EditorGUILayout.PropertyField(_scaleSnapping);
-            EditorGUI.indentLevel -= 2;
+            //Synchronizing.
+            EditorGUILayout.LabelField("Synchronizing.", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            //Position.
+            EditorGUILayout.PropertyField(_synchronizePosition);
+            if (_synchronizePosition.boolValue)
+            {
+                EditorGUI.indentLevel += 2;
+                EditorGUILayout.PropertyField(_positionSnapping);
+                EditorGUI.indentLevel -= 2;
+            }
+            //Rotation.
+            EditorGUILayout.PropertyField(_synchronizeRotation);
+            if (_synchronizeRotation.boolValue)
+            {
+                EditorGUI.indentLevel += 2;
+                EditorGUILayout.PropertyField(_rotationSnapping);
+                EditorGUI.indentLevel -= 2;
+            }
+            //Scale.
+            EditorGUILayout.PropertyField(_synchronizeScale);
+            if (_synchronizeScale.boolValue)
+            {
+                EditorGUI.indentLevel += 2;
+                EditorGUILayout.PropertyField(_scaleSnapping);
+                EditorGUI.indentLevel -= 2;
+            }
+            EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();
         }

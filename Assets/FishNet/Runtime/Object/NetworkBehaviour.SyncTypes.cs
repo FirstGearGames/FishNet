@@ -229,6 +229,7 @@ namespace FishNet.Object
             //True if data has been written and is ready to send.
             bool dataWritten = false;
             Dictionary<uint, SyncBase> collection = (isSyncObject) ? _syncObjects : _syncVars;
+            
             foreach (SyncBase sb in collection.Values)
             {
                 if (!sb.IsDirty)
@@ -310,19 +311,8 @@ namespace FishNet.Object
 
                                 PooledWriter dataWriter = WriterPool.GetWriter();
                                 dataWriter.WriteNetworkBehaviour(this);
-                                /* //clean try and clean this up similar to rpc changes
-                                // with unreliable lengths and what not. */
-
                                 dataWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
                                 
-                                //If unreliable write packet length.
-                                if ((Channel)channel == Channel.Unreliable)
-                                {
-                                    if (dataWriter.Length > short.MaxValue)
-                                        headerWriter.WriteInt16(-2);
-                                    else
-                                        headerWriter.WriteInt16((short)dataWriter.Length);
-                                }
                                 //Attach data onto packetWriter.
                                 headerWriter.WriteArraySegment(dataWriter.GetArraySegment());
                                 dataWriter.Dispose();

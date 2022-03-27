@@ -697,19 +697,19 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteNetworkObject(NetworkObject nob)
         {
-            if (nob == null)
+            bool isSpawned = (nob != null && nob.IsSpawned);
+            WriteBoolean(isSpawned);
+
+            if (isSpawned)
             {
-                WriteInt16(-1);
-            }
-            else if (!nob.IsSpawned)
-            {
-                WriteInt16(-1);
-                if (NetworkManager.StaticCanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkObject on GameObject {nob.name} is not spawned. Only objects spawned by the server can be written over the network.");
+                WriteInt16((short)nob.ObjectId);
             }
             else
             {
-                WriteInt16((short)nob.ObjectId);
+                if (nob == null)
+                    WriteInt16(-1);
+                else
+                    WriteInt16(nob.PrefabId);
             }
         }
 
@@ -722,13 +722,6 @@ namespace FishNet.Serializing
         {
             if (nb == null)
             {
-                WriteNetworkObject(null);
-                WriteByte(0);
-            }
-            else if (!nb.IsSpawned)
-            {
-                if (NetworkManager.StaticCanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkObject on GameObject {nb.name} is not spawned.");
                 WriteNetworkObject(null);
                 WriteByte(0);
             }

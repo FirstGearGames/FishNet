@@ -1,5 +1,6 @@
 ﻿using FishNet.Documenting;
 using FishNet.Object.Helping;
+using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
@@ -7,6 +8,7 @@ using FishNet.Transporting;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
@@ -62,10 +64,10 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public SyncVar(WritePermission writePermission, ReadPermission readPermission, float sendRate, Channel channel, T value)
+        public SyncVar(NetworkBehaviour nb, uint syncIndex, WritePermission writePermission, ReadPermission readPermission, float sendRate, Channel channel, T value)
         {
             SetInitialValues(value);
-            base.InitializeInstance(writePermission, readPermission, sendRate, channel, false);
+            base.InitializeInstance(nb, syncIndex, writePermission, readPermission, sendRate, channel, false);
         }
 
         /// <summary>
@@ -102,6 +104,18 @@ namespace FishNet.Object.Synchronizing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetValue(T nextValue, bool calledByUser)
         {
+            /* If not registered then that means Awake
+             * has not completed on the owning class. This would be true
+             * when setting values within awake on the owning class. Registered
+             * is called at the end of awake, so it would be unset until awake completed.
+             * 
+             * Registered however will be true when setting from another script,
+             * even if the owning class of this was just spawned. This is because
+             * the unity cycle will fire awake on the object soon as it's spawned, 
+             * completing awake, and the user would set the value after. */
+            if (!base.IsRegistered)
+                return;
+
             bool isServer = base.NetworkBehaviour.IsServer;
             bool isClient = base.NetworkBehaviour.IsClient;
             /* If not client or server then set skipChecks

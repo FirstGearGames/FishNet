@@ -197,7 +197,7 @@ namespace FishNet.Managing.Scened
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void InitializeOnce(NetworkManager manager)
+        internal void InitializeOnceInternal(NetworkManager manager)
         {
             _networkManager = manager;
         }
@@ -790,7 +790,17 @@ namespace FishNet.Managing.Scened
                 * 1f / 2f is 0.5f. */
                 float maximumIndexWorth = (1f / (float)loadableScenes.Count);
 
-                AsyncOperation loadAsync = UnitySceneManager.LoadSceneAsync(loadableScenes[i].Name, loadSceneParameters);
+                AsyncOperation loadAsync;
+                if (data.SceneLoadData.Options.Addressables)
+                {
+                    //loadAsync = Addressables
+                    Debug.LogError($"Loading with addressables is not supported yet.");
+                    loadAsync = null;
+                }
+                else
+                {
+                    loadAsync = UnitySceneManager.LoadSceneAsync(loadableScenes[i].Name, loadSceneParameters);
+                }
                 loadAsync.allowSceneActivation = false;
                 asyncOperations.Add(loadAsync);
                 while (loadAsync.progress < 0.9f)

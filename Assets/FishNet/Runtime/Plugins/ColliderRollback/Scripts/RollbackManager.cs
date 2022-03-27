@@ -35,7 +35,7 @@ namespace FishNet.Component.ColliderRollback
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void InitializeOnce(NetworkManager manager)
+        internal void InitializeOnceInternal(NetworkManager manager)
         {
             
         }

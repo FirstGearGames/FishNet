@@ -1,10 +1,10 @@
 ﻿using FishNet.Authenticating;
 using FishNet.Connection;
+using FishNet.Managing.Debugging;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using FishNet.Transporting.Multipass;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
 using System;
@@ -110,6 +110,12 @@ namespace FishNet.Managing.Server
         /// Used to read splits.
         /// </summary>
         private SplitReader _splitReader = new SplitReader();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>
+        /// Logs data about parser to help debug.
+        /// </summary>
+        private ParseLogger _parseLogger = new ParseLogger();
+#endif
         #endregion
 
         private void OnDestroy()
@@ -121,7 +127,7 @@ namespace FishNet.Managing.Server
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void InitializeOnce(NetworkManager manager)
+        internal void InitializeOnceInternal(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ServerObjects(manager);
@@ -277,8 +283,8 @@ namespace FishNet.Managing.Server
             Started = AnyServerStarted();
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
             Objects.OnServerConnectionState(args);
-            
-            LocalConnectionStates state = args.ConnectionState;            
+
+            LocalConnectionStates state = args.ConnectionState;
 
             if (NetworkManager.CanLog(LoggingType.Common))
             {
@@ -436,6 +442,9 @@ namespace FishNet.Managing.Server
                 while (reader.Remaining > 0)
                 {
                     packetId = reader.ReadPacketId();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    _parseLogger.AddPacket(packetId);
+#endif
                     NetworkConnection conn;
 
                     /* Connection isn't available. This should never happen.
@@ -478,7 +487,15 @@ namespace FishNet.Managing.Server
                     else
                     {
                         if (NetworkManager.CanLog(LoggingType.Error))
+                        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                             Debug.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
+                            _parseLogger.Print(NetworkManager);
+#else
+                            Debug.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately.");
+                            NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+#endif
+                        }
                         return;
                     }
                 }

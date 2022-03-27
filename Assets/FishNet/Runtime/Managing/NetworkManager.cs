@@ -283,13 +283,13 @@ namespace FishNet.Managing
         /// </summary>
         private void InitializeComponents()
         {
-            TimeManager.InitializeOnce(this);
+            TimeManager.InitializeOnceInternal(this);
             TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
-            SceneManager.InitializeOnce(this);
-            TransportManager.InitializeOnce(this);
-            ServerManager.InitializeOnce(this);
-            ClientManager.InitializeOnce(this);
-            RollbackManager.InitializeOnce(this);
+            SceneManager.InitializeOnceInternal(this);
+            TransportManager.InitializeOnceInternal(this);
+            ServerManager.InitializeOnceInternal(this);
+            ClientManager.InitializeOnceInternal(this);
+            RollbackManager.InitializeOnceInternal(this);
         }
 
         /// <summary>
@@ -346,37 +346,38 @@ namespace FishNet.Managing
                 return true;
 
             List<NetworkManager> instances = Instances.ToList();
-            //If at least one manager is already instantiated/initialized.
-            if (instances.Count > 0)
+            //This is the first instance, it may initialize.
+            if (instances.Count == 0)
+                return true;
+
+            //First instance of NM.
+            NetworkManager firstInstance = instances[0];
+
+            //If to destroy the newest.
+            if (_persistence == PersistenceType.DestroyNewest)
             {
-                GameObject target = null;
-                //If destroy newest.
-                if (_persistence == PersistenceType.DestroyNewest)
-                {
-                    target = gameObject;
-                }
-                //If destroy oldest.
-                else
-                {
-                    NetworkManager previous = instances[0];
-                    if (previous != null)
-                        target = previous.gameObject;
-                }
-
-                bool result = (target != gameObject);
-                if (target != null)
-                {
-                    if (CanLog(LoggingType.Common))
-                        Debug.Log($"NetworkManager on object {gameObject.name} is is being destroyed due to persistence type {_persistence}. Another NetworkManager already exists on object {instances[0].gameObject.name}.");
-                    Destroy(gameObject);
-                }
-
-                return result;
+                if (CanLog(LoggingType.Common))
+                    Debug.Log($"NetworkManager on object {gameObject.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance already exist on {firstInstance.name}.");
+                Destroy(gameObject);
+                //This one is being destroyed because its the newest.
+                return false;
             }
-            //First manager, will not be destroyed.
+            //If to destroy the oldest.
+            else if (_persistence == PersistenceType.DestroyOldest)
+            {
+                if (CanLog(LoggingType.Common))
+                    Debug.Log($"NetworkManager on object {firstInstance.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance has been created on {gameObject.name}.");
+                Destroy(firstInstance.gameObject);
+                //This being the new one will persist, allow initialization.
+                return true;
+            }
+            //Unhandled.
             else
             {
-                return true;
+                if (CanLog(LoggingType.Error))
+                    Debug.Log($"Persistance type of {_persistence} is unhandled on {gameObject.name}. Initialization will not proceed.");
+
+                return false;
             }
         }
 
@@ -491,7 +492,7 @@ namespace FishNet.Managing
 
         private void SetDefaultPrefabs()
         {
-            
+
             if (SpawnablePrefabs == null)
             {
                 SpawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);

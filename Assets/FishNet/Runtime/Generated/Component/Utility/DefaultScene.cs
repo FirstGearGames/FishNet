@@ -109,8 +109,11 @@ public class DefaultScene : MonoBehaviour
          * join it when connecting. */
         if (obj.ConnectionState == LocalConnectionStates.Started)
         {
-            /* A server besides this one is already started,
-             * no need to load start scenes again. */
+            /* If not exactly one server is started then
+             * that means either none are started, which isnt true because
+             * we just got a started callback, or two+ are started.
+             * When a server has already started there's no reason to load
+             * scenes again. */
             if (!InstanceFinder.ServerManager.OneServerStarted())
                 return;
 

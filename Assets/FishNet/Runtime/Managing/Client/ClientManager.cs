@@ -1,4 +1,5 @@
 ﻿using FishNet.Connection;
+using FishNet.Managing.Debugging;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Managing.Transporting;
@@ -7,7 +8,6 @@ using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 
 namespace FishNet.Managing.Client
@@ -71,9 +71,9 @@ namespace FishNet.Managing.Client
         private SplitReader _splitReader = new SplitReader();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         /// <summary>
-        /// Contains the last three non-split packets to arrive. This is used for debugging.
+        /// Logs data about parser to help debug.
         /// </summary>
-        private Queue<PacketId> _incomingPacketIds = new Queue<PacketId>();
+        private ParseLogger _parseLogger = new ParseLogger();
 #endif
         #endregion
 
@@ -87,7 +87,7 @@ namespace FishNet.Managing.Client
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void InitializeOnce(NetworkManager manager)
+        internal void InitializeOnceInternal(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ClientObjects(manager);
@@ -189,15 +189,14 @@ namespace FishNet.Managing.Client
         }
 
         /// <summary>
-        /// Called when a connection state changes for local client.
+        /// Called when a connection state changes for the local client.
         /// </summary>
         /// <param name="args"></param>
         private void Transport_OnClientConnectionState(ClientConnectionStateArgs args)
         {
-            Objects.OnClientConnectionState(args);
-
             LocalConnectionStates state = args.ConnectionState;
             Started = (state == LocalConnectionStates.Started);
+            Objects.OnClientConnectionState(args);
 
             //Clear connection after so objects can update using current Connection value.
             if (!Started)
@@ -284,9 +283,7 @@ namespace FishNet.Managing.Client
                 {
                     packetId = reader.ReadPacketId();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    _incomingPacketIds.Enqueue(packetId);
-                    if (_incomingPacketIds.Count > 5)
-                        _incomingPacketIds.Dequeue();
+                    _parseLogger.AddPacket(packetId);
 #endif
                     bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
                     /* Length of data. Only available if using unreliable. Unreliable packets
@@ -366,10 +363,7 @@ namespace FishNet.Managing.Client
                             {
                                 Debug.LogError($"Client received an unhandled PacketId of {(ushort)packetId}. Remaining data has been purged.");
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                                StringBuilder sb = new StringBuilder();
-                                foreach (PacketId item in _incomingPacketIds)
-                                    sb.Insert(0, $"{item.ToString()}{Environment.NewLine}");
-                                Debug.LogError($"The last {_incomingPacketIds.Count} packets to arrive are: {Environment.NewLine}{sb.ToString()}");
+                                _parseLogger.Print(NetworkManager);
 #endif
                             }
                             return;
@@ -431,6 +425,7 @@ namespace FishNet.Managing.Client
                 {
                     if (NetworkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"Unable to lookup LocalConnection for {connectionId} as host.");
+
                     Connection = new NetworkConnection(NetworkManager, connectionId);
                 }
             }

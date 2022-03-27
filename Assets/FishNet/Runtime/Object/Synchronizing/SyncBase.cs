@@ -2,7 +2,7 @@
 using FishNet.Managing.Timing;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using UnityEngine;
+using System.Runtime.CompilerServices;
 
 namespace FishNet.Object.Synchronizing.Internal
 {
@@ -10,6 +10,10 @@ namespace FishNet.Object.Synchronizing.Internal
     {
 
         #region Public.
+        /// <summary>
+        /// True if this SyncBase has been registered within it's containing class.
+        /// </summary>
+        public bool IsRegistered { get; private set; }
         /// <summary>
         /// True if a SyncObject, false if a SyncVar.
         /// </summary>
@@ -62,12 +66,12 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Initializes this SyncBase.
         /// </summary>
-        /// <param name="writePermissions"></param>
-        /// <param name="readPermissions"></param>
-        /// <param name="tickRate"></param>
-        /// <param name="channel"></param>
-        public void InitializeInstance(WritePermission writePermissions, ReadPermission readPermissions, float tickRate, Channel channel, bool isSyncObject)
+        public void InitializeInstance(NetworkBehaviour nb, uint syncIndex, WritePermission writePermissions, ReadPermission readPermissions, float tickRate, Channel channel, bool isSyncObject)
         {
+            NetworkBehaviour = nb;
+            SyncIndex = syncIndex;
+            _currentChannel = channel;
+            IsSyncObject = isSyncObject;
             Settings = new Settings()
             {
                 WritePermission = writePermissions,
@@ -76,26 +80,25 @@ namespace FishNet.Object.Synchronizing.Internal
                 Channel = channel
             };
 
-            _currentChannel = channel;
-            IsSyncObject = isSyncObject;
+            NetworkBehaviour.RegisterSyncType(this, SyncIndex);
         }
 
         /// <summary>
         /// Sets the SyncIndex.
         /// </summary>
-        /// <param name="index"></param>
-        public void SetSyncIndex(NetworkBehaviour nb, uint index)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetRegistered()
         {
-            NetworkBehaviour = nb;
-            SyncIndex = index;
-            NetworkBehaviour.RegisterSyncType(this, SyncIndex);
             Registered();
         }
 
         /// <summary>
         /// Called when the SyncType has been registered, but not yet initialized over the network.
         /// </summary>
-        protected virtual void Registered() { }
+        protected virtual void Registered()
+        {
+            IsRegistered = true;
+        }
 
         /// <summary>
         /// PreInitializes this for use with the network.
