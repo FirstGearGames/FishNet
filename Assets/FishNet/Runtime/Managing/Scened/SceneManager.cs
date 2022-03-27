@@ -1366,7 +1366,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Adds the owner of nob to the gameObjects scene if there are no global scenes.
         /// </summary>
-        internal void AddOwnerToDefaultScene(NetworkObject nob)
+        public void AddOwnerToDefaultScene(NetworkObject nob)
         {
             //No owner.
             if (!nob.Owner.IsValid)
