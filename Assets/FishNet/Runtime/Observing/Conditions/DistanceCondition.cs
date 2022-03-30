@@ -26,6 +26,13 @@ namespace FishNet.Component.Observing
         /// </summary>
         public float MaximumDistance { get => _maximumDistance; set => _maximumDistance = value; }
         /// <summary>
+        /// Additional percent of distance client must be until this object is hidden. For example, if distance was 100f and percent was 0.5f the client must be 150f units away before this object is hidden again. This can be useful for keeping objects from regularly appearing and disappearing.
+        /// </summary>
+        [Tooltip("Additional percent of distance client must be until this object is hidden. For example, if distance was 100f and percent was 0.5f the client must be 150f units away before this object is hidden again. This can be useful for keeping objects from regularly appearing and disappearing.")]
+        [Range(0f, 1f)]
+        [SerializeField]
+        private float _hideDistancePercent = 0.1f;
+        /// <summary>
         /// 
         /// </summary>
         [Tooltip("How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. A value of 0f will cause the object the update quickly as possible while any other value will be used as a delay.")]
@@ -54,10 +61,11 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// Returns if the object which this condition resides should be visible to connection.
         /// </summary>
-        /// <param name="connection"></param>
+        /// <param name="connection">Connection which the condition is being checked for.</param>
+        /// <param name="currentlyAdded">True if the connection currently has visibility of this object.</param>
         /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool ConditionMet(NetworkConnection connection, out bool notProcessed)
+        public override bool ConditionMet(NetworkConnection connection, bool currentlyAdded, out bool notProcessed)
         {
             if (_updateFrequency > 0f)
             {
@@ -86,7 +94,20 @@ namespace FishNet.Component.Observing
             //If here then checks are being processed.
             notProcessed = false;
 
-            float sqrMaximumDistance = (MaximumDistance * MaximumDistance);
+            float sqrMaximumDistance;
+            /* If already visible then use additional
+             * distance to determine when to hide. */
+            if (currentlyAdded)
+            {
+                float maxModified = (MaximumDistance * (1f + _hideDistancePercent));
+                sqrMaximumDistance = (maxModified * maxModified);
+            }
+            //Not visible, use normal distance.
+            else
+            {
+                sqrMaximumDistance = (MaximumDistance * MaximumDistance);
+            }
+
             Vector3 thisPosition = NetworkObject.transform.position;
             foreach (NetworkObject nob in connection.Objects)
             {

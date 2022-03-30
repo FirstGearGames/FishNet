@@ -300,24 +300,27 @@ namespace FishNet.Managing
             bool clientStarted = ClientManager.Started;
             bool serverStarted = ServerManager.Started;
 
-            int frameRate;
+            int frameRate = 0;
+            //If both client and server are started then use whichever framerate is higher.
             if (clientStarted && serverStarted)
                 frameRate = Math.Max(ServerManager.FrameRate, ClientManager.FrameRate);
             else if (clientStarted)
                 frameRate = ClientManager.FrameRate;
             else if (serverStarted)
                 frameRate = ServerManager.FrameRate;
-            else
-                frameRate = MAXIMUM_FRAMERATE;
 
             /* Make sure framerate isn't set to 9999 on server.
-             * If it is then default to tick rate. */
+             * If it is then default to tick rate. If framerate is
+             * less than tickrate then also set to tickrate. */
 #if UNITY_SERVER
             if (frameRate == MAXIMUM_FRAMERATE)
                 frameRate = TimeManager.TickRate;
+            else if (frameRate < TimeManager.TickRate)
+                frameRate = TimeManager.TickRate;
 #endif
-
-            Application.targetFrameRate = frameRate;
+            //If there is a framerate to set.
+            if (frameRate > 0)
+                Application.targetFrameRate = frameRate;
         }
 
         /// <summary>

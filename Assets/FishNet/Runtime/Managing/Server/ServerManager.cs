@@ -31,7 +31,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         public event Action<NetworkConnection, bool> OnAuthenticationResult;
         /// <summary>
-        /// Called when a client state changes with the server.
+        /// Called when a remote client state changes with the server.
         /// </summary>
         public event Action<NetworkConnection, RemoteConnectionStateArgs> OnRemoteConnectionState;
         /// <summary>
@@ -66,6 +66,12 @@ namespace FishNet.Managing.Server
         /// </summary>
         public Authenticator Authenticator { get => _authenticator; set => _authenticator = value; }
         /// <summary>
+        /// True to automatically set the frame rate when the client connects.
+        /// </summary>
+        [Tooltip("True to automatically set the frame rate when the client connects.")]
+        [SerializeField]
+        private bool _changeFrameRate = true;
+        /// <summary>
         ///  
         /// </summary>
         [Tooltip("Maximum frame rate the server may run at. When as host this value runs at whichever is higher between client and server.")]
@@ -75,7 +81,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Maximum frame rate the server may run at. When as host this value runs at whichever is higher between client and server.
         /// </summary>
-        internal ushort FrameRate => _frameRate;
+        internal ushort FrameRate => (_changeFrameRate) ? _frameRate : (ushort)0;
         /// <summary>
         /// 
         /// </summary>
@@ -153,10 +159,13 @@ namespace FishNet.Managing.Server
         /// </summary>
         internal void StartForHeadless()
         {
-#if UNITY_SERVER
             if (_startOnHeadless)
+            {
+                //Wrapping logic in check instead of everything so _startOnHeadless doesnt warn as unused in editor.
+#if UNITY_SERVER
                 StartConnection();
 #endif
+            }
         }
 
         /// <summary>

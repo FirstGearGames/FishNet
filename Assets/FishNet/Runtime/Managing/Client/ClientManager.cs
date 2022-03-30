@@ -52,6 +52,12 @@ namespace FishNet.Managing.Client
 
         #region Serialized.
         /// <summary>
+        /// True to automatically set the frame rate when the client connects.
+        /// </summary>
+        [Tooltip("True to automatically set the frame rate when the client connects.")]
+        [SerializeField]
+        private bool _changeFrameRate = true;
+        /// <summary>
         /// 
         /// </summary>
         [Tooltip("Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.")]
@@ -61,7 +67,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.
         /// </summary>
-        internal ushort FrameRate => _frameRate;
+        internal ushort FrameRate => (_changeFrameRate) ? _frameRate : (ushort)0;
         #endregion
 
         #region Private.

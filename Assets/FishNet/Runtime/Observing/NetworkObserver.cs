@@ -186,7 +186,7 @@ namespace FishNet.Observing
                      * from loop and return removed. If one observer has
                      * removed then there's no reason to iterate
                      * the rest. */
-                    bool conditionMet = condition.ConditionMet(connection, out bool notProcessed);
+                    bool conditionMet = condition.ConditionMet(connection, currentlyAdded, out bool notProcessed);
                     if (notProcessed)
                         conditionMet = currentlyAdded;
 
@@ -198,6 +198,7 @@ namespace FishNet.Observing
                     }
                 }
             }
+
 
             //If not for the host-client connection.
             if (notLocalConnection)
