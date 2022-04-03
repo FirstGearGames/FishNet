@@ -1,4 +1,5 @@
-﻿using FishNet.Managing.Logging;
+﻿using FishNet.Component.Observing;
+using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -141,14 +142,19 @@ namespace FishNet.Managing.Object
                 }
             }
 
-            //Deinitialize then destroy/deactivate.
+            //Deinitialize to invoke callbacks.
             nob.Deinitialize(asServer);
+            //Remove from match condition.
+            MatchCondition.RemoveFromMatchWithoutRebuild(nob, NetworkManager);
+            //Remove from spawned collection.
+            RemoveFromSpawned(nob, false);
+
             if (destroy)
                 MonoBehaviour.Destroy(nob.gameObject);
             else
                 nob.gameObject.SetActive(false);
 
-            RemoveFromSpawned(nob, false);
+
         }
 
         /// <summary>

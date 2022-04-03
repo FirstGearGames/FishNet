@@ -1,4 +1,5 @@
 ﻿using FishNet.Authenticating;
+using FishNet.Component.Observing;
 using FishNet.Connection;
 using FishNet.Managing.Debugging;
 using FishNet.Managing.Logging;
@@ -291,6 +292,10 @@ namespace FishNet.Managing.Server
              * before the server completes it's actions. */
             Started = AnyServerStarted();
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
+            //If no servers are started then reset match conditions.
+            if (!Started)
+                MatchCondition.ClearMatchesWithoutRebuilding();
+
             Objects.OnServerConnectionState(args);
 
             LocalConnectionStates state = args.ConnectionState;
@@ -351,6 +356,7 @@ namespace FishNet.Managing.Server
                         conn.SetDisconnecting(true);
                         OnRemoteConnectionState?.Invoke(conn, args);
                         Clients.Remove(id);
+                        MatchCondition.RemoveFromMatchWithoutRebuild(conn, NetworkManager);
                         Objects.ClientDisconnected(conn);
                         BroadcastClientConnectionChange(false, conn);
                         conn.Reset();

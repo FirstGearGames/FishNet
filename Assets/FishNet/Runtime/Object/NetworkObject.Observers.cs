@@ -76,7 +76,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="connection"></param>
         /// <returns>True if added to Observers.</returns>
-        internal ObserverStateChange RebuildObservers(NetworkConnection connection)
+        internal ObserverStateChange RebuildObservers(NetworkConnection connection, bool timedOnly)
         {
             //If not a valid connection.
             if (!connection.IsValid)
@@ -107,7 +107,7 @@ namespace FishNet.Object
             }
             else
             {
-                ObserverStateChange osc = NetworkObserver.RebuildObservers(connection);
+                ObserverStateChange osc = NetworkObserver.RebuildObservers(connection, timedOnly);
                 if (osc == ObserverStateChange.Added)
                     Observers.Add(connection);
                 else if (osc == ObserverStateChange.Removed)

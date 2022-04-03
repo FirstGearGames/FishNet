@@ -223,10 +223,8 @@ namespace FishNet.Managing
         private void Awake()
         {
             InitializeLogging();
-#if UNITY_EDITOR
-            if (SpawnablePrefabs == null)
-                SetDefaultPrefabs();
-#endif
+            if (!ValidateSpawnablePrefabs(true))
+                return;
 
             if (StartingRpcLinkIndex == 0)
                 StartingRpcLinkIndex = (ushort)(EnumFN.GetHighestValue<PacketId>() + 1);
@@ -385,6 +383,24 @@ namespace FishNet.Managing
         }
 
         /// <summary>
+        /// Validates SpawnablePrefabs field and returns if validated successfully.
+        /// </summary>
+        /// <returns></returns>
+        private bool ValidateSpawnablePrefabs(bool print)
+        {
+            //If null and object is in a scene.
+            if (SpawnablePrefabs == null && !string.IsNullOrEmpty(gameObject.scene.name))
+            {
+                //Always throw an error as this would cause failure.
+                if (print)
+                    Debug.LogError($"SpawnablePrefabs is null on {gameObject.name}. Select the NetworkManager in scene {gameObject.scene.name} and choose a prefabs file. Choosing DefaultPrefabObjects will automatically populate prefabs for you.");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Sets DontDestroyOnLoad if configured to.
         /// </summary>
         private void SetDontDestroyOnLoad()
@@ -486,27 +502,9 @@ namespace FishNet.Managing
         }
         private void Reset()
         {
-            if (Application.isPlaying)
-                return;
-            if (PlayModeTracker.QuitRecently(3f))
-                return;
-            SetDefaultPrefabs();
+            ValidateSpawnablePrefabs(true);
         }
 
-        private void SetDefaultPrefabs()
-        {
-
-            if (SpawnablePrefabs == null)
-            {
-                SpawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);
-                //If found.
-                if (SpawnablePrefabs != null)
-                {
-                    if (CanLog(LoggingType.Common))
-                        Debug.Log($"NetworkManager on {gameObject.name} is using the default prefabs collection.");
-                }
-            }
-        }
 #endif
 
         #endregion

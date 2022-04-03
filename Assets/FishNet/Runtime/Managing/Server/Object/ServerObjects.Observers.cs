@@ -93,7 +93,7 @@ namespace FishNet.Managing.Server
                         }
 
                         NetworkObject nob = _timedNetworkObservers[observerIndex];
-                        ObserverStateChange osc = nob.RebuildObservers(conn);
+                        ObserverStateChange osc = nob.RebuildObservers(conn, true);
                         if (osc == ObserverStateChange.Added)
                         {
                             everyoneWriter.Reset();
@@ -199,6 +199,28 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
+        /// Rebuilds observers on objects.
+        /// </summary>
+        /// <param name="connection"></param>
+        public void RebuildObservers(NetworkObject[] nobs)
+        {
+            int count = nobs.Length;
+            for (int i = 0; i < count; i++)
+                RebuildObservers(nobs[i]);
+        }
+
+        /// <summary>
+        /// Rebuilds observers on objects.
+        /// </summary>
+        /// <param name="connection"></param>
+        public void RebuildObservers(ListCache<NetworkObject> nobs)
+        {
+            int count = nobs.Written;
+            List<NetworkObject> collection = nobs.Collection;
+            for (int i = 0; i < count; i++)
+                RebuildObservers(collection[i]);
+        }
+        /// <summary>
         /// Rebuilds observers on all objects for a connections.
         /// </summary>
         /// <param name="connection"></param>
@@ -245,7 +267,7 @@ namespace FishNet.Managing.Server
                 foreach (NetworkObject nob in Spawned.Values)
                 {
                     //If observer state changed then write changes.
-                    ObserverStateChange osc = nob.RebuildObservers(connection);
+                    ObserverStateChange osc = nob.RebuildObservers(connection, false);
                     if (osc == ObserverStateChange.Added)
                     {
                         everyoneWriter.Reset();
@@ -304,7 +326,7 @@ namespace FishNet.Managing.Server
                 everyoneWriter.Reset();
                 ownerWriter.Reset();
                 //If observer state changed then write changes.
-                ObserverStateChange osc = networkObject.RebuildObservers(conn);
+                ObserverStateChange osc = networkObject.RebuildObservers(conn, false);
                 if (osc == ObserverStateChange.Added)
                     WriteSpawn(networkObject, conn, ref everyoneWriter, ref ownerWriter);
                 else if (osc == ObserverStateChange.Removed)
@@ -347,6 +369,19 @@ namespace FishNet.Managing.Server
             cache.Reset();
             foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)
                 cache.AddValue(item);
+
+            RebuildObservers(nob, cache);
+        }
+        /// <summary>
+        /// Rebuilds observers for a connection on NetworkObject.
+        /// </summary>
+        /// <param name="nob">NetworkObject to rebuild on.</param>
+        /// <param name="conn">Connection to rebuild for.</param>
+        internal void RebuildObservers(NetworkObject nob, NetworkConnection conn)
+        {
+            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
+            cache.Reset();
+            cache.AddValue(conn);
 
             RebuildObservers(nob, cache);
         }

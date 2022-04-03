@@ -52,6 +52,8 @@ namespace FishNet.Component.Observing
                 //Fall through, no scenes shared.
                 return false;
             }
+            /* If there is no owner as a fallback see if
+             * the connection is in the same scene as this object. */
             else
             {
                 /* When there is no owner only then is the gameobject

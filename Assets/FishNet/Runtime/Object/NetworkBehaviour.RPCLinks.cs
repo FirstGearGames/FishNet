@@ -44,7 +44,7 @@ namespace FishNet.Object
         /// </summary>
         private void InitializeOnceRpcLinks()
         {
-            if (IsServer)
+            if (NetworkManager.IsServer)
             {
                 /* Link only data from server to clients. While it is
                  * just as easy to link client to server it's usually

@@ -7,12 +7,9 @@ using FishNet.Object.Helping;
 using FishNet.Transporting;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
-using MonoFN.Cecil.Rocks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEngine;
-using SR = System.Reflection;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -392,7 +389,7 @@ namespace FishNet.CodeGenerating.Processing
             if (!intentionallyNull && logicMd == null)
                 return false;
 
-            readerMd = CreateRpcReaderMethod(typeDef, originalMd, serializedParameters, logicMd, rpcAttribute, rpcType, out intentionallyNull);
+            readerMd = CreateRpcReaderMethod(typeDef, runLocally, originalMd, serializedParameters, logicMd, rpcAttribute, rpcType, out intentionallyNull);
             if (!intentionallyNull && readerMd == null)
                 return false;
 
@@ -627,7 +624,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="originalMethodDef"></param>
         /// <param name="rpcAttribute"></param>
         /// <returns></returns>
-        private MethodDefinition CreateRpcReaderMethod(TypeDefinition typeDef, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, MethodDefinition logicMethodDef, CustomAttribute rpcAttribute, RpcType rpcType, out bool intentionallyNull)
+        private MethodDefinition CreateRpcReaderMethod(TypeDefinition typeDef, bool runLocally, MethodDefinition originalMethodDef, List<ParameterDefinition> serializedParameters, MethodDefinition logicMethodDef, CustomAttribute rpcAttribute, RpcType rpcType, out bool intentionallyNull)
         {
             intentionallyNull = false;
 
@@ -653,9 +650,9 @@ namespace FishNet.CodeGenerating.Processing
             createdMethodDef.Body.InitLocals = true;
 
             if (rpcType == RpcType.Server)
-                return CreateServerRpcReaderMethod(typeDef, originalMethodDef, createdMethodDef, serializedParameters, logicMethodDef, rpcAttribute);
+                return CreateServerRpcReaderMethod(typeDef, runLocally, originalMethodDef, createdMethodDef, serializedParameters, logicMethodDef, rpcAttribute);
             else if (rpcType == RpcType.Target || rpcType == RpcType.Observers)
-                return CreateClientRpcReaderMethod(originalMethodDef, createdMethodDef, serializedParameters, logicMethodDef, rpcAttribute, rpcType);
+                return CreateClientRpcReaderMethod(originalMethodDef, runLocally, createdMethodDef, serializedParameters, logicMethodDef, rpcAttribute, rpcType);
             else
                 return null;
         }
@@ -667,7 +664,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="originalMd"></param>
         /// <param name="rpcAttribute"></param>
         /// <returns></returns>
-        private MethodDefinition CreateServerRpcReaderMethod(TypeDefinition typeDef, MethodDefinition originalMd, MethodDefinition createdMd, List<ParameterDefinition> serializedParameters, MethodDefinition logicMd, CustomAttribute rpcAttribute)
+        private MethodDefinition CreateServerRpcReaderMethod(TypeDefinition typeDef, bool runLocally, MethodDefinition originalMd, MethodDefinition createdMd, List<ParameterDefinition> serializedParameters, MethodDefinition logicMd, CustomAttribute rpcAttribute)
         {
             ILProcessor createdProcessor = createdMd.Body.GetILProcessor();
 
@@ -693,6 +690,10 @@ namespace FishNet.CodeGenerating.Processing
             //Read to clear pooledreader.
             createdProcessor.Add(allReadInsts);
 
+            //Block from running twice as host.
+            if (runLocally)
+                createdProcessor.Add(CreateIsHostBlock(createdMd));
+
             //this.Logic
             createdProcessor.Emit(OpCodes.Ldarg_0);
             //Add each read variable as an argument. 
@@ -714,14 +715,13 @@ namespace FishNet.CodeGenerating.Processing
             return createdMd;
         }
 
-
         /// <summary>
         /// Creates a reader for ObserversRpc.
         /// </summary>
         /// <param name="originalMd"></param>
         /// <param name="rpcAttribute"></param>
         /// <returns></returns>
-        private MethodDefinition CreateClientRpcReaderMethod(MethodDefinition originalMd, MethodDefinition createdMd, List<ParameterDefinition> serializedParameters, MethodDefinition logicMethodDef, CustomAttribute rpcAttribute, RpcType rpcType)
+        private MethodDefinition CreateClientRpcReaderMethod(MethodDefinition originalMd, bool runLocally, MethodDefinition createdMd, List<ParameterDefinition> serializedParameters, MethodDefinition logicMethodDef, CustomAttribute rpcAttribute, RpcType rpcType)
         {
             ILProcessor createdProcessor = createdMd.Body.GetILProcessor();
 
@@ -752,8 +752,11 @@ namespace FishNet.CodeGenerating.Processing
                 }
             }
 
-            createdProcessor.Emit(OpCodes.Ldarg_0); //this.
+            //Block from running twice as host.
+            if (runLocally)
+                createdProcessor.Add(CreateIsHostBlock(createdMd));
 
+            createdProcessor.Emit(OpCodes.Ldarg_0); //this.
             /* TargetRpc passes in localconnection
             * as receiver for connection. */
             if (rpcType == RpcType.Target)
@@ -776,6 +779,25 @@ namespace FishNet.CodeGenerating.Processing
             return createdMd;
         }
 
+
+        /// <summary>
+        /// Appends a block to the method if running as host.
+        /// </summary>
+        /// <param name="md"></param>
+        private List<Instruction> CreateIsHostBlock(MethodDefinition md)
+        {
+            List<Instruction> ints = new List<Instruction>();
+            ILProcessor processor = md.Body.GetILProcessor();
+
+            Instruction endIfInst = processor.Create(OpCodes.Nop);
+            ints.Add(processor.Create(OpCodes.Ldarg_0));
+            ints.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_IsHost_MethodRef));
+            ints.Add(processor.Create(OpCodes.Brfalse_S, endIfInst));
+            ints.Add(processor.Create(OpCodes.Ret));
+            ints.Add(endIfInst);
+
+            return ints;
+        }
 
         /// <summary>
         /// Gets the optional NetworkConnection parameter for ServerRpc, if it exists.

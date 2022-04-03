@@ -51,6 +51,8 @@ MonoBehaviour:
   _runInBackground: 1
   _dontDestroyOnLoad: 1
   _persistence: 0
+  _incomingIterationOrder: 1
+  _outgoingIterationOrder: 0
 --- !u!114 &7443408887813606060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -65,7 +67,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _playerPrefab: {fileID: 0}
   _addToDefaultScene: 1
-  _spawns: []
+  Spawns: []
 --- !u!1001 &2130063410
 PrefabInstance:
   m_ObjectHideFlags: 0

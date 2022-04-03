@@ -1,11 +1,10 @@
 ﻿using FishNet.Connection;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Object;
-using FishNet.Managing.Transporting;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using FishNet.Transporting.Multipass;
+using FishNet.Utility;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
 using System;
@@ -227,6 +226,10 @@ namespace FishNet.Managing.Server
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
                 SetupSceneObjects(SceneManager.GetSceneAt(i));
+
+            Scene ddolScene = DDOLFinder.GetDDOL().gameObject.scene;
+            if (ddolScene.isLoaded)
+                SetupSceneObjects(ddolScene);
         }
 
         /// <summary>

@@ -431,9 +431,8 @@ namespace FishNet.Object
             //If asServer send updates to clients as needed.
             if (asServer)
             {
-                //Rebuild for new owner first so they get change messages.
                 if (activeNewOwner)
-                    RebuildObservers(newOwner);
+                    NetworkManager.ServerManager.Objects.RebuildObservers(this, newOwner);
 
                 using (PooledWriter writer = WriterPool.GetWriter())
                 {
@@ -456,7 +455,7 @@ namespace FishNet.Object
                 }
 
                 if (prevOwner.IsActive)
-                    RebuildObservers(prevOwner);
+                    RebuildObservers(prevOwner, false);
             }
         }
 
