@@ -138,6 +138,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Initializes this for use.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Initialize(NetworkManager nm, int clientId)
         {
             NetworkManager = nm;

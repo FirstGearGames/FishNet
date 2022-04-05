@@ -92,6 +92,19 @@ namespace FishNet.Object
             }
         }
 
+        ///// <summary>
+        ///// Creates a PooledWriter and writes the header for a rpc.
+        ///// </summary>
+        ///// <param name="writer"></param>
+        ///// <param name="rpcHash"></param>
+        ///// <param name="packetId"></param>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //private void CreateLinkedRpcHeader(RpcLinkType link, PooledWriter writer)
+        //{
+        //    writer.WriteUInt16(link.LinkIndex);
+        //}
+
+
         /// <summary>
         /// Creates a PooledWriter and writes the header for a rpc.
         /// </summary>

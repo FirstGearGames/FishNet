@@ -11,9 +11,13 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// How much time to smooth desyncs over.
         /// </summary>
-        [Tooltip("How much time to smooth desyncs over.")]
-        [SerializeField]
-        private float _duration = 0.15f;
+        [SerializeField, HideInInspector]
+        private float _smoothingDuration = 0.15f;
+        /// <summary>
+        /// Sets SmoothingDuration to value.
+        /// </summary>
+        /// <param name="value"></param>
+        internal void SetSmoothingDuration(float value) => _smoothingDuration = value;
         #endregion
 
         #region Private.
@@ -117,9 +121,9 @@ namespace FishNet.Component.Prediction
 
             //Calculate move rates based on time to complete vs distance required.
             distance = (t.localPosition - _instantiatedPosition).magnitude;
-            _positionRate = distance / _duration;
+            _positionRate = distance / _smoothingDuration;
             distance = Quaternion.Angle(t.localRotation, _instantiatedRotation);
-            _rotationRate = distance / _duration;
+            _rotationRate = distance / _smoothingDuration;
         }
 
         private void Update()

@@ -1,8 +1,12 @@
 ﻿using FishNet.Component.ColliderRollback;
 using FishNet.Connection;
 using FishNet.Managing;
+using FishNet.Managing.Client;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Scened;
+using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
+using FishNet.Managing.Transporting;
 using System;
 using UnityEngine;
 
@@ -20,9 +24,25 @@ namespace FishNet.Object
         /// </summary>
         public NetworkManager NetworkManager => _networkObjectCache.NetworkManager;
         /// <summary>
+        /// ServerManager for this object.
+        /// </summary>
+        public ServerManager ServerManager => _networkObjectCache.ServerManager;
+        /// <summary>
+        /// ClientManager for this object.
+        /// </summary>
+        public ClientManager ClientManager => _networkObjectCache.ClientManager;
+        /// <summary>
+        /// TransportManager for this object.
+        /// </summary>
+        public TransportManager TransportManager => _networkObjectCache.TransportManager;
+        /// <summary>
         /// TimeManager for this object.
         /// </summary>
         public TimeManager TimeManager => _networkObjectCache.TimeManager;
+        /// <summary>
+        /// SceneManager for this object.
+        /// </summary>
+        public SceneManager SceneManager => _networkObjectCache.SceneManager;
         /// <summary>
         /// RollbackManager for this object.
         /// </summary>

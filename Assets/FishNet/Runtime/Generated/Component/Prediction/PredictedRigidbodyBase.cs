@@ -1,4 +1,5 @@
-﻿using FishNet.Managing.Timing;
+﻿using FishNet.Documenting;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using UnityEngine;
 
@@ -8,29 +9,32 @@ namespace FishNet.Component.Prediction
     /// <summary>
     /// Base class for predicting rigidbodies for non-owners.
     /// </summary>
+    [AddComponentMenu("")]
+    [APIExclude]
     public abstract class PredictedRigidbodyBase : NetworkBehaviour
     {
-        #region Serialized.
+        #region Protected.
         /// <summary>
         /// How often to synchronize values from server to clients when no changes have been detected.
         /// </summary>
-        [Tooltip("How often to synchronize values from server to clients when no changes have been detected.")]
-        [SerializeField]
-        private float _sendInterval = 1f;
+        protected const float SEND_INTERVAL = 1f;        
         /// <summary>
         /// How much of the previous velocity to retain when predicting. Default value is 0f. Increasing this value may result in overshooting with rigidbodies that do not behave naturally, such as controllers or vehicles.
         /// </summary>
-        [Tooltip("How much of the previous velocity to retain when predicting. Default value is 0f. Increasing this value may result in overshooting with rigidbodies that do not behave naturally, such as controllers or vehicles.")]
-        [Range(0f, 1f)]
-        [SerializeField]
-        protected float PredictionRatio = 0f;
+        [SerializeField, HideInInspector]
+        protected float PredictionRatio;
+        /// <summary>
+        /// Sets PredictionRatio to value.
+        /// </summary>
+        /// <param name="value"></param>
+        internal void SetPredictionRatio(float value) => PredictionRatio = value;
         #endregion
 
         #region Private
         /// <summary>
         /// True if subscribed to events.
         /// </summary>
-        private bool _subscribed = false;
+        private bool _subscribed;
         /// <summary>
         /// Next tick to send data.
         /// </summary>
@@ -112,7 +116,7 @@ namespace FishNet.Component.Prediction
 
                 if (base.TimeManager.LocalTick >= _nextSendTick || base.TransformMayChange())
                 {
-                    uint ticksRequired = base.TimeManager.TimeToTicks(_sendInterval, TickRounding.RoundUp);
+                    uint ticksRequired = base.TimeManager.TimeToTicks(SEND_INTERVAL, TickRounding.RoundUp);
                     _nextSendTick += ticksRequired;
                     SendRigidbodyState();
                 }

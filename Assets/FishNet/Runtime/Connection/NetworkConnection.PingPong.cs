@@ -40,7 +40,7 @@ namespace FishNet.Connection
         private void InitializePing()
         {
             //Give the client some room for error.
-            float requiredInterval = (TimeManager.PING_INTERVAL * 0.85f);
+            float requiredInterval = (NetworkManager.TimeManager.PingInterval * 0.85f);
             //Round down so required ticks is lower.
             _requiredPingTicks = NetworkManager.TimeManager.TimeToTicks(requiredInterval, TickRounding.RoundDown);
         }

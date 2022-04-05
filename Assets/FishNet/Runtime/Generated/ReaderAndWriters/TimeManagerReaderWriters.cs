@@ -9,15 +9,6 @@ namespace FishNet.Runtime
     [StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
     public static class TimeManagerReaderWriters
     {
-        public static void WriteUpdateTicksBroadcast(this Writer writer, UpdateTicksBroadcast value)
-        {
-
-        }
-        public static UpdateTicksBroadcast ReadUpdateTicksBroadcast(this Reader reader)
-        {
-            return new UpdateTicksBroadcast();
-        }
-
         public static void WriteSynchronizeTickBroadcast(this Writer writer, SynchronizeTickBroadcast value)
         {
             writer.WriteUInt32(value.Tick, AutoPackType.Unpacked);

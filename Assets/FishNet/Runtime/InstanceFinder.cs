@@ -1,3 +1,4 @@
+using FishNet.Component.ColliderRollback;
 using FishNet.Managing;
 using FishNet.Managing.Client;
 using FishNet.Managing.Logging;
@@ -102,12 +103,26 @@ namespace FishNet
             }
         }
 
+        /// <summary>
+        /// Returns the first instance of SceneManager.
+        /// </summary>
         public static SceneManager SceneManager
         {
             get
             {
                 NetworkManager nm = NetworkManager;
                 return (nm == null) ? null : nm.SceneManager;
+            }
+        }
+        /// <summary>
+        /// Returns the first instance of RollbackManager.
+        /// </summary>
+        public static RollbackManager RollbackManager
+        {
+            get
+            {
+                NetworkManager nm = NetworkManager;
+                return (nm == null) ? null : nm.RollbackManager;
             }
         }
 

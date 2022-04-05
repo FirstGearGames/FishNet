@@ -25,7 +25,8 @@ namespace FishNet.Transporting
         PingPong = 14,
         Replicate = 15,
         Reconcile = 16,
-        Disconnect = 17
+        Disconnect = 17,
+        TimingUpdate = 18
     }
 
 }

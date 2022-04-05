@@ -92,6 +92,7 @@ GameObject:
   - component: {fileID: 201277551}
   - component: {fileID: 201277550}
   - component: {fileID: 201277549}
+  - component: {fileID: 9323490746301994}
   m_Layer: 0
   m_Name: RigidbodyPrediction
   m_TagString: Untagged
@@ -139,7 +140,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e123f937d4b4f94c9cb6cc03944f786, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 201277550}
+  _networkObjectCache: {fileID: 201277550}
   _jumpForce: 40
   _moveRate: 15
 --- !u!114 &201277550
@@ -160,6 +163,10 @@ MonoBehaviour:
   _sceneId: 0
   _sceneNetworkObjects:
   - {fileID: 201277550}
+  _networkBehaviours:
+  - {fileID: 201277551}
+  - {fileID: 1809765198654616903}
+  - {fileID: 310496457586817320}
   SceneTransformProperties:
     Position: {x: -4.80351, y: 0.18147132, z: 5.430528}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
@@ -182,6 +189,32 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &9323490746301994
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 303449598114786579}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _graphicalObject: {fileID: 303449599178274091}
+  _smoothingDuration: 0.125
+  _predictionType: 1
+  _rigidbody: {fileID: 201277549}
+  _rigidbody2d: {fileID: 0}
+  _predictionRatio: 0
+  _lastPredictionRatio: 0
+  _lastGraphicalObject: {fileID: 303449599178274091}
+  _lastMovementType: 1
+  _lastSmoothingDuration: 0.125
+  _lastSelectedRigidbody: {fileID: 0}
+  _addedPredictedRigidbody: {fileID: 310496457586817320}
+  _addedDesyncSmoother: {fileID: 1809765198654616903}
+  _rebuildComponents: 0
 --- !u!1 &303449598207636365
 GameObject:
   m_ObjectHideFlags: 0
@@ -351,8 +384,8 @@ GameObject:
   - component: {fileID: 303449599178274091}
   - component: {fileID: 303449599178274088}
   - component: {fileID: 303449599178274089}
-  - component: {fileID: 1264834644}
-  - component: {fileID: 7254623875417506226}
+  - component: {fileID: 1809765198654616903}
+  - component: {fileID: 310496457586817320}
   m_Layer: 0
   m_Name: Sphere (1)
   m_TagString: Untagged
@@ -424,7 +457,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!114 &1264834644
+--- !u!114 &1809765198654616903
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -436,9 +469,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37c39a68e17740c4ea2b1fb940e5cd53, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 201277550}
-  _duration: 0.15
---- !u!114 &7254623875417506226
+  _networkObjectCache: {fileID: 201277550}
+  _smoothingDuration: 0.125
+--- !u!114 &310496457586817320
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -450,7 +485,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 644ebd523c7f2894fae407433dac6824, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 2
   _addedNetworkObject: {fileID: 201277550}
-  _sendInterval: 1
+  _networkObjectCache: {fileID: 201277550}
   PredictionRatio: 0
   _rigidbody: {fileID: 201277549}

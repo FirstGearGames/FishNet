@@ -350,6 +350,10 @@ namespace FishNet.Managing.Client
                         {
                             Objects.ParseSyncType(reader, true, args.Channel);
                         }
+                        else if (packetId == PacketId.TimingUpdate)
+                        {
+                            NetworkManager.TimeManager.ParseTimingUpdate();
+                        }
                         else if (packetId == PacketId.OwnershipChange)
                         {
                             Objects.ParseOwnershipChange(reader);

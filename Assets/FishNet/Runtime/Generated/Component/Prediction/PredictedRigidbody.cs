@@ -7,6 +7,7 @@ using UnityEngine;
 namespace FishNet.Component.Prediction
 {
 
+    [AddComponentMenu("")]
     [APIExclude]
     public class PredictedRigidbody : PredictedRigidbodyBase
     {
@@ -24,9 +25,13 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Rigidbody to predict.
         /// </summary>
-        [Tooltip("Rigidbody to predict.")]
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private Rigidbody _rigidbody;
+        /// <summary>
+        /// Sets Rigidbody to value.
+        /// </summary>
+        /// <param name="value"></param>
+        internal void SetRigidbody(Rigidbody value) => _rigidbody = value;
         #endregion
 
         #region Private.

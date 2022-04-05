@@ -142,7 +142,24 @@ namespace FishNet.Managing.Timing
         /// How many times per second the server will simulate. This does not limit server frame rate.
         /// </summary>
         public ushort TickRate { get => _tickRate; private set => _tickRate = value; }
-
+        /// <summary>
+        /// 
+        /// </summary>        
+        [Tooltip("How often in seconds to a connections ping. This is also responsible for approximating server tick. This value does not affect prediction.")]
+        [Range(1, 15)]
+        [SerializeField]
+        private byte _pingInterval = 1;
+        /// <summary>
+        /// How often in seconds to a connections ping. This is also responsible for approximating server tick. This value does not affect prediction.
+        /// </summary>
+        internal byte PingInterval => _pingInterval;
+        /// <summary>
+        /// How often in seconds to update prediction timing. Lower values will result in more accurate at the cost of bandwidth.
+        /// </summary>        
+        [Tooltip("How often in seconds to update prediction timing. Lower values will result in more accurate at the cost of bandwidth.")]
+        [Range(1, 15)]
+        [SerializeField]
+        private byte _predictionTimingInterval = 2;
         /// <summary>
         /// 
         /// </summary>
@@ -249,14 +266,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private const double POSITIVE_STEPS_RECOVERY_RATE = 0.0001f;
         /// <summary>
-        /// Ping interval in seconds.
-        /// </summary>
-        internal const float PING_INTERVAL = 1f;
-        /// <summary>
-        /// How many seconds between each timing adjustment from the server.
-        /// </summary>
-        private const byte ADJUST_TIMING_INTERVAL = 2;
-        /// <summary>
         /// When steps to be sent to clients are equal to or higher than this value in either direction a reset steps will be sent.
         /// </summary>
         private const byte RESET_STEPS_THRESHOLD = 5;
@@ -341,7 +350,6 @@ namespace FishNet.Managing.Timing
             _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
             _networkManager.ServerManager.OnAuthenticationResult += ServerManager_OnAuthenticationResult;
-            _networkManager.ClientManager.RegisterBroadcast<UpdateTicksBroadcast>(OnUpdateTicksBroadcast);
 
             AddNetworkLoops();
         }
@@ -549,6 +557,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void TrySendPing()
         {
+            byte pingInterval = PingInterval;
             /* Set next ping time based on uptime.
             * Client should try to get their ping asap
             * once connecting but more casually after. 
@@ -556,11 +565,11 @@ namespace FishNet.Managing.Timing
             * ping then wait longer. The server maybe didn't
             * respond because client is sending too fast. */
             long requiredTime = (_receivedPong) ?
-                (long)(PING_INTERVAL * 1000) :
-                (long)(PING_INTERVAL * 1500);
+                (long)(pingInterval * 1000) :
+                (long)(pingInterval * 1500);
 
             _pingTicks++;
-            uint requiredTicks = TimeToTicks(PING_INTERVAL);
+            uint requiredTicks = TimeToTicks(pingInterval);
             /* We cannot just consider time because ticks might run slower
              * from adjustments. We also cannot only consider ticks because
              * they might run faster from adjustments. Therefor require both
@@ -839,7 +848,12 @@ namespace FishNet.Managing.Timing
             uint tick = Tick;
             if (tick - _lastUpdateTicks >= _updateTicksGoal)
             {
-                _networkManager.ServerManager.Broadcast(new UpdateTicksBroadcast(), true, Channel.Unreliable);
+                //Now send using a packetId.
+                PooledWriter writer = WriterPool.GetWriter();
+                writer.WritePacketId(PacketId.TimingUpdate);
+                _networkManager.TransportManager.SendToClients((byte)Channel.Unreliable, writer.GetArraySegment());
+                writer.Dispose();
+
                 _lastUpdateTicks = tick;
             }
         }
@@ -848,11 +862,15 @@ namespace FishNet.Managing.Timing
         /// Called on client when server sends StepChange.
         /// </summary>
         /// <param name="ta"></param>
-        private void OnUpdateTicksBroadcast(UpdateTicksBroadcast ut)
+        internal void ParseTimingUpdate()
         {
             //Don't adjust timing on server.
             if (_networkManager.IsServer)
                 return;
+
+            //Add half of rtt onto tick.
+            uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
+            Tick = LastPacketTick + rttTicks;
 
             uint expected = (uint)(TickRate * 2);
             long difference;
@@ -890,7 +908,7 @@ namespace FishNet.Managing.Timing
             TickDelta = (1d / TickRate);
             _adjustedTickDelta = TickDelta;
             //Update every x seconds.
-            _timingAdjustmentInterval = (ushort)(TickRate * ADJUST_TIMING_INTERVAL);
+            _timingAdjustmentInterval = (ushort)(TickRate * _predictionTimingInterval);
             _clientTimingRange = new double[]
             {
                 TickDelta * (1f - CLIENT_TIMING_PERCENT_RANGE),

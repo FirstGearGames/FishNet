@@ -217,6 +217,51 @@ namespace FishNet.Object
             _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
             writer.Dispose();
         }
+
+//        /// <summary>
+//        /// Sends a RPC to observers.
+//        /// Internal use.
+//        /// </summary>
+//        /// <param name="hash"></param>
+//        /// <param name="writer"></param>
+//        /// <param name="channel"></param>
+//        [APIExclude] //codegen this can be made internal then set public via codegen
+//        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+//        protected internal bool InternalPrepareObserversRpc(uint hash, PooledWriter writer, Channel channel, bool buffered)
+//        {
+//            if (!IsSpawnedWithWarning())
+//                return false;
+
+//#if UNITY_EDITOR || DEVELOPMENT_BUILD
+//            if (NetworkManager.DebugManager.ObserverRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
+//#else
+//            if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
+//#endif
+//                CreateLinkedRpcHeader(link, writer);
+//            else
+//                CreateRpcHeader(hash, writer, PacketId.ObserversRpc);
+
+//            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers);
+
+//            InternalBufferObserversRpc(hash, writer, channel);
+
+//            return true;
+//        }
+
+//        /// <summary>
+//        /// Buffers an ObserverRPC.
+//        /// </summary>
+//        protected internal void InternalBufferObserversRpc(uint hash, PooledWriter writer, Channel channel)
+//        {
+//            /* If buffered then dispose of any already buffered
+//             * writers and replace with new one. Writers should
+//             * automatically dispose when references are lost
+//             * anyway but better safe than sorry. */
+//            if (_bufferedRpcs.TryGetValueIL2CPP(hash, out (PooledWriter pw, Channel ch) result))
+//                result.pw.Dispose();
+//            _bufferedRpcs[hash] = (writer, channel);
+//        }
+
         /// <summary>
         /// Sends a RPC to observers.
         /// Internal use.
@@ -331,6 +376,17 @@ namespace FishNet.Object
 
             return result;
         }
+
+        ///// <summary>
+        ///// Writes a full RPC and returns the writer.
+        ///// </summary>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //private void CreateRpcHeader(uint hash, PooledWriter writer, PacketId packetId)
+        //{
+        //    writer.WritePacketId(packetId);
+        //    writer.WriteNetworkBehaviour(this);
+        //    WriteRpcHash(hash, writer);
+        //}
 
         /// <summary>
         /// Writes a full RPC and returns the writer.

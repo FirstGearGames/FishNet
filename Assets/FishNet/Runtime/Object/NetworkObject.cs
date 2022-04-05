@@ -6,7 +6,6 @@ using FishNet.Transporting;
 using FishNet.Managing.Logging;
 using FishNet.Utility;
 using System.Collections.Generic;
-using FishNet.Utility.Performance;
 using System.Runtime.CompilerServices;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -53,10 +52,6 @@ namespace FishNet.Object
         /// </summary>
         [SerializeField, HideInInspector]
         internal SceneTransformProperties SceneTransformProperties = new SceneTransformProperties();
-        /// <summary>
-        /// NetworkManager for this object.
-        /// </summary>
-        public NetworkManager NetworkManager { get; private set; }
         #endregion
 
         #region Serialized.
@@ -196,9 +191,13 @@ namespace FishNet.Object
         internal void InitializeOnceInternal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
             Deinitializing = false;
+            //QOL references.
             NetworkManager = networkManager;
-            //Set QOL references.
+            ServerManager = networkManager.ServerManager;
+            ClientManager = networkManager.ClientManager;
+            TransportManager = networkManager.TransportManager;
             TimeManager = networkManager.TimeManager;
+            SceneManager = networkManager.SceneManager;
             RollbackManager = networkManager.RollbackManager;
 
             SetOwner(owner);

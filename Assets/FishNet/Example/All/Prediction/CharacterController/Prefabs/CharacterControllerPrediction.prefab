@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &9117857247562382221
+--- !u!1 &50058147544064912
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,50 +8,46 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 9117857247562382215}
-  - component: {fileID: 9117857247562382214}
-  - component: {fileID: 9117857247562382209}
-  - component: {fileID: 9117857247562382208}
-  - component: {fileID: 9117857247562382210}
-  - component: {fileID: 9144896207351220584}
-  - component: {fileID: 9144896207351220583}
-  - component: {fileID: 1012129365208062032}
+  - component: {fileID: 8274935638305073705}
+  - component: {fileID: 5937955550093657123}
+  - component: {fileID: 8512892203317417748}
+  - component: {fileID: 6854400091791599799}
   m_Layer: 0
-  m_Name: CharacterControllerPrediction
+  m_Name: Capsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &9117857247562382215
+--- !u!4 &8274935638305073705
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9117857247562382221}
+  m_GameObject: {fileID: 50058147544064912}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 9117857247562382215}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &9117857247562382214
+--- !u!33 &5937955550093657123
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9117857247562382221}
+  m_GameObject: {fileID: 50058147544064912}
   m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &9117857247562382209
+--- !u!23 &8512892203317417748
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9117857247562382221}
+  m_GameObject: {fileID: 50058147544064912}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -84,6 +80,59 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+--- !u!114 &6854400091791599799
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 50058147544064912}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37c39a68e17740c4ea2b1fb940e5cd53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 2
+  _addedNetworkObject: {fileID: 9117857247562382210}
+  _networkObjectCache: {fileID: 9117857247562382210}
+  _smoothingDuration: 0.125
+--- !u!1 &9117857247562382221
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9117857247562382215}
+  - component: {fileID: 9117857247562382208}
+  - component: {fileID: 9117857247562382210}
+  - component: {fileID: 264791952884968468}
+  - component: {fileID: 9144896207351220584}
+  - component: {fileID: 9144896207351220583}
+  - component: {fileID: 1012129365208062032}
+  m_Layer: 0
+  m_Name: CharacterControllerPrediction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9117857247562382215
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9117857247562382221}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 8274935638305073705}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &9117857247562382208
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -116,12 +165,42 @@ MonoBehaviour:
   _sceneId: 0
   _sceneNetworkObjects:
   - {fileID: 9117857247562382210}
+  _networkBehaviours:
+  - {fileID: 9144896207351220584}
+  - {fileID: 1012129365208062032}
+  - {fileID: 6854400091791599799}
   SceneTransformProperties:
     Position: {x: 0, y: 1, z: -10}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
     LocalScale: {x: 1, y: 1, z: 1}
   _isNetworked: 1
   ChildNetworkObjects: []
+--- !u!114 &264791952884968468
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9117857247562382221}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _graphicalObject: {fileID: 8274935638305073705}
+  _smoothingDuration: 0.125
+  _predictionType: 0
+  _rigidbody: {fileID: 0}
+  _rigidbody2d: {fileID: 0}
+  _predictionRatio: 0
+  _lastPredictionRatio: 0
+  _lastGraphicalObject: {fileID: 8274935638305073705}
+  _lastMovementType: 0
+  _lastSmoothingDuration: 0.125
+  _lastSelectedRigidbody: {fileID: 0}
+  _addedPredictedRigidbody: {fileID: 0}
+  _addedDesyncSmoother: {fileID: 6854400091791599799}
+  _rebuildComponents: 0
 --- !u!114 &9144896207351220584
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -134,7 +213,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bb7bd88fd11b5d4aa7fca3d42172ab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 9117857247562382210}
+  _networkObjectCache: {fileID: 9117857247562382210}
   _moveRate: 5
 --- !u!143 &9144896207351220583
 CharacterController:
@@ -166,7 +247,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 9117857247562382210}
+  _networkObjectCache: {fileID: 9117857247562382210}
   _compress: 1
   _synchronizeParent: 0
   _interpolation: 2
@@ -175,14 +258,17 @@ MonoBehaviour:
   _teleportThreshold: 1
   _clientAuthoritative: 0
   _sendToOwner: 0
+  _synchronizePosition: 1
   _positionSnapping:
     X: 0
     Y: 0
     Z: 0
+  _synchronizeRotation: 1
   _rotationSnapping:
     X: 0
     Y: 0
     Z: 0
+  _synchronizeScale: 1
   _scaleSnapping:
     X: 0
     Y: 0

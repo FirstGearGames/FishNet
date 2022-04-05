@@ -52,7 +52,7 @@ namespace FishNet.Connection
             }
             else
             {
-                InstanceFinder.ServerManager.Broadcast<T>(this, message, requireAuthenticated, channel);
+                NetworkManager.ServerManager.Broadcast<T>(this, message, requireAuthenticated, channel);
             }
         }
 

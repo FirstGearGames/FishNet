@@ -1,7 +1,12 @@
 ﻿using FishNet.Component.ColliderRollback;
 using FishNet.Connection;
+using FishNet.Managing;
+using FishNet.Managing.Client;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Scened;
+using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
+using FishNet.Managing.Transporting;
 using System;
 using UnityEngine;
 
@@ -136,13 +141,35 @@ namespace FishNet.Object
         /// </summary>
         public NetworkConnection LocalConnection => (NetworkManager == null) ? new NetworkConnection() : NetworkManager.ClientManager.Connection;
         /// <summary>
+        /// NetworkManager for this object.
+        /// </summary>
+        public NetworkManager NetworkManager { get; private set; }
+        /// <summary>
+        /// ServerManager for this object.
+        /// </summary>
+        public ServerManager ServerManager { get; private set; }
+        /// <summary>
+        /// ClientManager for this object.
+        /// </summary>
+        public ClientManager ClientManager { get; private set; }
+        /// <summary>
+        /// TransportManager for this object.
+        /// </summary>
+        public TransportManager TransportManager { get; private set; }
+        /// <summary>
         /// TimeManager for this object.
         /// </summary>
         public TimeManager TimeManager { get; private set; }
         /// <summary>
+        /// SceneManager for this object.
+        /// </summary>
+        public SceneManager SceneManager { get; private set; }
+        /// <summary>
         /// RollbackManager for this object.
         /// </summary>
         public RollbackManager RollbackManager { get; private set; }
+
+
         #endregion
 
         /// <summary>

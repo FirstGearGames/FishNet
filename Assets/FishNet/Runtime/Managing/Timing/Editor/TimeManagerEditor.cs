@@ -11,12 +11,16 @@ namespace FishNet.Managing.Timing.Editing
     public class TimeManagerEditor : Editor
     {
         private SerializedProperty _tickRate;
+        private SerializedProperty _pingInterval;
+        private SerializedProperty _predictionTimingInterval;
         private SerializedProperty _physicsMode;
         private SerializedProperty _maximumBufferedInputs;
 
         protected virtual void OnEnable()
         {
             _tickRate = serializedObject.FindProperty("_tickRate");
+            _pingInterval = serializedObject.FindProperty("_pingInterval");
+            _predictionTimingInterval = serializedObject.FindProperty("_predictionTimingInterval");
             _physicsMode = serializedObject.FindProperty("_physicsMode");
             _maximumBufferedInputs = serializedObject.FindProperty("_maximumBufferedInputs");
         }
@@ -34,6 +38,8 @@ namespace FishNet.Managing.Timing.Editing
             EditorGUILayout.LabelField("Timing", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_tickRate);
+            EditorGUILayout.PropertyField(_pingInterval);
+            EditorGUILayout.PropertyField(_predictionTimingInterval);            
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 

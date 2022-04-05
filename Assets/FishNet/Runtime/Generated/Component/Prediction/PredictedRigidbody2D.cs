@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace FishNet.Component.Prediction
 {
-
+    [AddComponentMenu("")]
     [APIExclude]
     public class PredictedRigidbody2D : PredictedRigidbodyBase
     {
@@ -24,9 +24,13 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Rigidbody to predict.
         /// </summary>
-        [Tooltip("Rigidbody to predict.")]
-        [SerializeField]
-        private Rigidbody2D _rigidbody2D;
+        [SerializeField, HideInInspector]
+        private Rigidbody2D _rigidbody2d;
+        /// <summary>
+        /// Sets Rigidbody2d to value.
+        /// </summary>
+        /// <param name="value"></param>
+        internal void SetRigidbody2D(Rigidbody2D value) => _rigidbody2d = value;
         #endregion
 
         #region Private.
@@ -54,7 +58,6 @@ namespace FishNet.Component.Prediction
         /// PhysicsScene for this object when OnPreReconcile is called.
         /// </summary>
         private PhysicsScene2D _physicsScene2D;
-
         #endregion
 
         protected override void Awake()
@@ -132,15 +135,15 @@ namespace FishNet.Component.Prediction
                 return;
 
             //Update transform and rigidbody.
-            _rigidbody2D.transform.position = _receivedRigidbodyState.Value.Position;
-            _rigidbody2D.transform.rotation = _receivedRigidbodyState.Value.Rotation;
-            _rigidbody2D.velocity = _receivedRigidbodyState.Value.Velocity;
-            _rigidbody2D.angularVelocity = _receivedRigidbodyState.Value.AngularVelocity;
+            _rigidbody2d.transform.position = _receivedRigidbodyState.Value.Position;
+            _rigidbody2d.transform.rotation = _receivedRigidbodyState.Value.Rotation;
+            _rigidbody2d.velocity = _receivedRigidbodyState.Value.Velocity;
+            _rigidbody2d.angularVelocity = _receivedRigidbodyState.Value.AngularVelocity;
             //Set prediction defaults.
             _velocityBaseline = null;
             _angularVelocityBaseline = null;
-            _lastVelocity = _rigidbody2D.velocity;
-            _lastAngularVelocity = _rigidbody2D.angularVelocity;
+            _lastVelocity = _rigidbody2d.velocity;
+            _lastAngularVelocity = _rigidbody2d.angularVelocity;
         }
 
         /// <summary>
@@ -155,14 +158,14 @@ namespace FishNet.Component.Prediction
                 return;
 
             Vector3 v3Result;
-            if (base.PredictVector3Velocity(ref _velocityBaseline, ref _lastVelocity, _rigidbody2D.velocity, out v3Result))
-                _rigidbody2D.velocity = v3Result;
+            if (base.PredictVector3Velocity(ref _velocityBaseline, ref _lastVelocity, _rigidbody2d.velocity, out v3Result))
+                _rigidbody2d.velocity = v3Result;
             float floatResult;
-            if (base.PredictFloatVelocity(ref _angularVelocityBaseline, ref _lastAngularVelocity, _rigidbody2D.angularVelocity, out floatResult))
-                _rigidbody2D.angularVelocity = floatResult;
+            if (base.PredictFloatVelocity(ref _angularVelocityBaseline, ref _lastAngularVelocity, _rigidbody2d.angularVelocity, out floatResult))
+                _rigidbody2d.angularVelocity = floatResult;
 
-            _lastVelocity = _rigidbody2D.velocity;
-            _lastAngularVelocity = _rigidbody2D.angularVelocity;
+            _lastVelocity = _rigidbody2d.velocity;
+            _lastAngularVelocity = _rigidbody2d.angularVelocity;
         }
 
 
@@ -173,10 +176,10 @@ namespace FishNet.Component.Prediction
         {
             Rigidbody2DState state = new Rigidbody2DState
             {
-                Position = _rigidbody2D.transform.position,
-                Rotation = _rigidbody2D.transform.rotation,
-                Velocity = _rigidbody2D.velocity,
-                AngularVelocity = _rigidbody2D.angularVelocity
+                Position = _rigidbody2d.transform.position,
+                Rotation = _rigidbody2d.transform.rotation,
+                Velocity = _rigidbody2d.velocity,
+                AngularVelocity = _rigidbody2d.angularVelocity
             };
 
             ObserversSendRigidbody2DState(state);
