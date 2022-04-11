@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using FishNet.Editing;
 using FishNet.Object;
 using FishNet.Utility.Extension;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace FishNet.Utility.Editing
         /// <summary>
         /// Rebuilds sceneIds for open scenes.
         /// </summary>
-        [MenuItem("Fish-Networking/Rebuild SceneIds", false, 2)]
+        [MenuItem("Fish-Networking/Rebuild SceneIds", false, 20)]
         static void RebuildSceneIds()
         {
             int generatedCount = 0;
@@ -34,6 +35,21 @@ namespace FishNet.Utility.Editing
 
             Debug.Log($"Generated sceneIds for {generatedCount} objects over {SceneManager.sceneCount} scenes. Please save your open scenes.");
         }
+
+
+    }
+
+    public class RefreshDefaultPrefabsMenu : MonoBehaviour
+    {
+        /// <summary>
+        /// Rebuilds the DefaultPrefabsCollection file.
+        /// </summary>
+        [MenuItem("Fish-Networking/Refresh Default Prefabs", false, 21)]
+        static void RebuildSceneIds()
+        {
+            DefaultPrefabsFinder.PopulateDefaultPrefabs(true, true);
+        }
+
 
     }
 

@@ -382,7 +382,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         {
             MethodDefinition writerMd = cr.WriterMethodDef;
             MethodDefinition originalMd = cr.OriginalMethodDef;
-            ILProcessor createdProcessor = writerMd.Body.GetILProcessor();
+            ILProcessor processor = writerMd.Body.GetILProcessor();
 
             //Add all parameters from the original.
             for (int i = 0; i < originalMd.Parameters.Count; i++)
@@ -411,11 +411,11 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             //uint methodHash = originalMethodDef.FullName.GetStableHash32();
             //Call the method on NetworkBehaviour responsible for sending out the rpc.
-            CreateSendServerRpc(writerMd, cr.MethodHash, pooledWriterVariableDef, channelVariableDef);
+            processor.Add(CreateSendServerRpc(writerMd, cr.MethodHash, pooledWriterVariableDef, channelVariableDef));
             //Dispose of writer.
-            createdProcessor.Add(CodegenSession.WriterHelper.DisposePooledWriter(writerMd, pooledWriterVariableDef));
+            processor.Add(CodegenSession.WriterHelper.DisposePooledWriter(writerMd, pooledWriterVariableDef));
             //Add end of method.
-            createdProcessor.Emit(OpCodes.Ret);
+            processor.Emit(OpCodes.Ret);
 
             return true;
         }
