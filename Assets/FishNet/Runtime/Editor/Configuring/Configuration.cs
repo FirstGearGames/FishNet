@@ -1,92 +1,66 @@
-﻿#if UNITY_EDITOR
-using FishNet.Editing;
-using System;
+﻿using System;
 using System.IO;
+#if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.Compilation;
+#endif
 using UnityEngine;
 
-namespace FishNet.Configuring.Editing
+namespace FishNet.Configuring
 {
-    internal static class ConfigurationExtension
-    {
-
-        /// <summary>
-        /// Returns if a differs from b.
-        /// </summary>
-        public static bool HasChanged(this ConfigurationEditor.ConfigurationData a, ConfigurationEditor.ConfigurationData b)
-        {
-            return (a.StripReleaseBuilds != b.StripReleaseBuilds);
-        }
-        /// <summary>
-        /// Copies all values from source to target.
-        /// </summary>
-        public static void CopyTo(this ConfigurationEditor.ConfigurationData source, ConfigurationEditor.ConfigurationData target)
-        {
-            target.StripReleaseBuilds = source.StripReleaseBuilds;
-        }
-    }
-
+#if UNITY_EDITOR
     [InitializeOnLoad]
-    internal class ConfigurationEditor : EditorWindow
+#endif
+    internal class Configuration
     {
-        #region Types.
-        public class ConfigurationData
-        {
-            public bool StripReleaseBuilds = false;
-        }
-        #endregion
 
         #region Public.
         /// <summary>
+        /// Save and load path for configuration disk data.
+        /// </summary>       
+        internal static string ConfigurationFilePath;
+        /// <summary> 
         /// Current configuration data.
         /// </summary>
-        internal static ConfigurationData Configuration = new ConfigurationData();
+        internal static ConfigurationData ConfigurationData { get; private set; }
+        /// <summary>
+        /// True if the editor is currently compiling assemblies.
+        /// </summary>
+        private static bool _isCompiling;
         #endregion
 
-        #region Private.
+        #region Const.
         /// <summary>
         /// File name for configuration disk data.
         /// </summary>
         private const string CONFIG_FILE_NAME = "FishNet.Config.json";
-        /// <summary>
-        /// Used to compare if ConfigurationData has changed.
-        /// </summary>
-        private static ConfigurationData _comparerConfiguration = new ConfigurationData();
-        /// <summary>
-        /// True if initialized.
-        /// </summary>
-        [System.NonSerialized]
-        private static bool _initialized;
-        /// <summary>
-        /// True to reload the configuration file.
-        /// </summary>
-        [System.NonSerialized]
-        private static bool _reloadFile = true;
-        /// <summary>
-        /// Save and load path for configuration disk data.
-        /// </summary>
-        private static string _configurationFilePath;
         #endregion
 
-        static ConfigurationEditor()
+        static Configuration()
         {
-            EditorApplication.update += InitializeOnce;
+#if UNITY_EDITOR
+            CompilationPipeline.compilationStarted += CompilationPipeline_compilationStarted;
+            CompilationPipeline.compilationFinished += CompilationPipeline_compilationFinished;
+#endif
         }
-        ~ConfigurationEditor()
+        ~Configuration()
         {
-            EditorApplication.update -= InitializeOnce;
+#if UNITY_EDITOR
+            CompilationPipeline.compilationStarted -= CompilationPipeline_compilationStarted;
+            CompilationPipeline.compilationFinished -= CompilationPipeline_compilationFinished;
+#endif
         }
 
-        /// <summary>
-        /// Initializes this for use.
-        /// </summary>
-        private static void InitializeOnce()
-        {
-            if (_initialized)
-                return;
-            _initialized = true;
 
-            SetConfigurationPath(false);
+        private static void CompilationPipeline_compilationFinished(object obj)
+        {
+            _isCompiling = false;
+        }
+
+        private static void CompilationPipeline_compilationStarted(object obj)
+        {
+            LoadConfiguration();
+            _isCompiling = true;
         }
 
         /// <summary>
@@ -94,22 +68,36 @@ namespace FishNet.Configuring.Editing
         /// </summary>
         private static bool SetConfigurationPath(bool error)
         {
-            string appPath = Application.dataPath;
-            if (appPath != string.Empty)
+            if (_isCompiling)
+                return false;
+
+            try
             {
-                _configurationFilePath = Path.Combine(appPath, CONFIG_FILE_NAME);
-                return true;
+                string appPath =Application.dataPath;
+                //Set configuration file path.
+                if (appPath != string.Empty)
+                {
+                    ConfigurationFilePath = Path.Combine(appPath, CONFIG_FILE_NAME);
+                    return true;
+                }
+                //App path not found.
+                else
+                {
+                    Debug.LogError($"Application dataPath could not be found. Fish-Networking configuration will not function.");
+                    return false;
+                }
             }
-            else
+            catch (Exception ex)
             {
+                Debug.LogError("An error occurred while setting configuration path. " + ex.Message);
                 return false;
             }
+            
         }
         /// <summary>
         /// Loads ConfigurationData from disk.
         /// </summary>
-
-        private static void LoadConfiguration()
+        internal static void LoadConfiguration()
         {
             if (!SetConfigurationPath(true))
                 return;
@@ -117,15 +105,14 @@ namespace FishNet.Configuring.Editing
             try
             {
                 //File is on disk.
-                if (File.Exists(_configurationFilePath))
+                if (File.Exists(ConfigurationFilePath))
                 {
-                    string json = File.ReadAllText(_configurationFilePath);
-                    Configuration = JsonUtility.FromJson<ConfigurationData>(json);
+                    string json = File.ReadAllText(ConfigurationFilePath);
+                    ConfigurationData = JsonUtility.FromJson<ConfigurationData>(json);
                 }
-                //Not on disk, make new instance of data.
                 else
                 {
-                    Configuration = new ConfigurationData();
+                    ConfigurationData = new ConfigurationData();
                 }
             }
             catch (Exception ex)
@@ -134,87 +121,5 @@ namespace FishNet.Configuring.Editing
             }
         }
 
-        /// <summary>
-        /// Saves ConfigurationData to disk.
-        /// </summary>
-        private void SaveConfiguration()
-        {
-            if (!SetConfigurationPath(true))
-                return;
-
-            //Not yet set.
-            if (Configuration == null)
-                Configuration = new ConfigurationData();
-
-            string json = JsonUtility.ToJson(Configuration);
-            try
-            {
-                File.WriteAllText(_configurationFilePath, json);
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"There was a problem saving Fish-Networking configuration. Message: {ex.Message}.");
-            }
-        }
-
-
-        [MenuItem("Fish-Networking/Configuration", false, 0)]
-        public static void ShowConfiguration()
-        {
-            LoadConfiguration();
-            EditorWindow window = GetWindow<ConfigurationEditor>();
-            window.titleContent = new GUIContent("Fish-Networking Configuration");
-            //Dont worry about capping size until it becomes a problem.
-            //const int width = 200;
-            //const int height = 100;
-            //float x = (Screen.currentResolution.width - width);
-            //float y = (Screen.currentResolution.height - height);
-            //window.minSize = new Vector2(width, height);
-            //window.maxSize = new Vector2(x, y);
-        }
-
-        private void OnGUI()
-        {
-            if (_reloadFile)
-                LoadConfiguration();
-
-            if (Configuration == null)
-                return;
-            Configuration.CopyTo(_comparerConfiguration);
-
-            GUILayout.BeginVertical();
-            GUILayout.BeginScrollView(Vector2.zero, GUILayout.Width(500), GUILayout.Height(800));
-
-            GUILayout.Space(10f);
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(10f);
-            GUILayout.Box(EditingConstants.PRO_ASSETS_LOCKED_TEXT, GUILayout.Width(200f));
-            GUILayout.EndHorizontal();
-            GUILayout.Space(5f);
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(20f);
-            Configuration.StripReleaseBuilds = EditorGUILayout.ToggleLeft("* Strip Release Builds", Configuration.StripReleaseBuilds);
-            GUILayout.EndHorizontal();
-
-            if (Configuration.StripReleaseBuilds)
-            {
-                GUILayout.BeginHorizontal();
-                GUILayout.Space(40f);
-                GUILayout.Box("NOTICE: development builds will not have code stripped. Additionally, if you plan to run as host disable code stripping.", GUILayout.Width(170f));
-                GUILayout.EndHorizontal();
-            }
-
-
-            GUILayout.EndScrollView();
-            GUILayout.EndVertical();
-
-            if (Configuration.HasChanged(_comparerConfiguration))
-                SaveConfiguration();
-        }
     }
 }
-#endif

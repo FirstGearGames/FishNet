@@ -343,7 +343,7 @@ namespace FishNet.Managing.Client
                         if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Position))
                             nob.transform.position = reader.ReadVector3();
                         if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Rotation))
-                            nob.transform.rotation = reader.ReadQuaternion(AutoPackType.Unpacked);
+                            nob.transform.rotation = reader.ReadQuaternion(base.NetworkManager.ServerManager.SpawnPacking.Rotation);
                         if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalScale))
                             nob.transform.localScale = reader.ReadVector3();
                     }
@@ -370,7 +370,7 @@ namespace FishNet.Managing.Client
         {
             short prefabId = reader.ReadInt16();
             Vector3 position = reader.ReadVector3();
-            Quaternion rotation = reader.ReadQuaternion(AutoPackType.Unpacked);
+            Quaternion rotation = reader.ReadQuaternion(base.NetworkManager.ServerManager.SpawnPacking.Rotation);
             Vector3 localScale = reader.ReadVector3();
 
             NetworkObject result = null;

@@ -415,9 +415,10 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         private void ParseAuthenticated(PooledReader reader)
         {
+            NetworkManager networkManager = NetworkManager;
             int connectionId = reader.ReadNetworkConnectionId();
             //If only a client then make a new connection.
-            if (!NetworkManager.IsServer)
+            if (!networkManager.IsServer)
             {
                 Clients.TryGetValueIL2CPP(connectionId, out Connection);
             }
@@ -427,18 +428,24 @@ namespace FishNet.Managing.Client
              * reference, which results in different field values. */
             else
             {
-                if (NetworkManager.ServerManager.Clients.TryGetValueIL2CPP(connectionId, out NetworkConnection conn))
+                if (networkManager.ServerManager.Clients.TryGetValueIL2CPP(connectionId, out NetworkConnection conn))
                 {
                     Connection = conn;
                 }
                 else
                 {
-                    if (NetworkManager.CanLog(LoggingType.Error))
+                    if (networkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"Unable to lookup LocalConnection for {connectionId} as host.");
 
-                    Connection = new NetworkConnection(NetworkManager, connectionId);
+                    Connection = new NetworkConnection(networkManager, connectionId);
                 }
             }
+
+            /* Set the TimeManager tick to lastReceivedTick.
+             * This still doesn't account for latency but
+             * it's the best we can do until the client gets
+             * a ping response. */
+            networkManager.TimeManager.Tick = networkManager.TimeManager.LastPacketTick;
 
             //Mark as authenticated.
             Connection.ConnectionAuthenticated();

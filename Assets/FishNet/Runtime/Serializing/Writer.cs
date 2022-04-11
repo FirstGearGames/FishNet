@@ -35,11 +35,15 @@ namespace FishNet.Serializing
         /// <summary>
         /// Current write position.
         /// </summary>
-        public int Position = 0;
+        public int Position;
         /// <summary>
         /// Number of bytes writen to the buffer.
         /// </summary>
-        public int Length { get; private set; }
+        public int Length;
+        /// <summary>
+        /// NetworkManager associated with this writer. May be null.
+        /// </summary>
+        public NetworkManager NetworkManager;
         #endregion
 
         #region Private.
@@ -57,14 +61,14 @@ namespace FishNet.Serializing
         private byte[] _stringBuffer = new byte[64];
         #endregion
 
-
         /// <summary>
         /// Resets the writer as though it was unused. Does not reset buffers.
         /// </summary>
-        public void Reset()
+        public void Reset(NetworkManager manager = null)
         {
             Length = 0;
             Position = 0;
+            NetworkManager = manager;
         }
 
         /// <summary>
@@ -574,8 +578,15 @@ namespace FishNet.Serializing
             if (packType == AutoPackType.Packed)
             {
                 EnsureBufferLength(4);
-                uint result = Quaternions.Compress(value);
+                uint result = Quaternion32Compression.Compress(value);
                 WriterExtensions.WriteUInt32(_buffer, result, ref Position);
+                Length = Math.Max(Length, Position);
+            }
+            else if (packType == AutoPackType.PackedLess) 
+            {
+                EnsureBufferLength(8);
+                ulong result = Quaternion64Compression.Compress(value);
+                WriterExtensions.WriteUInt64(_buffer, result, ref Position);
                 Length = Math.Max(Length, Position);
             }
             else

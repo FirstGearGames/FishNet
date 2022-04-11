@@ -544,15 +544,13 @@ namespace FishNet.CodeGenerating.Helping
                 return instructions;
 
 
-            //If null skip..
-            Instruction skipDebugInst = processor.Create(OpCodes.Nop);
-            VariableDefinition nmVariableDef = CreateVariable(processor.Body.Method, typeof(NetworkManager));
+            VariableDefinition networkManagerVd = CreateVariable(processor.Body.Method, typeof(NetworkManager));
             //Using InstanceFinder(static).
             if (useStatic)
             {
-                //Store nm refrence.
+                //Store instancefinder to nm variable.
                 instructions.Add(processor.Create(OpCodes.Call, InstanceFinder_NetworkManager_MethodRef));
-                instructions.Add(processor.Create(OpCodes.Stloc, nmVariableDef));
+                instructions.Add(processor.Create(OpCodes.Stloc, networkManagerVd));
             }
             //Using networkBehaviour.
             else
@@ -560,11 +558,21 @@ namespace FishNet.CodeGenerating.Helping
                 //Store nm reference.
                 instructions.Add(processor.Create(OpCodes.Ldarg_0));
                 instructions.Add(processor.Create(OpCodes.Call, NetworkBehaviour_NetworkManager_MethodRef));
-                instructions.Add(processor.Create(OpCodes.Stloc, nmVariableDef));
+                instructions.Add(processor.Create(OpCodes.Stloc, networkManagerVd));
+                //If was set to null then try to log with instancefinder.
+                Instruction skipStaticSetInst = processor.Create(OpCodes.Nop);
+                //if (nmVd == null) nmVd = InstanceFinder.NetworkManager.
+                instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerVd));
+                instructions.Add(processor.Create(OpCodes.Brtrue_S, skipStaticSetInst));
+                //Store instancefinder to nm variable.
+                instructions.Add(processor.Create(OpCodes.Call, InstanceFinder_NetworkManager_MethodRef));
+                instructions.Add(processor.Create(OpCodes.Stloc, networkManagerVd));
+                instructions.Add(skipStaticSetInst);
             }
 
-            //null check nm reference.
-            instructions.Add(processor.Create(OpCodes.Ldloc, nmVariableDef));
+            Instruction skipDebugInst = processor.Create(OpCodes.Nop);
+            //null check nm reference. If null then skip logging.
+            instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerVd));
             instructions.Add(processor.Create(OpCodes.Brfalse_S, skipDebugInst));
 
             //Only need to call CanLog if not using networkmanager logging.
@@ -577,7 +585,7 @@ namespace FishNet.CodeGenerating.Helping
                 instructions.Add(processor.Create(OpCodes.Brfalse_S, skipDebugInst));
             }
 
-            instructions.Add(processor.Create(OpCodes.Ldloc, nmVariableDef));
+            instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerVd));
             instructions.AddRange(debugPrint);
             instructions.Add(skipDebugInst);
 

@@ -84,6 +84,8 @@ namespace FishNet.Example.Authenticating
             }
 
             bool correctPassword = (pb.Password == _password);
+            //Invoke result. This is handled internally to complete the connection or kick client.
+            OnAuthenticationResult?.Invoke(conn, correctPassword);
             /* Tell client if they authenticated or not. This is
              * entirely optional but does demonstrate that you can send
              * broadcasts to client on pass or fail. */
@@ -92,8 +94,6 @@ namespace FishNet.Example.Authenticating
                 Passed = correctPassword
             };
             base.NetworkManager.ServerManager.Broadcast(conn, rb, false);
-            //Invoke result. This is handled internally to complete the connection or kick client.
-            OnAuthenticationResult?.Invoke(conn, correctPassword);
         }
 
         /// <summary>

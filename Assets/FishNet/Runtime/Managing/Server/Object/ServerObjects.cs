@@ -45,6 +45,10 @@ namespace FishNet.Managing.Server
         /// This is needed when running as host so host client will get any final messages for the object before they're destroyed.
         /// </summary>
         private Dictionary<int, NetworkObject> _pendingDestroy = new Dictionary<int, NetworkObject>();
+        /// <summary>
+        /// Scenes which were loaded that need to be setup.
+        /// </summary>
+        private List<(int, Scene)> _loadedScenes = new List<(int frame, Scene scene)>();
         #endregion
 
         internal ServerObjects(NetworkManager networkManager)
@@ -206,6 +210,27 @@ namespace FishNet.Managing.Server
 
         #region Initializing Objects In Scenes.
         /// <summary>
+        /// Iterates loaded scenes and sets them up.
+        /// </summary>
+        internal void IterateLoadedScenes()
+        {
+            //Not started, clear loaded scenes.
+            if (!NetworkManager.ServerManager.Started)
+                _loadedScenes.Clear();
+
+            for (int i = 0; i < _loadedScenes.Count; i++)
+            {
+                (int frame, Scene scene) value = _loadedScenes[i];
+                if (Time.frameCount > value.frame)
+                {
+                    SetupSceneObjects(value.scene);
+                    _loadedScenes.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
+        /// <summary>
         /// Called when a scene loads on the server.
         /// </summary>
         /// <param name="s"></param>
@@ -216,7 +241,8 @@ namespace FishNet.Managing.Server
 
             if (!NetworkManager.ServerManager.Started)
                 return;
-            SetupSceneObjects(s);
+            //Add to loaded scenes so that they are setup next frame.
+            _loadedScenes.Add((Time.frameCount, s));
         }
 
         /// <summary>
@@ -391,7 +417,7 @@ namespace FishNet.Managing.Server
                     if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Position))
                         headerWriter.WriteVector3(nob.transform.position);
                     if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Rotation))
-                        headerWriter.WriteQuaternion(nob.transform.rotation, AutoPackType.Unpacked);
+                        headerWriter.WriteQuaternion(nob.transform.rotation, base.NetworkManager.ServerManager.SpawnPacking.Rotation);
                     if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalScale))
                         headerWriter.WriteVector3(nob.transform.localScale);
                 }
@@ -404,7 +430,7 @@ namespace FishNet.Managing.Server
                  * from the prefab. Odds are position will be changed,
                  * and possibly rotation, but not too likely scale. */
                 headerWriter.WriteVector3(nob.transform.position);
-                headerWriter.WriteQuaternion(nob.transform.rotation, AutoPackType.Unpacked);
+                headerWriter.WriteQuaternion(nob.transform.rotation, base.NetworkManager.ServerManager.SpawnPacking.Rotation);
                 headerWriter.WriteVector3(nob.transform.localScale);
             }
 

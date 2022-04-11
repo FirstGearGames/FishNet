@@ -11,6 +11,7 @@ namespace FishNet.Managing.Server.Editing
     public class ServerManagerEditor : Editor
     {
         private SerializedProperty _authenticator;
+        private SerializedProperty _spawnPacking;
         private SerializedProperty _changeFrameRate;
         private SerializedProperty _frameRate;
         private SerializedProperty _shareIds;
@@ -20,14 +21,13 @@ namespace FishNet.Managing.Server.Editing
         protected virtual void OnEnable()
         {
             _authenticator = serializedObject.FindProperty("_authenticator");
+            _spawnPacking = serializedObject.FindProperty("SpawnPacking");
             _changeFrameRate = serializedObject.FindProperty("_changeFrameRate");
             _frameRate = serializedObject.FindProperty("_frameRate");
             _shareIds = serializedObject.FindProperty("_shareIds");
             _startOnHeadless = serializedObject.FindProperty("_startOnHeadless");
             _limitClientMTU = serializedObject.FindProperty("_limitClientMTU");
         }
-
-
 
         public override void OnInspectorGUI()
         {
@@ -39,6 +39,7 @@ namespace FishNet.Managing.Server.Editing
 
 
             EditorGUILayout.PropertyField(_authenticator);
+            EditorGUILayout.PropertyField(_spawnPacking);
             EditorGUILayout.PropertyField(_changeFrameRate);
             if (_changeFrameRate.boolValue)
             {

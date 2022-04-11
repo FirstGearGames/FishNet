@@ -1,34 +1,33 @@
-﻿using System;
+﻿
+using System;
 using UnityEngine;
 
 namespace FishNet.Serializing.Helping
 {
-    public static class Quaternions
+    /// <summary>
+    /// Credit to https://github.com/viliwonka
+    /// https://github.com/FirstGearGames/FishNet/pull/23
+    /// </summary>
+    public static class Quaternion64Compression
     {
-
-        /// <summary>
-        ///     Credit to this man for converting gaffer games c code to c#
-        ///     https://gist.github.com/fversnel/0497ad7ab3b81e0dc1dd
-        /// </summary>
-        private enum ComponentType : uint
-        {
-            X = 0,
-            Y = 1,
-            Z = 2,
-            W = 3
-        }
-
-        // note: 1.0f / sqrt(2)
+        // 64 bit quaternion compression
+        // [4 bits] largest component
+        // [21 bits] higher res  
+        // [21 bits] higher res
+        // [20 bits] higher res
+        // sum is 64 bits
         private const float Maximum = +1.0f / 1.414214f;
+        private const int BitsPerAxis_H = 21; // higher res, 21 bits
+        private const int BitsPerAxis_L = 20; // lower res, 20 bits
+        private const int LargestComponentShift = BitsPerAxis_H * 2 + BitsPerAxis_L * 1;
+        private const int AShift = BitsPerAxis_H + BitsPerAxis_L;
+        private const int BShift = BitsPerAxis_L;
+        private const int IntScale_H = (1 << (BitsPerAxis_H - 1)) - 1;
+        private const int IntMask_H = (1 << BitsPerAxis_H) - 1;
+        private const int IntScale_L = (1 << (BitsPerAxis_L - 1)) - 1;
+        private const int IntMask_L = (1 << BitsPerAxis_L) - 1;
 
-        private const int BitsPerAxis = 10;
-        private const int LargestComponentShift = BitsPerAxis * 3;
-        private const int AShift = BitsPerAxis * 2;
-        private const int BShift = BitsPerAxis * 1;
-        private const int IntScale = (1 << (BitsPerAxis - 1)) - 1;
-        private const int IntMask = (1 << BitsPerAxis) - 1;
-
-        internal static uint Compress(Quaternion quaternion)
+        internal static ulong Compress(Quaternion quaternion)
         {
             float absX = Mathf.Abs(quaternion.x);
             float absY = Mathf.Abs(quaternion.y);
@@ -60,6 +59,7 @@ namespace FishNet.Serializing.Helping
             float a = 0;
             float b = 0;
             float c = 0;
+
             switch (largestComponent)
             {
                 case ComponentType.X:
@@ -91,38 +91,53 @@ namespace FishNet.Serializing.Helping
                 c = -c;
             }
 
-            uint integerA = ScaleToUint(a);
-            uint integerB = ScaleToUint(b);
-            uint integerC = ScaleToUint(c);
+            ulong integerA = ScaleToUint_H(a);
+            ulong integerB = ScaleToUint_H(b);
+            ulong integerC = ScaleToUint_L(c);
 
-            return (((uint)largestComponent) << LargestComponentShift) | (integerA << AShift) | (integerB << BShift) | integerC;
+            return (((ulong)largestComponent) << LargestComponentShift) | (integerA << AShift) | (integerB << BShift) | integerC;
         }
 
-        private static uint ScaleToUint(float v)
+        private static ulong ScaleToUint_H(float v)
         {
             float normalized = v / Maximum;
-            return (uint)Mathf.RoundToInt(normalized * IntScale) & IntMask;
+            return (ulong)Mathf.RoundToInt(normalized * IntScale_H) & IntMask_H;
         }
 
-        private static float ScaleToFloat(uint v)
+        private static ulong ScaleToUint_L(float v)
         {
-            float unscaled = v * Maximum / IntScale;
+            float normalized = v / Maximum;
+            return (ulong)Mathf.RoundToInt(normalized * IntScale_L) & IntMask_L;
+        }
+
+        private static float ScaleToFloat_H(ulong v)
+        {
+            float unscaled = v * Maximum / IntScale_H;
 
             if (unscaled > Maximum)
                 unscaled -= Maximum * 2;
             return unscaled;
         }
 
-        internal static Quaternion Decompress(uint compressed)
+        private static float ScaleToFloat_L(ulong v)
+        {
+            float unscaled = v * Maximum / IntScale_L;
+
+            if (unscaled > Maximum)
+                unscaled -= Maximum * 2;
+            return unscaled;
+        }
+
+        internal static Quaternion Decompress(ulong compressed)
         {
             var largestComponentType = (ComponentType)(compressed >> LargestComponentShift);
-            uint integerA = (compressed >> AShift) & IntMask;
-            uint integerB = (compressed >> BShift) & IntMask;
-            uint integerC = compressed & IntMask;
+            ulong integerA = (compressed >> AShift) & IntMask_H;
+            ulong integerB = (compressed >> BShift) & IntMask_H;
+            ulong integerC = compressed & IntMask_L;
 
-            float a = ScaleToFloat(integerA);
-            float b = ScaleToFloat(integerB);
-            float c = ScaleToFloat(integerC);
+            float a = ScaleToFloat_H(integerA);
+            float b = ScaleToFloat_H(integerB);
+            float c = ScaleToFloat_L(integerC);
 
             Quaternion rotation;
             switch (largestComponentType)
@@ -171,6 +186,7 @@ namespace FishNet.Serializing.Helping
 
             return rotation;
         }
+
 
     }
 }

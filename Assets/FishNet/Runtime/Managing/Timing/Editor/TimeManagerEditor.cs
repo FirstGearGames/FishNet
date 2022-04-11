@@ -12,7 +12,7 @@ namespace FishNet.Managing.Timing.Editing
     {
         private SerializedProperty _tickRate;
         private SerializedProperty _pingInterval;
-        private SerializedProperty _predictionTimingInterval;
+        private SerializedProperty _timingInterval;
         private SerializedProperty _physicsMode;
         private SerializedProperty _maximumBufferedInputs;
 
@@ -20,7 +20,7 @@ namespace FishNet.Managing.Timing.Editing
         {
             _tickRate = serializedObject.FindProperty("_tickRate");
             _pingInterval = serializedObject.FindProperty("_pingInterval");
-            _predictionTimingInterval = serializedObject.FindProperty("_predictionTimingInterval");
+            _timingInterval = serializedObject.FindProperty("_timingInterval");
             _physicsMode = serializedObject.FindProperty("_physicsMode");
             _maximumBufferedInputs = serializedObject.FindProperty("_maximumBufferedInputs");
         }
@@ -39,7 +39,7 @@ namespace FishNet.Managing.Timing.Editing
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_tickRate);
             EditorGUILayout.PropertyField(_pingInterval);
-            EditorGUILayout.PropertyField(_predictionTimingInterval);            
+            EditorGUILayout.PropertyField(_timingInterval);            
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 

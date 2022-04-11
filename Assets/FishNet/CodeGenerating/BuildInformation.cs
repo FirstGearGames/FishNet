@@ -42,6 +42,7 @@ public class BuildInformation
     {
         get
         {
+
             
             /* This is to protect non pro users from enabling this
              * without the extra logic code.  */

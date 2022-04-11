@@ -1,5 +1,7 @@
+using FishNet.Managing;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace FishNet.Serializing
 {
@@ -24,13 +26,22 @@ namespace FishNet.Serializing
         #endregion
 
         /// <summary>
-        /// Get the next writer in the pool or creates a new one if none are available.
+        /// Get the next writer in the pool.
+        /// <para>If pool is empty, creates a new Reader</para>
         /// </summary>
-        public static PooledWriter GetWriter()
+        public static PooledWriter GetWriter(NetworkManager networkManager)
         {
             PooledWriter result = (_pool.Count > 0) ? _pool.Pop() : new PooledWriter();
-            result.Reset();
+            result.Reset(networkManager);
             return result;
+        }
+        /// <summary>
+        /// Get the next writer in the pool.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PooledWriter GetWriter()
+        {
+            return GetWriter(null);
         }
 
         /// <summary>

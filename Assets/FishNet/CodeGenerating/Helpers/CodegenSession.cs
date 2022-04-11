@@ -1,4 +1,5 @@
 ﻿using FishNet.CodeGenerating.Processing;
+using FishNet.CodeGenerating.Processing.Rpc;
 using MonoFN.Cecil;
 using System.Collections.Generic;
 using Unity.CompilationPipeline.Common.Diagnostics;
@@ -46,7 +47,7 @@ namespace FishNet.CodeGenerating.Helping
         [System.ThreadStatic]
         internal static QolAttributeProcessor QolAttributeProcessor;
         [System.ThreadStatic]
-        internal static NetworkBehaviourRpcProcessor NetworkBehaviourRpcProcessor;
+        internal static RpcProcessor RpcProcessor;
         [System.ThreadStatic]
         internal static NetworkBehaviourSyncProcessor NetworkBehaviourSyncProcessor;
         [System.ThreadStatic]
@@ -107,7 +108,7 @@ namespace FishNet.CodeGenerating.Helping
             CustomSerializerProcessor = new CustomSerializerProcessor();
             NetworkBehaviourProcessor = new NetworkBehaviourProcessor();
             QolAttributeProcessor = new QolAttributeProcessor();
-            NetworkBehaviourRpcProcessor = new NetworkBehaviourRpcProcessor();
+            RpcProcessor = new RpcProcessor();
             NetworkBehaviourSyncProcessor = new NetworkBehaviourSyncProcessor();
             NetworkBehaviourPredictionProcessor = new NetworkBehaviourPredictionProcessor();
             DifferentAssemblySyncVars = new List<FieldDefinition>();

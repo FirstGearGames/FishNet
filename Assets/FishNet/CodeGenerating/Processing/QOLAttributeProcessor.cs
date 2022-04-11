@@ -15,14 +15,14 @@ namespace FishNet.CodeGenerating.Processing
         {
             bool modified = false;
             List<MethodDefinition> methods = typeDef.Methods.ToList();
-            foreach (MethodDefinition methodDef in methods)
+            foreach (MethodDefinition md in methods)
             {
                 //Has RPC attribute, doesn't quality for a quality of life attribute.
-                if (CodegenSession.NetworkBehaviourRpcProcessor.GetRpcAttribute(methodDef, false, out _) != null)
+                if (CodegenSession.RpcProcessor.Attributes.HasRpcAttributes(md))
                     continue;
 
                 QolAttributeType qolType;
-                CustomAttribute qolAttribute = GetQOLAttribute(methodDef, out qolType);
+                CustomAttribute qolAttribute = GetQOLAttribute(md, out qolType);
                 if (qolAttribute == null)
                     continue;
 
@@ -36,7 +36,7 @@ namespace FishNet.CodeGenerating.Processing
                     continue;
                 }
 
-                CreateAttributeMethod(methodDef, qolAttribute, qolType);
+                CreateAttributeMethod(md, qolAttribute, qolType);
                 modified = true;
             }
 
@@ -105,8 +105,7 @@ namespace FishNet.CodeGenerating.Processing
         private void CreateAttributeMethod(MethodDefinition methodDef, CustomAttribute qolAttribute, QolAttributeType qolType)
         {
             bool inheritsNetworkBehaviour = methodDef.DeclaringType.InheritsNetworkBehaviour();
-            TypeDefinition typeDef = methodDef.DeclaringType;
-
+            
             //True to use InstanceFInder.
             bool useStatic = (methodDef.IsStatic || !inheritsNetworkBehaviour);
 
@@ -128,7 +127,7 @@ namespace FishNet.CodeGenerating.Processing
                     }
                     //If (!base.IsOwner);
                     if (requireOwnership)
-                        CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(methodDef, logging, false, true);
+                        CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(methodDef, logging, true, false, true);
                     //Otherwise normal IsClient check.
                     else
                         CodegenSession.ObjectHelper.CreateIsClientCheck(methodDef, logging, useStatic, true);
@@ -141,7 +140,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
                     CodegenSession.ObjectHelper.CreateIsServerCheck(methodDef, logging, useStatic, true);
-                }              
+                }
             }
         }
 

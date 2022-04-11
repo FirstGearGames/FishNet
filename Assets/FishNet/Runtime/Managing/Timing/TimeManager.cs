@@ -1,7 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
-using FishNet.Managing.Timing.Broadcast;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -99,7 +98,7 @@ namespace FishNet.Managing.Timing
         /// Tick can be used to get the server time by using TicksToTime().
         /// Use LocalTick for values that only increase.
         /// </summary>
-        public uint Tick { get; private set; }
+        public uint Tick { get; internal set; }
         /// <summary>
         /// Percentage of how much into next tick the time is.
         /// </summary>
@@ -159,7 +158,7 @@ namespace FishNet.Managing.Timing
         [Tooltip("How often in seconds to update prediction timing. Lower values will result in more accurate at the cost of bandwidth.")]
         [Range(1, 15)]
         [SerializeField]
-        private byte _predictionTimingInterval = 2;
+        private byte _timingInterval = 2;
         /// <summary>
         /// 
         /// </summary>
@@ -227,10 +226,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private double[] _clientTimingRange;
         /// <summary>
-        /// How many ticks to wait for each timing update to clients.
-        /// </summary>
-        private ushort _timingAdjustmentInterval;
-        /// <summary>
         /// Last frame an iteration occurred for incoming.
         /// </summary>
         private int _lastIncomingIterationFrame = -1;
@@ -238,10 +233,6 @@ namespace FishNet.Managing.Timing
         /// True if client received Pong since last ping.
         /// </summary>
         private bool _receivedPong = true;
-        /// <summary>
-        /// Last step change the client received. The value will be 0 when default, or during a step reset.
-        /// </summary>
-        private sbyte _lastStepsReceived;
         /// <summary>
         /// Number of TimeManagers open which are using manual physics.
         /// </summary>
@@ -262,10 +253,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private const double CLIENT_SLOWDOWN_PERCENT = 0.005d;
         /// <summary>
-        /// How quickly to move AdjustedDeltaTick to DeltaTick.
-        /// </summary>
-        private const double POSITIVE_STEPS_RECOVERY_RATE = 0.0001f;
-        /// <summary>
         /// When steps to be sent to clients are equal to or higher than this value in either direction a reset steps will be sent.
         /// </summary>
         private const byte RESET_STEPS_THRESHOLD = 5;
@@ -283,10 +270,6 @@ namespace FishNet.Managing.Timing
         /// Last Tick the server sent out UpdateTicksBroadcast.
         /// </summary>
         private uint _lastUpdateTicks = 0;
-        /// <summary>
-        /// How many ticks should pass before server sends UpdateTicksBroadcast.
-        /// </summary>
-        private uint _updateTicksGoal => (uint)(TickRate * 2);
 
 #if UNITY_EDITOR
         private void OnDisable()
@@ -321,11 +304,7 @@ namespace FishNet.Managing.Timing
                 ServerUptime += Time.deltaTime;
 
             if (_networkManager.IsClient)
-            {
                 ClientUptime += Time.deltaTime;
-                if (_lastStepsReceived > 0)
-                    _adjustedTickDelta = Mathf.MoveTowards((float)_adjustedTickDelta, (float)TickDelta, Time.deltaTime * (float)POSITIVE_STEPS_RECOVERY_RATE);
-            }
 
             IncreaseTick();
             OnUpdate?.Invoke();
@@ -349,7 +328,6 @@ namespace FishNet.Managing.Timing
             SetInitialValues();
             _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
-            _networkManager.ServerManager.OnAuthenticationResult += ServerManager_OnAuthenticationResult;
 
             AddNetworkLoops();
         }
@@ -540,14 +518,12 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Modifies client ping based on LocalTick and clientTIck.
         /// </summary>
-        /// <param name="clientTIck"></param>
-        internal void ModifyPing(uint clientTIck)
+        /// <param name="clientTick"></param>
+        internal void ModifyPing(uint clientTick)
         {
-            uint tickDifference = (LocalTick - clientTIck);
+            uint tickDifference = (LocalTick - clientTick);
             _pingAverage.ComputeAverage(tickDifference);
             double averageInTime = (_pingAverage.Average * TickDelta * 1000);
-            //Remove tickrate for a more accurate ping representation.
-            averageInTime = Math.Max(0, averageInTime - (TickDelta * 1000d));
             RoundTripTime = (long)Math.Round(averageInTime);
             _receivedPong = true;
         }
@@ -555,7 +531,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Sends a ping to the server.
         /// </summary>
-        private void TrySendPing()
+        private void TrySendPing(uint? tickOverride = null)
         {
             byte pingInterval = PingInterval;
             /* Set next ping time based on uptime.
@@ -582,10 +558,11 @@ namespace FishNet.Managing.Timing
             //Unset receivedPong, wait for new response.
             _receivedPong = false;
 
+            uint tick = (tickOverride == null) ? LocalTick : tickOverride.Value;
             using (PooledWriter writer = WriterPool.GetWriter())
             {
                 writer.WriteUInt16((ushort)PacketId.PingPong);
-                writer.WriteUInt32(LocalTick, AutoPackType.Unpacked);
+                writer.WriteUInt32(tick, AutoPackType.Unpacked);
                 _networkManager.TransportManager.SendToServer((byte)Channel.Unreliable, writer.GetArraySegment());
             }
         }
@@ -616,7 +593,7 @@ namespace FishNet.Managing.Timing
             double time = Time.deltaTime;
             _elapsedTickTime += time;
 
-            bool ticked = (_elapsedTickTime >= timePerSimulation);
+            bool isClient = _networkManager.IsClient;
             while (_elapsedTickTime >= timePerSimulation)
             {
                 _elapsedTickTime -= timePerSimulation;
@@ -638,6 +615,12 @@ namespace FishNet.Managing.Timing
                 }
 
                 OnPostTick?.Invoke();
+
+                /* If isClient this is the
+                 * last tick during this loop. */
+                if (isClient && (_elapsedTickTime < timePerSimulation))
+                    TrySendPing(LocalTick + 1);
+
                 //Send out data.
                 TryIterateData(false);
 
@@ -650,25 +633,6 @@ namespace FishNet.Managing.Timing
                 LocalTick++;
             }
 
-            //If ticked also try to send out data.
-            if (ticked)
-            {
-                if (_networkManager.IsClient)
-                    TrySendPing();
-            }
-        }
-
-        /// <summary>
-        /// Called when a client authentication result occurs.
-        /// </summary>
-        /// <param name="arg1"></param>
-        /// <param name="authenticated"></param>
-        private void ServerManager_OnAuthenticationResult(NetworkConnection arg1, bool authenticated)
-        {
-            if (!authenticated)
-                return;
-
-            SynchronizeTick(arg1);
         }
 
         #region TicksToTime float. 
@@ -826,27 +790,12 @@ namespace FishNet.Managing.Timing
 
         #region Timing adjusting.    
         /// <summary>
-        /// Sends a reliable timing adjustment to conn with no step change.
-        /// </summary>
-        /// <param name="conn"></param>
-        private void SynchronizeTick(NetworkConnection conn)
-        {
-            SynchronizeTickBroadcast msg = new SynchronizeTickBroadcast()
-            {
-                //Can use Tick = Tick but using LocalTick for less confusion.
-                Tick = LocalTick
-            };
-            _networkManager.ServerManager.Broadcast(conn, msg, true, Channel.Reliable);
-        }
-
-        /// <summary>
-        /// Sends a TimingAdjustmentBroadcast to clients.
+        /// Sends a TimingUpdate packet to clients.
         /// </summary>
         private void SendTimingAdjustment()
         {
-            //If 2 seconds have passed since last send.
             uint tick = Tick;
-            if (tick - _lastUpdateTicks >= _updateTicksGoal)
+            if (tick - _lastUpdateTicks >= _timingInterval)
             {
                 //Now send using a packetId.
                 PooledWriter writer = WriterPool.GetWriter();
@@ -891,9 +840,10 @@ namespace FishNet.Managing.Timing
                 sbyte steps = (sbyte)Mathf.Clamp(difference, sbyte.MinValue, sbyte.MaxValue);
                 double percent = (steps < 0) ? CLIENT_SPEEDUP_PERCENT : CLIENT_SLOWDOWN_PERCENT;
                 double change = (steps * (percent * TickDelta));
-               
+
                 _adjustedTickDelta = MathFN.ClampDouble(_adjustedTickDelta + change, _clientTimingRange[0], _clientTimingRange[1]);
             }
+
             _clientTicks = 0;
         }
         #endregion
@@ -907,8 +857,6 @@ namespace FishNet.Managing.Timing
             TickRate = value;
             TickDelta = (1d / TickRate);
             _adjustedTickDelta = TickDelta;
-            //Update every x seconds.
-            _timingAdjustmentInterval = (ushort)(TickRate * _predictionTimingInterval);
             _clientTimingRange = new double[]
             {
                 TickDelta * (1f - CLIENT_TIMING_PERCENT_RANGE),

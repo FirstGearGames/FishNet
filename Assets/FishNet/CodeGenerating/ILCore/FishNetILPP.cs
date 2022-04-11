@@ -10,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.ILCore
 { 
@@ -337,7 +336,7 @@ namespace FishNet.CodeGenerating.ILCore
                 foreach (TypeDefinition td in CodegenSession.Module.Types)
                 {
                     CodegenSession.NetworkBehaviourSyncProcessor.ReplaceGetSets(td, allProcessedSyncs);
-                    CodegenSession.NetworkBehaviourRpcProcessor.RedirectBaseCalls();
+                    CodegenSession.RpcProcessor.RedirectBaseCalls();
                 }
             }
 
@@ -392,7 +391,7 @@ namespace FishNet.CodeGenerating.ILCore
                     do
                     {
                         //How many RPCs are in copyTd.
-                        uint copyCount = CodegenSession.NetworkBehaviourRpcProcessor.GetRpcCount(copyTd);
+                        uint copyCount = CodegenSession.RpcProcessor.GetRpcCount(copyTd);
 
                         /* If not found it this is the first time being
                          * processed. When this occurs set the value

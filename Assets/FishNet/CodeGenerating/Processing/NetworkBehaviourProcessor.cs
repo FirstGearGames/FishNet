@@ -6,6 +6,7 @@ using MonoFN.Cecil.Cil;
 using MonoFN.Collections.Generic;
 using System.Collections.Generic;
 using System.Linq;
+using UnityDebug = UnityEngine.Debug;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -87,7 +88,7 @@ namespace FishNet.CodeGenerating.Processing
                 //25ms 
 
                 /* RPCs. */
-                modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref rpcCount);
+                modified |= CodegenSession.RpcProcessor.Process(copyTypeDef, ref rpcCount);
                 //30ms
                 /* //perf rpcCounts can be optimized by having different counts
                  * for target, observers, server, replicate, and reoncile rpcs. Since
@@ -150,7 +151,7 @@ namespace FishNet.CodeGenerating.Processing
                 foreach (MethodDefinition md in typeDef.Methods)
                 {
                     //Has RPC attribute but doesn't inherit from NB.
-                    if (CodegenSession.NetworkBehaviourRpcProcessor.GetRpcAttribute(md, false, out _) != null)
+                    if (CodegenSession.RpcProcessor.Attributes.HasRpcAttributes(md))
                     {
                         CodegenSession.LogError($"{typeDef.FullName} has one or more RPC attributes but does not inherit from NetworkBehaviour.");
                         error = true;
@@ -317,6 +318,7 @@ namespace FishNet.CodeGenerating.Processing
             //First check if any are public, if so that's the attribute all of them will use.
             bool usePublic = false;
 
+            //Determine if awake needs to be public or protected.
             TypeDefinition copyTypeDef = typeDef;
             do
             {
@@ -329,7 +331,7 @@ namespace FishNet.CodeGenerating.Processing
                     {
                         usePublic = true;
                         break;
-                    }
+                    }                        
                 }
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
 
@@ -337,29 +339,25 @@ namespace FishNet.CodeGenerating.Processing
 
 
             MethodAttributes attributes = (usePublic) ? PUBLIC_VIRTUAL_ATTRIBUTES : PROTECTED_VIRTUAL_ATTRIBUTES;
-
             //Now update all scopes/create methods.
             copyTypeDef = typeDef;
             do
-            {
+            { 
                 MethodDefinition tmpMd = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
                 //Exist, make it public virtual.
                 if (tmpMd != null)
                 {
                     if (tmpMd.ReturnType != copyTypeDef.Module.TypeSystem.Void)
-                    {
+                    { 
                         CodegenSession.LogError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
                         return false;
                     }
-                    tmpMd.Attributes = PUBLIC_VIRTUAL_ATTRIBUTES;
-
                     tmpMd.Attributes = attributes;
                 }
                 //Does not exist, add it.
                 else
                 {
-                    tmpMd = new MethodDefinition(ObjectHelper.AWAKE_METHOD_NAME, PUBLIC_VIRTUAL_ATTRIBUTES, CodegenSession.Module.TypeSystem.Void);
-                    tmpMd = new MethodDefinition(ObjectHelper.AWAKE_METHOD_NAME, attributes, CodegenSession.Module.TypeSystem.Void);
+                    tmpMd = new MethodDefinition(ObjectHelper.AWAKE_METHOD_NAME, attributes, copyTypeDef.Module.TypeSystem.Void);
                     copyTypeDef.Methods.Add(tmpMd);
                     ILProcessor processor = tmpMd.Body.GetILProcessor();
                     processor.Emit(OpCodes.Ret);

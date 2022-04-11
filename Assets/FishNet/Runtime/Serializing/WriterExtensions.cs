@@ -38,9 +38,6 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes value to dst without error checking.
         /// </summary>
-        /// <param name="dst"></param>
-        /// <param name="value"></param>
-        /// <param name="position"></param>
         [CodegenExclude]
         internal static void WriteUInt32(byte[] dst, uint value, ref int position)
         {
@@ -49,6 +46,22 @@ namespace FishNet.Serializing
             dst[position++] = (byte)(value >> 16);
             dst[position++] = (byte)(value >> 24);
         }
+        /// <summary>
+        /// Writes value to dst without error checking.
+        /// </summary>
+        [CodegenExclude]
+        internal static void WriteUInt64(byte[] dst, ulong value, ref int position)
+        {
+            dst[position++] = (byte)value;
+            dst[position++] = (byte)(value >> 8);
+            dst[position++] = (byte)(value >> 16);
+            dst[position++] = (byte)(value >> 24);
+            dst[position++] = (byte)(value >> 32);
+            dst[position++] = (byte)(value >> 40);
+            dst[position++] = (byte)(value >> 48);
+            dst[position++] = (byte)(value >> 56);
+        }
+
 
         public static void WriteDictionary<TKey, TValue>(this Writer writer, Dictionary<TKey, TValue> dict) => writer.WriteDictionary(dict);
         public static void WriteByte(this Writer writer, byte value) => writer.WriteByte(value);

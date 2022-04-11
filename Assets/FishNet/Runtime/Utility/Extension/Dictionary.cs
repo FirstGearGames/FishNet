@@ -14,17 +14,16 @@ namespace FishNet.Utility.Extension
         public static bool TryGetValueIL2CPP<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, out TValue value)
         {
 #if ENABLE_IL2CPP && UNITY_IOS || UNITY_ANDROID
-            foreach (KeyValuePair<TKey, TValue> item in dict)
+            if (dict.ContainsKey(key))
             {
-                if (item.Key.Equals(key))
-                {
-                    value = item.Value;
-                    return true;
-                }    
+                value = dict[key];
+                return true;
             }
-
-            value = default(TValue);
-            return false;
+            else
+            {
+                value = default;
+                return false;
+            }
 #else
             return dict.TryGetValue(key, out value);
 #endif

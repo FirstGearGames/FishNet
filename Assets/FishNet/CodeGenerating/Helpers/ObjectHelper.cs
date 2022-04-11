@@ -279,10 +279,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates exit method condition if local client is not owner.
         /// </summary>
-        /// <param name="processor"></param>
         /// <param name="retIfOwner">True if to ret when owner, false to ret when not owner.</param>
         /// <returns>Returns Ret instruction.</returns>
-        internal Instruction CreateLocalClientIsOwnerCheck(MethodDefinition methodDef, LoggingType loggingType, bool retIfOwner, bool insertFirst)
+        internal Instruction CreateLocalClientIsOwnerCheck(MethodDefinition methodDef, LoggingType loggingType, bool canDisableLogging, bool retIfOwner, bool insertFirst)
         {
             List<Instruction> instructions = new List<Instruction>();
             /* This is placed after the if check.
@@ -301,9 +300,10 @@ namespace FishNet.CodeGenerating.Helping
             //If logging is not disabled.
             if (loggingType != LoggingType.Off)
             {
+                string disableLoggingText = (canDisableLogging) ? DISABLE_LOGGING_TEXT : string.Empty;
                 string msg = (retIfOwner) ?
-                    $"Cannot complete action because you are the owner of this object. {DISABLE_LOGGING_TEXT}." :
-                    $"Cannot complete action because you are not the owner of this object. {DISABLE_LOGGING_TEXT}.";
+                    $"Cannot complete action because you are the owner of this object. {disableLoggingText}." :
+                    $"Cannot complete action because you are not the owner of this object. {disableLoggingText}.";
 
                 instructions.AddRange(
                     CodegenSession.GeneralHelper.CreateDebugWithCanLogInstructions(processor, msg, loggingType, false, true)
@@ -385,7 +385,7 @@ namespace FishNet.CodeGenerating.Helping
             //If warning then also append warning text.
             if (loggingType != LoggingType.Off)
             {
-                string msg = "Cannot complete action because client is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component.";
+                string msg = $"Cannot complete action because client is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component. {DISABLE_LOGGING_TEXT}.";
                 instructions.AddRange(
                     CodegenSession.GeneralHelper.CreateDebugWithCanLogInstructions(processor, msg, loggingType, useStatic, true)
                     );
@@ -436,7 +436,7 @@ namespace FishNet.CodeGenerating.Helping
             //If warning then also append warning text.
             if (loggingType != LoggingType.Off)
             {
-                string msg = "Cannot complete action because server is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component.";
+                string msg = $"Cannot complete action because server is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component. {DISABLE_LOGGING_TEXT}";
                 instructions.AddRange(
                     CodegenSession.GeneralHelper.CreateDebugWithCanLogInstructions(processor, msg, loggingType, useStatic, true)
                     );

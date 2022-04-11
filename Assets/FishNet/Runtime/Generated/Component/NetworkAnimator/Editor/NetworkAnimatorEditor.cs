@@ -94,7 +94,7 @@ namespace FishNet.Component.Animating.Editing
             if (animator == null)
                 return;
 
-            RuntimeAnimatorController runtimeController = animator.runtimeAnimatorController;
+            RuntimeAnimatorController runtimeController = (animator.runtimeAnimatorController is AnimatorOverrideController aoc) ? aoc.runtimeAnimatorController : animator.runtimeAnimatorController;
             if (runtimeController == null)
             {
                 na.IgnoredParameters.Clear();
@@ -105,7 +105,7 @@ namespace FishNet.Component.Animating.Editing
              * or editor controller is null
              * then get new editor controller. */
             if (runtimeController != _lastRuntimeAnimatorController || _lastAnimatorController == null)
-                _lastAnimatorController = (AnimatorController)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(animator.runtimeAnimatorController), typeof(AnimatorController));
+                _lastAnimatorController = (AnimatorController)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(runtimeController), typeof(AnimatorController));
             _lastRuntimeAnimatorController = runtimeController;
 
             Color defaultColor = GUI.backgroundColor;

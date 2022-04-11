@@ -184,17 +184,22 @@ namespace FishNet.Component.Transforming
 
         #region Serialized.
         /// <summary>
-        /// True to compress values. If you find accuracy of transform properties to be less than desirable try disabling this option.
-        /// </summary>
-        [Tooltip("True to compress values. If you find accuracy of transform properties to be less than desirable try disabling this option.")]
-        [SerializeField]
-        private bool _compress = true;
-        /// <summary>
         /// True to synchronize when this transform changes parent.
         /// </summary>
         [Tooltip("True to synchronize when this transform changes parent.")]
         [SerializeField]
         private bool _synchronizeParent;
+        /// <summary>
+        /// How much to compress each transform property.
+        /// </summary>
+        [Tooltip("How much to compress each transform property.")]
+        [SerializeField]
+        private TransformPackingData _packing = new TransformPackingData()
+        {
+            Position = AutoPackType.Packed,
+            Rotation = AutoPackType.Packed,
+            Scale = AutoPackType.Unpacked
+        };
         /// <summary>
         /// How many ticks to interpolate.
         /// </summary>
@@ -273,6 +278,15 @@ namespace FishNet.Component.Transforming
         #endregion
 
         #region Private.
+        /// <summary>
+        /// Packing data with all values set to uncompressed.
+        /// </summary>
+        private TransformPackingData _unpacked = new TransformPackingData()
+        {
+            Position = AutoPackType.Unpacked,
+            Rotation = AutoPackType.Unpacked,
+            Scale = AutoPackType.Unpacked
+        };
         /// <summary>
         /// True if the last DataReceived was on the reliable channel. Default to true so initial values do not extrapolate.
         /// </summary>
@@ -529,7 +543,8 @@ namespace FishNet.Component.Transforming
             /* Do not use compression when nested. Depending
              * on the scale of the parent compression may
              * not be accurate enough. */
-            bool compress = (ChangedContains(changed, ChangedDelta.Nested)) ? false : _compress;
+            TransformPackingData packing = (ChangedContains(changed, ChangedDelta.Nested)) ?
+                _unpacked : _packing;
 
             int startIndexA = writer.Position;
             writer.Reserve(1);
@@ -547,12 +562,13 @@ namespace FishNet.Component.Transforming
             /* Position. */
             if (_synchronizePosition)
             {
+                AutoPackType localPacking = packing.Position;
                 //PositionX
                 if (ChangedContains(changed, ChangedDelta.PositionX))
                 {
                     original = t.localPosition.x;
                     compressed = original * multiplier;
-                    if (compress && Math.Abs(compressed) <= maxValue)
+                    if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= maxValue)
                     {
                         flagsA |= UpdateFlagA.X2;
                         writer.WriteInt16((short)compressed);
@@ -568,7 +584,7 @@ namespace FishNet.Component.Transforming
                 {
                     original = t.localPosition.y;
                     compressed = original * multiplier;
-                    if (compress && Math.Abs(compressed) <= maxValue)
+                    if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= maxValue)
                     {
                         flagsA |= UpdateFlagA.Y2;
                         writer.WriteInt16((short)compressed);
@@ -584,7 +600,7 @@ namespace FishNet.Component.Transforming
                 {
                     original = t.localPosition.z;
                     compressed = original * multiplier;
-                    if (compress && Math.Abs(compressed) <= maxValue)
+                    if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= maxValue)
                     {
                         flagsA |= UpdateFlagA.Z2;
                         writer.WriteInt16((short)compressed);
@@ -603,12 +619,15 @@ namespace FishNet.Component.Transforming
                 if (ChangedContains(changed, ChangedDelta.Rotation))
                 {
                     flagsA |= UpdateFlagA.Rotation;
-                    writer.WriteQuaternion(t.localRotation);
+                    /* Rotation can always use pack settings even
+                     * if nested. Unsual transform scale shouldn't affect rotation. */
+                    writer.WriteQuaternion(t.localRotation, _packing.Rotation);
                 }
             }
 
             if (ChangedContains(changed, ChangedDelta.Extended))
             {
+                AutoPackType localPacking = packing.Position;
                 flagsA |= UpdateFlagA.Extended;
                 int startIndexB = writer.Position;
                 writer.Reserve(1);
@@ -621,7 +640,7 @@ namespace FishNet.Component.Transforming
                     {
                         original = t.localScale.x;
                         compressed = original * multiplier;
-                        if (compress && Math.Abs(compressed) <= maxValue)
+                        if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= maxValue)
                         {
                             flagsB |= UpdateFlagB.X2;
                             writer.WriteInt16((short)compressed);
@@ -637,7 +656,7 @@ namespace FishNet.Component.Transforming
                     {
                         original = t.localScale.y;
                         compressed = original * multiplier;
-                        if (compress && Math.Abs(compressed) <= maxValue)
+                        if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= maxValue)
                         {
                             flagsB |= UpdateFlagB.Y2;
                             writer.WriteInt16((short)compressed);
@@ -653,7 +672,7 @@ namespace FishNet.Component.Transforming
                     {
                         original = t.localScale.z;
                         compressed = original * multiplier;
-                        if (compress && Math.Abs(compressed) <= maxValue)
+                        if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= maxValue)
                         {
                             flagsB |= UpdateFlagB.Z2;
                             writer.WriteInt16((short)compressed);
@@ -724,7 +743,8 @@ namespace FishNet.Component.Transforming
                 //Rotation.
                 if (UpdateFlagAContains(flagsA, UpdateFlagA.Rotation))
                 {
-                    nextTransformData.Rotation = r.ReadQuaternion();
+                    //Always use _packing value even if nested.
+                    nextTransformData.Rotation = r.ReadQuaternion(_packing.Rotation);
                     changedFull |= ChangedFull.Rotation;
                 }
                 else

@@ -608,7 +608,12 @@ namespace FishNet.Serializing
             if (packType == AutoPackType.Packed)
             {
                 uint result = ReadUInt32(AutoPackType.Unpacked);
-                return Quaternions.Decompress(result);
+                return Quaternion32Compression.Decompress(result);
+            }
+            else if (packType == AutoPackType.PackedLess)
+            {
+                ulong result = ReadUInt64(AutoPackType.Unpacked);
+                return Quaternion64Compression.Decompress(result);
             }
             else
             {

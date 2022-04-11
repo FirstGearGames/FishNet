@@ -13,7 +13,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         {
             md.Body.Instructions.Clear();
             ILProcessor processor = md.Body.GetILProcessor();
-            CodegenSession.ObjectHelper.CreateRetDefault(md);
+            processor.Add(CodegenSession.ObjectHelper.CreateRetDefault(md));
         }
 
         /// <summary>

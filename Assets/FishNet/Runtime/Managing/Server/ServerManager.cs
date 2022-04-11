@@ -67,6 +67,17 @@ namespace FishNet.Managing.Server
         /// </summary>
         public Authenticator Authenticator { get => _authenticator; set => _authenticator = value; }
         /// <summary>
+        /// How to pack object spawns.
+        /// </summary>
+        [Tooltip("How to pack object spawns.")]
+        [SerializeField]
+        internal TransformPackingData SpawnPacking = new TransformPackingData()
+        {
+            Position = AutoPackType.Unpacked,
+            Rotation = AutoPackType.PackedLess,
+            Scale = AutoPackType.PackedLess
+        };
+        /// <summary>
         /// True to automatically set the frame rate when the client connects.
         /// </summary>
         [Tooltip("True to automatically set the frame rate when the client connects.")]
@@ -128,6 +139,11 @@ namespace FishNet.Managing.Server
         private void OnDestroy()
         {
             Objects?.SubscribeToSceneLoaded(false);
+        }
+
+        private void Update()
+        {
+            Objects?.IterateLoadedScenes();
         }
 
         /// <summary>
