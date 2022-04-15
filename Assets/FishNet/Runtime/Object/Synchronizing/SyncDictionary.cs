@@ -262,7 +262,7 @@ namespace FishNet.Object.Synchronizing
             if (!_valuesChanged)
                 return;
 
-            base.WriteDelta(writer, false);
+            base.WriteHeader(writer, false);
             writer.WriteUInt32((uint)Collection.Count);
             foreach (KeyValuePair<TKey, TValue> item in Collection)
             {
@@ -366,6 +366,7 @@ namespace FishNet.Object.Synchronizing
             _changed.Clear();
             Collection.Clear();
             ClientHostCollection.Clear();
+            _valuesChanged = false;
 
             foreach (KeyValuePair<TKey, TValue> item in _initialValues)
             {

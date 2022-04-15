@@ -147,10 +147,25 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void RemoveAddedScripts()
         {
-            if (_addedDesyncSmoother != null)
-                    DestroyImmediate(_addedDesyncSmoother);
-            if (_addedPredictedRigidbody != null)
-                    DestroyImmediate(_addedPredictedRigidbody);
+            //Cannot find scripts if graphical object is null.
+            if (_graphicalObject == null)
+                return;
+
+            //Remove them all, it's safer.
+            UnityEngine.Component c;
+
+            //rb
+            c = _graphicalObject.GetComponent<PredictedRigidbody>();
+            if (c != null)
+                DestroyImmediate(c);
+            //rb2d
+            c = _graphicalObject.GetComponent<PredictedRigidbody2D>();
+            if (c != null)
+                DestroyImmediate(c);
+            //DesyncSmoother.
+            c = _graphicalObject.GetComponent<DesyncSmoother>();
+            if (c != null)
+                DestroyImmediate(c);
         }
 
         /// <summary>

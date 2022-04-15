@@ -311,7 +311,7 @@ namespace FishNet.Component.Animating
         {
             get
             {
-                bool failedChecks = (_animator == null || !_animator.enabled);
+                bool failedChecks = (_animator == null || !_animator.enabled || _animator.runtimeAnimatorController == null);
                 return !failedChecks;
             }
         }

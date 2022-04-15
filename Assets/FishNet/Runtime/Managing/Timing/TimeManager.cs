@@ -659,6 +659,35 @@ namespace FishNet.Managing.Timing
             return (float)(TickDelta * ticks);
         }
         /// <summary>
+        /// Gets time passed from Tick to previousTick.
+        /// </summary>
+        /// <param name="previousTick">The previous tick.</param>
+        /// <param name="allowNegative">True to allow negative values. When false and value would be negative 0 is returned.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double TimePassed(uint previousTick, bool allowNegative = false)
+        {
+            uint currentTick = Tick;
+            //Difference will be positive.
+            if (currentTick >= previousTick)
+            {
+                return TicksToTimeDouble(currentTick - previousTick);                
+            }
+            //Difference would be negative.
+            else
+            {
+                if (!allowNegative)
+                {
+                    return 0d;
+                }
+                else
+                {
+                    double difference = TicksToTimeDouble(previousTick - currentTick);
+                    return (difference * -1d);
+                }
+            }
+        }
+        /// <summary>
         /// Converts time passed from currentTick to previous. Value will be negative if previousTick is larger than currentTick.
         /// </summary>
         /// <param name="currentTick">The current tick.</param>

@@ -54,8 +54,19 @@ namespace FishNet.Managing.Server
         internal ServerObjects(NetworkManager networkManager)
         {
             base.NetworkManager = networkManager;
-            InitializeObservers();
+            networkManager.SceneManager.OnActiveSceneSet += SceneManager_OnActiveSceneSet;
+            networkManager.TimeManager.OnUpdate += TimeManager_OnUpdate;
         }
+
+        /// <summary>
+        /// Called when MonoBehaviours call Update.
+        /// </summary>
+        private void TimeManager_OnUpdate()
+        {
+            IterateLoadedScenes(false);
+            PartialOnUpdate();
+        }
+        partial void PartialOnUpdate();
 
         #region Checking dirty SyncTypes.
         /// <summary>
@@ -210,9 +221,17 @@ namespace FishNet.Managing.Server
 
         #region Initializing Objects In Scenes.
         /// <summary>
+        /// Called after the active scene has been scene, immediately after scene loads.
+        /// </summary>
+        private void SceneManager_OnActiveSceneSet()
+        {
+            IterateLoadedScenes(true);
+        }
+        /// <summary>
         /// Iterates loaded scenes and sets them up.
         /// </summary>
-        internal void IterateLoadedScenes()
+        /// <param name="ignoreFrameRestriction">True to ignore the frame restriction when iterating.</param>
+        internal void IterateLoadedScenes(bool ignoreFrameRestriction)
         {
             //Not started, clear loaded scenes.
             if (!NetworkManager.ServerManager.Started)
@@ -221,7 +240,7 @@ namespace FishNet.Managing.Server
             for (int i = 0; i < _loadedScenes.Count; i++)
             {
                 (int frame, Scene scene) value = _loadedScenes[i];
-                if (Time.frameCount > value.frame)
+                if (ignoreFrameRestriction || (Time.frameCount > value.frame))
                 {
                     SetupSceneObjects(value.scene);
                     _loadedScenes.RemoveAt(i);

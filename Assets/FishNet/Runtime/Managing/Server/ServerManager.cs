@@ -141,11 +141,6 @@ namespace FishNet.Managing.Server
             Objects?.SubscribeToSceneLoaded(false);
         }
 
-        private void Update()
-        {
-            Objects?.IterateLoadedScenes();
-        }
-
         /// <summary>
         /// Initializes this script for use.
         /// </summary>

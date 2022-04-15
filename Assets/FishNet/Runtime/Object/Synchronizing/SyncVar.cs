@@ -257,6 +257,8 @@ namespace FishNet.Object.Synchronizing
         {
             if (Comparers.EqualityCompare<T>(_initialValue, _value))
                 return;
+            /* SyncVars only hold latest value, so just
+             * write current delta. */
             WriteDelta(obj0, false);
         }
 

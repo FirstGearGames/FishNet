@@ -30,7 +30,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Called when MonoBehaviours call Update.
         /// </summary>
-        private void TimeManager_OnUpdate()
+        partial void PartialOnUpdate()
         {
             UpdateTimedObservers();
         }
@@ -153,14 +153,6 @@ namespace FishNet.Managing.Server
         public void RemoveTimedNetworkObserver(NetworkObject networkObject)
         {
             _timedNetworkObservers.Remove(networkObject);
-        }
-
-        /// <summary>
-        /// Initializes this script for use.
-        /// </summary>
-        private void InitializeObservers()
-        {
-            base.NetworkManager.TimeManager.OnUpdate += TimeManager_OnUpdate;
         }
 
         /// <summary>

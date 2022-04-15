@@ -51,6 +51,10 @@ public class BuildInformation
 #pragma warning restore CS0162 // Unreachable code detected
         }
     }
+    private static object _compilationContext;
+    private static int _compilationErrorCount;
+
+
 
     
 

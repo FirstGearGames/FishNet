@@ -240,7 +240,7 @@ namespace FishNet.Object.Synchronizing
             if (!_valuesChanged)
                 return;
 
-            base.WriteDelta(writer, false);
+            base.WriteHeader(writer, false);
             int count = Collection.Count;
             writer.WriteUInt32((uint)count);
             foreach (T item in Collection)

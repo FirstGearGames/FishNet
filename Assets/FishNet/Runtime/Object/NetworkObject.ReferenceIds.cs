@@ -199,7 +199,6 @@ namespace FishNet.Object
 
         partial void PartialOnValidate()
         {
-
             TryCreateSceneID();
         }
         partial void PartialReset()

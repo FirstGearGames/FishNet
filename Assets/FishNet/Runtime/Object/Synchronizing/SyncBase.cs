@@ -169,7 +169,17 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         /// <param name="writer"></param>
         /// <param name="resetSyncTick">True to set the next time data may sync.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
+        {
+            WriteHeader(writer, resetSyncTick);
+        }
+        /// <summary>
+        /// Writers the header for this SyncType.
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="resetSyncTick"></param>
+        protected virtual void WriteHeader(PooledWriter writer, bool resetSyncTick = true)
         {
             if (resetSyncTick)
                 NextSyncTick = NetworkManager.TimeManager.Tick + _timeToTicks;

@@ -285,7 +285,7 @@ namespace FishNet.Object.Synchronizing
             if (!_valuesChanged)
                 return;
 
-            base.WriteDelta(writer, false);
+            base.WriteHeader(writer, false);
             writer.WriteUInt32((uint)Collection.Count);
             for (int i = 0; i < Collection.Count; i++)
             {

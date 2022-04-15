@@ -179,7 +179,7 @@ namespace FishNet.Example.CustomSyncObject
             if (!_valuesChanged)
                 return;
 
-            base.WriteDelta(writer, false);
+            base.WriteHeader(writer, false);
             //Write one change.
             writer.WriteInt32(1);
             //Write if changed is from the server, so always use the server _value.           

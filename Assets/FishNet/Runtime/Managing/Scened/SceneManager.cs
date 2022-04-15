@@ -71,6 +71,13 @@ namespace FishNet.Managing.Scened
         public Dictionary<Scene, HashSet<NetworkConnection>> SceneConnections { get; private set; } = new Dictionary<Scene, HashSet<NetworkConnection>>();
         #endregion
 
+        #region Internal.
+        /// <summary>
+        /// Called after the active scene has been scene, immediately after scene loads.
+        /// </summary>
+        internal event Action OnActiveSceneSet;
+        #endregion
+
         #region Private.
         /// <summary>
         /// NetworkManager for this script.
@@ -1800,6 +1807,8 @@ namespace FishNet.Managing.Scened
             //If was changed then update active scene.
             if (!string.IsNullOrEmpty(s.name))
                 UnitySceneManager.SetActiveScene(s);
+
+            OnActiveSceneSet?.Invoke();
         }
 
         /// <summary>

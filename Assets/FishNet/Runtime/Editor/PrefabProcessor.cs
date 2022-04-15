@@ -22,8 +22,17 @@ namespace FishNet.Editing
         /// <param name="deletedAssets"></param>
         /// <param name="movedAssets"></param>
         /// <param name="movedFromAssetPaths"></param>
+#if UNITY_2021_3_OR_NEWER
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths, bool didDomainReload)
+#else
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+#endif
         {
+
+#if UNITY_2021_3_OR_NEWER
+            if (didDomainReload)
+                return;
+#endif
             bool justPopulated;
             if (_defaultPrefabs == null)
                 _defaultPrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out justPopulated);
@@ -43,8 +52,13 @@ namespace FishNet.Editing
             if (justPopulated)
                 return;
 
+            System.Type goType = typeof(UnityEngine.GameObject);
             foreach (string item in importedAssets)
             {
+                System.Type assetType = AssetDatabase.GetMainAssetTypeAtPath(item);
+                if (assetType != goType)
+                    continue;
+
                 GameObject go = (GameObject)AssetDatabase.LoadAssetAtPath(item, typeof(GameObject));
                 //If is a gameobject.
                 if (go != null)
