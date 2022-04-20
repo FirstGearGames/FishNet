@@ -1,10 +1,12 @@
 ﻿using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.CodeGenerating.Processing.Rpc;
 using FishNet.Managing.Logging;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -15,6 +17,9 @@ namespace FishNet.CodeGenerating.Processing
         {
             bool modified = false;
             List<MethodDefinition> methods = typeDef.Methods.ToList();
+
+            
+
             foreach (MethodDefinition md in methods)
             {
                 //Has RPC attribute, doesn't quality for a quality of life attribute.
@@ -55,6 +60,9 @@ namespace FishNet.CodeGenerating.Processing
             qolType = QolAttributeType.None;
             //Becomes true if an error occurred during this process.
             bool error = false;
+            //Nothing to check.
+            if (methodDef == null || methodDef.CustomAttributes == null)
+                return null;
 
             foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
             {
@@ -105,14 +113,15 @@ namespace FishNet.CodeGenerating.Processing
         private void CreateAttributeMethod(MethodDefinition methodDef, CustomAttribute qolAttribute, QolAttributeType qolType)
         {
             bool inheritsNetworkBehaviour = methodDef.DeclaringType.InheritsNetworkBehaviour();
-            
+
             //True to use InstanceFInder.
             bool useStatic = (methodDef.IsStatic || !inheritsNetworkBehaviour);
 
             if (qolType == QolAttributeType.Client)
             {
+                bool removeLogic = (CodeStripping.StripBuild && CodeStripping.ReleasingForServer);
                 
-                if (!BuildInformation.StripBuild)
+                if (!removeLogic && !CodeStripping.StripBuild)
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
                     /* Since isClient also uses insert first
@@ -135,8 +144,9 @@ namespace FishNet.CodeGenerating.Processing
             }
             else if (qolType == QolAttributeType.Server)
             {
+                bool removeLogic = (CodeStripping.StripBuild && CodeStripping.ReleasingForClient);
                 
-                if (!BuildInformation.StripBuild)
+                if (!removeLogic && !CodeStripping.StripBuild)
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
                     CodegenSession.ObjectHelper.CreateIsServerCheck(methodDef, logging, useStatic, true);
@@ -144,5 +154,7 @@ namespace FishNet.CodeGenerating.Processing
             }
         }
 
+        
     }
+
 }

@@ -463,7 +463,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="methodDef"></param>
         /// <returns></returns>
-        public List<Instruction> CreateRetDefault(MethodDefinition methodDef)
+        public List<Instruction> CreateRetDefault(MethodDefinition methodDef, ModuleDefinition importReturnModule = null)
         {
             ILProcessor processor = methodDef.Body.GetILProcessor();
             List<Instruction> instructions = new List<Instruction>();
@@ -472,6 +472,8 @@ namespace FishNet.CodeGenerating.Helping
             {
                 //Import type first.
                 methodDef.Module.ImportReference(methodDef.ReturnType);
+                if (importReturnModule != null)
+                    importReturnModule.ImportReference(methodDef.ReturnType);
                 VariableDefinition vd = CodegenSession.GeneralHelper.CreateVariable(methodDef, methodDef.ReturnType);
                 instructions.Add(processor.Create(OpCodes.Ldloca_S, vd));
                 instructions.Add(processor.Create(OpCodes.Initobj, vd.VariableType));

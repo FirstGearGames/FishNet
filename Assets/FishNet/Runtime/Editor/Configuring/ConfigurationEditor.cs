@@ -2,10 +2,9 @@
 using FishNet.Editing;
 using System;
 using System.IO;
+using System.Xml;
+using System.Xml.Serialization;
 using UnityEditor;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
-using UnityEditor.Compilation;
 using UnityEngine;
 
 namespace FishNet.Configuring.Editing
@@ -32,24 +31,14 @@ namespace FishNet.Configuring.Editing
         /// </summary>
         private void SaveConfiguration()
         {
-            string json = JsonUtility.ToJson(Configuration.ConfigurationData);
-            try
-            {
-                File.WriteAllText(Configuration.ConfigurationFilePath, json);
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"There was a problem saving Fish-Networking configuration. Message: {ex.Message}.");
-            }
+            string path = CodeStripping.GetAssetsPath(CodeStripping.CONFIG_FILE_NAME);
+            CodeStripping.ConfigurationData.Write(path, true);
         }
 
 
         [MenuItem("Fish-Networking/Configuration", false, 0)]
         public static void ShowConfiguration()
         {
-            Configuration.LoadConfiguration();
             EditorWindow window = GetWindow<ConfigurationEditor>();
             window.titleContent = new GUIContent("Fish-Networking Configuration");
             //Dont worry about capping size until it becomes a problem.
@@ -66,7 +55,7 @@ namespace FishNet.Configuring.Editing
             //if (_reloadFile)
             //    Configuration.LoadConfiguration();
 
-            ConfigurationData data = Configuration.ConfigurationData;
+            ConfigurationData data = CodeStripping.GetConfigurationData();
 
             if (data == null)
                 return;
@@ -103,7 +92,7 @@ namespace FishNet.Configuring.Editing
             if (data.HasChanged(_comparerConfiguration))
                 SaveConfiguration();
         }
-        
+
     }
 }
 #endif

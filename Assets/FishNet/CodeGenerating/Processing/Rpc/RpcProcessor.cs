@@ -155,7 +155,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// <summary>
         /// Returns the method name with parameter types included within the name.
         /// </summary>
-        private string GetMethodNameAsParameters(MethodDefinition methodDef)
+        public static string GetMethodNameAsParameters(MethodDefinition methodDef)
         {
             StringBuilder sb = new StringBuilder();
             foreach (ParameterDefinition pd in methodDef.Parameters)
@@ -346,7 +346,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             /* Creates basic ServerRpc and ClientRpc
              * conditions such as if requireOwnership ect..
              * or if (!base.isClient) */
-            if (!BuildInformation.IsBuilding)
+            
                 CreateClientRpcConditionsForServer(writerMd);
 
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);
@@ -393,7 +393,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             /* Creates basic ServerRpc
              * conditions such as if requireOwnership ect..
              * or if (!base.isClient) */
-            if (!BuildInformation.IsBuilding)
+            
                 CreateServerRpcConditionsForClient(writerMd, cr.Attribute);
 
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);

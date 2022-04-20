@@ -355,7 +355,7 @@ namespace FishNet.Managing.Client
             else
             {
                 if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"SceneId of {sceneId} not found in SceneObjects.");
+                    Debug.LogError($"SceneId of {sceneId} not found in SceneObjects. This may occur if your scene differs between client and server, if client does not have the scene loaded, or if networked scene objects do not have a SceneCondition. See ObserverManager in the documentation for more on conditions.");
                 return null;
             }
         }

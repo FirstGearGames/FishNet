@@ -9,11 +9,11 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Clears the method content and returns ret.
         /// </summary>
-        internal static void ClearMethodWithRet(this MethodDefinition md)
+        internal static void ClearMethodWithRet(this MethodDefinition md, ModuleDefinition importReturnModule = null)
         {
             md.Body.Instructions.Clear();
             ILProcessor processor = md.Body.GetILProcessor();
-            processor.Add(CodegenSession.ObjectHelper.CreateRetDefault(md));
+            processor.Add(CodegenSession.ObjectHelper.CreateRetDefault(md, importReturnModule));
         }
 
         /// <summary>

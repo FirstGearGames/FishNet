@@ -331,7 +331,7 @@ namespace FishNet.CodeGenerating.Processing
                     {
                         usePublic = true;
                         break;
-                    }                        
+                    }
                 }
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
 
@@ -342,13 +342,13 @@ namespace FishNet.CodeGenerating.Processing
             //Now update all scopes/create methods.
             copyTypeDef = typeDef;
             do
-            { 
+            {
                 MethodDefinition tmpMd = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
                 //Exist, make it public virtual.
                 if (tmpMd != null)
                 {
                     if (tmpMd.ReturnType != copyTypeDef.Module.TypeSystem.Void)
-                    { 
+                    {
                         CodegenSession.LogError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
                         return false;
                     }

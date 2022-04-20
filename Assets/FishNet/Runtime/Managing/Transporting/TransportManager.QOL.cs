@@ -41,12 +41,15 @@ namespace FishNet.Managing.Transporting
         /// Gets transport of type T.
         /// </summary>
         /// <returns>Returns the found transport which is of type T. Returns null if not found.</returns>
-        public Transport GetTransport<T>()
+        public Transport GetTransport<T>() where T : Transport
         {
             //If using multipass try to find the correct transport.
             if (Transport is Multipass mp)
             {
-                return mp.GetTransport<T>();
+                if (typeof(T) == typeof(Multipass))
+                    return mp;
+                else
+                    return mp.GetTransport<T>();
             }
             //Not using multipass.
             else
