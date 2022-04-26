@@ -12,7 +12,7 @@ using System.Text;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
 
 namespace FishNet.CodeGenerating.ILCore
-{ 
+{
     public class FishNetILPP : ILPostProcessor
     {
         #region Const.
@@ -270,15 +270,22 @@ namespace FishNet.CodeGenerating.ILCore
         {
             bool modified = false;
 
+            bool codeStripping = false;
+            
             List<TypeDefinition> allTypeDefs = CodegenSession.Module.Types.ToList();
+
+            /* First pass, potentially only pass.
+             * If code stripping them this will be run again. The first iteration
+             * is to ensure things are removed in the proper order. */
             foreach (TypeDefinition td in allTypeDefs)
             {
                 if (CodegenSession.GeneralHelper.IgnoreTypeDefinition(td))
                     continue;
 
-                modified |= CodegenSession.QolAttributeProcessor.Process(td);
+                modified |= CodegenSession.QolAttributeProcessor.Process(td, codeStripping);
             }
 
+            
 
             return modified;
         }

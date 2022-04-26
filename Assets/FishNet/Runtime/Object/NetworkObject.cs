@@ -56,13 +56,13 @@ namespace FishNet.Object
 
         #region Serialized.
         /// <summary>
-        /// Default value for IsNetworked. True if this object is acting as a NetworkedObject. Using network Spawn() will always set this object as networked.
+        /// True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.
         /// </summary>
-        [Tooltip("Default value for IsNetworked. True if this object is acting as a NetworkedObject. Using network Spawn() will always set this object as networked.")]
+        [Tooltip("True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.")]
         [SerializeField]
         private bool _isNetworked = true;
         /// <summary>
-        /// Default value for IsNetworked.True if this object is acting as a NetworkedObject.Using network Spawn() will always set this object as networked.
+        /// True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.
         /// </summary>
         public bool IsNetworked
         {

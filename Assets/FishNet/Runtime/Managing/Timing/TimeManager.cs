@@ -621,13 +621,14 @@ namespace FishNet.Managing.Timing
                 if (isClient && (_elapsedTickTime < timePerSimulation))
                     TrySendPing(LocalTick + 1);
 
+                if (_networkManager.IsServer)
+                    SendTimingAdjustment();
+
                 //Send out data.
                 TryIterateData(false);
 
                 if (_networkManager.IsClient)
                     _clientTicks++;
-                if (_networkManager.IsServer)
-                    SendTimingAdjustment();
 
                 Tick++;
                 LocalTick++;
@@ -804,15 +805,19 @@ namespace FishNet.Managing.Timing
                 /* This will be true if to iterate first first
                  * resulting in the first TransportManager.Iterate
                  * being called for server, and the second for client. */
-                bool a = (_networkManager.IncomingIterationOrder == NetworkManager.HostIterationOrder.ServerFirst);
-                _networkManager.TransportManager.IterateIncoming(a);
-                _networkManager.TransportManager.IterateIncoming(!a);
+                //bool a = (_networkManager.IncomingIterationOrder == NetworkManager.HostIterationOrder.ServerFirst);
+                //_networkManager.TransportManager.IterateIncoming(a);
+                //_networkManager.TransportManager.IterateIncoming(!a);
+                _networkManager.TransportManager.IterateIncoming(true);
+                _networkManager.TransportManager.IterateIncoming(false);
             }
             else
             {
-                bool a = (_networkManager.OutgoingIterationOrder == NetworkManager.HostIterationOrder.ServerFirst);
-                _networkManager.TransportManager.IterateOutgoing(a);
-                _networkManager.TransportManager.IterateOutgoing(!a);
+                //bool a = (_networkManager.OutgoingIterationOrder == NetworkManager.HostIterationOrder.ServerFirst);
+                //_networkManager.TransportManager.IterateOutgoing(a);
+                //_networkManager.TransportManager.IterateOutgoing(!a);
+                _networkManager.TransportManager.IterateOutgoing(true);
+                _networkManager.TransportManager.IterateOutgoing(false);
             }
         }
 

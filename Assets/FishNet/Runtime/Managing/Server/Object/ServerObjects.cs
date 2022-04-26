@@ -54,7 +54,7 @@ namespace FishNet.Managing.Server
         internal ServerObjects(NetworkManager networkManager)
         {
             base.NetworkManager = networkManager;
-            networkManager.SceneManager.OnActiveSceneSet += SceneManager_OnActiveSceneSet;
+            networkManager.SceneManager.OnActiveSceneSetInternal += SceneManager_OnActiveSceneSet;
             networkManager.TimeManager.OnUpdate += TimeManager_OnUpdate;
         }
 

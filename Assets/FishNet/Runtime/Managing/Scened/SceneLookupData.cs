@@ -75,6 +75,15 @@ namespace FishNet.Managing.Scened
         {
             Handle = handle;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="handle">Scene handle to generate from.</param>
+        public SceneLookupData(int handle, string name)
+        {
+            Handle = handle;
+            Name = name;
+        }
 
         #region Comparers.
         public static bool operator ==(SceneLookupData sldA, SceneLookupData sldB)

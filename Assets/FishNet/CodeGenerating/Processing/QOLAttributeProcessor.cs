@@ -6,14 +6,13 @@ using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
     internal class QolAttributeProcessor
     {
 
-        internal bool Process(TypeDefinition typeDef)
+        internal bool Process(TypeDefinition typeDef, bool codeStripping)
         {
             bool modified = false;
             List<MethodDefinition> methods = typeDef.Methods.ToList();

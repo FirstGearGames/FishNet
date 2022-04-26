@@ -605,9 +605,7 @@ namespace FishNet.Object.Synchronizing
                     toRemove.Add(Collection[i]);
 
             foreach (T entry in toRemove)
-            {
                 Remove(entry);
-            }
 
             return toRemove.Count;
         }
@@ -623,6 +621,24 @@ namespace FishNet.Object.Synchronizing
             set => Set(i, value, true, true);
         }
 
+        /// <summary>
+        /// Looks up obj in Collection and if found marks it's index as dirty.
+        /// While using this operation previous value will be the same as next.
+        /// </summary>
+        /// <param name="obj"></param>
+        public void Dirty(T obj)
+        {
+            int index = Collection.IndexOf(obj);
+            if (index != -1)
+            { 
+                Dirty(index);
+            }
+            else
+            {
+                if (base.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Could not find object within SyncList, dirty will not be set.");
+            }
+        }
         /// <summary>
         /// Marks an index as dirty.
         /// While using this operation previous value will be the same as next.

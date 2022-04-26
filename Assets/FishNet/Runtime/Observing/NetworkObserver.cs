@@ -171,7 +171,7 @@ namespace FishNet.Observing
         /// Returns a condition if found within Conditions.
         /// </summary>
         /// <returns></returns>
-        public ObserverCondition GetObserverCondition<T>()
+        public ObserverCondition GetObserverCondition<T>() where T : ObserverCondition
         {
             /* Do not bother setting local variables,
              * condition collections aren't going to be long

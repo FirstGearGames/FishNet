@@ -183,26 +183,26 @@ namespace FishNet.Managing
         [Tooltip("How to persist when other NetworkManagers are introduced.")]
         [SerializeField]
         private PersistenceType _persistence = PersistenceType.DestroyNewest;
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("Whether client or server should iterate incoming data first when running as host.")]
-        [SerializeField]
-        private HostIterationOrder _incomingIterationOrder = HostIterationOrder.ClientFirst;
-        /// <summary>
-        /// Whether client or server should iterate incoming data first when running as host.
-        /// </summary>
-        internal HostIterationOrder IncomingIterationOrder => _incomingIterationOrder;
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("Whether client or server should iterate outgoing data first when running as host.")]
-        [SerializeField]
-        private HostIterationOrder _outgoingIterationOrder = HostIterationOrder.ServerFirst;
-        /// <summary>
-        /// Whether client or server should iterate incoming data first when running as host.
-        /// </summary>
-        internal HostIterationOrder OutgoingIterationOrder => _outgoingIterationOrder;
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //[Tooltip("Whether client or server should iterate incoming data first when running as host.")]
+        //[SerializeField]
+        //private HostIterationOrder _incomingIterationOrder = HostIterationOrder.ClientFirst;
+        ///// <summary>
+        ///// Whether client or server should iterate incoming data first when running as host.
+        ///// </summary>
+        //internal HostIterationOrder IncomingIterationOrder => _incomingIterationOrder;
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //[Tooltip("Whether client or server should iterate outgoing data first when running as host.")]
+        //[SerializeField]
+        //private HostIterationOrder _outgoingIterationOrder = HostIterationOrder.ServerFirst;
+        ///// <summary>
+        ///// Whether client or server should iterate incoming data first when running as host.
+        ///// </summary>
+        //internal HostIterationOrder OutgoingIterationOrder => _outgoingIterationOrder;
         #endregion
 
         #region Private.

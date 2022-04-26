@@ -61,30 +61,30 @@ namespace FishNet.Managing.Editing
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_spawnablePrefabs);
             EditorGUILayout.PropertyField(_refreshDefaultPrefabs);
-            //Show manual refresh button if not auto refresh.
-            if (_refreshDefaultPrefabs.boolValue == false)
-            {
-                using (GUILayout.HorizontalScope hs = new GUILayout.HorizontalScope())
-                {
-                    GUILayout.Space(15f);
-                    if (GUILayout.Button("Manually Refresh Default Prefabs"))
-                    {
-                        if (networkManager.SpawnablePrefabs != null && networkManager.SpawnablePrefabs is DefaultPrefabObjects dpo)
-                            dpo.PopulateDefaultPrefabs(true, true);
-                    }      
-                }
+            ////Show manual refresh button if not auto refresh.
+            //if (_refreshDefaultPrefabs.boolValue == false)
+            //{
+            //    using (GUILayout.HorizontalScope hs = new GUILayout.HorizontalScope())
+            //    {
+            //        GUILayout.Space(15f);
+            //        if (GUILayout.Button("Manually Refresh Default Prefabs"))
+            //        {
+            //            if (networkManager.SpawnablePrefabs != null && networkManager.SpawnablePrefabs is DefaultPrefabObjects dpo)
+            //                dpo.PopulateDefaultPrefabs(true, true);
+            //        }      
+            //    }
 
-            }
+            //}
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
 
-            EditorGUILayout.LabelField("Experimental", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_incomingIterationOrder);
-            EditorGUILayout.PropertyField(_outgoingIterationOrder);
-            EditorGUILayout.Space();
-            EditorGUI.indentLevel--;
+            //EditorGUILayout.LabelField("Experimental", EditorStyles.boldLabel);
+            //EditorGUI.indentLevel++;
+            //EditorGUILayout.PropertyField(_incomingIterationOrder);
+            //EditorGUILayout.PropertyField(_outgoingIterationOrder);
+            //EditorGUILayout.Space();
+            //EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();
         }

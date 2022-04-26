@@ -1188,8 +1188,10 @@ namespace FishNet.Component.Transforming
                 lastTick = (nextGd.Transforms.Tick - 1);
 
             uint tickDifference = (td.Tick - lastTick);
+            //This should never happen but just to be safe.
+            if (tickDifference == 0)
+                tickDifference = 1;
             float timePassed = base.NetworkManager.TimeManager.TicksToTime(tickDifference);
-
             //Distance between properties.
             float distance;
             float positionRate = 0f;

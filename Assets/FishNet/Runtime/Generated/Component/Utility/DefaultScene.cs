@@ -37,9 +37,9 @@ public class DefaultScene : MonoBehaviour
     [SerializeField, Scene]
     private string _onlineScene;
     /// <summary>
-    /// Which scenes to replace when loading into onlineScene.
+    /// Which scenes to replace when loading into OnlineScene.
     /// </summary>
-    [Tooltip("Which scenes to replace when loading into onlineScene.")]
+    [Tooltip("Which scenes to replace when loading into OnlineScene.")]
     [SerializeField]
     private ReplaceOption _replaceScenes = ReplaceOption.All;
     #endregion

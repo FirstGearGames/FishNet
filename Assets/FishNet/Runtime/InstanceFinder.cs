@@ -92,7 +92,7 @@ namespace FishNet
         }
 
         /// <summary>
-        /// Returns the first instance of TransportManager.
+        /// Returns the first instance of TimeManager.
         /// </summary>
         public static TimeManager TimeManager
         {

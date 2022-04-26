@@ -26,6 +26,10 @@ namespace FishNet.Managing.Scened
 
         #region Public.
         /// <summary>
+        /// Called after the active scene has been set, immediately after scene loads. This will occur before NetworkBehaviour callbacks run for the scene's objects.
+        /// </summary>
+        public event Action OnActiveSceneSet;
+        /// <summary>
         /// Called when a client loads initial scenes after connecting. Boolean will be true if asServer.
         /// </summary>
         public event Action<NetworkConnection, bool> OnClientLoadedStartScenes;
@@ -73,9 +77,9 @@ namespace FishNet.Managing.Scened
 
         #region Internal.
         /// <summary>
-        /// Called after the active scene has been scene, immediately after scene loads.
+        /// Called after the active scene has been set, immediately after scene loads.
         /// </summary>
-        internal event Action OnActiveSceneSet;
+        internal event Action OnActiveSceneSetInternal;
         #endregion
 
         #region Private.
@@ -1809,6 +1813,7 @@ namespace FishNet.Managing.Scened
                 UnitySceneManager.SetActiveScene(s);
 
             OnActiveSceneSet?.Invoke();
+            OnActiveSceneSetInternal?.Invoke();
         }
 
         /// <summary>
