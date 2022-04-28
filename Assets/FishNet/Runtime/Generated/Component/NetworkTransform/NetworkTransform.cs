@@ -971,7 +971,7 @@ namespace FishNet.Component.Transforming
                 _lastSentTransformData.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, _parentBehaviour);
 
                 //Send latest.
-                using (PooledWriter writer = WriterPool.GetWriter())
+                using (PooledWriter writer = WriterPool.GetWriter(false))
                 {
                     SerializeChanged(changed, writer);
                     ObserversUpdateTransform(writer.GetArraySegment(), channel);
@@ -1018,7 +1018,7 @@ namespace FishNet.Component.Transforming
             _lastSentTransformData.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, _parentBehaviour);
 
             //Send latest.
-            using (PooledWriter writer = WriterPool.GetWriter())
+            using (PooledWriter writer = WriterPool.GetWriter(false))
             {
                 SerializeChanged(changed, writer);
                 ServerUpdateTransform(writer.GetArraySegment(), channel);
@@ -1350,7 +1350,7 @@ namespace FishNet.Component.Transforming
 
             //Set to received bytes.
             if (_receivedClientBytes == null)
-                _receivedClientBytes = WriterPool.GetWriter();
+                _receivedClientBytes = WriterPool.GetWriter(true);
             _receivedClientBytes.Reset();
             _receivedClientBytes.WriteArraySegment(data);
 

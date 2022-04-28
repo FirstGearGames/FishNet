@@ -161,14 +161,14 @@ namespace FishNet.Object
 
             Channel channel = Channel.Unreliable;
             //Write history to methodWriter.
-            PooledWriter methodWriter = WriterPool.GetWriter();
+            PooledWriter methodWriter = WriterPool.GetWriter(false);
             methodWriter.WriteToEnd(replicateBuffer, offset);
 
             PooledWriter writer;
             //if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
             //writer = CreateLinkedRpc(link, methodWriter, Channel.Unreliable);
             //else //todo add support for -> server rpc links.
-            writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
+            writer = CreateRpc(hash, false, methodWriter, PacketId.Replicate, channel);
             NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), false);
 
             methodWriter.Dispose();
@@ -188,7 +188,7 @@ namespace FishNet.Object
             if (!Owner.IsActive)
                 return;
 
-            PooledWriter methodWriter = WriterPool.GetWriter();
+            PooledWriter methodWriter = WriterPool.GetWriter(false);
             methodWriter.Write(reconcileData);
 
             PooledWriter writer;
@@ -199,7 +199,7 @@ namespace FishNet.Object
 #endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else
-                writer = CreateRpc(hash, methodWriter, PacketId.Reconcile, channel);
+                writer = CreateRpc(hash, false, methodWriter, PacketId.Reconcile, channel);
 
             _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), Owner);
 

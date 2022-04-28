@@ -213,7 +213,7 @@ namespace FishNet.Object
             if (!IsSpawnedWithWarning())
                 return;
 
-            PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.ServerRpc, channel);
+            PooledWriter writer = CreateRpc(hash, false, methodWriter, PacketId.ServerRpc, channel);
             _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
             writer.Dispose();
         }
@@ -284,7 +284,7 @@ namespace FishNet.Object
 #endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else
-                writer = CreateRpc(hash, methodWriter, PacketId.ObserversRpc, channel);
+                writer = CreateRpc(hash, buffered, methodWriter, PacketId.ObserversRpc, channel);
 
             _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers);
             /* If buffered then dispose of any already buffered
@@ -354,7 +354,7 @@ namespace FishNet.Object
 #endif
                 writer = CreateLinkedRpc(link, methodWriter, channel);
             else
-                writer = CreateRpc(hash, methodWriter, PacketId.TargetRpc, channel);
+                writer = CreateRpc(hash, false, methodWriter, PacketId.TargetRpc, channel);
 
             _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target);
             writer.Dispose();
@@ -392,10 +392,10 @@ namespace FishNet.Object
         /// Writes a full RPC and returns the writer.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private PooledWriter CreateRpc(uint hash, PooledWriter methodWriter, PacketId packetId, Channel channel)
+        private PooledWriter CreateRpc(uint hash, bool buffered, PooledWriter methodWriter, PacketId packetId, Channel channel)
         {
             //Writer containing full packet.
-            PooledWriter writer = WriterPool.GetWriter();
+            PooledWriter writer = WriterPool.GetWriter(buffered);
             writer.WritePacketId(packetId);
             writer.WriteNetworkBehaviour(this);
             ////Only write length if unreliable.

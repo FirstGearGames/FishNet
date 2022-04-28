@@ -59,8 +59,8 @@ namespace FishNet.Managing.Server
                 iterations = observersCount;
 
 
-            PooledWriter everyoneWriter = WriterPool.GetWriter();
-            PooledWriter ownerWriter = WriterPool.GetWriter();
+            PooledWriter everyoneWriter = WriterPool.GetWriter(false);
+            PooledWriter ownerWriter = WriterPool.GetWriter(false);
 
             //Index to perform a check on.
             int observerIndex = 0;
@@ -68,7 +68,7 @@ namespace FishNet.Managing.Server
             {
 
                 int cacheIndex = 0;
-                using (PooledWriter largeWriter = WriterPool.GetWriter())
+                using (PooledWriter largeWriter = WriterPool.GetWriter(false))
                 {
                     //Reset index to start on for every connection.
                     observerIndex = 0;
@@ -249,11 +249,11 @@ namespace FishNet.Managing.Server
         /// <param name="connection"></param>
         public void RebuildObservers(NetworkConnection connection)
         {
-            PooledWriter everyoneWriter = WriterPool.GetWriter();
-            PooledWriter ownerWriter = WriterPool.GetWriter();
+            PooledWriter everyoneWriter = WriterPool.GetWriter(false);
+            PooledWriter ownerWriter = WriterPool.GetWriter(false);
 
             int observerCacheIndex = 0;
-            using (PooledWriter largeWriter = WriterPool.GetWriter())
+            using (PooledWriter largeWriter = WriterPool.GetWriter(false))
             {
                 observerCacheIndex = 0;
                 foreach (NetworkObject nob in Spawned.Values)
@@ -307,8 +307,8 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void RebuildObservers(NetworkObject networkObject, ListCache<NetworkConnection> cache)
         {
-            PooledWriter everyoneWriter = WriterPool.GetWriter();
-            PooledWriter ownerWriter = WriterPool.GetWriter();
+            PooledWriter everyoneWriter = WriterPool.GetWriter(false);
+            PooledWriter ownerWriter = WriterPool.GetWriter(false);
 
             int written = cache.Written;
             for (int i = 0; i < written; i++)

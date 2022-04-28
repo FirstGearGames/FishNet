@@ -119,6 +119,15 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Returns the full buffer size.
+        /// </summary>
+        /// <returns>Internal buffer size</returns>
+        public int GetBufferSize()
+        {
+            return _buffer.Length;
+        }
+
+        /// <summary>
         /// Returns the used portion of the buffer as an ArraySegment.
         /// </summary>
         /// <returns></returns>

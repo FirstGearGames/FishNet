@@ -61,5 +61,27 @@ namespace FishNet.Serializing
         public static NetworkConnection ReadNetworkConnection(this Reader reader) => reader.ReadNetworkConnection();
         [CodegenExclude]
         public static T Read<T>(this Reader reader) => reader.Read<T>();
+
+        public static SubStream ReadSubStream(this Reader reader)
+        {
+            var ss = new SubStream();
+
+            // Attack vector, requires checks
+            var subLength = reader.ReadInt32();
+
+            if (subLength < 0)
+                throw new Exception("Length of sub stream is negative!");
+
+            PooledSubReader subReader = SubReaderPool.GetSubReader(reader, subLength);
+
+            // advance parent reader with length of subReader
+            reader.Position += subLength;
+
+            // set reference of subReader to subStream struct
+            ss.sReader = subReader;
+
+            // !! USER SHOULD RECYCLE SUBSTREAM (SUB READER) AFTER USER IS DONE READING FROM IT !!
+            return ss;
+        }
     }
 }

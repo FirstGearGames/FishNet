@@ -114,7 +114,7 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private PooledWriter CreateLinkedRpc(RpcLinkType link, PooledWriter methodWriter, Channel channel)
         {
-            PooledWriter writer = WriterPool.GetWriter();
+            PooledWriter writer = WriterPool.GetWriter(false);
             writer.WriteUInt16(link.LinkIndex);
             ////Write length only if unreliable.
             //if (channel == Channel.Unreliable)
@@ -131,7 +131,7 @@ namespace FishNet.Object
         /// </summary>
         internal void WriteRpcLinks(PooledWriter writer)
         {
-            PooledWriter rpcLinkWriter = WriterPool.GetWriter();
+            PooledWriter rpcLinkWriter = WriterPool.GetWriter(false);
             foreach (KeyValuePair<uint, RpcLinkType> item in _rpcLinks)
             {
                 //RpcLink index.

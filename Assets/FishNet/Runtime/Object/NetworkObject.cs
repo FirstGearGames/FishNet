@@ -433,7 +433,7 @@ namespace FishNet.Object
                 if (activeNewOwner)
                     NetworkManager.ServerManager.Objects.RebuildObservers(this, newOwner);
 
-                using (PooledWriter writer = WriterPool.GetWriter())
+                using (PooledWriter writer = WriterPool.GetWriter(false))
                 {
                     writer.WritePacketId(PacketId.OwnershipChange);
                     writer.WriteNetworkObject(this);

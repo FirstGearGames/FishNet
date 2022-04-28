@@ -559,7 +559,7 @@ namespace FishNet.Managing.Timing
             _receivedPong = false;
 
             uint tick = (tickOverride == null) ? LocalTick : tickOverride.Value;
-            using (PooledWriter writer = WriterPool.GetWriter())
+            using (PooledWriter writer = WriterPool.GetWriter(false))
             {
                 writer.WriteUInt16((ushort)PacketId.PingPong);
                 writer.WriteUInt32(tick, AutoPackType.Unpacked);
@@ -575,7 +575,7 @@ namespace FishNet.Managing.Timing
             if (!conn.IsActive || !conn.Authenticated)
                 return;
 
-            using (PooledWriter writer = WriterPool.GetWriter())
+            using (PooledWriter writer = WriterPool.GetWriter(false))
             {
                 writer.WriteUInt16((ushort)PacketId.PingPong);
                 writer.WriteUInt32(clientTick, AutoPackType.Unpacked);
@@ -832,7 +832,7 @@ namespace FishNet.Managing.Timing
             if (tick - _lastUpdateTicks >= _timingInterval)
             {
                 //Now send using a packetId.
-                PooledWriter writer = WriterPool.GetWriter();
+                PooledWriter writer = WriterPool.GetWriter(false);
                 writer.WritePacketId(PacketId.TimingUpdate);
                 _networkManager.TransportManager.SendToClients((byte)Channel.Unreliable, writer.GetArraySegment());
                 writer.Dispose();

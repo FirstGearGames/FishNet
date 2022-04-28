@@ -19,7 +19,7 @@ namespace FishNet.Serializing.Helping
             writer.WritePacketId(PacketId.Broadcast);
             writer.WriteUInt16(typeof(T).FullName.GetStableHash16()); //muchlater codegen this to pass in hash. use technique similar to rpcs to limit byte/shorts.            
             //Write data to a new writer.
-            PooledWriter dataWriter = WriterPool.GetWriter();
+            PooledWriter dataWriter = WriterPool.GetWriter(false);
             dataWriter.Write<T>(message);
             //Write length of data.
             writer.WriteInt32(dataWriter.Length);

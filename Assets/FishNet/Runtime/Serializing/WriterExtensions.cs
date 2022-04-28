@@ -109,5 +109,19 @@ namespace FishNet.Serializing
         [CodegenExclude]
         public static void Write<T>(this Writer writer, T value) => writer.Write<T>(value);
 
+        public static void WriteSubStream(this Writer writer, SubStream value)
+        {
+
+            //Debug.Log("Before BuffLen:" + writer.GetBuffer().Length);
+            //Debug.Log("Before SubLen:" + value.sWriter.GetBuffer().Length);
+            // write length and data itself then recycle subWriter
+            writer.WriteArraySegmentAndSize(value.sWriter.GetArraySegment());
+
+            value.sWriter.Dispose();
+            //Debug.Log("SubPoolSize:" + SubWriterPool.PoolSize);
+            //Debug.Log("PoolSize:" + WriterPool.SmallPoolSize);
+            //Debug.Log("After BuffLen:" + writer.GetBuffer().Length);
+            //Debug.Log("After SubLen:" + value.sWriter.GetBuffer().Length);
+        }
     }
 }

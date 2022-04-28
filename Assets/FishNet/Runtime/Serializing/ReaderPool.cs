@@ -16,6 +16,21 @@ namespace FishNet.Serializing
     }
 
     /// <summary>
+    /// Reader which is reused to save on garbage collection and performance. Specialy made for substream.
+    /// </summary>
+    public sealed class PooledSubReader : Reader, IDisposable
+    {
+        internal PooledSubReader(Reader parentReader, int length) : base(parentReader, length) { }
+        public void Dispose()
+        {
+            // Dereference buffers (memory-leak protection)
+            this._buffer = null;
+            this._guidBuffer = null;
+            SubReaderPool.Recycle(this);
+        }
+    }
+
+    /// <summary>
     /// Collection of PooledReader. Stores and gets PooledReader.
     /// </summary>
     public static class ReaderPool
@@ -62,6 +77,48 @@ namespace FishNet.Serializing
         /// </summary>
         public static void Recycle(PooledReader reader)
         {
+            _pool.Push(reader);
+        }
+    }
+
+    /// <summary>
+    /// Collection of PooledSubReader used for SubStreams. Stores and gets PooledSubReader.
+    /// </summary>
+    public static class SubReaderPool
+    {
+        #region Private.
+        /// <summary>
+        /// Pool of subreaders.
+        /// </summary>
+        private static readonly Stack<PooledSubReader> _pool = new Stack<PooledSubReader>();
+        #endregion
+
+        /// <summary>
+        /// Get the next subreader in the pool or creates a new one if none are available.
+        /// </summary>
+        public static PooledSubReader GetSubReader(Reader reader, int length)
+        {
+            PooledSubReader result;
+            if (_pool.Count > 0)
+            {
+                result = _pool.Pop();
+                result.InitializeSubStream(reader, length);
+            }
+            else
+            {
+                result = new PooledSubReader(reader, length);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Puts subreader back into pool
+        /// <para>When pool is full, the extra reader is left for the GC</para>
+        /// </summary>
+        public static void Recycle(PooledSubReader reader)
+        {
+
             _pool.Push(reader);
         }
     }

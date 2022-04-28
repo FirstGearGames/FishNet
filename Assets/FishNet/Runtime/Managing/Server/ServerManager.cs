@@ -215,7 +215,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void SendDisconnectMessages(List<NetworkConnection> conns, bool iterate)
         {
-            PooledWriter writer = WriterPool.GetWriter();
+            PooledWriter writer = WriterPool.GetWriter(false);
             writer.WritePacketId(PacketId.Disconnect);
             ArraySegment<byte> segment = writer.GetArraySegment();
             //Send segment to each client, authenticated or not.
@@ -385,7 +385,7 @@ namespace FishNet.Managing.Server
         /// <param name="connectionid"></param>
         private void SendAuthenticated(NetworkConnection conn)
         {
-            using (PooledWriter writer = WriterPool.GetWriter())
+            using (PooledWriter writer = WriterPool.GetWriter(false))
             {
                 writer.WritePacketId(PacketId.Authenticated);
                 writer.WriteNetworkConnection(conn);

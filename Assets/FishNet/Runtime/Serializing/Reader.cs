@@ -77,11 +77,11 @@ namespace FishNet.Serializing
         /// <summary>
         /// Data being read.
         /// </summary>
-        private byte[] _buffer;
+        protected byte[] _buffer;
         /// <summary>
         /// Buffer to copy Guids into.
         /// </summary>
-        private byte[] _guidBuffer = new byte[16];
+        protected byte[] _guidBuffer = new byte[16];
         /// <summary>
         /// Used to encode strings.
         /// </summary>
@@ -97,6 +97,11 @@ namespace FishNet.Serializing
         public Reader(ArraySegment<byte> segment, NetworkManager networkManager)
         {
             Initialize(segment, networkManager);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Reader(Reader parentReader, int length)
+        {
+            InitializeSubStream(parentReader, length);
         }
 
         /// <summary>
@@ -140,7 +145,26 @@ namespace FishNet.Serializing
         {
             Initialize(new ArraySegment<byte>(bytes), networkManager);
         }
+        /// <summary>
+        /// Initialized subReader from existing parentReader
+        /// </summary>
+        /// <param name="parentReader">Existing initialized reader</param>
+        /// <param name="length">Length of substream</param>
+        /// <exception cref="ArgumentException">Throws if parentReader is uninitialized</exception>
+        internal void InitializeSubStream(Reader parentReader, int length)
+        {
+            if (parentReader._buffer == null)
+                throw new ArgumentException("Parent reader must be initialized!");
 
+            //Copy buffer references, those should be cached already inside CPU.
+            _buffer = parentReader._buffer;
+            _guidBuffer = parentReader._guidBuffer;
+
+            Position = parentReader.Position;
+            Offset = parentReader.Position;
+            Length = length;
+            NetworkManager = parentReader.NetworkManager;
+        }
 
         /// <summary>
         /// Writes a dictionary.

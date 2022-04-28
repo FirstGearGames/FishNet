@@ -11,7 +11,6 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Types.
@@ -34,7 +33,7 @@ namespace FishNet.Object
                 ReadPermission = readPermission;
                 Writers = new PooledWriter[TransportManager.CHANNEL_COUNT];
                 for (int i = 0; i < Writers.Length; i++)
-                    Writers[i] = WriterPool.GetWriter();
+                    Writers[i] = WriterPool.GetWriter(true);
             }
 
             /// <summary>
@@ -304,12 +303,12 @@ namespace FishNet.Object
                         //If there is data to send.
                         if (channelWriter.Length > 0)
                         {
-                            using (PooledWriter headerWriter = WriterPool.GetWriter())
+                            using (PooledWriter headerWriter = WriterPool.GetWriter(false))
                             {
                                 PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
                                 headerWriter.WritePacketId(packetId);
 
-                                PooledWriter dataWriter = WriterPool.GetWriter();
+                                PooledWriter dataWriter = WriterPool.GetWriter(false);
                                 dataWriter.WriteNetworkBehaviour(this);
                                 dataWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
                                 
@@ -362,7 +361,7 @@ namespace FishNet.Object
 
             void WriteSyncType(Dictionary<uint, SyncBase> collection)
             {
-                using (PooledWriter syncTypeWriter = WriterPool.GetWriter())
+                using (PooledWriter syncTypeWriter = WriterPool.GetWriter(false))
                 {
                     /* Since all values are being written everything is
                      * written in order so there's no reason to pass
