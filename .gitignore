@@ -7,14 +7,14 @@ DefaultPrefabObjects.asset
 DefaultPrefabObjects.asset.meta
 
 Documentation
-/Library/
-/Packages/
-/ProjectSettings/
-/Temp/
-/Builds/
-/UserSettings/
-/Obj/
-/Logs/
+Library/
+Packages/
+ProjectSettings/
+Temp/
+Builds/
+UserSettings/
+Obj/
+Logs/
 *.csproj
 *.vs/
 *.vsconfig
