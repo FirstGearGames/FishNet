@@ -40,7 +40,8 @@ namespace FishNet.Component.Transforming
             ScaleX = 32,
             ScaleY = 64,
             ScaleZ = 128,
-            Nested = 256
+            Nested = 256,
+            Unnested = 512
         }
         private enum ChangedFull
         {
@@ -48,11 +49,8 @@ namespace FishNet.Component.Transforming
             Position = 1,
             Rotation = 2,
             Scale = 4,
-            Nested = 8
-        }
-        private enum SpecialFlag : byte
-        {
-
+            Nested = 8,
+            Unnested = 16
         }
 
         private enum UpdateFlagA : byte
@@ -76,7 +74,8 @@ namespace FishNet.Component.Transforming
             Y4 = 8,
             Z2 = 16,
             Z4 = 32,
-            Nested = 64
+            Nested = 64,
+            Unnested = 128
         }
         private class GoalData
         {
@@ -378,7 +377,6 @@ namespace FishNet.Component.Transforming
         {
             base.OnStartServer();
             SetDefaultGoalData();
-
             /* Server must always subscribe.
              * Server needs to relay client auth in
              * ticks or send non-auth/non-owner to
@@ -389,22 +387,7 @@ namespace FishNet.Component.Transforming
         public override void OnSpawnServer(NetworkConnection connection)
         {
             base.OnSpawnServer(connection);
-            if (_synchronizeParent)
-            {
-                /* Can send under the following conditions.
-                 *  Client auth and not owner. No need to send parent changes to owner when client auth.
-                 *  
-                 *  Not client auth and send to owner. Everyone will get changes in this scenario.
-                 * 
-                 *  Not client auth, not send to owner, and not owner.
-                 *      This should send to everyone but owner.
-                 */
-                bool canSend = (_clientAuthoritative && connection != base.Owner) ||
-                    (!_clientAuthoritative && _sendToOwner) ||
-                    (!_clientAuthoritative && !_sendToOwner && connection != Owner);
-                if (canSend)
-                    TargetSetParent(connection, _parentBehaviour);
-            }
+            
         }
 
         public override void OnStartClient()
@@ -516,8 +499,16 @@ namespace FishNet.Component.Transforming
             {
                 transform.parent.TryGetComponent<NetworkBehaviour>(out parentBehaviour);
                 if (parentBehaviour == null)
+                {
                     LogInvalidParent();
+                }
+                else
+                {
+                    _parentTransform = transform.parent;
+                    _parentBehaviour = parentBehaviour;
+                }
             }
+
             _lastReceivedTransformData.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, parentBehaviour);
             SetInstantRates(_currentGoalData.Rates);
             _currentGoalData.SetIsDefault(true);
@@ -787,13 +778,13 @@ namespace FishNet.Component.Transforming
 
                     if (UpdateFlagBContains(flagsB, UpdateFlagB.Nested))
                     {
-
                         nextTransformData.ParentBehaviour = r.ReadNetworkBehaviour();
                         changedFull |= ChangedFull.Nested;
                     }
-                    else
+                    else if (UpdateFlagBContains(flagsB, UpdateFlagB.Unnested))
                     {
-                        nextTransformData.ParentBehaviour = prevTransformData.ParentBehaviour;
+                        nextTransformData.ParentBehaviour = null;
+                        changedFull |= ChangedFull.Unnested;
                     }
                 }
                 //No extended settings.
@@ -822,6 +813,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Moves to a GoalData. Automatically determins if to use data from server or client.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void MoveToTarget(float deltaOverride = -1f)
         {
             if (!_queueReady)
@@ -849,14 +841,7 @@ namespace FishNet.Component.Transforming
             TransformData td = _currentGoalData.Transforms;
             RateData rd = _currentGoalData.Rates;
 
-            //Set parent.
-            if (_synchronizeParent)
-            {
-                if (td.ParentBehaviour != null)
-                    transform.SetParent(td.ParentBehaviour.transform);
-                else
-                    transform.SetParent(null);
-            }
+            
 
             float multiplier = 1f;
             int queueCount = _goalDataQueue.Count;
@@ -1116,10 +1101,14 @@ namespace FishNet.Component.Transforming
             if (scale.z != lastScale.z)
                 changed |= ChangedDelta.ScaleZ;
 
+            //If parentBehaviour doesnt equal current _parentBehaviour.
             if (_parentBehaviour != parentBehaviour)
-                changed |= ChangedDelta.Nested;
-            else if (_parentBehaviour != null && changed != ChangedDelta.Unset)
-                changed |= ChangedDelta.Nested;
+            {
+                if (_parentBehaviour != null)
+                    changed |= ChangedDelta.Nested;
+                else
+                    changed |= ChangedDelta.Unnested;
+            }
 
             //If added scale or nested then also add extended.
             if (startChanged != changed)
@@ -1188,10 +1177,8 @@ namespace FishNet.Component.Transforming
                 lastTick = (nextGd.Transforms.Tick - 1);
 
             uint tickDifference = (td.Tick - lastTick);
-            //This should never happen but just to be safe.
-            if (tickDifference == 0)
-                tickDifference = 1;
             float timePassed = base.NetworkManager.TimeManager.TicksToTime(tickDifference);
+
             //Distance between properties.
             float distance;
             float positionRate = 0f;
@@ -1301,6 +1288,12 @@ namespace FishNet.Component.Transforming
         }
         #endregion       
 
+        /// <summary>
+        /// Sets extrapolation data on next.
+        /// </summary>
+        /// <param name="prev"></param>
+        /// <param name="next"></param>
+        /// <param name="channel"></param>
         private void SetExtrapolation(TransformData prev, TransformData next, Channel channel)
         {
             //Default value.
@@ -1423,7 +1416,7 @@ namespace FishNet.Component.Transforming
                 {
                     _currentGoalData = _goalDataQueue.Dequeue();
                     /* If is reliable and has changed then also
- * enqueue latest. */
+                    * enqueue latest. */
                     if (hasChanged)
                         _goalDataQueue.Enqueue(nextGd);
 
@@ -1445,32 +1438,7 @@ namespace FishNet.Component.Transforming
         [TargetRpc]
         private void TargetSetParent(NetworkConnection conn, NetworkBehaviour parent)
         {
-            /* Same checks on sending end, just making sure
-             * something hasn't changed since packet was sent. */
-            if (!_synchronizeParent)
-                return;
-
-            /* Can be received if
-             *  Client auth and not owner. 
-             * 
-             *  Server auth and send to owner, since all clients should get this.
-             *  
-             *  Server auth, dont send to owner, and not owner.
-             */
-            bool canReceive = (_clientAuthoritative && !base.IsOwner) ||
-                (!_clientAuthoritative && _sendToOwner) ||
-                (!_clientAuthoritative && !_sendToOwner && !base.IsOwner);
-
-            if (!canReceive)
-                return;
-
-            _parentBehaviour = parent;
-            _lastReceivedTransformData.ParentBehaviour = parent;
-
-            if (parent != null)
-                transform.SetParent(parent.transform);
-            else
-                transform.SetParent(null);
+            
         }
 
         /// <summary>

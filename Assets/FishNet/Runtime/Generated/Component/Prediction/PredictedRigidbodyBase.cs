@@ -150,7 +150,8 @@ namespace FishNet.Component.Prediction
             _subscribed = subscribe;
         }
 
-
+        internal abstract void SetRigidbody(Rigidbody rb);
+        internal abstract void SetRigidbody(Rigidbody2D rb2d);
 
         /// <summary>
         /// Tries to predict velocity for a Vector3.

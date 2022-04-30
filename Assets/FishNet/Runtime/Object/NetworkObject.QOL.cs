@@ -205,7 +205,7 @@ namespace FishNet.Object
                 canExecute = false;
                 if (warn)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Warning))
+                    if (NetworkManager.StaticCanLog(LoggingType.Warning))
                         Debug.LogWarning($"Cannot despawn {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
                 }
             }

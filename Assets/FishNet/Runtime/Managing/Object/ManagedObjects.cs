@@ -161,13 +161,32 @@ namespace FishNet.Managing.Object
         /// Updates NetworkBehaviours on nob.
         /// </summary>
         /// <param name="asServer"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void UpdateNetworkBehaviours(NetworkObject nob, bool asServer)
         {
             //Would have already been done on server side.
             if (!asServer && NetworkManager.IsServer)
                 return;
 
-            nob.UpdateNetworkBehaviours();
+            InitializePrefab(nob, -1);
+        }
+
+        /// <summary>
+        /// Initializes a prefab, not to be mistaken for initializing a spawned object.
+        /// </summary>
+        /// <param name="prefab"></param>
+        /// <param name="index"></param>
+        public static void InitializePrefab(NetworkObject prefab, int index)
+        {
+            if (prefab == null)
+                return;
+
+            /* Only set the Id if not -1. 
+             * A value of -1 would indicate it's a scene
+             * object. */
+            if (index != -1)
+                prefab.SetPrefabId((short)index);
+            prefab.UpdateNetworkBehaviours();
         }
 
         /// <summary>

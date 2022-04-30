@@ -26,11 +26,6 @@ namespace FishNet.Component.Prediction
         /// </summary>
         [SerializeField, HideInInspector]
         private Rigidbody2D _rigidbody2d;
-        /// <summary>
-        /// Sets Rigidbody2d to value.
-        /// </summary>
-        /// <param name="value"></param>
-        internal void SetRigidbody2D(Rigidbody2D value) => _rigidbody2d = value;
         #endregion
 
         #region Private.
@@ -204,6 +199,12 @@ namespace FishNet.Component.Prediction
             base.ResetToTransformPrevious();
         }
 
+        internal override void SetRigidbody(Rigidbody rb) { }
+        /// <summary>
+        /// Sets Rigidbody2d to value.
+        /// </summary>
+        /// <param name="value"></param>
+        internal override void SetRigidbody(Rigidbody2D value) => _rigidbody2d = value;
     }
 
 }

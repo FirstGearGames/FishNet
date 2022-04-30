@@ -63,29 +63,21 @@ namespace FishNet.Component.Prediction
 
         #region Editor Private. 
         [SerializeField, HideInInspector]
-        private float _lastPredictionRatio;
-        [SerializeField, HideInInspector]
         private Transform _lastGraphicalObject;
         [SerializeField, HideInInspector]
         private PredictionType _lastMovementType;
         [SerializeField, HideInInspector]
-        private float _lastSmoothingDuration;
-        [SerializeField, HideInInspector]
         private UnityEngine.Component _lastSelectedRigidbody;
         [SerializeField, HideInInspector]
-        private UnityEngine.Component _addedPredictedRigidbody;
+        private PredictedRigidbodyBase _addedPredictedRigidbody;
         [SerializeField, HideInInspector]
         private DesyncSmoother _addedDesyncSmoother;
         [SerializeField, HideInInspector]
         private bool _rebuildComponents;
-        #endregion
+        #endregion 
 
         private void Awake()
         {
-#if UNITY_EDITOR
-            //Using update because delayCall doesn't work properly.
-            EditorApplication.update += new EditorApplication.CallbackFunction(OnEditor_DelayCall);
-#endif
             if (Application.isPlaying)
                 InitializeOnce();
         }
@@ -94,11 +86,29 @@ namespace FishNet.Component.Prediction
         {
 #if UNITY_EDITOR
             //Using update because delayCall doesn't work properly.
-            EditorApplication.update -= new EditorApplication.CallbackFunction(OnEditor_DelayCall);
-            Cleanup();
+            SubscribeToEditorUpdate(false);
+            RemoveAddedScripts(_graphicalObject);
 #endif
         }
 
+        /// <summary>
+        /// Changes subscription to editor update.
+        /// </summary>
+        /// <param name="subscribe"></param>
+        private void SubscribeToEditorUpdate(bool subscribe)
+        {
+#if UNITY_EDITOR
+            if (subscribe)
+            {
+                EditorApplication.update -= new EditorApplication.CallbackFunction(OnEditor_Update);
+                EditorApplication.update += new EditorApplication.CallbackFunction(OnEditor_Update);
+            }
+            else
+            {
+                EditorApplication.update -= new EditorApplication.CallbackFunction(OnEditor_Update);
+            }
+#endif
+        }
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
@@ -111,61 +121,48 @@ namespace FishNet.Component.Prediction
                     Debug.LogError($"GraphicalObject is not set on {gameObject.name}. Initialization will fail.");
                 return;
             }
-            //RB component not specified.
-            if ((_predictionType == PredictionType.Rigidbody2D && _rigidbody2d == null) ||
-                (_predictionType == PredictionType.Rigidbody && _rigidbody == null))
-            {
-                if (NetworkManager.StaticCanLog(LoggingType.Error))
-                    Debug.LogError($"MovementType on {gameObject.name} uses a physics object but rigidbody or rigidbody2d is not set. Initialization will fail.");
-                return;
-            }
+
+            //Rb settings.
+            if (_predictionType == PredictionType.Rigidbody)
+                _addedPredictedRigidbody.SetRigidbody(_rigidbody);
+            else if (_predictionType == PredictionType.Rigidbody2D)
+                _addedPredictedRigidbody.SetRigidbody(_rigidbody2d);
+            _addedPredictedRigidbody?.SetPredictionRatio(_predictionRatio);
         }
 
 
 #if UNITY_EDITOR
-        private void OnEditor_DelayCall()
+        private void OnEditor_Update()
         {
             if (_rebuildComponents)
             {
                 _rebuildComponents = false;
-                Cleanup();
+                SubscribeToEditorUpdate(false);
+                RemoveAddedScripts(_lastGraphicalObject);
                 _lastMovementType = _predictionType;
                 _lastGraphicalObject = _graphicalObject;
                 AddScripts();
             }
         }
-        /// <summary>
-        /// Cleans up this object and all script it added.
-        /// </summary>
-        internal void Cleanup()
-        {
-            RemoveAddedScripts();
-        }
 
         /// <summary>
         /// Removes scripts added by this component.
         /// </summary>
-        private void RemoveAddedScripts()
+        private void RemoveAddedScripts(Transform t)
         {
             //Cannot find scripts if graphical object is null.
-            if (_graphicalObject == null)
+            if (t == null)
                 return;
 
-            //Remove them all, it's safer.
             UnityEngine.Component c;
-
-            //rb
-            c = _graphicalObject.GetComponent<PredictedRigidbody>();
-            if (c != null)
-                DestroyImmediate(c);
-            //rb2d
-            c = _graphicalObject.GetComponent<PredictedRigidbody2D>();
-            if (c != null)
-                DestroyImmediate(c);
+            //rbs
+            PredictedRigidbodyBase[] pbrs = t.GetComponents<PredictedRigidbodyBase>();
+            foreach (PredictedRigidbodyBase item in pbrs)
+                DestroyImmediate(item, true);
             //DesyncSmoother.
-            c = _graphicalObject.GetComponent<DesyncSmoother>();
+            c = t.GetComponent<DesyncSmoother>();
             if (c != null)
-                DestroyImmediate(c);
+                DestroyImmediate(c, true);
         }
 
         /// <summary>
@@ -183,17 +180,9 @@ namespace FishNet.Component.Prediction
             _addedDesyncSmoother.SetSmoothingDuration(_smoothingDuration);
 
             if (_predictionType == PredictionType.Rigidbody)
-            {
-                PredictedRigidbody pr = go.AddComponent<PredictedRigidbody>();
-                _addedPredictedRigidbody = pr;
-                pr.SetRigidbody(_rigidbody);
-            }
+                _addedPredictedRigidbody = go.AddComponent<PredictedRigidbody>();
             else if (_predictionType == PredictionType.Rigidbody2D)
-            {
-                PredictedRigidbody2D pr = go.AddComponent<PredictedRigidbody2D>();
-                _addedPredictedRigidbody = pr;
-                pr.SetRigidbody2D(_rigidbody2d);
-            }
+                _addedPredictedRigidbody = go.AddComponent<PredictedRigidbody2D>();
         }
 
         private void OnValidate()
@@ -202,46 +191,24 @@ namespace FishNet.Component.Prediction
             {
                 Debug.LogError($"The graphical object may not be the root of the transform. Your graphical objects must be beneath your prediction scripts so that they may be smoothed independently during desynchronizations.");
                 _graphicalObject = null;
-                Cleanup();
+                RemoveAddedScripts(_graphicalObject);
                 return;
             }
 
             _rebuildComponents |= (_predictionType != _lastMovementType);
             _rebuildComponents |= (_graphicalObject != _lastGraphicalObject);
 
-            //Rigidbody change.
-            if (_predictionType == PredictionType.Rigidbody && _rigidbody != _lastSelectedRigidbody)
+            if (_rebuildComponents)
             {
-                if (_addedPredictedRigidbody is PredictedRigidbody pr0)
-                    pr0.SetRigidbody(_rigidbody);
-            }
-            //Rigidbody2D change.
-            if (_predictionType == PredictionType.Rigidbody2D && _rigidbody2d != _lastSelectedRigidbody)
-            {
-                if (_addedPredictedRigidbody is PredictedRigidbody2D pr1)
-                    pr1.SetRigidbody2D(_rigidbody2d);
-            }
-
-            //Prediction ratio change.
-            if (_predictionRatio != _lastPredictionRatio)
-            {
-                _lastPredictionRatio = _predictionRatio;
-                if (_addedPredictedRigidbody != null)
+                SubscribeToEditorUpdate(true);
+                if (!gameObject.activeInHierarchy && _graphicalObject != null)
                 {
-                    PredictedRigidbodyBase prb = (PredictedRigidbodyBase)_addedPredictedRigidbody;
-                    prb.SetPredictionRatio(_predictionRatio);
+                    string scriptName = GetType().Name;
+                    Debug.LogWarning($"GameObject {gameObject.name} is disabled. Should you remove component {scriptName} while the object is disabled, supporting scripts will not clean up properly." +
+                        $" Be sure to enable this gameObject and it's root before removing {scriptName}, or manually remove added scripts from {_graphicalObject.name}.");
                 }
             }
-            //Smoothing duration change.
-            if (_smoothingDuration != _lastSmoothingDuration)
-            {
-                _lastSmoothingDuration = _smoothingDuration;
-                if (_addedDesyncSmoother != null)
-                    _addedDesyncSmoother.SetSmoothingDuration(_smoothingDuration);
-                    
-            }
         }
-
 
 #endif
     }

@@ -1,10 +1,7 @@
-﻿using FishNet;
-using FishNet.Managing;
+﻿using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Scened;
-using FishNet.Managing.Transporting;
 using FishNet.Transporting;
-using FishNet.Transporting.Multipass;
 using FishNet.Utility;
 using System.IO;
 using UnityEngine;
@@ -44,6 +41,13 @@ public class DefaultScene : MonoBehaviour
     private ReplaceOption _replaceScenes = ReplaceOption.All;
     #endregion
 
+    #region Private.
+    /// <summary>
+    /// NetworkManager for this component.
+    /// </summary>
+    private NetworkManager _networkManager;
+    #endregion
+
     private void Awake()
     {
         InitializeOnce();
@@ -52,11 +56,11 @@ public class DefaultScene : MonoBehaviour
     private void OnDestroy()
     {
 
-        if (!ApplicationState.IsQuitting())
+        if (!ApplicationState.IsQuitting() && _networkManager != null)
         {
-            InstanceFinder.ClientManager.OnClientConnectionState -= ClientManager_OnClientConnectionState;
-            InstanceFinder.ServerManager.OnServerConnectionState -= ServerManager_OnServerConnectionState;
-            InstanceFinder.SceneManager.OnLoadEnd -= SceneManager_OnLoadEnd;
+            _networkManager.ClientManager.OnClientConnectionState -= ClientManager_OnClientConnectionState;
+            _networkManager.ServerManager.OnServerConnectionState -= ServerManager_OnServerConnectionState;
+            _networkManager.SceneManager.OnLoadEnd -= SceneManager_OnLoadEnd;
         }
     }
 
@@ -65,16 +69,23 @@ public class DefaultScene : MonoBehaviour
     /// </summary>
     private void InitializeOnce()
     {
+        _networkManager = GetComponentInParent<NetworkManager>();
+        if (_networkManager == null)
+        {
+            if (NetworkManager.StaticCanLog(LoggingType.Error))
+                Debug.LogError($"NetworkManager not found on {gameObject.name} or any parent objects. DefaultScene will not work.");
+            return;
+        }
         if (_onlineScene == string.Empty || _offlineScene == string.Empty)
         {
-            if (NetworkManager.StaticCanLog(LoggingType.Warning))
+            if (_networkManager.CanLog(LoggingType.Warning))
                 Debug.LogWarning("Online or Offline scene is not specified. Default scenes will not load.");
             return;
         }
 
-        InstanceFinder.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
-        InstanceFinder.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
-        InstanceFinder.SceneManager.OnLoadEnd += SceneManager_OnLoadEnd;
+        _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
+        _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
+        _networkManager.SceneManager.OnLoadEnd += SceneManager_OnLoadEnd;
         if (_startInOffline)
             LoadOfflineScene();
     }
@@ -114,13 +125,13 @@ public class DefaultScene : MonoBehaviour
              * we just got a started callback, or two+ are started.
              * When a server has already started there's no reason to load
              * scenes again. */
-            if (!InstanceFinder.ServerManager.OneServerStarted())
+            if (!_networkManager.ServerManager.OneServerStarted())
                 return;
 
             //If here can load scene.
             SceneLoadData sld = new SceneLoadData(GetSceneName(_onlineScene));
             sld.ReplaceScenes = _replaceScenes;
-            InstanceFinder.SceneManager.LoadGlobalScenes(sld);
+            _networkManager.SceneManager.LoadGlobalScenes(sld);
         }
         //When server stops load offline scene.
         else if (obj.ConnectionState == LocalConnectionStates.Stopped)
@@ -137,7 +148,7 @@ public class DefaultScene : MonoBehaviour
         if (obj.ConnectionState == LocalConnectionStates.Stopped)
         {
             //Only load offline scene if not also server.
-            if (!InstanceFinder.IsServer)
+            if (!_networkManager.IsServer)
                 LoadOfflineScene();
         }
     }

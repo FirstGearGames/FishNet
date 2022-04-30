@@ -79,8 +79,9 @@ namespace FishNet.Object
             if (Application.isPlaying)
                 return;
 
-            NetworkObject nob = TryAddNetworkObject();
-            nob.UpdateNetworkBehaviours();
+            //NetworkObject nob = TryAddNetworkObject();
+            TryAddNetworkObject();
+            //nob.UpdateNetworkBehaviours();
 #endif
         }
 
@@ -90,10 +91,11 @@ namespace FishNet.Object
             if (Application.isPlaying)
                 return;
 
-            NetworkObject nob = TryAddNetworkObject();
-            //If componentIndex has not been set.
-            if (ComponentIndex == byte.MaxValue)
-                nob.UpdateNetworkBehaviours();
+            TryAddNetworkObject();
+            //NetworkObject nob = TryAddNetworkObject();
+            ////If componentIndex has not been set.
+            //if (ComponentIndex == byte.MaxValue)
+            //    nob.UpdateNetworkBehaviours();
 #endif
         }
 

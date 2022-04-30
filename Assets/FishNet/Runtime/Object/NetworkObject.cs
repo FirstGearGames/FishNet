@@ -76,41 +76,29 @@ namespace FishNet.Object
         internal void SetIsNetworked(bool isNetworked)
         {
             IsNetworked = isNetworked;
-            for (int i = 0; i < ChildNetworkObjects.Count; i++)
-                ChildNetworkObjects[i].SetIsNetworked(isNetworked);
         }
         /// <summary>
         /// NetworkObjects which are children of this one.
         /// </summary>
         [SerializeField, HideInInspector]
-        internal List<NetworkObject> ChildNetworkObjects = new List<NetworkObject>();
-        #endregion
-
-        private void Awake()
+        private bool _hasParentNetworkObjectAtEdit;
+        /// <summary>
+        /// Sets HasParentNetworkObjectAtEdit value.
+        /// </summary>
+        /// <param name="value"></param>
+        internal void SetHasParentNetworkObjectAtEdit(bool value)
         {
-            /* Only run check when playing so nested nobs are not
-             * destroyed on prefabs. */
-            if (ApplicationState.IsPlaying())
-            {
-                //If this has a parent check for higher up network objects.
-                Transform start = transform.root;
-                if (start != null && start != transform)
-                {
-                    NetworkObject parentNob = start.GetComponentInParent<NetworkObject>();
-                    //Disallow child network objects for now.
-                    if (parentNob != null)
-                    {
-                        if (IsNetworked && InstanceFinder.NetworkManager.CanLog(LoggingType.Common))
-                            Debug.Log($"NetworkObject removed from object {gameObject.name}, child of {start.name}. This message is informative only and may be ignored.");
-                        DestroyImmediate(this);
-                    }
-                }
-            }
+            _hasParentNetworkObjectAtEdit = value;
         }
+        #endregion
 
         private void Start()
         {
             if (!IsNetworked)
+                return;
+            /* Only the parent nob should try to deactivate.
+             * If there is a parent nob then exit method. */
+            if (_hasParentNetworkObjectAtEdit)
                 return;
 
             if (NetworkManager == null || (!NetworkManager.IsClient && !NetworkManager.IsServer))
@@ -298,6 +286,16 @@ namespace FishNet.Object
             //    for (int i = 0; i < written; i++)
             //        NetworkBehaviours[i] = nbs[i];
             //}
+
+            //Go through each nob and set if it has a parent nob.
+            NetworkObject[] nobs = GetComponentsInChildren<NetworkObject>(true);
+            foreach (NetworkObject n in nobs)
+            {
+                if (n != this)
+                    n.SetHasParentNetworkObjectAtEdit(true);
+                else
+                    n.SetHasParentNetworkObjectAtEdit(false);
+            }
 
             NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>(true);
             //Check and initialize found network behaviours.
@@ -517,7 +515,7 @@ namespace FishNet.Object
         private void Reset()
         {
             SerializeSceneTransformProperties();
-            UpdateNetworkBehaviours();
+            //UpdateNetworkBehaviours();
             PartialReset();
         }
         partial void PartialReset();
