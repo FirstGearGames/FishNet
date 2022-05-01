@@ -423,9 +423,10 @@ namespace FishNet.Serializing
              * never intentionally inflict allocations on itself. 
              * Reader ensures string count cannot exceed received
              * packet size. */
-            if (value.Length >= _stringBuffer.Length)
+            int valueMaxBytes = _encoding.GetMaxByteCount(value.Length);
+            if (valueMaxBytes >= _stringBuffer.Length)
             {
-                int nextSize = (_stringBuffer.Length * 2) + value.Length;
+                int nextSize = (_stringBuffer.Length * 2) + valueMaxBytes;
                 Array.Resize(ref _stringBuffer, nextSize);
             }
 
