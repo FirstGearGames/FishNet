@@ -455,30 +455,30 @@ namespace FishNet.Component.Observing
         /// </summary>
         private static void FinalizeChange(int match, HashSet<NetworkObject> results, List<NetworkObject> nobs, NetworkManager manager)
         {
-            ListCache<NetworkObject> cache = ListCaches.NetworkObjectCache;
-            cache.Reset();
+            ListCache<NetworkObject> cache = ListCaches.GetNetworkObjectCache();
             cache.AddValues(nobs);
             FinalizeChange(match, results, cache, manager);
+            ListCaches.StoreCache(cache);
         }
         /// <summary>
         /// Finalizes changes to observers.
         /// </summary>
         private static void FinalizeChange(int match, HashSet<NetworkObject> results, NetworkObject[] nobs, NetworkManager manager)
         {
-            ListCache<NetworkObject> cache = ListCaches.NetworkObjectCache;
-            cache.Reset();
+            ListCache<NetworkObject> cache = ListCaches.GetNetworkObjectCache();
             cache.AddValues(nobs);
             FinalizeChange(match, results, cache, manager);
+            ListCaches.StoreCache(cache);
         }
         /// <summary>
         /// Finalizes changes to observers.
         /// </summary>
         private static void FinalizeChange(int match, HashSet<NetworkObject> results, NetworkObject nob, NetworkManager manager)
         {
-            ListCache<NetworkObject> cache = ListCaches.NetworkObjectCache;
-            cache.Reset();
+            ListCache<NetworkObject> cache = ListCaches.GetNetworkObjectCache();
             cache.AddValue(nob);
             FinalizeChange(match, results, cache, manager);
+            ListCaches.StoreCache(cache);
         }
         /// <summary>
         /// Finalizes changes to observers.
@@ -515,8 +515,6 @@ namespace FishNet.Component.Observing
             * and connection share a match. */
             if (owner.IsValid)
             {
-                if (base.NetworkObject.name == "CCC")
-                    Debug.Log("0");
                 //Connection isn't in a match so condition cannot be met.
                 if (!_connectionMatch.TryGetValueIL2CPP(connection, out int match))
                     return false;

@@ -1312,8 +1312,7 @@ namespace FishNet.Managing.Scened
              * wiped from SceneConnections earlier depending on how scenes are
              * loaded or unloaded. Instead we must iterate through spawned objects. */
 
-            ListCache<NetworkObject> movingNobs = ListCaches.NetworkObjectCache;
-            movingNobs.Reset();
+            ListCache<NetworkObject> movingNobs = ListCaches.GetNetworkObjectCache();
             /* Rather than a get all networkobjects in scene
              * let's iterate the spawned objects instead. I imagine
              * in most scenarios iterating spawned would be faster.
@@ -1357,7 +1356,7 @@ namespace FishNet.Managing.Scened
                     UnitySceneManager.MoveGameObjectToScene(nob.gameObject, moveScene);
                 }
             }
-
+            ListCaches.StoreCache(movingNobs);
         }
 
         /// <summary>

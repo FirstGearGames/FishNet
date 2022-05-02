@@ -190,6 +190,15 @@ namespace FishNet.Object
                 return;
             NetworkManager.ServerManager.Spawn(go, ownerConnection);
         }
+        /// <summary>
+        /// Spawns an object over the network. Only call from the server.
+        /// </summary>
+        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
+        {
+            if (!CanSpawnOrDespawn(true))
+                return;
+            NetworkManager.ServerManager.Spawn(nob, ownerConnection);
+        }
 
         /// <summary>
         /// Returns if Spawn or Despawn can be called.
@@ -207,15 +216,6 @@ namespace FishNet.Object
                 {
                     if (NetworkManager.StaticCanLog(LoggingType.Warning))
                         Debug.LogWarning($"Cannot despawn {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
-                }
-            }
-            else if (!IsServer)
-            {
-                canExecute = false;
-                if (warn)
-                {
-                    if (NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Cannot spawn or despawn {gameObject.name}, server is not active.");
                 }
             }
             else if (Deinitializing)

@@ -93,7 +93,7 @@ MonoBehaviour:
     Rotation: {x: 0, y: 0, z: 0, w: 1}
     LocalScale: {x: 1, y: 1, z: 1}
   _isNetworked: 1
-  ChildNetworkObjects: []
+  _hasParentNetworkObjectAtEdit: 0
 --- !u!114 &8399567158492483659
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -112,10 +112,8 @@ MonoBehaviour:
   _rigidbody: {fileID: 0}
   _rigidbody2d: {fileID: 0}
   _predictionRatio: 0
-  _lastPredictionRatio: 0
   _lastGraphicalObject: {fileID: 7846666075604890595}
   _lastMovementType: 0
-  _lastSmoothingDuration: 0.125
   _lastSelectedRigidbody: {fileID: 0}
   _addedPredictedRigidbody: {fileID: 0}
   _addedDesyncSmoother: {fileID: 127344193514963329}
@@ -135,8 +133,11 @@ MonoBehaviour:
   _componentIndexCache: 1
   _addedNetworkObject: {fileID: 27039729695437543}
   _networkObjectCache: {fileID: 27039729695437543}
-  _compress: 1
   _synchronizeParent: 0
+  _packing:
+    Position: 1
+    Rotation: 1
+    Scale: 0
   _interpolation: 2
   _extrapolation: 0
   _enableTeleport: 0
@@ -170,6 +171,7 @@ GameObject:
   - component: {fileID: 3240451035359699034}
   - component: {fileID: 85305618895715439}
   - component: {fileID: 127344193514963329}
+  - component: {fileID: -5907575657931513273}
   m_Layer: 0
   m_Name: Capsule
   m_TagString: Untagged
@@ -253,4 +255,20 @@ MonoBehaviour:
   _componentIndexCache: 2
   _addedNetworkObject: {fileID: 27039729695437543}
   _networkObjectCache: {fileID: 27039729695437543}
+  _smoothingDuration: 0.125
+--- !u!114 &-5907575657931513273
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 907868826061293566}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37c39a68e17740c4ea2b1fb940e5cd53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 27039729695437543}
+  _networkObjectCache: {fileID: 0}
   _smoothingDuration: 0.125

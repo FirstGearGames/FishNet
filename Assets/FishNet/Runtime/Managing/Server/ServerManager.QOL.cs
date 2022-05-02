@@ -83,6 +83,8 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
         {
+            if (!CanSpawnOrDespawn(true))
+                return;
             if (go == null)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
@@ -102,6 +104,8 @@ namespace FishNet.Managing.Server
         /// <param name="ownerConnection">Connection to give ownership to.</param>
         public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
         {
+            if (!CanSpawnOrDespawn(true))
+                return;
             if (nob == null)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
@@ -114,11 +118,32 @@ namespace FishNet.Managing.Server
 
 
         /// <summary>
+        /// Returns if Spawn can be called.
+        /// </summary>
+        /// <param name="warn">True to warn if not able to execute spawn or despawn.</param>
+        /// <returns></returns>
+        private bool CanSpawnOrDespawn(bool warn)
+        {
+            bool canLog = (warn && NetworkManager.CanLog(LoggingType.Warning));
+            if (!Started)
+            {
+                if (canLog)
+                    Debug.Log($"The server must be active to spawn or despawn networked objects.");
+                return false;
+            }
+
+            return true;
+        }
+
+
+        /// <summary>
         /// Despawns an object over the network. Can only be called on the server.
         /// </summary>
         /// <param name="go">GameObject instance to despawn.</param>
         public void Despawn(GameObject go)
         {
+            if (!CanSpawnOrDespawn(true))
+                return;
             if (go == null)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
@@ -136,6 +161,8 @@ namespace FishNet.Managing.Server
         /// <param name="networkObject">NetworkObject instance to despawn.</param>
         public void Despawn(NetworkObject networkObject)
         {
+            if (!CanSpawnOrDespawn(true))
+                return;
             if (networkObject == null)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))

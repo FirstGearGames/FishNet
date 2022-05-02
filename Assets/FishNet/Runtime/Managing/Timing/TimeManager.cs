@@ -120,6 +120,10 @@ namespace FishNet.Managing.Timing
         [HideInInspector]
         public double TickDelta { get; private set; }
         /// <summary>
+        /// True if the TimeManager will or has ticked this frame.
+        /// </summary>
+        public bool FrameTicked { get; private set; }
+        /// <summary>
         /// How long the local server has been connected.
         /// </summary>
         public float ServerUptime { get; private set; }
@@ -302,7 +306,6 @@ namespace FishNet.Managing.Timing
         {
             if (_networkManager.IsServer)
                 ServerUptime += Time.deltaTime;
-
             if (_networkManager.IsClient)
                 ClientUptime += Time.deltaTime;
 
@@ -593,6 +596,7 @@ namespace FishNet.Managing.Timing
             double time = Time.deltaTime;
             _elapsedTickTime += time;
 
+            FrameTicked = (_elapsedTickTime >= timePerSimulation);
             bool isClient = _networkManager.IsClient;
             while (_elapsedTickTime >= timePerSimulation)
             {

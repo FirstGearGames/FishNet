@@ -151,8 +151,7 @@ namespace FishNet.Managing.Server
             /* A cache is made because the Objects
              * collection would end up modified during
              * iteration from removing ownership and despawning. */
-            ListCache<NetworkObject> cache = ListCaches.NetworkObjectCache;
-            cache.Reset();
+            ListCache<NetworkObject> cache = ListCaches.GetNetworkObjectCache();
             foreach (NetworkObject nob in connection.Objects)
                 cache.AddValue(nob);
 
@@ -160,6 +159,8 @@ namespace FishNet.Managing.Server
             List<NetworkObject> collection = cache.Collection;
             for (int i = 0; i < written; i++)
                 collection[i].Despawn();
+
+            ListCaches.StoreCache(cache);
         }
         #endregion
 
@@ -283,13 +284,13 @@ namespace FishNet.Managing.Server
         /// <param name="s"></param>
         private void SetupSceneObjects(Scene s)
         {
-            int nobCount;
-            List<NetworkObject> networkObjects = SceneFN.GetSceneNetworkObjects(s, out nobCount);
+            ListCache<NetworkObject> nobs;
+            SceneFN.GetSceneNetworkObjects(s, true, out nobs);
             bool isHost = base.NetworkManager.IsHost;
 
-            for (int i = 0; i < nobCount; i++)
+            for (int i = 0; i < nobs.Written; i++)
             {
-                NetworkObject nob = networkObjects[i];
+                NetworkObject nob = nobs.Collection[i];
                 //Only setup if a scene object and not initialzied.
                 if (nob.SceneObject && nob.Deinitializing)
                 {
@@ -310,6 +311,8 @@ namespace FishNet.Managing.Server
                     }
                 }
             }
+
+            ListCaches.StoreCache(nobs);
         }
 
         /// <summary>
@@ -322,7 +325,7 @@ namespace FishNet.Managing.Server
             {
                 int objectId = GetNextNetworkObjectId();
                 nob.InitializeOnceInternal(NetworkManager, objectId, ownerConnection, true);
-                base.AddToSpawned(nob);
+                base.AddToSpawned(nob, true);
                 nob.gameObject.SetActive(true);
                 nob.Initialize(true);
             }
@@ -382,6 +385,11 @@ namespace FishNet.Managing.Server
             SetupWithoutSynchronization(networkObject, ownerConnection);
             //Also rebuild observers for the object so it spawns for others.
             RebuildObservers(networkObject);
+
+            /* If also client then we need to make sure the object renderers have correct visibility.
+             * Set visibility based on if the observers contains the clientHost connection. */
+            if (NetworkManager.IsClient)
+                networkObject.SetHostVisibility(networkObject.Observers.Contains(NetworkManager.ClientManager.Connection));
         }
 
         /// <summary>

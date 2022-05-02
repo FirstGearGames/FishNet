@@ -7,6 +7,7 @@ using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -110,12 +111,12 @@ namespace FishNet.Managing.Client
         /// <param name="s"></param>
         private void RegisterAndDespawnSceneObjects(Scene s)
         {
-            int nobCount;
-            List<NetworkObject> networkObjects = SceneFN.GetSceneNetworkObjects(s, out nobCount);
+            ListCache<NetworkObject> nobs;
+            SceneFN.GetSceneNetworkObjects(s, true, out nobs);
 
-            for (int i = 0; i < nobCount; i++)
+            for (int i = 0; i < nobs.Written; i++)
             {
-                NetworkObject nob = networkObjects[i];
+                NetworkObject nob = nobs.Collection[i];
                 base.UpdateNetworkBehaviours(nob, false);
                 if (nob.SceneObject && nob.IsNetworked)
                 {
@@ -125,6 +126,8 @@ namespace FishNet.Managing.Client
                         nob.gameObject.SetActive(false);
                 }
             }
+
+            ListCaches.StoreCache(nobs);
         }
 
         /// <summary>

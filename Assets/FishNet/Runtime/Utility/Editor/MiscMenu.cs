@@ -2,6 +2,7 @@
 using FishNet.Editing;
 using FishNet.Object;
 using FishNet.Utility.Extension;
+using FishNet.Utility.Performance;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -23,14 +24,18 @@ namespace FishNet.Utility.Editing
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 Scene s = SceneManager.GetSceneAt(i);
-                int count;
-                List<NetworkObject> nobs = SceneFN.GetSceneNetworkObjects(s, out count);
-                for (int z = 0; z < count; z++)
+
+                ListCache<NetworkObject> nobs;
+                SceneFN.GetSceneNetworkObjects(s, true, out nobs);
+                for (int z = 0; z < nobs.Written; z++)
                 {
-                    nobs[z].TryCreateSceneID();
-                    EditorUtility.SetDirty(nobs[z]);
+                    NetworkObject nob = nobs.Collection[z];
+                    nob.TryCreateSceneID();
+                    EditorUtility.SetDirty(nob);
                 }
-                generatedCount += count;
+                generatedCount += nobs.Written;
+
+                ListCaches.StoreCache(nobs);
             }
 
             Debug.Log($"Generated sceneIds for {generatedCount} objects over {SceneManager.sceneCount} scenes. Please save your open scenes.");

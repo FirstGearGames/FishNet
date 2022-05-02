@@ -11,12 +11,6 @@ namespace FishNet.Object
     /// </summary>
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
-        #region Debug //debug
-        //[HideInInspector]
-        //public string GivenName;
-        //public void SetGivenName(string s) => GivenName = s;
-        #endregion
-
         /// <summary>
         /// True if this NetworkBehaviour is initialized for the network.
         /// </summary>

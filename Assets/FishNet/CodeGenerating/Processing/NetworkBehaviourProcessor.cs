@@ -52,7 +52,7 @@ namespace FishNet.CodeGenerating.Processing
                 CodegenSession.LogError($"Was unable to make Awake methods public virtual starting on type {firstTypeDef.FullName}.");
                 return modified;
             }
-            CallBaseAwakeMethods(firstTypeDef);
+
             do
             {
                 /* Class was already processed. Since child most is processed first
@@ -76,7 +76,7 @@ namespace FishNet.CodeGenerating.Processing
                 /* Create NetworkInitialize before-hand so the other procesors
                  * can use it. */
                 CreateNetworkInitializeMethods(copyTypeDef);
-
+                //No longer used...remove in rework.
                 uint rpcCount = 0;
                 childRpcCounts.TryGetValue(copyTypeDef, out rpcCount);
                 /* Prediction. */
@@ -106,6 +106,7 @@ namespace FishNet.CodeGenerating.Processing
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
             } while (copyTypeDef != null);
 
+
             int maxAllowSyncTypes = 256;
             if (allProcessedSyncs.Count > maxAllowSyncTypes)
             {
@@ -115,6 +116,7 @@ namespace FishNet.CodeGenerating.Processing
 
             /* If here then all inerited classes for firstTypeDef have
              * been processed. */
+            CallBaseNetworkInitializeMethods(firstTypeDef);
             CallNetworkInitializeFromAwake(firstTypeDef, true);
             CallNetworkInitializeFromAwake(firstTypeDef, false);
             CodegenSession.NetworkBehaviourSyncProcessor.CallBaseReadSyncVar(firstTypeDef);
@@ -173,63 +175,127 @@ namespace FishNet.CodeGenerating.Processing
 
         
 
+        ///// <summary>
+        ///// Gets the top-most parent away method.
+        ///// </summary>
+        ///// <param name="typeDef"></param>
+        ///// <returns></returns>
+        //private void CallBaseAwakeMethods(TypeDefinition firstTypeDef)
+        //{
+        //    TypeDefinition copyTypeDef = firstTypeDef;
+
+        //    do
+        //    {
+        //        //No more awakes to call.
+        //        if (!copyTypeDef.CanProcessBaseType())
+        //            return;
+
+        //        /* Awake will always exist because it was added previously.
+        //         * Get awake for copy and base of copy. */
+        //        MethodDefinition copyAwakeMethodDef = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+        //        MethodDefinition baseAwakeMethodDef = copyTypeDef.BaseType.CachedResolve().GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+        //        MethodReference baseAwakeMethodRef = CodegenSession.ImportReference(baseAwakeMethodDef);
+
+        //        ILProcessor processor = copyAwakeMethodDef.Body.GetILProcessor();
+
+        //        bool alreadyHasBaseCall = false;
+        //        //Check if already calls baseAwake.
+        //        foreach (var item in copyAwakeMethodDef.Body.Instructions)
+        //        {
+
+        //            //If a call or call virt. Although, callvirt should never occur.
+        //            if (item.OpCode == OpCodes.Call || item.OpCode == OpCodes.Callvirt)
+        //            {
+        //                if (item.Operand != null && item.Operand.GetType().Name == nameof(MethodDefinition))
+        //                {
+        //                    MethodDefinition md = (MethodDefinition)item.Operand;
+        //                    if (md == baseAwakeMethodDef)
+        //                    {
+        //                        alreadyHasBaseCall = true;
+        //                        break;
+        //                    }
+        //                }
+        //            }
+        //        }
+
+        //        /* //todo only call awake if client has another awake and don't trickle all the way up hierarchy.
+        //         * in the first awake call networkinitialize methods, and have each of them call up the hierarchy
+        //         * instead. this is to prevent calling awake where the user may not want to. I cant not call
+        //         * awake with the current technique either because this will lead to the networkinitialize methods
+        //         * not firing. best option is to call networkinitialize on the child most and awake once from
+        //         * child most. */
+
+        //        if (!alreadyHasBaseCall)
+        //        {
+        //            //Create instructions for base call.
+        //            List<Instruction> instructions = new List<Instruction>();
+        //            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+        //            instructions.Add(processor.Create(OpCodes.Call, baseAwakeMethodRef));
+        //            processor.InsertFirst(instructions);
+        //        }
+
+        //        copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
+        //    } while (copyTypeDef != null);
+
+        //}
+
+
+
         /// <summary>
         /// Gets the top-most parent away method.
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        private void CallBaseAwakeMethods(TypeDefinition firstTypeDef)
+        private void CallBaseNetworkInitializeMethods(TypeDefinition firstTypeDef)
         {
             TypeDefinition copyTypeDef = firstTypeDef;
 
+            string[] initializeMethodNames = new string[] { NETWORKINITIALIZE_EARLY_INTERNAL_NAME, NETWORKINITIALIZE_LATE_INTERNAL_NAME };
+
             do
             {
-                //No more awakes to call.
+                //No more initialize methods to call.
                 if (!copyTypeDef.CanProcessBaseType())
                     return;
 
-                /* Awake will always exist because it was added previously.
-                 * Get awake for copy and base of copy. */
-                MethodDefinition copyAwakeMethodDef = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
-                MethodDefinition baseAwakeMethodDef = copyTypeDef.BaseType.CachedResolve().GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
-                MethodReference baseAwakeMethodRef = CodegenSession.ImportReference(baseAwakeMethodDef);
-
-                ILProcessor processor = copyAwakeMethodDef.Body.GetILProcessor();
-
-                bool alreadyHasBaseCall = false;
-                //Check if already calls baseAwake.
-                foreach (var item in copyAwakeMethodDef.Body.Instructions)
+                foreach (string mdName in initializeMethodNames)
                 {
+                    /* Awake will always exist because it was added previously.
+                     * Get awake for copy and base of copy. */
+                    MethodDefinition copyMd = copyTypeDef.GetMethod(mdName);
+                    MethodDefinition baseMd = copyTypeDef.BaseType.CachedResolve().GetMethod(mdName);
+                    MethodReference baseMr = CodegenSession.ImportReference(baseMd);
 
-                    //If a call or call virt. Although, callvirt should never occur.
-                    if (item.OpCode == OpCodes.Call || item.OpCode == OpCodes.Callvirt)
+                    ILProcessor processor = copyMd.Body.GetILProcessor();
+
+                    bool alreadyHasBaseCall = false;
+                    //Check if already calls baseAwake.
+                    foreach (Instruction item in copyMd.Body.Instructions)
                     {
-                        if (item.Operand != null && item.Operand.GetType().Name == nameof(MethodDefinition))
+
+                        //If a call or call virt. Although, callvirt should never occur.
+                        if (item.OpCode == OpCodes.Call || item.OpCode == OpCodes.Callvirt)
                         {
-                            MethodDefinition md = (MethodDefinition)item.Operand;
-                            if (md == baseAwakeMethodDef)
+                            if (item.Operand != null && item.Operand.GetType().Name == nameof(MethodDefinition))
                             {
-                                alreadyHasBaseCall = true;
-                                break;
+                                MethodDefinition md = (MethodDefinition)item.Operand;
+                                if (md == baseMd)
+                                {
+                                    alreadyHasBaseCall = true;
+                                    break;
+                                }
                             }
                         }
                     }
-                }
 
-                /* //todo only call awake if client has another awake and don't trickle all the way up hierarchy.
-                 * in the first awake call networkinitialize methods, and have each of them call up the hierarchy
-                 * instead. this is to prevent calling awake where the user may not want to. I cant not call
-                 * awake with the current technique either because this will lead to the networkinitialize methods
-                 * not firing. best option is to call networkinitialize on the child most and awake once from
-                 * child most. */
-
-                if (!alreadyHasBaseCall)
-                {
-                    //Create instructions for base call.
-                    List<Instruction> instructions = new List<Instruction>();
-                    instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-                    instructions.Add(processor.Create(OpCodes.Call, baseAwakeMethodRef));
-                    processor.InsertFirst(instructions);
+                    if (!alreadyHasBaseCall)
+                    {
+                        //Create instructions for base call.
+                        List<Instruction> instructions = new List<Instruction>();
+                        instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+                        instructions.Add(processor.Create(OpCodes.Call, baseMr));
+                        processor.InsertFirst(instructions);
+                    }
                 }
 
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);

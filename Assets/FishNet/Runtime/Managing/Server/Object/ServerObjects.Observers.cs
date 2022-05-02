@@ -1,5 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Managing.Object;
+using FishNet.Managing.Transporting;
 using FishNet.Object;
 using FishNet.Observing;
 using FishNet.Serializing;
@@ -7,6 +8,7 @@ using FishNet.Transporting;
 using FishNet.Utility.Performance;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace FishNet.Managing.Server
 {
@@ -42,19 +44,28 @@ namespace FishNet.Managing.Server
         {
             if (!base.NetworkManager.IsServer)
                 return;
+            //No point in updating if the timemanager isn't going to tick this frame.
+            if (!base.NetworkManager.TimeManager.FrameTicked)
+                return;
             int observersCount = _timedNetworkObservers.Count;
             if (observersCount == 0)
                 return;
 
-            int targetFps = 60;
-            /* Multiply required frames based on connection count. This will
+            ServerManager serverManager = base.NetworkManager.ServerManager;
+            TransportManager transportManager = NetworkManager.TransportManager;
+            /* Try to iterate all timed observers every half a second.
+             * This value will increase as there's more observers. */
+            int completionTicks = Mathf.Max(1, (base.NetworkManager.TimeManager.TickRate * 2));
+            /* Multiply required ticks based on connection count and nob count. This will
              * reduce how quickly observers update slightly but will drastically
              * improve performance. */
-            float fpsMultiplier = 1f + (float)(base.NetworkManager.ServerManager.Clients.Count * 0.01f);
-            /* Performing one additional iteration would
-            * likely be quicker than casting two ints
-            * to a float. */
-            int iterations = (observersCount / (int)(targetFps * fpsMultiplier)) + 1;
+            float tickMultiplier = 1f + (float)(
+                (serverManager.Clients.Count * 0.005f) +
+                (serverManager.Objects.Spawned.Count * 0.0025f)
+                );
+            /* Add an additional iteration to prevent
+             * 0 iterations */
+            int iterations = (observersCount / (int)(completionTicks * tickMultiplier)) + 1;
             if (iterations > observersCount)
                 iterations = observersCount;
 
@@ -64,7 +75,7 @@ namespace FishNet.Managing.Server
 
             //Index to perform a check on.
             int observerIndex = 0;
-            foreach (NetworkConnection conn in base.NetworkManager.ServerManager.Clients.Values)
+            foreach (NetworkConnection conn in serverManager.Clients.Values)
             {
 
                 int cacheIndex = 0;
@@ -121,7 +132,7 @@ namespace FishNet.Managing.Server
 
                     if (largeWriter.Length > 0)
                     {
-                        NetworkManager.TransportManager.SendToClient(
+                        transportManager.SendToClient(
                             (byte)Channel.Reliable,
                             largeWriter.GetArraySegment(), conn);
                     }

@@ -7,6 +7,7 @@ using FishNet.Managing.Logging;
 using FishNet.Utility;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using FishNet.Utility.Performance;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -82,6 +83,7 @@ namespace FishNet.Object
         /// </summary>
         [SerializeField, HideInInspector]
         private bool _hasParentNetworkObjectAtEdit;
+
         /// <summary>
         /// Sets HasParentNetworkObjectAtEdit value.
         /// </summary>
@@ -97,9 +99,13 @@ namespace FishNet.Object
             if (!IsNetworked)
                 return;
             /* Only the parent nob should try to deactivate.
-             * If there is a parent nob then exit method. */
+             * If there is a parent nob then unset networked
+             * and exit method. */
             if (_hasParentNetworkObjectAtEdit)
+            {
+                SetIsNetworked(false);
                 return;
+            }
 
             if (NetworkManager == null || (!NetworkManager.IsClient && !NetworkManager.IsServer))
             {
@@ -216,86 +222,10 @@ namespace FishNet.Object
         /// </summary>
         internal void UpdateNetworkBehaviours()
         {
-            //NetworkBehaviours = null;
-
-            /////* Make sure there are no parent nobs, if there are
-            //// * they need to be responsible for initializing
-            //// * networkbehaviours. This will change when nested nobs are
-            //// * supported. */ //This isn't needed atm with recent changes but keeping it around anyway for now.
-            ////Transform parentTransform = transform.parent;
-            ////if (parentTransform != null && parentTransform != transform)
-            ////{
-            ////    //One or more parents have a nob.
-            ////    if (parentTransform.GetComponentInParent<NetworkObject>() != null)
-            ////        return;
-            ////}
-
-            ////If there are no child nobs then get NetworkBehaviours normally.
-            //if (ChildNetworkObjects.Count == 0)
-            //{
-            //    NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>(true);
-            //}
-            ////There are child nobs.
-            //else
-            //{
-            //    //Transforms which can be searched for networkbehaviours.
-            //    ListCache<Transform> transformCache = ListCaches.TransformCache;
-            //    transformCache.Reset();
-
-            //    transformCache.AddValue(transform);
-
-            //    for (int z = 0; z < transformCache.Written; z++)
-            //    {
-            //        Transform currentT = transformCache.Collection[z];
-            //        for (int i = 0; i < currentT.childCount; i++)
-            //        {
-            //            Transform t = currentT.GetChild(i);
-            //            bool hasNob = false;
-            //            for (int x = 0; x < ChildNetworkObjects.Count; x++)
-            //            {
-            //                if (ChildNetworkObjects[x].transform == t)
-            //                {
-            //                    hasNob = true;
-            //                    break;
-            //                }
-            //            }
-
-            //            /* If the transform being checked 
-            //             * does not have a network object then
-            //             * add it to the cache. */
-            //            if (!hasNob)
-            //                transformCache.AddValue(t);
-            //        }
-            //    }
-
-            //    int written;
-            //    //Iterate all cached transforms and get networkbehaviours.
-            //    ListCache<NetworkBehaviour> nbCache = ListCaches.NetworkBehaviourCache;
-            //    nbCache.Reset();
-            //    written = transformCache.Written;
-            //    List<Transform> ts = transformCache.Collection;
-            //    //
-            //    for (int i = 0; i < written; i++)
-            //        nbCache.AddValues(ts[i].GetNetworkBehaviours());
-
-            //    //Copy to array.
-            //    written = nbCache.Written;
-            //    List<NetworkBehaviour> nbs = nbCache.Collection;
-            //    NetworkBehaviours = new NetworkBehaviour[written];
-            //    //
-            //    for (int i = 0; i < written; i++)
-            //        NetworkBehaviours[i] = nbs[i];
-            //}
-
             //Go through each nob and set if it has a parent nob.
             NetworkObject[] nobs = GetComponentsInChildren<NetworkObject>(true);
             foreach (NetworkObject n in nobs)
-            {
-                if (n != this)
-                    n.SetHasParentNetworkObjectAtEdit(true);
-                else
-                    n.SetHasParentNetworkObjectAtEdit(false);
-            }
+                n.SetHasParentNetworkObjectAtEdit(n != this);
 
             NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>(true);
             //Check and initialize found network behaviours.
@@ -503,23 +433,23 @@ namespace FishNet.Object
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            ////Set if there are any nobs in children.
-            //NetworkObject[] nobs  = GetComponentsInChildren<NetworkObject>(true);
-            //ChildNetworkObjects.Clear();
-            ////Start at index 1 as 0 would be this nob.
-            //for (int i = 1; i < nobs.Length; i++)
-            //    ChildNetworkObjects.Add(nobs[i]);
+            SceneUpdateNetworkBehaviours();
             PartialOnValidate();
         }
         partial void PartialOnValidate();
         private void Reset()
         {
             SerializeSceneTransformProperties();
-            //UpdateNetworkBehaviours();
+            SceneUpdateNetworkBehaviours();
             PartialReset();
         }
         partial void PartialReset();
 
+        private void SceneUpdateNetworkBehaviours()
+        {
+            if (!string.IsNullOrEmpty(gameObject.scene.name))
+                UpdateNetworkBehaviours();
+        }
 
         private void OnDrawGizmosSelected()
         {
