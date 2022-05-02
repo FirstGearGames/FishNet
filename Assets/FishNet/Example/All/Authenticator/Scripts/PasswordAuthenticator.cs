@@ -27,7 +27,6 @@ namespace FishNet.Example.Authenticating
         /// <summary>
         /// Password to authenticate.
         /// </summary>
-        /// <param name="networkManager"></param>
         [Tooltip("Password to authenticate.")]
         [SerializeField]
         private string _password = "HelloWorld";
