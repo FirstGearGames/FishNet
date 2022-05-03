@@ -232,7 +232,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteSByte(sbyte value)
         {
-            EnsureBufferLength(1);            
+            EnsureBufferLength(1);
             _buffer[Position++] = (byte)value;
             Length = Math.Max(Length, Position);
         }
@@ -583,7 +583,7 @@ namespace FishNet.Serializing
                 WriterExtensions.WriteUInt32(_buffer, result, ref Position);
                 Length = Math.Max(Length, Position);
             }
-            else if (packType == AutoPackType.PackedLess) 
+            else if (packType == AutoPackType.PackedLess)
             {
                 EnsureBufferLength(8);
                 ulong result = Quaternion64Compression.Compress(value);
