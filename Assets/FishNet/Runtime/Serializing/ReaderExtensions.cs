@@ -75,8 +75,7 @@ namespace FishNet.Serializing
             PooledSubReader subReader = SubReaderPool.GetSubReader(reader, subLength);
 
             // advance parent reader with length of subReader
-            reader.Position += subLength;
-
+            reader.Skip(subLength);
             // set reference of subReader to subStream struct
             ss.sReader = subReader;
 
