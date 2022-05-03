@@ -66,7 +66,7 @@ namespace FishNet.Serializing
         {
             var ss = new SubStream();
 
-            // Attack vector, requires checks
+            // Attack vector, requires checks?
             var subLength = reader.ReadInt32();
 
             if (subLength < 0)
@@ -79,7 +79,7 @@ namespace FishNet.Serializing
             // set reference of subReader to subStream struct
             ss.sReader = subReader;
 
-            // !! USER SHOULD RECYCLE SUBSTREAM (SUB READER) AFTER USER IS DONE READING FROM IT !!
+            // User should recycle substream after it is done reading from it!
             return ss;
         }
     }

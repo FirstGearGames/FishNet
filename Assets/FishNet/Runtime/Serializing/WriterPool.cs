@@ -25,7 +25,7 @@ namespace FishNet.Serializing
         private static readonly Stack<PooledWriter> _largePool = new Stack<PooledWriter>();
         private static readonly Stack<PooledWriter> _smallPool = new Stack<PooledWriter>();
 
-        public static int SizeThreshold = 512;
+        private const int SizeThreshold = 1023;
         #endregion
 
         /// <summary>
@@ -70,6 +70,7 @@ namespace FishNet.Serializing
                     else
                     {
                         result = new PooledWriter();
+                        result.EnsureBufferLength(SizeThreshold+1);
                     }
                 }
             }
@@ -115,58 +116,5 @@ namespace FishNet.Serializing
         }
         public static int SmallPoolSize => _smallPool.Count;
 
-    }
-
-
-    /// <summary>
-    /// Writer which is reused to save on garbage collection and performance.
-    /// </summary>
-    public sealed class PooledSubWriter : Writer, IDisposable
-    {
-        public void Dispose() => SubWriterPool.Recycle(this);
-    }
-
-    /// <summary>
-    /// Collection of PooledSubWriter. Stores and gets PooledWriter.
-    /// It is separate, because substream writers can get big (user can write bigger data at will), and if main pool is used (where small sized writers are), lots of GC heavy resizing can occur. 
-    /// </summary>
-    public static class SubWriterPool
-    {
-        #region Private.
-        /// <summary>
-        /// Pool of writers.
-        /// </summary>
-        private static readonly Stack<PooledSubWriter> _pool = new Stack<PooledSubWriter>();
-        #endregion
-
-        public static int PoolSize => _pool.Count;
-
-        /// <summary>
-        /// Get the next writer in the pool.
-        /// <para>If pool is empty, creates a new Reader</para>
-        /// </summary>
-        public static PooledSubWriter GetWriter(NetworkManager networkManager)
-        {
-            PooledSubWriter result = (_pool.Count > 0) ? _pool.Pop() : new PooledSubWriter();
-            result.Reset(networkManager);
-            return result;
-        }
-        /// <summary>
-        /// Get the next writer in the pool.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledSubWriter GetSubWriter()
-        {
-            return GetWriter(null);
-        }
-
-        /// <summary>
-        /// Puts writer back into pool
-        /// <para>When pool is full, the extra writer is left for the GC</para>
-        /// </summary>
-        public static void Recycle(PooledSubWriter writer)
-        {
-            _pool.Push(writer);
-        }
     }
 }

@@ -16,14 +16,13 @@ namespace FishNet.Serializing
     }
 
     /// <summary>
-    /// Reader which is reused to save on garbage collection and performance. Specialy made for substream.
+    /// Reader which is reused to save on garbage collection and performance. Specialy made for substream - re-uses existing readers so no copying is done
     /// </summary>
     public sealed class PooledSubReader : Reader, IDisposable
     {
         internal PooledSubReader(Reader parentReader, int length) : base(parentReader, length) { }
         public void Dispose()
         {
-            // Dereference buffers (memory-leak protection)
             this._buffer = null;
             this._guidBuffer = null;
             SubReaderPool.Recycle(this);

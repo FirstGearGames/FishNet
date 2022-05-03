@@ -88,6 +88,8 @@ namespace FishNet.Serializing
         private readonly UTF8Encoding _encoding = new UTF8Encoding(false, true);
         #endregion
 
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Reader(byte[] bytes, NetworkManager networkManager)
         {
