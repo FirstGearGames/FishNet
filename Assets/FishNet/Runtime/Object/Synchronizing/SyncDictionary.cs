@@ -164,7 +164,10 @@ namespace FishNet.Object.Synchronizing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddOperation(SyncDictionaryOperation operation, TKey key, TValue value)
         {
-            if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
+            if (!base.IsRegistered)
+                return;
+
+            if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");

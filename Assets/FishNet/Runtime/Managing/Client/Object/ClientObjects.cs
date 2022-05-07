@@ -118,7 +118,7 @@ namespace FishNet.Managing.Client
             {
                 NetworkObject nob = nobs.Collection[i];
                 base.UpdateNetworkBehaviours(nob, false);
-                if (nob.SceneObject && nob.IsNetworked)
+                if (nob.IsNetworked && nob.SceneObject && nob.IsNetworked)
                 {
                     base.AddToSceneObjects(nob);
                     //Only run if not also server, as this already ran on server.
@@ -294,7 +294,7 @@ namespace FishNet.Managing.Client
                     if (!base.NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(ownerId, out owner))
                         owner = NetworkManager.EmptyConnection;
                 }
-                nob.InitializeOnceInternal(NetworkManager, objectId, owner, false);
+                nob.PreinitializeInternal(NetworkManager, objectId, owner, false, false);
             }
 
             _objectCache.AddSpawn(nob, rpcLinks, syncValues, NetworkManager);

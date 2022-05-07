@@ -33,7 +33,12 @@ namespace FishNet.Object
         /// <summary>
         /// Found renderers on the NetworkObject and it's children. This is only used as clientHost to hide non-observers objects.
         /// </summary>
+        [System.NonSerialized]
         private Renderer[] _renderers;
+        /// <summary>
+        /// True if renderers have been looked up.
+        /// </summary>
+        private bool _renderersPopulated;
         #endregion
 
         /// <summary>
@@ -45,10 +50,14 @@ namespace FishNet.Object
             /* If renderers are not set then the object
             * was never despawned. This means the renderers
             * could not possibly be hidden. */
-            if (visible && _renderers == null)
+            if (visible && !_renderersPopulated)
                 return;
-            else if (!visible && _renderers == null)
+
+            if (!visible && !_renderersPopulated)
+            { 
                 _renderers = GetComponentsInChildren<Renderer>(true);
+                _renderersPopulated = true;
+            }
 
             Renderer[] rs = _renderers;
             int count = rs.Length;

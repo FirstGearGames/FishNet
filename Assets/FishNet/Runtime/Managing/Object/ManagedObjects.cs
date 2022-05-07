@@ -93,7 +93,7 @@ namespace FishNet.Managing.Object
             }
 
             //True if should be destroyed, false if deactivated.
-            bool destroy = true;
+            bool destroy;
             /* Only modify object state if asServer,
              * or !asServer and not host. This is so clients, when acting as
              * host, don't destroy objects they lost observation of. */
@@ -144,8 +144,9 @@ namespace FishNet.Managing.Object
 
             //Deinitialize to invoke callbacks.
             nob.Deinitialize(asServer);
-            //Remove from match condition.
-            MatchCondition.RemoveFromMatchWithoutRebuild(nob, NetworkManager);
+            //Remove from match condition only if server.
+            if (asServer)
+                MatchCondition.RemoveFromMatchWithoutRebuild(nob, NetworkManager);
             //Remove from spawned collection.
             RemoveFromSpawned(nob, false);
 

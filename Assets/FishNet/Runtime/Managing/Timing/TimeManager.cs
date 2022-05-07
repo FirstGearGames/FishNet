@@ -157,9 +157,9 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal byte PingInterval => _pingInterval;
         /// <summary>
-        /// How often in seconds to update prediction timing. Lower values will result in more accurate at the cost of bandwidth.
+        /// How often in seconds to update prediction timing. Lower values will result in marginally more accurate timings at the cost of bandwidth.
         /// </summary>        
-        [Tooltip("How often in seconds to update prediction timing. Lower values will result in more accurate at the cost of bandwidth.")]
+        [Tooltip("How often in seconds to update prediction timing. Lower values will result in marginally more accurate timings at the cost of bandwidth.")]
         [Range(1, 15)]
         [SerializeField]
         private byte _timingInterval = 2;

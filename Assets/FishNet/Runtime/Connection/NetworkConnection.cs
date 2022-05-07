@@ -94,7 +94,10 @@ namespace FishNet.Connection
         #region Comparers.
         public override bool Equals(object obj)
         {
-            return this.Equals(obj as NetworkConnection);
+            if (obj is NetworkConnection nc)
+                return (nc.ClientId == this.ClientId);
+            else
+                return false;
         }
         public bool Equals(NetworkConnection nc)
         {
@@ -103,6 +106,7 @@ namespace FishNet.Connection
             //If either is -1 Id.
             if (this.ClientId == -1 || nc.ClientId == -1)
                 return false;
+            //Same object.
             if (System.Object.ReferenceEquals(this, nc))
                 return true;
 

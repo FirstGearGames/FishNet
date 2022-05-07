@@ -502,7 +502,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// <returns></returns>
         private MethodDefinition CreateServerRpcReaderMethod(TypeDefinition typeDef, bool runLocally, MethodDefinition originalMd, MethodDefinition createdMd, List<ParameterDefinition> serializedParameters, MethodDefinition logicMd, CustomAttribute rpcAttribute)
         {
-            ILProcessor createdProcessor = createdMd.Body.GetILProcessor();
+            ILProcessor processor = createdMd.Body.GetILProcessor();
 
             bool requireOwnership = rpcAttribute.GetField(REQUIREOWNERSHIP_NAME, true);
             //Create PooledReader parameter.
@@ -520,33 +520,42 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             List<Instruction> allReadInsts;
             CreateRpcReadInstructions(createdMd, readerParameterDef, serializedParameters, out readVariableDefs, out allReadInsts);
 
-            Instruction retInst = CreateServerRpcConditionsForServer(createdProcessor, requireOwnership, connectionParameterDef);
+            Instruction retInst = CreateServerRpcConditionsForServer(processor, requireOwnership, connectionParameterDef);
             if (retInst != null)
-                createdProcessor.InsertBefore(retInst, allReadInsts);
+                processor.InsertBefore(retInst, allReadInsts);
             //Read to clear pooledreader.
-            createdProcessor.Add(allReadInsts);
+            processor.Add(allReadInsts);
 
             //Block from running twice as host.
             if (runLocally)
-                createdProcessor.Add(CreateIsHostBlock(createdMd));
+            {
+                //The connection calling is always passed into the reader method as the last parameter.
+                ParameterDefinition ncPd = createdMd.Parameters[createdMd.Parameters.Count - 1];
+                Instruction afterConnectionRet = processor.Create(OpCodes.Nop);
+                processor.Emit(OpCodes.Ldarg, ncPd);
+                processor.Emit(OpCodes.Callvirt, CodegenSession.ObjectHelper.NetworkConnection_GetIsLocalClient_MethodRef);
+                processor.Emit(OpCodes.Brfalse_S, afterConnectionRet);
+                processor.Emit(OpCodes.Ret);
+                processor.Append(afterConnectionRet);
+            }
 
             //this.Logic
-            createdProcessor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldarg_0);
             //Add each read variable as an argument. 
             foreach (VariableDefinition vd in readVariableDefs)
-                createdProcessor.Emit(OpCodes.Ldloc, vd);
+                processor.Emit(OpCodes.Ldloc, vd);
 
             /* Pass in channel and connection if original
              * method supports them. */
             ParameterDefinition originalChannelParameterDef = GetChannelParameter(originalMd, RpcType.Server);
             ParameterDefinition originalConnectionParameterDef = GetNetworkConnectionParameter(originalMd);
             if (originalChannelParameterDef != null)
-                createdProcessor.Emit(OpCodes.Ldarg, channelParameterDef);
+                processor.Emit(OpCodes.Ldarg, channelParameterDef);
             if (originalConnectionParameterDef != null)
-                createdProcessor.Emit(OpCodes.Ldarg, connectionParameterDef);
+                processor.Emit(OpCodes.Ldarg, connectionParameterDef);
             //Call __Logic method.
-            createdProcessor.Emit(OpCodes.Call, logicMd);
-            createdProcessor.Emit(OpCodes.Ret);
+            processor.Emit(OpCodes.Call, logicMd);
+            processor.Emit(OpCodes.Ret);
 
             return createdMd;
         }

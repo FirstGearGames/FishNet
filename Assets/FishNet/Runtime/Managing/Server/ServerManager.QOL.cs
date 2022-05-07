@@ -102,7 +102,8 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="nob">MetworkObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
-        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
+        /// <param name="synchronizeParent">True to synchronize the parent object in the spawn message. The parent must have a NetworkObject or NetworkBehaviour component for this to work.</param>
+        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null, bool synchronizeParent = true)
         {
             if (!CanSpawnOrDespawn(true))
                 return;
@@ -113,7 +114,7 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            Objects.Spawn(nob, ownerConnection);
+            Objects.Spawn(nob, ownerConnection, synchronizeParent);
         }
 
 

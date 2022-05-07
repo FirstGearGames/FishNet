@@ -56,7 +56,7 @@ public class DefaultScene : MonoBehaviour
     private void OnDestroy()
     {
 
-        if (!ApplicationState.IsQuitting() && _networkManager != null)
+        if (!ApplicationState.IsQuitting() && _networkManager != null && _networkManager.Initialized)
         {
             _networkManager.ClientManager.OnClientConnectionState -= ClientManager_OnClientConnectionState;
             _networkManager.ServerManager.OnServerConnectionState -= ServerManager_OnServerConnectionState;
@@ -76,6 +76,9 @@ public class DefaultScene : MonoBehaviour
                 Debug.LogError($"NetworkManager not found on {gameObject.name} or any parent objects. DefaultScene will not work.");
             return;
         }
+        //A NetworkManager won't be initialized if it's being destroyed.
+        if (!_networkManager.Initialized)
+            return;
         if (_onlineScene == string.Empty || _offlineScene == string.Empty)
         {
             if (_networkManager.CanLog(LoggingType.Warning))

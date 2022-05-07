@@ -23,6 +23,10 @@ namespace FishNet.Object
         /// </summary>
         internal bool ActiveDuringEdit;
         /// <summary>
+        /// True to synchronize the parent of this object during the spawn message.
+        /// </summary>
+        internal bool SynchronizeParent;
+        /// <summary>
         /// Returns if this object was placed in the scene during edit-time.
         /// </summary>
         /// <returns></returns>
@@ -182,7 +186,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="networkManager"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InitializeOnceInternal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
+        internal void PreinitializeInternal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool synchronizeParent, bool asServer)
         {
             Deinitializing = false;
             //QOL references.
@@ -194,6 +198,7 @@ namespace FishNet.Object
             SceneManager = networkManager.SceneManager;
             RollbackManager = networkManager.RollbackManager;
 
+            SynchronizeParent = synchronizeParent;
             SetOwner(owner);
             ObjectId = objectId;
 

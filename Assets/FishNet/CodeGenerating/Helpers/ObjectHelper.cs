@@ -1,6 +1,7 @@
 ﻿using FishNet.Broadcast;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.Processing;
+using FishNet.Connection;
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Object.Delegating;
@@ -59,6 +60,7 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference NetworkBehaviour_Owner_MethodRef;
         internal MethodReference NetworkBehaviour_ReadSyncVar_MethodRef;
         internal MethodReference Dictionary_Add_UShort_SyncBase_MethodRef;
+        internal MethodReference NetworkConnection_GetIsLocalClient_MethodRef;
         //TimeManager.
         internal MethodReference NetworkBehaviour_TimeManager_MethodRef;
         #endregion
@@ -92,6 +94,14 @@ namespace FishNet.CodeGenerating.Helping
             tmpType = typeof(SyncHashSet<>);
             CodegenSession.ImportReference(tmpType);
             SyncHashSet_Name = tmpType.Name;
+
+            tmpType = typeof(NetworkConnection);
+            TypeReference networkConnectionTr = CodegenSession.ImportReference(tmpType);
+            foreach (PropertyDefinition item in networkConnectionTr.CachedResolve().Properties)
+            {
+                if (item.Name == nameof(NetworkConnection.IsLocalClient))
+                    NetworkConnection_GetIsLocalClient_MethodRef = CodegenSession.ImportReference(item.GetMethod);
+            }
 
             //Dictionary.Add(ushort, SyncBase).
             Type dictType = typeof(Dictionary<ushort, SyncBase>);

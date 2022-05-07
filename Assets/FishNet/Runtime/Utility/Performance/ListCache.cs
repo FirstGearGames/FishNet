@@ -35,8 +35,13 @@ namespace FishNet.Utility.Performance
         [Obsolete("Use GetTransformCache instead.")] //Remove on 2023/01/01
         public static ListCache<Transform> TransformCache = new ListCache<Transform>();
         /// <summary>
+        /// Cache collection for NetworkConnections.
+        /// </summary>
+        private static Stack<ListCache<NetworkConnection>> _networkConnectionCaches = new Stack<ListCache<NetworkConnection>>();
+        /// <summary>
         /// Cache for NetworkConnectios.
         /// </summary>
+        [Obsolete("Use GetNetworkConnectionCache instead.")] //Remove on 2023/01/01
         public static ListCache<NetworkConnection> NetworkConnectionCache = new ListCache<NetworkConnection>();
         /// <summary>
         /// Cache for ints.
@@ -60,6 +65,20 @@ namespace FishNet.Utility.Performance
             return result;
         }
         /// <summary>
+        /// Returns a NetworkConnection cache. Use StoreCache to return the cache.
+        /// </summary>
+        /// <returns></returns>
+        public static ListCache<NetworkConnection> GetNetworkConnectionCache()
+        {
+            ListCache<NetworkConnection> result;
+            if (_networkConnectionCaches.Count == 0)
+                result = new ListCache<NetworkConnection>();
+            else
+                result = _networkConnectionCaches.Pop();
+
+            return result;
+        }
+        /// <summary>
         /// Returns a Transform cache. Use StoreCache to return the cache.
         /// </summary>
         /// <returns></returns>
@@ -78,15 +97,6 @@ namespace FishNet.Utility.Performance
 
         #region StoreCache.
         /// <summary>
-        /// Stores a Transform cache.
-        /// </summary>
-        /// <param name="cache"></param>
-        public static void StoreCache(ListCache<Transform> cache)
-        {
-            cache.Reset();
-            _transformCaches.Push(cache);
-        }
-        /// <summary>
         /// Stores a NetworkObject cache.
         /// </summary>
         /// <param name="cache"></param>
@@ -94,6 +104,24 @@ namespace FishNet.Utility.Performance
         {
             cache.Reset();
             _networkObjectCaches.Push(cache);
+        }
+        /// <summary>
+        /// Stores a NetworkConnection cache.
+        /// </summary>
+        /// <param name="cache"></param>
+        public static void StoreCache(ListCache<NetworkConnection> cache)
+        {
+            cache.Reset();
+            _networkConnectionCaches.Push(cache);
+        }
+        /// <summary>
+        /// Stores a Transform cache.
+        /// </summary>
+        /// <param name="cache"></param>
+        public static void StoreCache(ListCache<Transform> cache)
+        {
+            cache.Reset();
+            _transformCaches.Push(cache);
         }
         #endregion
 
@@ -196,6 +224,17 @@ namespace FishNet.Utility.Performance
             foreach (T item in values)
                 AddValue(item);
         }
+
+        /// <summary>
+        /// Adds values to Collection.
+        /// </summary>
+        /// <param name="value"></param>
+        public void AddValues(IReadOnlyCollection<T> values)
+        {
+            foreach (T item in values)
+                AddValue(item);
+        }
+
 
         /// <summary>
         /// Resets cache.

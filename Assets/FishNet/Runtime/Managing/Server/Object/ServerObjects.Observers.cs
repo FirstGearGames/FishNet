@@ -61,7 +61,7 @@ namespace FishNet.Managing.Server
              * improve performance. */
             float tickMultiplier = 1f + (float)(
                 (serverManager.Clients.Count * 0.005f) +
-                (serverManager.Objects.Spawned.Count * 0.0025f)
+                (serverManager.Objects.Spawned.Count * 0.0005f)
                 );
             /* Add an additional iteration to prevent
              * 0 iterations */
@@ -202,6 +202,23 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
+        /// Rebuilds observers on all objects for all connections.
+        /// </summary>
+        public void RebuildObservers()
+        {
+            ListCache<NetworkObject> nobCache = ListCaches.GetNetworkObjectCache();
+            foreach (NetworkObject nob in Spawned.Values)
+                nobCache.AddValue(nob);
+            ListCache<NetworkConnection> connCache = ListCaches.GetNetworkConnectionCache();
+            foreach (NetworkConnection conn in base.NetworkManager.ServerManager.Clients.Values)
+                connCache.AddValue(conn);
+
+            RebuildObservers(nobCache, connCache);
+            ListCaches.StoreCache(nobCache);
+            ListCaches.StoreCache(connCache);
+        }
+
+        /// <summary>
         /// Rebuilds observers on objects.
         /// </summary>
         /// <param name="connection"></param>
@@ -216,12 +233,32 @@ namespace FishNet.Managing.Server
         /// Rebuilds observers on objects.
         /// </summary>
         /// <param name="connection"></param>
+        public void RebuildObservers(List<NetworkObject> nobs)
+        {
+            int count = nobs.Count;
+            for (int i = 0; i < count; i++)
+                RebuildObservers(nobs[i]);
+        }
+
+        /// <summary>
+        /// Rebuilds observers on objects.
+        /// </summary>
         public void RebuildObservers(ListCache<NetworkObject> nobs)
         {
             int count = nobs.Written;
             List<NetworkObject> collection = nobs.Collection;
             for (int i = 0; i < count; i++)
                 RebuildObservers(collection[i]);
+        }
+        /// <summary>
+        /// Rebuilds observers on objects.
+        /// </summary>
+        public void RebuildObservers(ListCache<NetworkObject> nobs, ListCache<NetworkConnection> conns)
+        {
+            int count = nobs.Written;
+            List<NetworkObject> collection = nobs.Collection;
+            for (int i = 0; i < count; i++)
+                RebuildObservers(collection[i], conns);
         }
         /// <summary>
         /// Rebuilds observers on all objects for a connections.
@@ -368,12 +405,12 @@ namespace FishNet.Managing.Server
         /// <param name="nob">NetworkObject to rebuild on.</param>
         internal void RebuildObservers(NetworkObject nob)
         {
-            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
-            cache.Reset();
+            ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();
             foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)
                 cache.AddValue(item);
 
             RebuildObservers(nob, cache);
+            ListCaches.StoreCache(cache);
         }
         /// <summary>
         /// Rebuilds observers for a connection on NetworkObject.
@@ -382,11 +419,11 @@ namespace FishNet.Managing.Server
         /// <param name="conn">Connection to rebuild for.</param>
         internal void RebuildObservers(NetworkObject nob, NetworkConnection conn)
         {
-            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
-            cache.Reset();
+            ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();
             cache.AddValue(conn);
 
             RebuildObservers(nob, cache);
+            ListCaches.StoreCache(cache);
         }
         /// <summary>
         /// Rebuilds observers for connections on NetworkObject.
@@ -395,10 +432,10 @@ namespace FishNet.Managing.Server
         /// <param name="connections">Connections to rebuild for.
         public void RebuildObservers(NetworkObject networkObject, NetworkConnection[] connections)
         {
-            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
-            cache.Reset();
+            ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();
             cache.AddValues(connections);
             RebuildObservers(networkObject, cache);
+            ListCaches.StoreCache(cache);
         }
 
         /// <summary>
@@ -408,10 +445,10 @@ namespace FishNet.Managing.Server
         /// <param name="connections">Connections to rebuild for.
         public void RebuildObservers(NetworkObject networkObject, List<NetworkConnection> connections)
         {
-            ListCache<NetworkConnection> cache = ListCaches.NetworkConnectionCache;
-            cache.Reset();
+            ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();
             cache.AddValues(connections);
             RebuildObservers(networkObject, cache);
+            ListCaches.StoreCache(cache);
         }
 
 

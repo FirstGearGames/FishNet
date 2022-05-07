@@ -1,4 +1,5 @@
-﻿using FishNet.Object.Synchronizing;
+﻿using FishNet.Managing.Logging;
+using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System.Collections.Generic;
@@ -113,15 +114,13 @@ namespace FishNet.Example.CustomSyncObject
         /// <param name="next"></param>
         private void AddOperation(CustomOperation operation, Structy prev, Structy next)
         {
-            /* Only check this if NetworkManager is set.
-             * It may not be set if results are being populated
-             * before initialization, such as in Awake. */
-            if (base.NetworkManager == null)
+            if (!base.IsRegistered)
                 return;
 
-            if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkManager.IsServer)
+            if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 

@@ -292,7 +292,7 @@ namespace FishNet.Managing.Server
             {
                 NetworkObject nob = nobs.Collection[i];
                 //Only setup if a scene object and not initialzied.
-                if (nob.SceneObject && nob.Deinitializing)
+                if (nob.IsNetworked && nob.SceneObject && nob.Deinitializing)
                 {
                     base.UpdateNetworkBehaviours(nob, true);
                     base.AddToSceneObjects(nob);
@@ -318,13 +318,12 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Performs setup on a NetworkObject without synchronizing the actions to clients.
         /// </summary>
-        /// <param name="nob"></param>
-        private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null)
+        private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null, bool synchronizeParent = true)
         {
             if (nob.IsNetworked)
             {
                 int objectId = GetNextNetworkObjectId();
-                nob.InitializeOnceInternal(NetworkManager, objectId, ownerConnection, true);
+                nob.PreinitializeInternal(NetworkManager, objectId, ownerConnection, synchronizeParent, true);
                 base.AddToSpawned(nob, true);
                 nob.gameObject.SetActive(true);
                 nob.Initialize(true);
@@ -337,7 +336,7 @@ namespace FishNet.Managing.Server
         /// Spawns an object over the network.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection = null)
+        internal void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection = null, bool synchronizeParent = true)
         {
             if (!NetworkManager.ServerManager.Started)
             {
@@ -369,20 +368,20 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            SpawnWithoutChecks(networkObject, ownerConnection);
+            SpawnWithoutChecks(networkObject, ownerConnection, synchronizeParent);
         }
 
         /// <summary>
         /// Spawns networkObject without any checks.
         /// </summary>
-        private void SpawnWithoutChecks(NetworkObject networkObject, NetworkConnection ownerConnection = null)
+        private void SpawnWithoutChecks(NetworkObject networkObject, NetworkConnection ownerConnection = null, bool synchronizeParent = true)
         {
             /* Setup locally without sending to clients.
             * When observers are built for the network object
             * during initialization spawn messages will
             * be sent. */
             networkObject.SetIsNetworked(true);
-            SetupWithoutSynchronization(networkObject, ownerConnection);
+            SetupWithoutSynchronization(networkObject, ownerConnection, synchronizeParent);
             //Also rebuild observers for the object so it spawns for others.
             RebuildObservers(networkObject);
 

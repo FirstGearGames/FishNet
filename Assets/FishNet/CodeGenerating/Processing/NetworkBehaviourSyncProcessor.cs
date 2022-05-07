@@ -157,7 +157,6 @@ namespace FishNet.CodeGenerating.Processing
             }
             else
             {
-
                 /* If no attribute make sure the field does not implement
                  * ISyncType. If it does then a SyncObject or SyncVar attribute
                  * should exist. */
@@ -633,9 +632,9 @@ namespace FishNet.CodeGenerating.Processing
         /// Sets methods used from SyncBase for typeDef.
         /// </summary>
         /// <returns></returns>
-        internal bool SetSyncBaseMethods(TypeDefinition typeDef, out MethodReference setSyncIndexMr, out MethodReference initializeInstanceMr)
+        internal bool SetSyncBaseMethods(TypeDefinition typeDef, out MethodReference setRegisteredMr, out MethodReference initializeInstanceMr)
         {
-            setSyncIndexMr = null;
+            setRegisteredMr = null;
             initializeInstanceMr = null;
             //Find the SyncBase class.
             TypeDefinition syncBaseTd = null;
@@ -664,7 +663,7 @@ namespace FishNet.CodeGenerating.Processing
                 initializeInstanceMr = CodegenSession.ImportReference(tmpMd);
                 //SetSyncIndex.
                 tmpMd = syncBaseTd.GetMethod(SETREGISTERED_METHOD_NAME);
-                setSyncIndexMr = CodegenSession.ImportReference(tmpMd);
+                setRegisteredMr = CodegenSession.ImportReference(tmpMd);
                 return true;
             }
 
@@ -821,9 +820,9 @@ namespace FishNet.CodeGenerating.Processing
             CodegenSession.ImportReference(originalFieldDef);
 
             //Set needed methods from syncbase.
-            MethodReference setSyncIndexMr;
+            MethodReference setRegisteredMr;
             MethodReference initializeInstanceMr;
-            if (!SetSyncBaseMethods(originalFieldDef.FieldType.CachedResolve(), out setSyncIndexMr, out initializeInstanceMr))
+            if (!SetSyncBaseMethods(originalFieldDef.FieldType.CachedResolve(), out setRegisteredMr, out initializeInstanceMr))
                 return false;
 
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
@@ -852,7 +851,7 @@ namespace FishNet.CodeGenerating.Processing
 
             insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             insts.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
-            insts.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMr));
+            insts.Add(processor.Create(OpCodes.Callvirt, setRegisteredMr));
 
             processor.InsertFirst(insts);
 

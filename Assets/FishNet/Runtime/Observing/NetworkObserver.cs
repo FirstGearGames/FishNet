@@ -188,6 +188,7 @@ namespace FishNet.Observing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ObserverStateChange RebuildObservers(NetworkConnection connection, bool timedOnly)
         {
+            timedOnly = false;
             bool currentlyAdded = (_networkObject.Observers.Contains(connection));
 
             //True if all conditions are met.
