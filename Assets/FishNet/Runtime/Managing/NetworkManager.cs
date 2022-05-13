@@ -160,12 +160,6 @@ namespace FishNet.Managing
 
         #region Serialized.
         /// <summary>
-        /// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
-        /// </summary>
-        [Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
-        [SerializeField]
-        private bool _refreshDefaultPrefabs = false;
-        /// <summary>
         /// True to have your application run while in the background.
         /// </summary>
         [Tooltip("True to have your application run while in the background.")]
