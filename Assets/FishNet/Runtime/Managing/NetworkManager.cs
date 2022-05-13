@@ -1,7 +1,4 @@
-﻿#if UNITY_EDITOR
-using FishNet.Editing;
-#endif
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Managing.Client;
 using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
@@ -17,7 +14,6 @@ using System;
 using FishNet.Managing.Observing;
 using System.Linq;
 using FishNet.Managing.Debugging;
-using FishNet.Managing.Object;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
 
@@ -212,21 +208,6 @@ namespace FishNet.Managing
 
             if (StartingRpcLinkIndex == 0)
                 StartingRpcLinkIndex = (ushort)(EnumFN.GetHighestValue<PacketId>() + 1);
-
-#if UNITY_EDITOR
-            /* If first instance then force
-             * default prefabs to repopulate.
-             * This is only done in editor because
-             * cloning tools sometimes don't synchronize
-             * scriptable object changes, which is what
-             * the default prefabs is. */
-            if (_refreshDefaultPrefabs && SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
-            {
-                DefaultPrefabObjects.CanAutomate = false;
-                dpo.PopulateDefaultPrefabs(false);
-                DefaultPrefabObjects.CanAutomate = true;
-            }
-#endif
 
             _canPersist = CanInitialize();
             if (!_canPersist)
