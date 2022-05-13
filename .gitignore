@@ -15,6 +15,7 @@ Documentation
 /UserSettings/
 /Obj/
 /Logs/
+*.sln
 *.csproj
 *.vs/
 *.vsconfig
