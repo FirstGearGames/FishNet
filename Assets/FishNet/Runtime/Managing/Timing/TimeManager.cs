@@ -592,14 +592,14 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void IncreaseTick()
         {
-            bool isClient = _networkManager.IsClient;
-            bool isServer = _networkManager.IsServer;
-            //Network isn't active, don't tick.
-            if (!isClient && !isServer)
-            {
-                _elapsedTickTime = 0f;
-                return;
-            }
+            // bool isClient = _networkManager.IsClient;
+            // bool isServer = _networkManager.IsServer;
+            // //Network isn't active, don't tick.
+            // if (!isClient && !isServer)
+            // {
+            //     _elapsedTickTime = 0f;
+            //     return;
+            // }
 
             double timePerSimulation = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
             double time = Time.deltaTime;
@@ -609,7 +609,7 @@ namespace FishNet.Managing.Timing
             while (_elapsedTickTime >= timePerSimulation)
             {
                 _elapsedTickTime -= timePerSimulation;
-
+                bool isClient = _networkManager.IsClient;
                 OnPreTick?.Invoke();
                 /* This has to be called inside the loop because
                  * OnPreTick promises data hasn't been read yet.
