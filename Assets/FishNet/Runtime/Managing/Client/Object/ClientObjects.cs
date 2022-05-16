@@ -118,7 +118,7 @@ namespace FishNet.Managing.Client
             {
                 NetworkObject nob = nobs.Collection[i];
                 base.UpdateNetworkBehaviours(nob, false);
-                if (nob.IsNetworked && nob.SceneObject && nob.IsNetworked)
+                if (nob.IsNetworked && nob.IsSceneObject && nob.IsNetworked)
                 {
                     base.AddToSceneObjects(nob);
                     //Only run if not also server, as this already ran on server.
@@ -198,7 +198,7 @@ namespace FishNet.Managing.Client
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.Reconcile, reader, channel);
-            
+
             if (nb != null)
                 nb.OnReconcileRpc(null, reader, channel);
             else
@@ -371,6 +371,22 @@ namespace FishNet.Managing.Client
         /// <param name="owner"></param>
         private NetworkObject ReadSpawnedObject(PooledReader reader, int objectId)
         {
+            //Parent.
+            SpawnParentType spt = (SpawnParentType)reader.ReadByte();
+            Transform parentTransform = null;
+            if (spt == SpawnParentType.NetworkObject)
+            {
+                NetworkObject n = reader.ReadNetworkObject();
+                if (n != null)
+                    parentTransform = n.transform;
+            }
+            else if (spt == SpawnParentType.NetworkBehaviour)
+            {
+                NetworkBehaviour n = reader.ReadNetworkBehaviour();
+                if (n != null)
+                    parentTransform = n.transform;
+            }
+
             short prefabId = reader.ReadInt16();
             Vector3 position = reader.ReadVector3();
             Quaternion rotation = reader.ReadQuaternion(base.NetworkManager.ServerManager.SpawnPacking.Rotation);
@@ -390,8 +406,9 @@ namespace FishNet.Managing.Client
                 {
                     NetworkObject prefab = NetworkManager.SpawnablePrefabs.GetObject(false, prefabId);
                     result = MonoBehaviour.Instantiate<NetworkObject>(prefab, position, rotation);
-                    result.transform.position = position;
-                    result.transform.rotation = rotation;
+                    result.transform.SetParent(parentTransform, true);
+                    //result.transform.position = position;
+                    //result.transform.rotation = rotation;
                     result.transform.localScale = localScale;
                 }
                 //If host then find server instantiated object.

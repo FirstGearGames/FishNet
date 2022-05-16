@@ -76,7 +76,7 @@ namespace FishNet.Managing.Object
         {
             Spawned.Remove(nob.ObjectId);
             //Do the same with SceneObjects.
-            if (unexpectedlyDestroyed && nob.SceneObject)
+            if (unexpectedlyDestroyed && nob.IsSceneObject)
                 RemoveFromSceneObjects(nob);
         }
 
@@ -101,7 +101,7 @@ namespace FishNet.Managing.Object
             if (asServer)
             {
                 //Scene object.
-                if (nob.SceneObject)
+                if (nob.IsSceneObject)
                 {
                     destroy = false;
                 }
@@ -126,7 +126,7 @@ namespace FishNet.Managing.Object
             else
             {
                 //Scene object.
-                if (nob.SceneObject)
+                if (nob.IsSceneObject)
                 {
                     destroy = false;
                 }
@@ -238,7 +238,7 @@ namespace FishNet.Managing.Object
             * as host* when being modified client side. */
             if (asServer || (!asServer && !NetworkManager.IsServer))
             {
-                if (nob.SceneObject)
+                if (nob.IsSceneObject)
                     nob.gameObject.SetActive(false);
                 else
                     MonoBehaviour.Destroy(nob.gameObject);

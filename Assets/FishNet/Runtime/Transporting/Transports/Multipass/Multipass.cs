@@ -648,12 +648,7 @@ namespace FishNet.Transporting.Multipass
             foreach (Transport t in Transports)
                 t.SetClientAddress(address);
         }
-        /// <summary>
-        /// Sets which address the server will bind to.
-        /// This is called on the first transport.
-        /// </summary>
-        /// <param name="address"></param>
-        public override void SetServerBindAddress(string address)
+        public override void SetServerBindAddress(string address, IPAddressType addressType)
         {
             if (base.NetworkManager.CanLog(LoggingType.Error))
                 Debug.LogError($"This method is not supported. Use SetServerBindAddress(address, transportIndex) instead.");
@@ -662,12 +657,12 @@ namespace FishNet.Transporting.Multipass
         /// This is called on the transport of index.
         /// </summary>
         /// <param name="address"></param>
-        public void SetServerBindAddress(string address, int index)
+        public void SetServerBindAddress(string address, IPAddressType addressType, int index)
         {
             if (!IndexInRange(index, true))
                 return;
 
-            _transports[index].SetServerBindAddress(address);
+            _transports[index].SetServerBindAddress(address, addressType);
         }
         /// <summary>
         /// Sets which port to use on the first transport.

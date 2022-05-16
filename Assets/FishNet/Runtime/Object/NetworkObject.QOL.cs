@@ -135,7 +135,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if the object is initialized for the network.
         /// </summary>
-        public bool IsSpawned => (!Deinitializing && ObjectId >= 0);
+        public bool IsSpawned => (!IsDeinitializing && ObjectId >= 0);
         /// <summary>
         /// The local connection of the client calling this method.
         /// </summary>
@@ -218,7 +218,7 @@ namespace FishNet.Object
                         Debug.LogWarning($"Cannot despawn {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
                 }
             }
-            else if (Deinitializing)
+            else if (IsDeinitializing)
             {
                 canExecute = false;
                 if (warn)
