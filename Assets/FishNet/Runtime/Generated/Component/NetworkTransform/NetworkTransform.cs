@@ -211,7 +211,7 @@ namespace FishNet.Component.Transforming
         [Tooltip("How many ticks to extrapolate.")]
         [Range(0, 1024)]
         [SerializeField]
-        private ushort _extrapolation;
+        private ushort _extrapolation = 2;
         /// <summary>
         /// True to enable teleport threshhold.
         /// </summary>
@@ -1542,7 +1542,6 @@ namespace FishNet.Component.Transforming
             return result;
         }
 
-#if UNITY_EDITOR
         /// <summary>
         /// Configures this NetworkTransform for CSP.
         /// </summary>
@@ -1551,7 +1550,6 @@ namespace FishNet.Component.Transforming
             _clientAuthoritative = false;
             _sendToOwner = false;
         }
-#endif
     }
 
 

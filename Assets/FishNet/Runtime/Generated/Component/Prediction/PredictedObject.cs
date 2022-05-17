@@ -131,10 +131,10 @@ namespace FishNet.Component.Prediction
             if (Application.isPlaying)
                 InitializeOnce();
             PartialRigidbodies_Awake();
-            PartialDesyncSmoother_Awake();
+            PartialDifferenceSmoother_Awake();
         }
         partial void PartialRigidbodies_Awake();
-        partial void PartialDesyncSmoother_Awake();
+        partial void PartialDifferenceSmoother_Awake();
 
         public override void OnStartNetwork()
         {
@@ -174,10 +174,10 @@ namespace FishNet.Component.Prediction
         private void Update()
         {
             PartialRigidbodies_Update();
-            PartialDesyncSmoother_Update();
+            PartialDifferenceSmoother_Update();
         }
         partial void PartialRigidbodies_Update();
-        partial void PartialDesyncSmoother_Update();
+        partial void PartialDifferenceSmoother_Update();
 
 
 
@@ -199,10 +199,10 @@ namespace FishNet.Component.Prediction
         protected virtual void TimeManager_OnPreReconcile(NetworkBehaviour obj)
         {
             PartialRigidbodies_TimeManager_OnPreReconcile(obj);
-            PartialDesyncSmoother_TimeManager_OnPreReconcile(obj);
+            PartialDifferenceSmoother_TimeManager_OnPreReconcile(obj);
         }
         partial void PartialRigidbodies_TimeManager_OnPreReconcile(NetworkBehaviour obj);
-        partial void PartialDesyncSmoother_TimeManager_OnPreReconcile(NetworkBehaviour obj);
+        partial void PartialDifferenceSmoother_TimeManager_OnPreReconcile(NetworkBehaviour obj);
 
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
@@ -220,10 +220,10 @@ namespace FishNet.Component.Prediction
         protected virtual void TimeManager_OnPostReconcile(NetworkBehaviour obj)
         {
             PartialRigidbodies_TimeManager_OnPostReconcile(obj);
-            PartialDesyncSmoother_TimeManager_OnPostReconcile(obj);
+            PartialDifferenceSmoother_TimeManager_OnPostReconcile(obj);
         }
         partial void PartialRigidbodies_TimeManager_OnPostReconcile(NetworkBehaviour obj);
-        partial void PartialDesyncSmoother_TimeManager_OnPostReconcile(NetworkBehaviour obj);
+        partial void PartialDifferenceSmoother_TimeManager_OnPostReconcile(NetworkBehaviour obj);
 
 
         private void TimeManager_OnPreTick()
@@ -282,6 +282,9 @@ namespace FishNet.Component.Prediction
         /// <returns></returns>
         private bool CanSmooth()
         {
+            //Only client needs smoothing.
+            if (!base.IsClient)
+                return false;
             if (!_smoothTicks)
                 return false;
 

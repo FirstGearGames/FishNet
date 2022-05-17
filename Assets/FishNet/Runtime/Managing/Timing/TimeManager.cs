@@ -593,13 +593,6 @@ namespace FishNet.Managing.Timing
         private void IncreaseTick()
         {
             bool isClient = _networkManager.IsClient;
-            bool isServer = _networkManager.IsServer;
-            //Network isn't active, don't tick.
-            if (!isClient && !isServer)
-            {
-                _elapsedTickTime = 0f;
-                return;
-            }
 
             double timePerSimulation = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
             double time = Time.deltaTime;

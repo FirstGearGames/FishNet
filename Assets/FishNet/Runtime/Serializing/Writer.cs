@@ -684,7 +684,7 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
-        /// Writes a GameObject. GameObject must be spawned over the network already.
+        /// Writes a GameObject. GameObject must be spawned over the network already or be a prefab with a NetworkObject attached.
         /// </summary>
         /// <param name="go"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -697,6 +697,24 @@ namespace FishNet.Serializing
             else
             {
                 NetworkObject nob = go.GetComponent<NetworkObject>();
+                WriteNetworkObject(nob);
+            }
+        }
+
+        /// <summary>
+        /// Writes a Transform. Transform must be spawned over the network already or be a prefab with a NetworkObject attached.
+        /// </summary>
+        /// <param name="t"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteTransform(Transform t)
+        {
+            if (t == null)
+            {
+                WriteNetworkObject(null);
+            }
+            else
+            {
+                NetworkObject nob = t.GetComponent<NetworkObject>();
                 WriteNetworkObject(nob);
             }
         }
