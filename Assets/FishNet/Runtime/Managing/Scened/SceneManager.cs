@@ -754,8 +754,9 @@ namespace FishNet.Managing.Scened
             {
                 foreach (NetworkObject nob in data.SceneLoadData.MovedNetworkObjects)
                 {
+                    bool canMove = CanMoveNetworkObject(nob);
                     //NetworkObject might be null if client lost observation of it.
-                    if (nob != null && !CanMoveNetworkObject(nob))
+                    if (nob != null && CanMoveNetworkObject(nob))
                         UnitySceneManager.MoveGameObjectToScene(nob.gameObject, GetMovedObjectsScene());
                 }
                 /* Note: previously connection objects which were not in
