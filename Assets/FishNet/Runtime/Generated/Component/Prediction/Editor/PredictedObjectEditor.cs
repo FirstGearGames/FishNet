@@ -11,19 +11,24 @@ namespace FishNet.Component.Prediction
     public class PredictionObjectEditor : Editor
     {
         private SerializedProperty _graphicalObject;
+        private SerializedProperty _smoothTicks;
         private SerializedProperty _smoothingDuration;
         private SerializedProperty _predictionType;
         private SerializedProperty _rigidbody;
         private SerializedProperty _rigidbody2d;
+        private SerializedProperty _networkTransform;
         private SerializedProperty _predictionRatio;
+
 
         protected virtual void OnEnable()
         {
-             _graphicalObject= serializedObject.FindProperty("_graphicalObject");
+            _graphicalObject = serializedObject.FindProperty("_graphicalObject");
+            _smoothTicks = serializedObject.FindProperty("_smoothTicks");
             _smoothingDuration = serializedObject.FindProperty("_smoothingDuration");
             _predictionType = serializedObject.FindProperty("_predictionType");
             _rigidbody = serializedObject.FindProperty("_rigidbody");
-            _rigidbody2d= serializedObject.FindProperty("_rigidbody2d");
+            _rigidbody2d = serializedObject.FindProperty("_rigidbody2d");
+            _networkTransform = serializedObject.FindProperty("_networkTransform");
             _predictionRatio = serializedObject.FindProperty("_predictionRatio");
         }
 
@@ -35,9 +40,8 @@ namespace FishNet.Component.Prediction
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((PredictedObject)target), typeof(PredictedObject), false);
             GUI.enabled = true;
 
-            EditorGUILayout.HelpBox("This component is experimental. Documentation may not yet be available.", MessageType.Warning);
-
             EditorGUILayout.PropertyField(_graphicalObject);
+            EditorGUILayout.PropertyField(_smoothTicks);
             EditorGUILayout.PropertyField(_smoothingDuration);
 
             EditorGUILayout.PropertyField(_predictionType);
@@ -53,9 +57,16 @@ namespace FishNet.Component.Prediction
                 EditorGUILayout.PropertyField(_predictionRatio);
                 EditorGUI.indentLevel--;
             }
+            else
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.HelpBox("When other is selected another component, such as NetworkTransform, must be used to synchronize.", MessageType.Info);
+                EditorGUILayout.PropertyField(_networkTransform);
+                EditorGUI.indentLevel--;
+            }
 
             EditorGUILayout.Space();
-            
+
             //EditorGUILayout.HelpBox("To remove scripts added by PredictedObject click 'Cleanup' below.", MessageType.Info);
             //if (GUILayout.Button("Cleanup"))
             //{
@@ -64,11 +75,12 @@ namespace FishNet.Component.Prediction
             //}
             //else
             //{
-                serializedObject.ApplyModifiedProperties();
+            serializedObject.ApplyModifiedProperties();
             //}
-            
+
         }
 
     }
 }
 #endif
+

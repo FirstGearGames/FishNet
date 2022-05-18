@@ -83,6 +83,8 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
         {
+            if (!CanSpawnOrDespawn(true))
+                return;
             if (go == null)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
@@ -100,8 +102,11 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="nob">MetworkObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
-        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
+        /// <param name="synchronizeParent">True to synchronize the parent object in the spawn message. The parent must have a NetworkObject or NetworkBehaviour component for this to work.</param>
+        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null, bool synchronizeParent = true)
         {
+            if (!CanSpawnOrDespawn(true))
+                return;
             if (nob == null)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
@@ -109,7 +114,26 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            Objects.Spawn(nob, ownerConnection);
+            Objects.Spawn(nob, ownerConnection, synchronizeParent);
+        }
+
+
+        /// <summary>
+        /// Returns if Spawn can be called.
+        /// </summary>
+        /// <param name="warn">True to warn if not able to execute spawn or despawn.</param>
+        /// <returns></returns>
+        private bool CanSpawnOrDespawn(bool warn)
+        {
+            bool canLog = (warn && NetworkManager.CanLog(LoggingType.Warning));
+            if (!Started)
+            {
+                if (canLog)
+                    Debug.Log($"The server must be active to spawn or despawn networked objects.");
+                return false;
+            }
+
+            return true;
         }
 
 
@@ -119,6 +143,8 @@ namespace FishNet.Managing.Server
         /// <param name="go">GameObject instance to despawn.</param>
         public void Despawn(GameObject go)
         {
+            if (!CanSpawnOrDespawn(true))
+                return;
             if (go == null)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
@@ -136,6 +162,8 @@ namespace FishNet.Managing.Server
         /// <param name="networkObject">NetworkObject instance to despawn.</param>
         public void Despawn(NetworkObject networkObject)
         {
+            if (!CanSpawnOrDespawn(true))
+                return;
             if (networkObject == null)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))

@@ -115,6 +115,9 @@ namespace FishNet.Object.Synchronizing
              * completing awake, and the user would set the value after. */
             if (!base.IsRegistered)
                 return;
+            /* Don't include warning about setting values when not server.
+             * SyncVars have an option to exclude owner when synchronizing
+             * because the client may need to change values locally only. */
 
             bool isServer = base.NetworkBehaviour.IsServer;
             bool isClient = base.NetworkBehaviour.IsClient;

@@ -34,6 +34,18 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         public AttackResponseType AttackResponseType => _attackResponseType;
         /// <summary>
+        /// IPv4 address to bind server to.
+        /// </summary>
+        [Tooltip("IPv4 Address to bind server to.")]
+        [SerializeField]
+        private string _ipv4BindAddress;
+        /// <summary>
+        /// IPv6 address to bind server to.
+        /// </summary>
+        [Tooltip("IPv6 Address to bind server to.")]
+        [SerializeField]
+        private string _ipv6BindAddress;
+        /// <summary>
         /// Port to use.
         /// </summary>
         [Tooltip("Port to use.")]
@@ -46,6 +58,7 @@ namespace FishNet.Transporting.Tugboat
         [Range(1, 9999)]
         [SerializeField]
         private int _maximumClients = 4095;
+
 
         [Header("Client")]
         /// <summary>
@@ -301,17 +314,23 @@ namespace FishNet.Transporting.Tugboat
         /// Sets which address the server will bind to.
         /// </summary>
         /// <param name="address"></param>
-        public override void SetServerBindAddress(string address)
+        public override void SetServerBindAddress(string address, IPAddressType addressType)
         {
-            
+            if (addressType == IPAddressType.IPv4)
+                _ipv4BindAddress = address;
+            else
+                _ipv6BindAddress = address;
         }
         /// <summary>
         /// Gets which address the server will bind to.
         /// </summary>
         /// <param name="address"></param>
-        public override string GetServerBindAddress()
+        public override string GetServerBindAddress(IPAddressType addressType)
         {
-            return "localhost";
+            if (addressType == IPAddressType.IPv4)
+                return _ipv4BindAddress;
+            else
+                return _ipv6BindAddress;
         }
         /// <summary>
         /// Sets which port to use.
@@ -384,7 +403,7 @@ namespace FishNet.Transporting.Tugboat
         {
             _server.Initialize(this, _unreliableMTU);
             UpdateTimeout();
-            return _server.StartConnection(_port, _maximumClients, AttackResponseType);
+            return _server.StartConnection(_port, _maximumClients, AttackResponseType, _ipv4BindAddress, _ipv6BindAddress);
         }
 
         /// <summary>

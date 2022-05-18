@@ -55,6 +55,7 @@ namespace FishNet.Serializing
         public static byte[] ReadBytesAllocated(this Reader reader, int count) => reader.ReadBytesAllocated(count);
         public static System.Guid ReadGuid(this Reader reader) => reader.ReadGuid();
         public static GameObject ReadGameObject(this Reader reader) => reader.ReadGameObject();
+        public static Transform ReadTransform(this Reader reader) => reader.ReadTransform();
         public static NetworkObject ReadNetworkObject(this Reader reader) => reader.ReadNetworkObject();
         public static NetworkBehaviour ReadNetworkBehaviour(this Reader reader) => reader.ReadNetworkBehaviour();
         public static Channel ReadChannel(this Reader reader) => reader.ReadChannel();

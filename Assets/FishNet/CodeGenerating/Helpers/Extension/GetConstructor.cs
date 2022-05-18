@@ -1,6 +1,7 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
 using MonoFN.Cecil;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
@@ -62,6 +63,23 @@ namespace FishNet.CodeGenerating.Helping
 
             return null;
         }
+
+        /// <summary>
+        /// Gets all constructors on typeDef.
+        /// </summary>
+        /// <returns></returns>
+        public static List<MethodDefinition> GetConstructors(this TypeDefinition typeDef)
+        {
+            List<MethodDefinition> lst = new List<MethodDefinition>();
+            foreach (MethodDefinition methodDef in typeDef.Methods)
+            {
+                if (methodDef.IsConstructor)
+                    lst.Add(methodDef);
+            }
+
+            return lst;
+        }
+
 
         /// <summary>
         /// Gets constructor which has arguments.

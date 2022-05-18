@@ -2,6 +2,7 @@ using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Managing.Object
@@ -109,17 +110,13 @@ namespace FishNet.Managing.Object
             _prefabs.Add(dp);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void InitializePrefabRange(int startIndex)
         {
             for (int i = startIndex; i < _prefabs.Count; i++)
             {
-                if (_prefabs[i].Server == null || _prefabs[i].Client == null)
-                    continue;
-
-                _prefabs[i].Server.SetPrefabId((short)i);
-                _prefabs[i].Server.UpdateNetworkBehaviours();
-                _prefabs[i].Client.SetPrefabId((short)i);
-                _prefabs[i].Client.UpdateNetworkBehaviours();
+                ManagedObjects.InitializePrefab(_prefabs[i].Server, i);
+                ManagedObjects.InitializePrefab(_prefabs[i].Client, i);
             }
         }
 

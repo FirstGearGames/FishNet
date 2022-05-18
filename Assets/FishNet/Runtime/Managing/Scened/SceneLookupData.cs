@@ -79,6 +79,7 @@ namespace FishNet.Managing.Scened
         /// 
         /// </summary>
         /// <param name="handle">Scene handle to generate from.</param>
+        /// <param name="name">Name to generate from if handle is 0.</param>
         public SceneLookupData(int handle, string name)
         {
             Handle = handle;

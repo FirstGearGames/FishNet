@@ -91,13 +91,21 @@ namespace FishNet.Managing.Server
                         if (targetHashCode == handlerHashCode)
                         {
                             result = del;
+                            targetHashCodes.Remove((targetHashCode, del));
                             break;
                         }
                     }
+                    //If no more in targetHashCodes then remove from handlerTarget.
+                    if (targetHashCodes.Count == 0)
+                        _handlerTargets.Remove(key);
 
                     if (result != null)
                         handlers.Remove(result);
                 }
+
+                //If no more in handlers then remove broadcastHandlers.
+                if (handlers.Count == 0)
+                    _broadcastHandlers.Remove(key);
             }
         }
 

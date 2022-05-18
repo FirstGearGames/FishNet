@@ -41,7 +41,7 @@ namespace FishNet.Managing.Client
         {
             CachedNetworkObject cnob = _cachedObjects.AddReference();
             cnob.InitializeSpawn(nob, rpcLinks, syncValues, manager);
-            _clientObjects.AddToSpawned(nob);
+            _clientObjects.AddToSpawned(nob, false);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace FishNet.Managing.Client
              * had removed them. This can occur if an object is set to be spawned,
              * thus added to spawned before iterations, then a despawn runs which
              * removes it from spawn. */
-            _clientObjects.AddToSpawned(cnob.NetworkObject);
+            _clientObjects.AddToSpawned(cnob.NetworkObject, false);
 
             List<ushort> rpcLinkIndexes = new List<ushort>();
             //Apply rpcLinks.

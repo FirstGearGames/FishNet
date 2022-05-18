@@ -4,6 +4,7 @@ using LiteNetLib;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -86,6 +87,14 @@ namespace FishNet.Transporting.Tugboat.Server
         /// </summary>
         private NetManager _server;
         /// <summary>
+        /// IPv4 address to bind server to.
+        /// </summary>
+        private string _ipv4BindAddress;
+        /// <summary>
+        /// IPv6 address to bind server to.
+        /// </summary>
+        private string _ipv6BindAddress;
+        /// <summary>
         /// Locks the NetManager to stop it.
         /// </summary>
         private readonly object _stopLock = new object();
@@ -139,8 +148,42 @@ namespace FishNet.Transporting.Tugboat.Server
 
             UpdateTimeout(_timeout);
 
-            bool startResult = _server.Start(_port);
+            //Set bind addresses.
+            IPAddress ipv4;
+            IPAddress ipv6;
+            //Set ipv4
+            if (!string.IsNullOrEmpty(_ipv4BindAddress))
+            {
+                if (!IPAddress.TryParse(_ipv4BindAddress, out ipv4))
+                    ipv4 = null;
+            }
+            else
+            {
+                IPAddress.TryParse("0.0.0.0", out ipv4);
+            }
+            //Set ipv6.
+            if (!string.IsNullOrEmpty(_ipv6BindAddress))
+            {
+                if (!IPAddress.TryParse(_ipv6BindAddress, out ipv6))
+                    ipv6 = null;
+            }
+            else
+            {
+                IPAddress.TryParse("0:0:0:0:0:0:0:0", out ipv6);
+            }
 
+            string ipv4FailText = (ipv4 == null) ? $"IPv4 address {_ipv4BindAddress} failed to parse. " : string.Empty;
+            string ipv6FailText = (ipv6 == null) ? $"IPv6 address {_ipv6BindAddress} failed to parse. " : string.Empty;
+            if (ipv4FailText != string.Empty || ipv6FailText != string.Empty)
+            {
+                if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.Log($"{ipv4FailText}{ipv6FailText}Clear the bind address field to use any bind address.");
+
+                StopConnection();
+                return;
+            }
+
+            bool startResult = _server.Start(ipv4, ipv6, _port);
             //If started succcessfully.
             if (startResult)
             {
@@ -220,7 +263,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Starts the server.
         /// </summary>
-        internal bool StartConnection(ushort port, int maximumClients, AttackResponseType attackResponseType)
+        internal bool StartConnection(ushort port, int maximumClients, AttackResponseType attackResponseType, string ipv4BindAddress, string ipv6BindAddress)
         {
             if (base.GetConnectionState() != LocalConnectionStates.Stopped)
                 return false;
@@ -231,6 +274,8 @@ namespace FishNet.Transporting.Tugboat.Server
             _port = port;
             _maximumClients = maximumClients;
             _attackResponseType = attackResponseType;
+            _ipv4BindAddress = ipv4BindAddress;
+            _ipv6BindAddress = ipv6BindAddress;
             ResetQueues();
 
             Task t = Task.Run(() => ThreadedSocket());
@@ -495,7 +540,7 @@ namespace FishNet.Transporting.Tugboat.Server
                 RemoteConnectionStates state = (connectionEvent.Connected) ? RemoteConnectionStates.Started : RemoteConnectionStates.Stopped;
                 base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(state, connectionEvent.ConnectionId, base.Transport.Index));
             }
-            
+
             //Handle packets.
             while (_incoming.Count > 0)
             {
@@ -504,7 +549,7 @@ namespace FishNet.Transporting.Tugboat.Server
                 NetPeer peer = GetNetPeer(incoming.ConnectionId, true);
                 if (peer != null)
                 {
-                    ServerReceivedDataArgs  dataArgs = new ServerReceivedDataArgs(
+                    ServerReceivedDataArgs dataArgs = new ServerReceivedDataArgs(
                         incoming.GetArraySegment(),
                         (Channel)incoming.Channel,
                         incoming.ConnectionId,

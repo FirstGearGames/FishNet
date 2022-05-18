@@ -62,6 +62,10 @@ namespace FishNet.Managing
 
         #region Public.
         /// <summary>
+        /// True if this instance of the NetworkManager is initialized.
+        /// </summary>
+        public bool Initialized { get; private set; }
+        /// <summary>
         /// 
         /// </summary>
         private static List<NetworkManager> _instances = new List<NetworkManager>();
@@ -183,26 +187,6 @@ namespace FishNet.Managing
         [Tooltip("How to persist when other NetworkManagers are introduced.")]
         [SerializeField]
         private PersistenceType _persistence = PersistenceType.DestroyNewest;
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        //[Tooltip("Whether client or server should iterate incoming data first when running as host.")]
-        //[SerializeField]
-        //private HostIterationOrder _incomingIterationOrder = HostIterationOrder.ClientFirst;
-        ///// <summary>
-        ///// Whether client or server should iterate incoming data first when running as host.
-        ///// </summary>
-        //internal HostIterationOrder IncomingIterationOrder => _incomingIterationOrder;
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        //[Tooltip("Whether client or server should iterate outgoing data first when running as host.")]
-        //[SerializeField]
-        //private HostIterationOrder _outgoingIterationOrder = HostIterationOrder.ServerFirst;
-        ///// <summary>
-        ///// Whether client or server should iterate incoming data first when running as host.
-        ///// </summary>
-        //internal HostIterationOrder OutgoingIterationOrder => _outgoingIterationOrder;
         #endregion
 
         #region Private.
@@ -267,7 +251,11 @@ namespace FishNet.Managing
             InitializeComponents();
 
             _instances.Add(this);
+            Initialized = true;            
+        }
 
+        private void Start()
+        {
             ServerManager.StartForHeadless();
         }
 

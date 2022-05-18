@@ -7,6 +7,7 @@ using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -110,14 +111,14 @@ namespace FishNet.Managing.Client
         /// <param name="s"></param>
         private void RegisterAndDespawnSceneObjects(Scene s)
         {
-            int nobCount;
-            List<NetworkObject> networkObjects = SceneFN.GetSceneNetworkObjects(s, out nobCount);
+            ListCache<NetworkObject> nobs;
+            SceneFN.GetSceneNetworkObjects(s, true, out nobs);
 
-            for (int i = 0; i < nobCount; i++)
+            for (int i = 0; i < nobs.Written; i++)
             {
-                NetworkObject nob = networkObjects[i];
+                NetworkObject nob = nobs.Collection[i];
                 base.UpdateNetworkBehaviours(nob, false);
-                if (nob.SceneObject && nob.IsNetworked)
+                if (nob.IsNetworked && nob.IsSceneObject && nob.IsNetworked)
                 {
                     base.AddToSceneObjects(nob);
                     //Only run if not also server, as this already ran on server.
@@ -125,6 +126,8 @@ namespace FishNet.Managing.Client
                         nob.gameObject.SetActive(false);
                 }
             }
+
+            ListCaches.StoreCache(nobs);
         }
 
         /// <summary>
@@ -195,7 +198,7 @@ namespace FishNet.Managing.Client
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.Reconcile, reader, channel);
-            
+
             if (nb != null)
                 nb.OnReconcileRpc(null, reader, channel);
             else
@@ -291,7 +294,7 @@ namespace FishNet.Managing.Client
                     if (!base.NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(ownerId, out owner))
                         owner = NetworkManager.EmptyConnection;
                 }
-                nob.InitializeOnceInternal(NetworkManager, objectId, owner, false);
+                nob.PreinitializeInternal(NetworkManager, objectId, owner, false, false);
             }
 
             _objectCache.AddSpawn(nob, rpcLinks, syncValues, NetworkManager);
@@ -368,6 +371,22 @@ namespace FishNet.Managing.Client
         /// <param name="owner"></param>
         private NetworkObject ReadSpawnedObject(PooledReader reader, int objectId)
         {
+            //Parent.
+            SpawnParentType spt = (SpawnParentType)reader.ReadByte();
+            Transform parentTransform = null;
+            if (spt == SpawnParentType.NetworkObject)
+            {
+                NetworkObject n = reader.ReadNetworkObject();
+                if (n != null)
+                    parentTransform = n.transform;
+            }
+            else if (spt == SpawnParentType.NetworkBehaviour)
+            {
+                NetworkBehaviour n = reader.ReadNetworkBehaviour();
+                if (n != null)
+                    parentTransform = n.transform;
+            }
+
             short prefabId = reader.ReadInt16();
             Vector3 position = reader.ReadVector3();
             Quaternion rotation = reader.ReadQuaternion(base.NetworkManager.ServerManager.SpawnPacking.Rotation);
@@ -387,8 +406,9 @@ namespace FishNet.Managing.Client
                 {
                     NetworkObject prefab = NetworkManager.SpawnablePrefabs.GetObject(false, prefabId);
                     result = MonoBehaviour.Instantiate<NetworkObject>(prefab, position, rotation);
-                    result.transform.position = position;
-                    result.transform.rotation = rotation;
+                    result.transform.SetParent(parentTransform, true);
+                    //result.transform.position = position;
+                    //result.transform.rotation = rotation;
                     result.transform.localScale = localScale;
                 }
                 //If host then find server instantiated object.

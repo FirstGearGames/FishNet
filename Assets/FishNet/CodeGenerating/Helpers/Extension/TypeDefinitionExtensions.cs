@@ -53,7 +53,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         internal static bool CanProcessBaseType(this TypeDefinition typeDef)
         {
-            return (typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName);
+            return (typeDef != null && typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName);
         }
         /// <summary>
         /// Returns if the BaseType for TypeDef exist and is not NetworkBehaviour,

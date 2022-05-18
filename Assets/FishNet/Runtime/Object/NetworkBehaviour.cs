@@ -1,5 +1,4 @@
-﻿using FishNet.Utility;
-using FishNet.Utility.Constant;
+﻿using FishNet.Utility.Constant;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -11,12 +10,6 @@ namespace FishNet.Object
     /// </summary>
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
-        #region Debug //debug
-        //[HideInInspector]
-        //public string GivenName;
-        //public void SetGivenName(string s) => GivenName = s;
-        #endregion
-
         /// <summary>
         /// True if this NetworkBehaviour is initialized for the network.
         /// </summary>
@@ -79,8 +72,9 @@ namespace FishNet.Object
             if (Application.isPlaying)
                 return;
 
-            NetworkObject nob = TryAddNetworkObject();
-            nob.UpdateNetworkBehaviours();
+            //NetworkObject nob = TryAddNetworkObject();
+            TryAddNetworkObject();
+            //nob.UpdateNetworkBehaviours();
 #endif
         }
 
@@ -90,10 +84,11 @@ namespace FishNet.Object
             if (Application.isPlaying)
                 return;
 
-            NetworkObject nob = TryAddNetworkObject();
-            //If componentIndex has not been set.
-            if (ComponentIndex == byte.MaxValue)
-                nob.UpdateNetworkBehaviours();
+            TryAddNetworkObject();
+            //NetworkObject nob = TryAddNetworkObject();
+            ////If componentIndex has not been set.
+            //if (ComponentIndex == byte.MaxValue)
+            //    nob.UpdateNetworkBehaviours();
 #endif
         }
 

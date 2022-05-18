@@ -102,6 +102,7 @@ namespace FishNet.Serializing
         public static void WriteMatrix4x4(this Writer writer, Matrix4x4 value) => writer.WriteMatrix4x4(value);
         public static void WriteGuidAllocated(this Writer writer, System.Guid value) => writer.WriteGuidAllocated(value);
         public static void WriteGameObject(this Writer writer, GameObject value) => writer.WriteGameObject(value);
+        public static void WriteTransform(this Writer writer, Transform value) => writer.WriteTransform(value);
         public static void WriteNetworkObject(this Writer writer, NetworkObject value) => writer.WriteNetworkObject(value);
         public static void WriteNetworkBehaviour(this Writer writer, NetworkBehaviour value) => writer.WriteNetworkBehaviour(value);
         public static void WriteChannel(this Writer writer, Channel value) => writer.WriteChannel(value);

@@ -30,7 +30,40 @@ namespace FishNet.Object
         /// True if NetworkObserver has been initialized.
         /// </summary>
         private bool _networkObserverInitiliazed = false;
+        /// <summary>
+        /// Found renderers on the NetworkObject and it's children. This is only used as clientHost to hide non-observers objects.
+        /// </summary>
+        [System.NonSerialized]
+        private Renderer[] _renderers;
+        /// <summary>
+        /// True if renderers have been looked up.
+        /// </summary>
+        private bool _renderersPopulated;
         #endregion
+
+        /// <summary>
+        /// Sets the renderer visibility for clientHost.
+        /// </summary>
+        /// <param name="visible"></param>
+        internal void SetHostVisibility(bool visible)
+        {
+            /* If renderers are not set then the object
+            * was never despawned. This means the renderers
+            * could not possibly be hidden. */
+            if (visible && !_renderersPopulated)
+                return;
+
+            if (!visible && !_renderersPopulated)
+            { 
+                _renderers = GetComponentsInChildren<Renderer>(true);
+                _renderersPopulated = true;
+            }
+
+            Renderer[] rs = _renderers;
+            int count = rs.Length;
+            for (int i = 0; i < count; i++)
+                rs[i].enabled = visible;
+        }
 
         /// <summary>
         /// Adds the default NetworkObserver conditions using the ObserverManager.

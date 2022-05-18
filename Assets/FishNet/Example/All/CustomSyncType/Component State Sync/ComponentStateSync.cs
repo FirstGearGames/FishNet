@@ -86,9 +86,13 @@ namespace FishNet.Example.ComponentStateSync
         /// </summary>
         private void AddOperation(T component, bool prev, bool next)
         {
-            if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkManager.IsServer)
+            if (!base.IsRegistered)
+                return;
+
+            if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 

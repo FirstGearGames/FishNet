@@ -1,4 +1,5 @@
 ﻿using FishNet.Broadcast;
+using FishNet.Broadcast.Helping;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Utility;
 using FishNet.Object.Helping;
@@ -70,7 +71,8 @@ namespace FishNet.Managing.Client
         /// <param name="handler">Method to unregister.</param>
         public void UnregisterBroadcast<T>(Action<T> handler) where T : struct, IBroadcast
         {
-            ushort key = typeof(T).FullName.GetStableHash16();
+            ushort key = BroadcastHelper.GetKey<T>();
+
             /* If key is found for T then look for
              * the appropriate handler to remove. */
             if (_broadcastHandlers.TryGetValueIL2CPP(key, out HashSet<ServerBroadcastDelegate> handlers))
@@ -85,13 +87,21 @@ namespace FishNet.Managing.Client
                         if (targetHashCode == handlerHashCode)
                         {
                             result = del;
+                            targetHashCodes.Remove((targetHashCode, del));
                             break;
                         }
                     }
+                    //If no more in targetHashCodes then remove from handlerTarget.
+                    if (targetHashCodes.Count == 0)
+                        _handlerTargets.Remove(key);
 
                     if (result != null)
                         handlers.Remove(result);
                 }
+
+                //If no more in handlers then remove broadcastHandlers.
+                if (handlers.Count == 0)
+                    _broadcastHandlers.Remove(key);
             }
         }
 

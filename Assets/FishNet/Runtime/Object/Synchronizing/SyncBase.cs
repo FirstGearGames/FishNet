@@ -3,6 +3,7 @@ using FishNet.Managing.Timing;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace FishNet.Object.Synchronizing.Internal
 {

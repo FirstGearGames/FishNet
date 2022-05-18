@@ -152,16 +152,13 @@ namespace FishNet.Object.Synchronizing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddOperation(SyncHashSetOperation operation, T item)
         {
-            /* Only check this if NetworkManager is set.
-             * It may not be set if results are being populated
-             * before initialization. */
-            if (base.NetworkManager == null)
+            if (!base.IsRegistered)
                 return;
 
-            if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkManager.IsServer)
+            if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
+                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 

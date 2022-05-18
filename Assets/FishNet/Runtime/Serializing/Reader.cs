@@ -761,6 +761,19 @@ namespace FishNet.Serializing
             return (nob == null) ? null : nob.gameObject;
         }
 
+
+        /// <summary>
+        /// Reads a Transform.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Transform ReadTransform()
+        {
+            NetworkObject nob = ReadNetworkObject();
+            return (nob == null) ? null : nob.transform;
+        }
+
+
         /// <summary>
         /// Reads a NetworkObject.
         /// </summary>

@@ -241,7 +241,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteSByte(sbyte value)
         {
-            EnsureBufferLength(1);            
+            EnsureBufferLength(1);
             _buffer[Position++] = (byte)value;
             Length = Math.Max(Length, Position);
         }
@@ -432,9 +432,10 @@ namespace FishNet.Serializing
              * never intentionally inflict allocations on itself. 
              * Reader ensures string count cannot exceed received
              * packet size. */
-            if (value.Length >= _stringBuffer.Length)
+            int valueMaxBytes = _encoding.GetMaxByteCount(value.Length);
+            if (valueMaxBytes >= _stringBuffer.Length)
             {
-                int nextSize = (_stringBuffer.Length * 2) + value.Length;
+                int nextSize = (_stringBuffer.Length * 2) + valueMaxBytes;
                 Array.Resize(ref _stringBuffer, nextSize);
             }
 
@@ -591,7 +592,7 @@ namespace FishNet.Serializing
                 WriterExtensions.WriteUInt32(_buffer, result, ref Position);
                 Length = Math.Max(Length, Position);
             }
-            else if (packType == AutoPackType.PackedLess) 
+            else if (packType == AutoPackType.PackedLess)
             {
                 EnsureBufferLength(8);
                 ulong result = Quaternion64Compression.Compress(value);
@@ -692,7 +693,7 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
-        /// Writes a GameObject. GameObject must be spawned over the network already.
+        /// Writes a GameObject. GameObject must be spawned over the network already or be a prefab with a NetworkObject attached.
         /// </summary>
         /// <param name="go"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -705,6 +706,24 @@ namespace FishNet.Serializing
             else
             {
                 NetworkObject nob = go.GetComponent<NetworkObject>();
+                WriteNetworkObject(nob);
+            }
+        }
+
+        /// <summary>
+        /// Writes a Transform. Transform must be spawned over the network already or be a prefab with a NetworkObject attached.
+        /// </summary>
+        /// <param name="t"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteTransform(Transform t)
+        {
+            if (t == null)
+            {
+                WriteNetworkObject(null);
+            }
+            else
+            {
+                NetworkObject nob = t.GetComponent<NetworkObject>();
                 WriteNetworkObject(nob);
             }
         }

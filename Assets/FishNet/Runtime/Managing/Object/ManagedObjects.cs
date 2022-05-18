@@ -44,7 +44,7 @@ namespace FishNet.Managing.Object
         internal void SubscribeToSceneLoaded(bool subscribe)
         {
             if (subscribe)
-            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
+                SceneManager.sceneLoaded += SceneManager_sceneLoaded;
             else
                 SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
         }
@@ -76,7 +76,7 @@ namespace FishNet.Managing.Object
         {
             Spawned.Remove(nob.ObjectId);
             //Do the same with SceneObjects.
-            if (unexpectedlyDestroyed && nob.SceneObject)
+            if (unexpectedlyDestroyed && nob.IsSceneObject)
                 RemoveFromSceneObjects(nob);
         }
 
@@ -93,7 +93,7 @@ namespace FishNet.Managing.Object
             }
 
             //True if should be destroyed, false if deactivated.
-            bool destroy = true;
+            bool destroy;
             /* Only modify object state if asServer,
              * or !asServer and not host. This is so clients, when acting as
              * host, don't destroy objects they lost observation of. */
@@ -101,7 +101,7 @@ namespace FishNet.Managing.Object
             if (asServer)
             {
                 //Scene object.
-                if (nob.SceneObject)
+                if (nob.IsSceneObject)
                 {
                     destroy = false;
                 }
@@ -126,7 +126,7 @@ namespace FishNet.Managing.Object
             else
             {
                 //Scene object.
-                if (nob.SceneObject)
+                if (nob.IsSceneObject)
                 {
                     destroy = false;
                 }
@@ -144,30 +144,70 @@ namespace FishNet.Managing.Object
 
             //Deinitialize to invoke callbacks.
             nob.Deinitialize(asServer);
-            //Remove from match condition.
-            MatchCondition.RemoveFromMatchWithoutRebuild(nob, NetworkManager);
+            //Remove from match condition only if server.
+            if (asServer)
+                MatchCondition.RemoveFromMatchWithoutRebuild(nob, NetworkManager);
             //Remove from spawned collection.
             RemoveFromSpawned(nob, false);
 
             if (destroy)
+            {
                 MonoBehaviour.Destroy(nob.gameObject);
+            }
             else
-                nob.gameObject.SetActive(false);
-
+            {
+                /* If running as client and is also server
+                 * then see if server still has object spawned.
+                 * If not, the object can be disabled, otherwise
+                 * hide the renderers. */
+                if (!asServer && NetworkManager.IsServer)
+                {
+                    //Still spawned.
+                    if (NetworkManager.ServerManager.Objects.Spawned.ContainsKey(nob.ObjectId))
+                        nob.SetHostVisibility(false);
+                    //Not spawned.
+                    else
+                        nob.gameObject.SetActive(false);
+                }
+                //AsServer or not IsServer, can deactivate
+                else
+                {
+                    nob.gameObject.SetActive(false);
+                }
+            }
 
         }
+
 
         /// <summary>
         /// Updates NetworkBehaviours on nob.
         /// </summary>
         /// <param name="asServer"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void UpdateNetworkBehaviours(NetworkObject nob, bool asServer)
         {
             //Would have already been done on server side.
             if (!asServer && NetworkManager.IsServer)
                 return;
 
-            nob.UpdateNetworkBehaviours();
+            InitializePrefab(nob, -1);
+        }
+
+        /// <summary>
+        /// Initializes a prefab, not to be mistaken for initializing a spawned object.
+        /// </summary>
+        /// <param name="prefab"></param>
+        /// <param name="index"></param>
+        public static void InitializePrefab(NetworkObject prefab, int index)
+        {
+            if (prefab == null)
+                return;
+            /* Only set the Id if not -1. 
+             * A value of -1 would indicate it's a scene
+             * object. */
+            if (index != -1)
+                prefab.SetPrefabId((short)index);
+            prefab.UpdateNetworkBehaviours();
         }
 
         /// <summary>
@@ -198,7 +238,7 @@ namespace FishNet.Managing.Object
             * as host* when being modified client side. */
             if (asServer || (!asServer && !NetworkManager.IsServer))
             {
-                if (nob.SceneObject)
+                if (nob.IsSceneObject)
                     nob.gameObject.SetActive(false);
                 else
                     MonoBehaviour.Destroy(nob.gameObject);
@@ -209,9 +249,13 @@ namespace FishNet.Managing.Object
         /// Adds a NetworkObject to Spawned.
         /// </summary>
         /// <param name="nob"></param>
-        internal void AddToSpawned(NetworkObject nob)
+        internal void AddToSpawned(NetworkObject nob, bool asServer)
         {
             Spawned[nob.ObjectId] = nob;
+
+            //If being added as client and is also server.
+            if (!asServer && NetworkManager.IsServer)
+                nob.SetHostVisibility(true);
         }
 
         /// <summary>

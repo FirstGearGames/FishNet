@@ -120,6 +120,10 @@ namespace FishNet.Managing.Timing
         [HideInInspector]
         public double TickDelta { get; private set; }
         /// <summary>
+        /// True if the TimeManager will or has ticked this frame.
+        /// </summary>
+        public bool FrameTicked { get; private set; }
+        /// <summary>
         /// How long the local server has been connected.
         /// </summary>
         public float ServerUptime { get; private set; }
@@ -153,9 +157,9 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal byte PingInterval => _pingInterval;
         /// <summary>
-        /// How often in seconds to update prediction timing. Lower values will result in more accurate at the cost of bandwidth.
+        /// How often in seconds to update prediction timing. Lower values will result in marginally more accurate timings at the cost of bandwidth.
         /// </summary>        
-        [Tooltip("How often in seconds to update prediction timing. Lower values will result in more accurate at the cost of bandwidth.")]
+        [Tooltip("How often in seconds to update prediction timing. Lower values will result in marginally more accurate timings at the cost of bandwidth.")]
         [Range(1, 15)]
         [SerializeField]
         private byte _timingInterval = 2;
@@ -302,7 +306,6 @@ namespace FishNet.Managing.Timing
         {
             if (_networkManager.IsServer)
                 ServerUptime += Time.deltaTime;
-
             if (_networkManager.IsClient)
                 ClientUptime += Time.deltaTime;
 
@@ -589,11 +592,13 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void IncreaseTick()
         {
+            bool isClient = _networkManager.IsClient;
+
             double timePerSimulation = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
             double time = Time.deltaTime;
             _elapsedTickTime += time;
+            FrameTicked = (_elapsedTickTime >= timePerSimulation);
 
-            bool isClient = _networkManager.IsClient;
             while (_elapsedTickTime >= timePerSimulation)
             {
                 _elapsedTickTime -= timePerSimulation;

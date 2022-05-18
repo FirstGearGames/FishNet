@@ -164,7 +164,10 @@ namespace FishNet.Object.Synchronizing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddOperation(SyncDictionaryOperation operation, TKey key, TValue value)
         {
-            if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
+            if (!base.IsRegistered)
+                return;
+
+            if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
@@ -520,6 +523,39 @@ namespace FishNet.Object.Synchronizing
             }
         }
 
+        /// <summary>
+        /// Dirties an entry by key.
+        /// </summary>
+        /// <param name="key">Key to dirty.</param>
+        public void Dirty(TKey key)
+        {
+            if (Collection.TryGetValueIL2CPP(key, out TValue value))
+                AddOperation(SyncDictionaryOperation.Set, key, value);
+        }
+
+        /// <summary>
+        /// Dirties an entry by value.
+        /// This operation can be very expensive, will cause allocations, and may fail if your value cannot be compared.
+        /// </summary>
+        /// <param name="value">Value to dirty.</param>
+        /// <returns>True if value was found and marked dirty.</returns>
+        public bool Dirty(TValue value, EqualityComparer<TValue> comparer = null)
+        {
+            if (comparer == null)
+                comparer = EqualityComparer<TValue>.Default;
+
+            foreach (KeyValuePair<TKey, TValue> item in Collection)
+            {
+                if (comparer.Equals(item.Value, value))
+                {
+                    AddOperation(SyncDictionaryOperation.Set, item.Key, value);
+                    return true;
+                }
+            }
+
+            //Not found.
+            return false;
+        }
 
         /// <summary>
         /// Gets the IEnumerator for the collection.
