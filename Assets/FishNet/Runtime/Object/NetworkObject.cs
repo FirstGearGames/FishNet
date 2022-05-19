@@ -79,10 +79,10 @@ namespace FishNet.Object
             private set => _isNetworked = value;
         }
         /// <summary>
-        /// Sets IsNetworked value.
+        /// Sets IsNetworked value. This method must be called before Start.
         /// </summary>
         /// <param name="isNetworked"></param>
-        internal void SetIsNetworked(bool isNetworked)
+        public void SetIsNetworked(bool isNetworked)
         {
             IsNetworked = isNetworked;
         }
