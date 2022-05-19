@@ -225,7 +225,6 @@ namespace FishNet.Managing.Transporting
                 //    _networkManager.ClientManager.StopConnection();
                 //    return;
                 //}
-
                 //If here split can be sent.
                 SendSplitData(null, ref segment, requiredMessages, maxMessageSize);
             }

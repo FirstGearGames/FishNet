@@ -243,7 +243,7 @@ namespace FishNet.Component.Transforming
         [Tooltip("How often in ticks to synchronize. A value of 1 will synchronize every tick, a value of 10 will synchronize every 10 ticks.")]
         [Range(1, 255)]
         [SerializeField]
-        private byte _interval;
+        private byte _interval = 1;
         /// <summary>
         /// True to synchronize position. Even while checked only changed values are sent.
         /// </summary>
@@ -373,6 +373,10 @@ namespace FishNet.Component.Transforming
         public const ushort MAX_INTERPOLATION = 250;
         #endregion
 
+        private void Awake()
+        {
+            _interval = Math.Max(_interval, (byte)1);
+        }
 
         private void OnDisable()
         {

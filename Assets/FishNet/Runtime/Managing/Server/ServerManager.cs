@@ -408,6 +408,10 @@ namespace FishNet.Managing.Server
         /// <param name="args"></param>
         private void ParseReceived(ServerReceivedDataArgs args)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _parseLogger.Reset();
+#endif
+
             //Not from a valid connection.
             if (args.ConnectionId < 0)
                 return;

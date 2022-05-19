@@ -251,6 +251,10 @@ namespace FishNet.Managing.Client
         /// </summary>
         private void ParseReceived(ClientReceivedDataArgs args)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _parseLogger.Reset();
+#endif
+
             ArraySegment<byte> segment = args.Data;
             if (segment.Count <= TransportManager.TICK_BYTES)
                 return;

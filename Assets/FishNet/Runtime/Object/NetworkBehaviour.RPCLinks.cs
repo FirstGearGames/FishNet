@@ -116,9 +116,9 @@ namespace FishNet.Object
         {
             PooledWriter writer = WriterPool.GetWriter();
             writer.WriteUInt16(link.LinkIndex);
-            ////Write length only if unreliable.
-            //if (channel == Channel.Unreliable)
-            //    WriteUnreliableLength(writer, methodWriter.Length);
+            //Write length only if reliable.
+            if (channel == Channel.Reliable)
+                WriteReliableLength(writer, methodWriter.Length);
             //Data.
             writer.WriteArraySegment(methodWriter.GetArraySegment());
 
