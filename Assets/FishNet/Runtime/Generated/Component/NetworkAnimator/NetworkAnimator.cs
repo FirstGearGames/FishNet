@@ -487,7 +487,7 @@ namespace FishNet.Component.Animating
 
             if (!_isAnimatorEnabled)
             {
-                Debug.LogWarning("Animator is null or not enabled; unable to initialize for animator. Use SetAnimator if animator was changed or enable the animator.");
+                //Debug.LogWarning("Animator is null or not enabled; unable to initialize for animator. Use SetAnimator if animator was changed or enable the animator.");
                 return;
             }
 

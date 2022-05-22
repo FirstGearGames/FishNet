@@ -177,6 +177,11 @@ namespace FishNet.Managing.Scened
             _serverManager.RegisterBroadcast<EmptyStartScenesBroadcast>(OnServerEmptyStartScenes);
         }
 
+        private void OnDestroy()
+        {
+            UnitySceneManager.sceneUnloaded -= SceneManager_SceneUnloaded;
+        }
+
         /// <summary>
         /// Called when the server connection state changes.
         /// </summary>
@@ -581,6 +586,55 @@ namespace FishNet.Managing.Scened
         }
 
         /// <summary>
+        /// Returns if a NetworkObject can be moved.
+        /// </summary>
+        /// <param name="warn"></param>
+        /// <returns></returns>
+        private bool CanMoveNetworkObject(NetworkObject nob)
+        {
+            bool canLog = _networkManager.CanLog(LoggingType.Warning);
+
+            //Null.
+            if (nob == null)
+            {
+                if (canLog)
+                    Debug.LogWarning($"NetworkObject is null.");
+                return false;
+            }
+            //Not networked.
+            if (!nob.IsNetworked)
+            {
+                if (canLog)
+                    Debug.LogWarning($"NetworkObject {nob.name} cannot be moved as it is not networked.");
+                return false;
+            }
+
+            //Not spawned.
+            if (!nob.IsSpawned)
+            {
+                if (canLog)
+                    Debug.LogWarning($"NetworkObject {nob.name} canot be moved as it is not spawned.");
+                return false;
+            }
+            //SceneObject.
+            if (nob.IsSceneObject)
+            {
+                if (canLog)
+                    Debug.LogWarning($"NetworkObject {nob.name} cannot be moved as it is a scene object.");
+                return false;
+            }
+            //Not root.
+            if (nob.transform.parent != null)
+            {
+                if (canLog)
+                    Debug.LogWarning($"NetworkObject {nob.name} cannot be moved because it is not the root object. Unity can only move root objects between scenes.");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Loads a connection scene queue data. This behaves just like a networked scene load except it sends only to the specified connections, and it always loads as an additive scene on server.
         /// </summary>
         /// <returns></returns>
@@ -700,8 +754,9 @@ namespace FishNet.Managing.Scened
             {
                 foreach (NetworkObject nob in data.SceneLoadData.MovedNetworkObjects)
                 {
+                    bool canMove = CanMoveNetworkObject(nob);
                     //NetworkObject might be null if client lost observation of it.
-                    if (nob != null)
+                    if (nob != null && CanMoveNetworkObject(nob))
                         UnitySceneManager.MoveGameObjectToScene(nob.gameObject, GetMovedObjectsScene());
                 }
                 /* Note: previously connection objects which were not in
@@ -798,7 +853,7 @@ namespace FishNet.Managing.Scened
                 Scene s = GetMovedObjectsScene();
                 foreach (NetworkObject nob in _networkManager.ClientManager.Objects.Spawned.Values)
                 {
-                    if (!nob.SceneObject)
+                    if (!nob.IsSceneObject)
                         UnitySceneManager.MoveGameObjectToScene(nob.gameObject, s);
                 }
             }
@@ -1348,7 +1403,7 @@ namespace FishNet.Managing.Scened
                      *just disable and move it. Otherwise despawn it
                     * on the server then move it. */
                     //Not deinitializing, despawn it then.
-                    if (!nob.Deinitializing)
+                    if (!nob.IsDeinitializing)
                         nob.Despawn();
                     else
                         nob.gameObject.SetActive(false);

@@ -22,6 +22,12 @@ namespace FishNet.Component.Transforming
     public class NetworkTransform : NetworkBehaviour
     {
         #region Types.
+        private struct ReceivedData
+        {
+            public bool HasData;
+            public PooledWriter Writer;
+            public Channel Channel;
+        }
         [System.Serializable]
         public struct SnappedAxes
         {
@@ -205,7 +211,7 @@ namespace FishNet.Component.Transforming
         [Tooltip("How many ticks to extrapolate.")]
         [Range(0, 1024)]
         [SerializeField]
-        private ushort _extrapolation;
+        private ushort _extrapolation = 2;
         /// <summary>
         /// True to enable teleport threshhold.
         /// </summary>
@@ -231,6 +237,13 @@ namespace FishNet.Component.Transforming
         [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
         [SerializeField]
         private bool _sendToOwner = true;
+        /// <summary>
+        /// How often in ticks to synchronize. A value of 1 will synchronize every tick, a value of 10 will synchronize every 10 ticks.
+        /// </summary>
+        [Tooltip("How often in ticks to synchronize. A value of 1 will synchronize every tick, a value of 10 will synchronize every 10 ticks.")]
+        [Range(1, 255)]
+        [SerializeField]
+        private byte _interval = 1;
         /// <summary>
         /// True to synchronize position. Even while checked only changed values are sent.
         /// </summary>
@@ -310,11 +323,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Last received data from an authoritative client.
         /// </summary>
-        private PooledWriter _receivedClientBytes;
-        /// <summary>
-        /// True when receivedClientBytes contains new data.
-        /// </summary>
-        private bool _clientBytesChanged;
+        private ReceivedData _receivedClientData = new ReceivedData();
         /// <summary>
         /// True if subscribed to TimeManager for ticks.
         /// </summary>
@@ -351,6 +360,10 @@ namespace FishNet.Component.Transforming
         /// True if the transform has changed since it started.
         /// </summary>
         private bool _changedSinceStart;
+        /// <summary>
+        /// Number of intervals remaining before synchronization.
+        /// </summary>
+        private byte _intervalsRemaining;
         #endregion
 
         #region Const.
@@ -360,13 +373,17 @@ namespace FishNet.Component.Transforming
         public const ushort MAX_INTERPOLATION = 250;
         #endregion
 
+        private void Awake()
+        {
+            _interval = Math.Max(_interval, (byte)1);
+        }
 
         private void OnDisable()
         {
-            if (_receivedClientBytes != null)
+            if (_receivedClientData.Writer != null)
             {
-                _receivedClientBytes.Dispose();
-                _receivedClientBytes = null;
+                _receivedClientData.Writer.Dispose();
+                _receivedClientData.Writer = null;
             }
         }
 
@@ -410,6 +427,7 @@ namespace FishNet.Component.Transforming
         public override void OnOwnershipServer(NetworkConnection prevOwner)
         {
             base.OnOwnershipServer(prevOwner);
+            _intervalsRemaining = 0;
             //Reset last tick since each client sends their own ticks.
             _lastServerRpcTick = 0;
         }
@@ -417,6 +435,7 @@ namespace FishNet.Component.Transforming
         public override void OnOwnershipClient(NetworkConnection prevOwner)
         {
             base.OnOwnershipClient(prevOwner);
+            _intervalsRemaining = 0;
             /* If newOwner is self then client
              * must subscribe to ticks. Client can also
              * unsubscribe from ticks if not owner,
@@ -465,6 +484,20 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void TimeManager_OnPostTick()
         {
+            /* If more than 1 interval is remaining than then means
+             * there are more ticks to be waited upon. */
+            if (_intervalsRemaining > 1)
+            {
+                _intervalsRemaining--;
+                return;
+            }
+            /* If there is 0 or 1 interval remaining then this
+             * tick would be the one to send data and reset the interval. */
+            else
+            {
+                _intervalsRemaining = _interval;
+            }
+
             
             if (base.IsServer)
                 SendToClients();
@@ -939,20 +972,23 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void SendToClients()
         {
-            //True if to send transform state rather than received state from client.
-            bool sendServerState = (_receivedClientBytes == null || _receivedClientBytes.Length == 0 || !base.Owner.IsValid);
+            //True if clientAuthoritative and there is an owner.
+            bool clientAuthoritativeWithOwner = (_clientAuthoritative && base.Owner.IsValid);
+            //Quick exit if client auth and there's no new data.
+            if (_clientAuthoritative && base.Owner.IsValid && !_receivedClientData.HasData)
+                return;
             //Channel to send rpc on.
             Channel channel = Channel.Unreliable;
             //If relaying from client.
-            if (!sendServerState)
+            if (clientAuthoritativeWithOwner)
             {
-                //No new data from clients.
-                if (!_clientBytesChanged)
-                    return;
-
-                _changedSinceStart = true;
-                //Resend data from clients.
-                ObserversUpdateTransform(_receivedClientBytes.GetArraySegment(), channel);
+                if (_receivedClientData.HasData)
+                {
+                    _changedSinceStart = true;
+                    //Resend data from clients.
+                    ObserversUpdateTransform(_receivedClientData.Writer.GetArraySegment(), _receivedClientData.Channel);
+                    _receivedClientData.HasData = false;
+                }
             }
             //Sending server transform state.
             else
@@ -1212,9 +1248,11 @@ namespace FishNet.Component.Transforming
                 return;
             }
 
-            //How much time has passed between last update and current.
+            /* How much time has passed between last update and current.
+             * If set to 0 then that means the transform has
+             * settled. */
             if (lastTick == 0)
-                lastTick = (nextGd.Transforms.Tick - 1);
+                lastTick = (nextGd.Transforms.Tick - _interval);
 
             uint tickDifference = (td.Tick - lastTick);
             float timePassed = base.NetworkManager.TimeManager.TicksToTime(tickDifference);
@@ -1390,14 +1428,13 @@ namespace FishNet.Component.Transforming
                 return;
             _lastServerRpcTick = lastPacketTick;
 
-            //Set to received bytes.
-            if (_receivedClientBytes == null)
-                _receivedClientBytes = WriterPool.GetWriter();
-            _receivedClientBytes.Reset();
-            _receivedClientBytes.WriteArraySegment(data);
-
-            //Indicates new data has been received from client.
-            _clientBytesChanged = true;
+            //Populate writer if it doesn't exist.
+            if (_receivedClientData.Writer == null)
+                _receivedClientData.Writer = WriterPool.GetWriter();
+            _receivedClientData.Channel = channel;
+            _receivedClientData.Writer.Reset();
+            _receivedClientData.Writer.WriteArraySegment(data);
+            _receivedClientData.HasData = true;
 
             DataReceived(data, channel, true);
         }
@@ -1507,6 +1544,15 @@ namespace FishNet.Component.Transforming
             GoalData result = (_goalDataCache.Count > 0) ? _goalDataCache.Pop() : new GoalData();
             result.Reset();
             return result;
+        }
+
+        /// <summary>
+        /// Configures this NetworkTransform for CSP.
+        /// </summary>
+        internal void ConfigureForCSP()
+        {
+            _clientAuthoritative = false;
+            _sendToOwner = false;
         }
     }
 

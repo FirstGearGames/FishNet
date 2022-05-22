@@ -11,8 +11,6 @@ GameObject:
   - component: {fileID: 8274935638305073705}
   - component: {fileID: 5937955550093657123}
   - component: {fileID: 8512892203317417748}
-  - component: {fileID: 6854400091791599799}
-  - component: {fileID: 7447793670132774809}
   m_Layer: 0
   m_Name: Capsule
   m_TagString: Untagged
@@ -81,38 +79,6 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!114 &6854400091791599799
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 50058147544064912}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 37c39a68e17740c4ea2b1fb940e5cd53, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 2
-  _addedNetworkObject: {fileID: 9117857247562382210}
-  _networkObjectCache: {fileID: 9117857247562382210}
-  _smoothingDuration: 0.125
---- !u!114 &7447793670132774809
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 50058147544064912}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 37c39a68e17740c4ea2b1fb940e5cd53, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 255
-  _addedNetworkObject: {fileID: 9117857247562382210}
-  _networkObjectCache: {fileID: 0}
-  _smoothingDuration: 0.125
 --- !u!1 &9117857247562382221
 GameObject:
   m_ObjectHideFlags: 0
@@ -177,15 +143,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 1
+  _prefabId: 27
   _scenePathHash: 0
   _sceneId: 0
   _sceneNetworkObjects:
   - {fileID: 9117857247562382210}
   _networkBehaviours:
+  - {fileID: 264791952884968468}
   - {fileID: 9144896207351220584}
   - {fileID: 1012129365208062032}
-  - {fileID: 6854400091791599799}
   SceneTransformProperties:
     Position: {x: 0, y: 1, z: -10}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
@@ -204,18 +170,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 0
+  _addedNetworkObject: {fileID: 0}
+  _networkObjectCache: {fileID: 9117857247562382210}
   _graphicalObject: {fileID: 8274935638305073705}
-  _smoothingDuration: 0.125
+  _smoothTicks: 1
+  _smoothingDuration: 0.05
   _predictionType: 0
   _rigidbody: {fileID: 0}
   _rigidbody2d: {fileID: 0}
+  _networkTransform: {fileID: 1012129365208062032}
   _predictionRatio: 0
-  _lastGraphicalObject: {fileID: 8274935638305073705}
-  _lastMovementType: 0
-  _lastSelectedRigidbody: {fileID: 0}
-  _addedPredictedRigidbody: {fileID: 0}
-  _addedDesyncSmoother: {fileID: 6854400091791599799}
-  _rebuildComponents: 0
 --- !u!114 &9144896207351220584
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -228,7 +193,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bb7bd88fd11b5d4aa7fca3d42172ab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 9117857247562382210}
   _networkObjectCache: {fileID: 9117857247562382210}
   _moveRate: 5
@@ -262,7 +227,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 1
+  _componentIndexCache: 2
   _addedNetworkObject: {fileID: 9117857247562382210}
   _networkObjectCache: {fileID: 9117857247562382210}
   _synchronizeParent: 0
@@ -276,6 +241,7 @@ MonoBehaviour:
   _teleportThreshold: 1
   _clientAuthoritative: 0
   _sendToOwner: 0
+  _interval: 0
   _synchronizePosition: 1
   _positionSnapping:
     X: 0

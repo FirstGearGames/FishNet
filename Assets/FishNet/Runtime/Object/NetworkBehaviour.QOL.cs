@@ -21,7 +21,9 @@ namespace FishNet.Object
         /// <summary>
         /// True if the NetworkObject for this NetworkBehaviour is deinitializing.
         /// </summary>
-        public bool Deinitializing => _networkObjectCache.Deinitializing;
+        public bool IsDeinitializing => _networkObjectCache.IsDeinitializing;
+        [Obsolete("Use IsDeinitializing instead.")]
+        public bool Deinitializing => IsDeinitializing; //Remove on 2023/01/01.
         /// <summary>
         /// NetworkManager for this object.
         /// </summary>

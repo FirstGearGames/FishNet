@@ -94,7 +94,7 @@ namespace FishNet.Observing
         }
         private void OnDisable()
         {
-            if (_networkObject != null && _networkObject.Deinitializing)
+            if (_networkObject != null && _networkObject.IsDeinitializing)
                 UnregisterTimedConditions();
         }
         private void OnDestroy()

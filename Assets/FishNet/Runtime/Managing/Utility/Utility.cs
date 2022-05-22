@@ -27,6 +27,7 @@ namespace FishNet.Managing.Utility
             else if (channel == Channel.Reliable)
             {
                 return (int)MissingObjectPacketLength.Reliable;
+                //return reader.ReadInt32();
             }
             //Unreliable purges remaining.
             if (channel == Channel.Unreliable)

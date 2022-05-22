@@ -537,18 +537,19 @@ namespace FishNet.Managing.Timing
         private void TrySendPing(uint? tickOverride = null)
         {
             byte pingInterval = PingInterval;
-            /* Set next ping time based on uptime.
-            * Client should try to get their ping asap
-            * once connecting but more casually after. 
-            * If client did not receive a response to last
-            * ping then wait longer. The server maybe didn't
-            * respond because client is sending too fast. */
-            long requiredTime = (_receivedPong) ?
-                (long)(pingInterval * 1000) :
-                (long)(pingInterval * 1500);
+
+            /* How often client may send ping is based on if
+             * the server responded to the last ping.
+             * A response may not be received if the server
+             * believes the client is pinging too fast, or if the 
+             * client is having difficulties reaching the server. */
+            long requiredTime = (pingInterval * 1000);
+            float multiplier = (_receivedPong) ? 1f : 1.5f;
+
+            requiredTime = (long)(requiredTime * multiplier);
+            uint requiredTicks = TimeToTicks(pingInterval * multiplier);
 
             _pingTicks++;
-            uint requiredTicks = TimeToTicks(pingInterval);
             /* We cannot just consider time because ticks might run slower
              * from adjustments. We also cannot only consider ticks because
              * they might run faster from adjustments. Therefor require both
@@ -592,12 +593,13 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void IncreaseTick()
         {
+            bool isClient = _networkManager.IsClient;
+
             double timePerSimulation = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
             double time = Time.deltaTime;
             _elapsedTickTime += time;
-
             FrameTicked = (_elapsedTickTime >= timePerSimulation);
-            bool isClient = _networkManager.IsClient;
+
             while (_elapsedTickTime >= timePerSimulation)
             {
                 _elapsedTickTime -= timePerSimulation;
@@ -832,8 +834,9 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void SendTimingAdjustment()
         {
+            uint requiredTicks = TimeToTicks(_timingInterval);            
             uint tick = Tick;
-            if (tick - _lastUpdateTicks >= _timingInterval)
+            if (tick - _lastUpdateTicks >= requiredTicks)
             {
                 //Now send using a packetId.
                 PooledWriter writer = WriterPool.GetWriter();

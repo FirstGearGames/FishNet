@@ -139,7 +139,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _tickRate: 40
+  _tickRate: 30
   _pingInterval: 1
   _timingInterval: 2
   _physicsMode: 1
@@ -158,6 +158,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _unreliableMTU: 1023
   _attackResponseType: 1
+  _ipv4BindAddress: 
+  _ipv6BindAddress: 
   _port: 7770
   _maximumClients: 5000
   _clientAddress: localhost

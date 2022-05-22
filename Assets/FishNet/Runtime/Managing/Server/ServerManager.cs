@@ -349,7 +349,9 @@ namespace FishNet.Managing.Server
                     Clients.Add(args.ConnectionId, conn);
 
                     OnRemoteConnectionState?.Invoke(conn, args);
-
+                    //Connection is no longer valid. This can occur if the user changes the state using the OnRemoteConnectionState event.
+                    if (!conn.IsValid)
+                        return;
                     /* If there is an authenticator
                      * and the transport is not a local transport. */
                     if (Authenticator != null && !NetworkManager.TransportManager.IsLocalTransport(id))
@@ -406,6 +408,10 @@ namespace FishNet.Managing.Server
         /// <param name="args"></param>
         private void ParseReceived(ServerReceivedDataArgs args)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _parseLogger.Reset();
+#endif
+
             //Not from a valid connection.
             if (args.ConnectionId < 0)
                 return;

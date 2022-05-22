@@ -55,13 +55,6 @@ namespace FishNet.Example.Prediction.Transforms
         private float _moveRate = 5f;
         #endregion
 
-        #region Private.
-        /// <summary>
-        /// The last MoveData client sent.
-        /// </summary>
-        private MoveData _clientMoveData;
-        #endregion
-
         private void Awake()
         {
             /* Prediction is tick based so you must
@@ -73,7 +66,6 @@ namespace FishNet.Example.Prediction.Transforms
              * loaded. If you are using several NetworkManagers you would want
              * to subscrube in OnStartServer/Client using base.TimeManager. */
             InstanceFinder.TimeManager.OnTick += TimeManager_OnTick;
-            InstanceFinder.TimeManager.OnUpdate += TimeManager_OnUpdate;
         }
 
         private void OnDestroy()
@@ -82,7 +74,6 @@ namespace FishNet.Example.Prediction.Transforms
             if (InstanceFinder.TimeManager != null)
             {
                 InstanceFinder.TimeManager.OnTick -= TimeManager_OnTick;
-                InstanceFinder.TimeManager.OnUpdate -= TimeManager_OnUpdate;
             }
         }
 
@@ -126,17 +117,6 @@ namespace FishNet.Example.Prediction.Transforms
                 ReconcileData rd = new ReconcileData(transform.position, transform.rotation);
                 Reconciliation(rd, true);
             }
-        }
-
-
-        private void TimeManager_OnUpdate()
-        {
-            /* Move every frame using the clients last
-             * movedata and the frames delta. This will move
-             * the client smoothly while only sending data
-             * every tick. */
-            if (base.IsOwner)
-                MoveWithData(_clientMoveData, Time.deltaTime);
         }
 
 
@@ -191,32 +171,8 @@ namespace FishNet.Example.Prediction.Transforms
                 //VFX!
             }
 
-            /* Run logic as if it were an offline game.
-            * It's important to use TickDelta as your deltaTime
-            * when running in the simulation tick. */
-            if (asServer || replaying)
-                MoveWithData(md, (float)base.TimeManager.TickDelta);
-            /* When running as client and not
-             * replaying set the clientMoveData to what
-             * was passed in. This will be used in OnUpdate
-             * to move the client smoothly over each frame
-             * rather than at the tickDelta. This really
-             * only applies for non-physics based movement such as
-             * transform or character controller. If you were
-             * to see the rigidbody example you'd notice the
-             * movement is done in this method for both
-             * client and server, and not over time in update.
-             * While you may be able to do some sort of interpolation
-             * in update with a rigidbody, that's up to you to
-             * figure out. */
-            else if (!asServer)
-                _clientMoveData = md;
-        }
-
-        private void MoveWithData(MoveData md, float delta)
-        {
             Vector3 move = new Vector3(md.Horizontal, 0f, md.Vertical);
-            transform.position += (move * _moveRate * delta);
+            transform.position += (move * _moveRate * (float)base.TimeManager.TickDelta);
         }
 
         /// <summary>

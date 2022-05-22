@@ -546,11 +546,11 @@ namespace FishNet.CodeGenerating.Processing
                     CodegenSession.LogError(incorrectParametersMsg);
                     return null;
                 }
-                //One or more parameters are wrong.
-                //Not correct number of parameters.
-                if (md.Parameters[0].ParameterType != originalFieldDef.FieldType ||
-                    md.Parameters[1].ParameterType != originalFieldDef.FieldType ||
-                    md.Parameters[2].ParameterType != CodegenSession.Module.TypeSystem.Boolean)
+                /* Check if any parameters are not
+                 * the expected type. */      
+                if (md.Parameters[0].ParameterType.CachedResolve() != originalFieldDef.FieldType.CachedResolve() ||
+                    md.Parameters[1].ParameterType.CachedResolve() != originalFieldDef.FieldType.CachedResolve() ||
+                    md.Parameters[2].ParameterType.CachedResolve() != CodegenSession.Module.TypeSystem.Boolean.CachedResolve())
                 {
                     CodegenSession.LogError(incorrectParametersMsg);
                     return null;
