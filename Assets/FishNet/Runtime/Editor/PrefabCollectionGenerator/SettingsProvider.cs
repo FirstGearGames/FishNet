@@ -7,13 +7,16 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
-namespace FishNet.Runtime.Editor
+using UnitySettingsProviderAttribute = UnityEditor.SettingsProviderAttribute;
+using UnitySettingsProvider = UnityEditor.SettingsProvider;
+
+namespace FishNet.Runtime.Editor.PrefabObjects.Generation
 {
-	internal static class PrefabCollectionGeneratorSettingsProvider
+	internal static class SettingsProvider
 	{
 		private static readonly Regex SlashRegex = new Regex(@"[\\//]");
 
-		private static PrefabCollectionGeneratorSettings _settings;
+		private static Settings _settings;
 
 		private static GUIContent _folderIcon;
 		private static GUIContent _deleteIcon;
@@ -22,29 +25,29 @@ namespace FishNet.Runtime.Editor
 
 		private static bool _showFolders;
 
-		[SettingsProvider]
-		public static SettingsProvider Create()
+		[UnitySettingsProvider]
+		private static UnitySettingsProvider Create()
 		{
-			return new SettingsProvider("Project/Prefab Collection Generator", SettingsScope.Project)
+			return new UnitySettingsProvider("Project/Fish-Networking/Prefab Objects Generator", SettingsScope.Project)
 			{
-				label = "Prefab Collection Generator",
+				label = "Prefab Objects Generator",
 
 				guiHandler = OnGUI,
 
 				keywords = new string[]
 				{
+					"Fish",
+					"Networking",
 					"Prefab",
-					"Collection",
+					"Objects",
 					"Generator",
-					"Fish-Networking",
-					"FishNetworking",
 				},
 			};
 		}
 
 		private static void OnGUI(string searchContext)
 		{
-			if (_settings == null) _settings = PrefabCollectionGeneratorSettings.Load();
+			if (_settings == null) _settings = Settings.Load();
 
 			if (_folderIcon == null) _folderIcon = EditorGUIUtility.IconContent("d_FolderOpened Icon");
 
@@ -58,6 +61,10 @@ namespace FishNet.Runtime.Editor
 			};
 
 			_scrollVector = EditorGUILayout.BeginScrollView(_scrollVector, scrollViewStyle);
+
+			_settings.isEnabled = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.isEnabled)), _settings.isEnabled);
+
+			_settings.enableLogging = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.enableLogging)), _settings.enableLogging);
 
 			GUILayoutOption iconWidthConstraint = GUILayout.MaxWidth(32.0f);
 
@@ -91,13 +98,13 @@ namespace FishNet.Runtime.Editor
 					}
 					else
 					{
-						PrefabCollectionGenerator.Enabled = false;
+						Generator.AutoTrigger = false;
 
 						if (File.Exists(oldAssetPath)) AssetDatabase.MoveAsset(oldAssetPath, newAssetPath);
 
 						_settings.assetPath = newAssetPath;
 
-						PrefabCollectionGenerator.Enabled = true;
+						Generator.AutoTrigger = true;
 					}
 				}
 				else
@@ -108,26 +115,26 @@ namespace FishNet.Runtime.Editor
 
 			EditorGUILayout.EndHorizontal();
 
-			_settings.searchScope = (PrefabCollectionGeneratorSettings.SearchScope)EditorGUILayout.EnumPopup(ObjectNames.NicifyVariableName(nameof(_settings.searchScope)), _settings.searchScope);
+			_settings.searchScope = (Settings.SearchScope)EditorGUILayout.EnumPopup(ObjectNames.NicifyVariableName(nameof(_settings.searchScope)), _settings.searchScope);
 
-			if (_settings.searchScope == PrefabCollectionGeneratorSettings.SearchScope.EntireProject)
+			if (_settings.searchScope == Settings.SearchScope.EntireProject)
 			{
 				EditorGUILayout.HelpBox("Searching the entire project for prefabs can become very slow. Consider switching the search scope to specific folders instead.", MessageType.Warning);
 
-				if (GUILayout.Button("Switch")) _settings.searchScope = PrefabCollectionGeneratorSettings.SearchScope.SpecificFolders;
+				if (GUILayout.Button("Switch")) _settings.searchScope = Settings.SearchScope.SpecificFolders;
 			}
 
 			List<string> folders = null;
 
 			string foldersName = null;
 
-			if (_settings.searchScope == PrefabCollectionGeneratorSettings.SearchScope.EntireProject)
+			if (_settings.searchScope == Settings.SearchScope.EntireProject)
 			{
 				folders = _settings.excludedFolders;
 
 				foldersName = ObjectNames.NicifyVariableName(nameof(_settings.excludedFolders));
 			}
-			else if (_settings.searchScope == PrefabCollectionGeneratorSettings.SearchScope.SpecificFolders)
+			else if (_settings.searchScope == Settings.SearchScope.SpecificFolders)
 			{
 				folders = _settings.includedFolders;
 
@@ -179,7 +186,7 @@ namespace FishNet.Runtime.Editor
 
 				EditorGUI.indentLevel--;
 
-				if (_settings.searchScope == PrefabCollectionGeneratorSettings.SearchScope.SpecificFolders) EditorGUILayout.HelpBox("You can include subfolders by appending an asterisk (*) to a path.", MessageType.None);
+				if (_settings.searchScope == Settings.SearchScope.SpecificFolders) EditorGUILayout.HelpBox("You can include subfolders by appending an asterisk (*) to a path.", MessageType.None);
 
 				if (GUILayout.Button("Browse"))
 				{
@@ -196,7 +203,7 @@ namespace FishNet.Runtime.Editor
 
 			if (EditorGUI.EndChangeCheck()) _settings.Save();
 
-			if (GUILayout.Button("Generate")) PrefabCollectionGenerator.Generate();
+			if (GUILayout.Button("Generate")) Generator.Generate();
 
 			EditorGUILayout.HelpBox("Consider pressing 'Generate' after changing the settings.", MessageType.Info);
 

@@ -9,12 +9,12 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace FishNet.Runtime.Editor
+namespace FishNet.Runtime.Editor.PrefabObjects.Generation
 {
-	internal sealed class PrefabCollectionGenerator : AssetPostprocessor
+	internal sealed class Generator : AssetPostprocessor
 	{
-		public static bool Enabled = true;
-		
+		public static bool AutoTrigger = true;
+
 		private static IEnumerable<string> EnumerateDirectoriesRecursively(string directory, HashSet<string> excludedDirectories)
 		{
 			if (excludedDirectories.Contains(directory)) yield break;
@@ -31,18 +31,18 @@ namespace FishNet.Runtime.Editor
 				}
 			}
 		}
-
-		public static void Generate(bool enableLogging = false)
+		
+		public static void Generate(Settings settings = null)
 		{
-			if (!Enabled) return;
+			settings = settings ?? Settings.Load();
 
-			Stopwatch stopwatch = enableLogging ? Stopwatch.StartNew() : null;
+			if (!settings.isEnabled) return;
 
-			PrefabCollectionGeneratorSettings settings = PrefabCollectionGeneratorSettings.Load();
+			Stopwatch stopwatch = settings.enableLogging ? Stopwatch.StartNew() : null;
 
 			List<NetworkObject> networkObjectPrefabs = new List<NetworkObject>();
 
-			if (settings.searchScope == PrefabCollectionGeneratorSettings.SearchScope.EntireProject)
+			if (settings.searchScope == Settings.SearchScope.EntireProject)
 			{
 				foreach (string directory in EnumerateDirectoriesRecursively("Assets", new HashSet<string>(settings.excludedFolders)))
 				{
@@ -54,7 +54,7 @@ namespace FishNet.Runtime.Editor
 					}
 				}
 			}
-			else if (settings.searchScope == PrefabCollectionGeneratorSettings.SearchScope.SpecificFolders)
+			else if (settings.searchScope == Settings.SearchScope.SpecificFolders)
 			{
 				foreach (string folder in settings.includedFolders.Distinct())
 				{
@@ -97,7 +97,7 @@ namespace FishNet.Runtime.Editor
 
 			EditorUtility.SetDirty(prefabCollection);
 
-			if (enableLogging)
+			if (settings.enableLogging)
 			{
 				stopwatch.Stop();
 
@@ -107,14 +107,16 @@ namespace FishNet.Runtime.Editor
 
 		private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
-			PrefabCollectionGeneratorSettings settings = PrefabCollectionGeneratorSettings.Load();
+			if (!AutoTrigger) return;
+
+			Settings settings = Settings.Load();
 
 			if ((importedAssets.Length == 1 && importedAssets[0] == settings.assetPath)
 				|| (deletedAssets.Length == 1 && deletedAssets[0] == settings.assetPath)
 				|| (movedAssets.Length == 1 && movedAssets[0] == settings.assetPath)) return;
 
-			Generate();
-		}
+			Generate(settings);
+		}		
 	}
 }
 

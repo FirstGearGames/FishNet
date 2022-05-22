@@ -46,10 +46,10 @@ namespace FishNet.Utility.Editing
 		/// <summary>
 		/// Regenerates the NetworkObject prefab collection.
 		/// </summary>
-		[MenuItem("Fish-Networking/Regenerate Prefab Collection", priority = 21)]
-		private static void RegeneratePrefabCollection()
+		[MenuItem("Fish-Networking/Regenerate Prefab Objects", priority = 21)]
+		private static void RegeneratePrefabObjects()
 		{
-			PrefabCollectionGenerator.Generate(true);
+			Runtime.Editor.PrefabObjects.Generation.Generator.Generate();
 		}
 	}
 }

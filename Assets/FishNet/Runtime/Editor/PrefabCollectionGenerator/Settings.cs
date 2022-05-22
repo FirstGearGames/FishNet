@@ -5,19 +5,22 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace FishNet.Runtime.Editor
+namespace FishNet.Runtime.Editor.PrefabObjects.Generation
 {
-	internal sealed class PrefabCollectionGeneratorSettings
+	internal sealed class Settings
 	{
 		private static string DirectoryPath => Path.Combine(Path.GetDirectoryName(Application.dataPath), "Library");
 
-		private static string FilePath => Path.Combine(DirectoryPath, $"FishNet.Editor.{nameof(PrefabCollectionGeneratorSettings)}.json");
+		private static string FilePath => Path.Combine(DirectoryPath, $"FishNet.Runtime.Editor.PrefabObjects.Generation.{nameof(Settings)}.json");
 
 		public enum SearchScope
 		{
 			EntireProject,
 			SpecificFolders,
 		}
+
+		public bool isEnabled;
+		public bool enableLogging;
 
 		public string assetPath;
 
@@ -26,9 +29,12 @@ namespace FishNet.Runtime.Editor
 		public List<string> excludedFolders;
 		public List<string> includedFolders;
 
-		public PrefabCollectionGeneratorSettings()
+		public Settings()
 		{
-			assetPath = $"Assets{Path.DirectorySeparatorChar}FishNet{Path.DirectorySeparatorChar}DefaultPrefabObjects.asset";
+			isEnabled = true;
+			enableLogging = false;
+
+			assetPath = $"Assets{Path.DirectorySeparatorChar}FishNet{Path.DirectorySeparatorChar}Runtime{Path.DirectorySeparatorChar}DefaultPrefabObjects.asset";
 
 			searchScope = SearchScope.EntireProject;
 
@@ -43,18 +49,18 @@ namespace FishNet.Runtime.Editor
 			File.WriteAllText(FilePath, JsonUtility.ToJson(this));
 		}
 
-		public static PrefabCollectionGeneratorSettings Load()
+		public static Settings Load()
 		{
 			try
 			{
-				if (File.Exists(FilePath)) return JsonUtility.FromJson<PrefabCollectionGeneratorSettings>(File.ReadAllText(FilePath));
+				if (File.Exists(FilePath)) return JsonUtility.FromJson<Settings>(File.ReadAllText(FilePath));
 			}
 			catch (Exception ex)
 			{
 				Debug.LogError($"An error has occurred when loading the prefab collection generator settings: {ex}");
 			}
 
-			return new PrefabCollectionGeneratorSettings();
+			return new Settings();
 		}
 	}
 }
