@@ -30,10 +30,11 @@ namespace FishNet.Component.Prediction
 
             if (base.IsServer)
             {
-                if (base.TimeManager.LocalTick >= _nextSendTick || base.TransformMayChange())
+                uint localTick = base.TimeManager.LocalTick;
+                if (localTick >= _nextSendTick || base.TransformMayChange())
                 {
                     uint ticksRequired = base.TimeManager.TimeToTicks(SEND_INTERVAL, TickRounding.RoundUp);
-                    _nextSendTick += ticksRequired;
+                    _nextSendTick = localTick + ticksRequired;
 
                     if (!is2D)
                         SendRigidbodyState();
@@ -357,7 +358,6 @@ namespace FishNet.Component.Prediction
             SetTransformMoveRates();
         }
         #endregion
-
 
         #region Rigidbody2D.
         #region Type.
