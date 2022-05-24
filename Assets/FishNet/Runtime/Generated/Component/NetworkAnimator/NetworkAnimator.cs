@@ -507,7 +507,12 @@ namespace FishNet.Component.Animating
             foreach (AnimatorControllerParameter item in _animator.parameters)
             {
                 bool process = !_animator.IsParameterControlledByCurve(item.name);
-                
+                //PROSTART
+                /* This is done in a weird way for processing
+                 * to work with the pro tool stripper. */
+                if (IgnoredParameters.Contains(item.name))
+                    process = false;
+                //PROEND
                 if (process)
                 {
                     //Over 250 parameters; who would do this!?

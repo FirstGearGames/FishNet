@@ -248,7 +248,21 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="rpcType"></param>
         internal void CreateRpcDelegate(bool runLocally, TypeDefinition typeDef, MethodDefinition readerMethodDef, RpcType rpcType, uint methodHash, CustomAttribute rpcAttribute)
         {
-            
+            //PROSTART            
+            if (CodeStripping.StripBuild)
+            {
+                /* Clients do not need to register serverRpcs since they won't
+                 * get them, just as server doesn't need to register client rpcs. */
+                bool isServerRpc = (rpcType == RpcType.Server);
+                if (
+                    (isServerRpc && CodeStripping.ReleasingForClient) ||
+                       (!isServerRpc && CodeStripping.ReleasingForServer)
+                    )
+                {
+                    return;
+                }
+            }
+            //PROEND
 
             MethodDefinition methodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = methodDef.Body.GetILProcessor();

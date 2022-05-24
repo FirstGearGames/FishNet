@@ -41,6 +41,17 @@ namespace FishNet.Component.Prediction
         [SerializeField]
         private bool _smoothTicks = true;
         /// <summary>
+        /// Sets the value for SmoothTicks.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public void SetSmoothTicks(bool value) => _smoothTicks = value;
+        /// <summary>
+        /// Gets the value for SmoothTicks.
+        /// </summary>
+        /// <returns></returns>
+        public bool GetSmoothTicks() => _smoothTicks;
+        /// <summary>
         /// Duration to smooth desynchronizations over.
         /// </summary>
         [Tooltip("Duration to smooth desynchronizations over.")]
@@ -185,8 +196,8 @@ namespace FishNet.Component.Prediction
         {
             if (CanSmooth())
             {
-                SetTransformMoveRates();
                 ResetToTransformPreviousProperties();
+                SetTransformMoveRates();
             }
             PartialRigidbodies_TimeManager_OnPostTick();
         }
@@ -347,8 +358,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void ResetToTransformPreviousProperties()
         {
-            _graphicalObject.position = _previousPosition;
-            _graphicalObject.rotation = _previousRotation;
+            _graphicalObject.SetPositionAndRotation(_previousPosition, _previousRotation);
         }
 
 

@@ -165,6 +165,15 @@ namespace FishNet.Serializing
             return result;
         }
 
+        /// <summary>
+        /// Reads length. This method is used to make debugging easier.
+        /// </summary>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal int ReadLength()
+        {
+            return ReadInt32();
+        }
 
         /// <summary>
         /// Reads a packetId.

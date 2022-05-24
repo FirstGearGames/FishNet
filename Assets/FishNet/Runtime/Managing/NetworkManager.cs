@@ -220,11 +220,11 @@ namespace FishNet.Managing
              * cloning tools sometimes don't synchronize
              * scriptable object changes, which is what
              * the default prefabs is. */
-            if (_refreshDefaultPrefabs && SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
+            if (SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
             {
-                DefaultPrefabObjects.CanAutomate = false;
-                dpo.PopulateDefaultPrefabs(false);
-                DefaultPrefabObjects.CanAutomate = true;
+                if (_refreshDefaultPrefabs)
+                    FishNet.Editing.Generator.Generate();
+                dpo.Sort();
             }
 #endif
 
@@ -251,7 +251,7 @@ namespace FishNet.Managing
             InitializeComponents();
 
             _instances.Add(this);
-            Initialized = true;            
+            Initialized = true;
         }
 
         private void Start()

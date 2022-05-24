@@ -1,9 +1,7 @@
 ﻿#if UNITY_EDITOR
-using FishNet.Editing;
 using FishNet.Object;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -50,9 +48,10 @@ namespace FishNet.Utility.Editing
         /// Rebuilds the DefaultPrefabsCollection file.
         /// </summary>
         [MenuItem("Fish-Networking/Refresh Default Prefabs", false, 21)]
-        static void RebuildSceneIds()
+        static void RebuildDefaultPrefabs()
         {
-            DefaultPrefabsFinder.PopulateDefaultPrefabs(true, true);
+            Debug.Log("Refreshing default prefabs.");
+            FishNet.Editing.Generator.Generate();
         }
 
 

@@ -400,23 +400,12 @@ namespace FishNet.Object
             writer.WriteNetworkBehaviour(this);
             //Only write length if reliable.
             if (channel == Channel.Reliable)
-                WriteReliableLength(writer, methodWriter.Length + _rpcHashSize);
+                writer.WriteLength(methodWriter.Length + _rpcHashSize);
             //Hash and data.
             WriteRpcHash(hash, writer);
             writer.WriteArraySegment(methodWriter.GetArraySegment());
             return writer;
         }
-
-        /// <summary>
-        /// Writes length to a writer for a reliable packet.
-        /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="length"></param>
-        private void WriteReliableLength(PooledWriter writer, int length)
-        {
-            //writer.WriteInt32(length);
-        }
-
 
         /// <summary>
         /// Writes rpcHash to writer.

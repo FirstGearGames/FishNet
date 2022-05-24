@@ -130,7 +130,10 @@ namespace FishNet.CodeGenerating.Processing
                  * for target, observers, server, replicate, and reoncile rpcs. Since
                  * each registers to their own delegates this is possible. */
 
-                
+                //PROSTART
+                /* Code stripping. */
+                modified |= StripBehaviourCallbacks(copyTypeDef);
+                //PROEND
 
                 /* SyncTypes. */
                 uint syncTypeStartCount;
@@ -210,7 +213,50 @@ namespace FishNet.CodeGenerating.Processing
             return error;
         }
 
-        
+        //PROSTART
+        /// <summary>
+        /// Removes NetworkBehaviour callbacks which don't need to be known to client or server.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <returns></returns>
+        private bool StripBehaviourCallbacks(TypeDefinition typeDef)
+        {
+            bool removeClient = CodeStripping.RemoveClientLogic;
+            bool removeServer = CodeStripping.RemoveServerLogic;
+
+            List<MethodDefinition> methods = typeDef.Methods.ToList();
+            int startCount = methods.Count;
+            foreach (MethodDefinition md in methods)
+            {
+                if (!md.IsVirtual)
+                    continue;
+
+                if (removeClient)
+                {
+                    if (
+                        (md.Name == nameof(NetworkBehaviour.OnStartClient)) ||
+                        (md.Name == nameof(NetworkBehaviour.OnStopClient)) ||
+                        (md.Name == nameof(NetworkBehaviour.OnOwnershipClient))
+                        )
+                        typeDef.Methods.Remove(md);
+                }
+                else if (removeServer)
+                {
+                    if (
+                        (md.Name == nameof(NetworkBehaviour.OnStartServer)) ||
+                        (md.Name == nameof(NetworkBehaviour.OnStopServer)) ||
+                        (md.Name == nameof(NetworkBehaviour.OnOwnershipServer)) ||
+                        (md.Name == nameof(NetworkBehaviour.OnSpawnServer)) ||
+                        (md.Name == nameof(NetworkBehaviour.OnDespawnServer))
+                        )
+                        typeDef.Methods.Remove(md);
+                }
+
+            }
+
+            return (typeDef.Methods.Count != startCount);
+        }
+        //PROEND
 
         /// <summary>
         /// Gets the top-most parent away method.
