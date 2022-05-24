@@ -1,4 +1,7 @@
-﻿using FishNet.Connection;
+﻿#if UNITY_EDITOR
+using FishNet.Editing;
+#endif
+using FishNet.Connection;
 using FishNet.Managing.Client;
 using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
@@ -14,6 +17,7 @@ using System;
 using FishNet.Managing.Observing;
 using System.Linq;
 using FishNet.Managing.Debugging;
+using FishNet.Managing.Object;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
 
@@ -160,6 +164,12 @@ namespace FishNet.Managing
 
         #region Serialized.
         /// <summary>
+        /// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
+        /// </summary>
+        [Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
+        [SerializeField]
+        private bool _refreshDefaultPrefabs = false;
+        /// <summary>
         /// True to have your application run while in the background.
         /// </summary>
         [Tooltip("True to have your application run while in the background.")]
@@ -203,6 +213,21 @@ namespace FishNet.Managing
             if (StartingRpcLinkIndex == 0)
                 StartingRpcLinkIndex = (ushort)(EnumFN.GetHighestValue<PacketId>() + 1);
 
+#if UNITY_EDITOR
+            /* If first instance then force
+             * default prefabs to repopulate.
+             * This is only done in editor because
+             * cloning tools sometimes don't synchronize
+             * scriptable object changes, which is what
+             * the default prefabs is. */
+            if (SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
+            {
+                if (_refreshDefaultPrefabs)
+                    FishNet.Editing.Generator.Generate();
+                dpo.Sort();
+            }
+#endif
+
             _canPersist = CanInitialize();
             if (!_canPersist)
                 return;
@@ -226,7 +251,7 @@ namespace FishNet.Managing
             InitializeComponents();
 
             _instances.Add(this);
-            Initialized = true;            
+            Initialized = true;
         }
 
         private void Start()

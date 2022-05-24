@@ -118,7 +118,7 @@ namespace FishNet.Object
             writer.WriteUInt16(link.LinkIndex);
             //Write length only if reliable.
             if (channel == Channel.Reliable)
-                WriteReliableLength(writer, methodWriter.Length);
+                writer.WriteLength(methodWriter.Length);
             //Data.
             writer.WriteArraySegment(methodWriter.GetArraySegment());
 

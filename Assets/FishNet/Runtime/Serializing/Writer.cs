@@ -140,6 +140,17 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Writes length. This method is used to make debugging easier.
+        /// </summary>
+        /// <param name="length"></param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void WriteLength(int length)
+        {
+            WriteInt32(length);
+        }
+
+        /// <summary>
         /// Sends a packetId.
         /// </summary>
         /// <param name="pid"></param>

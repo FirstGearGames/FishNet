@@ -10,7 +10,7 @@ using UnityEngine;
 using UnitySettingsProviderAttribute = UnityEditor.SettingsProviderAttribute;
 using UnitySettingsProvider = UnityEditor.SettingsProvider;
 
-namespace FishNet.Runtime.Editor.PrefabObjects.Generation
+namespace FishNet.Editing
 {
 	internal static class SettingsProvider
 	{

@@ -17,7 +17,13 @@ namespace FishNet.CodeGenerating.Processing
             bool modified = false;
             List<MethodDefinition> methods = typeDef.Methods.ToList();
 
-            
+            //PROSTART
+            if (codeStripping)
+            {
+                MoveStrippedCalls(methods);
+                return true;
+            }
+            //PROEND
 
             foreach (MethodDefinition md in methods)
             {
@@ -119,7 +125,10 @@ namespace FishNet.CodeGenerating.Processing
             if (qolType == QolAttributeType.Client)
             {
                 bool removeLogic = (CodeStripping.StripBuild && CodeStripping.ReleasingForServer);
-                
+                //PROSTART
+                if (removeLogic)
+                    methodDef.DeclaringType.Methods.Remove(methodDef);
+                //PROEND
                 if (!removeLogic && !CodeStripping.StripBuild)
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
@@ -144,7 +153,10 @@ namespace FishNet.CodeGenerating.Processing
             else if (qolType == QolAttributeType.Server)
             {
                 bool removeLogic = (CodeStripping.StripBuild && CodeStripping.ReleasingForClient);
-                
+                //PROSTART
+                if (removeLogic)
+                    methodDef.DeclaringType.Methods.Remove(methodDef);
+                //PROEND
                 if (!removeLogic && !CodeStripping.StripBuild)
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
@@ -153,7 +165,109 @@ namespace FishNet.CodeGenerating.Processing
             }
         }
 
-        
+        //PROSTART
+        /// <summary>
+        /// Moves instructions when are calling a stripped method to a dummy method.
+        /// </summary>
+        /// <param name="methods"></param>
+        private void MoveStrippedCalls(List<MethodDefinition> methods)
+        {
+            if (!CodeStripping.StripBuild)
+                return;
+
+            foreach (MethodDefinition md in methods)
+            {
+                //Went null at some point. It was likely stripped.
+                if (md == null || md.Body == null || md.Body.Instructions == null)
+                    continue;
+
+                foreach (Instruction inst in md.Body.Instructions)
+                {
+                    //Calls a method.
+                    if (inst.OpCode == OpCodes.Call || inst.OpCode == OpCodes.Callvirt || inst.Operand == null)
+                    {
+                        //This shouldn't be possible but okay.
+                        if (inst.Operand == null)
+                            continue;
+
+                        MethodDefinition targetMethod;
+                        System.Type operandType = inst.Operand.GetType();
+                        if (operandType == typeof(MethodDefinition))
+                        {
+                            targetMethod = (MethodDefinition)inst.Operand;
+                        }
+                        else if (operandType == typeof(MethodReference))
+                        {
+                            MethodReference mr = (MethodReference)inst.Operand;
+                            targetMethod = mr.Resolve();
+                        }
+                        //Type isn't found, unable to remove call.
+                        else
+                        {
+                            continue;
+                        }
+                        //Target method couldn't be looked up.
+                        if (targetMethod == null)
+                            continue;
+                        GetQOLAttribute(targetMethod, out QolAttributeType qt);
+
+                        bool redirectCall;
+                        if (qt == QolAttributeType.Client)
+                            redirectCall = (CodeStripping.StripBuild && CodeStripping.ReleasingForServer);
+                        else if (qt == QolAttributeType.Server)
+                            redirectCall = (CodeStripping.StripBuild && CodeStripping.ReleasingForClient);
+                        else
+                            redirectCall = false;
+
+                        if (redirectCall)
+                        {
+                            if (md.Module != targetMethod.Module)
+                            {
+                                CodegenSession.LogError($"{md.Name} in {md.DeclaringType.Name}/{md.Module.Name} calls method {targetMethod.Name} in {targetMethod.DeclaringType.Name}/{targetMethod.Module.Name}. Code stripping cannot work on client and server attributed methods when they are being called across assemblies. Use an accessor method within {targetMethod.DeclaringType.Name}/{targetMethod.Module.Name} to resolve this.");
+                            }
+                            else
+                            {
+                                MethodDefinition dummyMd = GetOrMakeDummyMethod(md, targetMethod);
+                                targetMethod.Module.ImportReference(dummyMd);
+                                md.Module.ImportReference(dummyMd);
+                                inst.Operand = dummyMd;
+                            }
+                        }
+                    }
+
+                }
+
+            }
+
+            //Gets a dummy method in targetMd, or creates it should it not exist.
+            MethodDefinition GetOrMakeDummyMethod(MethodDefinition callerMd, MethodDefinition targetMd)
+            {
+                string mdName = $"CallDummyMethod___{RpcProcessor.GetMethodNameAsParameters(targetMd)}";
+                MethodDefinition result = targetMd.DeclaringType.GetMethod(mdName);
+                if (result == null)
+                {
+                    TypeReference returnType = CodegenSession.ImportReference(targetMd.ReturnType);
+                    result = new MethodDefinition(mdName, targetMd.Attributes, returnType);
+                    foreach (var item in targetMd.Parameters)
+                    {
+                        CodegenSession.ImportReference(item.ParameterType);
+                        result.Parameters.Add(item);
+                    }
+
+                    targetMd.DeclaringType.Methods.Add(result);
+                    result.ClearMethodWithRet(callerMd.Module);
+                    result.Body.InitLocals = true;
+                }
+
+                callerMd.Module.ImportReference(result);
+                targetMd.Module.ImportReference(result);
+
+                return result;
+            }
+
+
+        }
+        //PROEND
     }
 
 }

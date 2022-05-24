@@ -38,8 +38,6 @@ namespace FishNet.Managing.Client
             //Link index isn't stored.
             if (!_rpcLinks.TryGetValueIL2CPP(index, out RpcLink link))
             {
-                /* Like other reliable communications the object
-                * should never be missing.*/
                 SkipDataLength(index, reader, dataLength);
                 return;
             }

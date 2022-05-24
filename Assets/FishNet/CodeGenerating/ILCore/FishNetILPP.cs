@@ -271,7 +271,9 @@ namespace FishNet.CodeGenerating.ILCore
             bool modified = false;
 
             bool codeStripping = false;
-            
+            //PROSTART
+            codeStripping = CodeStripping.StripBuild;
+            //PROEND
             List<TypeDefinition> allTypeDefs = CodegenSession.Module.Types.ToList();
 
             /* First pass, potentially only pass.
@@ -285,7 +287,19 @@ namespace FishNet.CodeGenerating.ILCore
                 modified |= CodegenSession.QolAttributeProcessor.Process(td, codeStripping);
             }
 
-            
+            //PROSTART
+            /* If stripping then remove the remainder content */
+            if (codeStripping)
+            {
+                foreach (TypeDefinition td in allTypeDefs)
+                {
+                    if (CodegenSession.GeneralHelper.IgnoreTypeDefinition(td))
+                        continue;
+
+                    modified |= CodegenSession.QolAttributeProcessor.Process(td, false);
+                }
+            }
+            //PROEND
 
             return modified;
         }

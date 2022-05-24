@@ -9,7 +9,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace FishNet.Runtime.Editor.PrefabObjects.Generation
+namespace FishNet.Editing
 {
 	internal sealed class Generator : AssetPostprocessor
 	{
@@ -71,7 +71,7 @@ namespace FishNet.Runtime.Editor.PrefabObjects.Generation
 				}
 			}
 
-			SinglePrefabObjects prefabCollection = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>(settings.assetPath);
+			DefaultPrefabObjects prefabCollection = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(settings.assetPath);
 
 			if (prefabCollection == null)
 			{
@@ -84,7 +84,7 @@ namespace FishNet.Runtime.Editor.PrefabObjects.Generation
 					AssetDatabase.Refresh();
 				}
 
-				prefabCollection = ScriptableObject.CreateInstance<SinglePrefabObjects>();
+				prefabCollection = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
 
 				AssetDatabase.CreateAsset(prefabCollection, settings.assetPath);
 

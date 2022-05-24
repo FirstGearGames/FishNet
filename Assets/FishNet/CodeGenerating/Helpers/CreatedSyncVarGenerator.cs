@@ -10,7 +10,7 @@ namespace FishNet.CodeGenerating.Helping
 {
     internal class CreatedSyncVarGenerator
     {
-        private readonly Dictionary<TypeDefinition, CreatedSyncVar> _createdSyncVars = new Dictionary<TypeDefinition, CreatedSyncVar>(new TypeDefinitionComparer());
+        private readonly Dictionary<string, CreatedSyncVar> _createdSyncVars = new Dictionary<string, CreatedSyncVar>();
 
         #region Relfection references.
         private TypeReference _syncBase_TypeRef;
@@ -55,7 +55,9 @@ namespace FishNet.CodeGenerating.Helping
             TypeReference dataTr = originalFd.FieldType;
             TypeDefinition dataTd = dataTr.CachedResolve();
 
-            if (_createdSyncVars.TryGetValue(dataTd, out CreatedSyncVar createdSyncVar))
+            string typeHash = dataTr.FullName + dataTr.IsArray.ToString();
+
+            if (_createdSyncVars.TryGetValue(typeHash, out CreatedSyncVar createdSyncVar))
             {
                 return createdSyncVar;
             }
@@ -107,7 +109,7 @@ namespace FishNet.CodeGenerating.Helping
                     return null;
 
                 CreatedSyncVar csv = new CreatedSyncVar(syncVarGit, dataTd, getValueMr, setValueMr, setSyncIndexMr, null, genericSyncVarCtor);
-                _createdSyncVars.Add(dataTd, csv);
+                _createdSyncVars.Add(typeHash, csv);
                 return csv;
             }
         }

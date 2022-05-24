@@ -571,10 +571,18 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Tries to removes objectId from PendingDestroy and returns if successful.
         /// </summary>
-        /// <param name="objectId"></param>
         internal bool RemoveFromPending(int objectId)
         {
             return _pendingDestroy.Remove(objectId);
+        }
+        /// <summary>
+        /// Returns a NetworkObject in PendingDestroy.
+        /// </summary>
+        internal NetworkObject GetFromPending(int objectId)
+        {
+            NetworkObject nob;
+            _pendingDestroy.TryGetValue(objectId, out nob);
+            return nob;
         }
         /// <summary>
         /// Destroys NetworkObjects pending for destruction.

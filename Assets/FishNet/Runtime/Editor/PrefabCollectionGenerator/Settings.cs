@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace FishNet.Runtime.Editor.PrefabObjects.Generation
+namespace FishNet.Editing
 {
 	internal sealed class Settings
 	{
