@@ -520,11 +520,18 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             List<Instruction> allReadInsts;
             CreateRpcReadInstructions(createdMd, readerParameterDef, serializedParameters, out readVariableDefs, out allReadInsts);
 
-            Instruction retInst = CreateServerRpcConditionsForServer(processor, requireOwnership, connectionParameterDef);
-            if (retInst != null)
-                processor.InsertBefore(retInst, allReadInsts);
             //Read to clear pooledreader.
             processor.Add(allReadInsts);
+
+            /* Don't continue if server is not active.
+             * This can happen if an object is deinitializing
+             * as a RPC arrives. When separate server and client
+             * this should not occur but there's a chance as host
+             * because deinitializations are slightly delayed to support
+             * the clientHost deinitializing the object as well. */
+            CodegenSession.ObjectHelper.CreateIsServerCheck(createdMd, LoggingType.Off, false, false);
+            //
+            CreateServerRpcConditionsForServer(processor, requireOwnership, connectionParameterDef);
 
             //Block from running twice as host.
             if (runLocally)
@@ -569,16 +576,16 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         private MethodDefinition CreateClientRpcReaderMethod(List<ParameterDefinition> serializedParameters, List<AttributeData> attributeDatas, CreatedRpc cr)
         {
             MethodDefinition originalMd = cr.OriginalMethodDef;
-            MethodDefinition readerMd = cr.ReaderMethodDef;
+            MethodDefinition createdMd = cr.ReaderMethodDef;
             RpcType rpcType = cr.RpcType;
             CustomAttribute rpcAttribute = cr.Attribute;
             bool runLocally = cr.RunLocally;
 
-            ILProcessor processor = readerMd.Body.GetILProcessor();
+            ILProcessor processor = createdMd.Body.GetILProcessor();
 
             //Create PooledReader parameter.
-            ParameterDefinition readerParameterDef = CodegenSession.GeneralHelper.CreateParameter(readerMd, CodegenSession.ReaderHelper.PooledReader_TypeRef);
-            ParameterDefinition channelParameterDef = GetOrCreateChannelParameter(readerMd, rpcType);
+            ParameterDefinition readerParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdMd, CodegenSession.ReaderHelper.PooledReader_TypeRef);
+            ParameterDefinition channelParameterDef = GetOrCreateChannelParameter(createdMd, rpcType);
             /* It's very important to read everything
              * from the PooledReader before applying any
              * exit logic. Should the method return before
@@ -586,9 +593,17 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * packet will be malformed due to invalid index. */
             VariableDefinition[] readVariableDefs;
             List<Instruction> allReadInsts;
-            CreateRpcReadInstructions(readerMd, readerParameterDef, serializedParameters, out readVariableDefs, out allReadInsts);
+            CreateRpcReadInstructions(createdMd, readerParameterDef, serializedParameters, out readVariableDefs, out allReadInsts);
             //Read instructions even if not to include owner.
             processor.Add(allReadInsts);
+
+            /* Don't continue if client is not active.
+            * This can happen if an object is deinitializing
+            * as a RPC arrives. When separate server and client
+            * this should not occur but there's a chance as host
+            * because deinitializations are slightly delayed to support
+            * the clientHost deinitializing the object as well. */
+            CodegenSession.ObjectHelper.CreateIsClientCheck(createdMd, LoggingType.Off, false, false);
 
             /* ObserversRpc IncludeOwnerCheck. */
             if (rpcType == RpcType.Observers)
@@ -598,14 +613,14 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 if (!includeOwner)
                 {
                     //Create return if owner.
-                    Instruction retInst = CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(readerMd, LoggingType.Off, true, true, true);
+                    Instruction retInst = CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdMd, LoggingType.Off, true, true, true);
                     processor.InsertBefore(retInst, allReadInsts);
                 }
             }
 
             //Block from running twice as host.
             if (runLocally)
-                processor.Add(CreateIsHostBlock(readerMd));
+                processor.Add(CreateIsHostBlock(createdMd));
 
             processor.Emit(OpCodes.Ldarg_0); //this.
             /* TargetRpc passes in localconnection
@@ -633,7 +648,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             processor.Emit(OpCodes.Call, cr.LogicMethodDef);
             processor.Emit(OpCodes.Ret);
 
-            return readerMd;
+            return createdMd;
         }
 
 

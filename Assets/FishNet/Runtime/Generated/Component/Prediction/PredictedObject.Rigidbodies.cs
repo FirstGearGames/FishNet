@@ -105,8 +105,8 @@ namespace FishNet.Component.Prediction
 
             if (canCalculate)
             {
-                SetTransformMoveRates();
                 ResetToTransformPreviousProperties();
+                SetTransformMoveRates();
             }
         }
 
@@ -353,8 +353,8 @@ namespace FishNet.Component.Prediction
             _receivedRigidbodyState = state;
             ResetRigidbodyToData();
 
-            SetTransformMoveRates();
             ResetToTransformPreviousProperties();
+            SetTransformMoveRates();
         }
         #endregion
 
@@ -471,8 +471,8 @@ namespace FishNet.Component.Prediction
             _receivedRigidbody2DState = state;
             ResetRigidbody2DToData();
 
-            SetTransformMoveRates();
             ResetToTransformPreviousProperties();
+            SetTransformMoveRates();
         }
         #endregion
 

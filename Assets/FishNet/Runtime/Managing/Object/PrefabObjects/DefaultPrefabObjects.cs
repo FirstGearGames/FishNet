@@ -16,17 +16,6 @@ namespace FishNet.Managing.Object
     public class DefaultPrefabObjects : SinglePrefabObjects
     {
         /// <summary>
-        /// True if this can be automatically populated.
-        /// </summary>
-        internal static bool CanAutomate = true;
-
-        /// <summary>
-        /// True if this refreshed while playing.
-        /// </summary>
-        [System.NonSerialized]
-        private bool _refreshedWhilePlaying = false;
-
-        /// <summary>
         /// Sorts prefabs by name and path hashcode.
         /// </summary>
         internal void Sort()
@@ -57,49 +46,6 @@ namespace FishNet.Managing.Object
             base.AddObjects(sortedNobs, false);
 #endif
         }
-
-        /// <summary>
-        /// Populates this DefaultPrefabObjects.
-        /// </summary>
-        internal void AutoPopulateDefaultPrefabs(bool log = true, bool clear = true)
-        {
-            if (!CanAutomate)
-            {
-                Debug.Log("Auto populating DefaultPrefabs is blocked.");
-                return;
-            }
-
-            PopulateDefaultPrefabs(log, clear);
-        }
-
-        /// <summary>
-        /// Populates this DefaultPrefabObjects.
-        /// </summary>
-        internal void PopulateDefaultPrefabs(bool log = true, bool clear = true)
-        {
-#if UNITY_EDITOR
-            DefaultPrefabsFinder.PopulateDefaultPrefabs(log, clear);
-#endif
-        }
-        /* Try to recover invalid/null prefab errors in editor.
-         * This can occur when simlinking or when the asset processor
-         * doesn't function properly. */
-        public override NetworkObject GetObject(bool asServer, int id)
-        {
-            //Only error check cases where the collection may be wrong.
-            bool error = (id >= base.Prefabs.Count ||
-                base.Prefabs[id] == null);
-
-            if (error && !_refreshedWhilePlaying)
-            {
-                //This prevents the list from trying to populate several times before exiting play mode.
-                _refreshedWhilePlaying = true;
-                AutoPopulateDefaultPrefabs(false);
-            }
-
-            return base.GetObject(asServer, id);
-        }
-
 
 
     }

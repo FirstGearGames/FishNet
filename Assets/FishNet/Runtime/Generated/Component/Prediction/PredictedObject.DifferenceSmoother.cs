@@ -27,8 +27,7 @@ namespace FishNet.Component.Prediction
             if (_smoothTicks)
                 return;
 
-            _previousPosition = _graphicalObject.position;
-            _previousRotation = _graphicalObject.rotation;
+            SetPreviousTransformProperties();
         }
 
         /// <summary>
@@ -42,8 +41,7 @@ namespace FishNet.Component.Prediction
             if (!CanSmooth())
                 return;
 
-            //Set transform back to where it was before reconcile so there's no visual disturbances.
-            _graphicalObject.SetPositionAndRotation(_previousPosition, _previousRotation);
+            ResetToTransformPreviousProperties();
             SetTransformMoveRates(_smoothingDuration);
         }
 

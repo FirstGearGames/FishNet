@@ -39,8 +39,9 @@ namespace FishNet.Configuring.Editing
         [MenuItem("Fish-Networking/Configuration", false, 0)]
         public static void ShowConfiguration()
         {
-            EditorWindow window = GetWindow<ConfigurationEditor>();
-            window.titleContent = new GUIContent("Fish-Networking Configuration");
+            SettingsService.OpenProjectSettings("Project/Fish-Networking/Configuration");
+            //EditorWindow window = GetWindow<ConfigurationEditor>();
+            //window.titleContent = new GUIContent("Fish-Networking Configuration");
             //Dont worry about capping size until it becomes a problem.
             //const int width = 200;
             //const int height = 100;

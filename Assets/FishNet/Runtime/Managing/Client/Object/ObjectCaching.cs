@@ -15,6 +15,15 @@ namespace FishNet.Managing.Client
     /// </summary>
     internal class ClientObjectCache
     {
+        #region Types.
+        public enum CacheSearchType
+        {
+            Any = 0,
+            Spawning = 1,
+            Despawning = 2
+        }
+        #endregion
+
         #region Private.
         /// <summary>
         /// Cached objects buffer. Contains spawns and despawns.
@@ -31,6 +40,35 @@ namespace FishNet.Managing.Client
             _clientObjects = cobs;
         }
 
+        /// <summary>
+        /// Returns a NetworkObject found in spawned cache using objectId.
+        /// </summary>
+        /// <param name="objectId"></param>
+        /// <returns></returns>
+        public NetworkObject GetInCached(int objectId, CacheSearchType searchType)
+        {
+            int count = _cachedObjects.Written;
+            List<CachedNetworkObject> collection = _cachedObjects.Collection;
+            for (int i = 0; i < count; i++)
+            {
+                CachedNetworkObject cnob = collection[i];
+                if (cnob.NetworkObject.ObjectId == objectId)
+                {
+                    //Any condition always returns.
+                    if (searchType == CacheSearchType.Any)
+                        return cnob.NetworkObject;
+
+                    bool spawning = (searchType == CacheSearchType.Spawning);
+                    if (cnob.Spawn == spawning)
+                        return cnob.NetworkObject;
+                    else
+                        return null;
+                }
+            }
+
+            //Fall through.
+            return null;
+        }
         /// <summary>
         /// Initializes for a spawned NetworkObject.
         /// </summary>

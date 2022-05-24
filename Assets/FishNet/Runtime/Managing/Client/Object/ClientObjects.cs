@@ -179,9 +179,8 @@ namespace FishNet.Managing.Client
                  * a set length and data must be read through completion.
                  * The only way to know where completion of syncvar is, versus
                  * when another packet starts is by including the length. */
-                int length = reader.ReadInt32();
-                if (length > 0)
-                    nb.OnSyncType(reader, length, isSyncObject);
+                if (dataLength > 0)
+                    nb.OnSyncType(reader, dataLength, isSyncObject);
             }
             else
             {
@@ -255,6 +254,14 @@ namespace FishNet.Managing.Client
             ArraySegment<byte> rpcLinks = reader.ReadArraySegmentAndSize();
             ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
 
+            /* If nob is null and is host see if it's in pending destroy.
+             * This can occur when the networkobject is spawned and despawned on
+             * the server before it's sent to the client. This happens because the
+             * server spawns the object, queues spawn package, despawns, queues despawn packet,
+             * then removes it from Spawned. By the time the packet sends the object cannot be found
+             * except in pending. */
+            if (nob == null && NetworkManager.IsHost)
+                nob = NetworkManager.ServerManager.Objects.GetFromPending(objectId);
             /*If nob is null then exit method. Since ClientObjects gets nob from
              * server objects as host this can occur sometimes
              * when the object is destroyed on server before client gets
@@ -267,7 +274,6 @@ namespace FishNet.Managing.Client
                     if (NetworkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"Spawn object could not be found or created for Id {objectId}; scene object: {sceneObject}.");
                 }
-
                 return;
             }
             else
@@ -307,8 +313,21 @@ namespace FishNet.Managing.Client
         internal void CacheDespawn(PooledReader reader)
         {
             int objectId = reader.ReadNetworkObjectId();
+            //Try checking already spawned objects first.
             if (base.Spawned.TryGetValueIL2CPP(objectId, out NetworkObject nob))
+            { 
                 _objectCache.AddDespawn(nob);
+            }
+            /* If not found in already spawned objects see if
+             * the networkObject is in the objectCache. It's possible the despawn
+             * came immediately or shortly after the spawn message, before
+             * the object has been initialized. */
+            else
+            {
+                NetworkObject nob2 = _objectCache.GetInCached(objectId, ClientObjectCache.CacheSearchType.Any);
+                if (nob2 != null)
+                    _objectCache.AddDespawn(nob2);
+            }
         }
 
 
@@ -407,8 +426,6 @@ namespace FishNet.Managing.Client
                     NetworkObject prefab = NetworkManager.SpawnablePrefabs.GetObject(false, prefabId);
                     result = MonoBehaviour.Instantiate<NetworkObject>(prefab, position, rotation);
                     result.transform.SetParent(parentTransform, true);
-                    //result.transform.position = position;
-                    //result.transform.rotation = rotation;
                     result.transform.localScale = localScale;
                 }
                 //If host then find server instantiated object.

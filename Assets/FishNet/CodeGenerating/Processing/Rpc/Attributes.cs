@@ -4,6 +4,7 @@ using FishNet.Connection;
 using FishNet.Object.Helping;
 using MonoFN.Cecil;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace FishNet.CodeGenerating.Processing.Rpc
 {
@@ -32,12 +33,25 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         public List<AttributeData> GetRpcAttributes(MethodDefinition methodDef)
         {
             List<AttributeData> results = new List<AttributeData>();
-
+            string asyncAttributeFullName = typeof(AsyncStateMachineAttribute).FullName;
             foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
             {
                 RpcType rt = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute);
                 if (rt != RpcType.None)
+                {
                     results.Add(new AttributeData(customAttribute, rt));
+                }
+                //Not a rpc attribute.
+                else
+                {
+                    //Check if async.
+                    if (customAttribute.Is(asyncAttributeFullName))
+                    {
+                        CodegenSession.LogError($"{methodDef.Name} is an async RPC. This feature is not currently supported. You may instead run an async method from this RPC.");
+                        return new List<AttributeData>();
+                    }
+
+                }
             }
 
             //Nothing found, exit early.
@@ -57,13 +71,13 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             }
 
             //Next validate that the method is setup properly for each rpcType.
-            foreach (AttributeData ra in results)
+            foreach (AttributeData ad in results)
             {
                 //If not valid then return empty list.
-                if (!IsRpcMethodValid(methodDef, ra.RpcType))
+                if (!IsRpcMethodValid(methodDef, ad.RpcType))
                     return new List<AttributeData>();
             }
-           
+
             return results;
         }
 
@@ -99,6 +113,11 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             //Misc failing conditions.
             else
             {
+                //Check for async attribute.
+                foreach (CustomAttribute ca in methodDef.CustomAttributes)
+                {
+
+                }
             }
             //TargetRpc but missing correct parameters.
             if (rpcType == RpcType.Target)
