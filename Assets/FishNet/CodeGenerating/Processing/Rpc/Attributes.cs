@@ -34,6 +34,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         {
             List<AttributeData> results = new List<AttributeData>();
             string asyncAttributeFullName = typeof(AsyncStateMachineAttribute).FullName;
+            bool isAsync = false;
+
             foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
             {
                 RpcType rt = CodegenSession.AttributeHelper.GetRpcAttributeType(customAttribute);
@@ -46,11 +48,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 {
                     //Check if async.
                     if (customAttribute.Is(asyncAttributeFullName))
-                    {
-                        CodegenSession.LogError($"{methodDef.Name} is an async RPC. This feature is not currently supported. You may instead run an async method from this RPC.");
-                        return new List<AttributeData>();
-                    }
-
+                        isAsync = true;
                 }
             }
 
@@ -58,6 +56,12 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             if (results.Count == 0)
             {
                 return results;
+            }
+            //If has at least one RPC attrivbute and is an async method.
+            else if (isAsync)
+            {
+                CodegenSession.LogError($"{methodDef.Name} is an async RPC. This feature is not currently supported. You may instead run an async method from this RPC.");
+                return new List<AttributeData>();
             }
             //If more than one attribute make sure the combination is allowed.
             else if (results.Count >= 2)
