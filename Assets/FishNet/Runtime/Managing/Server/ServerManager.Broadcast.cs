@@ -10,6 +10,7 @@ using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -144,17 +145,44 @@ namespace FishNet.Managing.Server
             ushort key = reader.ReadUInt16();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.Broadcast, reader, channel);
 
-            // try to invoke the handler for that message
+            //Try to invoke the handler for that message
             if (_broadcastHandlers.TryGetValueIL2CPP(key, out HashSet<ClientBroadcastDelegate> handlers))
             {
                 int readerStartPosition = reader.Position;
                 /* //muchlater resetting the position could be better by instead reading once and passing in
                  * the object to invoke with. */
+                bool rebuildHandlers = false;
+                //True if data is read at least once. Otherwise it's length will have to be purged.
+                bool dataRead = false;
                 foreach (ClientBroadcastDelegate handler in handlers)
                 {
-                    reader.Position = readerStartPosition;
-                    handler.Invoke(conn, reader);
+                    if (handler.Target == null && NetworkManager.CanLog(LoggingType.Warning))
+                    {
+                        Debug.LogWarning($"A Broadcast handler target is null. This can occur when a script is destroyed but does not unregister from a Broadcast.");
+                        rebuildHandlers = true;
+                    }
+                    else
+                    {
+                        reader.Position = readerStartPosition;
+                        handler.Invoke(conn, reader);
+                        dataRead = true;
+                    }
                 }
+
+                //If rebuilding handlers...
+                if (rebuildHandlers)
+                {
+                    List<ClientBroadcastDelegate> dels = handlers.ToList();
+                    handlers.Clear();
+                    for (int i = 0; i < dels.Count; i++)
+                    {
+                        if (dels[i].Target != null)
+                            handlers.Add(dels[i]);
+                    }
+                }
+                //Make sure data was read as well.
+                if (!dataRead)
+                    reader.Skip(dataLength);
             }
             else
             {

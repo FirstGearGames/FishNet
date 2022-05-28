@@ -162,7 +162,7 @@ namespace FishNet.Object
             Channel channel = Channel.Unreliable;
             //Write history to methodWriter.
             PooledWriter methodWriter = WriterPool.GetWriter();
-            methodWriter.WriteToEnd(replicateBuffer, offset);
+            methodWriter.WriteList(replicateBuffer, offset);
 
             PooledWriter writer;
             //if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))

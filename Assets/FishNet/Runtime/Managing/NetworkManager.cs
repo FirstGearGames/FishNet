@@ -163,12 +163,12 @@ namespace FishNet.Managing
         #endregion
 
         #region Serialized.
-        /// <summary>
-        /// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
-        /// </summary>
-        [Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
-        [SerializeField]
-        private bool _refreshDefaultPrefabs = false;
+        ///// <summary>
+        ///// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
+        ///// </summary>
+        //[Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
+        //[SerializeField]
+        //private bool _refreshDefaultPrefabs = false;
         /// <summary>
         /// True to have your application run while in the background.
         /// </summary>
@@ -220,12 +220,11 @@ namespace FishNet.Managing
              * cloning tools sometimes don't synchronize
              * scriptable object changes, which is what
              * the default prefabs is. */
-            if (SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
-            {
-                if (_refreshDefaultPrefabs)
-                    FishNet.Editing.Generator.Generate();
-                dpo.Sort();
-            }
+            //if (SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
+            //{
+            //    if (_refreshDefaultPrefabs)
+            //        FishNet.Editing.Generator.Generate();
+            //}
 #endif
 
             _canPersist = CanInitialize();

@@ -202,8 +202,9 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Rebuilds observers on all objects for all connections.
+        /// Rebuilds observers on all NetworkObjects for all connections.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers()
         {
             ListCache<NetworkObject> nobCache = ListCaches.GetNetworkObjectCache();
@@ -219,9 +220,9 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Rebuilds observers on objects.
+        /// Rebuilds observers on NetworkObjects.
         /// </summary>
-        /// <param name="connection"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(NetworkObject[] nobs)
         {
             int count = nobs.Length;
@@ -230,9 +231,9 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Rebuilds observers on objects.
+        /// Rebuilds observers on NetworkObjects.
         /// </summary>
-        /// <param name="connection"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(List<NetworkObject> nobs)
         {
             int count = nobs.Count;
@@ -241,8 +242,9 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Rebuilds observers on objects.
+        /// Rebuilds observers on NetworkObjects.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(ListCache<NetworkObject> nobs)
         {
             int count = nobs.Written;
@@ -251,8 +253,9 @@ namespace FishNet.Managing.Server
                 RebuildObservers(collection[i]);
         }
         /// <summary>
-        /// Rebuilds observers on objects.
+        /// Rebuilds observers on NetworkObjects for connections.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(ListCache<NetworkObject> nobs, ListCache<NetworkConnection> conns)
         {
             int count = nobs.Written;
@@ -263,7 +266,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Rebuilds observers on all objects for a connections.
         /// </summary>
-        /// <param name="connection"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(ListCache<NetworkConnection> connections)
         {
             int count = connections.Written;
@@ -272,9 +275,9 @@ namespace FishNet.Managing.Server
                 RebuildObservers(collection[i]);
         }
         /// <summary>
-        /// Rebuilds observers on all objects for a connections.
+        /// Rebuilds observers on all objects for connections.
         /// </summary>
-        /// <param name="connection"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(NetworkConnection[] connections)
         {
             int count = connections.Length;
@@ -282,20 +285,29 @@ namespace FishNet.Managing.Server
                 RebuildObservers(connections[i]);
         }
         /// <summary>
-        /// Rebuilds observers on all objects for a connections.
+        /// Rebuilds observers on all objects for connections.
         /// </summary>
-        /// <param name="connection"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(List<NetworkConnection> connections)
         {
             int count = connections.Count;
             for (int i = 0; i < count; i++)
                 RebuildObservers(connections[i]);
         }
+
         /// <summary>
-        /// Rebuilds observers on all objects for a connection.
+        /// Rebuilds observers on all NetworkObjects for a connection.
         /// </summary>
-        /// <param name="connection"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(NetworkConnection connection)
+        {
+            RebuildObservers(Spawned.Values, connection);
+        }
+
+        /// <summary>
+        /// Rebuilds observers for a connection on NetworkObjects.
+        /// </summary>       
+        public void RebuildObservers(IEnumerable<NetworkObject> nobs, NetworkConnection connection)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             PooledWriter ownerWriter = WriterPool.GetWriter();
@@ -304,21 +316,21 @@ namespace FishNet.Managing.Server
             using (PooledWriter largeWriter = WriterPool.GetWriter())
             {
                 observerCacheIndex = 0;
-                foreach (NetworkObject nob in Spawned.Values)
+                foreach (NetworkObject n in nobs)
                 {
                     //If observer state changed then write changes.
-                    ObserverStateChange osc = nob.RebuildObservers(connection, false);
+                    ObserverStateChange osc = n.RebuildObservers(connection, false);
                     if (osc == ObserverStateChange.Added)
                     {
                         everyoneWriter.Reset();
                         ownerWriter.Reset();
-                        WriteSpawn(nob, connection, ref everyoneWriter, ref ownerWriter);
-                        CacheObserverChange(nob, ref observerCacheIndex);
+                        WriteSpawn(n, connection, ref everyoneWriter, ref ownerWriter);
+                        CacheObserverChange(n, ref observerCacheIndex);
                     }
                     else if (osc == ObserverStateChange.Removed)
                     {
                         everyoneWriter.Reset();
-                        WriteDespawn(nob, ref everyoneWriter);
+                        WriteDespawn(n, ref everyoneWriter);
                     }
                     else
                     {
@@ -327,7 +339,7 @@ namespace FishNet.Managing.Server
                     /* Only use ownerWriter if an add, and if owner. Owner //cleanup see if rebuild timed and this can be joined or reuse methods.
                      * doesn't matter if not being added because no owner specific
                      * information would be included. */
-                    PooledWriter writerToUse = (osc == ObserverStateChange.Added && nob.Owner == connection) ?
+                    PooledWriter writerToUse = (osc == ObserverStateChange.Added && n.Owner == connection) ?
                         ownerWriter : everyoneWriter;
 
                     largeWriter.WriteArraySegment(writerToUse.GetArraySegment());
@@ -351,33 +363,33 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Rebuilds observers for cached connections for a NetworkObject.
+        /// Rebuilds observers for connections on a NetworkObject.
         /// </summary>
-        private void RebuildObservers(NetworkObject networkObject, ListCache<NetworkConnection> cache)
+        private void RebuildObservers(NetworkObject nob, ListCache<NetworkConnection> conns)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             PooledWriter ownerWriter = WriterPool.GetWriter();
 
-            int written = cache.Written;
+            int written = conns.Written;
             for (int i = 0; i < written; i++)
             {
-                NetworkConnection conn = cache.Collection[i];
+                NetworkConnection conn = conns.Collection[i];
 
                 everyoneWriter.Reset();
                 ownerWriter.Reset();
                 //If observer state changed then write changes.
-                ObserverStateChange osc = networkObject.RebuildObservers(conn, false);
+                ObserverStateChange osc = nob.RebuildObservers(conn, false);
                 if (osc == ObserverStateChange.Added)
-                    WriteSpawn(networkObject, conn, ref everyoneWriter, ref ownerWriter);
+                    WriteSpawn(nob, conn, ref everyoneWriter, ref ownerWriter);
                 else if (osc == ObserverStateChange.Removed)
-                    WriteDespawn(networkObject, ref everyoneWriter);
+                    WriteDespawn(nob, ref everyoneWriter);
                 else
                     continue;
 
                 /* Only use ownerWriter if an add, and if owner. Owner
                  * doesn't matter if not being added because no owner specific
                  * information would be included. */
-                PooledWriter writerToUse = (osc == ObserverStateChange.Added && networkObject.Owner == conn) ?
+                PooledWriter writerToUse = (osc == ObserverStateChange.Added && nob.Owner == conn) ?
                     ownerWriter : everyoneWriter;
 
                 if (writerToUse.Length > 0)
@@ -388,7 +400,7 @@ namespace FishNet.Managing.Server
 
                     //If a spawn is being sent.
                     if (osc == ObserverStateChange.Added)
-                        networkObject.InvokePostOnServerStart(conn);
+                        nob.InvokePostOnServerStart(conn);
                 }
 
             }
@@ -402,7 +414,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Rebuilds observers for all connections for a NetworkObject.
         /// </summary>
-        /// <param name="nob">NetworkObject to rebuild on.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RebuildObservers(NetworkObject nob)
         {
             ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();
@@ -415,8 +427,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Rebuilds observers for a connection on NetworkObject.
         /// </summary>
-        /// <param name="nob">NetworkObject to rebuild on.</param>
-        /// <param name="conn">Connection to rebuild for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RebuildObservers(NetworkObject nob, NetworkConnection conn)
         {
             ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();
@@ -428,8 +439,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Rebuilds observers for connections on NetworkObject.
         /// </summary>
-        /// <param name="networkObject">NetworkObject to rebuild on.</param>
-        /// <param name="connections">Connections to rebuild for.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(NetworkObject networkObject, NetworkConnection[] connections)
         {
             ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();
@@ -441,8 +451,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Rebuilds observers for connections on NetworkObject.
         /// </summary>
-        /// <param name="networkObject">NetworkObject to rebuild on.</param>
-        /// <param name="connections">Connections to rebuild for.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(NetworkObject networkObject, List<NetworkConnection> connections)
         {
             ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();

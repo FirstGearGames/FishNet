@@ -141,11 +141,7 @@ namespace FishNet.Component.Prediction
 
             if (Application.isPlaying)
                 InitializeOnce();
-            PartialRigidbodies_Awake();
-            PartialDifferenceSmoother_Awake();
         }
-        partial void PartialRigidbodies_Awake();
-        partial void PartialDifferenceSmoother_Awake();
 
         public override void OnStartNetwork()
         {
@@ -153,43 +149,30 @@ namespace FishNet.Component.Prediction
             base.TimeManager.OnPostTick += TimeManager_OnPostTick;
             _instantiatedLocalPosition = _graphicalObject.localPosition;
             _instantiatedLocalRotation = _graphicalObject.localRotation;
-            PartialRigidbodies_OnStartNetwork();
         }
-        partial void PartialRigidbodies_OnStartNetwork();
 
         public override void OnStartClient()
         {
             base.OnStartClient();
             ChangeSubscriptions(true);
-            PartialRigidbodies_OnStartClient();
         }
-        partial void PartialRigidbodies_OnStartClient();
 
         public override void OnStopClient()
         {
             base.OnStopClient();
             ChangeSubscriptions(false);
-            PartialRigidbodies_OnStopClient();
         }
-        partial void PartialRigidbodies_OnStopClient();
-
         public override void OnStopNetwork()
         {
             base.OnStopNetwork();
             if (base.TimeManager != null)
                 base.TimeManager.OnPostTick -= TimeManager_OnPostTick;
-            PartialRigidbodies_OnStopNetwork();
         }
-        partial void PartialRigidbodies_OnStopNetwork();
 
         private void Update()
         {
-            PartialRigidbodies_Update();
-            PartialDifferenceSmoother_Update();
+            DifferenceSmoother_Update();
         }
-        partial void PartialRigidbodies_Update();
-        partial void PartialDifferenceSmoother_Update();
-
 
 
         protected void TimeManager_OnPostTick()
@@ -199,21 +182,17 @@ namespace FishNet.Component.Prediction
                 ResetToTransformPreviousProperties();
                 SetTransformMoveRates();
             }
-            PartialRigidbodies_TimeManager_OnPostTick();
+            Rigidbodies_TimeManager_OnPostTick();
         }
-        partial void PartialRigidbodies_TimeManager_OnPostTick();
-
 
         /// <summary>
         /// Called before performing a reconcile on NetworkBehaviour.
         /// </summary>
         protected virtual void TimeManager_OnPreReconcile(NetworkBehaviour obj)
         {
-            PartialRigidbodies_TimeManager_OnPreReconcile(obj);
-            PartialDifferenceSmoother_TimeManager_OnPreReconcile(obj);
+            Rigidbodies_TimeManager_OnPreReconcile(obj);
+            DifferenceSmoother_TimeManager_OnPreReconcile(obj);
         }
-        partial void PartialRigidbodies_TimeManager_OnPreReconcile(NetworkBehaviour obj);
-        partial void PartialDifferenceSmoother_TimeManager_OnPreReconcile(NetworkBehaviour obj);
 
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
@@ -221,21 +200,17 @@ namespace FishNet.Component.Prediction
         /// </summary>
         protected virtual void TimeManager_OnPostReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
         {
-            PartialRigidbodies_TimeManager_OnPostReplicateReplay(ps, ps2d);
+            Rigidbodies_TimeManager_OnPostReplicateReplay(ps, ps2d);
         }
-        partial void PartialRigidbodies_TimeManager_OnPostReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d);
 
         /// <summary>
         /// Called after performing a reconcile on a NetworkBehaviour.
         /// </summary>
         protected virtual void TimeManager_OnPostReconcile(NetworkBehaviour obj)
         {
-            PartialRigidbodies_TimeManager_OnPostReconcile(obj);
-            PartialDifferenceSmoother_TimeManager_OnPostReconcile(obj);
+            Rigidbodies_TimeManager_OnPostReconcile(obj);
+            DifferenceSmoother_TimeManager_OnPostReconcile(obj);
         }
-        partial void PartialRigidbodies_TimeManager_OnPostReconcile(NetworkBehaviour obj);
-        partial void PartialDifferenceSmoother_TimeManager_OnPostReconcile(NetworkBehaviour obj);
-
 
         private void TimeManager_OnPreTick()
         {

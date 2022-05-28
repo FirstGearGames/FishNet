@@ -53,7 +53,7 @@ namespace FishNet.CodeGenerating.Helping
                     continue;
                 }
                 //ReadToCollection.
-                else if (methodInfo.Name == nameof(PooledReader.ReadToCollection))
+                else if (methodInfo.Name == nameof(PooledReader.ReadArray))
                 {
                     Reader_ReadToCollection_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;

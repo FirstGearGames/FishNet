@@ -13,7 +13,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Called after a tick occurs; physics would have simulated if using PhysicsMode.TimeManager.
         /// </summary>
-        partial void PartialRigidbodies_TimeManager_OnPostTick()
+        private void Rigidbodies_TimeManager_OnPostTick()
         {
             if (!IsRigidbodyPrediction)
                 return;
@@ -44,19 +44,10 @@ namespace FishNet.Component.Prediction
             }
         }
 
-
-        partial void PartialRigidbodies_Update()
-        {
-            if (!CanPredict())
-                return;
-
-            MoveToTarget();
-        }
-
         /// <summary>
         /// Called before performing a reconcile on NetworkBehaviour.
         /// </summary>
-        partial void PartialRigidbodies_TimeManager_OnPreReconcile(NetworkBehaviour obj)
+        private void Rigidbodies_TimeManager_OnPreReconcile(NetworkBehaviour obj)
         {
             if (!CanPredict())
                 return;
@@ -92,7 +83,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Called after performing a reconcile on a NetworkBehaviour.
         /// </summary>
-        partial void PartialRigidbodies_TimeManager_OnPostReconcile(NetworkBehaviour obj)
+        private void Rigidbodies_TimeManager_OnPostReconcile(NetworkBehaviour obj)
         {
             if (!CanPredict())
                 return;
@@ -116,7 +107,7 @@ namespace FishNet.Component.Prediction
         /// Called before physics is simulated when replaying a replicate method.
         /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
         /// </summary>
-        partial void PartialRigidbodies_TimeManager_OnPostReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
+        private void Rigidbodies_TimeManager_OnPostReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
         {
             if (!CanPredict())
                 return;

@@ -9,7 +9,7 @@ namespace FishNet.Managing.Editing
     public class NetworkManagerEditor : Editor
     {
         private SerializedProperty _logging;
-        private SerializedProperty _refreshDefaultPrefabs;
+        //private SerializedProperty _refreshDefaultPrefabs;
         private SerializedProperty _runInBackground;
         private SerializedProperty _dontDestroyOnLoad;
         private SerializedProperty _persistence;
@@ -20,7 +20,7 @@ namespace FishNet.Managing.Editing
         private void OnEnable()
         {
             _logging = serializedObject.FindProperty("_logging");
-            _refreshDefaultPrefabs = serializedObject.FindProperty("_refreshDefaultPrefabs");
+          //  _refreshDefaultPrefabs = serializedObject.FindProperty("_refreshDefaultPrefabs");
             _runInBackground = serializedObject.FindProperty("_runInBackground");
             _dontDestroyOnLoad = serializedObject.FindProperty("_dontDestroyOnLoad");
             _persistence = serializedObject.FindProperty("_persistence");
@@ -60,31 +60,10 @@ namespace FishNet.Managing.Editing
             EditorGUILayout.LabelField("Prefabs", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_spawnablePrefabs);
-            EditorGUILayout.PropertyField(_refreshDefaultPrefabs);
-            ////Show manual refresh button if not auto refresh.
-            //if (_refreshDefaultPrefabs.boolValue == false)
-            //{
-            //    using (GUILayout.HorizontalScope hs = new GUILayout.HorizontalScope())
-            //    {
-            //        GUILayout.Space(15f);
-            //        if (GUILayout.Button("Manually Refresh Default Prefabs"))
-            //        {
-            //            if (networkManager.SpawnablePrefabs != null && networkManager.SpawnablePrefabs is DefaultPrefabObjects dpo)
-            //                dpo.PopulateDefaultPrefabs(true, true);
-            //        }      
-            //    }
+           // EditorGUILayout.PropertyField(_refreshDefaultPrefabs);
 
-            //}
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
-
-
-            //EditorGUILayout.LabelField("Experimental", EditorStyles.boldLabel);
-            //EditorGUI.indentLevel++;
-            //EditorGUILayout.PropertyField(_incomingIterationOrder);
-            //EditorGUILayout.PropertyField(_outgoingIterationOrder);
-            //EditorGUILayout.Space();
-            //EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();
         }

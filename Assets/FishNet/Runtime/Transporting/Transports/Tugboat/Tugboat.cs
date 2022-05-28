@@ -268,7 +268,16 @@ namespace FishNet.Transporting.Tugboat
         /// <returns></returns>
         public override float GetTimeout(bool asServer)
         {
-            return (asServer) ? -1f : (float)_timeout;
+            //Server and client uses the same timeout.
+            return (float)_timeout;
+        }
+        /// <summary>
+        /// Sets how long in seconds until either the server or client socket must go without data before being timed out.
+        /// </summary>
+        /// <param name="asServer">True to set the timeout for the server socket, false for the client socket.</param>
+        public override void SetTimeout(float value, bool asServer)
+        {
+            _timeout = (ushort)value;
         }
         /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.

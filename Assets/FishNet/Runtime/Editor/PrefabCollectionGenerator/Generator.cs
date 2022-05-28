@@ -11,113 +11,118 @@ using UnityEngine;
 
 namespace FishNet.Editing
 {
-	internal sealed class Generator : AssetPostprocessor
-	{
-		public static bool AutoTrigger = true;
+    internal sealed class Generator : AssetPostprocessor
+    {
+        public static bool IgnorePostProcess = false;
+        public static bool SortCollection = false;
 
-		private static IEnumerable<string> EnumerateDirectoriesRecursively(string directory, HashSet<string> excludedDirectories)
-		{
-			if (excludedDirectories.Contains(directory)) yield break;
+        private static IEnumerable<string> EnumerateDirectoriesRecursively(string directory, HashSet<string> excludedDirectories)
+        {
+            if (excludedDirectories.Contains(directory)) yield break;
 
-			yield return directory;
+            yield return directory;
 
-			foreach (string level1NestedDirectory in Directory.EnumerateDirectories(directory))
-			{
-				if (excludedDirectories.Contains(level1NestedDirectory)) continue;
+            foreach (string level1NestedDirectory in Directory.EnumerateDirectories(directory))
+            {
+                if (excludedDirectories.Contains(level1NestedDirectory)) continue;
 
-				foreach (string level2NestedDirectory in EnumerateDirectoriesRecursively(level1NestedDirectory, excludedDirectories))
-				{
-					yield return level2NestedDirectory;
-				}
-			}
-		}
-		
-		public static void Generate(Settings settings = null)
-		{
-			settings = settings ?? Settings.Load();
+                foreach (string level2NestedDirectory in EnumerateDirectoriesRecursively(level1NestedDirectory, excludedDirectories))
+                {
+                    yield return level2NestedDirectory;
+                }
+            }
+        }
 
-			if (!settings.isEnabled) return;
+        public static void Generate(Settings settings = null)
+        {
+            settings = settings ?? Settings.Load();
 
-			Stopwatch stopwatch = settings.enableLogging ? Stopwatch.StartNew() : null;
+            if (!settings.Enabled) return;
 
-			List<NetworkObject> networkObjectPrefabs = new List<NetworkObject>();
+            Stopwatch stopwatch = settings.LogToConsole ? Stopwatch.StartNew() : null;
 
-			if (settings.searchScope == Settings.SearchScope.EntireProject)
-			{
-				foreach (string directory in EnumerateDirectoriesRecursively("Assets", new HashSet<string>(settings.excludedFolders)))
-				{
-					foreach (string file in Directory.EnumerateFiles(directory, "*.prefab"))
-					{
-						NetworkObject networkObjectPrefab = AssetDatabase.LoadAssetAtPath<NetworkObject>(file);
+            List<NetworkObject> networkObjectPrefabs = new List<NetworkObject>();
 
-						if (networkObjectPrefab != null) networkObjectPrefabs.Add(networkObjectPrefab);
-					}
-				}
-			}
-			else if (settings.searchScope == Settings.SearchScope.SpecificFolders)
-			{
-				foreach (string folder in settings.includedFolders.Distinct())
-				{
-					bool includeSubfolders = folder[folder.Length - 1] == '*';
+            if (settings.SearchScope == Settings.SearchScopeType.EntireProject)
+            {
+                foreach (string directory in EnumerateDirectoriesRecursively("Assets", new HashSet<string>(settings.ExcludedFolders)))
+                {
+                    foreach (string file in Directory.EnumerateFiles(directory, "*.prefab"))
+                    {
+                        NetworkObject networkObjectPrefab = AssetDatabase.LoadAssetAtPath<NetworkObject>(file);
 
-					if (!Directory.Exists(includeSubfolders ? folder.Remove(folder.Length - 1) : folder)) continue;
+                        if (networkObjectPrefab != null) networkObjectPrefabs.Add(networkObjectPrefab);
+                    }
+                }
+            }
+            else if (settings.SearchScope == Settings.SearchScopeType.SpecificFolders)
+            {
+                foreach (string folder in settings.IncludedFolders.Distinct())
+                {
+                    bool includeSubfolders = folder[folder.Length - 1] == '*';
 
-					foreach (string file in Directory.EnumerateFiles(includeSubfolders ? folder.Remove(folder.Length - 1) : folder, "*.prefab", includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly))
-					{
-						NetworkObject networkObjectPrefab = AssetDatabase.LoadAssetAtPath<NetworkObject>(file);
+                    if (!Directory.Exists(includeSubfolders ? folder.Remove(folder.Length - 1) : folder)) continue;
 
-						if (networkObjectPrefab != null) networkObjectPrefabs.Add(networkObjectPrefab);
-					}
-				}
-			}
+                    foreach (string file in Directory.EnumerateFiles(includeSubfolders ? folder.Remove(folder.Length - 1) : folder, "*.prefab", includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly))
+                    {
+                        NetworkObject networkObjectPrefab = AssetDatabase.LoadAssetAtPath<NetworkObject>(file);
 
-			DefaultPrefabObjects prefabCollection = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(settings.assetPath);
+                        if (networkObjectPrefab != null) networkObjectPrefabs.Add(networkObjectPrefab);
+                    }
+                }
+            }
 
-			if (prefabCollection == null)
-			{
-				string directory = Path.GetDirectoryName(settings.assetPath);
+            DefaultPrefabObjects prefabCollection = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(settings.AssetPath);
 
-				if (!Directory.Exists(directory))
-				{
-					Directory.CreateDirectory(directory);
+            if (prefabCollection == null)
+            {
+                string directory = Path.GetDirectoryName(settings.AssetPath);
 
-					AssetDatabase.Refresh();
-				}
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
 
-				prefabCollection = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
+                    AssetDatabase.Refresh();
+                }
 
-				AssetDatabase.CreateAsset(prefabCollection, settings.assetPath);
+                prefabCollection = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
 
-				AssetDatabase.SaveAssets();
-			}
+                AssetDatabase.CreateAsset(prefabCollection, settings.AssetPath);
 
-			prefabCollection.Clear();
+                AssetDatabase.SaveAssets();
+            }
 
-			prefabCollection.AddObjects(networkObjectPrefabs);
+            prefabCollection.Clear();
 
-			EditorUtility.SetDirty(prefabCollection);
+            prefabCollection.AddObjects(networkObjectPrefabs);
 
-			if (settings.enableLogging)
-			{
-				stopwatch.Stop();
+            if (SortCollection)
+                prefabCollection.Sort();
 
-				UnityEngine.Debug.Log($"NetworkObject prefab collection '{Path.GetFileNameWithoutExtension(settings.assetPath)}' generation took {stopwatch.ElapsedMilliseconds} milliseconds to complete. {networkObjectPrefabs.Count} NetworkObject prefabs were found.");
-			}
-		}
+            EditorUtility.SetDirty(prefabCollection);
 
-		private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
-		{
-			if (!AutoTrigger) return;
+            if (settings.LogToConsole)
+            {
+                stopwatch.Stop();
 
-			Settings settings = Settings.Load();
+                UnityEngine.Debug.Log($"NetworkObject prefab collection '{Path.GetFileNameWithoutExtension(settings.AssetPath)}' generation took {stopwatch.ElapsedMilliseconds} milliseconds to complete. {networkObjectPrefabs.Count} NetworkObject prefabs were found.");
+            }
+        }
 
-			if ((importedAssets.Length == 1 && importedAssets[0] == settings.assetPath)
-				|| (deletedAssets.Length == 1 && deletedAssets[0] == settings.assetPath)
-				|| (movedAssets.Length == 1 && movedAssets[0] == settings.assetPath)) return;
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            if (IgnorePostProcess) return;
+            if (EditorApplication.isUpdating || EditorApplication.isCompiling) return;
 
-			Generate(settings);
-		}		
-	}
+            Settings settings = Settings.Load();
+
+            if ((importedAssets.Length == 1 && importedAssets[0] == settings.AssetPath)
+                || (deletedAssets.Length == 1 && deletedAssets[0] == settings.AssetPath)
+                || (movedAssets.Length == 1 && movedAssets[0] == settings.AssetPath)) return;
+
+            Generate(settings);
+        }
+    }
 }
 
 #endif

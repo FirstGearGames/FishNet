@@ -1045,6 +1045,19 @@ namespace FishNet.Serializing
 
         #region Generators.
         /// <summary>
+        /// Reads a list.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public List<T> ReadListAllocated<T>()
+        {
+            List<T> result = null;
+            ReadList<T>(ref result);
+            return result;
+        }
+        /// <summary>
         /// Reads into collection and returns amount read.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -1052,24 +1065,82 @@ namespace FishNet.Serializing
         /// <returns></returns>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int ReadToCollection<T>(ref T[] collection)
+        public int ReadList<T>(ref List<T> collection)
         {
             int count = ReadInt32();
-            if (count <= 0)
+            if (count == -1)
             {
-                return count;
+                return 0;
+            }
+            else if (count == 0)
+            {
+                if (collection == null)
+                    collection = new List<T>();
+
+                return 0;
             }
             else
             {
                 //Initialize buffer if not already done.
-                if (collection == null || collection.Length < count)
-                    collection = new T[count];
+                if (collection == null)
+                    collection = new List<T>(count);
+                else if (collection.Count < count)
+                    collection.Capacity = count;
 
                 for (int i = 0; i < count; i++)
                     collection[i] = Read<T>();
-            }
 
-            return count;
+                return count;
+            }
+        }
+        /// <summary>
+        /// Reads an array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T[] ReadArrayAllocated<T>()
+        {
+            T[] result = null;
+            ReadArray<T>(ref result);
+            return result;
+        }
+        /// <summary>
+        /// Reads into collection and returns amount read.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection"></param>
+        /// <returns></returns>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ReadArray<T>(ref T[] collection)
+        {
+            int count = ReadInt32();
+            if (count == -1)
+            {
+                return 0;
+            }
+            else if (count == 0)
+            {
+                if (collection == null)
+                    collection = new T[0];
+
+                return 0;
+            }
+            else
+            {
+                //Initialize buffer if not already done.
+                if (collection == null)
+                    collection = new T[count];
+                else if (collection.Length < count)
+                    Array.Resize(ref collection, count);
+
+                for (int i = 0; i < count; i++)
+                    collection[i] = Read<T>();
+
+                return count;
+            }
         }
 
         /// <summary>

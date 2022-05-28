@@ -912,45 +912,119 @@ namespace FishNet.Serializing
 
         #region Generators.
         /// <summary>
-        /// Writes to the end of value starting at offset.
+        /// Writes a list.
         /// </summary>
+        /// <param name="value">Collection to write.</param>
+        /// <param name="offset">Offset to begin at.</param>
+        /// <param name="count">Entries to write.</param>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteToEnd<T>(List<T> value, int offset)
+        public void WriteList<T>(List<T> value, int offset, int count)
         {
-            int count = value.Count;
-            if (value == null || offset >= count)
+            if (value == null)
             {
                 WriteInt32(-1);
             }
             else
             {
-
-                WriteInt32(count - offset);
-                for (int i = offset; i < count; i++)
-                    Write<T>(value[i]);
+                //If theres no values, or offset exceeds count then write 0 for count.
+                if (value.Count == 0 || (offset >= count))
+                {
+                    WriteInt32(0);
+                }
+                else
+                {
+                    WriteInt32(count);
+                    for (int i = 0; i < count; i++)
+                        Write<T>(value[i + offset]);
+                }
             }
         }
         /// <summary>
-        /// Writes to the end of value starting at offset.
+        /// Writes a list.
         /// </summary>
+        /// <param name="value">Collection to write.</param>
+        /// <param name="offset">Offset to begin at.</param>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteToEnd<T>(T[] value, int offset)
+        public void WriteList<T>(List<T> value, int offset)
         {
-            int length = value.Length;
-            if (value == null || offset >= length)
+            if (value == null)
+                WriteList<T>(null, 0, 0);
+            else
+                WriteList<T>(value, offset, value.Count);
+        }
+        /// <summary>
+        /// Writes a list.
+        /// </summary>
+        /// <param name="value">Collection to write.</param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteList<T>(List<T> value)
+        {
+            if (value == null)
+                WriteList<T>(null, 0, 0);
+            else
+                WriteList<T>(value, 0, value.Count);
+        }
+
+        /// <summary>
+        /// Writes an array.
+        /// </summary>
+        /// <param name="value">Collection to write.</param>
+        /// <param name="offset">Offset to begin at.</param>
+        /// <param name="count">Entries to write.</param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteArray<T>(T[] value, int offset, int count)
+        {
+            if (value == null)
             {
                 WriteInt32(-1);
             }
             else
             {
-
-                WriteInt32(length - offset);
-                for (int i = offset; i < length; i++)
-                    Write<T>(value[i]);
+                //If theres no values, or offset exceeds count then write 0 for count.
+                if (value.Length == 0 || (offset >= count))
+                {
+                    WriteInt32(0);
+                }
+                else
+                {
+                    WriteInt32(count);
+                    for (int i = 0; i < count; i++)
+                        Write<T>(value[i + offset]);
+                }
             }
         }
+        /// <summary>
+        /// Writes an array.
+        /// </summary>
+        /// <param name="value">Collection to write.</param>
+        /// <param name="offset">Offset to begin at.</param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteArray<T>(T[] value, int offset)
+        {
+            if (value == null)
+                WriteArray<T>(null, 0, 0);
+            else
+                WriteArray<T>(value, offset, value.Length);
+        }
+        /// <summary>
+        /// Writes an array.
+        /// </summary>
+        /// <param name="value">Collection to write.</param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteArray<T>(T[] value)
+        {
+            if (value == null)
+                WriteArray<T>(null, 0, 0);
+            else
+                WriteArray<T>(value, 0, value.Length);
+        }
+
 
         /// <summary>
         /// Writers any supported type.

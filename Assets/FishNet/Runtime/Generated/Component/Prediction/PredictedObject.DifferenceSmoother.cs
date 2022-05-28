@@ -10,7 +10,7 @@ namespace FishNet.Component.Prediction
         }
 
 
-        partial void PartialDifferenceSmoother_Update()
+        private void DifferenceSmoother_Update()
         {
             MoveToTarget();
         }
@@ -19,7 +19,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Called before performing a reconcile on NetworkBehaviour.
         /// </summary> 
-        partial void PartialDifferenceSmoother_TimeManager_OnPreReconcile(NetworkBehaviour obj)
+        private void DifferenceSmoother_TimeManager_OnPreReconcile(NetworkBehaviour obj)
         {
             //Requires to be owner.
             if (!base.IsOwner)
@@ -33,7 +33,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Called after performing a reconcile on a NetworkBehaviour.
         /// </summary>
-        partial void PartialDifferenceSmoother_TimeManager_OnPostReconcile(NetworkBehaviour obj)
+        private void DifferenceSmoother_TimeManager_OnPostReconcile(NetworkBehaviour obj)
         {
             //Requires to be owner.
             if (!base.IsOwner)

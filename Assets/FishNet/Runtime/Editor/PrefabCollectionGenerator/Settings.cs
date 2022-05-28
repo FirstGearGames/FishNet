@@ -13,33 +13,35 @@ namespace FishNet.Editing
 
 		private static string FilePath => Path.Combine(DirectoryPath, $"FishNet.Runtime.Editor.PrefabObjects.Generation.{nameof(Settings)}.json");
 
-		public enum SearchScope
+		public enum SearchScopeType
 		{
 			EntireProject,
 			SpecificFolders,
 		}
 
-		public bool isEnabled;
-		public bool enableLogging;
+		public bool Enabled;
+		public bool LogToConsole;
+		public bool SortCollection;
 
-		public string assetPath;
+		public string AssetPath;
 
-		public SearchScope searchScope;
+		public SearchScopeType SearchScope;
 
-		public List<string> excludedFolders;
-		public List<string> includedFolders;
+		public List<string> ExcludedFolders;
+		public List<string> IncludedFolders;
 
 		public Settings()
 		{
-			isEnabled = true;
-			enableLogging = false;
+			Enabled = true;
+			LogToConsole = true;
+			SortCollection = false;
 
-			assetPath = $"Assets{Path.DirectorySeparatorChar}FishNet{Path.DirectorySeparatorChar}Runtime{Path.DirectorySeparatorChar}DefaultPrefabObjects.asset";
+			AssetPath = $"Assets{Path.DirectorySeparatorChar}FishNet{Path.DirectorySeparatorChar}Runtime{Path.DirectorySeparatorChar}DefaultPrefabObjects.asset";
 
-			searchScope = SearchScope.EntireProject;
+			SearchScope = SearchScopeType.EntireProject;
 
-			excludedFolders = new List<string>();
-			includedFolders = new List<string>();
+			ExcludedFolders = new List<string>();
+			IncludedFolders = new List<string>();
 		}
 
 		public void Save()
