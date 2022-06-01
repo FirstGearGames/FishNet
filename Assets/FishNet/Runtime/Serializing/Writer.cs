@@ -935,8 +935,8 @@ namespace FishNet.Serializing
                 else
                 {
                     WriteInt32(count);
-                    for (int i = 0; i < count; i++)
-                        Write<T>(value[i + offset]);
+                    for (int i = offset; i < count; i++)
+                        Write<T>(value[i]);
                 }
             }
         }
@@ -952,7 +952,7 @@ namespace FishNet.Serializing
             if (value == null)
                 WriteList<T>(null, 0, 0);
             else
-                WriteList<T>(value, offset, value.Count);
+                WriteList<T>(value, offset, value.Count - offset);
         }
         /// <summary>
         /// Writes a list.
@@ -992,8 +992,8 @@ namespace FishNet.Serializing
                 else
                 {
                     WriteInt32(count);
-                    for (int i = 0; i < count; i++)
-                        Write<T>(value[i + offset]);
+                    for (int i = offset; i < count; i++)
+                        Write<T>(value[i]);
                 }
             }
         }
@@ -1009,7 +1009,7 @@ namespace FishNet.Serializing
             if (value == null)
                 WriteArray<T>(null, 0, 0);
             else
-                WriteArray<T>(value, offset, value.Length);
+                WriteArray<T>(value, offset, value.Length - offset);
         }
         /// <summary>
         /// Writes an array.

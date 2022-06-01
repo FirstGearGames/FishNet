@@ -18,6 +18,7 @@ namespace FishNet.CodeGenerating.Helping
     internal class GeneralHelper
     {
         #region Reflection references.
+        internal string CodegenExcludeAttribute_FullName;
         internal MethodReference Queue_Enqueue_MethodRef;
         internal MethodReference Queue_get_Count_MethodRef;
         internal MethodReference Queue_Dequeue_MethodRef;
@@ -55,10 +56,12 @@ namespace FishNet.CodeGenerating.Helping
         internal bool ImportReferences()
         {
             Type tmpType;
-            SR.MethodInfo tmpMi; 
+            SR.MethodInfo tmpMi;
 
             NonSerialized_Attribute_FullName = typeof(NonSerializedAttribute).FullName;
             Single_FullName = typeof(float).FullName;
+
+            CodegenExcludeAttribute_FullName = typeof(CodegenExcludeAttribute).FullName;
 
             tmpType = typeof(Queue<>);
             CodegenSession.ImportReference(tmpType);
@@ -159,7 +162,7 @@ namespace FishNet.CodeGenerating.Helping
 
 
 
-#region Resolves.
+        #region Resolves.
         /// <summary>
         /// Adds a typeRef to TypeReferenceResolves.
         /// </summary>
@@ -293,6 +296,22 @@ namespace FishNet.CodeGenerating.Helping
             foreach (SR.CustomAttributeData item in methodInfo.CustomAttributes)
             {
                 if (item.AttributeType == typeof(CodegenExcludeAttribute))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns if methodInfo should be ignored.
+        /// </summary>
+        /// <param name="methodInfo"></param>
+        /// <returns></returns>
+        internal bool IgnoreMethod(MethodDefinition methodDef)
+        {
+            foreach (CustomAttribute item in methodDef.CustomAttributes)
+            {
+                if (item.AttributeType.FullName == CodegenExcludeAttribute_FullName)
                     return true;
             }
 

@@ -6,6 +6,7 @@
 
 
 using FishNet.Connection;
+using FishNet.Documenting;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -134,7 +135,7 @@ namespace FishNet.Component.Transforming
             }
         }
 
-        private class TransformData
+        public class TransformData
         {
             public enum ExtrapolateState : byte
             {
@@ -152,7 +153,7 @@ namespace FishNet.Component.Transforming
             public NetworkBehaviour ParentBehaviour;
             public TransformData() { }
 
-            public void Reset()
+            internal void Reset()
             {
                 Tick = 0;
                 Snapped = false;
@@ -163,11 +164,11 @@ namespace FishNet.Component.Transforming
                 ExtrapolationState = ExtrapolateState.Disabled;
                 ParentBehaviour = null;
             }
-            public void Update(TransformData copy)
+            internal void Update(TransformData copy)
             {
                 Update(copy.Tick, copy.Position, copy.Rotation, copy.Scale, copy.ExtrapolatedPosition, copy.ParentBehaviour);
             }
-            public void Update(uint tick, Vector3 position, Quaternion rotation, Vector3 scale, Vector3 extrapolatedPosition, NetworkBehaviour parentBehaviour)
+            internal void Update(uint tick, Vector3 position, Quaternion rotation, Vector3 scale, Vector3 extrapolatedPosition, NetworkBehaviour parentBehaviour)
             {
                 Tick = tick;
                 Position = position;
@@ -180,6 +181,20 @@ namespace FishNet.Component.Transforming
 
         #endregion
 
+        #region Public.
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="prev"></param>
+        /// <param name="next"></param>
+        [APIExclude]
+        public delegate void DataReceivedChanged(TransformData prev, TransformData next);
+        /// <summary>
+        /// Called when new data is received. Previous and next data are provided. Next data may be manipulated.
+        /// This feature is experimental.
+        /// </summary>
+        public event DataReceivedChanged OnDataReceived;
+        #endregion
         #region Serialized.
         /// <summary>
         /// True to synchronize when this transform changes parent.
@@ -1451,6 +1466,7 @@ namespace FishNet.Component.Transforming
             GoalData nextGd = GetCachedGoalData();
             TransformData nextTd = nextGd.Transforms;
             UpdateTransformData(data, prevTd, nextTd, ref changedFull);
+            OnDataReceived?.Invoke(prevTd, nextTd);
             SetExtrapolation(prevTd, nextTd, channel);
 
             bool hasChanged = HasChanged(prevTd, nextTd);
@@ -1553,6 +1569,78 @@ namespace FishNet.Component.Transforming
         {
             _clientAuthoritative = false;
             _sendToOwner = false;
+        }
+
+        /// <summary>
+        /// Updates which properties are synchronized. This feature is experimental.
+        /// </summary>
+        /// <param name="value">Properties to synchronize.</param>
+        public void SetSynchronizedProperties(SynchronizedProperty value)
+        {
+            /* Make sure permissions are proper to change values.
+             * Let the server override client auth. 
+             *
+             * Can send if server.
+             * Or owner + client auth.
+             */
+            bool canSend = (
+                base.IsServer ||
+                (_clientAuthoritative && base.IsOwner)
+                );
+
+            if (!canSend)
+                return;
+
+            //If server send out observerRpc.
+            if (base.IsServer)
+                ObserversSetSynchronizedProperties(value);
+            //Otherwise send to the server.
+            else
+                ServerSetSynchronizedProperties(value);
+        }
+
+        /// <summary>
+        /// Sets synchronized values based on value.
+        /// </summary>
+        [ServerRpc]
+        private void ServerSetSynchronizedProperties(SynchronizedProperty value)
+        {
+            /* Client is trying to be sneaky ...
+             * a client should not be able to call this when NT isnt client auth. */
+            if (!_clientAuthoritative)
+                return;
+
+            SetSynchronizedPropertiesInternal(value);
+            ObserversSetSynchronizedProperties(value);
+        }
+
+        /// <summary>
+        /// Sets synchronized values based on value.
+        /// </summary>
+        [ObserversRpc(BufferLast = true)]
+        private void ObserversSetSynchronizedProperties(SynchronizedProperty value)
+        {
+            //Would have already run on server if host.
+            if (base.IsServer)
+                return;
+
+            SetSynchronizedPropertiesInternal(value);
+        }
+
+        /// <summary>
+        /// Sets synchronized values based on value.
+        /// </summary>
+        private void SetSynchronizedPropertiesInternal(SynchronizedProperty value)
+        {
+            _synchronizeParent = SynchronizedPropertyContains(value, SynchronizedProperty.Parent);
+            _synchronizePosition = SynchronizedPropertyContains(value, SynchronizedProperty.Position);
+            _synchronizeRotation = SynchronizedPropertyContains(value, SynchronizedProperty.Rotation);
+            _synchronizeScale = SynchronizedPropertyContains(value, SynchronizedProperty.Scale);
+
+            bool SynchronizedPropertyContains(SynchronizedProperty whole, SynchronizedProperty part)
+            {
+                return (whole & part) == part;
+            }
         }
     }
 

@@ -36,6 +36,8 @@ namespace FishNet.CodeGenerating.Processing
                 ExtensionType extensionType = GetExtensionType(methodDef);
                 if (extensionType == ExtensionType.None)
                     continue;
+                if (CodegenSession.GeneralHelper.IgnoreMethod(methodDef))
+                    continue;
 
                 MethodReference methodRef = CodegenSession.ImportReference(methodDef);
                 if (extensionType == ExtensionType.Write)
@@ -72,7 +74,9 @@ namespace FishNet.CodeGenerating.Processing
                 ExtensionType extensionType = GetExtensionType(methodDef);
                 if (extensionType == ExtensionType.None)
                     continue;
-
+                if (CodegenSession.GeneralHelper.IgnoreMethod(methodDef))
+                    continue;
+                 
                 declaredMethods.Add((methodDef, extensionType));
                 modified = true;
             }
