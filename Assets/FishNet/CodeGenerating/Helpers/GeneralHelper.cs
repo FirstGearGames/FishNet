@@ -51,6 +51,7 @@ namespace FishNet.CodeGenerating.Helping
         private Dictionary<FieldReference, FieldDefinition> _fieldReferenceResolves = new Dictionary<FieldReference, FieldDefinition>();
         private string NonSerialized_Attribute_FullName;
         private string Single_FullName;
+        private object fromMd;
         #endregion
 
         internal bool ImportReferences()
@@ -318,6 +319,63 @@ namespace FishNet.CodeGenerating.Helping
             return false;
         }
 
+        /// <summary>
+        /// Calls copiedMd with the assumption md shares the same parameters.
+        /// </summary>
+        internal void CallCopiedMethod(MethodDefinition md, MethodDefinition copiedMd)
+        {
+            ILProcessor processor = md.Body.GetILProcessor();
+            processor.Emit(OpCodes.Ldarg_0);
+            foreach (var item in copiedMd.Parameters)
+                processor.Emit(OpCodes.Ldarg, item);
+            processor.Emit(OpCodes.Call, copiedMd);
+
+        }
+
+        /// <summary>
+        /// Copies one method to another while transferring diagnostic paths.
+        /// </summary>
+        internal MethodDefinition CopyMethod(MethodDefinition originalMd, string toName, out bool alreadyCreated)
+        {
+            TypeDefinition typeDef = originalMd.DeclaringType;
+
+            MethodDefinition copyMd = typeDef.GetMethod(toName);
+            //Already made.
+            if (copyMd != null)
+            {
+                alreadyCreated = true;
+                return copyMd;
+            }
+            else
+            {
+                alreadyCreated = false;
+            }
+
+            //Create the method body.
+            copyMd = new MethodDefinition(
+                toName, originalMd.Attributes, originalMd.ReturnType);
+            typeDef.Methods.Add(copyMd);
+            copyMd.Body.InitLocals = true;
+
+            //Copy parameter expecations into new method.
+            foreach (ParameterDefinition pd in originalMd.Parameters)
+                copyMd.Parameters.Add(pd);
+
+            //Swap bodies.
+            (copyMd.Body, originalMd.Body) = (originalMd.Body, copyMd.Body);
+            //Move over all the debugging information
+            foreach (SequencePoint sequencePoint in originalMd.DebugInformation.SequencePoints)
+                copyMd.DebugInformation.SequencePoints.Add(sequencePoint);
+            originalMd.DebugInformation.SequencePoints.Clear();
+
+            foreach (CustomDebugInformation customInfo in originalMd.CustomDebugInformations)
+                copyMd.CustomDebugInformations.Add(customInfo);
+            originalMd.CustomDebugInformations.Clear();
+            //Swap debuginformation scope.
+            (originalMd.DebugInformation.Scope, copyMd.DebugInformation.Scope) = (copyMd.DebugInformation.Scope, originalMd.DebugInformation.Scope);
+
+            return copyMd;
+        }
 
         /// <summary>
         /// Creates the RuntimeInitializeOnLoadMethod attribute for a method.

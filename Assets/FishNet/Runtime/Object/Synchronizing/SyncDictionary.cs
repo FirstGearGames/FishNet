@@ -229,6 +229,8 @@ namespace FishNet.Object.Synchronizing
         public override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
+            //False for not full write.
+            writer.WriteBoolean(false);
             writer.WriteUInt32((uint)_changed.Count);
 
             for (int i = 0; i < _changed.Count; i++)
@@ -266,6 +268,8 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             base.WriteHeader(writer, false);
+            //True for full write.
+            writer.WriteBoolean(true);
             writer.WriteUInt32((uint)Collection.Count);
             foreach (KeyValuePair<TKey, TValue> item in Collection)
             {
@@ -292,8 +296,12 @@ namespace FishNet.Object.Synchronizing
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
             bool asClientAndHost = (!asServer && base.NetworkBehaviour.IsServer);
-            IDictionary<TKey, TValue> objects = (asClientAndHost) ? ClientHostCollection : Collection;
+            IDictionary<TKey, TValue> collection = (asClientAndHost) ? ClientHostCollection : Collection;
 
+            //Clear collection since it's a full write.
+            bool fullWrite = reader.ReadBoolean();
+            if (fullWrite)
+                collection.Clear();
 
             int changes = (int)reader.ReadUInt32();
             for (int i = 0; i < changes; i++)
@@ -310,18 +318,18 @@ namespace FishNet.Object.Synchronizing
                 {
                     key = reader.Read<TKey>();
                     value = reader.Read<TValue>();
-                    objects[key] = value;
+                    collection[key] = value;
                 }
                 //Clear.
                 else if (operation == SyncDictionaryOperation.Clear)
                 {
-                    objects.Clear();
+                    collection.Clear();
                 }
                 //Remove.
                 else if (operation == SyncDictionaryOperation.Remove)
                 {
                     key = reader.Read<TKey>();
-                    objects.Remove(key);
+                    collection.Remove(key);
                 }
 
                 InvokeOnChange(operation, key, value, false);

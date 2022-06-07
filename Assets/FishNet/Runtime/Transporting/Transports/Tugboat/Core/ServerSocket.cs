@@ -58,14 +58,6 @@ namespace FishNet.Transporting.Tugboat.Server
         /// </summary>
         private Queue<Packet> _outgoing = new Queue<Packet>();
         /// <summary>
-        /// Ids to disconnect next iteration. This ensures data goes through to disconnecting remote connections. This may be removed in a later release.
-        /// </summary>
-        private ListCache<int> _disconnectingNext = new ListCache<int>();
-        /// <summary>
-        /// Ids to disconnect immediately.
-        /// </summary>
-        private ListCache<int> _disconnectingNow = new ListCache<int>();
-        /// <summary>
         /// PossibleAttackEvents which need to be handled.
         /// </summary>
         private ConcurrentQueue<int> _possibleAttackEvents = new ConcurrentQueue<int>();
@@ -300,7 +292,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// Stops a remote client disconnecting the client from the server.
         /// </summary>
         /// <param name="connectionId">ConnectionId of the client to disconnect.</param>
-        internal bool StopConnection(int connectionId, bool immediately)
+        internal bool StopConnection(int connectionId)
         {
             //Server isn't running.
             if (_server == null || base.GetConnectionState() != LocalConnectionStates.Started)
@@ -310,24 +302,14 @@ namespace FishNet.Transporting.Tugboat.Server
             if (peer == null)
                 return false;
 
-            //Don't disconnect immediately, wait until next command iteration.
-            if (!immediately)
+            try
             {
-                _disconnectingNext.AddValue(connectionId);
-
+                peer.Disconnect();
+                base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, connectionId, base.Transport.Index));
             }
-            //Disconnect immediately.
-            else
+            catch
             {
-                try
-                {
-                    peer.Disconnect();
-                    base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, connectionId, base.Transport.Index));
-                }
-                catch
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
@@ -341,8 +323,6 @@ namespace FishNet.Transporting.Tugboat.Server
             _localConnectionStates.Clear();
             base.ClearPacketQueue(ref _incoming);
             base.ClearPacketQueue(ref _outgoing);
-            _disconnectingNext.Reset();
-            _disconnectingNow.Reset();
             while (_possibleAttackEvents.TryDequeue(out _)) ;
             _remoteConnectionEvents.Clear();
         }
@@ -402,38 +382,6 @@ namespace FishNet.Transporting.Tugboat.Server
         }
 
         /// <summary>
-        /// Dequeues and processes commands.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void DequeueDisconnects()
-        {
-            int count;
-
-            count = _disconnectingNow.Written;
-            //If there are disconnect nows.
-            if (count > 0)
-            {
-                List<int> collection = _disconnectingNow.Collection;
-                for (int i = 0; i < count; i++)
-                    StopConnection(collection[i], true);
-
-                _disconnectingNow.Reset();
-            }
-
-            count = _disconnectingNext.Written;
-            //If there are disconnect next.
-            if (count > 0)
-            {
-                List<int> collection = _disconnectingNext.Collection;
-                for (int i = 0; i < count; i++)
-                    _disconnectingNow.AddValue(collection[i]);
-
-                _disconnectingNext.Reset();
-            }
-        }
-
-
-        /// <summary>
         /// Dequeues and processes outgoing.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -489,7 +437,6 @@ namespace FishNet.Transporting.Tugboat.Server
         internal void IterateOutgoing()
         {
             DequeueOutgoing();
-            DequeueDisconnects();
         }
 
         /// <summary>

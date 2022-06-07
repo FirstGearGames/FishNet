@@ -75,7 +75,6 @@ namespace FishNet.Connection
             if (channel >= _toClientBundles.Count)
                 channel = 0;
 
-
             _toClientBundles[channel].Write(segment, forceNewBuffer);
             ServerDirty();
         }

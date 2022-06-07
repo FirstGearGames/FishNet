@@ -229,7 +229,7 @@ namespace FishNet.Object
             //True if data has been written and is ready to send.
             bool dataWritten = false;
             Dictionary<uint, SyncBase> collection = (isSyncObject) ? _syncObjects : _syncVars;
-            
+
             foreach (SyncBase sb in collection.Values)
             {
                 if (!sb.IsDirty)
@@ -271,7 +271,6 @@ namespace FishNet.Object
                         }
                     }
 
-                    int beforeWrite = writer.Length;
                     if (writer == null)
                     {
                         if (NetworkManager.CanLog(LoggingType.Error))
@@ -293,7 +292,7 @@ namespace FishNet.Object
                     _syncVarDirty = false;
                 return true;
             }
-            //At least one sync var was dirty.
+            //At least one sync type was dirty.
             else if (dataWritten)
             {
                 for (int i = 0; i < _syncTypeWriters.Length; i++)
@@ -306,13 +305,28 @@ namespace FishNet.Object
                         {
                             using (PooledWriter headerWriter = WriterPool.GetWriter())
                             {
+                                //Write the packetId and NB information.
                                 PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
                                 headerWriter.WritePacketId(packetId);
-
                                 PooledWriter dataWriter = WriterPool.GetWriter();
                                 dataWriter.WriteNetworkBehaviour(this);
-                                dataWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
-                                
+
+                                /* SyncVars need length written regardless because amount
+                                 * of data being sent per syncvar is unknown, and the packet may have
+                                 * additional data after the syncvars. Because of this we should only
+                                 * read up to syncvar length then assume the remainder is another packet. 
+                                 * 
+                                 * Reliable always has data written as well even if syncObject. This is so
+                                 * if an object does not exist for whatever reason the packet can be
+                                 * recovered by skipping the data.
+                                 * 
+                                 * Realistically everything will be a syncvar or on the reliable channel unless
+                                 * the user makes a custom syncobject that utilizes unreliable. */
+                                if (!isSyncObject || (Channel)channel == Channel.Reliable)
+                                    dataWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
+                                else
+                                    dataWriter.WriteBytes(channelWriter.GetBuffer(), 0, channelWriter.Length);
+
                                 //Attach data onto packetWriter.
                                 headerWriter.WriteArraySegment(dataWriter.GetArraySegment());
                                 dataWriter.Dispose();

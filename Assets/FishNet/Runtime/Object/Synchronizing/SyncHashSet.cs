@@ -211,6 +211,8 @@ namespace FishNet.Object.Synchronizing
         public override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
+            //False for not full write.
+            writer.WriteBoolean(false);
             writer.WriteUInt32((uint)_changed.Count);
 
             for (int i = 0; i < _changed.Count; i++)
@@ -238,6 +240,8 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             base.WriteHeader(writer, false);
+            //True for full write.
+            writer.WriteBoolean(true);
             int count = Collection.Count;
             writer.WriteUInt32((uint)count);
             foreach (T item in Collection)
@@ -262,6 +266,11 @@ namespace FishNet.Object.Synchronizing
             * and potentially overwrite data not yet sent. */
             bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
             ISet<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
+
+            //Clear collection since it's a full write.
+            bool fullWrite = reader.ReadBoolean();
+            if (fullWrite)
+                collection.Clear();
 
             int changes = (int)reader.ReadUInt32();
             for (int i = 0; i < changes; i++)

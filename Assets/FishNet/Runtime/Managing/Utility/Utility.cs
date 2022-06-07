@@ -23,7 +23,11 @@ namespace FishNet.Managing.Utility
             * Reliables also need length read in the instance a client
             * sends data to an object which server is despawning. Without
             * parsing length the remainer data from client will be corrupt. */
-            if ((PacketId)packetId == PacketId.Broadcast || channel == Channel.Reliable)
+            PacketId pid = (PacketId)packetId;
+            if (channel == Channel.Reliable ||
+                pid == PacketId.Broadcast ||
+                pid == PacketId.SyncVar
+                )
             {
                 return reader.ReadInt32();
             }

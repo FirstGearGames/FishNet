@@ -217,7 +217,6 @@ namespace FishNet.Managing.Server
             {
                 Broadcasts.WriteBroadcast<T>(writer, message, channel);
                 ArraySegment<byte> segment = writer.GetArraySegment();
-
                 NetworkManager.TransportManager.SendToClient((byte)channel, segment, connection);
             }
         }

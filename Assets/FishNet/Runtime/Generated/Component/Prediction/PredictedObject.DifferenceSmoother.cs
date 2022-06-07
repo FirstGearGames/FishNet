@@ -4,12 +4,6 @@ namespace FishNet.Component.Prediction
 {
     public partial class PredictedObject : NetworkBehaviour
     {
-        private void OnDisable()
-        {
-            ChangeSubscriptions(false);
-        }
-
-
         private void DifferenceSmoother_Update()
         {
             MoveToTarget();

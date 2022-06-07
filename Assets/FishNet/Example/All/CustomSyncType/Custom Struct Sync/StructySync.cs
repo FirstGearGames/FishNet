@@ -148,6 +148,8 @@ namespace FishNet.Example.CustomSyncObject
         public override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
+            //False for not full write.
+            writer.WriteBoolean(false);
             writer.WriteUInt32((uint)_changed.Count);
 
             for (int i = 0; i < _changed.Count; i++)

@@ -540,10 +540,10 @@ namespace FishNet.CodeGenerating.Processing
         {
             predictionReaders = null;
 
-            //Copy current instructions and add them at the end.
-            List<Instruction> replicateUserInsts = replicateMd.Body.Instructions.ToList();
+            string copySuffix = "___UserLogic";
+            MethodDefinition replicateUserMd = CodegenSession.GeneralHelper.CopyMethod(replicateMd, $"{replicateMd.Name}{copySuffix}", out _);
+            MethodDefinition reconcileUserMd = CodegenSession.GeneralHelper.CopyMethod(reconcileMd, $"{reconcileMd.Name}{copySuffix}", out _);
             replicateMd.Body.Instructions.Clear();
-            List<Instruction> reconcileUserInsts = reconcileMd.Body.Instructions.ToList();
             reconcileMd.Body.Instructions.Clear();
 
             MethodDefinition replicateReader;
@@ -585,7 +585,9 @@ namespace FishNet.CodeGenerating.Processing
                 /***************************/
                 processor.Append(afterNotAsServerInst);
 
-                processor.Add(replicateUserInsts);
+                //Call user instr method.
+                CodegenSession.GeneralHelper.CallCopiedMethod(replicateMd, replicateUserMd);
+                processor.Emit(OpCodes.Ret);
 
                 return true;
             }
@@ -613,11 +615,9 @@ namespace FishNet.CodeGenerating.Processing
                 SetReconcileData(reconcileMd, predictionFields);
                 //Invoke reconciling start. 
                 processor.Add(InvokeOnReconcile(reconcileMd, true));
-                /* Remove ret from user instructions if last instruction.)
-                 * Then add user instructions. */
-                if (reconcileUserInsts[reconcileUserInsts.Count - 1].OpCode == OpCodes.Ret)
-                    reconcileUserInsts.RemoveAt(reconcileUserInsts.Count - 1);
-                processor.Add(reconcileUserInsts);
+
+                //Call user instr method.
+                CodegenSession.GeneralHelper.CallCopiedMethod(reconcileMd, reconcileUserMd);
 
                 ClientCreateReconcile(reconcileMd, replicateMd, predictionFields);
 
@@ -1119,7 +1119,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldloc, iteratorVd);
             processor.Emit(OpCodes.Ldloc, queueCountVd);
             processor.Emit(OpCodes.Blt_S, dequeueLogicInst);
-            
+
             processor.Append(afterRemoveRangeInst);
 
 
@@ -1330,7 +1330,7 @@ namespace FishNet.CodeGenerating.Processing
             OpCode ldArgOC = (dataPd.ParameterType.IsValueType) ? OpCodes.Ldarga : OpCodes.Ldarg;
             processor.Emit(ldArgOC, dataPd);
             processor.Emit(OpCodes.Ldloc, tickVd);
-            processor.Emit(OpCodes.Stfld, ReplicateData_Tick_FieldRef.CachedResolve());            
+            processor.Emit(OpCodes.Stfld, ReplicateData_Tick_FieldRef.CachedResolve());
         }
         /// <summary>
         /// Sends clients inputs to server.
@@ -1722,7 +1722,7 @@ namespace FishNet.CodeGenerating.Processing
              * unreliably. It's possible they will arrive after
              * an owner change. */
             //      if (!base.IsOwner) return;
-            CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdMd, LoggingType.Off, true, false, false); 
+            CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdMd, LoggingType.Off, true, false, false);
 
             //uint receivedTick = data.DATA_TICK_FIELD_NAME.
             VariableDefinition receivedTickVd = CodegenSession.GeneralHelper.CreateVariable(createdMd, typeof(uint));

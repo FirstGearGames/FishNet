@@ -67,6 +67,12 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public event Action OnTick;
         /// <summary>
+        /// Called immediately before physics simulation will occur for the tick.
+        /// This may be useful if you wish to run physics differently for stacked scenes.
+        /// This action will only call when physics are set to TimeManager.
+        /// </summary>
+        public event Action<float> OnPhysicsSimulation;
+        /// <summary>
         /// Called after a tick occurs; physics would have simulated if using PhysicsMode.TimeManager.
         /// </summary>
         public event Action OnPostTick;
@@ -616,6 +622,7 @@ namespace FishNet.Managing.Timing
                 if (PhysicsMode == PhysicsMode.TimeManager)
                 {
                     float tick = (float)TickDelta;
+                    OnPhysicsSimulation?.Invoke(tick);
                     Physics.Simulate(tick);
                     Physics2D.Simulate(tick);
                 }
@@ -849,7 +856,7 @@ namespace FishNet.Managing.Timing
         }
 
         /// <summary>
-        /// Called on client when server sends StepChange.
+        /// Called on client when server sends a timing update.
         /// </summary>
         /// <param name="ta"></param>
         internal void ParseTimingUpdate()
@@ -862,7 +869,7 @@ namespace FishNet.Managing.Timing
             uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
             Tick = LastPacketTick + rttTicks;
 
-            uint expected = (uint)(TickRate * 2);
+            uint expected = (uint)(TickRate * _timingInterval);
             long difference;
             //If ticking too fast.
             if (_clientTicks > expected)

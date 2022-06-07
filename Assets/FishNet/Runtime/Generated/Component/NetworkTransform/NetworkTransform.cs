@@ -81,7 +81,7 @@ namespace FishNet.Component.Transforming
             Z4 = 32,
             Nested = 64
         }
-        private class GoalData
+        public class GoalData
         {
             public uint ReceivedTick;
             public RateData Rates = new RateData();
@@ -95,7 +95,7 @@ namespace FishNet.Component.Transforming
                 Rates.Reset();
             }
         }
-        private class RateData
+        public class RateData
         {
             public float Position;
             public float Rotation;
@@ -194,6 +194,14 @@ namespace FishNet.Component.Transforming
         /// This feature is experimental.
         /// </summary>
         public event DataReceivedChanged OnDataReceived;
+        /// <summary>
+        /// Called when GoalData is updated.
+        /// </summary>
+        public event Action<GoalData> OnNextGoal;
+        /// <summary>
+        /// Called when the transform has reached it's goal.
+        /// </summary>
+        public event Action OnInterpolationComplete;
         #endregion
         #region Serialized.
         /// <summary>
@@ -961,7 +969,7 @@ namespace FishNet.Component.Transforming
                 {
                     _currentGoalData.Reset();
                     _goalDataCache.Push(_currentGoalData);
-                    _currentGoalData = _goalDataQueue.Dequeue();
+                    SetCurrentGoalData(_goalDataQueue.Dequeue());
                     if (leftOver > 0f)
                         MoveToTarget(leftOver);
                 }
@@ -1501,7 +1509,7 @@ namespace FishNet.Component.Transforming
             if (_currentGoalData.Transforms.ExtrapolationState == TransformData.ExtrapolateState.Active)
             {
                 _queueReady = true;
-                _currentGoalData = nextGd;
+                SetCurrentGoalData(nextGd);
             }
             /* If queue isn't started and its buffered enough
              * to satisfy interpolation then set ready
@@ -1514,7 +1522,7 @@ namespace FishNet.Component.Transforming
                 _queueReady = true;
                 if (_goalDataQueue.Count > 0)
                 {
-                    _currentGoalData = _goalDataQueue.Dequeue();
+                    SetCurrentGoalData(_goalDataQueue.Dequeue());
                     /* If is reliable and has changed then also
                     * enqueue latest. */
                     if (hasChanged)
@@ -1522,7 +1530,9 @@ namespace FishNet.Component.Transforming
 
                 }
                 else
-                    _currentGoalData = nextGd;
+                {
+                    SetCurrentGoalData(nextGd);
+                }
             }
             /* If here then there's not enough in buffer to begin
              * so add onto the buffer. */
@@ -1530,6 +1540,16 @@ namespace FishNet.Component.Transforming
             {
                 _goalDataQueue.Enqueue(nextGd);
             }
+        }
+
+        /// <summary>
+        /// Sets CurrentGoalData value.
+        /// </summary>
+        /// <param name="data"></param>
+        private void SetCurrentGoalData(GoalData data)
+        {
+            _currentGoalData = data;
+            OnNextGoal?.Invoke(data);
         }
 
         /// <summary>

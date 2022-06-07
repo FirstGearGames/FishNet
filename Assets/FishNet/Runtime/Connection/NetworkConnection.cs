@@ -85,6 +85,10 @@ namespace FishNet.Connection
         /// </summary>
         public bool Disconnecting { get; private set; }
         /// <summary>
+        /// Tick when Disconnecting was set.
+        /// </summary>
+        internal uint DisconnectingTick { get; private set; }
+        /// <summary>
         /// Custom data associated with this connection which may be modified by the user.
         /// The value of this field are not synchronized over the network.
         /// </summary>
@@ -173,6 +177,8 @@ namespace FishNet.Connection
         internal void SetDisconnecting(bool value)
         {
             Disconnecting = value;
+            if (Disconnecting)
+                DisconnectingTick = NetworkManager.TimeManager.LocalTick;
         }
 
         /// <summary>

@@ -32,7 +32,7 @@ namespace FishNet.Managing.Client
         internal ClientObjects(NetworkManager networkManager)
         {
             base.NetworkManager = networkManager;
-            _objectCache = new ClientObjectCache(this);
+            _objectCache = new ClientObjectCache(this, networkManager);
         }
 
         /// <summary>

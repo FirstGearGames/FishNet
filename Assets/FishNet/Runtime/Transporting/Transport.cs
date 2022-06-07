@@ -233,7 +233,9 @@ namespace FishNet.Transporting
         /// Stops a remote client from the server, disconnecting the client.
         /// </summary>
         /// <param name="connectionId">ConnectionId of the client to disconnect.</param>
-        /// <param name="immediately">True to abrutly stp the client socket without waiting socket thread.</param>
+        /// <param name="immediately">True to abrutly stop the client socket. The technique used to accomplish immediate disconnects may vary depending on the transport.
+        /// When not using immediate disconnects it's recommended to perform disconnects using the ServerManager rather than accessing the transport directly.
+        /// </param>
         public abstract bool StopConnection(int connectionId, bool immediately);
         /// <summary>
         /// Stops both client and server.

@@ -135,12 +135,35 @@ namespace FishNet.Component.Prediction
 
         private void Awake()
         {
+            if (Application.isPlaying)
+            {
+                if (!InitializeOnce())
+                {
+                    this.enabled = false;
+                    return;
+                }
+            }
+
             ConfigureNetworkTransform();
             //Set in awake so they arent default.
             SetPreviousTransformProperties();
+        }
 
-            if (Application.isPlaying)
-                InitializeOnce();
+        private void OnEnable()
+        {
+            /* Only subscribe if client. Client may not be set
+             * yet but that's okay because the OnStartClient
+             * callback will catch the subscription. This is here
+             * should the user disable then re-enable the object after
+             * it's initialized. */
+            if (base.IsClient)
+                ChangeSubscriptions(true);
+        }
+        private void OnDisable()
+        {
+            //Only unsubscribe if client.
+            if (base.IsClient)
+                ChangeSubscriptions(false);
         }
 
         public override void OnStartNetwork()
@@ -249,18 +272,21 @@ namespace FishNet.Component.Prediction
 
 
         /// <summary>
-        /// Initializes this script for use.
+        /// Initializes this script for use. Returns true for success.
         /// </summary>
-        private void InitializeOnce()
+        private bool InitializeOnce()
         {
             //No graphical object, cannot smooth.
             if (_graphicalObject == null)
             {
                 if (NetworkManager.StaticCanLog(LoggingType.Error))
                     Debug.LogError($"GraphicalObject is not set on {gameObject.name}. Initialization will fail.");
-                return;
+                return false;
             }
+
+            return true;
         }
+
 
         /// <summary>
         /// Returns if prediction can be used on this rigidbody.

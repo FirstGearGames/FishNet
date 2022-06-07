@@ -1,5 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -17,6 +18,20 @@ namespace FishNet.Managing.Transporting
     [DisallowMultipleComponent]
     public sealed partial class TransportManager : MonoBehaviour
     {
+        #region Types.
+        private struct DisconnectingClient
+        {
+            public uint Tick;
+            public NetworkConnection Connection;
+
+            public DisconnectingClient(uint tick, NetworkConnection connection)
+            {
+                Tick = tick;
+                Connection = connection;
+            }
+        }
+        #endregion
+
         #region Public.
         /// <summary>
         /// Called before IterateOutgoing has started.
@@ -54,6 +69,10 @@ namespace FishNet.Managing.Transporting
         /// NetworkManager handling this TransportManager.
         /// </summary>
         private NetworkManager _networkManager;
+        /// <summary>
+        /// Clients which are pending disconnects.
+        /// </summary>
+        private List<DisconnectingClient> _disconnectingClients = new List<DisconnectingClient>();
         #endregion
 
         #region Consts.
@@ -331,6 +350,8 @@ namespace FishNet.Managing.Transporting
             /* If sending from the server. */
             if (server)
             {
+                TimeManager tm = _networkManager.TimeManager;
+                uint localTick = tm.LocalTick;
                 //uint sentBytes = 0;
                 //Write any dirty syncTypes.
                 _networkManager.ServerManager.Objects.WriteDirtySyncTypes();
@@ -362,17 +383,37 @@ namespace FishNet.Managing.Transporting
                         }
                     }
 
-                    /* A disconnection can be queued which will
-                     * run through the outgoing process from server.
-                     * This is done so users can send data to the client
-                     * then disconnect them after, while ensuring they
-                     * get the data. */
+                    /* When marked as disconnecting data will still be sent
+                     * this iteration but the connection will be marked as invalid.
+                     * This will prevent future data from going out/coming in.
+                     * Also the connection will be added to a disconnecting collection
+                     * so it will it disconnected briefly later to allow data from
+                     * this tick to send. */
                     if (conn.Disconnecting)
-                        Transport.StopConnection(conn.ClientId, false);
+                    {
+                        uint requiredTicks = tm.TimeToTicks(0.1d, TickRounding.RoundUp);
+                        /* Require 100ms or 2 ticks to pass
+                         * before disconnecting to allow for the
+                         * higher chance of success that remaining
+                         * data is sent. */
+                        requiredTicks = Math.Max(requiredTicks, 2);
+                        _disconnectingClients.Add(new DisconnectingClient(requiredTicks + localTick, conn));
+                    }
 
                     conn.ResetServerDirty();
                 }
 
+                //Iterate disconnects.
+                for (int i = 0; i < _disconnectingClients.Count; i++)
+                {
+                    DisconnectingClient dc = _disconnectingClients[i];
+                    if (localTick >= dc.Tick)
+                    {
+                        _networkManager.TransportManager.Transport.StopConnection(dc.Connection.ClientId, true);
+                        _disconnectingClients.RemoveAt(i);
+                        i--;
+                    }
+                }
                 //if (sentBytes > 0 && _networkManager.ServerManager.Objects.Spawned.Count > 1)
                 //    Debug.Log($"Sent {sentBytes} bytes. Avg {sentBytes / (_networkManager.ServerManager.Objects.Spawned.Count - 1)} per object.");
                 _dirtyToClients.Clear();

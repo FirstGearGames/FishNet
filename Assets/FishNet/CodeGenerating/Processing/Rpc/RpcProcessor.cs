@@ -852,41 +852,9 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * can occur when a method needs to be rebuilt due to
              * inheritence, and renumbering the RPC method names. 
              * The logic method however does not need to be rewritten. */
-            MethodDefinition logicMd = typeDef.GetMethod(methodName);
+            MethodDefinition logicMd = CodegenSession.GeneralHelper.CopyMethod(originalMd, methodName, out _);
 
-            //If found.
-            if (logicMd != null)
-            {
-                cr.LogicMethodDef = logicMd;
-                return logicMd;
-            }
-            else
-            {
-                //Create the method body.
-                logicMd = new MethodDefinition(
-                    methodName, originalMd.Attributes, originalMd.ReturnType);
-                typeDef.Methods.Add(logicMd);
-                logicMd.Body.InitLocals = true;
-                cr.LogicMethodDef = logicMd;
-            }
-
-            //Copy parameter expecations into new method.
-            foreach (ParameterDefinition pd in originalMd.Parameters)
-                logicMd.Parameters.Add(pd);
-
-            //Swap bodies.
-            (logicMd.Body, originalMd.Body) = (originalMd.Body, logicMd.Body);
-            //Move over all the debugging information
-            foreach (SequencePoint sequencePoint in originalMd.DebugInformation.SequencePoints)
-                logicMd.DebugInformation.SequencePoints.Add(sequencePoint);
-            originalMd.DebugInformation.SequencePoints.Clear();
-
-            foreach (CustomDebugInformation customInfo in originalMd.CustomDebugInformations)
-                logicMd.CustomDebugInformations.Add(customInfo);
-            originalMd.CustomDebugInformations.Clear();
-            //Swap debuginformation scope.
-            (originalMd.DebugInformation.Scope, logicMd.DebugInformation.Scope) = (logicMd.DebugInformation.Scope, originalMd.DebugInformation.Scope);
-
+            cr.LogicMethodDef = logicMd;
             return logicMd;
         }
 
