@@ -26,14 +26,14 @@ namespace FishNet.Managing.Server
                 foreach (Transport t in mp.Transports)
                 {
                     //Another transport is started, no need to load start scenes again.
-                    if (t.GetConnectionState(true) == LocalConnectionStates.Started)
+                    if (t.GetConnectionState(true) == LocalConnectionState.Started)
                         startedCount++;
                 }
             }
             //Not using multipass.
             else
             {
-                if (tm.Transport.GetConnectionState(true) == LocalConnectionStates.Started)
+                if (tm.Transport.GetConnectionState(true) == LocalConnectionState.Started)
                     startedCount = 1;
             }
 
@@ -61,14 +61,14 @@ namespace FishNet.Managing.Server
                     if (t == excludedTransport)
                         continue;
                     //Another transport is started, no need to load start scenes again.
-                    if (t.GetConnectionState(true) == LocalConnectionStates.Started)
+                    if (t.GetConnectionState(true) == LocalConnectionState.Started)
                         return true;
                 }
             }
             //Not using multipass.
             else
             {
-                return (tm.Transport.GetConnectionState(true) == LocalConnectionStates.Started);
+                return (tm.Transport.GetConnectionState(true) == LocalConnectionState.Started);
             }
 
             //Fall through, none started.

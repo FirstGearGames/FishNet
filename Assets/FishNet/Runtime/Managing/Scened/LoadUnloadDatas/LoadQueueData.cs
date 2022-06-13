@@ -16,7 +16,7 @@ namespace FishNet.Managing.Scened
         /// Clients which receive this SceneQueueData. If Networked, all clients do. If Connections, only the specified Connections do.
         /// </summary>
         [System.NonSerialized]
-        public SceneScopeTypes ScopeType;
+        public SceneScopeType ScopeType;
         /// <summary>
         /// Connections to load scenes for. Only valid on the server and when ScopeType is Connections.
         /// </summary>
@@ -37,7 +37,7 @@ namespace FishNet.Managing.Scened
         public readonly bool AsServer;
 
         internal LoadQueueData() { }
-        internal LoadQueueData(SceneScopeTypes scopeType, NetworkConnection[] conns, SceneLoadData sceneLoadData, string[] globalScenes, bool asServer)
+        internal LoadQueueData(SceneScopeType scopeType, NetworkConnection[] conns, SceneLoadData sceneLoadData, string[] globalScenes, bool asServer)
         {
             ScopeType = scopeType;
             Connections = conns;

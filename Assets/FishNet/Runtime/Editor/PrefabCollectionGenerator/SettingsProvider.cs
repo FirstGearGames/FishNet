@@ -10,7 +10,7 @@ using UnityEngine;
 using UnitySettingsProviderAttribute = UnityEditor.SettingsProviderAttribute;
 using UnitySettingsProvider = UnityEditor.SettingsProvider;
 
-namespace FishNet.Editing
+namespace FishNet.Editing.PrefabCollectionGenerator
 {
     internal static class SettingsProvider
     {
@@ -64,7 +64,7 @@ namespace FishNet.Editing
 
             _settings.Enabled = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.Enabled)), _settings.Enabled);
             _settings.LogToConsole = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.LogToConsole)), _settings.LogToConsole);
-            _settings.SortCollection = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.SortCollection)), _settings.SortCollection);
+            _settings.FullRebuild = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.FullRebuild)), _settings.FullRebuild);
 
             GUILayoutOption iconWidthConstraint = GUILayout.MaxWidth(32.0f);
             GUILayoutOption iconHeightConstraint = GUILayout.MaxHeight(EditorGUIUtility.singleLineHeight);
@@ -94,7 +94,7 @@ namespace FishNet.Editing
                     {
                         Generator.IgnorePostProcess = true;
 
-                        if (File.Exists(oldAssetPath)) 
+                        if (File.Exists(oldAssetPath))
                             AssetDatabase.MoveAsset(oldAssetPath, newAssetPath);
                         _settings.AssetPath = newAssetPath;
 
@@ -114,7 +114,7 @@ namespace FishNet.Editing
             {
                 EditorGUILayout.HelpBox("Searching the entire project for prefabs can become very slow. Consider switching the search scope to specific folders instead.", MessageType.Warning);
 
-                if (GUILayout.Button("Switch")) 
+                if (GUILayout.Button("Switch"))
                     _settings.SearchScope = Settings.SearchScopeType.SpecificFolders;
             }
 
@@ -182,10 +182,10 @@ namespace FishNet.Editing
                 }
             }
 
-            if (EditorGUI.EndChangeCheck()) 
+            if (EditorGUI.EndChangeCheck())
                 _settings.Save();
             if (GUILayout.Button("Generate"))
-                Generator.Generate();
+                Generator.GenerateFull();
 
             EditorGUILayout.HelpBox("Consider pressing 'Generate' after changing the settings.", MessageType.Info);
 

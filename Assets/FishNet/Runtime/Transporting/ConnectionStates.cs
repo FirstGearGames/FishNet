@@ -4,7 +4,7 @@
     /// <summary>
     /// States the local connection can be in.
     /// </summary>
-    public enum LocalConnectionStates : byte
+    public enum LocalConnectionState : byte
     {
         /// <summary>
         /// Connection is fully stopped.
@@ -27,7 +27,7 @@
     /// <summary>
     /// States a remote client can be in.
     /// </summary>
-    public enum RemoteConnectionStates : byte
+    public enum RemoteConnectionState : byte
     {
         /// <summary>
         /// Connection is fully stopped.

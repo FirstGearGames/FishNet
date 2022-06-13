@@ -41,7 +41,7 @@ namespace FishNet.Managing.Client
         internal void OnServerConnectionState(ServerConnectionStateArgs args)
         {
             //Nothing needs to be done if started.
-            if (args.ConnectionState == LocalConnectionStates.Started)
+            if (args.ConnectionState == LocalConnectionState.Started)
                 return;
 
             /* If not started and client is active then deinitialize
@@ -65,7 +65,7 @@ namespace FishNet.Managing.Client
         {
             /* If new state is not started then reset
              * environment. */
-            if (args.ConnectionState != LocalConnectionStates.Started)
+            if (args.ConnectionState != LocalConnectionState.Started)
             {
                 _objectCache.Reset();
                 base.DespawnSpawnedWithoutSynchronization(false);

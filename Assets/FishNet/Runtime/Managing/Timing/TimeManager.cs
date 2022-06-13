@@ -360,7 +360,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
         {
-            if (obj.ConnectionState != LocalConnectionStates.Started)
+            if (obj.ConnectionState != LocalConnectionState.Started)
             {
                 _pingStopwatch.Stop();
                 ClientUptime = 0f;
@@ -649,14 +649,14 @@ namespace FishNet.Managing.Timing
 
         }
 
-        #region TicksToTime float. 
+        #region TicksToTime.
         /// <summary>
         /// Converts current ticks to time.
         /// </summary>
         /// <param name="useLocalTick">True to use the LocalTick, false to use Tick.</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float TicksToTime(bool useLocalTick = true)
+        public double TicksToTime(bool useLocalTick = true)
         {
             if (useLocalTick)
                 return TicksToTime(LocalTick);
@@ -668,38 +668,9 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name="ticks">Ticks to convert.</param>
         /// <returns></returns>
-        public float TicksToTime(uint ticks)
+        public double TicksToTime(uint ticks)
         {
-            return (float)(TickDelta * ticks);
-        }
-        /// <summary>
-        /// Gets time passed from Tick to previousTick.
-        /// </summary>
-        /// <param name="previousTick">The previous tick.</param>
-        /// <param name="allowNegative">True to allow negative values. When false and value would be negative 0 is returned.</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double TimePassed(uint previousTick, bool allowNegative = false)
-        {
-            uint currentTick = Tick;
-            //Difference will be positive.
-            if (currentTick >= previousTick)
-            {
-                return TicksToTimeDouble(currentTick - previousTick);                
-            }
-            //Difference would be negative.
-            else
-            {
-                if (!allowNegative)
-                {
-                    return 0d;
-                }
-                else
-                {
-                    double difference = TicksToTimeDouble(previousTick - currentTick);
-                    return (difference * -1d);
-                }
-            }
+            return (TickDelta * (double)ticks);
         }
         /// <summary>
         /// Converts time passed from currentTick to previous. Value will be negative if previousTick is larger than currentTick.
@@ -708,7 +679,7 @@ namespace FishNet.Managing.Timing
         /// <param name="previousTick">The previous tick.</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float TicksToTime(uint currentTick, uint previousTick)
+        public double TicksToTime(uint currentTick, uint previousTick)
         {
             double multiplier;
             double result;
@@ -723,56 +694,36 @@ namespace FishNet.Managing.Timing
                 result = TicksToTime(previousTick - currentTick);
             }
 
-            return (float)(result * multiplier);
-        }
-        #endregion//Remove on 2022/06/01 in favor of AllowStacking.
-
-        #region TicksToTimeDouble. //Remove on 2022/06/01 and change TicksToTime to return double.
-        /// <summary>
-        /// Converts current ticks to time.
-        /// </summary>
-        /// <param name="useLocalTick">True to use the LocalTick, false to use Tick.</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double TicksToTimeDouble(bool useLocalTick = true)
-        {
-            if (useLocalTick)
-                return TicksToTimeDouble(LocalTick);
-            else
-                return TicksToTimeDouble(Tick);
+            return (result * multiplier);
         }
         /// <summary>
-        /// Converts a number ticks to time.
+        /// Gets time passed from Tick to previousTick.
         /// </summary>
-        /// <param name="ticks">Ticks to convert.</param>
-        /// <returns></returns>
-        public double TicksToTimeDouble(uint ticks)
-        {
-            return (TickDelta * ticks);
-        }
-        /// <summary>
-        /// Converts time passed from currentTick to previous. Value will be negative if previousTick is larger than currentTick.
-        /// </summary>
-        /// <param name="currentTick">The current tick.</param>
         /// <param name="previousTick">The previous tick.</param>
+        /// <param name="allowNegative">True to allow negative values. When false and value would be negative 0 is returned.</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double TicksToTimeDouble(uint currentTick, uint previousTick)
+        public double TimePassed(uint previousTick, bool allowNegative = false)
         {
-            double multiplier;
-            double result;
+            uint currentTick = Tick;
+            //Difference will be positive.
             if (currentTick >= previousTick)
             {
-                multiplier = 1f;
-                result = TicksToTimeDouble(currentTick - previousTick);
+                return TicksToTime(currentTick - previousTick);
             }
+            //Difference would be negative.
             else
             {
-                multiplier = -1f;
-                result = TicksToTimeDouble(previousTick - currentTick);
+                if (!allowNegative)
+                {
+                    return 0d;
+                }
+                else
+                {
+                    double difference = TicksToTime(previousTick - currentTick);
+                    return (difference * -1d);
+                }
             }
-
-            return (result * multiplier);
         }
         #endregion 
 

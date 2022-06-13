@@ -25,14 +25,6 @@ namespace FishNet.Transporting
         #region Initialization and unity.
         /// <summary>
         /// Initializes the transport. Use this instead of Awake.
-        /// </summary>
-        [Obsolete("This method is being replaced with Initialize(networkManager, transportIndex) to support multiple transports at once.")]  //Remove on 2022/06/01 in favor of AllowStacking.
-        public virtual void Initialize(NetworkManager networkManager)
-        {
-            NetworkManager = networkManager;
-        }
-        /// <summary>
-        /// Initializes the transport. Use this instead of Awake.
         /// <paramref name="transportIndex"/>Index this transport belongs to when using multiple transports at once.</param>
         /// </summary>
         public virtual void Initialize(NetworkManager networkManager, int transportIndex)
@@ -80,12 +72,12 @@ namespace FishNet.Transporting
         /// Gets the current local ConnectionState.
         /// </summary>
         /// <param name="server">True if getting ConnectionState for the server.</param>
-        public abstract LocalConnectionStates GetConnectionState(bool server);
+        public abstract LocalConnectionState GetConnectionState(bool server);
         /// <summary>
         /// Gets the current ConnectionState of a client connected to the server. Can only be called on the server.
         /// </summary>
         /// <param name="connectionId">ConnectionId to get ConnectionState for.</param>
-        public abstract RemoteConnectionStates GetConnectionState(int connectionId);
+        public abstract RemoteConnectionState GetConnectionState(int connectionId);
         #endregion
 
         #region Sending.
@@ -244,24 +236,6 @@ namespace FishNet.Transporting
         #endregion
 
         #region Channels.
-        /// <summary>
-        /// Gets the number of channels this transport supports.
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete("This method is being removed in a future version. Channel count will always be 2, for reliable and unreliable.")] //Remove on 2022/06/01.
-        public virtual byte GetChannelCount() { return 2; }
-        /// <summary>
-        /// Returns which channel to use by default for reliable.
-        /// </summary>
-        /// <returns>Channel as byte.</returns>
-        [Obsolete("This method will be removed. Reliable will always be 0, and unreliable always 1.")]
-        public virtual byte GetDefaultReliableChannel() { return 0; }  //Remove on 2022/06/01.
-        /// <summary>
-        /// Returns which channel to use by default for unreliable.
-        /// </summary>
-        /// <returns>Channel as byte.</returns>
-        [Obsolete("This method will be removed. Reliable will always be 0, and unreliable always 1.")]
-        public virtual byte GetDefaultUnreliableChannel() { return 1; } //Remove on 2022/06/01.
         /// <summary>
         /// Gets the MTU for a channel.
         /// </summary>

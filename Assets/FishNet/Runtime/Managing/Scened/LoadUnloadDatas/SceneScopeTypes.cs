@@ -2,8 +2,8 @@
 {
     /// <summary>
     /// Type of scopes for a scene load or unload.
-    /// </summary>
-    public enum SceneScopeTypes : byte
+    /// </summary> 
+    public enum SceneScopeType : byte
     {
         /// <summary>
         /// Scene action occured for all clients.

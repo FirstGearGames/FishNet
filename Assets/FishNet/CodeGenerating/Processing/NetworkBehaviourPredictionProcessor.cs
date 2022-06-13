@@ -740,7 +740,8 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, asServerPd);
             processor.Emit(OpCodes.Brfalse_S, afterNoOwnerCheckInst);
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_OwnerIsActive_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_Owner_MethodRef);
+            processor.Emit(OpCodes.Callvirt, CodegenSession.ObjectHelper.NetworkConnection_IsActive_MethodRef);
             processor.Emit(OpCodes.Brtrue_S, afterNoOwnerCheckInst);
             processor.Emit(OpCodes.Ret);
             processor.Append(afterNoOwnerCheckInst);

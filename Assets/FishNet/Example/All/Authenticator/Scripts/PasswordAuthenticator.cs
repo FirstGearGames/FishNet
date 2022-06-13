@@ -54,7 +54,7 @@ namespace FishNet.Example.Authenticating
             * doesn't have to send an authentication request before client
             * can authenticate, that is entirely optional and up to you. In this
             * example the client tries to authenticate soon as they connect. */
-            if (args.ConnectionState != LocalConnectionStates.Started)
+            if (args.ConnectionState != LocalConnectionState.Started)
                 return;
 
             PasswordBroadcast pb = new PasswordBroadcast()

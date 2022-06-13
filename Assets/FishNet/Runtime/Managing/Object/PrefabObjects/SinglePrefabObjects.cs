@@ -2,6 +2,7 @@ using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -69,14 +70,16 @@ namespace FishNet.Managing.Object
 
         public override void AddObject(NetworkObject networkObject, bool checkForDuplicates = false)
         {
-            AddObjects(new NetworkObject[] { networkObject }, checkForDuplicates);
+            if (!checkForDuplicates)
+                _prefabs.Add(networkObject);
+            else
+                AddUniqueNetworkObject(networkObject);
+
+            if (Application.isPlaying)
+                InitializePrefabRange(0);
         }
 
         public override void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false)
-        {
-            AddObjects(networkObjects.ToArray(), checkForDuplicates);
-        }
-        public override void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false)
         {
             if (!checkForDuplicates)
             {
@@ -90,6 +93,10 @@ namespace FishNet.Managing.Object
 
             if (Application.isPlaying)
                 InitializePrefabRange(0);
+        }
+        public override void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false)
+        {
+            AddObjects(networkObjects.ToList(), checkForDuplicates);
         }
 
         private void AddUniqueNetworkObject(NetworkObject nob)

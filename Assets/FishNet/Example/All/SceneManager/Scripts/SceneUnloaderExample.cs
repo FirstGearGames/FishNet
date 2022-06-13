@@ -70,7 +70,7 @@ namespace FishNet.Example.Scened
 
             UnloadOptions unloadOptions = new UnloadOptions()
             {
-                Mode = (_unloadUnused) ? UnloadOptions.ServerUnloadModes.UnloadUnused : UnloadOptions.ServerUnloadModes.KeepUnused
+                Mode = (_unloadUnused) ? UnloadOptions.ServerUnloadMode.UnloadUnused : UnloadOptions.ServerUnloadMode.KeepUnused
             };
 
             SceneUnloadData sud = new SceneUnloadData(_scenes);

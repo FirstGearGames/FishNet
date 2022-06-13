@@ -121,7 +121,7 @@ public class DefaultScene : MonoBehaviour
         /* When server starts load online scene as global.
          * Since this is a global scene clients will automatically
          * join it when connecting. */
-        if (obj.ConnectionState == LocalConnectionStates.Started)
+        if (obj.ConnectionState == LocalConnectionState.Started)
         {
             /* If not exactly one server is started then
              * that means either none are started, which isnt true because
@@ -137,7 +137,7 @@ public class DefaultScene : MonoBehaviour
             _networkManager.SceneManager.LoadGlobalScenes(sld);
         }
         //When server stops load offline scene.
-        else if (obj.ConnectionState == LocalConnectionStates.Stopped)
+        else if (obj.ConnectionState == LocalConnectionState.Stopped)
         {
             LoadOfflineScene();
         }
@@ -148,7 +148,7 @@ public class DefaultScene : MonoBehaviour
     /// </summary>
     private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
     {
-        if (obj.ConnectionState == LocalConnectionStates.Stopped)
+        if (obj.ConnectionState == LocalConnectionState.Stopped)
         {
             //Only load offline scene if not also server.
             if (!_networkManager.IsServer)

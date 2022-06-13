@@ -200,8 +200,8 @@ namespace FishNet.Managing.Client
         /// <param name="args"></param>
         private void Transport_OnClientConnectionState(ClientConnectionStateArgs args)
         {
-            LocalConnectionStates state = args.ConnectionState;
-            Started = (state == LocalConnectionStates.Started);
+            LocalConnectionState state = args.ConnectionState;
+            Started = (state == LocalConnectionState.Started);
             Objects.OnClientConnectionState(args);
 
             //Clear connection after so objects can update using current Connection value.

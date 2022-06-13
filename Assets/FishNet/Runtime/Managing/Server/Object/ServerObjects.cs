@@ -114,7 +114,7 @@ namespace FishNet.Managing.Server
         {
 
             //If server just connected.
-            if (args.ConnectionState == LocalConnectionStates.Started)
+            if (args.ConnectionState == LocalConnectionState.Started)
             {
                 /* If there's no servers started besides the one
                  * that just started then build Ids and setup scene objects. */

@@ -9,7 +9,7 @@ namespace FishNet.Managing.Editing
     public class NetworkManagerEditor : Editor
     {
         private SerializedProperty _logging;
-        //private SerializedProperty _refreshDefaultPrefabs;
+        private SerializedProperty _refreshDefaultPrefabs;
         private SerializedProperty _runInBackground;
         private SerializedProperty _dontDestroyOnLoad;
         private SerializedProperty _persistence;
@@ -20,7 +20,7 @@ namespace FishNet.Managing.Editing
         private void OnEnable()
         {
             _logging = serializedObject.FindProperty("_logging");
-          //  _refreshDefaultPrefabs = serializedObject.FindProperty("_refreshDefaultPrefabs");
+            _refreshDefaultPrefabs = serializedObject.FindProperty("_refreshDefaultPrefabs");
             _runInBackground = serializedObject.FindProperty("_runInBackground");
             _dontDestroyOnLoad = serializedObject.FindProperty("_dontDestroyOnLoad");
             _persistence = serializedObject.FindProperty("_persistence");
@@ -60,7 +60,7 @@ namespace FishNet.Managing.Editing
             EditorGUILayout.LabelField("Prefabs", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_spawnablePrefabs);
-           // EditorGUILayout.PropertyField(_refreshDefaultPrefabs);
+            EditorGUILayout.PropertyField(_refreshDefaultPrefabs);
 
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();

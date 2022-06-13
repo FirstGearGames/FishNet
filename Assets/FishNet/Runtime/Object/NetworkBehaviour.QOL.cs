@@ -100,17 +100,6 @@ namespace FishNet.Object
             }
         }
         /// <summary>
-        /// True if there is an owner.
-        /// </summary>
-        /// </summary>
-        [Obsolete("Use Owner.IsValid instead.")] //Remove on 2022/06/01
-        public bool OwnerIsValid => _networkObjectCache.OwnerIsValid;
-        /// <summary>
-        /// True if there is an owner and their connect is active. This will return false if there is no owner, or if the connection is disconnecting.
-        /// </summary>
-        [Obsolete("Use Owner.IsActive instead.")] //Remove on 2022/06/01
-        public bool OwnerIsActive => _networkObjectCache.OwnerIsActive;
-        /// <summary>
         /// ClientId for this NetworkObject owner.
         /// </summary>
         public int OwnerId => _networkObjectCache.OwnerId;

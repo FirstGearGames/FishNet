@@ -84,7 +84,6 @@ namespace FishNet.Object
         /// </summary>
         internal void TryCreateSceneID()
         {
-
             if (Application.isPlaying)
                 return;
             if (gameObject == null)

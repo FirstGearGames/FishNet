@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using FishNet.Editing.PrefabCollectionGenerator;
 using FishNet.Object;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
@@ -51,7 +52,7 @@ namespace FishNet.Utility.Editing
         static void RebuildDefaultPrefabs()
         {
             Debug.Log("Refreshing default prefabs.");
-            FishNet.Editing.Generator.Generate();
+            Generator.GenerateFull();
         }
 
 
