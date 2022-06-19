@@ -1,6 +1,6 @@
 This package contains third-party software components governed by the license(s) indicated below:
 
-Component Name: LiteNetLib
+Component Name: LiteNetLib 
 License Type: MIT
 Copyright (c) 2020 Ruslan Pyrch
 Copyright (c) 2021, Benjamin Berwick of FirstGearGames LLC, registered 2018, North Carolina.
