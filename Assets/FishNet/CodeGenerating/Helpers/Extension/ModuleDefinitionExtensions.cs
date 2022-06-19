@@ -11,6 +11,17 @@ namespace FishNet.CodeGenerating.Helping.Extension
     {
 
         /// <summary>
+        /// Returns a TypeReference after being imported into moduleDef.
+        /// </summary>
+        public static TypeReference ImportIfDifferent(this ModuleDefinition moduleDef, TypeReference tr)
+        {
+            if (tr.Module != moduleDef)
+                return moduleDef.ImportReference(tr.CachedResolve());
+            else
+                return tr;
+        }
+
+        /// <summary>
         /// Gets a class within CodegenSession.Module.
         /// </summary>
         /// <param name="moduleDef"></param>

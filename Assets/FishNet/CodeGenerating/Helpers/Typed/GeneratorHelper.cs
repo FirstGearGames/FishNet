@@ -2,7 +2,6 @@
 using FishNet.Object;
 using MonoFN.Cecil;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -117,9 +116,11 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="objectTd"></param>
         /// <returns></returns> 
-        private static bool IsValidSerializeType(TypeDefinition objectTd)
+        private static bool IsValidSerializeType(TypeDefinition objectTd) //todo rename. applies only to types which do not have a user made or included serializer.
         {
             string errorText = $"{objectTd.Name} is not a supported type. Use a supported type or provide a custom serializer";
+
+            System.Type unityObjectType = typeof(UnityEngine.Object);
             //Unable to determine type, cannot generate for.
             if (objectTd == null)
             {
@@ -133,7 +134,7 @@ namespace FishNet.CodeGenerating.Helping
                 return false;
             }
             //Unity Object.
-            if (objectTd.Is(typeof(UnityEngine.Object)))
+            if (objectTd.Is(unityObjectType))
             {
                 CodegenSession.LogError(errorText);
                 return false;
@@ -158,6 +159,11 @@ namespace FishNet.CodeGenerating.Helping
             }
             //Is abstract.
             if (objectTd.IsAbstract)
+            {
+                CodegenSession.LogError(errorText);
+                return false;
+            }
+            if (objectTd.InheritsFrom(unityObjectType) && objectTd.IsExcluded(GeneralHelper.UNITYENGINE_ASSEMBLY_PREFIX))
             {
                 CodegenSession.LogError(errorText);
                 return false;

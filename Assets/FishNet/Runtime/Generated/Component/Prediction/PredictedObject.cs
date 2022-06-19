@@ -41,16 +41,16 @@ namespace FishNet.Component.Prediction
         [SerializeField]
         private bool _smoothTicks = true;
         /// <summary>
+        /// Gets the value for SmoothTicks.
+        /// </summary>
+        /// <returns></returns>
+        public bool GetSmoothTicks() => _smoothTicks;
+        /// <summary>
         /// Sets the value for SmoothTicks.
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
         public void SetSmoothTicks(bool value) => _smoothTicks = value;
-        /// <summary>
-        /// Gets the value for SmoothTicks.
-        /// </summary>
-        /// <returns></returns>
-        public bool GetSmoothTicks() => _smoothTicks;
         /// <summary>
         /// Duration to smooth desynchronizations over.
         /// </summary>
@@ -58,6 +58,19 @@ namespace FishNet.Component.Prediction
         [Range(0.01f, 0.5f)]
         [SerializeField]
         private float _smoothingDuration = 0.125f;
+        /// <summary>
+        /// True to enable teleport threshhold.
+        /// </summary>
+        [Tooltip("True to enable teleport threshhold.")]
+        [SerializeField]
+        private bool _enableTeleport;
+        /// <summary>
+        /// How far the transform must travel in a single update to cause a teleport rather than smoothing. Using 0f will teleport every update.
+        /// </summary>
+        [Tooltip("How far the transform must travel in a single update to cause a teleport rather than smoothing. Using 0f will teleport every update.")]
+        [Range(0f, float.MaxValue)]
+        [SerializeField]
+        private float _teleportThreshold = 1f;
         /// <summary>
         /// Type of prediction movement which is being used.
         /// </summary>
@@ -115,7 +128,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// How quickly to move towards TargetPosition.
         /// </summary>
-        private float _positionMoveRate;
+        private float _positionMoveRate = -2;
         /// <summary>
         /// Local rotation of transform when instantiated.
         /// </summary>
@@ -123,7 +136,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// How quickly to move towards TargetRotation.
         /// </summary>
-        private float _rotationMoveRate;
+        private float _rotationMoveRate = -2;
         #endregion
 
         #region Consts.
@@ -309,22 +322,30 @@ namespace FishNet.Component.Prediction
         private void MoveToTarget()
         {
             //Not set, meaning movement doesnt need to happen or completed.
-            if (_positionMoveRate == -1f && _rotationMoveRate == -1f)
+            if (_positionMoveRate == -2f && _rotationMoveRate == -2f)
                 return;
+
+            /* Only try to update properties if they have a valid move rate.
+             * Properties may have 0f move rate if they did not change. */
 
             Transform t = _graphicalObject;
             float delta = Time.deltaTime;
-            if (_positionMoveRate > 0f)
+            //Position.
+            if (_positionMoveRate == -1f)
+                t.localPosition = _instantiatedLocalPosition;
+            else if (_positionMoveRate > 0f)
                 t.localPosition = Vector3.MoveTowards(t.localPosition, _instantiatedLocalPosition, _positionMoveRate * delta);
-            if (_rotationMoveRate > 0f)
+            //Rotation.
+            if (_rotationMoveRate == -1f)
+                t.localRotation = _instantiatedLocalRotation;
+            else if (_rotationMoveRate > 0f)
                 t.localRotation = Quaternion.RotateTowards(t.localRotation, _instantiatedLocalRotation, _rotationMoveRate * delta);
 
             if (GraphicalObjectMatches(_instantiatedLocalPosition, _instantiatedLocalRotation))
             {
-                _positionMoveRate = -1f;
-                _rotationMoveRate = -1f;
+                _positionMoveRate = -2f;
+                _rotationMoveRate = -2f;
             }
-
         }
 
 
@@ -338,10 +359,20 @@ namespace FishNet.Component.Prediction
             float distance;
 
             distance = Vector3.Distance(_instantiatedLocalPosition, _graphicalObject.localPosition);
-            _positionMoveRate = (distance / delta);
-            distance = Quaternion.Angle(_instantiatedLocalRotation, _graphicalObject.localRotation);
-            if (distance > 0f)
-                _rotationMoveRate = (distance / delta);
+            //If qualifies for teleporting.
+            if (_enableTeleport && distance >= _teleportThreshold)
+            {
+                _positionMoveRate = -1f;
+                _rotationMoveRate = -1f;
+            }
+            //Smoothing.
+            else
+            {
+                _positionMoveRate = (distance / delta);
+                distance = Quaternion.Angle(_instantiatedLocalRotation, _graphicalObject.localRotation);
+                if (distance > 0f)
+                    _rotationMoveRate = (distance / delta);
+            }
         }
 
 

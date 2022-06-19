@@ -1,5 +1,6 @@
 ﻿using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Configuring;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
@@ -162,15 +163,13 @@ namespace FishNet.CodeGenerating.Processing
                  * should exist. */
                 if (syncAttribute == null)
                 {
-                    //   if (fieldDef.Name == "_test")
-                    //Debug.Log("Checking " + fieldDef.FieldType.CachedResolve().GetLastBaseClass().Name);
                     TypeDefinition foundSyncBaseTd = fieldDef.FieldType.CachedResolve().GetClassInInheritance(SyncBase_TypeDef);
                     if (foundSyncBaseTd != null && foundSyncBaseTd.ImplementsInterface<ISyncType>())
                         CodegenSession.LogError($"{fieldDef.Name} within {fieldDef.DeclaringType.Name} is a SyncType but is missing the [SyncVar] or [SyncObject] attribute.");
-                        
+
                     return SyncType.Unset;
                 }
-                
+
                 /* If the attribute is not [SyncObject] then the attribute
                  * is [SyncVar]. Only checks that need to be made is to make sure
                  * the user is not using a SyncVar attribute when they should be using a SyncObject attribute. */
@@ -258,7 +257,7 @@ namespace FishNet.CodeGenerating.Processing
                 foreach (Instruction item in instructions)
                 {
                     //This token references the type.
-                    if (item.OpCode == OpCodes.Ldtoken)                        
+                    if (item.OpCode == OpCodes.Ldtoken)
                     {
                         TypeReference importedTr = null;
                         if (item.Operand is TypeDefinition td)
@@ -361,7 +360,7 @@ namespace FishNet.CodeGenerating.Processing
             }
 
             if (CodegenSession.Module != typeDef.Module)
-            {                
+            {
                 CodegenSession.DifferentAssemblySyncVars.Add(fieldDef);
                 return false;
             }
@@ -547,7 +546,7 @@ namespace FishNet.CodeGenerating.Processing
                     return null;
                 }
                 /* Check if any parameters are not
-                 * the expected type. */      
+                 * the expected type. */
                 if (md.Parameters[0].ParameterType.CachedResolve() != originalFieldDef.FieldType.CachedResolve() ||
                     md.Parameters[1].ParameterType.CachedResolve() != originalFieldDef.FieldType.CachedResolve() ||
                     md.Parameters[2].ParameterType.CachedResolve() != CodegenSession.Module.TypeSystem.Boolean.CachedResolve())
@@ -613,6 +612,13 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, valueParameterDef);
             processor.Emit(OpCodes.Stfld, originalFd);
 
+            Instruction retInst = processor.Create(OpCodes.Ret);
+
+            if (!Configuration.ConfigurationData.IsBuilding)
+            {
+                processor.Emit(OpCodes.Call, CodegenSession.GeneralHelper.Application_IsPlaying_MethodRef);
+                processor.Emit(OpCodes.Brfalse_S, retInst);
+            }
             //      SyncVar<>.SetValue(....);
             processor.Emit(OpCodes.Ldarg_0); //this.
             processor.Emit(OpCodes.Ldfld, createdSyncVarFd);
@@ -620,7 +626,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, calledByUserParameterDef);
             processor.Emit(OpCodes.Callvirt, createdSyncVar.SetValueMr);
 
-            processor.Emit(OpCodes.Ret);
+            processor.Append(retInst);
             accessorSetValueMr = CodegenSession.ImportReference(createdSetMethodDef);
             //Add setter to properties.
             createdPropertyDef.SetMethod = createdSetMethodDef;
@@ -979,83 +985,6 @@ namespace FishNet.CodeGenerating.Processing
 
 
             bool modified = false;
-
-            /* //codegen this needs to account for calling SecretDirty on syncvars from outside classes.
-             * also need to run this before converting to syncaccessor or store syncbase for syncaccessors. */
-            //for (int i = 0; i < methodDef.Body.Instructions.Count; i++)
-            //{
-            //    Instruction inst = methodDef.Body.Instructions[i];
-            //    //If Call/callvirt with an operand.
-            //    if ((inst.OpCode == OpCodes.Call || inst.OpCode == OpCodes.Callvirt) && inst.Operand != null)
-            //    {
-            //        //If operand is a methodreference see if it matches dirty call.
-            //        if (inst.Operand is MethodReference opMr)
-            //        {
-            //            //If is a call to the dirty synctype method.
-            //            if (opMr.FullName == SyncVarExtensions_Dirty_MethodRef.FullName)
-            //            {
-            //                //Find where the call to the method starts.
-            //                //Go one up from Call OpCode.
-            //                int instructionIndex = (i - 1);
-            //                //Original user made field.
-            //                FieldDefinition originalFd = null;
-
-            //                while (instructionIndex >= 0)
-            //                {
-            //                    //If found.
-            //                    if (methodDef.Body.Instructions[instructionIndex].OpCode == OpCodes.Ldarg_0)
-            //                    {
-            //                        //Previous instruction should be a ldfld or ldflda.
-            //                        Instruction nextInst = methodDef.Body.Instructions[instructionIndex + 1];
-            //                        //Debug.Log(nextInst.OpCode);
-            //                        if (nextInst.OpCode == OpCodes.Ldfld || nextInst.OpCode == OpCodes.Ldflda)
-            //                        {
-            //                            //instructionIndex--;
-            //                            if (nextInst.Operand is FieldDefinition fd)
-            //                                originalFd = fd;
-            //                        }
-            //                        else
-            //                        {
-            //                            CodegenSession.LogError($"Unable to parse {CodegenSession.ObjectHelper.NetworkBehaviour_DirtySyncType_MethodRef.Name} call in Method {methodDef.Name} within {methodDef.DeclaringType.Name}.");
-            //                        }
-            //                        break;
-            //                    }
-
-            //                    instructionIndex--;
-            //                }
-
-            //                //If found then swap out instructions for the syncbase.dirty.
-            //                if (originalFd != null)
-            //                {
-            //                    //int removeCount = (i - instructionIndex + 1);
-            //                    ////Remove user instructions.
-            //                    //for (int z = 0; z < removeCount; z++)
-            //                    //    methodDef.Body.Instructions.RemoveAt(instructionIndex);
-
-            //                    //If in processed, which should be.
-            //                    if (processedLookup.TryGetValue(originalFd, out List<ProcessedSync> psLst))
-            //                    {
-            //                        ProcessedSync ps = GetProcessedSync(originalFd, psLst);
-            //                        //Make sure PS is found, and is not the created accessor.
-            //                        if (ps != null && ps.GetMethodRef.CachedResolve() != methodDef)
-            //                        {
-            //                            Debug.Log("C");
-            //                            ILProcessor processor = methodDef.Body.GetILProcessor();
-            //                            List<Instruction> newInsts = new List<Instruction>();
-            //                            newInsts.Add(processor.Create(OpCodes.Ldarg_0));
-            //                            newInsts.Add(processor.Create(OpCodes.Ldfld, ps.GeneratedFieldRef));
-            //                            newInsts.Add(processor.Create(OpCodes.Callvirt, SyncBase_Dirty_MethodRef));
-            //                            newInsts.Add(processor.Create(OpCodes.Pop));
-            //                            processor.InsertAt(instructionIndex, newInsts);
-            //                        }
-            //                    }
-            //                }
-            //            }
-
-            //        }
-
-            //    }
-            //}
 
             for (int i = 0; i < methodDef.Body.Instructions.Count; i++)
             {

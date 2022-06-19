@@ -20,6 +20,9 @@ using FishNet.Managing.Debugging;
 using FishNet.Managing.Object;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
+#if UNITY_EDITOR
+using FishNet.Editing.PrefabCollectionGenerator;
+#endif
 
 namespace FishNet.Managing
 {
@@ -163,12 +166,12 @@ namespace FishNet.Managing
         #endregion
 
         #region Serialized.
-        ///// <summary>
-        ///// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
-        ///// </summary>
-        //[Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
-        //[SerializeField]
-        //private bool _refreshDefaultPrefabs = false;
+        /// <summary>
+        /// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
+        /// </summary>
+        [Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
+        [SerializeField]
+        private bool _refreshDefaultPrefabs = false;
         /// <summary>
         /// True to have your application run while in the background.
         /// </summary>
@@ -220,11 +223,16 @@ namespace FishNet.Managing
              * cloning tools sometimes don't synchronize
              * scriptable object changes, which is what
              * the default prefabs is. */
-            //if (SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
-            //{
-            //    if (_refreshDefaultPrefabs)
-            //        FishNet.Editing.Generator.Generate();
-            //}
+            if (_instances.Count == 0 && SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
+            {
+                if (_refreshDefaultPrefabs)
+                {
+                    Generator.IgnorePostProcess = true;
+                    Debug.Log("DefaultPrefabCollection is being refreshed.");
+                    Generator.GenerateFull();
+                    Generator.IgnorePostProcess = false;
+                }
+            }
 #endif
 
             _canPersist = CanInitialize();

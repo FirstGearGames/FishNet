@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace FishNet.Managing.Server
 {
+
     public sealed partial class ServerManager : MonoBehaviour
     {
 
@@ -18,7 +19,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// RPCLink indexes which can be used.
         /// </summary>
-        private Stack<ushort> _availableRpcLinkIndexes = new Stack<ushort>();
+        private Queue<ushort> _availableRpcLinkIndexes = new Queue<ushort>();
         #endregion
 
         /// <summary>
@@ -35,7 +36,7 @@ namespace FishNet.Managing.Server
 
             highestValue += 1;
             for (ushort i = highestValue; i < ushort.MaxValue; i++)
-                _availableRpcLinkIndexes.Push(i);
+                _availableRpcLinkIndexes.Enqueue(i);
         }
 
         /// <summary>
@@ -46,7 +47,7 @@ namespace FishNet.Managing.Server
         {
             if (_availableRpcLinkIndexes.Count > 0)
             {
-                value = _availableRpcLinkIndexes.Pop();
+                value = _availableRpcLinkIndexes.Dequeue();
                 return true;
             }
             else
@@ -67,9 +68,10 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Returns RPCLinks to availableRpcLinkIndexes.
         /// </summary>
-        internal void ReturnRpcLinks()
+        internal void ReturnRpcLinks(Dictionary<uint, RpcLinkType> links)
         {
-
+            foreach (ushort linkId in links.Keys)
+                _availableRpcLinkIndexes.Enqueue(linkId);
         }
     }
 

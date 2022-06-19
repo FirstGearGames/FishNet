@@ -113,6 +113,7 @@ namespace FishNet.Object
         public virtual void OnStopServer()
         {
             OnStartServerCalled = false;
+            ReturnRpcLinks();
         }
         /// <summary>
         /// Called on the server after ownership has changed.

@@ -9,7 +9,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Conditions to unloading a scene on the server.
         /// </summary>
-        public enum ServerUnloadModes
+        public enum ServerUnloadMode
         {
             /// <summary>
             /// Unloads the scene if no more connections are within it.
@@ -25,7 +25,7 @@ namespace FishNet.Managing.Scened
         /// How to unload scenes on the server. UnloadUnused will unload scenes which have no more clients in them. KeepUnused will not unload a scene even when empty. ForceUnload will unload a scene regardless of if clients are still connected to it.
         /// </summary>
         [System.NonSerialized]
-        public ServerUnloadModes Mode = ServerUnloadModes.UnloadUnused;
+        public ServerUnloadMode Mode = ServerUnloadMode.UnloadUnused;
         /// <summary>
         /// True if scenes should be unloaded using addressables.
         /// </summary>

@@ -98,7 +98,6 @@ namespace FishNet.Managing.Server
         /// 
         /// </summary>
         [Tooltip("True to share the Ids of clients and the objects they own with other clients. No sensitive information is shared.")]
-        [FormerlySerializedAs("_shareOwners")] //Remove on 2022/06/01.
         [SerializeField]
         private bool _shareIds = true;
         /// <summary>
@@ -243,7 +242,7 @@ namespace FishNet.Managing.Server
         {
             /* If client is doing anything but started destroy pending.
              * Pending is only used for host mode. */
-            if (obj.ConnectionState != LocalConnectionStates.Started)
+            if (obj.ConnectionState != LocalConnectionState.Started)
                 Objects.DestroyPending();
         }
 
@@ -309,7 +308,7 @@ namespace FishNet.Managing.Server
 
             Objects.OnServerConnectionState(args);
 
-            LocalConnectionStates state = args.ConnectionState;
+            LocalConnectionState state = args.ConnectionState;
 
             if (NetworkManager.CanLog(LoggingType.Common))
             {
@@ -341,7 +340,7 @@ namespace FishNet.Managing.Server
             else
             {
                 //If started then add to authenticated clients.
-                if (args.ConnectionState == RemoteConnectionStates.Started)
+                if (args.ConnectionState == RemoteConnectionState.Started)
                 {
                     if (NetworkManager.CanLog(LoggingType.Common))
                         Debug.Log($"Remote connection started for Id {id}.");
@@ -360,7 +359,7 @@ namespace FishNet.Managing.Server
                         ClientAuthenticated(conn);
                 }
                 //If stopping.
-                else if (args.ConnectionState == RemoteConnectionStates.Stopped)
+                else if (args.ConnectionState == RemoteConnectionState.Stopped)
                 {
                     /* If client's connection is found then clean
                      * them up from server. */

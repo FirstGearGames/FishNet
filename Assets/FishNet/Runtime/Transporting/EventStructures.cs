@@ -24,21 +24,27 @@ namespace FishNet.Transporting
         /// This is primarily used when supporting multiple transports.
         /// </summary>
         public int TransportIndex;
+        /// <summary>
+        /// Delegate to invoke after data is processed.
+        /// </summary>
+        /// <returns></returns>
+        public Action FinalizeMethod;
 
-        [Obsolete("Use ServerReceivedDataArgs(data, channel, connectionid, transportIndex) instead.")] //Remove on 2022/06/01 in favor of AllowStacking.
-        public ServerReceivedDataArgs(ArraySegment<byte> data, Channel channel, int connectionId)
-        {
-            Data = data;
-            Channel = channel;
-            ConnectionId = connectionId;
-            TransportIndex = 0;
-        }
         public ServerReceivedDataArgs(ArraySegment<byte> data, Channel channel, int connectionId, int transportIndex)
         {
             Data = data;
             Channel = channel;
             ConnectionId = connectionId;
             TransportIndex = transportIndex;
+            FinalizeMethod = null;
+        }
+        public ServerReceivedDataArgs(ArraySegment<byte> data, Channel channel, int connectionId, int transportIndex, Action finalizeMethod)
+        {
+            Data = data;
+            Channel = channel;
+            ConnectionId = connectionId;
+            TransportIndex = transportIndex;
+            FinalizeMethod = finalizeMethod;
         }
     }
 
@@ -62,13 +68,6 @@ namespace FishNet.Transporting
         /// </summary>
         public int TransportIndex;
 
-        [Obsolete("Use ClientReceivedDataArgs(data, channel, transportIndex) instead.")] //Remove on 2022/06/01 in favor of AllowStacking.
-        public ClientReceivedDataArgs(ArraySegment<byte> data, Channel channel)
-        {
-            Data = data;
-            Channel = channel;
-            TransportIndex = 0;
-        }
         public ClientReceivedDataArgs(ArraySegment<byte> data, Channel channel, int transportIndex)
         {
             Data = data;
@@ -92,20 +91,13 @@ namespace FishNet.Transporting
         /// <summary>
         /// New connection state.
         /// </summary>
-        public RemoteConnectionStates ConnectionState;
+        public RemoteConnectionState ConnectionState;
         /// <summary>
         /// ConnectionId for which client the state changed. Will be -1 if ConnectionState was for the local server.
         /// </summary>
         public int ConnectionId;
 
-        [Obsolete("Use RemoteConnectionStateArgs(connectionState, connectionId, transportIndex) instead.")] //Remove on 2022/06/01 in favor of AllowStacking.
-        public RemoteConnectionStateArgs(RemoteConnectionStates connectionState, int connectionId)
-        {
-            ConnectionState = connectionState;
-            ConnectionId = connectionId;
-            TransportIndex = 0;
-        }
-        public RemoteConnectionStateArgs(RemoteConnectionStates connectionState, int connectionId, int transportIndex)
+        public RemoteConnectionStateArgs(RemoteConnectionState connectionState, int connectionId, int transportIndex)
         {
             ConnectionState = connectionState;
             ConnectionId = connectionId;
@@ -126,15 +118,9 @@ namespace FishNet.Transporting
         /// <summary>
         /// New connection state.
         /// </summary>
-        public LocalConnectionStates ConnectionState;
+        public LocalConnectionState ConnectionState;
 
-        [Obsolete("Use ServerConnectionStateArgs(connectionState, transportIndex) instead.")] //Remove on 2022/06/01 in favor of AllowStacking.
-        public ServerConnectionStateArgs(LocalConnectionStates connectionState)
-        {
-            ConnectionState = connectionState;
-            TransportIndex = 0;
-        }
-        public ServerConnectionStateArgs(LocalConnectionStates connectionState, int transportIndex)
+        public ServerConnectionStateArgs(LocalConnectionState connectionState, int transportIndex)
         {            
             ConnectionState = connectionState;
             TransportIndex = transportIndex;
@@ -149,20 +135,14 @@ namespace FishNet.Transporting
         /// <summary>
         /// New connection state.
         /// </summary>
-        public LocalConnectionStates ConnectionState;
+        public LocalConnectionState ConnectionState;
         /// <summary>
         /// Index of the transport that is for.
         /// This is primarily used when supporting multiple transports.
         /// </summary>
         public int TransportIndex;
 
-        [Obsolete("Use ClientConnectionStateArgs(transportIndex, connectionState) instead.")] //Remove on 2022/06/01 in favor of AllowStacking.
-        public ClientConnectionStateArgs(LocalConnectionStates connectionState) //Remove on 2022/06/01 in favor of AllowStacking.
-        {
-            ConnectionState = connectionState;
-            TransportIndex = 0;
-        }
-        public ClientConnectionStateArgs(LocalConnectionStates connectionState, int transportIndex)
+        public ClientConnectionStateArgs(LocalConnectionState connectionState, int transportIndex)
         {            
             ConnectionState = connectionState;
             TransportIndex = transportIndex;

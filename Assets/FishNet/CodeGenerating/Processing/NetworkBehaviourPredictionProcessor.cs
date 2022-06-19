@@ -10,7 +10,6 @@ using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using SR = System.Reflection;
 
@@ -612,14 +611,24 @@ namespace FishNet.CodeGenerating.Processing
                 ClientRetIfNoReconcile(reconcileMd, predictionFields);
                 //      _clientHasReconcileData = false;
                 processor.Add(ClientSetHasReconcileData(reconcileMd, false, predictionFields));
+                //Set data received to the reconcile parameter so that clients access the right data.
                 SetReconcileData(reconcileMd, predictionFields);
+                //      uint reconcileTick = r.Generated___Tick.
+                VariableDefinition reconcileTickVd = reconcileMd.CreateVariable(typeof(uint));
+                processor.Emit(OpCodes.Ldarg, reconcileMd.Parameters[0]); //the data.
+                processor.Emit(OpCodes.Ldfld, ReconcileData_Tick_FieldRef); //Generated___Tick field.
+                processor.Emit(OpCodes.Stloc, reconcileTickVd);
+                //      base.SetLastReconcileTick(reconcileTick).
+                processor.Emit(OpCodes.Ldarg_0);
+                processor.Emit(OpCodes.Ldloc, reconcileTickVd);
+                processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SetLastReconcileTick_MethodRef);
                 //Invoke reconciling start. 
                 processor.Add(InvokeOnReconcile(reconcileMd, true));
 
                 //Call user instr method.
                 CodegenSession.GeneralHelper.CallCopiedMethod(reconcileMd, reconcileUserMd);
 
-                ClientCreateReconcile(reconcileMd, replicateMd, predictionFields);
+                ClientCreateReconcile(reconcileMd, replicateMd, predictionFields, reconcileTickVd);
 
                 processor.Emit(OpCodes.Ret);
                 return true;
@@ -740,7 +749,8 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, asServerPd);
             processor.Emit(OpCodes.Brfalse_S, afterNoOwnerCheckInst);
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_OwnerIsActive_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_Owner_MethodRef);
+            processor.Emit(OpCodes.Callvirt, CodegenSession.ObjectHelper.NetworkConnection_IsActive_MethodRef);
             processor.Emit(OpCodes.Brtrue_S, afterNoOwnerCheckInst);
             processor.Emit(OpCodes.Ret);
             processor.Append(afterNoOwnerCheckInst);
@@ -1475,7 +1485,8 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Removes replicates prior and at index.
         /// </summary>
-        private void ClientRemoveFromCache(MethodDefinition reconcileMd, MethodDefinition replicateMd, CreatedPredictionFields predictionFields)
+        private void ClientRemoveFromCache(MethodDefinition reconcileMd, MethodDefinition replicateMd,
+            CreatedPredictionFields predictionFields, VariableDefinition reconcileTickVd)
         {
             ParameterDefinition reconcileDataPd = reconcileMd.Parameters[0];
             TypeReference replicateDataTr = replicateMd.Parameters[0].ParameterType;
@@ -1501,21 +1512,20 @@ namespace FishNet.CodeGenerating.Processing
             //      for (int i = 0
             processor.Emit(OpCodes.Ldc_I4_0);
             processor.Emit(OpCodes.Stloc, iteratorVd);
-            processor.Emit(OpCodes.Br_S, iteratorComparerInst);
+            processor.Emit(OpCodes.Br, iteratorComparerInst);
             //Logic.
-            //      if (reconcile.Tick == replicates.Tick)
+            //      if (replicateTick(replaying).Tick == reconcileTick(fromServer))
             processor.Append(iteratorLogicInst); //Ldarg_0.
             processor.Emit(OpCodes.Ldfld, predictionFields.ClientReplicateDatas);
             processor.Emit(OpCodes.Ldloc, iteratorVd);
             processor.Emit(OpCodes.Callvirt, replicateGetItemMr);
             processor.Emit(OpCodes.Ldfld, ReplicateData_Tick_FieldRef);
-            processor.Emit(OpCodes.Ldarg, reconcileDataPd);
-            processor.Emit(OpCodes.Ldfld, ReconcileData_Tick_FieldRef);
-            processor.Emit(OpCodes.Bne_Un_S, iteratorIncreaseInst);
+            processor.Emit(OpCodes.Ldloc, reconcileTickVd);
+            processor.Emit(OpCodes.Bne_Un, iteratorIncreaseInst);
 
             processor.Emit(OpCodes.Ldloc, iteratorVd);
             processor.Emit(OpCodes.Stloc, foundIndexVd);
-            processor.Emit(OpCodes.Br_S, afterLoopInst);
+            processor.Emit(OpCodes.Br, afterLoopInst);
             //      i++;
             processor.Append(iteratorIncreaseInst); //Ldloc iteratorVd.
             processor.Emit(OpCodes.Ldc_I4_1);
@@ -1526,7 +1536,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ClientReplicateDatas);
             processor.Emit(OpCodes.Callvirt, replicateGetCountMr);
-            processor.Emit(OpCodes.Blt_S, iteratorLogicInst);
+            processor.Emit(OpCodes.Blt, iteratorLogicInst);
 
             processor.Append(afterLoopInst);
 
@@ -1536,12 +1546,12 @@ namespace FishNet.CodeGenerating.Processing
             Instruction afterRemoveRangeInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Ldloc, foundIndexVd);
             processor.Emit(OpCodes.Ldc_I4_M1);
-            processor.Emit(OpCodes.Bne_Un_S, afterClearInst);
+            processor.Emit(OpCodes.Bne_Un, afterClearInst);
             //            replicates.Clear();
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ClientReplicateDatas);
             processor.Emit(OpCodes.Callvirt, replicateClearMr);
-            processor.Emit(OpCodes.Br_S, afterRemoveRangeInst);
+            processor.Emit(OpCodes.Br, afterRemoveRangeInst);
 
             //      index++; This is for RemoveRange. If index is 0 then remove count needs to be 1.
             processor.Append(afterClearInst);
@@ -1554,29 +1564,34 @@ namespace FishNet.CodeGenerating.Processing
             processor.Append(afterRemoveRangeInst);
         }
 
-        private void ClientGetPhysicsScenes(MethodDefinition reconcileMd, out VariableDefinition physicsScene3DVd, out VariableDefinition physicsScene2DVd)
+        private void ClientGetPhysicsScenes(MethodDefinition reconcileMd, out VariableDefinition objectSceneVd, out VariableDefinition physicsScene3DVd, out VariableDefinition physicsScene2DVd)
         {
             ILProcessor processor = reconcileMd.Body.GetILProcessor();
+            objectSceneVd = reconcileMd.CreateVariable(typeof(UnityEngine.SceneManagement.Scene));
             physicsScene3DVd = reconcileMd.CreateVariable(typeof(PhysicsScene));
             physicsScene2DVd = reconcileMd.CreateVariable(typeof(PhysicsScene2D));
 
-            //      PhysicsScene ps3d = gameObject.scene.GetPhysicsScene();
+            //Scene objectScene = gameObject.scene;
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Call, Unity_GetGameObject_MethodRef);
             processor.Emit(OpCodes.Callvirt, Unity_GetScene_MethodRef);
+            processor.Emit(OpCodes.Stloc, objectSceneVd);
+            
+            //      PhysicsScene ps3d = objectScene.GetPhysicsScene();
+            processor.Emit(OpCodes.Ldloc, objectSceneVd);
             processor.Emit(OpCodes.Call, Unity_GetPhysicsScene3D_MethodRef);
             processor.Emit(OpCodes.Stloc, physicsScene3DVd);
-            //      PhysicsScene2D ps2d = gameObject.scene.GetPhysicsScene();
-            processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, Unity_GetGameObject_MethodRef);
-            processor.Emit(OpCodes.Callvirt, Unity_GetScene_MethodRef);
+
+            //      PhysicsScene2D ps2d = objectScene.GetPhysicsScene();
+            processor.Emit(OpCodes.Ldloc, objectSceneVd);
             processor.Emit(OpCodes.Call, Unity_GetPhysicsScene2D_MethodRef);
             processor.Emit(OpCodes.Stloc, physicsScene2DVd);
         }
         /// <summary>
         /// Replays all cached client datas.
         /// </summary>
-        private void ClientReplayBuffered(MethodDefinition reconcileMd, MethodDefinition replicateMd, CreatedPredictionFields predictionFields, VariableDefinition simulateVd, VariableDefinition physicsSceneVd, VariableDefinition physicsScene2DVd)
+        private void ClientReplayBuffered(MethodDefinition reconcileMd, MethodDefinition replicateMd, CreatedPredictionFields predictionFields,
+            VariableDefinition simulateVd, VariableDefinition sceneVd, VariableDefinition physicsSceneVd, VariableDefinition physicsScene2DVd)
         {
             MethodReference replicateMr = CodegenSession.ImportReference(replicateMd);
             TypeReference replicateDataTr = replicateMd.Parameters[0].ParameterType;
@@ -1615,10 +1630,10 @@ namespace FishNet.CodeGenerating.Processing
             //      for (int i = 0
             processor.Emit(OpCodes.Ldc_I4_0);
             processor.Emit(OpCodes.Stloc, iteratorVd);
-            processor.Emit(OpCodes.Br_S, iteratorComparerInst);
+            processor.Emit(OpCodes.Br, iteratorComparerInst);
             //Logic.
             processor.Append(iteratorLogicInst);
-            processor.Add(InvokeOnReplicateReplay(replicateMd, physicsSceneVd, physicsScene2DVd, true));
+            processor.Add(InvokeOnReplicateReplay(replicateMd, sceneVd, physicsSceneVd, physicsScene2DVd, true));
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ClientReplicateDatas);
@@ -1628,7 +1643,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldc_I4_1); //true for replaying.
             processor.Emit(OpCodes.Call, replicateMr);
             processor.Add(ClientTrySimulatePhysics(reconcileMd, simulateVd, tickDeltaVd, physicsSceneVd, physicsScene2DVd));
-            processor.Add(InvokeOnReplicateReplay(replicateMd, physicsSceneVd, physicsScene2DVd, false));
+            processor.Add(InvokeOnReplicateReplay(replicateMd, sceneVd, physicsSceneVd, physicsScene2DVd, false));
             //      i++;
             processor.Emit(OpCodes.Ldloc, iteratorVd);
             processor.Emit(OpCodes.Ldc_I4_1);
@@ -1639,7 +1654,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ClientReplicateDatas);
             processor.Emit(OpCodes.Callvirt, dataCollectionGetCountMr);
-            processor.Emit(OpCodes.Blt_S, iteratorLogicInst);
+            processor.Emit(OpCodes.Blt, iteratorLogicInst);
 
             //Invokes reconcile end.
             processor.Add(InvokeOnReconcile(reconcileMd, false));
@@ -1655,13 +1670,14 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Invokes OnReplicateReplay.
         /// </summary>
-        private List<Instruction> InvokeOnReplicateReplay(MethodDefinition methodDef, VariableDefinition physicsSceneVd, VariableDefinition physicsScene2DVd, bool start)
+        private List<Instruction> InvokeOnReplicateReplay(MethodDefinition methodDef, VariableDefinition sceneVd, VariableDefinition physicsSceneVd, VariableDefinition physicsScene2DVd, bool start)
         {
             List<Instruction> insts = new List<Instruction>();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             insts.Add(processor.Create(OpCodes.Ldarg_0));
             insts.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TimeManager_MethodRef));
+            insts.Add(processor.Create(OpCodes.Ldloc, sceneVd));
             insts.Add(processor.Create(OpCodes.Ldloc, physicsSceneVd));
             insts.Add(processor.Create(OpCodes.Ldloc, physicsScene2DVd));
             if (start)
@@ -1763,7 +1779,8 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="reconcileMd"></param>
         /// <returns></returns>
-        private void ClientCreateReconcile(MethodDefinition reconcileMd, MethodDefinition replicateMd, CreatedPredictionFields predictionFields)
+        private void ClientCreateReconcile(MethodDefinition reconcileMd, MethodDefinition replicateMd
+            , CreatedPredictionFields predictionFields, VariableDefinition reconcileTickVd)
         {
             ILProcessor reconcileProcessor = reconcileMd.Body.GetILProcessor();
 
@@ -1784,13 +1801,14 @@ namespace FishNet.CodeGenerating.Processing
             //      Physics/2D.SyncTransforms.
             ClientSyncTransforms(reconcileMd);
             //Remove data server processed.
-            ClientRemoveFromCache(reconcileMd, replicateMd, predictionFields);
+            ClientRemoveFromCache(reconcileMd, replicateMd, predictionFields, reconcileTickVd);
             //Gets physics scenes.
-            VariableDefinition physicsScene3DVd;
+            VariableDefinition objectSceneVd;
+            VariableDefinition physicsScenDVd;
             VariableDefinition physicsScene2DVd;
-            ClientGetPhysicsScenes(reconcileMd, out physicsScene3DVd, out physicsScene2DVd);
+            ClientGetPhysicsScenes(reconcileMd, out objectSceneVd, out physicsScenDVd, out physicsScene2DVd);
             //Replays buffered inputs.
-            ClientReplayBuffered(reconcileMd, replicateMd, predictionFields, simulateVd, physicsScene3DVd, physicsScene2DVd);
+            ClientReplayBuffered(reconcileMd, replicateMd, predictionFields, simulateVd, objectSceneVd, physicsScenDVd, physicsScene2DVd);
         }
         #endregion
 

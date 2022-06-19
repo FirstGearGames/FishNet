@@ -17,6 +17,16 @@ namespace FishNet.Managing.Observing
         /// <summary>
         /// 
         /// </summary>
+        [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")]
+        [SerializeField]
+        private bool _setHostVisibility = true;
+        /// <summary>
+        /// True to update visibility for clientHost based on if they are an observer or not.
+        /// </summary>
+        public bool SetHostVisibility => _setHostVisibility;
+        /// <summary>
+        /// 
+        /// </summary>
         [Tooltip("Default observer conditions for networked objects.")]
         [SerializeField]
         private List<ObserverCondition> _defaultConditions = new List<ObserverCondition>();

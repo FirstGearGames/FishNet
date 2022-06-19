@@ -47,6 +47,8 @@ namespace FishNet.Object
         /// <param name="visible"></param>
         internal void SetHostVisibility(bool visible)
         {
+            if (NetworkObserver != null && !NetworkObserver.SetHostVisibility)
+                return;
             /* If renderers are not set then the object
             * was never despawned. This means the renderers
             * could not possibly be hidden. */

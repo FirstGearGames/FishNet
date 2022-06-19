@@ -1,6 +1,7 @@
 ﻿using FishNet.Broadcast;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.Processing;
+using FishNet.Configuring;
 using FishNet.Connection;
 using FishNet.Managing.Logging;
 using FishNet.Object;
@@ -27,6 +28,7 @@ namespace FishNet.CodeGenerating.Helping
         internal string SyncDictionary_Name;
         internal string SyncHashSet_Name;
         //Prediction.
+        internal MethodReference NetworkBehaviour_SetLastReconcileTick_MethodRef;
         internal MethodReference NetworkBehaviour_TransformMayChange_MethodRef;
         internal MethodReference NetworkBehaviour_SendReplicateRpc_MethodRef;
         internal MethodReference NetworkBehaviour_SendReconcileRpc_MethodRef;
@@ -54,8 +56,8 @@ namespace FishNet.CodeGenerating.Helping
         //Misc.
         internal TypeReference NetworkBehaviour_TypeRef;
         private MethodReference NetworkBehaviour_CompareOwner_MethodRef;
-        internal MethodReference NetworkBehaviour_OwnerIsValid_MethodRef;
-        internal MethodReference NetworkBehaviour_OwnerIsActive_MethodRef;
+        internal MethodReference NetworkConnection_IsValid_MethodRef;
+        internal MethodReference NetworkConnection_IsActive_MethodRef;
         internal MethodReference NetworkBehaviour_LocalConnection_MethodRef;
         internal MethodReference NetworkBehaviour_Owner_MethodRef;
         internal MethodReference NetworkBehaviour_ReadSyncVar_MethodRef;
@@ -158,6 +160,9 @@ namespace FishNet.CodeGenerating.Helping
                     NetworkBehaviour_SendObserversRpc_MethodRef = CodegenSession.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.SendTargetRpc))
                     NetworkBehaviour_SendTargetRpc_MethodRef = CodegenSession.ImportReference(mi);
+                //Prediction.
+                else if (mi.Name == nameof(NetworkBehaviour.SetLastReconcileTick))
+                    NetworkBehaviour_SetLastReconcileTick_MethodRef = CodegenSession.ImportReference(mi);
                 //Misc.
                 else if (mi.Name == nameof(NetworkBehaviour.TransformMayChange))
                     NetworkBehaviour_TransformMayChange_MethodRef = CodegenSession.ImportReference(mi);
@@ -185,15 +190,18 @@ namespace FishNet.CodeGenerating.Helping
                     NetworkBehaviour_Owner_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkBehaviour.LocalConnection))
                     NetworkBehaviour_LocalConnection_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
-#pragma warning disable CS0618 // Type or member is obsolete
-                else if (pi.Name == nameof(NetworkBehaviour.OwnerIsValid))
-                    NetworkBehaviour_OwnerIsValid_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
-                else if (pi.Name == nameof(NetworkBehaviour.OwnerIsActive))
-                    NetworkBehaviour_OwnerIsActive_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
-#pragma warning restore CS0618 // Type or member is obsolete
                 //Misc.
                 else if (pi.Name == nameof(NetworkBehaviour.TimeManager))
                     NetworkBehaviour_TimeManager_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+            }
+
+            //NetworkConnection.
+            foreach (PropertyInfo pi in typeof(NetworkConnection).GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
+            {
+                if (pi.Name == nameof(NetworkConnection.IsValid))
+                    NetworkConnection_IsValid_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+                else if (pi.Name == nameof(NetworkConnection.IsActive))
+                    NetworkConnection_IsActive_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
             }
 
             return true;

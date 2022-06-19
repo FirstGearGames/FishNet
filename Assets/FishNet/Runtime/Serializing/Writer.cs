@@ -927,17 +927,13 @@ namespace FishNet.Serializing
             }
             else
             {
-                //If theres no values, or offset exceeds count then write 0 for count.
-                if (value.Count == 0 || (offset >= count))
-                {
-                    WriteInt32(0);
-                }
-                else
-                {
-                    WriteInt32(count);
-                    for (int i = 0; i < count; i++)
-                        Write<T>(value[i + offset]);
-                }
+                //Make sure values cannot cause out of bounds.
+                if ((offset + count > value.Count))
+                    count = 0;
+
+                WriteInt32(count);
+                for (int i = 0; i < count; i++)
+                    Write<T>(value[i + offset]);
             }
         }
         /// <summary>

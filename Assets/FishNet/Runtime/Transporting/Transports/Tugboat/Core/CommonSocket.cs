@@ -14,12 +14,12 @@ namespace FishNet.Transporting.Tugboat
         /// <summary>
         /// Current ConnectionState.
         /// </summary>
-        private LocalConnectionStates _connectionState = LocalConnectionStates.Stopped;
+        private LocalConnectionState _connectionState = LocalConnectionState.Stopped;
         /// <summary>
         /// Returns the current ConnectionState.
         /// </summary>
         /// <returns></returns>
-        internal LocalConnectionStates GetConnectionState()
+        internal LocalConnectionState GetConnectionState()
         {
             return _connectionState;
         }
@@ -27,7 +27,7 @@ namespace FishNet.Transporting.Tugboat
         /// Sets a new connection state.
         /// </summary>
         /// <param name="connectionState"></param>
-        protected void SetConnectionState(LocalConnectionStates connectionState, bool asServer)
+        protected void SetConnectionState(LocalConnectionState connectionState, bool asServer)
         {
             //If state hasn't changed.
             if (connectionState == _connectionState)
@@ -54,7 +54,7 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         internal void Send(ref Queue<Packet> queue, byte channelId, ArraySegment<byte> segment, int connectionId, int mtu)
         {
-            if (GetConnectionState() != LocalConnectionStates.Started)
+            if (GetConnectionState() != LocalConnectionState.Started)
                 return;
 
             //ConnectionId isn't used from client to server.

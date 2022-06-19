@@ -1,9 +1,12 @@
-﻿using System;
+﻿using FishNet.Utility.Constant;
+using System;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
 namespace FishNet.Serializing.Helping
 {
-    public class CodegenMakePublicAttribute : Attribute { }
+    internal class CodegenMakePublicAttribute : Attribute { }
     public class CodegenExcludeAttribute : Attribute { }
-    public class CodegenIncludeInternalAttribute : Attribute { }
+    internal class CodegenIncludeInternalAttribute : Attribute { }
 
 }

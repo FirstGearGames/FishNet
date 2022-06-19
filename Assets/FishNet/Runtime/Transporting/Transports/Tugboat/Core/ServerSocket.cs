@@ -19,13 +19,13 @@ namespace FishNet.Transporting.Tugboat.Server
         /// Gets the current ConnectionState of a remote client on the server.
         /// </summary>
         /// <param name="connectionId">ConnectionId to get ConnectionState for.</param>
-        internal RemoteConnectionStates GetConnectionState(int connectionId)
+        internal RemoteConnectionState GetConnectionState(int connectionId)
         {
             NetPeer peer = GetNetPeer(connectionId, false);
             if (peer == null || peer.ConnectionState != ConnectionState.Connected)
-                return RemoteConnectionStates.Stopped;
+                return RemoteConnectionState.Stopped;
             else
-                return RemoteConnectionStates.Started;
+                return RemoteConnectionState.Started;
         }
         #endregion
 
@@ -48,7 +48,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Changes to the sockets local connection state.
         /// </summary>
-        private Queue<LocalConnectionStates> _localConnectionStates = new Queue<LocalConnectionStates>();
+        private Queue<LocalConnectionState> _localConnectionStates = new Queue<LocalConnectionState>();
         /// <summary>
         /// Inbound messages which need to be handled.
         /// </summary>
@@ -179,7 +179,7 @@ namespace FishNet.Transporting.Tugboat.Server
             //If started succcessfully.
             if (startResult)
             {
-                _localConnectionStates.Enqueue(LocalConnectionStates.Started);
+                _localConnectionStates.Enqueue(LocalConnectionState.Started);
             }
             //Failed to start.
             else
@@ -217,8 +217,8 @@ namespace FishNet.Transporting.Tugboat.Server
                 }
 
                 //If not stopped yet also enqueue stop.
-                if (base.GetConnectionState() != LocalConnectionStates.Stopped)
-                    _localConnectionStates.Enqueue(LocalConnectionStates.Stopped);
+                if (base.GetConnectionState() != LocalConnectionState.Stopped)
+                    _localConnectionStates.Enqueue(LocalConnectionState.Stopped);
             });
         }
 
@@ -257,10 +257,10 @@ namespace FishNet.Transporting.Tugboat.Server
         /// </summary>
         internal bool StartConnection(ushort port, int maximumClients, AttackResponseType attackResponseType, string ipv4BindAddress, string ipv6BindAddress)
         {
-            if (base.GetConnectionState() != LocalConnectionStates.Stopped)
+            if (base.GetConnectionState() != LocalConnectionState.Stopped)
                 return false;
 
-            base.SetConnectionState(LocalConnectionStates.Starting, true);
+            base.SetConnectionState(LocalConnectionState.Starting, true);
 
             //Assign properties.
             _port = port;
@@ -280,10 +280,10 @@ namespace FishNet.Transporting.Tugboat.Server
         /// </summary>
         internal bool StopConnection()
         {
-            if (_server == null || base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
+            if (_server == null || base.GetConnectionState() == LocalConnectionState.Stopped || base.GetConnectionState() == LocalConnectionState.Stopping)
                 return false;
 
-            _localConnectionStates.Enqueue(LocalConnectionStates.Stopping);
+            _localConnectionStates.Enqueue(LocalConnectionState.Stopping);
             StopSocketOnThread();
             return true;
         }
@@ -295,7 +295,7 @@ namespace FishNet.Transporting.Tugboat.Server
         internal bool StopConnection(int connectionId)
         {
             //Server isn't running.
-            if (_server == null || base.GetConnectionState() != LocalConnectionStates.Started)
+            if (_server == null || base.GetConnectionState() != LocalConnectionState.Started)
                 return false;
 
             NetPeer peer = GetNetPeer(connectionId, false);
@@ -305,7 +305,7 @@ namespace FishNet.Transporting.Tugboat.Server
             try
             {
                 peer.Disconnect();
-                base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, connectionId, base.Transport.Index));
+                base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionState.Stopped, connectionId, base.Transport.Index));
             }
             catch
             {
@@ -387,7 +387,7 @@ namespace FishNet.Transporting.Tugboat.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void DequeueOutgoing()
         {
-            if (base.GetConnectionState() != LocalConnectionStates.Started || _server == null)
+            if (base.GetConnectionState() != LocalConnectionState.Started || _server == null)
             {
                 //Not started, clear outgoing.
                 base.ClearPacketQueue(ref _outgoing);
@@ -454,12 +454,12 @@ namespace FishNet.Transporting.Tugboat.Server
                 base.SetConnectionState(_localConnectionStates.Dequeue(), true);
 
             //Not yet started.
-            LocalConnectionStates localState = base.GetConnectionState();
-            if (localState != LocalConnectionStates.Started)
+            LocalConnectionState localState = base.GetConnectionState();
+            if (localState != LocalConnectionState.Started)
             {
                 ResetQueues();
                 //If stopped try to kill task.
-                if (localState == LocalConnectionStates.Stopped)
+                if (localState == LocalConnectionState.Stopped)
                 {
                     StopSocketOnThread();
                     return;
@@ -484,7 +484,7 @@ namespace FishNet.Transporting.Tugboat.Server
             while (_remoteConnectionEvents.Count > 0)
             {
                 RemoteConnectionEvent connectionEvent = _remoteConnectionEvents.Dequeue();
-                RemoteConnectionStates state = (connectionEvent.Connected) ? RemoteConnectionStates.Started : RemoteConnectionStates.Stopped;
+                RemoteConnectionState state = (connectionEvent.Connected) ? RemoteConnectionState.Started : RemoteConnectionState.Stopped;
                 base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(state, connectionEvent.ConnectionId, base.Transport.Index));
             }
 

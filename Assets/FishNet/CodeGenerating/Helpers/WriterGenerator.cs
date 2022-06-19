@@ -1,4 +1,5 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Object;
 using FishNet.Serializing;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
@@ -8,7 +9,6 @@ namespace FishNet.CodeGenerating.Helping
 {
     internal class WriterGenerator
     {
-
 
         #region Const.
         internal const string GENERATED_WRITERS_CLASS_NAME = "GeneratedWriters___FN";
@@ -37,6 +37,7 @@ namespace FishNet.CodeGenerating.Helping
             MethodReference methodRefResult = null;
             TypeDefinition objectTd;
             SerializerType serializerType = GeneratorHelper.GetSerializerType(objectTr, true, out objectTd);
+
             if (serializerType != SerializerType.Invalid)
             {
                 //Array.
@@ -199,7 +200,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             /*Stubs generate Method(Writer writer, T value). */
             MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
-            AddToStaticWriters(objectTr, createdWriterMd);                
+            AddToStaticWriters(objectTr, createdWriterMd);
 
             ILProcessor processor = createdWriterMd.Body.GetILProcessor();
 
@@ -214,7 +215,7 @@ namespace FishNet.CodeGenerating.Helping
 
             //Write all fields for the class or struct.
             ParameterDefinition valueParameterDef = createdWriterMd.Parameters[1];
-            if (!WriteFields(processor, valueParameterDef, objectTr))
+            if (!WriteFieldsAndProperties(createdWriterMd, valueParameterDef, objectTr))
                 return null;
 
             processor.Emit(OpCodes.Ret);
@@ -227,21 +228,40 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="objectTr"></param>
         /// <param name="processor"></param>
         /// <returns>false if fail</returns>
-        private bool WriteFields(ILProcessor processor, ParameterDefinition valueParameterDef, TypeReference objectTr)
+        private bool WriteFieldsAndProperties(MethodDefinition writerMd, ParameterDefinition valuePd, TypeReference objectTr)
         {
             //This probably isn't needed but I'm too afraid to remove it.
             if (objectTr.Module != CodegenSession.Module)
                 objectTr = CodegenSession.ImportReference(objectTr.CachedResolve());
 
-            foreach (FieldDefinition fieldDef in objectTr.FindAllPublicFields())
+            //Fields
+            foreach (FieldDefinition fieldDef in objectTr.FindAllPublicFields(true, true))//, WriterHelper.EXCLUDED_AUTO_SERIALIZER_TYPES))
             {
-                TypeReference typeRef = CodegenSession.ImportReference(fieldDef.FieldType);
-                MethodReference writeMethodRef = CodegenSession.WriterHelper.GetOrCreateFavoredWriteMethodReference(typeRef, true);
-                //Not all fields will support writing, such as NonSerialized ones.
-                if (writeMethodRef == null)
+                if (CodegenSession.GeneralHelper.CodegenExclude(fieldDef))
                     continue;
+                if (GetWriteMethod(fieldDef.FieldType, out MethodReference writeMr))
+                    CodegenSession.WriterHelper.CreateWrite(writerMd, valuePd, fieldDef, writeMr);
+            }
 
-                CodegenSession.WriterHelper.CreateWrite(processor, valueParameterDef, fieldDef, writeMethodRef);
+            //Properties.
+            foreach (PropertyDefinition propertyDef in objectTr.FindAllPublicProperties(
+                WriterHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, WriterHelper.EXCLUDED_ASSEMBLY_PREFIXES))
+            {
+                if (CodegenSession.GeneralHelper.CodegenExclude(propertyDef))
+                    continue;
+                if (GetWriteMethod(propertyDef.PropertyType, out MethodReference writerMr))
+                {
+                    MethodReference getMr = CodegenSession.Module.ImportReference(propertyDef.GetMethod);
+                    CodegenSession.WriterHelper.CreateWrite(writerMd, valuePd, getMr, writerMr);
+                }
+            }
+
+            //Gets or creates writer method and outputs it. Returns true if method is found or created.
+            bool GetWriteMethod(TypeReference tr, out MethodReference writeMr)
+            {
+                TypeReference typeRef = CodegenSession.Module.ImportIfDifferent(tr);
+                writeMr = CodegenSession.WriterHelper.GetOrCreateFavoredWriteMethodReference(typeRef, true);
+                return (writeMr != null);
             }
 
             return true;
@@ -295,10 +315,7 @@ namespace FishNet.CodeGenerating.Helping
             if (writeMethodRef == null)
                 return null;
 
-            if (objectTr.Name.Contains("InputActionMap"))
-                UnityEngine.Debug.Log("CreatingArray " + objectTr.Name);
-
-                MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
+            MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
             AddToStaticWriters(objectTr, createdWriterMd);
 
             ILProcessor processor = createdWriterMd.Body.GetILProcessor();

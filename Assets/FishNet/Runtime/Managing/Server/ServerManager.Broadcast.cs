@@ -33,6 +33,10 @@ namespace FishNet.Managing.Server
         /// Delegate targets for each key.
         /// </summary>
         private Dictionary<ushort, HashSet<(int, ClientBroadcastDelegate)>> _handlerTargets = new Dictionary<ushort, HashSet<(int, ClientBroadcastDelegate)>>();
+        /// <summary>
+        /// Connections which can be broadcasted to after having excluded removed.
+        /// </summary>
+        private HashSet<NetworkConnection> _connectionsWithoutExclusions = new HashSet<NetworkConnection>();
         #endregion
 
         /// <summary>
@@ -221,6 +225,7 @@ namespace FishNet.Managing.Server
             }
         }
 
+
         /// <summary>
         /// Sends a broadcast to connections.
         /// </summary>
@@ -261,6 +266,142 @@ namespace FishNet.Managing.Server
             }
         }
 
+        
+        /// <summary>
+        /// Sends a broadcast to connections except excluded.
+        /// </summary>
+        /// <typeparam name="T">Type of broadcast to send.</typeparam>
+        /// <param name="connections">Connections to send to.</param>
+        /// <param name="excludedConnection">Connection to exclude.</param>
+        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name="requireAuthenticated">True if the clients must be authenticated for this broadcast to send.</param>
+        /// <param name="channel">Channel to send on.</param>
+        public void BroadcastExcept<T>(HashSet<NetworkConnection> connections, NetworkConnection excludedConnection, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        {
+            if (!Started)
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
+                return;
+            }
+
+            //Fast exit if no exclusions.
+            if (excludedConnection == null || !excludedConnection.IsValid)
+            {
+                Broadcast(connections, message, requireAuthenticated, channel);
+                return;
+            }
+
+            connections.Remove(excludedConnection);
+            Broadcast(connections, message, requireAuthenticated, channel);
+        }
+
+
+        /// <summary>
+        /// Sends a broadcast to connections except excluded.
+        /// </summary>
+        /// <typeparam name="T">Type of broadcast to send.</typeparam>
+        /// <param name="connections">Connections to send to.</param>
+        /// <param name="excludedConnections">Connections to exclude.</param>
+        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name="requireAuthenticated">True if the clients must be authenticated for this broadcast to send.</param>
+        /// <param name="channel">Channel to send on.</param>
+        public void BroadcastExcept<T>(HashSet<NetworkConnection> connections, HashSet<NetworkConnection> excludedConnections, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        {
+            if (!Started)
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
+                return;
+            }
+
+            //Fast exit if no exclusions.
+            if (excludedConnections == null || excludedConnections.Count == 0)
+            {
+                Broadcast(connections, message, requireAuthenticated, channel);
+                return;
+            }
+
+            /* I'm not sure if the hashset API such as intersect generates
+             * GC or not but I'm betting doing remove locally is faster, or
+             * just as fast. */
+            foreach (NetworkConnection ec in excludedConnections)
+                connections.Remove(ec);
+
+            Broadcast(connections,message, requireAuthenticated, channel);
+        }
+
+        /// <summary>
+        /// Sends a broadcast to all connections except excluded.
+        /// </summary>
+        /// <typeparam name="T">Type of broadcast to send.</typeparam>
+        /// <param name="excludedConnection">Connection to exclude.</param>
+        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name="requireAuthenticated">True if the clients must be authenticated for this broadcast to send.</param>
+        /// <param name="channel">Channel to send on.</param>
+        public void BroadcastExcept<T>(NetworkConnection excludedConnection, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        {
+            if (!Started)
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
+                return;
+            }
+
+            //Fast exit if there are no excluded.
+            if (excludedConnection == null || !excludedConnection.IsValid)
+            {
+                Broadcast(message, requireAuthenticated, channel);
+                return;
+            }
+
+            _connectionsWithoutExclusions.Clear();
+            /* It will be faster to fill the entire list then
+             * remove vs checking if each connection is contained within excluded. */
+            foreach (NetworkConnection c in Clients.Values)
+                _connectionsWithoutExclusions.Add(c);
+            //Remove
+            _connectionsWithoutExclusions.Remove(excludedConnection);
+
+            Broadcast(_connectionsWithoutExclusions, message, requireAuthenticated, channel);
+        }
+
+        /// <summary>
+        /// Sends a broadcast to all connections except excluded.
+        /// </summary>
+        /// <typeparam name="T">Type of broadcast to send.</typeparam>
+        /// <param name="excludedConnections">Connections to send to.</param>
+        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name="requireAuthenticated">True if the clients must be authenticated for this broadcast to send.</param>
+        /// <param name="channel">Channel to send on.</param>
+        public void BroadcastExcept<T>(HashSet<NetworkConnection> excludedConnections, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        {
+            if (!Started)
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
+                return;
+            }
+
+            //Fast exit if there are no excluded.
+            if (excludedConnections == null || excludedConnections.Count == 0)
+            {
+                Broadcast(message, requireAuthenticated, channel);
+                return;
+            }
+
+            _connectionsWithoutExclusions.Clear();
+            /* It will be faster to fill the entire list then
+             * remove vs checking if each connection is contained within excluded. */
+            foreach (NetworkConnection c in Clients.Values)
+                _connectionsWithoutExclusions.Add(c);
+            //Remove
+            foreach (NetworkConnection c in excludedConnections)
+                _connectionsWithoutExclusions.Remove(c);
+
+            Broadcast(_connectionsWithoutExclusions, message, requireAuthenticated, channel);
+        }
+
         /// <summary>
         /// Sends a broadcast to observers.
         /// </summary>
@@ -269,6 +410,7 @@ namespace FishNet.Managing.Server
         /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
         /// <param name="requireAuthenticated">True if the clients must be authenticated for this broadcast to send.</param>
         /// <param name="channel">Channel to send on.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Broadcast<T>(NetworkObject networkObject, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (networkObject == null)

@@ -67,25 +67,25 @@ public class NetworkHudCanvases : MonoBehaviour
     /// <summary>
     /// Current state of client socket.
     /// </summary>
-    private LocalConnectionStates _clientState = LocalConnectionStates.Stopped;
+    private LocalConnectionState _clientState = LocalConnectionState.Stopped;
     /// <summary>
     /// Current state of server socket.
     /// </summary>
-    private LocalConnectionStates _serverState = LocalConnectionStates.Stopped;
+    private LocalConnectionState _serverState = LocalConnectionState.Stopped;
     #endregion
 
     void OnGUI()
     {
 #if ENABLE_INPUT_SYSTEM        
-        string GetNextStateText(LocalConnectionStates state)
+        string GetNextStateText(LocalConnectionState state)
         {
-            if (state == LocalConnectionStates.Stopped)
+            if (state == LocalConnectionState.Stopped)
                 return "Start";
-            else if (state == LocalConnectionStates.Starting)
+            else if (state == LocalConnectionState.Starting)
                 return "Starting";
-            else if (state == LocalConnectionStates.Stopping)
+            else if (state == LocalConnectionState.Stopping)
                 return "Stopping";
-            else if (state == LocalConnectionStates.Started)
+            else if (state == LocalConnectionState.Started)
                 return "Stop";
             else
                 return "Invalid";
@@ -140,8 +140,8 @@ public class NetworkHudCanvases : MonoBehaviour
         }
         else
         {
-            UpdateColor(LocalConnectionStates.Stopped, ref _serverIndicator);
-            UpdateColor(LocalConnectionStates.Stopped, ref _clientIndicator);
+            UpdateColor(LocalConnectionState.Stopped, ref _serverIndicator);
+            UpdateColor(LocalConnectionState.Stopped, ref _clientIndicator);
             _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
         }
@@ -167,12 +167,12 @@ public class NetworkHudCanvases : MonoBehaviour
     /// </summary>
     /// <param name="state"></param>
     /// <param name="img"></param>
-    private void UpdateColor(LocalConnectionStates state, ref Image img)
+    private void UpdateColor(LocalConnectionState state, ref Image img)
     {
         Color c;
-        if (state == LocalConnectionStates.Started)
+        if (state == LocalConnectionState.Started)
             c = _startedColor;
-        else if (state == LocalConnectionStates.Stopped)
+        else if (state == LocalConnectionState.Stopped)
             c = _stoppedColor;
         else
             c = _changingColor;
@@ -200,7 +200,7 @@ public class NetworkHudCanvases : MonoBehaviour
         if (_networkManager == null)
             return;
 
-        if (_serverState != LocalConnectionStates.Stopped)
+        if (_serverState != LocalConnectionState.Stopped)
             _networkManager.ServerManager.StopConnection(true);
         else
             _networkManager.ServerManager.StartConnection();
@@ -212,7 +212,7 @@ public class NetworkHudCanvases : MonoBehaviour
         if (_networkManager == null)
             return;
 
-        if (_clientState != LocalConnectionStates.Stopped)
+        if (_clientState != LocalConnectionState.Stopped)
             _networkManager.ClientManager.StopConnection();
         else
             _networkManager.ClientManager.StartConnection();

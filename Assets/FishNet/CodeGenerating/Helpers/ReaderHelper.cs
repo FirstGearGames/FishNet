@@ -28,6 +28,14 @@ namespace FishNet.CodeGenerating.Helping
 
         #region Const.
         internal const string READ_PREFIX = "Read";
+        /// <summary>
+        /// Types to exclude from being scanned for auto serialization.
+        /// </summary>
+        public static System.Type[] EXCLUDED_AUTO_SERIALIZER_TYPES => WriterHelper.EXCLUDED_AUTO_SERIALIZER_TYPES;
+        /// <summary>
+        /// Types to exclude from being scanned for auto serialization.
+        /// </summary>
+        public static string[] EXCLUDED_ASSEMBLY_PREFIXES => WriterHelper.EXCLUDED_ASSEMBLY_PREFIXES;
         #endregion
 
         /// <summary>
@@ -65,7 +73,7 @@ namespace FishNet.CodeGenerating.Helping
                     continue;
                 }
 
-                else if (CodegenSession.GeneralHelper.IgnoreMethod(methodInfo))
+                else if (CodegenSession.GeneralHelper.CodegenExclude(methodInfo))
                     continue;
                 //Generic methods are not supported.
                 else if (methodInfo.IsGenericMethod)
@@ -104,7 +112,7 @@ namespace FishNet.CodeGenerating.Helping
 
             foreach (MethodInfo methodInfo in readerExtensionsType.GetMethods())
             {
-                if (CodegenSession.GeneralHelper.IgnoreMethod(methodInfo))
+                if (CodegenSession.GeneralHelper.CodegenExclude(methodInfo))
                     continue;
                 //Generic methods are not supported.
                 if (methodInfo.IsGenericMethod)
@@ -395,13 +403,50 @@ namespace FishNet.CodeGenerating.Helping
 
         /// <summary>
         /// Creates a read for fieldRef and populates it into a created variable of class or struct type.
-        /// </summary>
-        internal bool CreateReadIntoClassOrStruct(MethodDefinition methodDef, ParameterDefinition readerParameterDef, VariableDefinition objectVariableDef, FieldReference fieldRef)
+        /// </summary> 
+        internal bool CreateReadIntoClassOrStruct(MethodDefinition readerMd, ParameterDefinition readerPd, MethodReference readMr, VariableDefinition objectVd, FieldReference valueFr)
         {
-            ILProcessor processor = methodDef.Body.GetILProcessor();
-            MethodReference readMethodRef = GetFavoredReadMethodReference(fieldRef.FieldType, true);
-            if (readMethodRef != null)
+            if (readMr != null)
             {
+                ILProcessor processor = readerMd.Body.GetILProcessor();
+                /* How to load object instance. If it's a structure
+                 * then it must be loaded by address. Otherwise if
+                 * class Ldloc can be used. */
+                OpCode loadOpCode = (objectVd.VariableType.IsValueType) ?
+                    OpCodes.Ldloca : OpCodes.Ldloc;
+
+                processor.Emit(loadOpCode, objectVd);
+                //reader.
+                processor.Emit(OpCodes.Ldarg, readerPd);
+                if (IsAutoPackedType(valueFr.FieldType))
+                {
+                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(valueFr.FieldType);
+                    processor.Emit(OpCodes.Ldc_I4, (int)packType);
+                }
+                //reader.ReadXXXX().
+                processor.Emit(OpCodes.Call, readMr);
+                //obj.Field = result / reader.ReadXXXX().
+                processor.Emit(OpCodes.Stfld, valueFr);
+
+                return true;
+            }
+            else
+            {
+                CodegenSession.LogError($"Reader not found for {valueFr.FullName}.");
+                return false;
+            }
+        }
+
+
+        /// <summary>
+        /// Creates a read for fieldRef and populates it into a created variable of class or struct type.
+        /// </summary>
+        internal bool CreateReadIntoClassOrStruct(MethodDefinition methodDef, ParameterDefinition readerPd, MethodReference readMr, VariableDefinition objectVariableDef, MethodReference setMr, TypeReference readTr)
+        {
+            if (readMr != null)
+            {
+                ILProcessor processor = methodDef.Body.GetILProcessor();
+
                 /* How to load object instance. If it's a structure
                  * then it must be loaded by address. Otherwise if
                  * class Ldloc can be used. */
@@ -410,22 +455,22 @@ namespace FishNet.CodeGenerating.Helping
 
                 processor.Emit(loadOpCode, objectVariableDef);
                 //reader.
-                processor.Emit(OpCodes.Ldarg, readerParameterDef);
-                if (IsAutoPackedType(fieldRef.FieldType))
+                processor.Emit(OpCodes.Ldarg, readerPd);
+                if (IsAutoPackedType(readTr))
                 {
-                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(fieldRef.FieldType);
+                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(readTr);
                     processor.Emit(OpCodes.Ldc_I4, (int)packType);
                 }
                 //reader.ReadXXXX().
-                processor.Emit(OpCodes.Call, readMethodRef);
-                //obj.Field = result / reader.ReadXXXX().
-                processor.Emit(OpCodes.Stfld, fieldRef);
+                processor.Emit(OpCodes.Call, readMr);
+                //obj.Property = result / reader.ReadXXXX().
+                processor.Emit(OpCodes.Call, setMr);
 
                 return true;
             }
             else
             {
-                CodegenSession.LogError($"Reader not found for {fieldRef.FullName}.");
+                CodegenSession.LogError($"Reader not found for {readTr.FullName}.");
                 return false;
             }
         }

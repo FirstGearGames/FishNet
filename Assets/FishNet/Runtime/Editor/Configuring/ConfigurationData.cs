@@ -21,6 +21,9 @@ namespace FishNet.Configuring
         public bool IsHeadless;
 
         public bool StripReleaseBuilds = false;
+
+        public const string VERSION = "2.2.0";
+        public string SavedVersion;
     }
 
     public static class ConfigurationDataExtension
@@ -40,6 +43,42 @@ namespace FishNet.Configuring
         {
             target.StripReleaseBuilds = source.StripReleaseBuilds;
         }
+
+
+        /// <summary>
+        /// Writes a configuration data.
+        /// </summary>
+        public static void Write(this ConfigurationData cd, bool refreshAssetDatabase)
+        {
+            /* Why is this a thing you ask? Because Unity makes it VERY difficult to read values from
+             * memory during builds since on some Unity versions the building application is on a different
+             * processor. In result instead of using memory to read configurationdata the values
+             * must be written to disk then load the disk values as needed.
+             * 
+             * Fortunatelly the file is extremely small and this does not occur often at all. The disk read
+             * will occur once per script save, and once per assembly when building. */
+            try
+            {
+                string path = Configuration.GetAssetsPath(Configuration.CONFIG_FILE_NAME);
+                XmlSerializer serializer = new XmlSerializer(typeof(ConfigurationData));
+                TextWriter writer = new StreamWriter(path);
+                serializer.Serialize(writer, cd);
+                writer.Close();
+#if UNITY_EDITOR
+                if (refreshAssetDatabase)
+                {
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                }
+#endif
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"An error occurred while writing ConfigurationData. Message: {ex.Message}");
+            }
+
+        }
+
 
         /// <summary>
         /// Writes a configuration data.

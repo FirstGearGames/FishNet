@@ -197,6 +197,7 @@ namespace FishNet.Object
             NetworkManager = networkManager;
             ServerManager = networkManager.ServerManager;
             ClientManager = networkManager.ClientManager;
+            ObserverManager = networkManager.ObserverManager;
             TransportManager = networkManager.TransportManager;
             TimeManager = networkManager.TimeManager;
             SceneManager = networkManager.SceneManager;

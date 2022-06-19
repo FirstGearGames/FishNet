@@ -6,6 +6,7 @@ using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Managing.Client;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Observing;
 using FishNet.Managing.Scened;
 using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
@@ -36,6 +37,10 @@ namespace FishNet.Object
         /// ClientManager for this object.
         /// </summary>
         public ClientManager ClientManager => _networkObjectCache.ClientManager;
+        /// <summary>
+        /// ObserverManager for this object.
+        /// </summary>
+        public ObserverManager ObserverManager => _networkObjectCache.ObserverManager;
         /// <summary>
         /// TransportManager for this object.
         /// </summary>
@@ -99,17 +104,6 @@ namespace FishNet.Object
                 return _networkObjectCache.Owner;
             }
         }
-        /// <summary>
-        /// True if there is an owner.
-        /// </summary>
-        /// </summary>
-        [Obsolete("Use Owner.IsValid instead.")] //Remove on 2022/06/01
-        public bool OwnerIsValid => _networkObjectCache.OwnerIsValid;
-        /// <summary>
-        /// True if there is an owner and their connect is active. This will return false if there is no owner, or if the connection is disconnecting.
-        /// </summary>
-        [Obsolete("Use Owner.IsActive instead.")] //Remove on 2022/06/01
-        public bool OwnerIsActive => _networkObjectCache.OwnerIsActive;
         /// <summary>
         /// ClientId for this NetworkObject owner.
         /// </summary>

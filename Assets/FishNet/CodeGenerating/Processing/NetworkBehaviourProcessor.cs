@@ -1,5 +1,6 @@
 ﻿using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Configuring;
 using FishNet.Object;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;

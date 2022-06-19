@@ -13,6 +13,8 @@ namespace FishNet.Component.Prediction
         private SerializedProperty _graphicalObject;
         private SerializedProperty _smoothTicks;
         private SerializedProperty _smoothingDuration;
+        private SerializedProperty _enableTeleport;
+        private SerializedProperty _teleportThreshold;
         private SerializedProperty _predictionType;
         private SerializedProperty _rigidbody;
         private SerializedProperty _rigidbody2d;
@@ -25,6 +27,8 @@ namespace FishNet.Component.Prediction
             _graphicalObject = serializedObject.FindProperty("_graphicalObject");
             _smoothTicks = serializedObject.FindProperty("_smoothTicks");
             _smoothingDuration = serializedObject.FindProperty("_smoothingDuration");
+            _enableTeleport = serializedObject.FindProperty("_enableTeleport");
+            _teleportThreshold = serializedObject.FindProperty("_teleportThreshold");
             _predictionType = serializedObject.FindProperty("_predictionType");
             _rigidbody = serializedObject.FindProperty("_rigidbody");
             _rigidbody2d = serializedObject.FindProperty("_rigidbody2d");
@@ -43,6 +47,13 @@ namespace FishNet.Component.Prediction
             EditorGUILayout.PropertyField(_graphicalObject);
             EditorGUILayout.PropertyField(_smoothTicks);
             EditorGUILayout.PropertyField(_smoothingDuration);
+            EditorGUILayout.PropertyField(_enableTeleport);
+            if (_enableTeleport.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_teleportThreshold);
+                EditorGUI.indentLevel--;
+            }
 
             EditorGUILayout.PropertyField(_predictionType);
             PredictedObject.PredictionType movementType = (PredictedObject.PredictionType)_predictionType.intValue;
@@ -66,18 +77,7 @@ namespace FishNet.Component.Prediction
             }
 
             EditorGUILayout.Space();
-
-            //EditorGUILayout.HelpBox("To remove scripts added by PredictedObject click 'Cleanup' below.", MessageType.Info);
-            //if (GUILayout.Button("Cleanup"))
-            //{
-            //    PredictedObject script = (PredictedObject)target;
-            //    script.Cleanup(true);
-            //}
-            //else
-            //{
             serializedObject.ApplyModifiedProperties();
-            //}
-
         }
 
     }

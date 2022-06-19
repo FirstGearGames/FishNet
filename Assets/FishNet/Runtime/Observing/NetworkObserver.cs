@@ -49,6 +49,20 @@ namespace FishNet.Observing
         /// <summary>
         /// 
         /// </summary>
+        [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")]
+        [SerializeField]
+        private bool _setHostVisibility = true;
+        /// <summary>
+        /// True to update visibility for clientHost based on if they are an observer or not.
+        /// </summary>
+        public bool SetHostVisibility
+        {
+            get => _setHostVisibility;
+            private set => _setHostVisibility = value;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
         [Tooltip("Conditions connections must met to be added as an observer. Multiple conditions may be used.")]
         [SerializeField]
         internal List<ObserverCondition> _observerConditions = new List<ObserverCondition>();
@@ -110,6 +124,11 @@ namespace FishNet.Observing
         internal void PreInitialize(NetworkObject networkObject)
         {
             _networkObject = networkObject;
+            bool ignoringManager = (OverrideType == ConditionOverrideType.IgnoreManager);
+
+            //Check to override SetHostVisibility.
+            if (!ignoringManager)
+                SetHostVisibility = base.ObserverManager.SetHostVisibility;
 
             bool observerFound = false;
             for (int i = 0; i < _observerConditions.Count; i++)
@@ -147,9 +166,9 @@ namespace FishNet.Observing
                  * Where-as no conditions with ignore manager would
                  * make sense if the manager had conditions, but you wanted
                  * this object global visible, thus no conditions. */
-                if (OverrideType != ConditionOverrideType.IgnoreManager)
+                if (!ignoringManager)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Warning))
+                    if (base.NetworkManager.CanLog(LoggingType.Warning))
                         Debug.LogWarning($"NetworkObserver exist on {gameObject.name} but there are no observer conditions. This script has been removed.");
                     Destroy(this);
                 }

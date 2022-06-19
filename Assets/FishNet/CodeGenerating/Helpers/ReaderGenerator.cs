@@ -349,7 +349,7 @@ namespace FishNet.CodeGenerating.Helping
             TypeDefinition objectTd = objectTr.CachedResolve();
             MethodDefinition createdReaderMd = CreateStaticReaderStubMethodDefinition(objectTr);
             AddToStaticReaders(objectTr, createdReaderMd);
-                        
+
             ILProcessor processor = createdReaderMd.Body.GetILProcessor();
 
             ParameterDefinition readerPd = createdReaderMd.Parameters[0];
@@ -413,7 +413,7 @@ namespace FishNet.CodeGenerating.Helping
             /* If here then not null. */
             //Make a new instance of object type and set to objectVariableDef.
             CodegenSession.GeneralHelper.SetVariableDefinitionFromObject(processor, objectVariableDef, objectTypeDef);
-            if (!ReadFields(createdReaderMd, readerParameterDef, objectVariableDef, objectTr))
+            if (!ReadFieldsAndProperties(createdReaderMd, readerParameterDef, objectVariableDef, objectTr))
                 return null;
             /* //codegen scriptableobjects seem to climb too high up to UnityEngine.Object when
              * creating serializers/deserialized. Make sure this is not possible. */
@@ -429,22 +429,42 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Reads all fields of objectTypeRef.
         /// </summary>  
-        private bool ReadFields(MethodDefinition methodDef, ParameterDefinition readerPd, VariableDefinition objectVd, TypeReference objectTr)
+        private bool ReadFieldsAndProperties(MethodDefinition readerMd, ParameterDefinition readerPd, VariableDefinition objectVd, TypeReference objectTr)
         {
             //This probably isn't needed but I'm too afraid to remove it.
             if (objectTr.Module != CodegenSession.Module)
                 objectTr = CodegenSession.ImportReference(objectTr.CachedResolve());
 
-            foreach (FieldDefinition fieldDef in objectTr.FindAllPublicFields())
+            //Fields.
+            foreach (FieldDefinition fieldDef in objectTr.FindAllPublicFields(true, true, 
+                ReaderHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderHelper.EXCLUDED_ASSEMBLY_PREFIXES))
             {
-                FieldReference fieldRef = CodegenSession.ImportReference(fieldDef);
-                TypeReference typeRef = CodegenSession.ImportReference(fieldRef.FieldType);
-                MethodReference readMethodRef = CodegenSession.ReaderHelper.GetOrCreateFavoredReadMethodReference(typeRef, true);
-                //Not all fields will support reading, such as NonSerialized ones.
-                if (readMethodRef == null)
+                if (CodegenSession.GeneralHelper.CodegenExclude(fieldDef))
                     continue;
+                FieldReference importedFr = CodegenSession.ImportReference(fieldDef);
+                if (GetReadMethod(fieldDef.FieldType, out MethodReference readMr))
+                    CodegenSession.ReaderHelper.CreateReadIntoClassOrStruct(readerMd, readerPd, readMr, objectVd, importedFr);
+            }
 
-                CodegenSession.ReaderHelper.CreateReadIntoClassOrStruct(methodDef, readerPd, objectVd, fieldRef);
+            //Properties.
+            foreach (PropertyDefinition propertyDef in objectTr.FindAllPublicProperties(
+                ReaderHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderHelper.EXCLUDED_ASSEMBLY_PREFIXES))
+            {
+                if (CodegenSession.GeneralHelper.CodegenExclude(propertyDef))
+                    continue;
+                if (GetReadMethod(propertyDef.PropertyType, out MethodReference readMr))
+                {
+                    MethodReference setMr = CodegenSession.Module.ImportReference(propertyDef.SetMethod);
+                    CodegenSession.ReaderHelper.CreateReadIntoClassOrStruct(readerMd, readerPd, readMr, objectVd, setMr, propertyDef.PropertyType);
+                }
+            }
+
+            //Gets or creates writer method and outputs it. Returns true if method is found or created.
+            bool GetReadMethod(TypeReference tr, out MethodReference readMr)
+            {
+                TypeReference typeRef = CodegenSession.Module.ImportIfDifferent(tr);
+                readMr = CodegenSession.ReaderHelper.GetOrCreateFavoredReadMethodReference(typeRef, true);
+                return (readMr != null);
             }
 
             return true;

@@ -139,7 +139,7 @@ namespace FishNet.Transporting.Tugboat
         /// Gets the current local ConnectionState.
         /// </summary>
         /// <param name="server">True if getting ConnectionState for the server.</param>
-        public override LocalConnectionStates GetConnectionState(bool server)
+        public override LocalConnectionState GetConnectionState(bool server)
         {
             if (server)
                 return _server.GetConnectionState();
@@ -150,7 +150,7 @@ namespace FishNet.Transporting.Tugboat
         /// Gets the current ConnectionState of a remote client on the server.
         /// </summary>
         /// <param name="connectionId">ConnectionId to get ConnectionState for.</param>
-        public override RemoteConnectionStates GetConnectionState(int connectionId)
+        public override RemoteConnectionState GetConnectionState(int connectionId)
         {
             return _server.GetConnectionState(connectionId);
         }
@@ -293,7 +293,7 @@ namespace FishNet.Transporting.Tugboat
         /// <param name="value"></param>
         public override void SetMaximumClients(int value)
         {
-            if (_server.GetConnectionState() != LocalConnectionStates.Stopped)
+            if (_server.GetConnectionState() != LocalConnectionState.Stopped)
             {
                 if (base.NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot set maximum clients when server is running.");
@@ -442,7 +442,7 @@ namespace FishNet.Transporting.Tugboat
         private void UpdateTimeout()
         {
             //If server is running set timeout to max. This is for host only.
-            //int timeout = (GetConnectionState(true) != LocalConnectionStates.Stopped) ? MAX_TIMEOUT_SECONDS : _timeout;
+            //int timeout = (GetConnectionState(true) != LocalConnectionState.Stopped) ? MAX_TIMEOUT_SECONDS : _timeout;
             int timeout = (Application.isEditor) ? MAX_TIMEOUT_SECONDS : _timeout;
             _client.UpdateTimeout(timeout);
             _server.UpdateTimeout(timeout);

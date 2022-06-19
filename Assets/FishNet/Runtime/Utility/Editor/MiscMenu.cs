@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using FishNet.Editing.PrefabCollectionGenerator;
 using FishNet.Object;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
@@ -10,13 +11,28 @@ namespace FishNet.Utility.Editing
 {
 
 
+    public class OpenDocumentationMenu : MonoBehaviour
+    {
+        /// <summary>
+        /// Opens the documentation.
+        /// </summary>
+        [MenuItem("Fish-Networking/Documentation", false, int.MaxValue)]
+        public static void OpenDocumentation()
+        {
+            System.Diagnostics.Process.Start("https://fish-networking.gitbook.io/docs/");
+        }
+
+
+    }
+
+
     public class RebuildSceneIdMenu : MonoBehaviour
     {
         /// <summary>
         /// Rebuilds sceneIds for open scenes.
         /// </summary>
         [MenuItem("Fish-Networking/Rebuild SceneIds", false, 20)]
-        static void RebuildSceneIds()
+        public static void RebuildSceneIds()
         {
             int generatedCount = 0;
             for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -48,10 +64,10 @@ namespace FishNet.Utility.Editing
         /// Rebuilds the DefaultPrefabsCollection file.
         /// </summary>
         [MenuItem("Fish-Networking/Refresh Default Prefabs", false, 21)]
-        static void RebuildDefaultPrefabs()
+        public static void RebuildDefaultPrefabs()
         {
             Debug.Log("Refreshing default prefabs.");
-            FishNet.Editing.Generator.Generate();
+            Generator.GenerateFull();
         }
 
 

@@ -3,6 +3,7 @@ using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Object.Prediction.Delegating;
 using FishNet.Serializing;
+using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Constant;
 using FishNet.Utility.Extension;
@@ -16,6 +17,29 @@ namespace FishNet.Object
 
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
+        #region Public.
+        /// <summary>
+        /// 
+        /// </summary>
+        private uint _lastReconcileTick;
+        /// <summary>
+        /// Gets the last tick this NetworkBehaviour reconciled with.
+        /// </summary>
+        public uint GetLastReconcileTick() => _lastReconcileTick;
+        /// <summary>
+        /// Sets the last tick this NetworkBehaviour reconciled with.
+        /// </summary>
+        [CodegenMakePublic] //Internal only.
+        protected internal void SetLastReconcileTick(uint value)
+        {
+            _lastReconcileTick = value;
+        }
+        /// <summary>
+        /// True if this object is reconciling.
+        /// </summary>
+        public bool IsReconciling { get; internal set; }
+        #endregion
+
         #region Private.
         /// <summary>
         /// Registered Replicate methods.

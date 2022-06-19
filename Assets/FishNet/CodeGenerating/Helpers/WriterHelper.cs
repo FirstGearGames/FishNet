@@ -28,6 +28,20 @@ namespace FishNet.CodeGenerating.Helping
 
         #region Const.
         internal const string WRITE_PREFIX = "Write";
+        /// <summary>
+        /// Types to exclude from being scanned for auto serialization.
+        /// </summary>
+        public static readonly System.Type[] EXCLUDED_AUTO_SERIALIZER_TYPES = new System.Type[]
+        {
+            typeof(NetworkBehaviour)
+        };
+        /// <summary>
+        /// Types within assemblies which begin with these prefixes will not have serializers created for them.
+        /// </summary>
+        public static readonly string[] EXCLUDED_ASSEMBLY_PREFIXES = new string[]
+        {
+            "UnityEngine."
+        };
         #endregion
 
         /// <summary>
@@ -72,7 +86,7 @@ namespace FishNet.CodeGenerating.Helping
                     continue;
                 }
 
-                else if (CodegenSession.GeneralHelper.IgnoreMethod(methodInfo))
+                else if (CodegenSession.GeneralHelper.CodegenExclude(methodInfo))
                     continue;
                 //Generic methods are not supported.
                 else if (methodInfo.IsGenericMethod)
@@ -117,7 +131,7 @@ namespace FishNet.CodeGenerating.Helping
             Type writerExtensionsType = typeof(WriterExtensions);
             foreach (MethodInfo methodInfo in writerExtensionsType.GetMethods())
             {
-                if (CodegenSession.GeneralHelper.IgnoreMethod(methodInfo))
+                if (CodegenSession.GeneralHelper.CodegenExclude(methodInfo))
                     continue;
                 //Generic methods are not supported.
                 if (methodInfo.IsGenericMethod)
@@ -257,9 +271,6 @@ namespace FishNet.CodeGenerating.Helping
         {
             //Try to get existing writer, if not present make one.
             MethodReference writeMethodRef = GetFavoredWriteMethodReference(typeRef, favorInstanced);
-
-            if (typeRef.Name.Contains("InputActionMap"))
-                Debug.Log(typeRef.FullName + ",  " + typeRef.Module.Name + ",  " + (writeMethodRef == null));
 
             if (writeMethodRef == null)
                 writeMethodRef = CodegenSession.WriterGenerator.CreateWriter(typeRef);
@@ -483,13 +494,16 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="fieldDef"></param>
-        internal void CreateWrite(ILProcessor processor, ParameterDefinition writerPd, FieldDefinition fieldDef, MethodReference writeMr)
+        internal void CreateWrite(MethodDefinition writerMd, ParameterDefinition valuePd, FieldDefinition fieldDef, MethodReference writeMr)
         {
             if (writeMr != null)
             {
+                ILProcessor processor = writerMd.Body.GetILProcessor();
+                ParameterDefinition writerPd = writerMd.Parameters[0];
+
                 FieldReference fieldRef = CodegenSession.GeneralHelper.GetFieldReference(fieldDef);
-                processor.Emit(OpCodes.Ldarg_0); //this.
                 processor.Emit(OpCodes.Ldarg, writerPd);
+                processor.Emit(OpCodes.Ldarg, valuePd);
                 processor.Emit(OpCodes.Ldfld, fieldRef);
                 //If an auto pack method then insert default value.
                 if (_autoPackedMethods.Contains(fieldDef.FieldType))
@@ -504,6 +518,39 @@ namespace FishNet.CodeGenerating.Helping
                 CodegenSession.LogError($"Writer not found for {fieldDef.FieldType.FullName}.");
             }
         }
+
+        /// <summary>
+        /// Creates a Write call to a writer.
+        /// EG: StaticClass.WriteBool(xxxxx);
+        /// </summary>
+        /// <param name="processor"></param>
+        /// <param name="propertyDef"></param>
+        internal void CreateWrite(MethodDefinition writerMd, ParameterDefinition valuePd, MethodReference getMr, MethodReference writeMr)
+        {
+            TypeReference returnTr = getMr.ReturnType;
+
+            if (writeMr != null)
+            {
+                ILProcessor processor = writerMd.Body.GetILProcessor();
+                ParameterDefinition writerPd = writerMd.Parameters[0];
+
+                processor.Emit(OpCodes.Ldarg, writerPd);
+                processor.Emit(OpCodes.Ldarg, valuePd);
+                processor.Emit(OpCodes.Call, getMr);
+                //If an auto pack method then insert default value.
+                if (_autoPackedMethods.Contains(returnTr))
+                {
+                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(returnTr);
+                    processor.Emit(OpCodes.Ldc_I4, (int)packType);
+                }
+                processor.Emit(OpCodes.Call, writeMr);
+            }
+            else
+            {
+                CodegenSession.LogError($"Writer not found for {returnTr.FullName}.");
+            }
+        }
+
 
     }
 
