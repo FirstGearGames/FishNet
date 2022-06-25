@@ -87,7 +87,7 @@ namespace FishNet.CodeGenerating.Helping
             else if (objectTr.Name == typeof(System.Nullable<>).Name)
             {
                 GenericInstanceType git = objectTr as GenericInstanceType;
-                if (git.GenericArguments.Count != 1)
+                if (git == null || git.GenericArguments.Count != 1)
                     return SerializerType.Invalid;
                 else
                     return SerializerType.Nullable;

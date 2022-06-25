@@ -1,4 +1,4 @@
-﻿
+﻿//Remove on 2023/01/01
 //using UnityEngine;
 //using UnityEngine.ResourceManagement.AsyncOperations;
 //using UnitySceneManager = UnityEngine.SceneManagement;
@@ -22,5 +22,3 @@
 //    }
 
 //}
-
-//WIP//WIP//WIP//WIP//WIP//WIP//WIP//WIP

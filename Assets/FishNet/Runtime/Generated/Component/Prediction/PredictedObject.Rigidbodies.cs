@@ -44,64 +44,6 @@ namespace FishNet.Component.Prediction
             }
         }
 
-        /// <summary>
-        /// Called before performing a reconcile on NetworkBehaviour.
-        /// </summary>
-        private void Rigidbodies_TimeManager_OnPreReconcile(NetworkBehaviour obj)
-        {
-            if (!CanPredict())
-                return;
-
-            bool canReset;
-            bool is2D = (_predictionType == PredictionType.Rigidbody2D);
-            if (_smoothTicks)
-            {
-                canReset = false;
-            }
-            else if (!is2D)
-            {
-                _physicsScene = gameObject.scene.GetPhysicsScene();
-                canReset = (_physicsScene == obj.gameObject.scene.GetPhysicsScene());
-            }
-            else
-            {
-                _physicsScene2D = gameObject.scene.GetPhysicsScene2D();
-                canReset = (_physicsScene2D == obj.gameObject.scene.GetPhysicsScene2D());
-            }
-
-            if (canReset)
-            {
-                SetPreviousTransformProperties();
-                if (!is2D)
-                    ResetRigidbodyToData();
-                else
-                    ResetRigidbody2DToData();
-            }
-        }
-
-
-        /// <summary>
-        /// Called after performing a reconcile on a NetworkBehaviour.
-        /// </summary>
-        private void Rigidbodies_TimeManager_OnPostReconcile(NetworkBehaviour obj)
-        {
-            if (!CanPredict())
-                return;
-
-            bool canCalculate = false;
-            bool is2D = (_predictionType == PredictionType.Rigidbody2D);
-            if (!is2D)
-                canCalculate = (_physicsScene == gameObject.scene.GetPhysicsScene());
-            else if (_predictionType == PredictionType.Rigidbody2D)
-                canCalculate = (_physicsScene2D == gameObject.scene.GetPhysicsScene2D());
-
-            if (canCalculate)
-            {
-                ResetToTransformPreviousProperties();
-                SetTransformMoveRates();
-            }
-        }
-
 
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
@@ -114,7 +56,7 @@ namespace FishNet.Component.Prediction
 
             if (_predictionType == PredictionType.Rigidbody)
                 PredictVelocity(ps);
-            else
+            else if (_predictionType == PredictionType.Rigidbody2D)
                 PredictVelocity(ps2d);
         }
 

@@ -16,6 +16,23 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 {
     internal sealed class Generator : AssetPostprocessor
     {
+        public Generator()
+        {
+            if (!_subscribed)
+            {
+                _subscribed = true;
+                EditorApplication.update += OnEditorUpdate;
+            }
+        }
+        ~Generator()
+        {
+            if (_subscribed)
+            {
+                _subscribed = false;
+                EditorApplication.update -= OnEditorUpdate;
+            }
+        }
+
         #region Types.
         private struct SpecifiedFolder
         {
@@ -33,7 +50,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             /// <summary>
             /// HashCode for the NetworkObject.
             /// </summary>
-            public readonly uint HashCode;
+            public readonly ulong HashCode;
             /// <summary>
             /// NetworkObject discovered.
             /// </summary>
@@ -43,9 +60,9 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             /// 
             /// </summary>
             /// <param name="path">Path of the NetworkObject.</param>
-            public FoundNetworkObject(NetworkObject nob, string path)
+            public FoundNetworkObject(NetworkObject nob, ulong hash)
             {
-                HashCode = Hashing.GetStableHash32(path);
+                HashCode = hash;
                 Object = nob;
             }
         }
@@ -63,6 +80,18 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// Last asset to import when there was only one imported asset and no other changes.
         /// </summary>
         private static string _lastSingleImportedAsset = string.Empty;
+        /// <summary>
+        /// Cached DefaultPrefabObjects reference.
+        /// </summary>
+        private static DefaultPrefabObjects _cachedDefaultPrefabs;
+        /// <summary>
+        /// True to refresh prefabs next update.
+        /// </summary>
+        private static bool _retryRefreshDefaultPrefabs;
+        /// <summary>
+        /// True if already subscribed to EditorApplication.Update.
+        /// </summary>
+        private static bool _subscribed;
         #endregion
 
         private static string[] GetPrefabFiles(string startingPath, HashSet<string> excludedPaths, bool recursive)
@@ -174,6 +203,8 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
             Stopwatch sw = (settings.LogToConsole) ? Stopwatch.StartNew() : null;
             DefaultPrefabObjects prefabCollection = GetDefaultPrefabObjects(settings);
+            if (prefabCollection == null)
+                return;
 
             System.Type goType = typeof(UnityEngine.GameObject);
             foreach (string item in importedAssets)
@@ -199,8 +230,8 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 if (n == null)
                     continue;
 
-                string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}";
-                ulong hashcode = Hashing.GetStableHash64(pathAndName);
+                string path = AssetDatabase.GetAssetPath(n.gameObject);
+                ulong hashcode = GetHashCode(n.gameObject, path);
                 hashcodesAndNobs[hashcode] = n;
                 hashcodes.Add(hashcode);
             }
@@ -236,11 +267,14 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             //If searching the entire project.
             if (settings.SearchScope == Settings.SearchScopeType.EntireProject)
             {
-                foreach (string item in GetPrefabFiles("Assets", excludedPaths, true))
+                foreach (string path in GetPrefabFiles("Assets", excludedPaths, true))
                 {
-                    NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(item);
+                    NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(path);
                     if (nob != null)
-                        foundNobs.Add(new FoundNetworkObject(nob, item));
+                    {
+                        ulong hash = GetHashCode(nob.gameObject, path);
+                        foundNobs.Add(new FoundNetworkObject(nob, hash));
+                    }
                 }
             }
             //Specific folders.
@@ -255,11 +289,14 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     if (!Directory.Exists(sf.Path))
                         continue;
 
-                    foreach (string item in GetPrefabFiles(sf.Path, excludedPaths, sf.Recursive))
+                    foreach (string path in GetPrefabFiles(sf.Path, excludedPaths, sf.Recursive))
                     {
-                        NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(item);
+                        NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(path);
                         if (nob != null)
-                            foundNobs.Add(new FoundNetworkObject(nob, item));
+                        {
+                            ulong hash = GetHashCode(nob.gameObject, path);
+                            foundNobs.Add(new FoundNetworkObject(nob, hash));
+                        }
                     }
                 }
             }
@@ -277,14 +314,28 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 orderedNobs.Add(item.Object);
 
             DefaultPrefabObjects prefabCollection = GetDefaultPrefabObjects();
+            if (prefabCollection == null)
+                return;
+
             //Clear and add built list.
             prefabCollection.Clear();
             prefabCollection.AddObjects(orderedNobs);
 
             if (sw != null)
-                UnityEngine.Debug.Log($"Default prefab generator found {prefabCollection.GetObjectCount()} prefabs in {sw.ElapsedMilliseconds}ms.");
-
+            {
+                string header = (_retryRefreshDefaultPrefabs) ? "Retry was successful. " : string.Empty;
+                UnityEngine.Debug.Log($"{header}Default prefab generator found {prefabCollection.GetObjectCount()} prefabs in {sw.ElapsedMilliseconds}ms.");
+            }
             EditorUtility.SetDirty(prefabCollection);
+        }
+
+
+        /// <summary>
+        /// Returns a stable hashcode for gameObject and it's path.
+        /// </summary>
+        private static ulong GetHashCode(GameObject go, string path)
+        {
+            return Hashing.GetStableHash64($"{path}{go.name}");
         }
 
         /// <summary>
@@ -329,26 +380,70 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 settings = Settings.Load();
 
             //Load the prefab collection
-            DefaultPrefabObjects prefabCollection = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(settings.AssetPath);
-            if (prefabCollection == null)
+            string assetPath = settings.AssetPath;
+
+            //If cached prefabs is not the same path as assetPath.
+            if (_cachedDefaultPrefabs != null)
             {
-                string directory = Path.GetDirectoryName(settings.AssetPath);
+                string foundPath = Path.GetFullPath(AssetDatabase.GetAssetPath(_cachedDefaultPrefabs));
+                string assetPathFull = Path.GetFullPath(assetPath);
+                if (foundPath != assetPathFull)
+                    _cachedDefaultPrefabs = null;
+            }
+
+            //If cached is null try to get it.
+            if (_cachedDefaultPrefabs == null)
+            {
+                //Only try to load it if file exist.
+                if (File.Exists(assetPath))
+                {
+                    _cachedDefaultPrefabs = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(assetPath);
+                    if (_cachedDefaultPrefabs == null)
+                    {
+                        //If already retried then throw an error.
+                        if (_retryRefreshDefaultPrefabs)
+                        {
+                            UnityEngine.Debug.LogError("DefaultPrefabObjects file exists but it could not be loaded by Unity. Use the Fish-Networking menu to Refresh Default Prefabs.");
+                        }
+                        else
+                        {
+                            UnityEngine.Debug.Log("DefaultPrefabObjects file exists but it could not be loaded by Unity. Trying to reload the file next frame.");
+                            _retryRefreshDefaultPrefabs = true;
+                        }
+                        return null;
+                    }
+                }
+            }
+
+            if (_cachedDefaultPrefabs == null)
+            {
+                UnityEngine.Debug.Log($"Creating a new DefaultPrefabsObject at {assetPath}.");
+                string directory = Path.GetDirectoryName(assetPath);
 
                 if (!Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
-
                     AssetDatabase.Refresh();
                 }
 
-                prefabCollection = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
-
-                AssetDatabase.CreateAsset(prefabCollection, settings.AssetPath);
-
+                _cachedDefaultPrefabs = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
+                AssetDatabase.CreateAsset(_cachedDefaultPrefabs, assetPath);
                 AssetDatabase.SaveAssets();
             }
 
-            return prefabCollection;
+            return _cachedDefaultPrefabs;
+        }
+
+        /// <summary>
+        /// Called every frame the editor updates.
+        /// </summary>
+        private static void OnEditorUpdate()
+        {
+            if (!_retryRefreshDefaultPrefabs)
+                return;
+
+            GenerateFull();
+            _retryRefreshDefaultPrefabs = false;
         }
 
         /// <summary>
@@ -356,6 +451,9 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
+            //If retrying next frame don't bother updating, next frame will do a full refresh.
+            if (_retryRefreshDefaultPrefabs)
+                return;
             //Post process is being ignored. Could be temporary or user has disabled this feature.
             if (IgnorePostProcess)
                 return;
@@ -400,6 +498,8 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     if (nob != null)
                     {
                         DefaultPrefabObjects dpo = GetDefaultPrefabObjects();
+                        if (dpo == null)
+                            return;
                         //Already added!
                         if (dpo.Prefabs.Contains(nob))
                             return;

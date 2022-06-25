@@ -38,7 +38,10 @@ namespace FishNet.Managing.Scened
         /// Name of the scene.
         /// </summary>
         public string Name = string.Empty;
-
+        /// <summary>
+        /// Returns the scene name without a directory path should one exist.
+        /// </summary>
+        public string NameOnly => System.IO.Path.GetFileNameWithoutExtension(Name);
         #region Const
         /// <summary>
         /// String to display when scene data is invalid.
@@ -242,7 +245,8 @@ namespace FishNet.Managing.Scened
                     continue;
                 }
 
-                result.Add(CreateData(item));
+                string nameOnly = System.IO.Path.GetFileNameWithoutExtension(item);
+                result.Add(CreateData(nameOnly));
             }
 
             if (invalidFound)
@@ -309,7 +313,7 @@ namespace FishNet.Managing.Scened
 
             //If couldnt find handle try by string.
             if (!foundByHandle)
-                result = SceneManager.GetScene(Name);
+                result = SceneManager.GetScene(NameOnly);
 
             return result;
         }

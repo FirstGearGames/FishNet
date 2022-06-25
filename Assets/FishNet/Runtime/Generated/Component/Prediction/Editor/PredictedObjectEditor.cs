@@ -12,6 +12,7 @@ namespace FishNet.Component.Prediction
     {
         private SerializedProperty _graphicalObject;
         private SerializedProperty _smoothTicks;
+        private SerializedProperty _durationType;
         private SerializedProperty _smoothingDuration;
         private SerializedProperty _enableTeleport;
         private SerializedProperty _teleportThreshold;
@@ -21,11 +22,11 @@ namespace FishNet.Component.Prediction
         private SerializedProperty _networkTransform;
         private SerializedProperty _predictionRatio;
 
-
         protected virtual void OnEnable()
         {
             _graphicalObject = serializedObject.FindProperty("_graphicalObject");
             _smoothTicks = serializedObject.FindProperty("_smoothTicks");
+            _durationType = serializedObject.FindProperty("_durationType");
             _smoothingDuration = serializedObject.FindProperty("_smoothingDuration");
             _enableTeleport = serializedObject.FindProperty("_enableTeleport");
             _teleportThreshold = serializedObject.FindProperty("_teleportThreshold");
@@ -46,7 +47,13 @@ namespace FishNet.Component.Prediction
 
             EditorGUILayout.PropertyField(_graphicalObject);
             EditorGUILayout.PropertyField(_smoothTicks);
-            EditorGUILayout.PropertyField(_smoothingDuration);
+            EditorGUILayout.PropertyField(_durationType);
+            if ((PredictedObject.SmoothingDurationType)_durationType.intValue == PredictedObject.SmoothingDurationType.Time)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_smoothingDuration);
+                EditorGUI.indentLevel--;
+            }
             EditorGUILayout.PropertyField(_enableTeleport);
             if (_enableTeleport.boolValue)
             {

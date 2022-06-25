@@ -1402,6 +1402,9 @@ namespace FishNet.Managing.Scened
                 //ClientHost doesn't have visibility.
                 if (!nob.Observers.Contains(clientConn))
                     continue;
+                //Cannot move if not root.
+                if (nob.transform.root != null)
+                    continue;
 
                 /* If here nob is in the same being
                  * destroyed and clientHost has visiblity. */
