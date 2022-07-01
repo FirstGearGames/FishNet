@@ -1,4 +1,5 @@
 ﻿using FishNet.Managing.Logging;
+using FishNet.Serializing.Helping;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -33,7 +34,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Handle of the scene. If value is 0, then handle is not used.
         /// </summary>
-        public int Handle = 0;
+        public int Handle;
         /// <summary>
         /// Name of the scene.
         /// </summary>
@@ -42,6 +43,7 @@ namespace FishNet.Managing.Scened
         /// Returns the scene name without a directory path should one exist.
         /// </summary>
         public string NameOnly => System.IO.Path.GetFileNameWithoutExtension(Name);
+
         #region Const
         /// <summary>
         /// String to display when scene data is invalid.

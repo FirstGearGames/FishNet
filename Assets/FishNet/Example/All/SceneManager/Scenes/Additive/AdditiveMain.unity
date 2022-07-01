@@ -1176,8 +1176,6 @@ MonoBehaviour:
   _runInBackground: 1
   _dontDestroyOnLoad: 1
   _persistence: 0
-  _incomingIterationOrder: 1
-  _outgoingIterationOrder: 0
 --- !u!114 &7443408887680269500
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1191,6 +1189,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _tickRate: 30
+  _pingInterval: 1
+  _timingInterval: 2
   _physicsMode: 0
   _maximumBufferedInputs: 15
 --- !u!114 &7443408887680269501
@@ -1207,6 +1207,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _unreliableMTU: 1023
   _attackResponseType: 1
+  _ipv4BindAddress: 
+  _ipv6BindAddress: 
   _port: 7770
   _maximumClients: 4095
   _clientAddress: localhost
@@ -1224,6 +1226,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _authenticator: {fileID: 0}
+  SpawnPacking:
+    Position: 0
+    Rotation: 2
+    Scale: 2
   _changeFrameRate: 1
   _frameRate: 9999
   _shareIds: 1
@@ -1238,10 +1244,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 7443408887680269498}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 890f47715afb30a4b9d7020403fb3692, type: 3}
+  m_Script: {fileID: 11500000, guid: 211a9f6ec51ddc14f908f5acc0cd0423, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _playerPrefab: {fileID: 6790989687170477923, guid: 0eecfd06c38d38342b30451acbb92607,
+  _playerPrefab: {fileID: 611616139817875448, guid: bf5f023b4017a5e41a9815ec5745df3d,
     type: 3}
   _addToDefaultScene: 1
   Spawns: []

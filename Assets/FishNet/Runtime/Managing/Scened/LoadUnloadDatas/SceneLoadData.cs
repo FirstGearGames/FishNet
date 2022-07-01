@@ -1,4 +1,5 @@
 ﻿using FishNet.Object;
+using FishNet.Serializing.Helping;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine.SceneManagement;
@@ -164,6 +165,9 @@ namespace FishNet.Managing.Scened
             //Null values.
             if (Params == null || MovedNetworkObjects == null || SceneLookupDatas == null ||
                 Options == null)
+                return true;
+            //No lookups.
+            if (SceneLookupDatas.Length == 0)
                 return true;
 
             return false;

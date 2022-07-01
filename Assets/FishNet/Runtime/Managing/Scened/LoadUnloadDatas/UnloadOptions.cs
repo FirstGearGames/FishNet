@@ -27,9 +27,9 @@ namespace FishNet.Managing.Scened
         [System.NonSerialized]
         public ServerUnloadMode Mode = ServerUnloadMode.UnloadUnused;
         /// <summary>
-        /// True if scenes should be unloaded using addressables.
+        /// True if scenes should be loaded using addressables. This field only exists for optional use so the user may know if their queue data is using addressables.
         /// </summary>
-        public bool Addressables = false;
+        public bool Addressables;
     }
 
 

@@ -22,7 +22,7 @@ namespace FishNet.Configuring
 
         public bool StripReleaseBuilds = false;
 
-        public const string VERSION = "2.2.0";
+        public const string VERSION = "2.2.2"; //this will need to read from the text file going forward.
         public string SavedVersion;
     }
 

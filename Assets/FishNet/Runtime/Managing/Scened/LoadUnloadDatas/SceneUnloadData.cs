@@ -100,6 +100,9 @@ namespace FishNet.Managing.Scened
             if (Params == null || SceneLookupDatas == null ||
                 Options == null)
                 return true;
+            //No lookups.
+            if (SceneLookupDatas.Length == 0)
+                return true;
 
             return false;
         }

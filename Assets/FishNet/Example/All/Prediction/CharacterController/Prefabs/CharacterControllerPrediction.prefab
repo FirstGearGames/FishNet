@@ -143,7 +143,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 27
+  _prefabId: 20
   _scenePathHash: 0
   _sceneId: 0
   _sceneNetworkObjects:
@@ -176,6 +176,8 @@ MonoBehaviour:
   _graphicalObject: {fileID: 8274935638305073705}
   _smoothTicks: 1
   _smoothingDuration: 0.05
+  _enableTeleport: 0
+  _teleportThreshold: 1
   _predictionType: 0
   _rigidbody: {fileID: 0}
   _rigidbody2d: {fileID: 0}

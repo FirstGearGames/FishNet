@@ -42,7 +42,7 @@ namespace FishNet.Object
         /// <summary>
         /// 
         /// </summary>
-        [SerializeField, HideInInspector]
+        [SerializeField]//, HideInInspector]
         private ulong _sceneId;
         /// <summary>
         /// Id for this scene object.
@@ -196,11 +196,11 @@ namespace FishNet.Object
             return false;
         }
 
-        partial void PartialOnValidate()
+        private void ReferenceIds_OnValidate()
         {
             TryCreateSceneID();
         }
-        partial void PartialReset()
+        private void ReferenceIds_Reset()
         {
             TryCreateSceneID();
         }

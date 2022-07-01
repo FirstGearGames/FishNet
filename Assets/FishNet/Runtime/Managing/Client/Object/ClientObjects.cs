@@ -112,7 +112,7 @@ namespace FishNet.Managing.Client
         private void RegisterAndDespawnSceneObjects(Scene s)
         {
             ListCache<NetworkObject> nobs;
-            SceneFN.GetSceneNetworkObjects(s, true, out nobs);
+            SceneFN.GetSceneNetworkObjects(s, false, out nobs);
 
             for (int i = 0; i < nobs.Written; i++)
             {

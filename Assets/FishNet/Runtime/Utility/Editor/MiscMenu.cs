@@ -40,7 +40,7 @@ namespace FishNet.Utility.Editing
                 Scene s = SceneManager.GetSceneAt(i);
 
                 ListCache<NetworkObject> nobs;
-                SceneFN.GetSceneNetworkObjects(s, true, out nobs);
+                SceneFN.GetSceneNetworkObjects(s, false, out nobs);
                 for (int z = 0; z < nobs.Written; z++)
                 {
                     NetworkObject nob = nobs.Collection[z];

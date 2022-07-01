@@ -48,7 +48,6 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return typeRef.Resolve().FindAllPublicFields(ignoreStatic, ignoreNonSerialized, excludedBaseTypes, excludedAssemblyPrefixes);
         }
 
-
         /// <summary>
         /// Returns a method within the base type of typeRef.
         /// </summary>

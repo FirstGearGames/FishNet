@@ -174,6 +174,22 @@ namespace FishNet.Managing.Object
                 {
                     nob.gameObject.SetActive(false);
                 }
+
+                ///* Also despawn child objects.
+                // * This only must be done when not destroying
+                // * as destroying would result in the despawn being
+                // * forced. 
+                // *
+                // * Only run if asServer as well. The server will send
+                // * individual despawns for each child. */
+                //if (asServer)
+                //{
+                //    foreach (NetworkObject childNob in nob.ChildNetworkObjects)
+                //    {
+                //        if (childNob != null && childNob.IsSpawned)
+                //            Despawn(childNob, asServer);
+                //    }
+                //}
             }
 
         }

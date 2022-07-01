@@ -43,6 +43,15 @@ namespace FishNet.Component.Prediction
         [SerializeField]
         private Transform _graphicalObject;
         /// <summary>
+        /// Gets GraphicalObject.
+        /// </summary>
+        public Transform GetGraphicalObject => _graphicalObject;
+        /// <summary>
+        /// Sets GraphicalObject.
+        /// </summary>
+        /// <param name="value"></param>
+        public void SetGraphicalObject(Transform value) => _graphicalObject = value;
+        /// <summary>
         /// True to smooth graphical object over tick durations. While true objects will be smooth even with low tick rates, but the visual representation will be behind one tick.
         /// </summary>
         [Tooltip("True to smooth graphical object over tick durations. While true objects will be smooth even with low tick rates, but the visual representation will be behind one tick.")]

@@ -22,8 +22,13 @@ namespace FishNet.Utility.Performance
         [Obsolete("Use GetNetworkObjectCache instead.")] //Remove on 2023/01/01
         public static ListCache<NetworkObject> NetworkObjectCache = new ListCache<NetworkObject>();
         /// <summary>
+        /// Cache collection for NetworkObjects.
+        /// </summary>
+        private static Stack<ListCache<NetworkBehaviour>> _networkBehaviourCaches = new Stack<ListCache<NetworkBehaviour>>();
+        /// <summary>
         /// Cache for NetworkBehaviours.
         /// </summary>
+        [Obsolete("Use GetNetworkBehaviourCache instead.")] //Remove on 2023/01/01
         public static ListCache<NetworkBehaviour> NetworkBehaviourCache = new ListCache<NetworkBehaviour>();
         /// <summary>
         /// Cache collection for NetworkObjects.
@@ -92,6 +97,20 @@ namespace FishNet.Utility.Performance
 
             return result;
         }
+        /// <summary>
+        /// Returns a NetworkBehaviour cache. Use StoreCache to return the cache.
+        /// </summary>
+        /// <returns></returns>
+        public static ListCache<NetworkBehaviour> GetNetworkBehaviourCache()
+        {
+            ListCache<NetworkBehaviour> result;
+            if (_networkBehaviourCaches.Count == 0)
+                result = new ListCache<NetworkBehaviour>();
+            else
+                result = _networkBehaviourCaches.Pop();
+
+            return result;
+        }
         #endregion
 
 
@@ -122,6 +141,15 @@ namespace FishNet.Utility.Performance
         {
             cache.Reset();
             _transformCaches.Push(cache);
+        }
+        /// <summary>
+        /// Stores a NetworkBehaviour cache.
+        /// </summary>
+        /// <param name="cache"></param>
+        public static void StoreCache(ListCache<NetworkBehaviour> cache)
+        {
+            cache.Reset();
+            _networkBehaviourCaches.Push(cache);
         }
         #endregion
 

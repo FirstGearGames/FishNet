@@ -1110,8 +1110,8 @@ namespace FishNet.CodeGenerating.Processing
                     Instruction boolTrueInst = processor.Create(OpCodes.Ldc_I4_1);
                     methodDef.Body.Instructions.Insert(instructionIndex, boolTrueInst);
 
-                    var newField = inst.Operand as FieldReference;
-                    var genericType = (GenericInstanceType)newField.DeclaringType;
+                    FieldReference newField = inst.Operand as FieldReference;
+                    GenericInstanceType genericType = (GenericInstanceType)newField.DeclaringType;
                     inst.OpCode = OpCodes.Callvirt;
                     inst.Operand = ps.SetMethodRef.MakeHostInstanceGeneric(genericType);
                 }

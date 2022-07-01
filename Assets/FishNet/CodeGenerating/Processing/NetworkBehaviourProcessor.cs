@@ -137,7 +137,6 @@ namespace FishNet.CodeGenerating.Processing
              * been processed. */
             PrepareNetworkInitializeMethods(firstTypeDef);
 
-
             /* Make awake methods for all inherited classes
             * public and virtual. This is so I can add logic
             * to the firstTypeDef awake and still execute
@@ -236,9 +235,10 @@ namespace FishNet.CodeGenerating.Processing
 
                 /* Get next base awake first.
                  * If it doesn't exist then nothing can be called. */
-                MethodDefinition baseAwakeMd = GetNextAwake(i);
+                GenericInstanceMethod baseAwakeMd = GetNextAwake(i);
                 if (baseAwakeMd == null)
                     return;
+
                 MethodReference baseAwakeMethodRef = CodegenSession.ImportReference(baseAwakeMd);
                 /* Awake will always exist because it was added previously.
                  * Get awake for the current declaring type. */
@@ -257,7 +257,7 @@ namespace FishNet.CodeGenerating.Processing
                         if (item.Operand != null && item.Operand.GetType().Name == nameof(MethodDefinition))
                         {
                             MethodDefinition md = (MethodDefinition)item.Operand;
-                            if (md == baseAwakeMd)
+                            if (md == baseAwakeMd.CachedResolve())
                             {
                                 alreadyHasBaseCall = true;
                                 break;
@@ -269,21 +269,30 @@ namespace FishNet.CodeGenerating.Processing
                 if (!alreadyHasBaseCall)
                 {
                     //Create instructions for base call.
-                    List<Instruction> instructions = new List<Instruction>();
                     processor.Emit(OpCodes.Ldarg_0); //base.
-                    processor.Emit(OpCodes.Call, baseAwakeMethodRef);
+                    processor.Emit(OpCodes.Callvirt, baseAwakeMd);
                 }
             }
 
             //Gets the next Awake method after the currentIndex.
-            MethodDefinition GetNextAwake(int currentIndex)
+            GenericInstanceMethod GetNextAwake(int currentIndex)
             {
                 int baseIndex = (currentIndex + 1);
                 //Out of bounds.
                 if (baseIndex >= datas.Count)
                     return null;
 
-                return datas[baseIndex].AwakeMethodDef.DeclaringType.CachedResolve().GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+                TypeDefinition td = datas[baseIndex].AwakeMethodDef.DeclaringType;
+                if (td.HasGenericParameters)
+                {
+                    MethodDefinition md = td.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+                    GenericInstanceType git = td.CreateGenericInstanceType(td.GenericParameters);
+                    return md.MakeGenericMethod(git);
+                }
+                else
+                {
+                    return td.GetMethod(ObjectHelper.AWAKE_METHOD_NAME).MakeGenericMethod();
+                }
             }
         }
 

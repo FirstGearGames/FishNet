@@ -1,4 +1,5 @@
 ﻿using MonoFN.Cecil;
+using MonoFN.Collections.Generic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,18 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
     internal static class TypeDefinitionExtensions
     {
+
+        /// <summary>
+        /// Creates a GenericInstanceType and adds parameters.
+        /// </summary>
+        internal static GenericInstanceType CreateGenericInstanceType(this TypeDefinition type, Collection<GenericParameter> parameters)
+        {
+            GenericInstanceType git = new GenericInstanceType(type);
+            foreach (GenericParameter gp in parameters)
+                git.GenericArguments.Add(gp);
+
+            return git;
+        }
 
         /// <summary>
         /// Finds public fields in type and base type
@@ -241,11 +254,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Returns if typeDef is static (abstract, sealed).
         /// </summary>
-        /// <param name="typeDef"></param>
-        /// <returns></returns>
         internal static bool IsStatic(this TypeDefinition typeDef)
         {
-            //Combing flags in a single check some reason doesn't work right with HasFlag.
+            //Combining flags in a single check some reason doesn't work right with HasFlag.
             return (typeDef.Attributes.HasFlag(TypeAttributes.Abstract) && typeDef.Attributes.HasFlag(TypeAttributes.Sealed));
         }
 

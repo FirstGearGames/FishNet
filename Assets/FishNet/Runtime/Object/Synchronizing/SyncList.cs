@@ -196,7 +196,7 @@ namespace FishNet.Object.Synchronizing
                 if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
-            } 
+            }
 
             /* Set as changed even if cannot dirty.
             * Dirty is only set when there are observers,
@@ -317,6 +317,7 @@ namespace FishNet.Object.Synchronizing
                 collection.Clear();
 
             int changes = (int)reader.ReadUInt32();
+
             for (int i = 0; i < changes; i++)
             {
                 SyncListOperation operation = (SyncListOperation)reader.ReadByte();
@@ -359,7 +360,6 @@ namespace FishNet.Object.Synchronizing
                     collection[index] = next;
                 }
 
-
                 InvokeOnChange(operation, index, prev, next, false);
             }
 
@@ -373,23 +373,19 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private void InvokeOnChange(SyncListOperation operation, int index, T prev, T next, bool asServer)
         {
-            if (OnChange != null)
+            if (asServer)
             {
-                if (asServer)
-                {
-                    if (base.NetworkBehaviour.OnStartServerCalled)
-                        OnChange.Invoke(operation, index, prev, next, asServer);
-                    else
-                        _serverOnChanges.Add(new CachedOnChange(operation, index, prev, next));
-                }
+                if (base.NetworkBehaviour.OnStartServerCalled)
+                    OnChange?.Invoke(operation, index, prev, next, asServer);
                 else
-                {
-                    if (base.NetworkBehaviour.OnStartClientCalled)
-                        OnChange.Invoke(operation, index, prev, next, asServer);
-                    else
-                        _clientOnChanges.Add(new CachedOnChange(operation, index, prev, next));
-                }
-
+                    _serverOnChanges.Add(new CachedOnChange(operation, index, prev, next));
+            }
+            else
+            {
+                if (base.NetworkBehaviour.OnStartClientCalled)
+                    OnChange?.Invoke(operation, index, prev, next, asServer);
+                else
+                    _clientOnChanges.Add(new CachedOnChange(operation, index, prev, next));
             }
         }
 
@@ -636,7 +632,7 @@ namespace FishNet.Object.Synchronizing
         {
             int index = Collection.IndexOf(obj);
             if (index != -1)
-            { 
+            {
                 Dirty(index);
             }
             else
