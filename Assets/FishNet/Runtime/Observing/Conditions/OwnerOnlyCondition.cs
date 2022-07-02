@@ -1,16 +1,14 @@
 ﻿using FishNet.Connection;
 using FishNet.Observing;
-using System;
 using UnityEngine;
 
 namespace FishNet.Component.Observing
 {
     /// <summary>
-    /// This condition makes an object only visible to the server.
+    /// This condition makes an object only visible to the owner.
     /// </summary>
-    //[CreateAssetMenu(menuName = "FishNet/Observers/Server Only Condition", fileName = "New Server Only Condition")]
-    [Obsolete("Use OwnerOnlyCondition instead.")] //Remove on 2023/06/01
-    public class ServerOnlyCondition : ObserverCondition
+    [CreateAssetMenu(menuName = "FishNet/Observers/Owner Only Condition", fileName = "New Owner Only Condition")]
+    public class OwnerOnlyCondition : ObserverCondition
     {
 
         /// <summary>
@@ -42,7 +40,7 @@ namespace FishNet.Component.Observing
         /// <returns></returns>
         public override ObserverCondition Clone()
         {
-            ServerOnlyCondition copy = ScriptableObject.CreateInstance<ServerOnlyCondition>();
+            OwnerOnlyCondition copy = ScriptableObject.CreateInstance<OwnerOnlyCondition>();
             return copy;
         }
     }

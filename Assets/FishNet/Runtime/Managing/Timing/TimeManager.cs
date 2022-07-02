@@ -69,9 +69,9 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public event Action OnTick;
         /// <summary>
-        /// Called immediately before physics simulation will occur for the tick.
+        /// When using TimeManager for physics timing, this is called immediately before physics simulation will occur for the tick.
+        /// While using Unity for physics timing, this is called during FixedUpdate.
         /// This may be useful if you wish to run physics differently for stacked scenes.
-        /// This action will only call when physics are set to TimeManager.
         /// </summary>
         public event Action<float> OnPhysicsSimulation;
         /// <summary>
@@ -94,6 +94,10 @@ namespace FishNet.Managing.Timing
         /// RoundTripTime in milliseconds.
         /// </summary>
         public long RoundTripTime { get; private set; }
+        /// <summary>
+        /// True if the number of frames per second are less than the number of expected ticks per second.
+        /// </summary>
+        internal bool LowFrameRate => ((Time.unscaledTime - _lastMultipleTicks) < 1f);
         /// <summary>
         /// Tick on the last received packet, be it from server or client.
         /// </summary>
@@ -277,6 +281,10 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private bool _receivedPong = true;
         /// <summary>
+        /// Last unscaledTime multiple ticks occurred in a single frame.
+        /// </summary>
+        private float _lastMultipleTicks;
+        /// <summary>
         /// Number of TimeManagers open which are using manual physics.
         /// </summary>
         private static uint _manualPhysics;
@@ -333,6 +341,10 @@ namespace FishNet.Managing.Timing
         internal void TickFixedUpdate()
         {
             OnFixedUpdate?.Invoke();
+            /* Invoke onsimulation if using Unity time.
+             * Otherwise let the tick cycling part invoke. */
+            if (PhysicsMode == PhysicsMode.Unity)
+                OnPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
         }
 
         /// <summary>
@@ -654,9 +666,13 @@ namespace FishNet.Managing.Timing
             bool isClient = _networkManager.IsClient;
 
             double timePerSimulation = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
-            double time = Time.deltaTime;
+            double time = Time.unscaledDeltaTime;
             _elapsedTickTime += time;
             FrameTicked = (_elapsedTickTime >= timePerSimulation);
+
+            //Multiple ticks will occur this frame.
+            if (_elapsedTickTime > (timePerSimulation * 2d)) ;
+            _lastMultipleTicks = Time.unscaledTime;
 
             while (_elapsedTickTime >= timePerSimulation)
             {

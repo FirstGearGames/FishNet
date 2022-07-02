@@ -169,6 +169,7 @@ namespace FishNet.Connection
             _loadedStartScenesAsServer = false;
             SetDisconnecting(false);
             Scenes.Clear();
+            ResetPingPong();
         }
 
         /// <summary>

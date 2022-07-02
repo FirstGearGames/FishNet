@@ -44,6 +44,17 @@ namespace FishNet.Connection
             //Round down so required ticks is lower.
             _requiredPingTicks = NetworkManager.TimeManager.TimeToTicks(requiredInterval, TickRounding.RoundDown);
         }
+
+
+        /// <summary>
+        /// Resets PingPong values.
+        /// </summary>
+        private void ResetPingPong()
+        {
+            _excessivePingCount = 0;
+            _lastPingTick = 0;
+        }
+
         /// <summary>
         /// Called when a ping is received from this connection. Returns if can respond to ping.
         /// </summary>
@@ -52,10 +63,14 @@ namespace FishNet.Connection
         {
             /* Only check ping conditions in build. Editors are prone to pausing which can
              * improperly kick clients. */
-#if UNITY_EDITOR
+#if !UNITY_EDITOR
             return true;
 #else
             TimeManager tm = (NetworkManager == null) ? InstanceFinder.TimeManager : NetworkManager.TimeManager;
+            //Server FPS is running low, timing isn't reliable enough to kick clients.
+            if (tm.LowFrameRate)
+                return true;
+
             uint currentTick = tm.Tick;
             uint difference = (currentTick - _lastPingTick);
             _lastPingTick = currentTick;

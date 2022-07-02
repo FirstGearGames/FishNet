@@ -232,10 +232,15 @@ MonoBehaviour:
   _prefabId: -1
   _scenePathHash: 3284346746
   _sceneId: 14106161866853908780
+  _sceneNetworkObjects: []
+  _networkBehaviours:
+  - {fileID: 76845514}
   SceneTransformProperties:
     Position: {x: -5, y: 3, z: 10}
     Rotation: {x: -0, y: -0, z: -0, w: 1}
     LocalScale: {x: 4, y: 4, z: 4}
+  _isNetworked: 1
+  _hasParentNetworkObjectAtEdit: 0
 --- !u!114 &76845514
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248,5 +253,53 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c71fd7f855ec523429999fc4e14a1928, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 0
+  _addedNetworkObject: {fileID: 76845513}
+  _networkObjectCache: {fileID: 76845513}
+  _overrideType: 3
+  _setHostVisibility: 1
   _observerConditions:
   - {fileID: 11400000, guid: 2033f54fd2794464bae08fa5a55c8996, type: 2}
+--- !u!1 &1877395657
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1877395659}
+  - component: {fileID: 1877395658}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1877395658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1877395657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bc3d1067e353a648bd08d349eb5e7de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1877395659
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1877395657}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.572327, y: -17.043049, z: -0.26644403}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
