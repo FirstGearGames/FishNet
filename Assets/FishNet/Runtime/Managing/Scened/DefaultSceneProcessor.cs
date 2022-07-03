@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 using UnityScene = UnityEngine.SceneManagement.Scene;
+using System.Collections;
 
 namespace FishNet.Managing.Scened
 {
@@ -128,16 +129,25 @@ namespace FishNet.Managing.Scened
         /// Returns if all asynchronized tasks are considered IsDone.
         /// </summary>
         /// <returns></returns>
-        public override bool AsyncsIsDone()
+        public override IEnumerator AsyncsIsDone()
         {
-            foreach (AsyncOperation ao in _loadingAsyncOperations)
+            bool notDone;
+            do
             {
-                if (ao.isDone)
-                    return false;
-            }
+                notDone = false;
+                foreach (AsyncOperation ao in _loadingAsyncOperations)
+                {
 
-            //Fall through. If here all are done.
-            return true;
+                    if (!ao.isDone)
+                    {
+                        notDone = true;
+                        break;
+                    }
+                }
+                yield return null;
+            } while (notDone);
+
+            yield break;
         }
     }
 

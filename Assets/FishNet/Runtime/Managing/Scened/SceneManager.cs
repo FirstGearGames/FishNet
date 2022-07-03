@@ -1037,16 +1037,8 @@ namespace FishNet.Managing.Scened
 
             _sceneProcessor.ActivateLoadedScenes();
             //Wait until everything is loaded (done).
-            while (!_sceneProcessor.AsyncsIsDone())
-                yield return null;
+            yield return _sceneProcessor.AsyncsIsDone();
             _sceneProcessor.LoadEnd(data);
-            /* Must yield after sceneProcessor handles things.
-             * This is a Unity bug of sorts. I'm not entirely sure what
-             * is happening, but without the yield it seems as though
-             * the processor logic doesn't complete. This doesn't make much
-             * sense given unity is supposed to be single threaded. Must be
-             * something to do with the coroutine. */
-            yield return null;
 
             SetActiveScene();
 

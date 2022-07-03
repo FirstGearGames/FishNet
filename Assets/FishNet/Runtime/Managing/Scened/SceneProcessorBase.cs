@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityScene = UnityEngine.SceneManagement.Scene;
@@ -84,7 +85,7 @@ namespace FishNet.Managing.Scened
         /// Returns if all asynchronized tasks are considered IsDone.
         /// </summary>
         /// <returns></returns>
-        public abstract bool AsyncsIsDone();
+        public abstract IEnumerator AsyncsIsDone();
 
     }
 
