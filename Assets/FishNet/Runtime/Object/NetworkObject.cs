@@ -444,16 +444,14 @@ namespace FishNet.Object
         private void OnValidate()
         {
             SceneUpdateNetworkBehaviours();
-            PartialOnValidate();
+            ReferenceIds_OnValidate();
         }
-        partial void PartialOnValidate();
         private void Reset()
         {
             SerializeSceneTransformProperties();
             SceneUpdateNetworkBehaviours();
-            PartialReset();
+            ReferenceIds_Reset();
         }
-        partial void PartialReset();
 
         private void SceneUpdateNetworkBehaviours()
         {
