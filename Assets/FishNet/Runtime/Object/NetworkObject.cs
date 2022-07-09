@@ -34,7 +34,6 @@ namespace FishNet.Object
         public bool IsSceneObject => (SceneId > 0);
         [Obsolete("Use IsSceneObject instead.")] //Remove on 2023/01/01
         public bool SceneObject => IsSceneObject;
-
         /// <summary>
         /// Unique Id for this NetworkObject. This does not represent the object owner.
         /// </summary>
@@ -81,10 +80,46 @@ namespace FishNet.Object
         /// <summary>
         /// Sets IsNetworked value. This method must be called before Start.
         /// </summary>
-        /// <param name="isNetworked"></param>
-        public void SetIsNetworked(bool isNetworked)
+        /// <param name="value">New IsNetworked value.</param>
+        public void SetIsNetworked(bool value)
         {
-            IsNetworked = isNetworked;
+            IsNetworked = value;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("True to make this object global, and added to the DontDestroyOnLoad scene. This value may only be set for instantiated objects, and can be changed if done immediately after instantiating.")]
+        [SerializeField]
+        private bool _isGlobal;
+        /// <summary>
+        /// True to make this object global, and added to the DontDestroyOnLoad scene. This value may only be set for instantiated objects, and can be changed if done immediately after instantiating.
+        /// </summary>
+        public bool IsGlobal
+        {
+            get => _isGlobal;
+            private set => _isGlobal = value;
+        }
+        /// <summary>
+        /// Sets IsGlobal value.
+        /// </summary>
+        /// <param name="value">New global value.</param>
+        public void SetIsGlobal(bool value)
+        {
+            if (!IsDeinitializing)
+            {
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Object {gameObject.name} cannot change IsGlobal as it's already initialized. IsGlobal may only be changed immediately after instantiating.");
+                return;
+            }
+            if (IsSceneObject)
+            {
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Object {gameObject.name} cannot have be global because it is a scene object. Only instantiated objects may be global.");
+                return;
+            }
+
+            _networkObserverInitiliazed = false;
+            IsGlobal = value;
         }
         /// <summary>
         /// NetworkObjects which are children of this one.
@@ -114,6 +149,9 @@ namespace FishNet.Object
                 SetIsNetworked(false);
                 return;
             }
+            //Global.
+            if (IsGlobal)
+                DontDestroyOnLoad(gameObject);
 
             if (NetworkManager == null || (!NetworkManager.IsClient && !NetworkManager.IsServer))
             {
@@ -445,6 +483,12 @@ namespace FishNet.Object
         {
             SceneUpdateNetworkBehaviours();
             ReferenceIds_OnValidate();
+
+            if (IsGlobal && IsSceneObject)
+            {
+                Debug.LogWarning($"Object {gameObject.name} cannot have be global because it is a scene object. Only instantiated objects may be global.");
+                IsGlobal = false;
+            }
         }
         private void Reset()
         {

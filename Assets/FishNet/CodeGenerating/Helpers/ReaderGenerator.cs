@@ -436,11 +436,9 @@ namespace FishNet.CodeGenerating.Helping
                 objectTr = CodegenSession.ImportReference(objectTr.CachedResolve());
 
             //Fields.
-            foreach (FieldDefinition fieldDef in objectTr.FindAllPublicFields(true, true, 
+            foreach (FieldDefinition fieldDef in objectTr.FindAllPublicFields(true, true,
                 ReaderHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderHelper.EXCLUDED_ASSEMBLY_PREFIXES))
             {
-                if (CodegenSession.GeneralHelper.CodegenExclude(fieldDef))
-                    continue;
                 FieldReference importedFr = CodegenSession.ImportReference(fieldDef);
                 if (GetReadMethod(fieldDef.FieldType, out MethodReference readMr))
                     CodegenSession.ReaderHelper.CreateReadIntoClassOrStruct(readerMd, readerPd, readMr, objectVd, importedFr);
@@ -448,10 +446,8 @@ namespace FishNet.CodeGenerating.Helping
 
             //Properties.
             foreach (PropertyDefinition propertyDef in objectTr.FindAllPublicProperties(
-                ReaderHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderHelper.EXCLUDED_ASSEMBLY_PREFIXES))
+                true, ReaderHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderHelper.EXCLUDED_ASSEMBLY_PREFIXES))
             {
-                if (CodegenSession.GeneralHelper.CodegenExclude(propertyDef))
-                    continue;
                 if (GetReadMethod(propertyDef.PropertyType, out MethodReference readMr))
                 {
                     MethodReference setMr = CodegenSession.Module.ImportReference(propertyDef.SetMethod);
@@ -462,8 +458,8 @@ namespace FishNet.CodeGenerating.Helping
             //Gets or creates writer method and outputs it. Returns true if method is found or created.
             bool GetReadMethod(TypeReference tr, out MethodReference readMr)
             {
-                TypeReference typeRef = CodegenSession.Module.ImportIfDifferent(tr);
-                readMr = CodegenSession.ReaderHelper.GetOrCreateFavoredReadMethodReference(typeRef, true);
+                tr = CodegenSession.ImportReference(tr);
+                readMr = CodegenSession.ReaderHelper.GetOrCreateFavoredReadMethodReference(tr, true);
                 return (readMr != null);
             }
 

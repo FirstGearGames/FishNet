@@ -45,7 +45,12 @@ namespace FishNet.Observing
         /// <summary>
         /// How ObserverManager conditions are used.
         /// </summary>
-        public ConditionOverrideType OverrideType => _overrideType;
+        public ConditionOverrideType OverrideType
+        {
+            get=> _overrideType;
+            internal set => _overrideType = value;
+        }
+        
         /// <summary>
         /// 
         /// </summary>

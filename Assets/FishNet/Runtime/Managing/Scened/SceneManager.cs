@@ -1040,6 +1040,23 @@ namespace FishNet.Managing.Scened
             yield return _sceneProcessor.AsyncsIsDone();
             _sceneProcessor.LoadEnd(data);
 
+            /* Wait until loadedScenes are all marked as done.
+             * This is an extra precautionary step because on some devices
+             * the AsyncIsDone returns true before scenes are actually loaded. */
+            bool allScenesLoaded = true;
+            do
+            {
+                foreach (Scene s in loadedScenes)
+                {
+                    if (!s.isLoaded)
+                    {
+                        allScenesLoaded = false;
+                        break;
+                    }
+                }
+                yield return null;
+            } while (!allScenesLoaded);
+
             SetActiveScene();
 
             //Only the server needs to find scene handles to send to client. Client will send these back to the server.

@@ -415,6 +415,7 @@ namespace FishNet.Managing.Server
             if (args.ConnectionId < 0)
                 return;
             ArraySegment<byte> segment = args.Data;
+            NetworkManager.StatisticsManager.NetworkTraffic.LocalServerReceivedData((ulong)segment.Count);
             if (segment.Count <= TransportManager.TICK_BYTES)
                 return;
 

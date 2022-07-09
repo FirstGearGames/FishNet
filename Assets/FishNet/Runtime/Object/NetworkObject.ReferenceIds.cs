@@ -42,7 +42,7 @@ namespace FishNet.Object
         /// <summary>
         /// 
         /// </summary>
-        [SerializeField]//, HideInInspector]
+        [SerializeField, HideInInspector]
         private ulong _sceneId;
         /// <summary>
         /// Id for this scene object.
@@ -88,7 +88,7 @@ namespace FishNet.Object
                 return;
             if (gameObject == null)
                 return;
-
+            
             ulong startId = SceneId;
             uint startPath = _scenePathHash;
 

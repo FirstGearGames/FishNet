@@ -32,9 +32,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeReference typeRef, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeReference typeRef, bool excludeGenerics = true, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
-            return typeRef.CachedResolve().FindAllPublicProperties(excludedBaseTypes, excludedAssemblyPrefixes);
+            return typeRef.CachedResolve().FindAllPublicProperties(excludeGenerics, excludedBaseTypes, excludedAssemblyPrefixes);
         }
 
 

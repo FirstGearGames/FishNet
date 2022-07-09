@@ -36,16 +36,18 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 if (IsExcluded(typeDef, excludedBaseTypes, excludedAssemblyPrefixes))
                     break;
 
-                foreach (FieldDefinition field in typeDef.Fields)
+                foreach (FieldDefinition fd in typeDef.Fields)
                 {
-                    if (ignoreStatic && field.IsStatic)
+                    if (ignoreStatic && fd.IsStatic)
                         continue;
-                    if (field.IsPrivate)
+                    if (fd.IsPrivate)
                         continue;
-                    if (ignoreNonSerialized && field.IsNotSerialized)
+                    if (ignoreNonSerialized && fd.IsNotSerialized)
+                        continue;
+                    if (CodegenSession.GeneralHelper.CodegenExclude(fd))
                         continue;
 
-                    yield return field;
+                    yield return fd;
                 }
 
                 try { typeDef = typeDef.BaseType?.CachedResolve(); }
@@ -58,23 +60,27 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeDefinition typeDef, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeDefinition typeDef, bool excludeGenerics = true, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
             while (typeDef != null)
             {
                 if (IsExcluded(typeDef, excludedBaseTypes, excludedAssemblyPrefixes))
                     break;
 
-                foreach (PropertyDefinition prop in typeDef.Properties)
+                foreach (PropertyDefinition pd in typeDef.Properties)
                 {
                     //Missing get or set method.
-                    if (prop.GetMethod == null || prop.SetMethod == null)
+                    if (pd.GetMethod == null || pd.SetMethod == null)
                         continue;
                     //Get or set is private.
-                    if (prop.GetMethod.IsPrivate || prop.SetMethod.IsPrivate)
+                    if (pd.GetMethod.IsPrivate || pd.SetMethod.IsPrivate)
+                        continue;
+                    if (excludeGenerics && pd.GetMethod.ReturnType.IsGenericParameter)
+                        continue;
+                    if (CodegenSession.GeneralHelper.CodegenExclude(pd))
                         continue;
 
-                    yield return prop;
+                    yield return pd;
                 }
 
                 try { typeDef = typeDef.BaseType?.CachedResolve(); }
@@ -107,6 +113,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                         return true;
                 }
             }
+
             //Fall through, not excluded.
             return false;
         }

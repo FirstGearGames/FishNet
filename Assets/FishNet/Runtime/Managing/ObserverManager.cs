@@ -47,8 +47,14 @@ namespace FishNet.Managing.Observing
             //If null then add.
             if (nullObs)
                 obs = nob.gameObject.AddComponent<NetworkObserver>();
-            //If not null and ignoring manager.
-            else if (obs.OverrideType == NetworkObserver.ConditionOverrideType.IgnoreManager)
+            //If global then ignore manager and clear all.
+            if (nob.IsGlobal)
+            {
+                obs.OverrideType = NetworkObserver.ConditionOverrideType.IgnoreManager;
+                obs.ObserverConditionsInternal.Clear();
+            }
+            //If ignoring manager.
+            if (obs.OverrideType == NetworkObserver.ConditionOverrideType.IgnoreManager)
                 return obs;
 
             //If using manager then replace all with conditions.

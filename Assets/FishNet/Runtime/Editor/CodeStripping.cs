@@ -5,6 +5,7 @@ using UnityEngine;
 using System.Xml.Serialization;
 
 #if UNITY_EDITOR
+using FishNet.Editing.PrefabCollectionGenerator;
 using UnityEditor.Compilation;
 using UnityEditor.Build.Reporting;
 using UnityEditor;
@@ -16,7 +17,7 @@ namespace FishNet.Configuring
 
 
     public class CodeStripping
-    
+
     {
 
         /// <summary>
@@ -35,7 +36,7 @@ namespace FishNet.Configuring
         {
             get
             {
-                
+
 
                 /* This is to protect non pro users from enabling this
                  * without the extra logic code.  */
@@ -51,7 +52,7 @@ namespace FishNet.Configuring
         {
             get
             {
-                
+
 
                 /* This is to protect non pro users from enabling this
                  * without the extra logic code.  */
@@ -61,7 +62,52 @@ namespace FishNet.Configuring
             }
         }
 
-        
+        private static object _compilationContext;
+        public int callbackOrder => 0;
+#if UNITY_EDITOR
+
+        public void OnPreprocessBuild(BuildReport report)
+        {
+            Generator.IgnorePostProcess = true;
+            Generator.GenerateFull();
+            CompilationPipeline.compilationStarted += CompilationPipelineOnCompilationStarted;
+            CompilationPipeline.compilationFinished += CompilationPipelineOnCompilationFinished;
+
+
+        }
+        /* Solution for builds ending with errors and not triggering OnPostprocessBuild.
+        * Link: https://gamedev.stackexchange.com/questions/181611/custom-build-failure-callback
+        */
+        private void CompilationPipelineOnCompilationStarted(object compilationContext)
+        {
+            _compilationContext = compilationContext;
+        }
+
+        private void CompilationPipelineOnCompilationFinished(object compilationContext)
+        {
+            if (compilationContext != _compilationContext)
+                return;
+
+            _compilationContext = null;
+
+            CompilationPipeline.compilationStarted -= CompilationPipelineOnCompilationStarted;
+            CompilationPipeline.compilationFinished -= CompilationPipelineOnCompilationFinished;
+
+            BuildingEnded();
+        }
+
+        private void BuildingEnded()
+        {
+
+
+            Generator.IgnorePostProcess = false;
+        }
+
+        public void OnPostprocessBuild(BuildReport report)
+        {
+            BuildingEnded();
+        }
+#endif
     }
 
 }
