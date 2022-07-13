@@ -57,7 +57,7 @@ namespace FishNet.Object
 
 
         /// <summary>
-        /// Serializes information about components.
+        /// Serializes information for network components.
         /// </summary>
         internal void SerializeComponents(NetworkObject nob, byte componentIndex)
         {

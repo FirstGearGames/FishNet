@@ -266,6 +266,17 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Adds a NetworkBehaviour and serializes it's components.
+        /// </summary>
+        internal T AddAndSerialize<T>() where T : NetworkBehaviour
+        {
+            int startingLength = NetworkBehaviours.Length;
+            T result = gameObject.AddComponent<T>();
+            result.SerializeComponents(this, (byte)startingLength);
+            return result;
+        }
+
+        /// <summary>
         /// Updates NetworkBehaviours and initializes them with serialized values.
         /// </summary>
         internal void UpdateNetworkBehaviours()

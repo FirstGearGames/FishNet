@@ -25,20 +25,20 @@ namespace FishNet.Serializing.Helping
             ComponentType largestComponent = ComponentType.X;
             float largestAbs = absX;
             float largest = quaternion.x;
-            
-            if (absY >= largestAbs && quaternion.y > largest)
+
+            if (absY > largestAbs)
             {
                 largestAbs = absY;
                 largestComponent = ComponentType.Y;
                 largest = quaternion.y;
             }
-            if (absZ >= largestAbs && quaternion.z > largest)
+            if (absZ > largestAbs)
             {
                 largestAbs = absZ;
                 largestComponent = ComponentType.Z;
                 largest = quaternion.z;
             }
-            if (absW >= largestAbs && quaternion.w > largest)
+            if (absW > largestAbs)
             {
                 largestComponent = ComponentType.W;
                 largest = quaternion.w;
