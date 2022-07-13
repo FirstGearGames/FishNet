@@ -789,7 +789,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name="tickType">TickType to compare against.</param>
         /// <returns></returns>
-        [Obsolete("Use TicksToTime(TickType) instead.")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double TicksToTime(TickType tickType = TickType.LocalTick)
         {

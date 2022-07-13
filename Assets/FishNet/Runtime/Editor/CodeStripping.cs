@@ -17,7 +17,7 @@ namespace FishNet.Configuring
 
 
     public class CodeStripping
-
+    
     {
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace FishNet.Configuring
         {
             get
             {
-
+                
 
                 /* This is to protect non pro users from enabling this
                  * without the extra logic code.  */
@@ -52,7 +52,7 @@ namespace FishNet.Configuring
         {
             get
             {
-
+                
 
                 /* This is to protect non pro users from enabling this
                  * without the extra logic code.  */
@@ -73,7 +73,7 @@ namespace FishNet.Configuring
             CompilationPipeline.compilationStarted += CompilationPipelineOnCompilationStarted;
             CompilationPipeline.compilationFinished += CompilationPipelineOnCompilationFinished;
 
-
+            
         }
         /* Solution for builds ending with errors and not triggering OnPostprocessBuild.
         * Link: https://gamedev.stackexchange.com/questions/181611/custom-build-failure-callback
@@ -98,14 +98,15 @@ namespace FishNet.Configuring
 
         private void BuildingEnded()
         {
-
+            
 
             Generator.IgnorePostProcess = false;
         }
 
         public void OnPostprocessBuild(BuildReport report)
         {
-            BuildingEnded();
+            
+                BuildingEnded();
         }
 #endif
     }

@@ -234,6 +234,17 @@ namespace FishNet.Managing.Server
         {
             return NetworkManager.TransportManager.Transport.StartConnection(true);
         }
+        /// <summary>
+        /// Starts the local server using port.
+        /// </summary>
+        /// <param name="port">Port to start on.</param>
+        /// <returns></returns>
+        public bool StartConnection(ushort port)
+        {
+            Transport t = NetworkManager.TransportManager.Transport;
+            t.SetPort(port);
+            return t.StartConnection(true);
+        }
 
         /// <summary>
         /// Called after the local client connection state changes.

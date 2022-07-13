@@ -574,8 +574,8 @@ namespace FishNet.CodeGenerating.Processing
                     logicMd = CodegenSession.GeneralHelper.CopyMethod(tmpMd, logicMethodName, out _);
                     //Clear awakeMethod.
                     tmpMd.Body.Instructions.Clear();
-                    datas.Add(new AwakeMethodData(tmpMd, logicMd, create));
                 }
+                datas.Add(new AwakeMethodData(tmpMd, logicMd, create));
 
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
 

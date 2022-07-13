@@ -150,7 +150,7 @@ namespace FishNet.Object
                 return;
             }
             //Global.
-            if (IsGlobal)
+            if (IsGlobal && !IsSceneObject)
                 DontDestroyOnLoad(gameObject);
 
             if (NetworkManager == null || (!NetworkManager.IsClient && !NetworkManager.IsServer))
@@ -485,10 +485,7 @@ namespace FishNet.Object
             ReferenceIds_OnValidate();
 
             if (IsGlobal && IsSceneObject)
-            {
-                Debug.LogWarning($"Object {gameObject.name} cannot have be global because it is a scene object. Only instantiated objects may be global.");
-                IsGlobal = false;
-            }
+                Debug.LogWarning($"Object {gameObject.name} will have it's IsGlobal state ignored because it is a scene object. Instantiated copies will still be global. This warning is informative only.");
         }
         private void Reset()
         {

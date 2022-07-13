@@ -433,7 +433,13 @@ namespace FishNet.Managing.Server
             /* Write if a scene object or not, and also
              * store sceneObjectId if is a scene object. */
             bool sceneObject = nob.IsSceneObject;
-            headerWriter.WriteBoolean(sceneObject);
+            ObjectSpawnType ost;
+            if (sceneObject)
+                ost = ObjectSpawnType.Scene;
+            else
+                ost = (nob.IsGlobal) ? ObjectSpawnType.InstantiatedGlobal : ObjectSpawnType.Instantiated;
+            headerWriter.WriteByte((byte)ost);
+            
             /* Writing a scene object. */
             if (sceneObject)
             {
@@ -458,7 +464,7 @@ namespace FishNet.Managing.Server
             else
             {
                 //Check to write parent behaviour or nob.
-                NetworkBehaviour parentNb = null;
+                NetworkBehaviour parentNb;
                 Transform t = nob.transform.parent;
                 if (t != null)
                 {
