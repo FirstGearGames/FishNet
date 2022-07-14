@@ -10,8 +10,8 @@ namespace FishNet.Object
     internal enum ChangedTransformProperties : byte
     {
         Unset = 0,
-        Position = 2,
-        Rotation = 4,
+        LocalPosition = 2,
+        LocalRotation = 4,
         LocalScale = 8
     }
 

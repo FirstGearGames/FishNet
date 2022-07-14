@@ -18,20 +18,8 @@ namespace FishNet.Object
         /// <summary>
         /// 
         /// </summary>
-        [SerializeField, HideInInspector]
-        private short _prefabId = -1;
-        /// <summary>
-        /// Id to use when spawning this object over the network as a prefab.
-        /// </summary>
-        public short PrefabId => _prefabId;
-        /// <summary>
-        /// Sets PrefabId.
-        /// </summary>
-        /// <param name="value"></param>
-        internal void SetPrefabId(short value)
-        {
-            _prefabId = value;
-        }
+        [field: SerializeField, HideInInspector]
+        public short PrefabId { get; internal set; } = -1;
 #pragma warning disable 414 //Disabled because Unity thinks tihs is unused when building.
         /// <summary>
         /// Hash to the scene which this object resides.
@@ -40,18 +28,10 @@ namespace FishNet.Object
         private uint _scenePathHash;
 #pragma warning restore 414
         /// <summary>
-        /// 
+        /// Network Id for this scene object.
         /// </summary>
-        [SerializeField, HideInInspector]
-        private ulong _sceneId;
-        /// <summary>
-        /// Id for this scene object.
-        /// </summary>
-        internal ulong SceneId
-        {
-            get => _sceneId;
-            private set => _sceneId = value;
-        }
+        [field: SerializeField, HideInInspector]
+        internal ulong SceneId { get; private set; }
         #endregion
 
 #if UNITY_EDITOR
@@ -86,9 +66,16 @@ namespace FishNet.Object
         {
             if (Application.isPlaying)
                 return;
+            //Unity bug, sometimes this can be null depending on editor callback orders.
             if (gameObject == null)
                 return;
-            
+            //Not a scene object.
+            if (string.IsNullOrEmpty(gameObject.scene.name))
+            {
+                SceneId = 0;
+                return;
+            }
+
             ulong startId = SceneId;
             uint startPath = _scenePathHash;
 

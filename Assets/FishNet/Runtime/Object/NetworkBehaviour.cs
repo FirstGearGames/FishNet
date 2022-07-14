@@ -64,7 +64,7 @@ namespace FishNet.Object
             _networkObjectCache = nob;
             ComponentIndex = componentIndex;
         }
-
+        
         #region Editor.
         protected virtual void Reset()
         {

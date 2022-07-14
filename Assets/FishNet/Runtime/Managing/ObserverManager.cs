@@ -46,7 +46,7 @@ namespace FishNet.Managing.Observing
 
             //If null then add and default to use manager.
             if (nullObs)
-            {
+            { 
                 obs = nob.AddAndSerialize<NetworkObserver>();
                 obs.OverrideType = NetworkObserver.ConditionOverrideType.UseManager;
             }
@@ -57,7 +57,7 @@ namespace FishNet.Managing.Observing
                 obs.OverrideType = NetworkObserver.ConditionOverrideType.IgnoreManager;
                 obs.ObserverConditionsInternal.Clear();
                 return obs;
-            }
+            }            
             //If ignoring manager.
             else if (obs.OverrideType == NetworkObserver.ConditionOverrideType.IgnoreManager)
                 return obs;

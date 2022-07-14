@@ -4,7 +4,6 @@ using UnityEngine;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Managing.Logging;
-using FishNet.Utility;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using FishNet.Utility.Performance;
@@ -19,21 +18,24 @@ namespace FishNet.Object
     public sealed partial class NetworkObject : MonoBehaviour
     {
         #region Public.
+        [field: SerializeField, HideInInspector]
+        public bool IsNested { get; private set; }
         /// <summary>
         /// True if this NetworkObject was active during edit. Will be true if placed in scene during edit, and was in active state on run.
         /// </summary>
         internal bool ActiveDuringEdit;
         /// <summary>
-        /// True to synchronize the parent of this object during the spawn message.
-        /// </summary>
-        internal bool SynchronizeParent;
-        /// <summary>
         /// Returns if this object was placed in the scene during edit-time.
         /// </summary>
         /// <returns></returns>
-        public bool IsSceneObject => (SceneId > 0);
+        public bool IsSceneObject =>(SceneId > 0);
         [Obsolete("Use IsSceneObject instead.")] //Remove on 2023/01/01
         public bool SceneObject => IsSceneObject;
+        /// <summary>
+        /// ComponentIndex for this NetworkBehaviour.
+        /// </summary>
+        [field: SerializeField, HideInInspector]
+        public byte ComponentIndex { get; private set; }
         /// <summary>
         /// Unique Id for this NetworkObject. This does not represent the object owner.
         /// </summary>
@@ -45,26 +47,36 @@ namespace FishNet.Object
         /// <summary>
         /// 
         /// </summary>
-        [SerializeField, HideInInspector]
+        [field: SerializeField, HideInInspector]
         private NetworkBehaviour[] _networkBehaviours;
         /// <summary>
         /// NetworkBehaviours within the root and children of this object.
-        /// </summary>
+        /// </summary>        
         public NetworkBehaviour[] NetworkBehaviours
         {
             get => _networkBehaviours;
             private set => _networkBehaviours = value;
         }
         /// <summary>
+        /// NetworkObject parenting this instance. The parent NetworkObject will be null if there was no parent during serialization.
+        /// </summary>
+        [field: SerializeField, HideInInspector]
+        public NetworkObject ParentNetworkObject { get; private set; }
+        /// NetworkObjects nested beneath this one. Recursive NetworkObjects may exist within each entry of this field.
+        /// </summary> 
+        [field: SerializeField, HideInInspector]
+        public List<NetworkObject> ChildNetworkObjects { get; private set; } = new List<NetworkObject>();
+        /// <summary>
         /// 
         /// </summary>
         [SerializeField, HideInInspector]
-        internal SceneTransformProperties SceneTransformProperties = new SceneTransformProperties();
+        internal TransformProperties SerializedTransformProperties = new TransformProperties();
         #endregion
 
         #region Serialized.
+
         /// <summary>
-        /// True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.
+        /// 
         /// </summary>
         [Tooltip("True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.")]
         [SerializeField]
@@ -105,6 +117,11 @@ namespace FishNet.Object
         /// <param name="value">New global value.</param>
         public void SetIsGlobal(bool value)
         {
+            if (IsNested)
+            {
+                if (NetworkManager.StaticCanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Object {gameObject.name} cannot change IsGlobal because it is nested. Only root objects may be set global.");
+            }
             if (!IsDeinitializing)
             {
                 if (NetworkManager.StaticCanLog(LoggingType.Warning))
@@ -121,34 +138,47 @@ namespace FishNet.Object
             _networkObserverInitiliazed = false;
             IsGlobal = value;
         }
+        [Header("WIP! Not Functional")]
         /// <summary>
-        /// NetworkObjects which are children of this one.
+        /// 
         /// </summary>
-        [SerializeField, HideInInspector]
-        private bool _hasParentNetworkObjectAtEdit;
-
+        [Tooltip("True to disable rather than destroy this NetworkObject when being despawned. Scene objects are never destroyed.")]
+        [SerializeField]
+        private bool _disableOnDespawn;
         /// <summary>
-        /// Sets HasParentNetworkObjectAtEdit value.
-        /// </summary>
-        /// <param name="value"></param>
-        internal void SetHasParentNetworkObjectAtEdit(bool value)
+        /// True to disable rather than destroy this NetworkObject when being despawned. Scene objects are never destroyed.
+        /// </summary> 
+        public bool DisableOnDespawn
         {
-            _hasParentNetworkObjectAtEdit = value;
+            get => _disableOnDespawn;
+            private set => _disableOnDespawn = value;
+        }
+        /// <summary>
+        /// Sets AllowDestroy value.
+        /// </summary>
+        /// <param name="allowDestroy"></param>
+        public void SetDisableOnDespawn(bool disableOnDespawn)
+        {
+            DisableOnDespawn = disableOnDespawn;
         }
         #endregion
 
         private void Start()
         {
+            TryStartDeactivation();
+            //Also deactivate children.
+            foreach (NetworkObject nob in ChildNetworkObjects)
+                nob.TryStartDeactivation();
+        }
+
+        /// <summary>
+        /// Deactivates this NetworkObject during it's start cycle if conditions are met.
+        /// </summary>
+        internal void TryStartDeactivation()
+        {
             if (!IsNetworked)
                 return;
-            /* Only the parent nob should try to deactivate.
-             * If there is a parent nob then unset networked
-             * and exit method. */
-            if (_hasParentNetworkObjectAtEdit)
-            {
-                SetIsNetworked(false);
-                return;
-            }
+
             //Global.
             if (IsGlobal && !IsSceneObject)
                 DontDestroyOnLoad(gameObject);
@@ -228,7 +258,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="networkManager"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void PreinitializeInternal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool synchronizeParent, bool asServer)
+        internal void PreinitializeInternal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
             IsDeinitializing = false;
             //QOL references.
@@ -241,7 +271,6 @@ namespace FishNet.Object
             SceneManager = networkManager.SceneManager;
             RollbackManager = networkManager.RollbackManager;
 
-            SynchronizeParent = synchronizeParent;
             SetOwner(owner);
             ObjectId = objectId;
 
@@ -268,35 +297,105 @@ namespace FishNet.Object
         /// <summary>
         /// Adds a NetworkBehaviour and serializes it's components.
         /// </summary>
-        internal T AddAndSerialize<T>() where T : NetworkBehaviour
+        internal T AddAndSerialize<T>() where T : NetworkBehaviour //runtimeNB make public.
         {
             int startingLength = NetworkBehaviours.Length;
             T result = gameObject.AddComponent<T>();
-            result.SerializeComponents(this, (byte)startingLength);
+            //Add to network behaviours.
+            Array.Resize(ref _networkBehaviours, startingLength + 1);
+            _networkBehaviours[startingLength] = result;
+            //Serialize values and return.
+            result.SerializeComponents(this, (byte)startingLength);            
             return result;
         }
 
         /// <summary>
         /// Updates NetworkBehaviours and initializes them with serialized values.
         /// </summary>
-        internal void UpdateNetworkBehaviours()
+        /// <param name="fromPrefabCollection">True if this call originated from a prefab collection, such as during it's initialization.</param>
+        internal void UpdateNetworkBehaviours(NetworkObject parentNob, ref byte componentIndex) //runtimeNB make public.
         {
-            //Go through each nob and set if it has a parent nob.
-            NetworkObject[] nobs = GetComponentsInChildren<NetworkObject>(true);
-            foreach (NetworkObject n in nobs)
-                n.SetHasParentNetworkObjectAtEdit(n != this);
+            /* This method can be called by the developer initializing prefabs, the prefab collection doing it automatically,
+             * or when the networkobject is modified or added to an object.
+             * 
+             * Prefab collections generally contain all prefabs, meaning they will not only call this on the topmost
+             * networkobject but also each child, as the child would be it's own prefab in the collection. This assumes
+             * that is, the child is a nested prefab.
+             * 
+             * Because of this potential a check must be done where if the componentIndex is 0 we must look
+             * for a networkobject above this one. If there is a networkObject above this one then we know the prefab
+             * is being initialized individually, not part of a recursive check. In this case exit early
+             * as the parent would have already resolved the needed information. */
 
-            NetworkBehaviours = GetComponentsInChildren<NetworkBehaviour>(true);
-            //Check and initialize found network behaviours.
-            if (NetworkBehaviours.Length > byte.MaxValue)
+            //If first componentIndex make sure there's no more than maximum allowed nested nobs.
+            if (componentIndex == 0)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Currently only {byte.MaxValue} NetworkBehaviour scripts per object are allowed. Object {gameObject.name} will not initialized.");
+                //Not possible for index to be 0 and nested.
+                if (IsNested)
+                    return;
+                byte maxNobs = 255;
+                if (GetComponentsInChildren<NetworkObject>().Length > maxNobs)
+                {
+                    Debug.LogError($"The number of child NetworkObjects on {gameObject.name} exceeds the maximum of {maxNobs}.");
+                    return;
+                }
             }
-            else
+
+            ComponentIndex = componentIndex;
+            ParentNetworkObject = parentNob;
+
+            //Transforms which can be searched for networkbehaviours.
+            ListCache<Transform> transformCache = ListCaches.GetTransformCache();
+            transformCache.Reset();
+            ChildNetworkObjects.Clear();
+
+            transformCache.AddValue(transform);
+
+            for (int z = 0; z < transformCache.Written; z++)
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].SerializeComponents(this, (byte)i);
+                Transform currentT = transformCache.Collection[z];
+                for (int i = 0; i < currentT.childCount; i++)
+                {
+                    Transform t = currentT.GetChild(i);
+                    /* If contains a nob then do not add to transformsCache.
+                     * Do add to ChildNetworkObjects so it can be initialized when
+                     * parent is. */
+                    if (t.TryGetComponent(out NetworkObject childNob))
+                        ChildNetworkObjects.Add(childNob);
+                    else
+                        transformCache.AddValue(t);
+                }
+            }
+
+            int written;
+            //Iterate all cached transforms and get networkbehaviours.
+            ListCache<NetworkBehaviour> nbCache = ListCaches.GetNetworkBehaviourCache();
+            nbCache.Reset();
+            written = transformCache.Written;
+            List<Transform> ts = transformCache.Collection;
+            //
+            for (int i = 0; i < written; i++)
+                nbCache.AddValues(ts[i].GetNetworkBehaviours());
+
+            //Copy to array.
+            written = nbCache.Written;
+            List<NetworkBehaviour> nbs = nbCache.Collection;
+            NetworkBehaviours = new NetworkBehaviour[written];
+            //
+            for (int i = 0; i < written; i++)
+            {
+                NetworkBehaviours[i] = nbs[i];
+                NetworkBehaviours[i].SerializeComponents(this, (byte)i);
+            }
+
+            ListCaches.StoreCache(transformCache);
+            ListCaches.StoreCache(nbCache);
+
+            //Tell children nobs to update their NetworkBehaviours.
+            foreach (NetworkObject item in ChildNetworkObjects)
+            {
+                componentIndex++;
+                item.UpdateNetworkBehaviours(this, ref componentIndex);
             }
         }
 
@@ -327,10 +426,7 @@ namespace FishNet.Object
                 RemoveClientRpcLinkIndexes();
             }
 
-            //if (SceneObject)
-            //This needs to be done even if not scene object to support pooling.
             ResetSyncTypes(asServer);
-
             if (asServer)
                 Observers.Clear();
 
@@ -459,75 +555,115 @@ namespace FishNet.Object
         /// Returns if this NetworkObject is a scene object, and has changed.
         /// </summary>
         /// <returns></returns>
-        internal ChangedTransformProperties GetChangedSceneTransformProperties()
+        internal ChangedTransformProperties GetTransformChanges(TransformProperties stp)
         {
             ChangedTransformProperties ctp = ChangedTransformProperties.Unset;
-            if (transform.position != SceneTransformProperties.Position)
-                ctp |= ChangedTransformProperties.Position;
-            if (transform.rotation != SceneTransformProperties.Rotation)
-                ctp |= ChangedTransformProperties.Rotation;
-            if (transform.localScale != SceneTransformProperties.LocalScale)
+            if (transform.localPosition != stp.Position)
+                ctp |= ChangedTransformProperties.LocalPosition;
+            if (transform.localRotation != stp.Rotation)
+                ctp |= ChangedTransformProperties.LocalRotation;
+            if (transform.localScale != stp.LocalScale)
                 ctp |= ChangedTransformProperties.LocalScale;
 
             return ctp;
         }
 
-        /* //Notes this isn't used because it would require a significant amount of work
-         * to track what to reset and what not to reset, and even then there may be missed
-         * data. It's better to let the user manually reset what's needed. */
-        ///// <summary>
-        ///// Resets this object to how it was when placed in the scene.
-        ///// </summary>
-        //internal void ResetSceneObject()
-        //{
-        //    transform.position = SceneTransformProperties.Position;
-        //    transform.rotation = SceneTransformProperties.Rotation;
-        //    transform.localScale = SceneTransformProperties.LocalScale;
-        //    //Reset syncvars in all networkbehaviours.
-        //    for (int i = 0; i < NetworkBehaviours.Length; i++)
-        //        NetworkBehaviours[i].ResetSyncTypes();
-        //}
+        /// <summary>
+        /// Returns if this NetworkObject is a scene object, and has changed.
+        /// </summary>
+        /// <returns></returns>
+        internal ChangedTransformProperties GetTransformChanges(GameObject prefab)
+        {
+            Transform t = prefab.transform;
+            ChangedTransformProperties ctp = ChangedTransformProperties.Unset;
+            if (transform.position != t.position)
+                ctp |= ChangedTransformProperties.LocalPosition;
+            if (transform.rotation != t.rotation)
+                ctp |= ChangedTransformProperties.LocalRotation;
+            if (transform.localScale != t.localScale)
+                ctp |= ChangedTransformProperties.LocalScale;
+
+            return ctp;
+        }
 
         #region Editor.
 #if UNITY_EDITOR
+
+        /// <summary>
+        /// Sets IsNested and returns the result.
+        /// </summary>
+        /// <returns></returns>
+        private bool SetIsNestedThroughTraversal()
+        {
+            Transform parent = transform.parent;
+            //Iterate long as parent isn't null, and isnt self.
+            while (parent != null && parent != transform)
+            {
+                if (parent.TryGetComponent<NetworkObject>(out _))
+                {
+                    //      Debug.Log("Found in parent");
+                    IsNested = true;
+                    return IsNested;
+                }
+
+                parent = parent.parent;
+            }
+
+            //No NetworkObject found in parents, meaning this is not nested.
+            IsNested = false;
+            return IsNested;
+
+        }
+
         private void OnValidate()
         {
+            SetIsNestedThroughTraversal();
             SceneUpdateNetworkBehaviours();
             ReferenceIds_OnValidate();
 
             if (IsGlobal && IsSceneObject)
                 Debug.LogWarning($"Object {gameObject.name} will have it's IsGlobal state ignored because it is a scene object. Instantiated copies will still be global. This warning is informative only.");
         }
+
         private void Reset()
         {
-            SerializeSceneTransformProperties();
+            SetIsNestedThroughTraversal();
+            SerializeTransformProperties();
             SceneUpdateNetworkBehaviours();
             ReferenceIds_Reset();
         }
 
         private void SceneUpdateNetworkBehaviours()
         {
+            //In a scene.
             if (!string.IsNullOrEmpty(gameObject.scene.name))
-                UpdateNetworkBehaviours();
+            {
+                if (IsNested)
+                    return;
+
+                byte componentIndex = 0;
+                UpdateNetworkBehaviours(null, ref componentIndex);
+            }
+
         }
 
         private void OnDrawGizmosSelected()
         {
-            SerializeSceneTransformProperties();
+            SerializeTransformProperties();
         }
 
         /// <summary>
-        /// Serializes SceneTransformProperties to current transform properties.
+        /// Serializes TransformProperties to current transform properties.
         /// </summary>
-        private void SerializeSceneTransformProperties()
+        private void SerializeTransformProperties()
         {
             /* Use this method to set scene data since it doesn't need to exist outside 
             * the editor and because its updated regularly while selected. */
             //If a scene object.
             if (!EditorApplication.isPlaying && !string.IsNullOrEmpty(gameObject.scene.name))
             {
-                SceneTransformProperties = new SceneTransformProperties(
-                    transform.position, transform.rotation, transform.localScale);
+                SerializedTransformProperties = new TransformProperties(
+                    transform.localPosition, transform.localRotation, transform.localScale);
             }
         }
 #endif

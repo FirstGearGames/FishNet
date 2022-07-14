@@ -3,12 +3,13 @@
 namespace FishNet.Object
 {
     [System.Serializable]
-    public struct SceneTransformProperties
+    public struct TransformProperties
     {
-        public Vector3 Position;
-        public Quaternion Rotation;
-        public Vector3 LocalScale;
-        public SceneTransformProperties(Vector3 position, Quaternion rotation, Vector3 localScale)
+        public readonly Vector3 Position;
+        public readonly Quaternion Rotation;
+        public readonly Vector3 LocalScale;
+
+        public TransformProperties(Vector3 position, Quaternion rotation, Vector3 localScale)
         {
             Position = position;
             Rotation = rotation;

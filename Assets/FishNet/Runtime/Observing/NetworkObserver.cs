@@ -204,7 +204,6 @@ namespace FishNet.Observing
             return null;
         }
 
-        private bool canPrint => (_networkObject != null && !_networkObject.IsOwner);
         /// <summary>
         /// Returns ObserverStateChange by comparing conditions for a connection.
         /// </summary>

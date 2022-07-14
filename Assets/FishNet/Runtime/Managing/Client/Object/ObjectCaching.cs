@@ -25,6 +25,13 @@ namespace FishNet.Managing.Client
         }
         #endregion
 
+        #region Internal.
+        /// <summary>
+        /// Objets which are being spawned during iteration.
+        /// </summary>
+        internal Dictionary<int, NetworkObject> SpawningObjects = new Dictionary<int, NetworkObject>();
+        #endregion
+
         #region Private.
         /// <summary>
         /// Cached objects buffer. Contains spawns and despawns.
@@ -42,10 +49,6 @@ namespace FishNet.Managing.Client
         /// NetworkManager for this cache.
         /// </summary>
         private NetworkManager _networkManager;
-        /// <summary>
-        /// Objets which are being spawned during iteration.
-        /// </summary>
-        private HashSet<NetworkObject> _spawningObjects = new HashSet<NetworkObject>();
         #endregion
 
         public ClientObjectCache(ClientObjects cobs, NetworkManager networkManager)
@@ -73,7 +76,8 @@ namespace FishNet.Managing.Client
                         return cnob.NetworkObject;
 
                     bool spawning = (searchType == CacheSearchType.Spawning);
-                    if (cnob.Spawn == spawning)
+                    bool spawnAction = (cnob.Action == CachedNetworkObject.ActionType.Spawn);
+                    if (spawning == spawnAction)
                         return cnob.NetworkObject;
                     else
                         return null;
@@ -94,17 +98,17 @@ namespace FishNet.Managing.Client
             CachedNetworkObject cnob = _cachedObjects.AddReference();
             cnob.InitializeSpawn(nob, rpcLinks, syncValues, manager);
             _clientObjects.AddToSpawned(nob, false);
-            _spawningObjects.Add(nob);
+            SpawningObjects.Add(nob.ObjectId, nob);
         }
 
         /// <summary>
         /// Initializes for a despawned NetworkObject.
         /// </summary>
         /// <param name="nob"></param>
-        public void AddDespawn(NetworkObject nob)
+        public void AddDespawn(NetworkObject nob, bool disableOnDespawn)
         {
             CachedNetworkObject cnob = _cachedObjects.AddReference();
-            cnob.InitializeDespawn(nob);
+            cnob.InitializeDespawn(nob, disableOnDespawn);
         }
 
         /// <summary>
@@ -125,7 +129,7 @@ namespace FishNet.Managing.Client
                 for (int i = 0; i < written; i++)
                 {
                     CachedNetworkObject cnob = collection[i];
-                    if (cnob.Spawn)
+                    if (cnob.Action == CachedNetworkObject.ActionType.Spawn)
                     {
                         IterateSpawn(cnob);
                         _iteratedSpawns.Add(cnob.NetworkObject);
@@ -168,7 +172,7 @@ namespace FishNet.Managing.Client
                 for (int i = 0; i < written; i++)
                 {
                     CachedNetworkObject cnob = collection[i];
-                    if (cnob.Spawn)
+                    if (cnob.Action == CachedNetworkObject.ActionType.Spawn)
                     {
                         /* Only continue with the initialization if it wasn't initialized
                          * early to prevent a despawn conflict. */
@@ -248,7 +252,8 @@ namespace FishNet.Managing.Client
         /// <param name="cnob"></param>
         private void IterateDespawn(CachedNetworkObject cnob)
         {
-            _clientObjects.Despawn(cnob.NetworkObject, false);
+            bool disableOnDespawn = (cnob.Action == CachedNetworkObject.ActionType.DespawnAndDestroy);
+            _clientObjects.Despawn(cnob.NetworkObject, disableOnDespawn, true);
         }
 
         /// <summary>
@@ -258,7 +263,7 @@ namespace FishNet.Managing.Client
         {
             _cachedObjects.Reset();
             _iteratedSpawns.Clear();
-            _spawningObjects.Clear();
+            SpawningObjects.Clear();
         }
     }
 
@@ -268,10 +273,20 @@ namespace FishNet.Managing.Client
     [Preserve]
     internal class CachedNetworkObject
     {
+        #region Types.
+        public enum ActionType
+        {
+            Unset = 0,
+            Spawn = 1,
+            DespawnAndDisable = 2,
+            DespawnAndDestroy = 3
+        }
+        #endregion
+
         /// <summary>
         /// True if spawning.
         /// </summary>
-        public bool Spawn { get; private set; }
+        public ActionType Action { get; private set; }
         /// <summary>
         /// Cached NetworkObject.
         /// </summary>
@@ -294,8 +309,7 @@ namespace FishNet.Managing.Client
         /// <param name="manager"></param>
         public void InitializeSpawn(NetworkObject nob, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues, NetworkManager manager)
         {
-            Spawn = true;
-
+            Action = ActionType.Spawn;
             NetworkObject = nob;
             RpcLinkReader = ReaderPool.GetReader(rpcLinks, manager);
             SyncValuesReader = ReaderPool.GetReader(syncValues, manager);
@@ -305,9 +319,9 @@ namespace FishNet.Managing.Client
         /// Initializes for a despawned NetworkObject.
         /// </summary>
         /// <param name="nob"></param>
-        public void InitializeDespawn(NetworkObject nob)
+        public void InitializeDespawn(NetworkObject nob, bool disableOnDespawn)
         {
-            Spawn = false;
+            Action = (disableOnDespawn) ? ActionType.DespawnAndDestroy : ActionType.DespawnAndDisable;
             NetworkObject = nob;
         }
 

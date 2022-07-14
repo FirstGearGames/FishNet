@@ -137,6 +137,7 @@ namespace FishNet
                 return (nm == null) ? null : nm.StatisticsManager;
             }
         }
+
         /// <summary>
         /// True if the server is active.
         /// </summary>

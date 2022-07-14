@@ -244,11 +244,16 @@ namespace FishNet.Managing.Client
             int objectId = reader.ReadNetworkObjectId();
             int ownerId = reader.ReadNetworkConnectionId();
             ObjectSpawnType ost = (ObjectSpawnType)reader.ReadByte();
+            byte componentIndex = reader.ReadByte();
+            bool nested = (componentIndex > 0);
             bool sceneObject = (ost == ObjectSpawnType.Scene);
-
+            int parentObjectId = (nested) ? reader.ReadNetworkObjectId() : -1;
             NetworkObject nob;
-            if (sceneObject)
-                nob = ReadSceneObject(reader, true);
+
+            if (nested)
+                nob = ReadNestedObject(reader, parentObjectId, componentIndex);
+            else if (sceneObject)
+                nob = ReadSceneObject(reader, componentIndex);
             else
                 nob = ReadSpawnedObject(reader, objectId, ost);
 
@@ -301,7 +306,7 @@ namespace FishNet.Managing.Client
                     if (!base.NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(ownerId, out owner))
                         owner = NetworkManager.EmptyConnection;
                 }
-                nob.PreinitializeInternal(NetworkManager, objectId, owner, false, false);
+                nob.PreinitializeInternal(NetworkManager, objectId, owner, false);
             }
 
             _objectCache.AddSpawn(nob, rpcLinks, syncValues, NetworkManager);
@@ -314,10 +319,11 @@ namespace FishNet.Managing.Client
         internal void CacheDespawn(PooledReader reader)
         {
             int objectId = reader.ReadNetworkObjectId();
+            bool disableOnDespawn = reader.ReadBoolean();
             //Try checking already spawned objects first.
             if (base.Spawned.TryGetValueIL2CPP(objectId, out NetworkObject nob))
             {
-                _objectCache.AddDespawn(nob);
+                _objectCache.AddDespawn(nob, disableOnDespawn);
             }
             /* If not found in already spawned objects see if
              * the networkObject is in the objectCache. It's possible the despawn
@@ -327,7 +333,7 @@ namespace FishNet.Managing.Client
             {
                 NetworkObject nob2 = _objectCache.GetInCached(objectId, ClientObjectCache.CacheSearchType.Any);
                 if (nob2 != null)
-                    _objectCache.AddDespawn(nob2);
+                    _objectCache.AddDespawn(nob2, disableOnDespawn);
             }
         }
 
@@ -342,12 +348,69 @@ namespace FishNet.Managing.Client
             _objectCache.Iterate();
         }
 
+
+        /// <summary>
+        /// Finishes reading a nested object. Nested objects should always already exist beneath the parent.
+        /// </summary>
+        private NetworkObject ReadNestedObject(PooledReader reader, int parentObjectId, byte componentIndex)
+        {
+            Dictionary<int, NetworkObject> spawned = (base.NetworkManager.IsHost) ?
+                NetworkManager.ServerManager.Objects.Spawned
+                : NetworkManager.ClientManager.Objects.Spawned;
+
+            NetworkObject parentNob;
+            /* Spawns are processed after all spawns come in,
+             * this ensures no reference race conditions. Turns out because of this
+             * the parentNob may be in cache and not actually spawned, if it was spawned the same packet
+             * as this one. So when not found in the spawned collection try to
+             * find it in Spawning before throwing. */
+            if (!spawned.TryGetValueIL2CPP(parentObjectId, out parentNob))
+                _objectCache.SpawningObjects.TryGetValue(parentObjectId, out parentNob);
+            //If still null, that's not good.
+            if (parentNob == null)
+            {
+                /* Purge reader of expected values.
+                * Use networkmanager transform, it doesn't really matter
+                * since values are discarded anyway. */
+                ReadTransformProperties(reader, base.NetworkManager.transform, out _, out _, out _);
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Nested spawned object with componentIndex of {componentIndex} and a parentId of {parentObjectId} could not be spawned because parent was not found.");
+                return null;
+            }
+
+            NetworkObject nob = null;
+            List<NetworkObject> childNobs = parentNob.ChildNetworkObjects;
+            //Find nob with component index.
+            for (int i = 0; i < childNobs.Count; i++)
+            {
+                if (childNobs[i].ComponentIndex == componentIndex)
+                {
+                    nob = childNobs[i];
+                    break;
+                }
+            }
+            //If child nob was not found.
+            if (nob == null)
+            {
+                /* Purge reader of expected values.
+                * Use networkmanager transform, it doesn't really matter
+                * since values are discarded anyway. */
+                ReadTransformProperties(reader, base.NetworkManager.transform, out _, out _, out _);
+                if (NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Nested spawned object with componentIndex of {componentIndex} could not be found as a child NetworkObject of {parentNob.name}.");
+                return null;
+            }
+
+            ReadTransformProperties(reader, nob.transform, out Vector3 pos, out Quaternion rot, out Vector3 scale);
+            nob.transform.SetLocalPositionRotationAndScale(pos, rot, scale);
+
+            return nob;
+        }
+
         /// <summary>
         /// Finishes reading a scene object.
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="setProperties">True to also read properties and set them.</param>
-        private NetworkObject ReadSceneObject(PooledReader reader, bool setProperties)
+        private NetworkObject ReadSceneObject(PooledReader reader, byte componentIndex)
         {
             ulong sceneId = reader.ReadUInt64(AutoPackType.Unpacked);
             NetworkObject nob;
@@ -355,23 +418,9 @@ namespace FishNet.Managing.Client
             //If found in scene objects.
             if (nob != null)
             {
-                if (setProperties)
-                {
-                    //Read changed.
-                    ChangedTransformProperties ctp = (ChangedTransformProperties)reader.ReadByte();
-                    //If scene object has changed.
-                    if (ctp != ChangedTransformProperties.Unset)
-                    {
-                        //Apply any changed values.
-                        if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Position))
-                            nob.transform.position = reader.ReadVector3();
-                        if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.Rotation))
-                            nob.transform.rotation = reader.ReadQuaternion(base.NetworkManager.ServerManager.SpawnPacking.Rotation);
-                        if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalScale))
-                            nob.transform.localScale = reader.ReadVector3();
-                    }
-                }
-
+                Transform t = nob.transform;
+                ReadTransformProperties(reader, t, out Vector3 pos, out Quaternion rot, out Vector3 scale);
+                t.SetLocalPositionRotationAndScale(pos, rot, scale);
                 return nob;
             }
             //Not found in despawned. Shouldn't ever happen.
@@ -405,26 +454,29 @@ namespace FishNet.Managing.Client
             }
 
             short prefabId = reader.ReadInt16();
-            Vector3 position = reader.ReadVector3();
-            Quaternion rotation = reader.ReadQuaternion(base.NetworkManager.ServerManager.SpawnPacking.Rotation);
-            Vector3 localScale = reader.ReadVector3();
-
             NetworkObject result = null;
 
             if (prefabId == -1)
             {
+                /* Purge reader of expected values.
+                 * Use networkmanager transform, it doesn't really matter
+                 * since values are discarded anyway. */
+                ReadTransformProperties(reader, base.NetworkManager.transform, out _, out _, out _);
                 if (NetworkManager.CanLog(LoggingType.Error))
                     Debug.LogError($"Spawned object has an invalid prefabId. Make sure all objects which are being spawned over the network are within SpawnableObjects on the NetworkManager.");
             }
             else
             {
+                NetworkObject prefab = NetworkManager.SpawnablePrefabs.GetObject(false, prefabId);
+                ReadTransformProperties(reader, prefab.transform, out Vector3 pos, out Quaternion rot, out Vector3 scale);
+
                 //Only instantiate if not host.
                 if (!base.NetworkManager.IsHost)
                 {
-                    NetworkObject prefab = NetworkManager.SpawnablePrefabs.GetObject(false, prefabId);
-                    result = MonoBehaviour.Instantiate<NetworkObject>(prefab, position, rotation);
-                    result.transform.SetParent(parentTransform, true);
-                    result.transform.localScale = localScale;
+                    result = MonoBehaviour.Instantiate<NetworkObject>(prefab);
+                    Transform t = result.transform;
+                    t.SetParent(parentTransform, true);
+                    t.SetLocalPositionRotationAndScale(pos, rot, scale);
                     //Only need to set IsGlobal also if not host.
                     result.SetIsGlobal((ost == ObjectSpawnType.InstantiatedGlobal));
                 }
@@ -432,11 +484,24 @@ namespace FishNet.Managing.Client
                 else
                 {
                     NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
-                }               
+                }
             }
 
             return result;
         }
+
+        /// <summary>
+        /// Reads transform properties and applies them to a transform.
+        /// </summary>
+        private void ReadTransformProperties(PooledReader reader, Transform defaultTransform, out Vector3 localPosition, out Quaternion localRotation, out Vector3 localScale)
+        {
+            //Read changed.
+            ChangedTransformProperties ctp = (ChangedTransformProperties)reader.ReadByte();
+            localPosition = Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalPosition) ? reader.ReadVector3() : defaultTransform.localPosition;
+            localRotation = Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalRotation) ? reader.ReadQuaternion(base.NetworkManager.ServerManager.SpawnPacking.Rotation) : defaultTransform.localRotation;
+            localScale = Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalScale) ? reader.ReadVector3() : defaultTransform.localScale;
+        }
+
 
     }
 

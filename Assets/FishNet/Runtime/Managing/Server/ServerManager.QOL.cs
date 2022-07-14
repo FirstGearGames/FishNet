@@ -4,6 +4,7 @@ using FishNet.Managing.Transporting;
 using FishNet.Object;
 using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
+using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -102,8 +103,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="nob">MetworkObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
-        /// <param name="synchronizeParent">True to synchronize the parent object in the spawn message. The parent must have a NetworkObject or NetworkBehaviour component for this to work.</param>
-        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null, bool synchronizeParent = true)
+        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
         {
             if (!CanSpawnOrDespawn(true))
                 return;
@@ -114,7 +114,29 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            Objects.Spawn(nob, ownerConnection, synchronizeParent);
+            Objects.Spawn(nob, ownerConnection);
+        }
+
+
+        /// <summary>
+        /// Spawns an object over the network. Can only be called on the server.
+        /// </summary>
+        /// <param name="nob">MetworkObject instance to spawn.</param>
+        /// <param name="ownerConnection">Connection to give ownership to.</param>
+        /// <param name="synchronizeParent">True to synchronize the parent object in the spawn message. The parent must have a NetworkObject or NetworkBehaviour component for this to work.</param>
+        [Obsolete("SynchronizeParent is now automatic, and no longer optional. Use Spawn(NetworkObject, NetworkConnection) instead.")] //Remove 2023/01/01.
+        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection, bool synchronizeParent)
+        {
+            if (!CanSpawnOrDespawn(true))
+                return;
+            if (nob == null)
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"NetworkObject cannot be spawned because it is null.");
+                return;
+            }
+
+            Objects.Spawn(nob, ownerConnection);
         }
 
 
@@ -141,10 +163,13 @@ namespace FishNet.Managing.Server
         /// Despawns an object over the network. Can only be called on the server.
         /// </summary>
         /// <param name="go">GameObject instance to despawn.</param>
-        public void Despawn(GameObject go)
+        /// <param name="disableOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Despawn(GameObject go, bool? disableOnDespawnOverride = null)
         {
             if (!CanSpawnOrDespawn(true))
                 return;
+
             if (go == null)
             {
                 if (NetworkManager.CanLog(LoggingType.Warning))
@@ -153,14 +178,15 @@ namespace FishNet.Managing.Server
             }
 
             NetworkObject nob = go.GetComponent<NetworkObject>();
-            Despawn(nob);
+            Despawn(nob, disableOnDespawnOverride);
         }
 
         /// <summary>
         /// Despawns an object over the network. Can only be called on the server.
         /// </summary>
         /// <param name="networkObject">NetworkObject instance to despawn.</param>
-        public void Despawn(NetworkObject networkObject)
+        /// <param name="disableOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
+        public void Despawn(NetworkObject networkObject, bool? disableOnDespawnOverride = null)
         {
             if (!CanSpawnOrDespawn(true))
                 return;
@@ -170,7 +196,9 @@ namespace FishNet.Managing.Server
                     Debug.LogWarning($"NetworkObject cannot be despawned because it is null.");
                 return;
             }
-            Objects.Despawn(networkObject, true);
+
+            bool disableOnDespawn = (disableOnDespawnOverride == null) ? networkObject.DisableOnDespawn : disableOnDespawnOverride.Value;
+            Objects.Despawn(networkObject, disableOnDespawn, true);
         }
     }
 

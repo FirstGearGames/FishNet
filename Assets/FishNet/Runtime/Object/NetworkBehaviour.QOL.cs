@@ -129,10 +129,11 @@ namespace FishNet.Object
         /// <summary>
         /// Despawns this _networkObjectCache. Can only be called on the server.
         /// </summary>
-        public void Despawn()
+        /// <param name="disableOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
+        public void Despawn(bool? disableOnDespawnOverride = null)
         {
             if (!IsNetworkObjectNull(true))
-                _networkObjectCache.Despawn();
+                _networkObjectCache.Despawn(disableOnDespawnOverride);
         }
         /// <summary>
         /// Spawns an object over the network. Can only be called on the server.
