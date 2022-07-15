@@ -910,8 +910,10 @@ namespace FishNet.Component.Transforming
         /// Moves to a GoalData. Automatically determins if to use data from server or client.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void MoveToTarget(float deltaOverride = -1f)
+        private void MoveToTarget(float deltaOverride = -1f, uint i = 0)
         {
+            if (i > 512)
+                return;
             if (!_queueReady)
                 return;
             //Cannot move if neither is active.
@@ -998,7 +1000,7 @@ namespace FishNet.Component.Transforming
                     _goalDataCache.Push(_currentGoalData);
                     SetCurrentGoalData(_goalDataQueue.Dequeue());
                     if (leftOver > 0f)
-                        MoveToTarget(leftOver);
+                        MoveToTarget(leftOver, i+1);
                 }
                 //No more in buffer, see if can extrapolate.
                 else
@@ -1032,7 +1034,7 @@ namespace FishNet.Component.Transforming
             //If relaying from client.
             if (clientAuthoritativeWithOwner)
             {
-                if (_receivedClientData.HasData)
+                if (_receivedClientData.HasData && _receivedClientData.Writer is not null)
                 {
                     _changedSinceStart = true;
                     //Resend data from clients.
