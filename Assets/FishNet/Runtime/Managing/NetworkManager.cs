@@ -20,9 +20,9 @@ using FishNet.Managing.Debugging;
 using FishNet.Managing.Object;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
+using FishNet.Managing.Statistic;
 #if UNITY_EDITOR
 using FishNet.Editing.PrefabCollectionGenerator;
-using FishNet.Managing.Statistic;
 #endif
 
 namespace FishNet.Managing
