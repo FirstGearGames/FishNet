@@ -47,10 +47,10 @@ namespace FishNet.Observing
         /// </summary>
         public ConditionOverrideType OverrideType
         {
-            get=> _overrideType;
+            get => _overrideType;
             internal set => _overrideType = value;
         }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -133,7 +133,7 @@ namespace FishNet.Observing
 
             //Check to override SetHostVisibility.
             if (!ignoringManager)
-                SetHostVisibility = base.ObserverManager.SetHostVisibility;
+                SetHostVisibility = networkObject.ObserverManager.SetHostVisibility;
 
             bool observerFound = false;
             for (int i = 0; i < _observerConditions.Count; i++)
@@ -173,7 +173,7 @@ namespace FishNet.Observing
                  * this object global visible, thus no conditions. */
                 if (!ignoringManager)
                 {
-                    if (base.NetworkManager.CanLog(LoggingType.Warning))
+                    if (networkObject.NetworkManager.CanLog(LoggingType.Warning))
                         Debug.LogWarning($"NetworkObserver exist on {gameObject.name} but there are no observer conditions. This script has been removed.");
                     Destroy(this);
                 }
