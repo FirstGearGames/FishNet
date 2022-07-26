@@ -45,7 +45,7 @@ namespace FishNet.Object
 
             private set => _isClient = value;
         }
-        
+
         /// <summary>
         /// True if only the client is active and authenticated.
         /// </summary>
@@ -99,7 +99,7 @@ namespace FishNet.Object
                 return Owner.IsLocalClient;
             }
         }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -163,10 +163,32 @@ namespace FishNet.Object
         /// RollbackManager for this object.
         /// </summary>
         public RollbackManager RollbackManager { get; private set; }
-
-
         #endregion
 
+        /// <summary>
+        /// Returns a NetworkBehaviour on this NetworkObject.
+        /// </summary>
+        /// <param name="componentIndex">ComponentIndex of the NetworkBehaviour.</param>
+        /// <param name="error">True to error if not found.</param>
+        /// <returns></returns>
+        public NetworkBehaviour GetNetworkBehaviour(byte componentIndex, bool error)
+        {
+            if (componentIndex >= NetworkBehaviours.Length)
+            {
+                if (error)
+                {
+                    bool staticLog = (NetworkManager == null);
+                    string errMsg = $"ComponentIndex of {componentIndex} is out of bounds on {gameObject.name} [id {ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.";
+
+                    if (staticLog && NetworkManager.StaticCanLog(LoggingType.Error))
+                        Debug.LogError(errMsg);
+                    else if (!staticLog && NetworkManager.CanLog(LoggingType.Error))
+                        Debug.LogError(errMsg);
+                }
+            }
+
+            return NetworkBehaviours[componentIndex];
+        }
         /// <summary>
         /// Despawns this NetworkObject. Only call from the server.
         /// </summary>

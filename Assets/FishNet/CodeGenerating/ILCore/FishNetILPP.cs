@@ -1,4 +1,5 @@
 ﻿using FishNet.Broadcast;
+using FishNet.CodeGenerating.Extension;
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.Processing;
@@ -215,7 +216,7 @@ namespace FishNet.CodeGenerating.ILCore
         {
             bool modified = false;
 
-            string networkBehaviourFullName = CodegenSession.ObjectHelper.NetworkBehaviour_FullName;
+            string networkBehaviourFullName = CodegenSession.NetworkBehaviourHelper.FullName;
 
             HashSet<TypeDefinition> typeDefs = new HashSet<TypeDefinition>();
             foreach (TypeDefinition td in CodegenSession.Module.Types)
@@ -241,7 +242,7 @@ namespace FishNet.CodeGenerating.ILCore
                     }
                     //0ms
 
-                    climbTd = climbTd.GetNextBaseClass();
+                    climbTd = climbTd.GetNextBaseTypeDefinition();
                     //this + name check 40ms
                 } while (climbTd != null);
 
@@ -301,7 +302,7 @@ namespace FishNet.CodeGenerating.ILCore
             bool modified = false;
             //Get all network behaviours to process.
             List<TypeDefinition> networkBehaviourTypeDefs = CodegenSession.Module.Types
-                .Where(td => td.IsSubclassOf(CodegenSession.ObjectHelper.NetworkBehaviour_FullName))
+                .Where(td => td.IsSubclassOf(CodegenSession.NetworkBehaviourHelper.FullName))
                 .ToList();
 
             //Moment a NetworkBehaviour exist the assembly is considered modified.
@@ -364,15 +365,15 @@ namespace FishNet.CodeGenerating.ILCore
                     /* Iterates all base types and
                      * adds them to inheritedTds so long
                      * as the base type is not a NetworkBehaviour. */
-                    TypeDefinition copyTd = tds[i].GetNextBaseClass();
+                    TypeDefinition copyTd = tds[i].GetNextBaseTypeDefinition();
                     while (copyTd != null)
                     {
                         //Class is NB.
-                        if (copyTd.FullName == CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
+                        if (copyTd.FullName == CodegenSession.NetworkBehaviourHelper.FullName)
                             break;
 
                         inheritedTds.Add(copyTd);
-                        copyTd = copyTd.GetNextBaseClass();
+                        copyTd = copyTd.GetNextBaseTypeDefinition();
                     }
                 }
 

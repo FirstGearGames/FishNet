@@ -65,6 +65,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             _settings.Enabled = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.Enabled)), _settings.Enabled);
             _settings.LogToConsole = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.LogToConsole)), _settings.LogToConsole);
             _settings.FullRebuild = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.FullRebuild)), _settings.FullRebuild);
+            _settings.SaveChanges = EditorGUILayout.Toggle(ObjectNames.NicifyVariableName(nameof(_settings.SaveChanges)), _settings.SaveChanges);
 
             GUILayoutOption iconWidthConstraint = GUILayout.MaxWidth(32.0f);
             GUILayoutOption iconHeightConstraint = GUILayout.MaxHeight(EditorGUIUtility.singleLineHeight);

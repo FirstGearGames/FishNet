@@ -261,21 +261,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 23
+  <PrefabId>k__BackingField: -1
   _scenePathHash: 0
-  _sceneId: 0
+  <SceneId>k__BackingField: 0
+  <AssetPathHash>k__BackingField: 15644345540858261432
   _sceneNetworkObjects: []
+  <IsNested>k__BackingField: 0
+  <ComponentIndex>k__BackingField: 0
+  ObjectId: 0
   _networkBehaviours:
   - {fileID: 5090726670223187108}
   - {fileID: 6420552185407096997}
   - {fileID: 6654616088585099699}
   - {fileID: 0}
-  SceneTransformProperties:
-    Position: {x: 0, y: 1.34, z: 0}
-    Rotation: {x: 0, y: 0, z: 0, w: 1}
-    LocalScale: {x: 1, y: 1, z: 1}
+  <ParentNetworkObject>k__BackingField: {fileID: 0}
+  <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
-  ChildNetworkObjects: []
+  _isGlobal: 0
+  _disableOnDespawn: 0
 --- !u!114 &6420552185407096997
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -292,6 +295,7 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 611616139817875448}
   _networkObjectCache: {fileID: 611616139817875448}
   _overrideType: 3
+  _setHostVisibility: 1
   _observerConditions:
   - {fileID: 11400000, guid: 2033f54fd2794464bae08fa5a55c8996, type: 2}
 --- !u!114 &6654616088585099699
@@ -309,14 +313,18 @@ MonoBehaviour:
   _componentIndexCache: 2
   _addedNetworkObject: {fileID: 611616139817875448}
   _networkObjectCache: {fileID: 611616139817875448}
-  _compress: 1
   _synchronizeParent: 0
+  _packing:
+    Position: 1
+    Rotation: 1
+    Scale: 0
   _interpolation: 2
   _extrapolation: 0
   _enableTeleport: 0
   _teleportThreshold: 0
   _clientAuthoritative: 1
   _sendToOwner: 1
+  _interval: 1
   _synchronizePosition: 1
   _positionSnapping:
     X: 0

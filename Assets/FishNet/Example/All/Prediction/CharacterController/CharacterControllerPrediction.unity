@@ -1181,7 +1181,6 @@ MonoBehaviour:
   _runInBackground: 1
   _dontDestroyOnLoad: 1
   _persistence: 0
-  _lpo: {fileID: 11400000, guid: ec64eb18c93ab344892891f33edbf82a, type: 2}
 --- !u!114 &7443408886491487336
 MonoBehaviour:
   m_ObjectHideFlags: 0

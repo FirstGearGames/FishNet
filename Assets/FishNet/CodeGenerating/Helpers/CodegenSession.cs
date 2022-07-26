@@ -29,6 +29,8 @@ namespace FishNet.CodeGenerating.Helping
         [System.ThreadStatic]
         internal static ObjectHelper ObjectHelper;
         [System.ThreadStatic]
+        internal static NetworkBehaviourHelper NetworkBehaviourHelper;
+        [System.ThreadStatic]
         internal static ReaderGenerator ReaderGenerator;
         [System.ThreadStatic]
         internal static ReaderHelper ReaderHelper;
@@ -98,6 +100,7 @@ namespace FishNet.CodeGenerating.Helping
             GenericReaderHelper = new GenericReaderHelper();
             GenericWriterHelper = new GenericWriterHelper();
             ObjectHelper = new ObjectHelper();
+            NetworkBehaviourHelper = new NetworkBehaviourHelper();
             ReaderGenerator = new ReaderGenerator();
             ReaderHelper = new ReaderHelper();
             CreatedSyncVarGenerator = new CreatedSyncVarGenerator();
@@ -128,6 +131,8 @@ namespace FishNet.CodeGenerating.Helping
             if (!GenericWriterHelper.ImportReferences())
                 return false;
             if (!ObjectHelper.ImportReferences())
+                return false;
+            if (!NetworkBehaviourHelper.ImportReferences())
                 return false;
             if (!ReaderGenerator.ImportReferences())
                 return false;

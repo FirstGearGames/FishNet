@@ -21,9 +21,6 @@ namespace FishNet.Configuring
         public bool IsHeadless;
 
         public bool StripReleaseBuilds = false;
-
-        public const string VERSION = "2.2.4"; //this will need to read from the text file going forward.
-        public string SavedVersion;
     }
 
     public static class ConfigurationDataExtension

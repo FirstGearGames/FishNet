@@ -31,6 +31,10 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 		/// </summary>
 		public bool LogToConsole;
 		/// <summary>
+		/// True to automatically save assets when default prefabs change.
+		/// </summary>
+		public bool SaveChanges;
+		/// <summary>
 		/// Path where prefabs file is created.
 		/// </summary>
 		public string AssetPath;
@@ -64,6 +68,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 			Enabled = true;
 			LogToConsole = true;
 			FullRebuild = false;
+			SaveChanges = true;
 			SearchScope = SearchScopeType.EntireProject;
 
 			AssetPath = $"Assets{Path.DirectorySeparatorChar}FishNet{Path.DirectorySeparatorChar}Runtime{Path.DirectorySeparatorChar}DefaultPrefabObjects.asset";

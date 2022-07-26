@@ -7,7 +7,7 @@ using UnityEngine;
 namespace FishNet.CodeGenerating.Helping.Extension
 {
 
-    internal static class TypeReferenceExtensions
+    internal static class TypeReferenceExtensionsOld
     {
 
         /// <summary>
@@ -48,38 +48,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return typeRef.Resolve().FindAllPublicFields(ignoreStatic, ignoreNonSerialized, excludedBaseTypes, excludedAssemblyPrefixes);
         }
 
-        /// <summary>
-        /// Returns a method within the base type of typeRef.
-        /// </summary>
-        /// <param name="typeRef"></param>
-        /// <param name="methodName"></param>
-        /// <returns></returns>
-        public static MethodDefinition GetMethodInBase(this TypeReference typeRef, string methodName)
-        {
-            TypeDefinition td = typeRef.CachedResolve().GetNextBaseClass();
-            while (td != null)
-            {
-                foreach (MethodDefinition md in td.Methods)
-                {
-                    if (md.Name == methodName)
-                        return md;
-                }
-
-                try
-                {
-                    td = td.GetNextBaseClass();
-                }
-                /* This may occur when inheriting from a class
-                 * in another assembly. */
-                catch (AssemblyResolutionException)
-                {
-                    break;
-                }
-            }
-
-            return null;
-        }
-
+    
         /// <summary>
         /// Returns if a typeRef is type.
         /// </summary>

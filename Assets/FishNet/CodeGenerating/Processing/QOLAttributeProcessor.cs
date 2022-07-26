@@ -136,10 +136,10 @@ namespace FishNet.CodeGenerating.Processing
                     }
                     //If (!base.IsOwner);
                     if (requireOwnership)
-                        CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(methodDef, logging, true, false, true);
+                        CodegenSession.NetworkBehaviourHelper.CreateLocalClientIsOwnerCheck(methodDef, logging, true, false, true);
                     //Otherwise normal IsClient check.
                     else
-                        CodegenSession.ObjectHelper.CreateIsClientCheck(methodDef, logging, useStatic, true);
+                        CodegenSession.NetworkBehaviourHelper.CreateIsClientCheck(methodDef, logging, useStatic, true);
                 }
             }
             else if (qolType == QolAttributeType.Server)
@@ -149,7 +149,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (!removeLogic && !CodeStripping.StripBuild)
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
-                    CodegenSession.ObjectHelper.CreateIsServerCheck(methodDef, logging, useStatic, true);
+                    CodegenSession.NetworkBehaviourHelper.CreateIsServerCheck(methodDef, logging, useStatic, true);
                 }
             }
         }

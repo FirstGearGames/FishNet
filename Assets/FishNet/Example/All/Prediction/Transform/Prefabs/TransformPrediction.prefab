@@ -79,21 +79,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 0
+  <PrefabId>k__BackingField: -1
   _scenePathHash: 0
-  _sceneId: 0
+  <SceneId>k__BackingField: 0
+  <AssetPathHash>k__BackingField: 139770397801111289
   _sceneNetworkObjects:
   - {fileID: 27039729695437543}
+  <IsNested>k__BackingField: 0
+  <ComponentIndex>k__BackingField: 0
+  ObjectId: 0
   _networkBehaviours:
   - {fileID: 27039729695437542}
   - {fileID: 8399567158492483659}
   - {fileID: -4118712540632748398}
-  SceneTransformProperties:
-    Position: {x: 0, y: 1, z: -10}
-    Rotation: {x: 0, y: 0, z: 0, w: 1}
-    LocalScale: {x: 1, y: 1, z: 1}
+  <ParentNetworkObject>k__BackingField: {fileID: 0}
+  <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
-  _hasParentNetworkObjectAtEdit: 0
+  _isGlobal: 0
+  _disableOnDespawn: 0
 --- !u!114 &8399567158492483659
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -111,7 +114,10 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 27039729695437543}
   _graphicalObject: {fileID: 7846666075604890595}
   _smoothTicks: 1
+  _durationType: 0
   _smoothingDuration: 0.05
+  _enableTeleport: 0
+  _teleportThreshold: 1
   _predictionType: 0
   _rigidbody: {fileID: 0}
   _rigidbody2d: {fileID: 0}

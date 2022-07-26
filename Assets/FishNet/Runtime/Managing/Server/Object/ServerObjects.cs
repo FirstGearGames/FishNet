@@ -53,11 +53,16 @@ namespace FishNet.Managing.Server
         /// Cache of spawning objects, used for recursively spawning nested NetworkObjects.
         /// </summary>
         private ListCache<NetworkObject> _spawnCache = new ListCache<NetworkObject>();
+        /// <summary>
+        /// True if one or more scenes are currently loading through the SceneManager.
+        /// </summary>
+        private bool _scenesLoading;
         #endregion
 
         internal ServerObjects(NetworkManager networkManager)
         {
             base.NetworkManager = networkManager;
+            networkManager.SceneManager.OnLoadStart += SceneManager_OnLoadStart;
             networkManager.SceneManager.OnActiveSceneSetInternal += SceneManager_OnActiveSceneSet;
             networkManager.TimeManager.OnUpdate += TimeManager_OnUpdate;
         }
@@ -67,10 +72,17 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void TimeManager_OnUpdate()
         {
-            IterateLoadedScenes(false);
-            PartialOnUpdate();
+            if (!base.NetworkManager.IsServer)
+            {
+                _scenesLoading = false;
+                _loadedScenes.Clear();
+                return;
+            }
+
+            if (!_scenesLoading)
+                IterateLoadedScenes(false);
+            Observers_OnUpdate();
         }
-        partial void PartialOnUpdate();
 
         #region Checking dirty SyncTypes.
         /// <summary>
@@ -162,7 +174,22 @@ namespace FishNet.Managing.Server
             int written = cache.Written;
             List<NetworkObject> collection = cache.Collection;
             for (int i = 0; i < written; i++)
-                collection[i].Despawn();
+            {
+                /* Objects may already be deinitializing when a client disconnects
+                 * because the root object could have been despawned first, and in result
+                 * all child objects would have been recursively despawned. 
+                 * 
+                 * EG: object is:
+                 *      A (nob)
+                 *          B (nob)
+                 * 
+                 * Both A and B are owned by the client so they will both be
+                 * in collection. Should A despawn first B will recursively despawn
+                 * from it. Then once that finishes and the next index of collection
+                 * is run, which would B, the object B would have already been deinitialized. */
+                if (!collection[i].IsDeinitializing)
+                    base.NetworkManager.ServerManager.Despawn(collection[i]);
+            }
 
             ListCaches.StoreCache(cache);
         }
@@ -226,10 +253,18 @@ namespace FishNet.Managing.Server
 
         #region Initializing Objects In Scenes.
         /// <summary>
+        /// Called when a scene load starts.
+        /// </summary>
+        private void SceneManager_OnLoadStart(Scened.SceneLoadStartEventArgs obj)
+        {
+            _scenesLoading = true;
+        }
+        /// <summary>
         /// Called after the active scene has been scene, immediately after scene loads.
         /// </summary>
         private void SceneManager_OnActiveSceneSet()
         {
+            _scenesLoading = false;
             IterateLoadedScenes(true);
         }
         /// <summary>
@@ -392,11 +427,15 @@ namespace FishNet.Managing.Server
             _spawnCache.AddValue(networkObject);
             SetupWithoutSynchronization(networkObject, ownerConnection);
 
-            foreach (var item in networkObject.ChildNetworkObjects)
-                SpawnWithoutChecks(item, ownerConnection, true);
+            foreach (NetworkObject item in networkObject.ChildNetworkObjects)
+            {
+                /* Only spawn recursively if the nob state is unset.
+                 * Unset indicates that the nob has not been */
+                if ((item.gameObject.activeSelf && item.State == NetworkObjectState.Unset) || item.State == NetworkObjectState.Spawned)
+                    SpawnWithoutChecks(item, ownerConnection, true);
+            }
 
             //Also rebuild observers for the object so it spawns for others.
-            //RebuildObservers(networkObject);
             RebuildObservers(_spawnCache);
 
             /* If also client then we need to make sure the object renderers have correct visibility.

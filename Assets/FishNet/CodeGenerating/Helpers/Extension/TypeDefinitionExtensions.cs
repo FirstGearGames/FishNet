@@ -1,4 +1,5 @@
-﻿using MonoFN.Cecil;
+﻿using FishNet.CodeGenerating.Extension;
+using MonoFN.Cecil;
 using MonoFN.Collections.Generic;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
 {
 
 
-    internal static class TypeDefinitionExtensions
+    internal static class TypeDefinitionExtensionsOld
     {
 
         /// <summary>
@@ -141,7 +142,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         internal static bool InheritsNetworkBehaviour(this TypeDefinition typeDef)
         {
-            string nbFullName = CodegenSession.ObjectHelper.NetworkBehaviour_FullName;
+            string nbFullName = CodegenSession.NetworkBehaviourHelper.FullName;
 
             TypeDefinition copyTd = typeDef;
             while (copyTd != null)
@@ -149,7 +150,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 if (copyTd.FullName == nbFullName)
                     return true;
 
-                copyTd = copyTd.GetNextBaseClass();
+                copyTd = copyTd.GetNextBaseTypeDefinition();
             }
 
             //Fall through, network behaviour not found.
@@ -177,7 +178,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         internal static bool CanProcessBaseType(this TypeDefinition typeDef)
         {
-            return (typeDef != null && typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName);
+            return (typeDef != null && typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.NetworkBehaviourHelper.FullName);
         }
         /// <summary>
         /// Returns if the BaseType for TypeDef exist and is not NetworkBehaviour,
@@ -186,7 +187,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         internal static TypeDefinition GetNextBaseClassToProcess(this TypeDefinition typeDef)
         {
-            if (typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
+            if (typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.NetworkBehaviourHelper.FullName)
                 return typeDef.BaseType.CachedResolve();
             else
                 return null;
@@ -249,15 +250,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         }
 
 
-        /// <summary>
-        /// Gets the next base type for typeDef.
-        /// </summary>
-        /// <param name="typeDef"></param>
-        /// <returns></returns>
-        internal static TypeDefinition GetNextBaseClass(this TypeDefinition typeDef)
-        {
-            return (typeDef.BaseType == null) ? null : typeDef.BaseType.CachedResolve();
-        }
+
         /// <summary>
         /// Returns if typeDef is static (abstract, sealed).
         /// </summary>
@@ -310,7 +303,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 if (copyTd.BaseType.IsType(type))
                     return true;
 
-                copyTd = copyTd.GetNextBaseClass();
+                copyTd = copyTd.GetNextBaseTypeDefinition();
             }
 
             //Fall through.

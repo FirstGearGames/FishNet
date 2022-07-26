@@ -90,10 +90,9 @@ GameObject:
   - component: {fileID: 9117857247562382215}
   - component: {fileID: 9117857247562382208}
   - component: {fileID: 9117857247562382210}
-  - component: {fileID: 264791952884968468}
   - component: {fileID: 9144896207351220584}
   - component: {fileID: 9144896207351220583}
-  - component: {fileID: 1012129365208062032}
+  - component: {fileID: 4742920392281400910}
   m_Layer: 0
   m_Name: CharacterControllerPrediction
   m_TagString: Untagged
@@ -143,46 +142,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 20
+  <PrefabId>k__BackingField: 27
   _scenePathHash: 0
-  _sceneId: 0
+  <SceneId>k__BackingField: 0
+  <AssetPathHash>k__BackingField: 14762131302109388384
   _sceneNetworkObjects:
   - {fileID: 9117857247562382210}
+  <IsNested>k__BackingField: 0
+  <ComponentIndex>k__BackingField: 0
+  ObjectId: 0
   _networkBehaviours:
-  - {fileID: 264791952884968468}
   - {fileID: 9144896207351220584}
-  - {fileID: 1012129365208062032}
-  SceneTransformProperties:
-    Position: {x: 0, y: 1, z: -10}
-    Rotation: {x: 0, y: 0, z: 0, w: 1}
-    LocalScale: {x: 1, y: 1, z: 1}
+  - {fileID: 4742920392281400910}
+  <ParentNetworkObject>k__BackingField: {fileID: 0}
+  <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
-  _hasParentNetworkObjectAtEdit: 0
---- !u!114 &264791952884968468
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9117857247562382221}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 0
-  _addedNetworkObject: {fileID: 0}
-  _networkObjectCache: {fileID: 9117857247562382210}
-  _graphicalObject: {fileID: 8274935638305073705}
-  _smoothTicks: 1
-  _smoothingDuration: 0.05
-  _enableTeleport: 0
-  _teleportThreshold: 1
-  _predictionType: 0
-  _rigidbody: {fileID: 0}
-  _rigidbody2d: {fileID: 0}
-  _networkTransform: {fileID: 1012129365208062032}
-  _predictionRatio: 0
+  _isGlobal: 0
+  _disableOnDespawn: 0
 --- !u!114 &9144896207351220584
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -195,7 +171,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bb7bd88fd11b5d4aa7fca3d42172ab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 1
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 9117857247562382210}
   _networkObjectCache: {fileID: 9117857247562382210}
   _moveRate: 5
@@ -217,7 +193,7 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1012129365208062032
+--- !u!114 &4742920392281400910
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -226,36 +202,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 9117857247562382221}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
+  m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 2
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 9117857247562382210}
   _networkObjectCache: {fileID: 9117857247562382210}
-  _synchronizeParent: 0
-  _packing:
-    Position: 1
-    Rotation: 1
-    Scale: 0
-  _interpolation: 2
-  _extrapolation: 0
+  _graphicalObject: {fileID: 8274935638305073705}
+  _smoothTicks: 1
+  _durationType: 0
+  _smoothingDuration: 0.125
   _enableTeleport: 0
   _teleportThreshold: 1
-  _clientAuthoritative: 0
-  _sendToOwner: 0
-  _interval: 0
-  _synchronizePosition: 1
-  _positionSnapping:
-    X: 0
-    Y: 0
-    Z: 0
-  _synchronizeRotation: 1
-  _rotationSnapping:
-    X: 0
-    Y: 0
-    Z: 0
-  _synchronizeScale: 1
-  _scaleSnapping:
-    X: 0
-    Y: 0
-    Z: 0
+  _predictionType: 0
+  _rigidbody: {fileID: 0}
+  _rigidbody2d: {fileID: 0}
+  _networkTransform: {fileID: 0}
+  _predictionRatio: 0

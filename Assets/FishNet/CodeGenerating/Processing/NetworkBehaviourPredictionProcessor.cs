@@ -311,9 +311,9 @@ namespace FishNet.CodeGenerating.Processing
                 return false;
 
             //If replication methods found but this hierarchy already has max.
-            if (rpcCount >= ObjectHelper.MAX_RPC_ALLOWANCE)
+            if (rpcCount >= NetworkBehaviourHelper.MAX_RPC_ALLOWANCE)
             {
-                CodegenSession.LogError($"{typeDef.FullName} and inherited types exceed {ObjectHelper.MAX_RPC_ALLOWANCE} replicated methods. Only {ObjectHelper.MAX_RPC_ALLOWANCE} replicated methods are supported per inheritance hierarchy.");
+                CodegenSession.LogError($"{typeDef.FullName} and inherited types exceed {NetworkBehaviourHelper.MAX_RPC_ALLOWANCE} replicated methods. Only {NetworkBehaviourHelper.MAX_RPC_ALLOWANCE} replicated methods are supported per inheritance hierarchy.");
                 return false;
             }
 
@@ -382,13 +382,13 @@ namespace FishNet.CodeGenerating.Processing
                 MethodReference callMr;
                 if (replicate)
                 {
-                    ctorMr = CodegenSession.ObjectHelper.Networkbehaviour_ReplicateRpcDelegateConstructor_MethodRef;
-                    callMr = CodegenSession.ObjectHelper.NetworkBehaviour_RegisterReplicateRpc_MethodRef;
+                    ctorMr = CodegenSession.NetworkBehaviourHelper.ReplicateRpcDelegateConstructor_MethodRef;
+                    callMr = CodegenSession.NetworkBehaviourHelper.RegisterReplicateRpc_MethodRef;
                 }
                 else
                 {
-                    ctorMr = CodegenSession.ObjectHelper.Networkbehaviour_ReconcileRpcDelegateConstructor_MethodRef;
-                    callMr = CodegenSession.ObjectHelper.NetworkBehaviour_RegisterReconcileRpc_MethodRef;
+                    ctorMr = CodegenSession.NetworkBehaviourHelper.ReconcileRpcDelegateConstructor_MethodRef;
+                    callMr = CodegenSession.NetworkBehaviourHelper.RegisterReconcileRpc_MethodRef;
                 }
 
                 insts.Add(processor.Create(OpCodes.Newobj, ctorMr));
@@ -621,7 +621,7 @@ namespace FishNet.CodeGenerating.Processing
                 //      base.SetLastReconcileTick(reconcileTick).
                 processor.Emit(OpCodes.Ldarg_0);
                 processor.Emit(OpCodes.Ldloc, reconcileTickVd);
-                processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SetLastReconcileTick_MethodRef);
+                processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.SetLastReconcileTick_MethodRef);
                 //Invoke reconciling start. 
                 processor.Add(InvokeOnReconcile(reconcileMd, true));
 
@@ -749,7 +749,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, asServerPd);
             processor.Emit(OpCodes.Brfalse_S, afterNoOwnerCheckInst);
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_Owner_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.Owner_MethodRef);
             processor.Emit(OpCodes.Callvirt, CodegenSession.ObjectHelper.NetworkConnection_IsActive_MethodRef);
             processor.Emit(OpCodes.Brtrue_S, afterNoOwnerCheckInst);
             processor.Emit(OpCodes.Ret);
@@ -760,7 +760,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, asServerPd);
             processor.Emit(OpCodes.Brtrue_S, afterClientCheckInst);
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_IsOwner_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.IsOwner_MethodRef);
             processor.Emit(OpCodes.Brtrue_S, afterClientCheckInst);
             processor.Emit(OpCodes.Ret);
             processor.Append(afterClientCheckInst);
@@ -770,7 +770,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, asServerPd);
             processor.Emit(OpCodes.Brfalse_S, afterAsServerIsClientInst);
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_IsOwner_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.IsOwner_MethodRef);
             processor.Emit(OpCodes.Brfalse_S, afterAsServerIsClientInst);
             processor.Emit(OpCodes.Ret);
             processor.Append(afterAsServerIsClientInst);
@@ -1004,7 +1004,7 @@ namespace FishNet.CodeGenerating.Processing
             //Create NetworkConnection parameter to compare owner.
             ParameterDefinition networkConnectionPd = CodegenSession.GeneralHelper.CreateParameter(createdMd, typeof(NetworkConnection));
             //      if (base.ComparerOwner(networkConnectionPd) return;
-            CodegenSession.ObjectHelper.CreateRemoteClientIsOwnerCheck(processor, networkConnectionPd);
+            CodegenSession.NetworkBehaviourHelper.CreateRemoteClientIsOwnerCheck(processor, networkConnectionPd);
 
             //Make a local array of same type for easier handling and set it's reference to field.
             VariableDefinition replicateDataArrVd = createdMd.CreateVariable(predictionFields.ServerReplicateReaderBuffer.FieldType);
@@ -1082,7 +1082,7 @@ namespace FishNet.CodeGenerating.Processing
             //      byte maximumBufferdInputs = base.TimeManager.MaximumBufferedInputs.
             VariableDefinition maximumBufferedVd = CodegenSession.GeneralHelper.CreateVariable(createdMd, typeof(byte));
             processor.Emit(OpCodes.Ldarg_0); //base.
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TimeManager_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.TimeManager_MethodRef);
             processor.Emit(OpCodes.Callvirt, CodegenSession.TimeManagerHelper.MaximumBufferedInputs_MethodRef);
             processor.Emit(OpCodes.Stloc, maximumBufferedVd);
             //Set queueCountVd to new count.
@@ -1151,7 +1151,7 @@ namespace FishNet.CodeGenerating.Processing
             List<Instruction> insts = new List<Instruction>();
             ILProcessor processor = reconcileMd.Body.GetILProcessor();
 
-            GenericInstanceMethod sendReconcileRpcdMr = CodegenSession.ObjectHelper.NetworkBehaviour_SendReconcileRpc_MethodRef.MakeGenericMethod(new TypeReference[] { reconcileDataPd.ParameterType });
+            GenericInstanceMethod sendReconcileRpcdMr = CodegenSession.NetworkBehaviourHelper.SendReconcileRpc_MethodRef.MakeGenericMethod(new TypeReference[] { reconcileDataPd.ParameterType });
 
             Instruction afterRetInst = processor.Create(OpCodes.Nop);
             //      if (serverReconcileResends == 0)
@@ -1291,7 +1291,7 @@ namespace FishNet.CodeGenerating.Processing
             //          default = true;
             Instruction afterSetDefaultInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TransformMayChange_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.TransformMayChange_MethodRef);
             processor.Emit(OpCodes.Brtrue_S, afterSetDefaultInst);
             processor.Emit(OpCodes.Ldarg, dataPd);
             processor.Emit(OpCodes.Call, genericIsDefaultMr);
@@ -1320,7 +1320,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldloc, isDefaultVd);
             processor.Emit(OpCodes.Brtrue_S, afterCallLocalTickInst);
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TimeManager_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.TimeManager_MethodRef);
             processor.Emit(OpCodes.Callvirt, CodegenSession.TimeManagerHelper.LocalTick_MethodRef);
             processor.Emit(OpCodes.Stloc, tickVd);
             //      _clientReplicateTick = localTick;
@@ -1353,7 +1353,7 @@ namespace FishNet.CodeGenerating.Processing
             ILProcessor processor = replicateMd.Body.GetILProcessor();
 
             //Make method reference NB.SendReplicateRpc<dataTr>
-            GenericInstanceMethod sendReplicateRpcdMr = CodegenSession.ObjectHelper.NetworkBehaviour_SendReplicateRpc_MethodRef.MakeGenericMethod(new TypeReference[] { dataTr });
+            GenericInstanceMethod sendReplicateRpcdMr = CodegenSession.NetworkBehaviourHelper.SendReplicateRpc_MethodRef.MakeGenericMethod(new TypeReference[] { dataTr });
 
             //Call WriteBufferedInput.
             //      base.WriteBufferedInput<dataTd>(hash, _clientBuffered, count);
@@ -1458,7 +1458,7 @@ namespace FishNet.CodeGenerating.Processing
             simulateVd = CodegenSession.GeneralHelper.CreateVariable(methodDef, typeof(bool));
 
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TimeManager_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.TimeManager_MethodRef);
             processor.Emit(OpCodes.Call, CodegenSession.TimeManagerHelper.PhysicsMode_MethodRef);
             processor.Emit(OpCodes.Ldc_I4, (int)PhysicsMode.TimeManager);
             processor.Emit(OpCodes.Ceq);
@@ -1616,7 +1616,7 @@ namespace FishNet.CodeGenerating.Processing
             //      double tickDelta = base.TimeManager.TickDelta;
             VariableDefinition tickDeltaVd = CodegenSession.GeneralHelper.CreateVariable(reconcileMd, typeof(double));
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TimeManager_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.TimeManager_MethodRef);
             processor.Emit(OpCodes.Callvirt, CodegenSession.TimeManagerHelper.TickDelta_MethodRef);
             processor.Emit(OpCodes.Stloc, tickDeltaVd);
 
@@ -1676,7 +1676,7 @@ namespace FishNet.CodeGenerating.Processing
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             insts.Add(processor.Create(OpCodes.Ldarg_0));
-            insts.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TimeManager_MethodRef));
+            insts.Add(processor.Create(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.TimeManager_MethodRef));
             insts.Add(processor.Create(OpCodes.Ldloc, sceneVd));
             insts.Add(processor.Create(OpCodes.Ldloc, physicsSceneVd));
             insts.Add(processor.Create(OpCodes.Ldloc, physicsScene2DVd));
@@ -1698,7 +1698,7 @@ namespace FishNet.CodeGenerating.Processing
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             insts.Add(processor.Create(OpCodes.Ldarg_0));
-            insts.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_TimeManager_MethodRef));
+            insts.Add(processor.Create(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.TimeManager_MethodRef));
             insts.Add(processor.Create(OpCodes.Ldarg_0)); //this for NB.
             if (start)
                 insts.Add(processor.Create(OpCodes.Ldc_I4_1));
@@ -1738,7 +1738,7 @@ namespace FishNet.CodeGenerating.Processing
              * unreliably. It's possible they will arrive after
              * an owner change. */
             //      if (!base.IsOwner) return;
-            CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdMd, LoggingType.Off, true, false, false);
+            CodegenSession.NetworkBehaviourHelper.CreateLocalClientIsOwnerCheck(createdMd, LoggingType.Off, true, false, false);
 
             //uint receivedTick = data.DATA_TICK_FIELD_NAME.
             VariableDefinition receivedTickVd = CodegenSession.GeneralHelper.CreateVariable(createdMd, typeof(uint));
@@ -1832,7 +1832,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             CreateSendPredictionCommon(processor, hash, writerVd);
             //Call NetworkBehaviour.SendReplicate.
-            processor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SendReplicateRpc_MethodRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.SendReplicateRpc_MethodRef);
         }
         #endregion
     }

@@ -237,6 +237,7 @@ namespace FishNet.Managing
                     Generator.GenerateFull();
                     Generator.IgnorePostProcess = false;
                 }
+                dpo.Sort();
             }
 #endif
 

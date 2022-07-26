@@ -845,10 +845,10 @@ namespace FishNet.Serializing
             }
             else
             {
-                if (componentIndex < 0 || componentIndex >= nob.NetworkBehaviours.Length)
+                if (componentIndex >= nob.NetworkBehaviours.Length)
                 {
                     if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name} [id {nob.ObjectId}] . This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
+                        Debug.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name} [id {nob.ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
                     result = null;
                 }
                 else
@@ -872,7 +872,6 @@ namespace FishNet.Serializing
         {
             return ReadNetworkBehaviour(out _, out _);
         }
-
 
         /// <summary>
         /// Writes a transport channel.

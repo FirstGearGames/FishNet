@@ -182,7 +182,7 @@ namespace FishNet.Managing.Object
                 {
                     foreach (NetworkObject childNob in nob.ChildNetworkObjects)
                     {
-                        if (childNob != null && childNob.IsSpawned)
+                        if (childNob != null && !childNob.IsDeinitializing)
                             Despawn(childNob, disableOnDespawn, asServer);
                     }
                 }

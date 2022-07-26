@@ -16,6 +16,47 @@ namespace FishNet.Managing.Object
     public class DefaultPrefabObjects : SinglePrefabObjects
     {
         /// <summary>
+        /// Sets asset path hashes for prefabs starting at index, or if missing.
+        /// </summary
+        /// <return>Returns true if one or more NetworkObjects were updated.</return>
+        internal bool SetAssetPathHashes(int index)
+        {
+#if UNITY_EDITOR
+            bool dirtied = false;
+            int count = base.GetObjectCount();
+
+            if (count == 0)
+                return false;
+            if (index < 0 || index >= count)
+            {
+                Debug.LogError($"Index {index} is out of range when trying to set asset path hashes. Collection length is {count}. Defaulf prefabs may need to be rebuilt.");
+                return false;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                NetworkObject n = base.Prefabs[i];
+                if (i < index)
+                    continue;
+
+                string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}";
+                ulong hashcode = Hashing.GetStableHash64(pathAndName);
+                //Already set.
+                if (n.AssetPathHash == hashcode)
+                    continue;
+
+                n.SetAssetPathHash(hashcode);
+                EditorUtility.SetDirty(n);
+                dirtied = true;
+            }
+
+            return dirtied;
+#else
+            return false;
+#endif
+        }
+
+        /// <summary> 
         /// Sorts prefabs by name and path hashcode.
         /// </summary>
         internal void Sort()
@@ -29,10 +70,14 @@ namespace FishNet.Managing.Object
 
             foreach (NetworkObject n in base.Prefabs)
             {
-                string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}";
-                ulong hashcode = Hashing.GetStableHash64(pathAndName);
-                hashcodesAndNobs[hashcode] = n;
-                hashcodes.Add(hashcode);
+                hashcodes.Add(n.AssetPathHash);
+                //If hashcode is 0 something is wrong
+                if (n.AssetPathHash == 0)
+                {
+                    Debug.LogError($"DefaultPrefabObjects could not be sorted because one or more NetworkObjects are missing hashes. Use the Fish-Networking menu to refresh default prefabs.");
+                    return;
+                }
+                hashcodesAndNobs.Add(n.AssetPathHash, n);
             }
 
             //Once all hashes have been made re-add them to prefabs sorted.

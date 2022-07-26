@@ -119,6 +119,10 @@ namespace FishNet.Object.Synchronizing
         /// The only reasonable way to reset this during a Reset call is by duplicating the original list and setting all values to it on reset.
         /// </summary>
         private bool _valuesChanged;
+        /// <summary>
+        /// True to send all values in the next WriteDelta.
+        /// </summary>
+        private bool _sendAll;
         #endregion
 
         [APIExclude]
@@ -229,29 +233,40 @@ namespace FishNet.Object.Synchronizing
         public override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
-            //False for not full write.
-            writer.WriteBoolean(false);
-            writer.WriteUInt32((uint)_changed.Count);
 
-            for (int i = 0; i < _changed.Count; i++)
+            //If sending all then clear changed and write full.
+            if (_sendAll)
             {
-                ChangeData change = _changed[i];
-                writer.WriteByte((byte)change.Operation);
-
-                //Clear does not need to write anymore data so it is not included in checks.
-                if (change.Operation == SyncDictionaryOperation.Add ||
-                    change.Operation == SyncDictionaryOperation.Set)
-                {
-                    writer.Write(change.Key);
-                    writer.Write(change.Value);
-                }
-                else if (change.Operation == SyncDictionaryOperation.Remove)
-                {
-                    writer.Write(change.Key);
-                }
+                _sendAll = false;
+                _changed.Clear();
+                WriteFull(writer);
             }
+            else
+            {
+                //False for not full write.
+                writer.WriteBoolean(false);
+                writer.WriteUInt32((uint)_changed.Count);
 
-            _changed.Clear();
+                for (int i = 0; i < _changed.Count; i++)
+                {
+                    ChangeData change = _changed[i];
+                    writer.WriteByte((byte)change.Operation);
+
+                    //Clear does not need to write anymore data so it is not included in checks.
+                    if (change.Operation == SyncDictionaryOperation.Add ||
+                        change.Operation == SyncDictionaryOperation.Set)
+                    {
+                        writer.Write(change.Key);
+                        writer.Write(change.Value);
+                    }
+                    else if (change.Operation == SyncDictionaryOperation.Remove)
+                    {
+                        writer.Write(change.Key);
+                    }
+                }
+
+                _changed.Clear();
+            }
         }
 
 
@@ -370,6 +385,7 @@ namespace FishNet.Object.Synchronizing
         public override void Reset()
         {
             base.Reset();
+            _sendAll = false;
             _changed.Clear();
             Collection.Clear();
             ClientHostCollection.Clear();
@@ -525,6 +541,25 @@ namespace FishNet.Object.Synchronizing
                 Collection[key] = value;
                 AddOperation(SyncDictionaryOperation.Set, key, value);
             }
+        }
+
+        /// <summary>
+        /// Dirties the entire collection forcing a full send.
+        /// </summary>
+        public void DirtyAll()
+        {
+            if (!base.IsRegistered)
+                return;
+
+            if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
+            {
+                if (NetworkManager.CanLog(LoggingType.Warning))
+                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                return;
+            }
+
+            if (base.Dirty())
+                _sendAll = true;
         }
 
         /// <summary>

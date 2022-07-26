@@ -23,12 +23,13 @@ namespace FishNet.Object
         /// <summary>
         /// True if this NetworkObject was active during edit. Will be true if placed in scene during edit, and was in active state on run.
         /// </summary>
+        [System.NonSerialized]
         internal bool ActiveDuringEdit;
         /// <summary>
         /// Returns if this object was placed in the scene during edit-time.
         /// </summary>
         /// <returns></returns>
-        public bool IsSceneObject =>(SceneId > 0);
+        public bool IsSceneObject => (SceneId > 0);
         [Obsolete("Use IsSceneObject instead.")] //Remove on 2023/01/01
         public bool SceneObject => IsSceneObject;
         /// <summary>
@@ -71,10 +72,14 @@ namespace FishNet.Object
         /// </summary>
         [SerializeField, HideInInspector]
         internal TransformProperties SerializedTransformProperties = new TransformProperties();
+        /// <summary>
+        /// Current state of the NetworkObject.
+        /// </summary>
+        [System.NonSerialized]
+        internal NetworkObjectState State = NetworkObjectState.Unset;
         #endregion
 
         #region Serialized.
-
         /// <summary>
         /// 
         /// </summary>
@@ -163,12 +168,52 @@ namespace FishNet.Object
         }
         #endregion
 
+        #region Private.
+        /// <summary>
+        /// True if disabled NetworkBehaviours have been initialized.
+        /// </summary>
+        private bool _disabledNetworkBehavioursInitialized;
+        #endregion
+
+
+        private void Awake()
+        {
+            SetChildDespawnedState();
+        }
+
         private void Start()
         {
             TryStartDeactivation();
-            //Also deactivate children.
-            foreach (NetworkObject nob in ChildNetworkObjects)
-                nob.TryStartDeactivation();
+            ////Also deactivate children.
+            //foreach (NetworkObject nob in ChildNetworkObjects)
+            //    nob.TryStartDeactivation();
+        }
+
+        /// <summary>
+        /// Initializes NetworkBehaviours if they are disabled.
+        /// </summary>
+        private void InitializeNetworkBehavioursIfDisabled()
+        {
+            if (_disabledNetworkBehavioursInitialized)
+                return;
+            _disabledNetworkBehavioursInitialized = true;
+
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].InitializeIfDisabled();
+        }
+
+        /// <summary>
+        /// Sets Despawned on child NetworkObjects if they are not enabled.
+        /// </summary>
+        private void SetChildDespawnedState()
+        {
+            NetworkObject nob;
+            for (int i = 0; i < ChildNetworkObjects.Count; i++)
+            {
+                nob = ChildNetworkObjects[i];
+                if (!nob.gameObject.activeSelf)
+                    nob.State = NetworkObjectState.Despawned;
+            }
         }
 
         /// <summary>
@@ -198,6 +243,35 @@ namespace FishNet.Object
              * then remove object from owner. */
             if (IsDeinitializing && Owner.IsValid)
                 Owner.RemoveObject(this);
+            /* If not nested then check to despawn this OnDisable.
+             * A nob may become disabled without being despawned if it's
+             * beneath another deinitializing nob. This can be true even while
+             * not nested because users may move a nob under another at runtime.
+             * 
+             * This object must also be activeSelf, meaning that it became disabled
+             * because a parent was. If not activeSelf then it's possible the
+             * user simply deactivated the object themselves. */
+            else if (IsServer && !IsNested && gameObject.activeSelf)
+            {
+                bool canDespawn = false;
+                Transform nextParent = transform.parent;
+                while (nextParent != null)
+                {
+                    if (nextParent.TryGetComponent(out NetworkObject pNob))
+                    {
+                        //If nob is deinitialized then this one cannot exist.
+                        if (pNob.IsDeinitializing)
+                        {
+                            canDespawn = true;
+                            break;
+                        }
+                    }
+                    nextParent = nextParent.parent;
+                }
+
+                if (canDespawn)
+                    Despawn();
+            }
         }
 
         private void OnDestroy()
@@ -240,6 +314,7 @@ namespace FishNet.Object
 
             SetActiveStatus(false, true);
             SetActiveStatus(false, false);
+            //Do not need to set state if being destroyed.
             //Don't need to reset sync types if object is being destroyed.
         }
 
@@ -260,6 +335,8 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void PreinitializeInternal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
+            State = NetworkObjectState.Spawned;
+            InitializeNetworkBehavioursIfDisabled();
             IsDeinitializing = false;
             //QOL references.
             NetworkManager = networkManager;
@@ -305,7 +382,7 @@ namespace FishNet.Object
             Array.Resize(ref _networkBehaviours, startingLength + 1);
             _networkBehaviours[startingLength] = result;
             //Serialize values and return.
-            result.SerializeComponents(this, (byte)startingLength);            
+            result.SerializeComponents(this, (byte)startingLength);
             return result;
         }
 
@@ -334,7 +411,7 @@ namespace FishNet.Object
                 if (IsNested)
                     return;
                 byte maxNobs = 255;
-                if (GetComponentsInChildren<NetworkObject>().Length > maxNobs)
+                if (GetComponentsInChildren<NetworkObject>(true).Length > maxNobs)
                 {
                     Debug.LogError($"The number of child NetworkObjects on {gameObject.name} exceeds the maximum of {maxNobs}.");
                     return;
@@ -350,7 +427,6 @@ namespace FishNet.Object
             ChildNetworkObjects.Clear();
 
             transformCache.AddValue(transform);
-
             for (int z = 0; z < transformCache.Written; z++)
             {
                 Transform currentT = transformCache.Collection[z];
@@ -431,6 +507,7 @@ namespace FishNet.Object
                 Observers.Clear();
 
             SetActiveStatus(false, asServer);
+            //State = NetworkObjectState.Despawned;
         }
 
         ///// <summary>

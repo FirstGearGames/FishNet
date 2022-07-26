@@ -32,6 +32,16 @@ namespace FishNet.Object
         /// </summary>
         [field: SerializeField, HideInInspector]
         internal ulong SceneId { get; private set; }
+        /// <summary>
+        /// Hash for the path which this asset resides. This value is set during edit time.
+        /// </summary> 
+        [field: SerializeField, HideInInspector]
+        public ulong AssetPathHash { get; private set; }
+        /// <summary>
+        /// Sets AssetPathhash value.
+        /// </summary>
+        /// <param name="value">Value to use.</param>
+        public void SetAssetPathHash(ulong value) => AssetPathHash = value;
         #endregion
 
 #if UNITY_EDITOR

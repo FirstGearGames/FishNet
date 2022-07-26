@@ -831,7 +831,7 @@ namespace FishNet.Managing.Scened
                         continue;
                     /* Cannot unload global scenes. If
                      * replace scenes was used for a global
-                     * load then global scenes would have bene reset
+                     * load then global scenes would have been reset
                      * before this. */
                     if (IsGlobalScene(s))
                         continue;
