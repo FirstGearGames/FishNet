@@ -61,7 +61,6 @@ namespace FishNet.Managing.Object
         /// </summary>
         internal void Sort()
         {
-#if UNITY_EDITOR
             if (base.GetObjectCount() == 0)
                 return;
 
@@ -89,7 +88,6 @@ namespace FishNet.Managing.Object
 
             base.Clear();
             base.AddObjects(sortedNobs, false);
-#endif
         }
 
 

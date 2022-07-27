@@ -221,6 +221,7 @@ namespace FishNet.Managing
             if (StartingRpcLinkIndex == 0)
                 StartingRpcLinkIndex = (ushort)(EnumFN.GetHighestValue<PacketId>() + 1);
 
+            bool isDefaultPrefabs = (SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects);
 #if UNITY_EDITOR
             /* If first instance then force
              * default prefabs to repopulate.
@@ -228,18 +229,24 @@ namespace FishNet.Managing
              * cloning tools sometimes don't synchronize
              * scriptable object changes, which is what
              * the default prefabs is. */
-            if (_instances.Count == 0 && SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects dpo)
+            if (_refreshDefaultPrefabs && _instances.Count == 0 && isDefaultPrefabs)
             {
-                if (_refreshDefaultPrefabs)
-                {
-                    Generator.IgnorePostProcess = true;
-                    Debug.Log("DefaultPrefabCollection is being refreshed.");
-                    Generator.GenerateFull();
-                    Generator.IgnorePostProcess = false;
-                }
-                dpo.Sort();
+                Generator.IgnorePostProcess = true;
+                Debug.Log("DefaultPrefabCollection is being refreshed.");
+                Generator.GenerateFull();
+                Generator.IgnorePostProcess = false;
             }
 #endif
+            //If default prefabs then also make a new instance and sort them.
+            if (isDefaultPrefabs)
+            {
+                DefaultPrefabObjects originalDpo = (DefaultPrefabObjects)SpawnablePrefabs;
+                //If not editor then a new instance must be made and sorted.
+                DefaultPrefabObjects instancedDpo = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
+                instancedDpo.AddObjects(originalDpo.Prefabs.ToList(), false);
+                instancedDpo.Sort();
+                SpawnablePrefabs = instancedDpo;
+            }
 
             _canPersist = CanInitialize();
             if (!_canPersist)
