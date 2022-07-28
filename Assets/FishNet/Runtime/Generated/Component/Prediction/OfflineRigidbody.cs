@@ -1,8 +1,4 @@
-﻿using FishNet.Component.Transforming;
-using FishNet.Managing;
-using FishNet.Managing.Logging;
-using FishNet.Managing.Timing;
-using FishNet.Object;
+﻿using FishNet.Managing.Timing;
 using System.Collections.Generic;
 using UnityEngine;
 

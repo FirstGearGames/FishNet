@@ -407,6 +407,12 @@ namespace FishNet.Managing.Server
                     Debug.LogWarning($"{networkObject.name} is already spawned.");
                 return;
             }
+            if (networkObject.ParentNetworkObject != null && !networkObject.ParentNetworkObject.IsSpawned)
+            {
+                if (base.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"{networkObject.name} cannot be spawned because it has a parent NetworkObject {networkObject.ParentNetworkObject} which is not spawned.");
+                return;
+            }
 
             SpawnWithoutChecks(networkObject, ownerConnection);
         }
@@ -431,7 +437,7 @@ namespace FishNet.Managing.Server
             {
                 /* Only spawn recursively if the nob state is unset.
                  * Unset indicates that the nob has not been */
-                if ((item.gameObject.activeSelf && item.State == NetworkObjectState.Unset) || item.State == NetworkObjectState.Spawned)
+                if (item.gameObject.activeInHierarchy || item.State == NetworkObjectState.Spawned)
                     SpawnWithoutChecks(item, ownerConnection, true);
             }
 
