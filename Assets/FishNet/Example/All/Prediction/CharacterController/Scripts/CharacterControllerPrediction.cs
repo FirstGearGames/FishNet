@@ -97,7 +97,7 @@ namespace FishNet.Example.Prediction.CharacterControllers
         [Replicate]
         private void Move(MoveData md, bool asServer, bool replaying = false)
         {
-            Vector3 move = new Vector3(md.Horizontal, Physics.gravity.y, md.Vertical);
+            Vector3 move = new Vector3(md.Horizontal, 0f, md.Vertical).normalized + new Vector3(0f, Physics.gravity.y, 0f);
             _characterController.Move(move * _moveRate * (float)base.TimeManager.TickDelta);
         }
 

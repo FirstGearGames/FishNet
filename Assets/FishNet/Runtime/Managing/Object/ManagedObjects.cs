@@ -104,7 +104,7 @@ namespace FishNet.Managing.Object
             if (nob.IsNested)
                 disableOnDespawn = true;
 
-            //Only check potential destroys when allowDestroy is true.
+            //Only check potential destroys when not destruction is choosen over disabling.
             if (!disableOnDespawn)
             {
                 //If as server.
@@ -125,16 +125,17 @@ namespace FishNet.Managing.Object
                 //Not as server.
                 else
                 {
-                    //Not a scene object, destroy normally.
+                    bool isServer = NetworkManager.IsServer;
+                    //Only check to destroy if not a scene object.
                     if (!nob.IsSceneObject)
-                        destroy = true;
-                    /* If was removed from pending then also destroy.
-                    * Pending objects are ones that exist on the server
-                     * side only to await destruction from client side.
-                     * Objects can also be destroyed if server is not
-                     * active. */
-                    else
-                        destroy = (!NetworkManager.IsServer || NetworkManager.ServerManager.Objects.RemoveFromPending(nob.ObjectId));
+                    {
+                        /* If was removed from pending then also destroy.
+                        * Pending objects are ones that exist on the server
+                        * side only to await destruction from client side.
+                        * Objects can also be destroyed if server is not
+                        * active. */
+                        destroy = (!isServer || NetworkManager.ServerManager.Objects.RemoveFromPending(nob.ObjectId));
+                    }
                 }
             }
 
@@ -146,29 +147,42 @@ namespace FishNet.Managing.Object
             //Remove from spawned collection.
             RemoveFromSpawned(nob, false);
 
+            //If to destroy.
             if (destroy)
             {
                 MonoBehaviour.Destroy(nob.gameObject);
             }
+            //If to potentially disable.
             else
             {
-                /* If running as client and is also server
-                 * then see if server still has object spawned.
-                 * If not, the object can be disabled, otherwise
-                 * hide the renderers. */
-                if (!asServer && NetworkManager.IsServer)
+                //If as server.
+                if (asServer)
                 {
-                    //Still spawned.
-                    if (NetworkManager.ServerManager.Objects.Spawned.ContainsKey(nob.ObjectId))
-                        nob.SetHostVisibility(false);
-                    //Not spawned.
-                    else
+                    //If not clientHost then the object can be disabled.
+                    if (!NetworkManager.IsClient)
                         nob.gameObject.SetActive(false);
                 }
-                //AsServer or not IsServer, can deactivate
+                //Not as server.
                 else
                 {
-                    nob.gameObject.SetActive(false);
+                    //If the server is not active then the object can be disabled.
+                    if (!NetworkManager.IsServer)
+                    {
+                        nob.gameObject.SetActive(false);
+                    }
+                    //If also server then checks must be done.
+                    else
+                    {
+                        /* Object is still spawned on the server side. This means
+                         * the clientHost likely lost visibility. When this is the case
+                         * update clientHost renderers. */
+                        if (NetworkManager.ServerManager.Objects.Spawned.ContainsKey(nob.ObjectId))
+                            nob.SetHostVisibility(false);
+                        /* No longer spawned on the server, can
+                         * deactivate on the client. */
+                        else
+                            nob.gameObject.SetActive(false);
+                    }
                 }
 
                 /* Also despawn child objects.

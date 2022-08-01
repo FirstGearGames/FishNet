@@ -42,11 +42,11 @@ namespace FishNet.Example.Scened
             if (_clientAuth)
                 Move(hor, ver);
             else
-                RpcMove(hor, ver);
+                ServerMove(hor, ver);
         }
 
         [ServerRpc]
-        private void RpcMove(float hor, float ver)
+        private void ServerMove(float hor, float ver)
         {
             Move(hor, ver);
         }

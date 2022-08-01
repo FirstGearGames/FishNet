@@ -353,7 +353,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         /// <param name="reader"></param>
         internal void CacheDespawn(PooledReader reader)
-        {
+        {            
             int objectId = reader.ReadNetworkObjectId();
             bool disableOnDespawn = reader.ReadBoolean();
             //Try checking already spawned objects first.
@@ -368,6 +368,8 @@ namespace FishNet.Managing.Client
             else
             {
                 NetworkObject nob2 = _objectCache.GetInCached(objectId, ClientObjectCache.CacheSearchType.Any);
+                /* Nob may be null if it's a child object being despawned, and the
+                 * parent despawn already occurred. */
                 if (nob2 != null)
                     _objectCache.AddDespawn(nob2, disableOnDespawn);
             }

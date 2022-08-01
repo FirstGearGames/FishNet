@@ -729,7 +729,7 @@ namespace FishNet.Managing.Timing
                 return default;
 
             double delta = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
-            double percent = (_elapsedTickTime / delta) * 100;
+            double percent = (_elapsedTickTime / delta) * 100d;
             return percent;
         }
         /// <summary>
@@ -757,18 +757,17 @@ namespace FishNet.Managing.Timing
             if (_networkManager == null)
                 return default;
 
-            uint tick;
             if (tickType == TickType.Tick)
             {
-                tick = Tick;
+                return GetPreciseTick(Tick);
             }
             else if (tickType == TickType.LocalTick)
             {
-                tick = LocalTick;
+                return GetPreciseTick(LocalTick);
             }
             else if (tickType == TickType.LastPacketTick)
             {
-                tick = LastPacketTick;
+                return GetPreciseTick(LastPacketTick);
             }
             else
             {
@@ -776,11 +775,6 @@ namespace FishNet.Managing.Timing
                     Debug.LogError($"TickType {tickType.ToString()} is unhandled.");
                 return default;
             }
-
-            double delta = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
-            double percent = (_elapsedTickTime / delta) * 100;
-
-            return new PreciseTick(tick, percent);
         }
 
 
@@ -858,6 +852,34 @@ namespace FishNet.Managing.Timing
             }
 
             return (result * multiplier);
+        }
+
+        /// <summary>
+        /// Gets time passed from Tick to preciseTick.
+        /// </summary>
+        /// <param name="preciseTick">PreciseTick value to compare against.</param>
+        /// <param name="allowNegative">True to allow negative values. When false and value would be negative 0 is returned.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double TimePassed(PreciseTick preciseTick, bool allowNegative = false)
+        {
+            PreciseTick currentPt = GetPreciseTick(TickType.Tick);
+
+            long tickDifference = (currentPt.Tick - preciseTick.Tick);
+            double percentDifference = (currentPt.Percent - preciseTick.Percent);
+
+            /* If tickDifference is less than 0 or tickDifference and percentDifference are 0 or less
+             * then the result would be negative. */
+            bool negativeValue = (tickDifference < 0 || (tickDifference <= 0 && percentDifference <= 0));
+
+            if (!allowNegative && negativeValue)
+                return 0d;
+
+            double tickTime = TimePassed(preciseTick.Tick, true);
+            double percent = (percentDifference / 100);
+            double percentTime = (percent * TickDelta);
+
+            return (tickTime + percentTime);
         }
         /// <summary>
         /// Gets time passed from Tick to previousTick.

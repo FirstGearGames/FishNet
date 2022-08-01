@@ -386,7 +386,7 @@ namespace FishNet.Managing.Client
         private void IterateDespawn(CachedNetworkObject cnob)
         {
             bool disableOnDespawn = (cnob.Action == CachedNetworkObject.ActionType.DespawnAndDestroy);
-            _clientObjects.Despawn(cnob.NetworkObject, disableOnDespawn, true);
+            _clientObjects.Despawn(cnob.NetworkObject, disableOnDespawn, false);
         }
 
 

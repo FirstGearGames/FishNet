@@ -88,13 +88,13 @@ namespace FishNet.Object
                  * 
                  * Wait for client-host being initialized before potentially
                  * returning true. */
-                if (!ClientInitialized)
-                    return false;
 
-                ////perf see how this can be removed.
-                ////ClientInitialized is only used for this.
-                //if (!IsClient || !ClientInitialized || !Owner.IsValid || (NetworkManager == null))
-                //    return false;
+                /* Removed this restriction because people may want to use
+                 * base.IsOwner for initializing in OnNetworkStart. While this
+                 * would return true for client only, it wouldn't for host. That
+                 * would be bad. */
+                //if (!ClientInitialized)
+                //return false;
 
                 return Owner.IsLocalClient;
             }

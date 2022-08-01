@@ -339,36 +339,7 @@ namespace FishNet.Component.Animating
                 //Fall through.
                 return true;
             }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        private byte? _cachedComponentIndex;
-        /// <summary>
-        /// Cached ComponentIndex for the NetworkBehaviour this FNA is on. This is because Mirror codes bad.
-        /// </summary>
-        public byte CachedComponentIndex
-        {
-            get
-            {
-                if (_cachedComponentIndex == null)
-                {
-                    //Exceeds value.
-                    if (base.ComponentIndex > 255)
-                    {
-                        Debug.LogError("ComponentIndex is larger than supported type.");
-                        _cachedComponentIndex = 0;
-                    }
-                    //Doesn't exceed value.
-                    else
-                    {
-                        _cachedComponentIndex = (byte)Mathf.Abs(base.ComponentIndex);
-                    }
-                }
-
-                return _cachedComponentIndex.Value;
-            }
-        }
+        }        
         /// <summary>
         /// Layers which need to have their state synchronized. Key is the layer, Value is the state change information.
         /// </summary>

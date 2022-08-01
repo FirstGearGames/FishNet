@@ -72,6 +72,12 @@ public class NetworkHudCanvases : MonoBehaviour
     /// Current state of server socket.
     /// </summary>
     private LocalConnectionState _serverState = LocalConnectionState.Stopped;
+#if !ENABLE_INPUT_SYSTEM
+    /// <summary>
+    /// EventSystem for the project.
+    /// </summary>
+    private EventSystem _eventSystem;
+#endif
     #endregion
 
     void OnGUI()
@@ -121,9 +127,7 @@ public class NetworkHudCanvases : MonoBehaviour
     private void Start()
     {
 #if !ENABLE_INPUT_SYSTEM
-        EventSystem systems = FindObjectOfType<EventSystem>();
-        if (systems == null)
-            gameObject.AddComponent<EventSystem>();
+        SetEventSystem();
         BaseInputModule inputModule = FindObjectOfType<BaseInputModule>();
         if (inputModule == null)
             gameObject.AddComponent<StandaloneInputModule>();
@@ -204,6 +208,8 @@ public class NetworkHudCanvases : MonoBehaviour
             _networkManager.ServerManager.StopConnection(true);
         else
             _networkManager.ServerManager.StartConnection();
+
+        DeselectButtons();
     }
 
 
@@ -216,5 +222,27 @@ public class NetworkHudCanvases : MonoBehaviour
             _networkManager.ClientManager.StopConnection();
         else
             _networkManager.ClientManager.StartConnection();
+
+        DeselectButtons();
+    }
+
+
+    private void SetEventSystem()
+    {
+#if !ENABLE_INPUT_SYSTEM
+        if (_eventSystem != null)
+            return;
+        _eventSystem = FindObjectOfType<EventSystem>();
+        if (_eventSystem == null)
+            _eventSystem = gameObject.AddComponent<EventSystem>();
+#endif
+    }
+
+    private void DeselectButtons()
+    {
+#if !ENABLE_INPUT_SYSTEM
+        SetEventSystem();
+        _eventSystem?.SetSelectedGameObject(null);
+#endif
     }
 }
