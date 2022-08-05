@@ -229,13 +229,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: -1
+  <PrefabId>k__BackingField: -1
   _scenePathHash: 3074121493
-  _sceneId: 13203251278943052711
-  SceneTransformProperties:
-    Position: {x: 5, y: 3, z: 10}
-    Rotation: {x: 0, y: 0, z: 0, w: 1}
-    LocalScale: {x: 4, y: 4, z: 4}
+  <SceneId>k__BackingField: 13203251279314293806
+  <AssetPathHash>k__BackingField: 0
+  _sceneNetworkObjects:
+  - {fileID: 1950515032}
+  <IsNested>k__BackingField: 0
+  <ComponentIndex>k__BackingField: 0
+  _networkBehaviours: []
+  <ParentNetworkObject>k__BackingField: {fileID: 0}
+  <ChildNetworkObjects>k__BackingField: []
+  _isNetworked: 1
+  _isGlobal: 0
+  _disableOnDespawn: 0
 --- !u!114 &1950515033
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248,6 +255,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c71fd7f855ec523429999fc4e14a1928, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _overrideType: 3
+  _setHostVisibility: 1
   _observerConditions:
   - {fileID: 11400000, guid: 2033f54fd2794464bae08fa5a55c8996, type: 2}
 --- !u!1 &1722183419489630397

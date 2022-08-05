@@ -28,11 +28,21 @@ public class DefaultScene : MonoBehaviour
     [SerializeField, Scene]
     private string _offlineScene;
     /// <summary>
+    /// Sets which offline scene to use.
+    /// </summary>
+    /// <param name="sceneName">Scene name to use as the offline scene.</param>
+    public void SetOfflineScene(string sceneName) => _offlineScene = sceneName;
+    /// <summary>
     /// Scene to load when connected. Server and client will load this scene.
     /// </summary>
     [Tooltip("Scene to load when connected. Server and client will load this scene.")]
     [SerializeField, Scene]
     private string _onlineScene;
+    /// <summary>
+    /// Sets which online scene to use.
+    /// </summary>
+    /// <param name="sceneName">Scene name to use as the online scene.</param>
+    public void SetOnlineScene(string sceneName) => _onlineScene = sceneName;
     /// <summary>
     /// Which scenes to replace when loading into OnlineScene.
     /// </summary>
