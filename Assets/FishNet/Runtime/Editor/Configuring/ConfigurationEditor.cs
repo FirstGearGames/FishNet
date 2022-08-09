@@ -1,95 +1,86 @@
 ﻿#if UNITY_EDITOR
-using FishNet.Editing;
+using FishNet.Editing.PrefabCollectionGenerator;
+using FishNet.Object;
+using FishNet.Utility.Extension;
+using FishNet.Utility.Performance;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-namespace FishNet.Configuring.Editing
+namespace FishNet.Editing
 {
-
-    [InitializeOnLoad]
-    internal class ConfigurationEditor : EditorWindow
+    public class ConfigurationEditor : EditorWindow
     {
-
-        #region Private.
-        /// <summary>
-        /// Used to compare if ConfigurationData has changed.
-        /// </summary>
-        private static ConfigurationData _comparerConfiguration = new ConfigurationData();
-        /// <summary>
-        /// True to reload the configuration file.
-        /// </summary>
-        //[System.NonSerialized]
-        //private static bool _reloadFile = true;
-        #endregion
-
-        /// <summary>
-        /// Saves ConfigurationData to disk.
-        /// </summary>
-        private void SaveConfiguration()
-        {
-            string path = Configuration.GetAssetsPath(Configuration.CONFIG_FILE_NAME);
-            Configuration.ConfigurationData.Write(path, true);
-        }
-
 
         [MenuItem("Fish-Networking/Configuration", false, 0)]
         public static void ShowConfiguration()
         {
             SettingsService.OpenProjectSettings("Project/Fish-Networking/Configuration");
-            //EditorWindow window = GetWindow<ConfigurationEditor>();
-            //window.titleContent = new GUIContent("Fish-Networking Configuration");
-            //Dont worry about capping size until it becomes a problem.
-            //const int width = 200;
-            //const int height = 100;
-            //float x = (Screen.currentResolution.width - width);
-            //float y = (Screen.currentResolution.height - height);
-            //window.minSize = new Vector2(width, height);
-            //window.maxSize = new Vector2(x, y);
-        }
-
-        private void OnGUI()
-        {
-            //if (_reloadFile)
-            //    Configuration.LoadConfiguration();
-
-            ConfigurationData data = Configuration.LoadConfigurationData();
-
-            if (data == null)
-                return;
-            data.CopyTo(_comparerConfiguration);
-
-            GUILayout.BeginVertical();
-            GUILayout.BeginScrollView(Vector2.zero, GUILayout.Width(500), GUILayout.Height(800));
-
-            GUILayout.Space(10f);
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(10f);
-            GUILayout.Box(EditingConstants.PRO_ASSETS_LOCKED_TEXT, GUILayout.Width(200f));
-            GUILayout.EndHorizontal();
-            GUILayout.Space(5f);
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(20f);
-            data.StripReleaseBuilds = EditorGUILayout.ToggleLeft("* Strip Release Builds", data.StripReleaseBuilds);
-            GUILayout.EndHorizontal();
-
-            if (data.StripReleaseBuilds)
-            {
-                GUILayout.BeginHorizontal();
-                GUILayout.Space(40f);
-                GUILayout.Box("NOTICE: development builds will not have code stripped. Additionally, if you plan to run as host disable code stripping.", GUILayout.Width(170f));
-                GUILayout.EndHorizontal();
-            }
-
-
-            GUILayout.EndScrollView();
-            GUILayout.EndVertical();
-
-            if (data.HasChanged(_comparerConfiguration))
-                SaveConfiguration();
         }
 
     }
+
+    public class OpenDocumentationMenu : MonoBehaviour
+    {
+        /// <summary>
+        /// Opens the documentation.
+        /// </summary>
+        [MenuItem("Fish-Networking/Documentation", false, int.MaxValue)]
+        public static void OpenDocumentation()
+        {
+            System.Diagnostics.Process.Start("https://fish-networking.gitbook.io/docs/");
+        }
+
+
+    }
+
+
+    public class RebuildSceneIdMenu : MonoBehaviour
+    {
+        /// <summary>
+        /// Rebuilds sceneIds for open scenes.
+        /// </summary>
+        [MenuItem("Fish-Networking/Rebuild SceneIds", false, 20)]
+        public static void RebuildSceneIds()
+        {
+            int generatedCount = 0;
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene s = SceneManager.GetSceneAt(i);
+
+                ListCache<NetworkObject> nobs;
+                SceneFN.GetSceneNetworkObjects(s, false, out nobs);
+                for (int z = 0; z < nobs.Written; z++)
+                {
+                    NetworkObject nob = nobs.Collection[z];
+                    nob.TryCreateSceneID();
+                    EditorUtility.SetDirty(nob);
+                }
+                generatedCount += nobs.Written;
+
+                ListCaches.StoreCache(nobs);
+            }
+
+            Debug.Log($"Generated sceneIds for {generatedCount} objects over {SceneManager.sceneCount} scenes. Please save your open scenes.");
+        }
+
+
+    }
+
+    public class RefreshDefaultPrefabsMenu : MonoBehaviour
+    {
+        /// <summary>
+        /// Rebuilds the DefaultPrefabsCollection file.
+        /// </summary>
+        [MenuItem("Fish-Networking/Refresh Default Prefabs", false, 21)]
+        public static void RebuildDefaultPrefabs()
+        {
+            Debug.Log("Refreshing default prefabs.");
+            Generator.GenerateFull(null, true);
+        }
+
+
+    }
+
 }
 #endif

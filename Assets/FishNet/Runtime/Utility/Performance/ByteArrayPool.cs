@@ -38,6 +38,12 @@ namespace FishNet.Utility.Performance
         /// </summary>
         public static void Store(byte[] buffer)
         {
+            /* Holy cow that's a lot of buffered
+             * buffers. This wouldn't happen under normal
+             * circumstances but if the user is stress
+             * testing connections in one executable perhaps. */
+            if (_byteArrays.Count > 300)
+                return;
             _byteArrays.Enqueue(buffer);
         }
 

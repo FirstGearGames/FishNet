@@ -5,6 +5,7 @@ using FishNet.Object;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace FishNet.Observing
 {
@@ -12,6 +13,7 @@ namespace FishNet.Observing
     /// Controls which clients can see and get messages for an object.
     /// </summary>
     [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Component/NetworkObserver")]
     public sealed class NetworkObserver : MonoBehaviour
     {
         #region Types.
@@ -55,15 +57,16 @@ namespace FishNet.Observing
         /// 
         /// </summary>
         [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")]
+        [FormerlySerializedAs("_setHostVisibility")]
         [SerializeField]
-        private bool _setHostVisibility = true;
+        private bool _updateHostVisibility = true;
         /// <summary>
         /// True to update visibility for clientHost based on if they are an observer or not.
         /// </summary>
-        public bool SetHostVisibility
+        public bool UpdateHostVisibility
         {
-            get => _setHostVisibility;
-            private set => _setHostVisibility = value;
+            get => _updateHostVisibility;
+            private set => _updateHostVisibility = value;
         }
         /// <summary>
         /// 
@@ -133,7 +136,7 @@ namespace FishNet.Observing
 
             //Check to override SetHostVisibility.
             if (!ignoringManager)
-                SetHostVisibility = networkObject.ObserverManager.SetHostVisibility;
+                UpdateHostVisibility = networkObject.ObserverManager.UpdateHostVisibility;
 
             bool observerFound = false;
             for (int i = 0; i < _observerConditions.Count; i++)
@@ -330,6 +333,22 @@ namespace FishNet.Observing
                 return ObserverStateChange.Unchanged;
             else
                 return ObserverStateChange.Added;
+        }
+
+
+        /// <summary>
+        /// Sets a new value for UpdateHostVisibility.
+        /// This does not immediately update renderers.
+        /// You may need to combine with NetworkObject.SetRenderersVisible(bool).
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetUpdateHostVisibility(bool value)
+        {
+            //Unchanged.
+            if (value == UpdateHostVisibility)
+                return;
+
+            UpdateHostVisibility = value;
         }
 
     }

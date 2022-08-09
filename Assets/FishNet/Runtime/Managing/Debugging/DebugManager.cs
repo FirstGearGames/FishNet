@@ -6,6 +6,7 @@ namespace FishNet.Managing.Debugging
     /// A container for debugging.
     /// </summary>
     [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Manager/DebugManager")]
     public class DebugManager : MonoBehaviour
     {
         public bool ObserverRpcLinks = true;

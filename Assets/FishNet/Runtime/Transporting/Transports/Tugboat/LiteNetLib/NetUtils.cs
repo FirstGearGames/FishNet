@@ -34,7 +34,7 @@ namespace LiteNetLib
 
             if (!IPAddress.TryParse(hostStr, out var ipAddress))
             {
-                if (NetSocket.IPv6Support)
+                if (NetManager.IPv6Support)
                     ipAddress = ResolveAddress(hostStr, AddressFamily.InterNetworkV6);
                 if (ipAddress == null)
                     ipAddress = ResolveAddress(hostStr, AddressFamily.InterNetwork);
@@ -102,23 +102,24 @@ namespace LiteNetLib
                             targetList.Add(address.ToString());
                     }
                 }
+
+	            //Fallback mode (unity android)
+	            if (targetList.Count == 0)
+	            {
+	                IPAddress[] addresses = Dns.GetHostEntry(Dns.GetHostName()).AddressList;
+	                foreach (IPAddress ip in addresses)
+	                {
+	                    if((ipv4 && ip.AddressFamily == AddressFamily.InterNetwork) ||
+	                       (ipv6 && ip.AddressFamily == AddressFamily.InterNetworkV6))
+	                        targetList.Add(ip.ToString());
+	                }
+	            }
             }
             catch
             {
                 //ignored
             }
-
-            //Fallback mode (unity android)
-            if (targetList.Count == 0)
-            {
-                IPAddress[] addresses = Dns.GetHostEntry(Dns.GetHostName()).AddressList;
-                foreach (IPAddress ip in addresses)
-                {
-                    if((ipv4 && ip.AddressFamily == AddressFamily.InterNetwork) ||
-                       (ipv6 && ip.AddressFamily == AddressFamily.InterNetworkV6))
-                        targetList.Add(ip.ToString());
-                }
-            }
+            
             if (targetList.Count == 0)
             {
                 if(ipv4)
@@ -149,7 +150,7 @@ namespace LiteNetLib
         // ===========================================
         internal static void PrintInterfaceInfos()
         {
-            NetDebug.WriteForce(NetLogLevel.Info, "IPv6Support: {0}", NetSocket.IPv6Support);
+            NetDebug.WriteForce(NetLogLevel.Info, "IPv6Support: {0}", NetManager.IPv6Support);
             try
             {
                 foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())

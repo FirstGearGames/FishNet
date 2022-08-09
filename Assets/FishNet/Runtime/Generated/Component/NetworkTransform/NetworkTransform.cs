@@ -20,7 +20,9 @@ namespace FishNet.Component.Transforming
 {
     /// <summary> 
     /// A somewhat basic but reliable NetworkTransform that will be improved upon greatly after release.
-    /// </summary>   
+    /// </summary>
+    [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Component/NetworkTransform")]
     public class NetworkTransform : NetworkBehaviour
     {
         #region Types.
@@ -261,7 +263,9 @@ namespace FishNet.Component.Transforming
         [Tooltip("How many ticks to extrapolate.")]
         [Range(0, 1024)]
         [SerializeField]
+#pragma warning disable CS0414 //Not in use.
         private ushort _extrapolation = 2;
+#pragma warning restore CS0414 //Not in use.
         /// <summary>
         /// True to enable teleport threshhold.
         /// </summary>
@@ -301,11 +305,21 @@ namespace FishNet.Component.Transforming
         [SerializeField]
         private bool _synchronizePosition = true;
         /// <summary>
+        /// Sets if to synchronize position.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetSynchronizePosition(bool value) => _synchronizePosition = value;
+        /// <summary>
         /// Axes to snap on position.
         /// </summary>
         [Tooltip("Axes to snap on position.")]
         [SerializeField]
         private SnappedAxes _positionSnapping = new SnappedAxes();
+        /// <summary>
+        /// Sets which Position axes to snap.
+        /// </summary>
+        /// <param name="axes">Axes to snap.</param>
+        public void SetPositionSnapping(SnappedAxes axes) => _positionSnapping = axes;
         /// <summary>
         /// True to synchronize rotation. Even while checked only changed values are sent.
         /// </summary>
@@ -313,11 +327,21 @@ namespace FishNet.Component.Transforming
         [SerializeField]
         private bool _synchronizeRotation = true;
         /// <summary>
+        /// Sets if to synchronize rotation.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetSynchronizeRotation(bool value) => _synchronizeRotation = value;
+        /// <summary>
         /// Axes to snap on rotation.
         /// </summary>
         [Tooltip("Axes to snap on rotation.")]
         [SerializeField]
         private SnappedAxes _rotationSnapping = new SnappedAxes();
+        /// <summary>
+        /// Sets which Scale axes to snap.
+        /// </summary>
+        /// <param name="axes">Axes to snap.</param>
+        public void SetRotationSnapping(SnappedAxes axes) => _rotationSnapping = axes;
         /// <summary>
         /// True to synchronize scale. Even while checked only changed values are sent.
         /// </summary>
@@ -325,11 +349,21 @@ namespace FishNet.Component.Transforming
         [SerializeField]
         private bool _synchronizeScale = true;
         /// <summary>
+        /// Sets if to synchronize scale.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetSynchronizeScale(bool value) => _synchronizeScale = value;
+        /// <summary>
         /// Axes to snap on scale.
         /// </summary>
         [Tooltip("Axes to snap on scale.")]
         [SerializeField]
         private SnappedAxes _scaleSnapping = new SnappedAxes();
+        /// <summary>
+        /// Sets which Scale axes to snap.
+        /// </summary>
+        /// <param name="axes">Axes to snap.</param>
+        public void SetScaleSnapping(SnappedAxes axes) => _scaleSnapping = axes;
         #endregion
 
         #region Private.

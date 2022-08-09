@@ -24,6 +24,7 @@ namespace FishNet
             string[] fishNetDefines = new string[]
             {
                 "FISHNET",
+                
             };
             bool modified = false;
             //Now add FN defines.

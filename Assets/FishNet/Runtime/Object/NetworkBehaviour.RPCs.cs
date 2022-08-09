@@ -46,7 +46,7 @@ namespace FishNet.Object
         /// <summary>
         /// Called when buffered RPCs should be sent.
         /// </summary>
-        internal void OnSendBufferedRpcs(NetworkConnection conn)
+        internal void SendBufferedRpcs(NetworkConnection conn)
         {
             TransportManager tm = _networkObjectCache.NetworkManager.TransportManager;
             foreach ((PooledWriter writer, Channel ch) in _bufferedRpcs.Values)

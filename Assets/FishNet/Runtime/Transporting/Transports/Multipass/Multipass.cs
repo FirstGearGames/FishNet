@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace FishNet.Transporting.Multipass
 {
+    [AddComponentMenu("FishNet/Transport/Multipass")]
     public class Multipass : Transport
     {
         #region Types.

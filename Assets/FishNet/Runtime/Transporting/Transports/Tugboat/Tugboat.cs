@@ -9,6 +9,7 @@ using UnityEngine;
 namespace FishNet.Transporting.Tugboat
 {
     [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Transport/Tugboat")]
     public class Tugboat : Transport
     {
 
@@ -23,16 +24,6 @@ namespace FishNet.Transporting.Tugboat
         private int _unreliableMTU = 1023;
 
         [Header("Server")]
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("How the server should respond when it suspects a client is performing an attack.")]
-        [SerializeField]
-        private AttackResponseType _attackResponseType = AttackResponseType.WarnAndKick;
-        /// <summary>
-        /// How the server should respond when it suspects a client is performing an attack.
-        /// </summary>
-        public AttackResponseType AttackResponseType => _attackResponseType;
         /// <summary>
         /// IPv4 address to bind server to.
         /// </summary>
@@ -414,7 +405,7 @@ namespace FishNet.Transporting.Tugboat
         {
             _server.Initialize(this, _unreliableMTU);
             UpdateTimeout();
-            return _server.StartConnection(_port, _maximumClients, AttackResponseType, _ipv4BindAddress, _ipv6BindAddress);
+            return _server.StartConnection(_port, _maximumClients, _ipv4BindAddress, _ipv6BindAddress);
         }
 
         /// <summary>

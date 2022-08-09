@@ -16,6 +16,7 @@ namespace FishNet.Managing.Client
     /// A container for local client data and actions.
     /// </summary>
     [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Manager/ClientManager")]
     public sealed partial class ClientManager : MonoBehaviour
     {
         #region Public.

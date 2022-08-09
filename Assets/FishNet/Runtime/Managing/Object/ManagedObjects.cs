@@ -177,7 +177,7 @@ namespace FishNet.Managing.Object
                          * the clientHost likely lost visibility. When this is the case
                          * update clientHost renderers. */
                         if (NetworkManager.ServerManager.Objects.Spawned.ContainsKey(nob.ObjectId))
-                            nob.SetHostVisibility(false);
+                            nob.SetRenderersVisible(false);
                         /* No longer spawned on the server, can
                          * deactivate on the client. */
                         else
@@ -283,7 +283,7 @@ namespace FishNet.Managing.Object
 
             //If being added as client and is also server.
             if (!asServer && NetworkManager.IsServer)
-                nob.SetHostVisibility(true);
+                nob.SetRenderersVisible(true);
         }
 
         /// <summary>

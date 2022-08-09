@@ -44,19 +44,18 @@ namespace FishNet.Object
         /// <summary>
         /// Sets the renderer visibility for clientHost.
         /// </summary>
-        /// <param name="visible"></param>
-        internal void SetHostVisibility(bool visible)
+        /// <param name="visible">True if renderers are to be visibile.</param>
+        /// <param name="force">True to skip blocking checks.</param>
+        public void SetRenderersVisible(bool visible, bool force = false)
         {
-            if (NetworkObserver != null && !NetworkObserver.SetHostVisibility)
-                return;
-            /* If renderers are not set then the object
-            * was never despawned. This means the renderers
-            * could not possibly be hidden. */
-            if (visible && !_renderersPopulated)
-                return;
+            if (!force)
+            {
+                if (NetworkObserver != null && !NetworkObserver.UpdateHostVisibility)
+                    return;
+            }
 
-            if (!visible && !_renderersPopulated)
-            { 
+            if (!_renderersPopulated)
+            {
                 _renderers = GetComponentsInChildren<Renderer>(true);
                 _renderersPopulated = true;
             }
@@ -127,6 +126,13 @@ namespace FishNet.Object
                  * and return unchanged because nothing should process
                  * given the connection isnt active. */
                 Observers.Remove(connection);
+                return ObserverStateChange.Unchanged;
+            }
+            else if (IsDeinitializing)
+            {
+                /* If object is deinitializing it's either being despawned
+                 * this frame or it's not spawned. If we've made it this far,
+                 * it's most likely being despawned. */
                 return ObserverStateChange.Unchanged;
             }
 

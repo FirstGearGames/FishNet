@@ -1,5 +1,4 @@
-﻿using FishNet.Utility.Extension;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -275,7 +274,7 @@ namespace LiteNetLib
         {
             int error = Marshal.GetLastWin32Error();
             if (UnixMode)
-                return NativeErrorToSocketError.TryGetValueIL2CPP(error, out var err)
+                return NativeErrorToSocketError.TryGetValue(error, out var err)
                     ? err
                     : SocketError.SocketError;
             return (SocketError)error;
@@ -285,7 +284,7 @@ namespace LiteNetLib
         {
             int error = Marshal.GetLastWin32Error();
             if (UnixMode)
-                return NativeErrorToSocketError.TryGetValueIL2CPP(error, out var err)
+                return NativeErrorToSocketError.TryGetValue(error, out var err)
                     ? new SocketException((int)err)
                     : new SocketException((int)SocketError.SocketError);
             return new SocketException(error);

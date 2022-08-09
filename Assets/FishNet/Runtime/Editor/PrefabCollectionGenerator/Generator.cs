@@ -252,11 +252,11 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// <summary>
         /// Generates prefabs by iterating all files within settings parameters.
         /// </summary>
-        public static void GenerateFull(Settings settings = null)
+        public static void GenerateFull(Settings settings = null, bool forced = false)
         {
             if (settings == null)
                 settings = Settings.Load();
-            if (!settings.Enabled)
+            if (!forced && !settings.Enabled)
                 return;
             bool log = settings.LogToConsole;
 

@@ -58,10 +58,6 @@ namespace FishNet.Transporting.Tugboat.Server
         /// </summary>
         private Queue<Packet> _outgoing = new Queue<Packet>();
         /// <summary>
-        /// PossibleAttackEvents which need to be handled.
-        /// </summary>
-        private ConcurrentQueue<int> _possibleAttackEvents = new ConcurrentQueue<int>();
-        /// <summary>
         /// ConnectionEvents which need to be handled.
         /// </summary>
         private Queue<RemoteConnectionEvent> _remoteConnectionEvents = new Queue<RemoteConnectionEvent>();
@@ -90,10 +86,6 @@ namespace FishNet.Transporting.Tugboat.Server
         /// Locks the NetManager to stop it.
         /// </summary>
         private readonly object _stopLock = new object();
-        /// <summary>
-        /// Attack response type to use.
-        /// </summary>
-        private AttackResponseType _attackResponseType;
         #endregion
 
         ~ServerSocket()
@@ -129,13 +121,11 @@ namespace FishNet.Transporting.Tugboat.Server
         {
             EventBasedNetListener listener = new EventBasedNetListener();
             listener.ConnectionRequestEvent += Listener_ConnectionRequestEvent;
-            if (_attackResponseType != AttackResponseType.Disabled)
-                listener.PossibleAttackEvent += Listener_PossibleAttackEvent;
             listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
             listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
-            _server = new NetManager(listener, null, _attackResponseType);
+            _server = new NetManager(listener);
             _server.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
             UpdateTimeout(_timeout);
@@ -189,15 +179,6 @@ namespace FishNet.Transporting.Tugboat.Server
 
                 StopConnection();
             }
-        }
-
-        /// <summary>
-        /// Called when the server suspects a client may be performing an attack.
-        /// </summary>
-        /// <param name="peer"></param>
-        private void Listener_PossibleAttackEvent(NetPeer peer)
-        {
-            _possibleAttackEvents.Enqueue(peer.Id);
         }
 
         /// <summary>
@@ -255,7 +236,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Starts the server.
         /// </summary>
-        internal bool StartConnection(ushort port, int maximumClients, AttackResponseType attackResponseType, string ipv4BindAddress, string ipv6BindAddress)
+        internal bool StartConnection(ushort port, int maximumClients, string ipv4BindAddress, string ipv6BindAddress)
         {
             if (base.GetConnectionState() != LocalConnectionState.Stopped)
                 return false;
@@ -265,7 +246,6 @@ namespace FishNet.Transporting.Tugboat.Server
             //Assign properties.
             _port = port;
             _maximumClients = maximumClients;
-            _attackResponseType = attackResponseType;
             _ipv4BindAddress = ipv4BindAddress;
             _ipv6BindAddress = ipv6BindAddress;
             ResetQueues();
@@ -323,7 +303,6 @@ namespace FishNet.Transporting.Tugboat.Server
             _localConnectionStates.Clear();
             base.ClearPacketQueue(ref _incoming);
             base.ClearPacketQueue(ref _outgoing);
-            while (_possibleAttackEvents.TryDequeue(out _)) ;
             _remoteConnectionEvents.Clear();
         }
 
@@ -445,7 +424,7 @@ namespace FishNet.Transporting.Tugboat.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void IterateIncoming()
         {
-            _server?.PollEvents(base.Transport.NetworkManager.TimeManager.Tick);
+            _server?.PollEvents();
 
             /* Run local connection states first so we can begin
              * to read for data at the start of the frame, as that's
@@ -463,20 +442,6 @@ namespace FishNet.Transporting.Tugboat.Server
                 {
                     StopSocketOnThread();
                     return;
-                }
-            }
-
-            bool canLogWarning = base.Transport.NetworkManager.CanLog(LoggingType.Warning);
-            //Go through attack events first.
-            while (_possibleAttackEvents.TryDequeue(out int connectionId))
-            {
-                if (canLogWarning)
-                {
-                    string msg = string.Empty;
-                    if (_attackResponseType == AttackResponseType.WarnAndKick)
-                        msg = " Client will be kicked.";
-
-                    Debug.LogWarning($"ConnectionId {connectionId} may be performing an attack.{msg}");
                 }
             }
 

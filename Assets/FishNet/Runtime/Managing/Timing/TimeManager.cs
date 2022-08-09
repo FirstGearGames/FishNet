@@ -21,6 +21,7 @@ namespace FishNet.Managing.Timing
     /// Provides data and actions for network time and tick based systems.
     /// </summary>
     [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Manager/TimeManager")]
     public sealed partial class TimeManager : MonoBehaviour
     {
         //#region Types.
@@ -934,7 +935,6 @@ namespace FishNet.Managing.Timing
         /// Tries to iterate incoming or outgoing data.
         /// </summary>
         /// <param name="incoming">True to iterate incoming.</param>
-        /// <param name="isTick">True if call is occuring during a tick.</param>
         private void TryIterateData(bool incoming)
         {
             if (incoming)

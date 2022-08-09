@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace FishNet.Component.Prediction
 {
+    [AddComponentMenu("FishNet/Component/PredictedObject")]
     public partial class PredictedObject : NetworkBehaviour
     {
         #region Types.

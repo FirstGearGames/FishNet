@@ -6,6 +6,7 @@ namespace FishNet.Component.Utility
     /// <summary>
     /// Add to any object to display current ping(round trip time).
     /// </summary>
+    [AddComponentMenu("FishNet/Component/PingDisplay")]
     public class PingDisplay : MonoBehaviour
     {
         #region Types.

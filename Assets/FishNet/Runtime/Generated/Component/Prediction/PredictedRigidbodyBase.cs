@@ -11,6 +11,7 @@ namespace FishNet.Component.Prediction
     /// </summary>
     [AddComponentMenu("")]
     [APIExclude]
-    public abstract class PredictedRigidbodyBase : MonoBehaviour { }
+    public abstract class PredictedRigidbodyBase : MonoBehaviour { }  
+    //Remove on 2023/01/01
 
 }

@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace FishNet.Component.Animating
 {
+    [AddComponentMenu("FishNet/Component/NetworkAnimator")]
     public class NetworkAnimator : NetworkBehaviour
     {
         #region Types.

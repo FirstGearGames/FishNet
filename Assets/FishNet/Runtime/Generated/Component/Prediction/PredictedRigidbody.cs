@@ -9,7 +9,8 @@ namespace FishNet.Component.Prediction
 {
     [AddComponentMenu("")]
     [APIExclude]
-    [Obsolete("PredictedRigidbody is obsolete. Please remove this component and use PredictedObject on your gameObject's root.")]
+    [Obsolete("PredictedRigidbody is obsolete. Please remove this component and use PredictedObject on your gameObject's root.")] 
+    //Remove on 2023/01/01
     public class PredictedRigidbody : PredictedRigidbodyBase { }
 
 

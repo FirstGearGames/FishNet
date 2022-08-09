@@ -30,6 +30,11 @@ namespace LiteNetLib.Utils
             _position += count;
         }
 
+        public void SetPosition(int position)
+        {
+            _position = position;
+        }
+
         public void SetSource(NetDataWriter dataWriter)
         {
             _data = dataWriter.Data;
@@ -617,7 +622,7 @@ namespace LiteNetLib.Utils
             if (AvailableBytes >= 2)
             {
                 ushort strSize = PeekUShort();
-                if (AvailableBytes >= strSize + 2)
+                if (AvailableBytes >= strSize + 1)
                 {
                     result = GetString();
                     return true;

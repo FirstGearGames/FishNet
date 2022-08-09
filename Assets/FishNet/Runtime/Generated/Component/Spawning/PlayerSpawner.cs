@@ -12,6 +12,7 @@ namespace FishNet.Component.Spawning
     /// Spawns a player object for clients when they connect.
     /// Must be placed on or beneath the NetworkManager object.
     /// </summary>
+    [AddComponentMenu("FishNet/Component/PlayerSpawner")]
     public class PlayerSpawner : MonoBehaviour
     {
         #region Public.

@@ -451,7 +451,7 @@ namespace FishNet.Managing.Server
                 int count = _spawnCache.Written;
                 List<NetworkObject> collection = _spawnCache.Collection;
                 for (int i = 0; i < count; i++)
-                    collection[i].SetHostVisibility(networkObject.Observers.Contains(NetworkManager.ClientManager.Connection));
+                    collection[i].SetRenderersVisible(networkObject.Observers.Contains(NetworkManager.ClientManager.Connection));
             }
         }
 

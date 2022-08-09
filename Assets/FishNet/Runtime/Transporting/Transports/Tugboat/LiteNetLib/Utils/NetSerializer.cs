@@ -3,7 +3,6 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Net;
 using System.Runtime.Serialization;
-using FishNet.Utility.Extension;
 
 namespace LiteNetLib.Utils
 {
@@ -644,7 +643,7 @@ namespace LiteNetLib.Utils
                     serialzer = new IPEndPointSerializer<T>();
                 else
                 {
-                    _registeredTypes.TryGetValueIL2CPP(elementType, out var customType);
+                    _registeredTypes.TryGetValue(elementType, out var customType);
                     if (customType != null)
                         serialzer = customType.Get<T>();
                 }

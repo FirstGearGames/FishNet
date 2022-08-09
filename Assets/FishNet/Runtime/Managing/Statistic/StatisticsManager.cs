@@ -3,6 +3,8 @@ using UnityEngine;
 namespace FishNet.Managing.Statistic
 {
 
+    [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Manager/StatisticsManager")]
     public class StatisticsManager : MonoBehaviour
     {
         /// <summary>

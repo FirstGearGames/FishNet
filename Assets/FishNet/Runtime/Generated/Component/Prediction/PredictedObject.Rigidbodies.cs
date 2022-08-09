@@ -177,15 +177,6 @@ namespace FishNet.Component.Prediction
         #endregion
 
         #region Rigidbody.
-        #region Type.
-        public struct RigidbodyState
-        {
-            public Vector3 Position;
-            public Quaternion Rotation;
-            public Vector3 Velocity;
-            public Vector3 AngularVelocity;
-        }
-        #endregion
 
         #region Private.
         /// <summary>
@@ -226,8 +217,13 @@ namespace FishNet.Component.Prediction
             //Update transform and rigidbody.
             _rigidbody.transform.position = _receivedRigidbodyState.Value.Position;
             _rigidbody.transform.rotation = _receivedRigidbodyState.Value.Rotation;
-            _rigidbody.velocity = _receivedRigidbodyState.Value.Velocity;
-            _rigidbody.angularVelocity = _receivedRigidbodyState.Value.AngularVelocity;
+            bool isKinematic = _receivedRigidbodyState.Value.IsKinematic;
+            _rigidbody.isKinematic = isKinematic;
+            if (!isKinematic)
+            {
+                _rigidbody.velocity = _receivedRigidbodyState.Value.Velocity;
+                _rigidbody.angularVelocity = _receivedRigidbodyState.Value.AngularVelocity;
+            }
             //Set prediction defaults.
             _velocityBaseline = null;
             _angularVelocityBaseline = null;
@@ -266,6 +262,7 @@ namespace FishNet.Component.Prediction
             {
                 Position = _rigidbody.transform.position,
                 Rotation = _rigidbody.transform.rotation,
+                IsKinematic = _rigidbody.isKinematic,
                 Velocity = _rigidbody.velocity,
                 AngularVelocity = _rigidbody.angularVelocity
             };
@@ -293,16 +290,6 @@ namespace FishNet.Component.Prediction
         #endregion
 
         #region Rigidbody2D.
-        #region Type.
-        public struct Rigidbody2DState
-        {
-            public Vector3 Position;
-            public Quaternion Rotation;
-            public Vector3 Velocity;
-            public float AngularVelocity;
-        }
-        #endregion
-
         #region Private.
         /// <summary>
         /// Last SpectatorMotorState received from the server. 
@@ -342,8 +329,13 @@ namespace FishNet.Component.Prediction
             //Update transform and rigidbody.
             _rigidbody2d.transform.position = _receivedRigidbody2DState.Value.Position;
             _rigidbody2d.transform.rotation = _receivedRigidbody2DState.Value.Rotation;
-            _rigidbody2d.velocity = _receivedRigidbody2DState.Value.Velocity;
-            _rigidbody2d.angularVelocity = _receivedRigidbody2DState.Value.AngularVelocity;
+            bool simulated = _receivedRigidbody2DState.Value.Simulated;
+            _rigidbody2d.simulated = simulated;
+            if (!simulated)
+            {
+                _rigidbody2d.velocity = _receivedRigidbody2DState.Value.Velocity;
+                _rigidbody2d.angularVelocity = _receivedRigidbody2DState.Value.AngularVelocity;
+            }
             //Set prediction defaults.
             _velocityBaseline2D = null;
             _angularVelocityBaseline2D = null;
@@ -383,6 +375,7 @@ namespace FishNet.Component.Prediction
             {
                 Position = _rigidbody2d.transform.position,
                 Rotation = _rigidbody2d.transform.rotation,
+                Simulated = _rigidbody2d.simulated,
                 Velocity = _rigidbody2d.velocity,
                 AngularVelocity = _rigidbody2d.angularVelocity
             };

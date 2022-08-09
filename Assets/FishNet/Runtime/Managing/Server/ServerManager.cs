@@ -21,6 +21,7 @@ namespace FishNet.Managing.Server
     /// A container for server data and actions.
     /// </summary>
     [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Manager/ServerManager")]
     public sealed partial class ServerManager : MonoBehaviour
     {
         #region Public.
@@ -276,7 +277,7 @@ namespace FishNet.Managing.Server
                     foreach (NetworkObject nob in Objects.Spawned.Values)
                     {
                         if (!nob.Observers.Contains(conn))
-                            nob.SetHostVisibility(false);
+                            nob.SetRenderersVisible(false);
                     }
                 }
             }

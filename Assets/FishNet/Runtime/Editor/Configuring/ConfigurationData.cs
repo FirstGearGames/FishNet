@@ -9,6 +9,13 @@ using UnityEditor;
 
 namespace FishNet.Configuring
 {
+     
+    public enum StrippingTypes : int
+    { 
+        Redirect = 0,
+        Empty_Experimental = 1,
+        //MoveAndEmpty = 2
+    }
 
     public class ConfigurationData
     {
@@ -21,6 +28,7 @@ namespace FishNet.Configuring
         public bool IsHeadless;
 
         public bool StripReleaseBuilds = false;
+        public int StrippingType;
     }
 
     public static class ConfigurationDataExtension

@@ -11,6 +11,7 @@ using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 /// <summary>
 /// Add to a NetworkManager object to change between Online and Offline scene based on connection states of the server or client.
 /// </summary>
+[AddComponentMenu("FishNet/Component/DefaultScene")]
 public class DefaultScene : MonoBehaviour
 {
 

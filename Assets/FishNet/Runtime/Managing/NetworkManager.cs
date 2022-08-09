@@ -32,6 +32,7 @@ namespace FishNet.Managing
     /// </summary>
     [DefaultExecutionOrder(short.MinValue)]
     [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Manager/NetworkManager")]
     public sealed partial class NetworkManager : MonoBehaviour
     {
         #region Types.
@@ -296,6 +297,7 @@ namespace FishNet.Managing
             TransportManager.InitializeOnceInternal(this);
             ServerManager.InitializeOnceInternal(this);
             ClientManager.InitializeOnceInternal(this);
+            ObserverManager.InitializeOnceInternal(this);
             RollbackManager.InitializeOnceInternal(this);
             StatisticsManager.InitializeOnceInternal(this);
         }

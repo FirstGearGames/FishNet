@@ -21,7 +21,7 @@ namespace LiteNetLib.Utils
         // 1000 readers after: .8MB GC, 18ms
         private static readonly UTF8Encoding _uTF8Encoding = new UTF8Encoding(false, true);
         public const int StringBufferMaxLength = 1024 * 32; // <- short.MaxValue + 1
-        private static readonly byte[] _stringBuffer = new byte[StringBufferMaxLength];
+        private readonly byte[] _stringBuffer = new byte[StringBufferMaxLength];
 
         public NetDataWriter() : this(true, InitialSize)
         {
@@ -79,6 +79,15 @@ namespace LiteNetLib.Utils
             if (_data.Length < newSize)
             {
                 Array.Resize(ref _data, Math.Max(newSize, _data.Length * 2));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void EnsureFit(int additionalSize)
+        {
+            if (_data.Length < _position + additionalSize)
+            {
+                Array.Resize(ref _data, Math.Max(_position + additionalSize, _data.Length * 2));
             }
         }
 
