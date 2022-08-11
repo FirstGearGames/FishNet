@@ -37,8 +37,8 @@ namespace FishNet.CodeGenerating.Helping
         private MethodReference NetworkManager_LogWarning_MethodRef;
         private MethodReference NetworkManager_LogError_MethodRef;
         internal MethodReference Debug_LogCommon_MethodRef;
-        private MethodReference Debug_LogWarning_MethodRef;
-        private MethodReference Debug_LogError_MethodRef;
+        internal MethodReference Debug_LogWarning_MethodRef;
+        internal MethodReference Debug_LogError_MethodRef;
         internal MethodReference Comparers_EqualityCompare_MethodRef;
         internal MethodReference Comparers_IsDefault_MethodRef;
         internal MethodReference IsServer_MethodRef;

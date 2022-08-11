@@ -611,6 +611,21 @@ namespace FishNet.CodeGenerating.Processing
                 ClientRetIfNoReconcile(reconcileMd, predictionFields);
                 //      _clientHasReconcileData = false;
                 processor.Add(ClientSetHasReconcileData(reconcileMd, false, predictionFields));
+
+                //      if (base.IsServer) invoke reconciles, but do not reconcile.
+                /* ClientHost does not reconcile but script may be dependent on the
+                 * pre/post reconcile events so invoke those anyway. */
+                Instruction afterClearReconcileInst = processor.Create(OpCodes.Nop);
+                processor.Emit(OpCodes.Ldarg_0);
+                processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.IsServer_MethodRef);
+                processor.Emit(OpCodes.Brfalse, afterClearReconcileInst);
+                //Invoke OnPre/PostReconcile.
+                processor.Add(InvokeOnReconcile(reconcileMd, true));
+                processor.Add(InvokeOnReconcile(reconcileMd, false));
+                //Exit method.
+                processor.Emit(OpCodes.Ret);
+                processor.Append(afterClearReconcileInst);
+
                 //Set data received to the reconcile parameter so that clients access the right data.
                 SetReconcileData(reconcileMd, predictionFields);
                 //      uint reconcileTick = r.Generated___Tick.
@@ -659,7 +674,7 @@ namespace FishNet.CodeGenerating.Processing
                 typeDef.Methods.Add(md);
                 CodegenSession.ImportReference(md);
             }
-
+             
             ILProcessor processor = md.Body.GetILProcessor();
 
             GenericInstanceType genericDataLst;
@@ -744,7 +759,7 @@ namespace FishNet.CodeGenerating.Processing
 
             ParameterDefinition asServerPd = replicateMd.Parameters[1];
 
-            //      if (asServer && !base.OwnerIsActive) return;
+            //      if (asServer && !base.Owner.IsActive) return;
             Instruction afterNoOwnerCheckInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Ldarg, asServerPd);
             processor.Emit(OpCodes.Brfalse_S, afterNoOwnerCheckInst);
@@ -752,6 +767,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.Owner_MethodRef);
             processor.Emit(OpCodes.Callvirt, CodegenSession.ObjectHelper.NetworkConnection_IsActive_MethodRef);
             processor.Emit(OpCodes.Brtrue_S, afterNoOwnerCheckInst);
+            ClearReplicateCache(true, false);
             processor.Emit(OpCodes.Ret);
             processor.Append(afterNoOwnerCheckInst);
 
@@ -762,19 +778,37 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.IsOwner_MethodRef);
             processor.Emit(OpCodes.Brtrue_S, afterClientCheckInst);
+            ClearReplicateCache(false, true);
             processor.Emit(OpCodes.Ret);
             processor.Append(afterClientCheckInst);
 
-            //      if (asServer && base.IsOwner) exit method; already ran on client side.
+            //      if (asServer && base.IsOwner) 
+            //clientHost does not replicate.
             Instruction afterAsServerIsClientInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Ldarg, asServerPd);
             processor.Emit(OpCodes.Brfalse_S, afterAsServerIsClientInst);
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.IsOwner_MethodRef);
             processor.Emit(OpCodes.Brfalse_S, afterAsServerIsClientInst);
+            ClearReplicateCache(true, true);
             processor.Emit(OpCodes.Ret);
             processor.Append(afterAsServerIsClientInst);
 
+            void ClearReplicateCache(bool server, bool client)
+            {
+                if (server)
+                {
+                    processor.Emit(OpCodes.Ldarg_0);
+                    processor.Emit(OpCodes.Ldc_I4_1);
+                    processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.ClearReplicateCache_MethodRef);
+                }
+                if (client)
+                {
+                    processor.Emit(OpCodes.Ldarg_0);
+                    processor.Emit(OpCodes.Ldc_I4_0);
+                    processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.ClearReplicateCache_MethodRef);
+                }
+            }
         }
 
         /// <summary>
@@ -1211,6 +1245,10 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ClientReplayingData);
             processor.Emit(OpCodes.Brtrue, afterNetworkLogicInst);
+            //      if (base.IsServer) skip sending, host doesn't need to send.
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.IsServer_MethodRef);
+            processor.Emit(OpCodes.Brtrue, afterNetworkLogicInst);
 
             //Sets isDefault to if dataPd is default value.
             VariableDefinition isDefaultVd;
@@ -1224,6 +1262,7 @@ namespace FishNet.CodeGenerating.Processing
             //Sets TimeManager.LocalTick to data.
             ClientSetReplicateDataTick(replicateMd, replicateDataPd, predictionFields, isDefaultVd);
             //Adds data to client buffer.
+
             //      if (!isDefaultData) _replicateDatas.Add....
             Instruction afterAddToBufferInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Ldloc, isDefaultVd);
@@ -1576,7 +1615,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Call, Unity_GetGameObject_MethodRef);
             processor.Emit(OpCodes.Callvirt, Unity_GetScene_MethodRef);
             processor.Emit(OpCodes.Stloc, objectSceneVd);
-            
+
             //      PhysicsScene ps3d = objectScene.GetPhysicsScene();
             processor.Emit(OpCodes.Ldloc, objectSceneVd);
             processor.Emit(OpCodes.Call, Unity_GetPhysicsScene3D_MethodRef);

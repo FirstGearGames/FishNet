@@ -21,6 +21,7 @@ namespace FishNet.CodeGenerating.Helping
         //Names.
         internal string FullName;
         //Prediction.
+        internal MethodReference ClearReplicateCache_MethodRef;
         internal MethodReference SetLastReconcileTick_MethodRef;
         internal MethodReference TransformMayChange_MethodRef;
         internal MethodReference SendReplicateRpc_MethodRef;
@@ -103,6 +104,8 @@ namespace FishNet.CodeGenerating.Helping
                 //Prediction.
                 else if (mi.Name == nameof(NetworkBehaviour.SetLastReconcileTick))
                     SetLastReconcileTick_MethodRef = CodegenSession.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.ClearReplicateCache))
+                    ClearReplicateCache_MethodRef = CodegenSession.ImportReference(mi);
                 //Misc.
                 else if (mi.Name == nameof(NetworkBehaviour.TransformMayChange))
                     TransformMayChange_MethodRef = CodegenSession.ImportReference(mi);

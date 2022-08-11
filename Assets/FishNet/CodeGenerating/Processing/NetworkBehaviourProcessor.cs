@@ -73,22 +73,35 @@ namespace FishNet.CodeGenerating.Processing
             TypeDefinition copyTypeDef = typeDef;
             TypeDefinition firstTypeDef = typeDef;
 
+            //Make collection of NBs to processor.
+            List<TypeDefinition> typeDefs = new List<TypeDefinition>();
             do
+            {
+                typeDefs.Add(copyTypeDef);
+                copyTypeDef = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(copyTypeDef);
+            } while (copyTypeDef != null);
+
+
+            /* Iterate from child-most to parent first
+             * while creating network initialize methods.
+             * This is because the child-most must call the parents
+             * base awake methods. */
+            foreach (TypeDefinition td in typeDefs)
             {
                 /* Class was already processed. Since child most is processed first
                  * this can occur if a class is inherited by multiple types. If a class
                  * has already been processed then there is no reason to scale up the hierarchy
                  * because it would have already been done. */
-                if (HasClassBeenProcessed(copyTypeDef))
-                    break;
+                if (HasClassBeenProcessed(td))
+                    continue;
 
                 //Disallow nested network behaviours.
-                ICollection<TypeDefinition> nestedTds = copyTypeDef.NestedTypes;
+                ICollection<TypeDefinition> nestedTds = td.NestedTypes;
                 foreach (TypeDefinition item in nestedTds)
                 {
                     if (item.InheritsNetworkBehaviour())
                     {
-                        CodegenSession.LogError($"{copyTypeDef.FullName} contains nested NetworkBehaviours. These are not supported.");
+                        CodegenSession.LogError($"{td.FullName} contains nested NetworkBehaviours. These are not supported.");
                         return modified;
                     }
                 }
@@ -96,21 +109,38 @@ namespace FishNet.CodeGenerating.Processing
                 /* Create NetworkInitialize before-hand so the other procesors
                  * can use it. */
                 MethodDefinition networkInitializeInternalMd;
-                CreateNetworkInitializeMethods(copyTypeDef, out networkInitializeInternalMd);
+                CreateNetworkInitializeMethods(td, out networkInitializeInternalMd);
                 CallNetworkInitializeMethods(networkInitializeInternalMd);
+            }
+
+            /* Reverse and do RPCs/SyncTypes.
+             * This counts up on children instead of the
+             * parent, so we do not have to rewrite
+             * parent numbers. */
+            typeDefs.Reverse();
+
+            foreach (TypeDefinition td in typeDefs)
+            {
+                /* Class was already processed. Since child most is processed first
+                 * this can occur if a class is inherited by multiple types. If a class
+                 * has already been processed then there is no reason to scale up the hierarchy
+                 * because it would have already been done. */
+                if (HasClassBeenProcessed(td))
+                    continue;
+
                 //No longer used...remove in rework.
                 uint rpcCount = 0;
-                childRpcCounts.TryGetValue(copyTypeDef, out rpcCount);
+                childRpcCounts.TryGetValue(td, out rpcCount);
                 /* Prediction. */
                 /* Run prediction first since prediction will modify
                  * user data passed into prediction methods. Because of this
                  * other RPCs should use the modified version and reader/writers
                  * made for prediction. */
-                modified |= CodegenSession.NetworkBehaviourPredictionProcessor.Process(copyTypeDef, ref rpcCount);
+                modified |= CodegenSession.NetworkBehaviourPredictionProcessor.Process(td, ref rpcCount);
                 //25ms 
 
                 /* RPCs. */
-                modified |= CodegenSession.RpcProcessor.Process(copyTypeDef, ref rpcCount);
+                modified |= CodegenSession.RpcProcessor.Process(td, ref rpcCount);
                 //30ms
                 /* //perf rpcCounts can be optimized by having different counts
                  * for target, observers, server, replicate, and reoncile rpcs. Since
@@ -120,14 +150,11 @@ namespace FishNet.CodeGenerating.Processing
 
                 /* SyncTypes. */
                 uint syncTypeStartCount;
-                childSyncTypeCounts.TryGetValue(copyTypeDef, out syncTypeStartCount);
-                modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(copyTypeDef, allProcessedSyncs, ref syncTypeStartCount);
+                childSyncTypeCounts.TryGetValue(td, out syncTypeStartCount);
+                modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(td, allProcessedSyncs, ref syncTypeStartCount);
                 //70ms
-                _processedClasses.Add(copyTypeDef);
-
-                copyTypeDef = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(copyTypeDef);
-            } while (copyTypeDef != null);
-
+                _processedClasses.Add(td);
+            }
 
             int maxAllowSyncTypes = 256;
             if (allProcessedSyncs.Count > maxAllowSyncTypes)
@@ -411,7 +438,6 @@ namespace FishNet.CodeGenerating.Processing
                     MethodDefinition thisMd = thisTypeDef.GetMethod(mdName);
                     MethodDefinition baseMd = thisTypeDef.BaseType.CachedResolve().GetMethod(mdName);
                     MethodReference baseMr = thisTypeDef.GetMethodReferenceInBase(mdName);
-
                     ILProcessor processor = thisMd.Body.GetILProcessor();
 
                     bool alreadyHasBaseCall = false;

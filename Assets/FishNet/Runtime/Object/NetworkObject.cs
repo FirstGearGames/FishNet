@@ -418,6 +418,7 @@ namespace FishNet.Object
                 }
             }
 
+            Debug.Log("Setting componentIndex on " + gameObject.name + " to " + componentIndex + ". SceneId is " + this.SceneId);
             ComponentIndex = componentIndex;
             ParentNetworkObject = parentNob;
 
@@ -437,9 +438,20 @@ namespace FishNet.Object
                      * Do add to ChildNetworkObjects so it can be initialized when
                      * parent is. */
                     if (t.TryGetComponent(out NetworkObject childNob))
-                        ChildNetworkObjects.Add(childNob);
+                    {
+                        /* Make sure both objects have the same value for
+                         * IsSceneObject. It's possible the user instantiated
+                         * an object and placed it beneath a scene object
+                         * before the scene initialized. They may also
+                         * add a scene object under an instantiated, even though
+                         * this almost certainly will break things. */
+                        if (IsSceneObject == childNob.IsSceneObject)
+                            ChildNetworkObjects.Add(childNob);
+                    }
                     else
+                    {
                         transformCache.AddValue(t);
+                    }
                 }
             }
 

@@ -1,8 +1,7 @@
 using FishNet.Managing.Logging;
-using FishNet.Utility.Performance;
 using LiteNetLib;
+using LiteNetLib.Layers;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -83,6 +82,10 @@ namespace FishNet.Transporting.Tugboat.Server
         /// </summary>
         private string _ipv6BindAddress;
         /// <summary>
+        /// PacketLayer to use with LiteNetLib.
+        /// </summary>
+        private PacketLayerBase _packetLayer;
+        /// <summary>
         /// Locks the NetManager to stop it.
         /// </summary>
         private readonly object _stopLock = new object();
@@ -97,10 +100,11 @@ namespace FishNet.Transporting.Tugboat.Server
         /// Initializes this for use.
         /// </summary>
         /// <param name="t"></param>
-        internal void Initialize(Transport t, int unreliableMTU)
+        internal void Initialize(Transport t, int unreliableMTU, PacketLayerBase packetLayer)
         {
             base.Transport = t;
             _mtu = unreliableMTU;
+            _packetLayer = packetLayer;
         }
 
         /// <summary>
@@ -125,7 +129,7 @@ namespace FishNet.Transporting.Tugboat.Server
             listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
-            _server = new NetManager(listener);
+            _server = new NetManager(listener, _packetLayer);
             _server.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
             UpdateTimeout(_timeout);

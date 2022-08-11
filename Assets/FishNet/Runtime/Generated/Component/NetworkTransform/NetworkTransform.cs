@@ -232,6 +232,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         public event Action OnInterpolationComplete;
         #endregion
+
         #region Serialized.
         /// <summary>
         /// True to synchronize when this transform changes parent.

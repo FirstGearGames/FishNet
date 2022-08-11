@@ -307,6 +307,21 @@ namespace FishNet.Managing.Client
                     CachedNetworkObject cnob = collection[i];
                     if (cnob.Action == CachedNetworkObject.ActionType.Spawn)
                     {
+                        /* Apply syncTypes. It's very important to do this after all
+                         * spawns have been processed and added to the manager.Objects collection.
+                         * Otherwise, the synctype may reference an object spawning the same tick
+                         * and the result would be null due to said object not being in spawned. */
+                        foreach (NetworkBehaviour nb in cnob.NetworkObject.NetworkBehaviours)
+                        {
+                            PooledReader reader = cnob.SyncValuesReader;
+                            //SyncVars.
+                            int length = reader.ReadInt32();
+                            nb.OnSyncType(reader, length, false);
+                            //SyncObjects
+                            length = reader.ReadInt32();
+                            nb.OnSyncType(reader, length, true);
+                        }
+
                         /* Only continue with the initialization if it wasn't initialized
                          * early to prevent a despawn conflict. */
                         bool canInitialize = (!despawnConflict || !_iteratedSpawns.Contains(cnob.NetworkObject));
@@ -365,18 +380,6 @@ namespace FishNet.Managing.Client
                 }
             }
             cnob.NetworkObject.SetRpcLinkIndexes(rpcLinkIndexes);
-
-            //Apply syncTypes.
-            foreach (NetworkBehaviour nb in cnob.NetworkObject.NetworkBehaviours)
-            {
-                PooledReader reader = cnob.SyncValuesReader;
-                //SyncVars.
-                int length = reader.ReadInt32();
-                nb.OnSyncType(reader, length, false);
-                //SyncObjects
-                length = reader.ReadInt32();
-                nb.OnSyncType(reader, length, true);
-            }
         }
 
         /// <summary>

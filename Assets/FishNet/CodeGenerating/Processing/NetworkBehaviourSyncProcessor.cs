@@ -362,7 +362,9 @@ namespace FishNet.CodeGenerating.Processing
 
             if (CodegenSession.Module != typeDef.Module)
             {
-                CodegenSession.DifferentAssemblySyncVars.Add(fieldDef);
+                //Only display warning if field is exposed.
+                if (!fieldDef.Attributes.HasFlag(FieldAttributes.Private))
+                    CodegenSession.DifferentAssemblySyncVars.Add(fieldDef);
                 return false;
             }
 
