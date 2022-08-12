@@ -418,7 +418,6 @@ namespace FishNet.Object
                 }
             }
 
-            Debug.Log("Setting componentIndex on " + gameObject.name + " to " + componentIndex + ". SceneId is " + this.SceneId);
             ComponentIndex = componentIndex;
             ParentNetworkObject = parentNob;
 
