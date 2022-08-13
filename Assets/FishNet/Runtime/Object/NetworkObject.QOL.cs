@@ -77,24 +77,27 @@ namespace FishNet.Object
                  * NetworkObject has been initialized on the client side.
                  *
                  * This value is used to prevent IsOwner from returning true
-                 * when running as host.
+                 * when running as host; primarily in Update or Tick callbacks
+                 * where IsOwner would be true as host but OnStartClient has
+                 * not called yet.
                  * 
                  * EG: server will set owner when it spawns the object.
                  * If IsOwner is checked before the object spawns on the
                  * client-host then it would also return true, since the
                  * Owner reference would be the same as what was set by server.
+                 *
                  * This is however bad when the client hasn't initialized the object
-                 * yet because it gives a false sense of initialization.
+                 * yet because it gives a false sense of execution order. 
+                 * As a result, Update or Ticks may return IsOwner as true well before OnStartClient
+                 * is called. Many users rightfully create code with the assumption the client has been
+                 * initialized by the time IsOwner is true.
                  * 
-                 * Wait for client-host being initialized before potentially
-                 * returning true. */
-
-                /* Removed this restriction because people may want to use
-                 * base.IsOwner for initializing in OnNetworkStart. While this
-                 * would return true for client only, it wouldn't for host. That
-                 * would be bad. */
-                //if (!ClientInitialized)
-                //return false;
+                 * This is a double edged sword though because now IsOwner would return true
+                 * within OnStartNetwork for clients only, but not for host given the client
+                 * side won't be initialized yet as host. As a work around CodeAnalysis will
+                 * inform users to instead use base.Owner.IsLocalClient within OnStartNetwork. */
+                if (!ClientInitialized)
+                    return false;
 
                 return Owner.IsLocalClient;
             }
