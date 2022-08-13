@@ -417,19 +417,17 @@ namespace FishNet.Managing.Server
             SpawnWithoutChecks(networkObject, ownerConnection);
         }
 
+
         /// <summary>
         /// Spawns networkObject without any checks.
         /// </summary>
-        private void SpawnWithoutChecks(NetworkObject networkObject, NetworkConnection ownerConnection = null, bool recursive = false)
+        private void SpawnWithoutChecks(NetworkObject networkObject, NetworkConnection ownerConnection = null)
         {
             /* Setup locally without sending to clients.
             * When observers are built for the network object
             * during initialization spawn messages will
             * be sent. */
             networkObject.SetIsNetworked(true);
-            if (!recursive)
-                _spawnCache.Reset();
-
             _spawnCache.AddValue(networkObject);
             SetupWithoutSynchronization(networkObject, ownerConnection);
 
@@ -438,21 +436,34 @@ namespace FishNet.Managing.Server
                 /* Only spawn recursively if the nob state is unset.
                  * Unset indicates that the nob has not been */
                 if (item.gameObject.activeInHierarchy || item.State == NetworkObjectState.Spawned)
-                    SpawnWithoutChecks(item, ownerConnection, true);
+                    SpawnWithoutChecks(item, ownerConnection);
             }
 
+            /* Copy to a new cache then reset _spawnCache
+             * just incase rebuilding observers would lead to 
+             * more additions into _spawnCache. EG: rebuilding
+             * may result in additional objects being spawned
+             * for clients and if _spawnCache were not reset
+             * the same objects would be rebuilt again. This likely
+             * would not affect anything other than perf but who
+             * wants that. */
+            ListCache<NetworkObject> spawnCacheCopy = ListCaches.GetNetworkObjectCache();
+            spawnCacheCopy.AddValues(_spawnCache);
+            _spawnCache.Reset();
             //Also rebuild observers for the object so it spawns for others.
-            RebuildObservers(_spawnCache);
+            RebuildObservers(spawnCacheCopy);
 
             /* If also client then we need to make sure the object renderers have correct visibility.
              * Set visibility based on if the observers contains the clientHost connection. */
             if (NetworkManager.IsClient)
             {
-                int count = _spawnCache.Written;
-                List<NetworkObject> collection = _spawnCache.Collection;
+                int count = spawnCacheCopy.Written;
+                List<NetworkObject> collection = spawnCacheCopy.Collection;
                 for (int i = 0; i < count; i++)
                     collection[i].SetRenderersVisible(networkObject.Observers.Contains(NetworkManager.ClientManager.Connection));
             }
+
+            ListCaches.StoreCache(spawnCacheCopy);
         }
 
         /// <summary>

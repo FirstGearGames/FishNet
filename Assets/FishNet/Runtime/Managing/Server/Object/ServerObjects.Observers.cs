@@ -208,9 +208,7 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers()
         {
-            ListCache<NetworkObject> nobCache = ListCaches.GetNetworkObjectCache();
-            foreach (NetworkObject nob in Spawned.Values)
-                nobCache.AddValue(nob);
+            ListCache<NetworkObject> nobCache = GetOrderedSpawnedObjects();
             ListCache<NetworkConnection> connCache = ListCaches.GetNetworkConnectionCache();
             foreach (NetworkConnection conn in base.NetworkManager.ServerManager.Clients.Values)
                 connCache.AddValue(conn);
@@ -252,6 +250,14 @@ namespace FishNet.Managing.Server
             List<NetworkObject> collection = nobs.Collection;
             for (int i = 0; i < count; i++)
                 RebuildObservers(collection[i]);
+        }
+        /// <summary>
+        /// Rebuilds observers on NetworkObjects for connections.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RebuildObservers(ListCache<NetworkObject> nobs, NetworkConnection conn)
+        {
+            RebuildObservers(nobs.Collection, conn, nobs.Written);
         }
         /// <summary>
         /// Rebuilds observers on NetworkObjects for connections.
@@ -302,13 +308,44 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(NetworkConnection connection)
         {
-            RebuildObservers(Spawned.Values, connection);
+            ListCache<NetworkObject> cache = GetOrderedSpawnedObjects();
+            RebuildObservers(cache, connection);
+            ListCaches.StoreCache(cache);
+        }
+
+        /// <summary>
+        /// Gets all spawned objects with root objects first.
+        /// </summary>
+        /// <returns></returns>
+        private ListCache<NetworkObject> GetOrderedSpawnedObjects()
+        {
+            ListCache<NetworkObject> cache = ListCaches.GetNetworkObjectCache();
+            foreach (NetworkObject networkObject in Spawned.Values)
+            {
+                if (networkObject.IsNested)
+                    continue;
+
+                //Add nob and children recursively.
+                AddChildNetworkObjects(networkObject);
+            }
+
+            void AddChildNetworkObjects(NetworkObject n)
+            {               
+                cache.AddValue(n);
+                foreach (NetworkObject nob in n.ChildNetworkObjects)
+                    AddChildNetworkObjects(nob);
+            }
+
+            return cache;
         }
 
         /// <summary>
         /// Rebuilds observers for a connection on NetworkObjects.
-        /// </summary>       
-        public void RebuildObservers(IEnumerable<NetworkObject> nobs, NetworkConnection connection)
+        /// </summary>               
+        /// <param name="nobs">NetworkObjects to rebuild.</param>
+        /// <param name="connection">Connection to rebuild for.</param>
+        /// <param name="count">Number of iterations to perform collection. Entire collection is iterated when value is -1.</param>
+        public void RebuildObservers(IEnumerable<NetworkObject> nobs, NetworkConnection connection, int count = -1)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             PooledWriter ownerWriter = WriterPool.GetWriter();

@@ -2,6 +2,7 @@
 using FishNet.Object;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Utility.Performance
@@ -219,7 +220,20 @@ namespace FishNet.Utility.Performance
         /// <summary>
         /// Adds values to Collection.
         /// </summary>
+        /// <param name="values"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddValues(ListCache<T> values)
+        {
+            int w = values.Written;
+            List<T> c = values.Collection;
+            for (int i = 0; i < w; i++)
+                AddValue(c[i]);
+        }
+        /// <summary>
+        /// Adds values to Collection.
+        /// </summary>
         /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddValues(T[] values)
         {
             for (int i = 0; i < values.Length; i++)
@@ -229,6 +243,7 @@ namespace FishNet.Utility.Performance
         /// Adds values to Collection.
         /// </summary>
         /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddValues(List<T> values)
         {
             for (int i = 0; i < values.Count; i++)
@@ -238,6 +253,7 @@ namespace FishNet.Utility.Performance
         /// Adds values to Collection.
         /// </summary>
         /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddValues(HashSet<T> values)
         {
             foreach (T item in values)
@@ -247,6 +263,7 @@ namespace FishNet.Utility.Performance
         /// Adds values to Collection.
         /// </summary>
         /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddValues(ISet<T> values)
         {
             foreach (T item in values)
@@ -257,6 +274,7 @@ namespace FishNet.Utility.Performance
         /// Adds values to Collection.
         /// </summary>
         /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddValues(IReadOnlyCollection<T> values)
         {
             foreach (T item in values)

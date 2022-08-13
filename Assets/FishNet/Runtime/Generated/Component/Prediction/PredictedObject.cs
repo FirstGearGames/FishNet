@@ -237,7 +237,17 @@ namespace FishNet.Component.Prediction
         private void TimeManager_OnPreTick()
         {
             if (CanSmooth())
+            {
+                /* Only snap to destination if using tick smoothing.
+                 * This ensures the graphics will be at the proper location
+                 * before the next movement rates are calculated. */
+                if (_durationType == SmoothingDurationType.Tick)
+                {
+                    _graphicalObject.localPosition = _instantiatedLocalPosition;
+                    _graphicalObject.localRotation = _instantiatedLocalRotation;
+                }
                 SetPreviousTransformProperties();
+            }
         }
 
         protected void TimeManager_OnPostTick()
@@ -246,8 +256,6 @@ namespace FishNet.Component.Prediction
             {
                 ResetToTransformPreviousProperties();
                 SetTransformMoveRates();
-                //Move 1 frame immediately since post tick occurs after update.
-                MoveToTarget();
             }
             Rigidbodies_TimeManager_OnPostTick();
         }
