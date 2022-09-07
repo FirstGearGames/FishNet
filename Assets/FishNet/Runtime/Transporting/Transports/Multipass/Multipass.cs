@@ -88,7 +88,7 @@ namespace FishNet.Transporting.Multipass
         /// <summary>
         /// Transports to use.
         /// </summary>
-        public IReadOnlyCollection<Transport> Transports => _transports;
+        public IList<Transport> Transports => _transports;
         #endregion
 
         #region Private. 
@@ -586,15 +586,15 @@ namespace FishNet.Transporting.Multipass
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
-        public Transport GetTransport<T>()
+        public T GetTransport<T>()
         {
             foreach (Transport t in Transports)
             {
                 if (t.GetType() == typeof(T))
-                    return t;
+                    return (T)(object)t;
             }
 
-            return null;
+            return default(T);
         }
         /// <summary>
         /// Returns if the transport for connectId is a local transport.

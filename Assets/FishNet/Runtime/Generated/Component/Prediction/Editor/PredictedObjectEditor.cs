@@ -8,7 +8,7 @@ namespace FishNet.Component.Prediction
 
     [CustomEditor(typeof(PredictedObject), true)]
     [CanEditMultipleObjects]
-    public class PredictionObjectEditor : Editor
+    public class PredictedObjectEditor : Editor
     {
         private SerializedProperty _graphicalObject;
         private SerializedProperty _smoothTicks;
@@ -21,7 +21,6 @@ namespace FishNet.Component.Prediction
         private SerializedProperty _rigidbody2d;
         private SerializedProperty _networkTransform;
         private SerializedProperty _predictionRatio;
-        private SerializedProperty _distance;
 
         protected virtual void OnEnable()
         {
@@ -36,7 +35,6 @@ namespace FishNet.Component.Prediction
             _rigidbody2d = serializedObject.FindProperty("_rigidbody2d");
             _networkTransform = serializedObject.FindProperty("_networkTransform");
             _predictionRatio = serializedObject.FindProperty("_predictionRatio");
-            _distance = serializedObject.FindProperty("_distance");
         }
 
         public override void OnInspectorGUI()
@@ -75,7 +73,6 @@ namespace FishNet.Component.Prediction
                 else
                     EditorGUILayout.PropertyField(_rigidbody2d, new GUIContent("Rigidbody2D", "Rigidbody2D to predict."));
                 EditorGUILayout.PropertyField(_predictionRatio);
-                EditorGUILayout.PropertyField(_distance);
                 EditorGUI.indentLevel--;
             }
             else
