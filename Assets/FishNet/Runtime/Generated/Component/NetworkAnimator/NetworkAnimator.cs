@@ -11,7 +11,7 @@ using UnityEngine;
 namespace FishNet.Component.Animating
 {
     [AddComponentMenu("FishNet/Component/NetworkAnimator")]
-    public class NetworkAnimator : NetworkBehaviour
+    public sealed class NetworkAnimator : NetworkBehaviour
     {
         #region Types.
         private struct StateChange

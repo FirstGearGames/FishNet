@@ -218,49 +218,49 @@ namespace FishNet.Object
             writer.Dispose();
         }
 
-//        /// <summary>
-//        /// Sends a RPC to observers.
-//        /// Internal use.
-//        /// </summary>
-//        /// <param name="hash"></param>
-//        /// <param name="writer"></param>
-//        /// <param name="channel"></param>
-//        [APIExclude] //codegen this can be made internal then set public via codegen
-//        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-//        protected internal bool InternalPrepareObserversRpc(uint hash, PooledWriter writer, Channel channel, bool buffered)
-//        {
-//            if (!IsSpawnedWithWarning())
-//                return false;
+        //        /// <summary>
+        //        /// Sends a RPC to observers.
+        //        /// Internal use.
+        //        /// </summary>
+        //        /// <param name="hash"></param>
+        //        /// <param name="writer"></param>
+        //        /// <param name="channel"></param>
+        //        [APIExclude] //codegen this can be made internal then set public via codegen
+        //        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //        protected internal bool InternalPrepareObserversRpc(uint hash, PooledWriter writer, Channel channel, bool buffered)
+        //        {
+        //            if (!IsSpawnedWithWarning())
+        //                return false;
 
-//#if UNITY_EDITOR || DEVELOPMENT_BUILD
-//            if (NetworkManager.DebugManager.ObserverRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
-//#else
-//            if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
-//#endif
-//                CreateLinkedRpcHeader(link, writer);
-//            else
-//                CreateRpcHeader(hash, writer, PacketId.ObserversRpc);
+        //#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        //            if (NetworkManager.DebugManager.ObserverRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
+        //#else
+        //            if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
+        //#endif
+        //                CreateLinkedRpcHeader(link, writer);
+        //            else
+        //                CreateRpcHeader(hash, writer, PacketId.ObserversRpc);
 
-//            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers);
+        //            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers);
 
-//            InternalBufferObserversRpc(hash, writer, channel);
+        //            InternalBufferObserversRpc(hash, writer, channel);
 
-//            return true;
-//        }
+        //            return true;
+        //        }
 
-//        /// <summary>
-//        /// Buffers an ObserverRPC.
-//        /// </summary>
-//        protected internal void InternalBufferObserversRpc(uint hash, PooledWriter writer, Channel channel)
-//        {
-//            /* If buffered then dispose of any already buffered
-//             * writers and replace with new one. Writers should
-//             * automatically dispose when references are lost
-//             * anyway but better safe than sorry. */
-//            if (_bufferedRpcs.TryGetValueIL2CPP(hash, out (PooledWriter pw, Channel ch) result))
-//                result.pw.Dispose();
-//            _bufferedRpcs[hash] = (writer, channel);
-//        }
+        //        /// <summary>
+        //        /// Buffers an ObserverRPC.
+        //        /// </summary>
+        //        protected internal void InternalBufferObserversRpc(uint hash, PooledWriter writer, Channel channel)
+        //        {
+        //            /* If buffered then dispose of any already buffered
+        //             * writers and replace with new one. Writers should
+        //             * automatically dispose when references are lost
+        //             * anyway but better safe than sorry. */
+        //            if (_bufferedRpcs.TryGetValueIL2CPP(hash, out (PooledWriter pw, Channel ch) result))
+        //                result.pw.Dispose();
+        //            _bufferedRpcs[hash] = (writer, channel);
+        //        }
 
         /// <summary>
         /// Sends a RPC to observers.
@@ -308,40 +308,30 @@ namespace FishNet.Object
         /// Sends a RPC to target.
         /// Internal use.
         /// </summary>
-        /// <param name="hash"></param>
-        /// <param name="methodWriter"></param>
-        /// <param name="channel"></param>
-        /// <param name="target"></param>
         [APIExclude] //codegen this can be made internal then set public via codegen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendTargetRpc(uint hash, PooledWriter methodWriter, Channel channel, NetworkConnection target)
+        public void SendTargetRpc(uint hash, PooledWriter methodWriter, Channel channel, NetworkConnection target, bool validateTarget = true)
         {
             if (!IsSpawnedWithWarning())
                 return;
 
-            /* These checks could be codegened in to save a very very small amount of performance
-             * by performing them before the serializer is written, but the odds of these failing
-             * are very low and I'd rather keep the complexity out of codegen. */
-            if (target == null)
+            if (validateTarget)
             {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Action cannot be completed as no Target is specified.");
-                return;
-            }
-            else
-            {
-                /* If not using observers, sending to owner,
-                 * or observers contains target. */
-                //bool canSendTotarget = (!_networkObjectCache.UsingObservers ||
-                //    _networkObjectCache.OwnerId == target.ClientId ||
-                //    _networkObjectCache.Observers.Contains(target));
-                bool canSendTotarget = _networkObjectCache.OwnerId == target.ClientId || _networkObjectCache.Observers.Contains(target);
-
-                if (!canSendTotarget)
+                if (target == null)
                 {
                     if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Action cannot be completed as Target is not an observer for object {gameObject.name} [id {ObjectId}].");
+                        Debug.LogWarning($"Action cannot be completed as no Target is specified.");
                     return;
+                }
+                else
+                {
+                    //If target is not an observer.
+                    if (!_networkObjectCache.Observers.Contains(target))
+                    {
+                        if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
+                            Debug.LogWarning($"Action cannot be completed as Target is not an observer for object {gameObject.name} [id {ObjectId}].");
+                        return;
+                    }
                 }
             }
 

@@ -28,11 +28,34 @@ namespace FishNet.Object
         public uint GetLastReconcileTick() => _lastReconcileTick;
         /// <summary>
         /// Sets the last tick this NetworkBehaviour reconciled with.
+        /// For internal use only.
         /// </summary>
         [CodegenMakePublic] //Internal only.
         protected internal void SetLastReconcileTick(uint value)
         {
             _lastReconcileTick = value;
+            //Also set on the timemanager.
+            TimeManager.LastReconcileTick = value;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        private uint _lastReplicateTick;
+        /// <summary>
+        /// Gets the last tick this NetworkBehaviour replicated with.
+        /// </summary>
+        public uint GetLastReplicateTick() => _lastReplicateTick;
+        /// <summary>
+        /// Sets the last tick this NetworkBehaviour replicated with.
+        /// For internal use only.
+        /// </summary>
+        [CodegenMakePublic] //Make public.
+        protected internal void SetLastReplicateTickInternal(uint value)
+        {
+            Owner.LocalReplicateTick = TimeManager.LocalTick;
+            _lastReplicateTick = value;
+            //Also set on the timemanager.
+            TimeManager.LastReplicateTick = value;
         }
         /// <summary>
         /// True if this object is reconciling.

@@ -2,12 +2,15 @@
 using FishNet.Managing.Timing;
 using FishNet.Transporting;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Component.ColliderRollback
 {
     public class RollbackManager : MonoBehaviour
     {
+        
+
         
 
         #region Serialized.
@@ -29,6 +32,8 @@ namespace FishNet.Component.ColliderRollback
         [SerializeField]
         internal ushort Interpolation = 2;
         #endregion
+
+        
 
         
 

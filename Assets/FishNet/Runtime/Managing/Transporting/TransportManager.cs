@@ -384,8 +384,10 @@ namespace FishNet.Managing.Transporting
                 //Write any dirty syncTypes.
                 _networkManager.ServerManager.Objects.WriteDirtySyncTypes();
 
+                int dirtyCount = _dirtyToClients.Count;
+
                 //Run through all dirty connections to send data to.
-                for (int z = 0; z < _dirtyToClients.Count; z++)
+                for (int z = 0; z < dirtyCount; z++)
                 {
                     NetworkConnection conn = _dirtyToClients[z];
                     if (conn == null || !conn.IsValid)
@@ -449,7 +451,11 @@ namespace FishNet.Managing.Transporting
                 }
 
                 _networkManager.StatisticsManager.NetworkTraffic.LocalServerSentData(sentBytes);
-                _dirtyToClients.Clear();
+
+                if (dirtyCount == _dirtyToClients.Count)
+                    _dirtyToClients.Clear();
+                else if (dirtyCount > 0)
+                    _dirtyToClients.RemoveRange(0, dirtyCount);
             }
             /* If sending to the server. */
             else

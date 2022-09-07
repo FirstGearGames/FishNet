@@ -132,6 +132,7 @@ namespace FishNet.CodeGenerating.Processing
         private const string RECONCILE_LOGIC_PREFIX = "ReconcileLogic___";
         private const string RECONCILE_READER_PREFIX = "ReconcileReader___";
         private const string DATA_TICK_FIELD_NAME = "Generated___Tick";
+        private static readonly OpCode RESEND_COUNT_OPCODE = OpCodes.Ldc_I4_3;
         #endregion
 
         internal bool ImportReferences()
@@ -962,9 +963,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Stloc, queueCountVd);
             /* If the queue count is 2 more than maximum
              * buffered then dequeue an extra one. Currently
-             * the input will be lost, in a later release users
-             * will have the option to run multiple inputs
-             * per tick which this occurs. */
+             * the input will be lost. */
             //If (queueCount > 3)
             Instruction afterDequeueInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Ldloc, queueCountVd);
@@ -997,10 +996,17 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, replicateDataPd);
             processor.Emit(OpCodes.Ldfld, ReplicateData_Tick_FieldRef);
             processor.Emit(OpCodes.Stfld, predictionFields.ServerReplicateTick.CachedResolve());
+            //Update last replicate tick.
+            //      base.SetLastReplicateTick(tick);
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldarg, replicateDataPd);
+            processor.Emit(OpCodes.Ldfld, ReplicateData_Tick_FieldRef);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.SetLastReplicateTick_MethodRef);
+
             //Reset reconcile ticks.
             //      _serverReconcileTicks = 3;
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldc_I4_3);
+            processor.Emit(RESEND_COUNT_OPCODE);
             processor.Emit(OpCodes.Stfld, predictionFields.ServerReconcileResends.CachedResolve());
 
             processor.Append(afterReplaceDataInst);
@@ -1195,6 +1201,18 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ret);
             processor.Append(afterRetInst);
 
+            //      bool firstSend = (_serverReconcileResends == 3);
+            VariableDefinition firstSendVd = reconcileMd.CreateVariable(typeof(bool));
+            Instruction afterFirstSendSetInst = processor.Create(OpCodes.Nop);
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldfld, predictionFields.ServerReconcileResends);
+            processor.Emit(RESEND_COUNT_OPCODE);
+            processor.Emit(OpCodes.Bne_Un_S, afterFirstSendSetInst);
+            processor.Emit(OpCodes.Ldc_I4_1);
+            processor.Emit(OpCodes.Stloc, firstSendVd);
+            processor.Append(afterFirstSendSetInst);
+
+            //processor.Emit(OpCodes.Ceq);
             //      _serverReconcileResends--;
             processor.Add(SubtractFromField(reconcileMd, predictionFields.ServerReconcileResends.CachedResolve()));
 
@@ -1212,18 +1230,33 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Stloc, channelVd);
             processor.Append(afterChannelReliableInst);
 
-            //Replace data.DATA_TICK_FIELD_NAME with last tick replicated.
+            //      Replace data.DATA_TICK_FIELD_NAME with last tick replicated.
             OpCode ldArgOC0 = (reconcileDataPd.ParameterType.IsValueType) ? OpCodes.Ldarga : OpCodes.Ldarg;
             processor.Emit(ldArgOC0, reconcileDataPd);
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateTick);
             processor.Emit(OpCodes.Stfld, ReconcileData_Tick_FieldRef);
 
+            //      base.SetlastReconcileTick(
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateTick);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.SetLastReconcileTick_MethodRef);
+
+            Instruction afterSendRigidbodyStatesInst = processor.Create(OpCodes.Nop);
+            //      if (firstSend)
+            //          PredictedObject.SendRigidbodyStatesInternal(this).
+            processor.Emit(OpCodes.Ldloc, firstSendVd);
+            processor.Emit(OpCodes.Brfalse_S, afterSendRigidbodyStatesInst);
+            //SendRigidbodyStatesInternal.
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Call, CodegenSession.PredictedObjectHelper.SendRigidbodyStatesInternal_MethodRef);
+            processor.Append(afterSendRigidbodyStatesInst);
             //      base.SendReconcileRpc(hash, data, channel);
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldc_I4, (int)rpcHash);
             processor.Emit(OpCodes.Ldarg, reconcileDataPd);
-            processor.Emit(OpCodes.Ldloc, channelVd);
+            processor.Emit(OpCodes.Ldloc, channelVd); 
             processor.Emit(OpCodes.Call, sendReconcileRpcdMr);
 
             processor.Add(insts);
@@ -1255,7 +1288,7 @@ namespace FishNet.CodeGenerating.Processing
             ClientIsDefault(replicateMd, replicateDataPd, out isDefaultVd);
             //Resets clientReplicateResends if dataPd is not default.
             ClientResetResends(replicateMd, predictionFields, isDefaultVd);
-            ///Exits method if client has no resends remaining.
+            //Exits method if client has no resends remaining.
             ClientSkipIfNoResends(replicateMd, predictionFields, afterNetworkLogicInst);
             //Decreases clientReplicateResends.
             processor.Add(SubtractFromField(replicateMd, predictionFields.ClientReplicateResends.CachedResolve()));
@@ -1300,7 +1333,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Brtrue_S, afterResetInst);
             //      _clientReplicateResends = 3.
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldc_I4_3);
+            processor.Emit(RESEND_COUNT_OPCODE);
             processor.Emit(OpCodes.Stfld, predictionFields.ClientReplicateResends);
             processor.Append(afterResetInst);
         }
@@ -1326,9 +1359,20 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldc_I4_0);
             processor.Emit(OpCodes.Stloc, boolVd);
 
-            //      if (!base.TransformMayChange() && Comparers.IsDefault<T>())
-            //          default = true;
             Instruction afterSetDefaultInst = processor.Create(OpCodes.Nop);
+            /* If PredictedObject.InstantiatedRigidbodyCount is greater than
+             * 0 then states must be updated regularly due to potential changes
+             * on server-side physics. When the count is larger than 0
+             * do not check setting isDefault; this will force client to replicate
+             * with default input, and in result the server will reconcile with the
+             * rigidbody states of PredictedObjects. This will be optimized later
+             * to use less bandwidth but for the time being PredictedObject states
+             * must be regularly updated using this technique. */
+            //      if (PredictedObject.InstantiatedRigidbodyCount == 0 && !base.TransformMayChange() && Comparers.IsDefault<T>())
+            //          default = true;
+            processor.Emit(OpCodes.Call, CodegenSession.PredictedObjectHelper.InstantiatedRigidbodyCountInternal_Get_MethodRef);
+            processor.Emit(OpCodes.Brtrue, afterSetDefaultInst);
+
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.TransformMayChange_MethodRef);
             processor.Emit(OpCodes.Brtrue_S, afterSetDefaultInst);
@@ -1375,11 +1419,16 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Stloc, tickVd);
             processor.Append(afterUseClientReplicateTickInst);
 
-            //data.DATA_TICK_FIELD_NAME = tick.
+            //      data.DATA_TICK_FIELD_NAME = tick.
             OpCode ldArgOC = (dataPd.ParameterType.IsValueType) ? OpCodes.Ldarga : OpCodes.Ldarg;
             processor.Emit(ldArgOC, dataPd);
             processor.Emit(OpCodes.Ldloc, tickVd);
             processor.Emit(OpCodes.Stfld, ReplicateData_Tick_FieldRef.CachedResolve());
+
+            //      base.SetLastReplicateTick(tick);
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldloc, tickVd);
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.SetLastReplicateTick_MethodRef);
         }
         /// <summary>
         /// Sends clients inputs to server.

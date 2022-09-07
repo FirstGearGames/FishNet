@@ -3,7 +3,9 @@ using FishNet.CodeGenerating.Processing.Rpc;
 using MonoFN.Cecil;
 using System.Collections.Generic;
 using Unity.CompilationPipeline.Common.Diagnostics;
+#if !UNITY_2020_1_OR_NEWER
 using UnityEngine;
+#endif
 using SR = System.Reflection;
 
 namespace FishNet.CodeGenerating.Helping
@@ -54,6 +56,10 @@ namespace FishNet.CodeGenerating.Helping
         internal static NetworkBehaviourSyncProcessor NetworkBehaviourSyncProcessor;
         [System.ThreadStatic]
         internal static NetworkBehaviourPredictionProcessor NetworkBehaviourPredictionProcessor;
+        [System.ThreadStatic]
+        internal static NetworkConnectionHelper NetworkConnectionHelper;
+        [System.ThreadStatic]
+        internal static PredictedObjectHelper PredictedObjectHelper;
         /// <summary>
         /// SyncVars that are being accessed from an assembly other than the currently being processed one.
         /// </summary>
@@ -107,6 +113,8 @@ namespace FishNet.CodeGenerating.Helping
             TransportHelper = new TransportHelper();
             WriterGenerator = new WriterGenerator();
             WriterHelper = new WriterHelper();
+            NetworkConnectionHelper = new NetworkConnectionHelper();
+            PredictedObjectHelper = new PredictedObjectHelper();
 
             CustomSerializerProcessor = new CustomSerializerProcessor();
             NetworkBehaviourProcessor = new NetworkBehaviourProcessor();
@@ -146,13 +154,17 @@ namespace FishNet.CodeGenerating.Helping
                 return false;
             if (!WriterHelper.ImportReferences())
                 return false;
+            if (!NetworkConnectionHelper.ImportReferences())
+                return false;
+            if (!PredictedObjectHelper.ImportReferences())
+                return false;
 
             return true;
         }
 
 
 
-        #region ImportReference.
+#region ImportReference.
 
         public static MethodReference ImportReference(SR.MethodBase method)
         {
@@ -214,7 +226,7 @@ namespace FishNet.CodeGenerating.Helping
             return Module.ImportReference(field, context);
         }
 
-        #endregion
+#endregion
     }
 
 

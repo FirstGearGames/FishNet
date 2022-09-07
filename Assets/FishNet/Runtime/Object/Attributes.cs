@@ -53,6 +53,11 @@ namespace FishNet.Object
         /// True to also run the RPC logic locally.
         /// </summary>
         public bool RunLocally = false;
+        /// <summary>
+        /// True to validate the target is possible and output debug when not.
+        /// Use this field with caution as it may create undesired results when set to false.
+        /// </summary>
+        public bool ValidateTarget = true;
     }
 
     /// <summary>

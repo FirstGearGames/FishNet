@@ -66,7 +66,6 @@ namespace FishNet.Example.Prediction.Rigidbodies
         #endregion
 
 
-
         private void Awake()
         {
 

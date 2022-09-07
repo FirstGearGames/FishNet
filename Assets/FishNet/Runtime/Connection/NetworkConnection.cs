@@ -93,6 +93,15 @@ namespace FishNet.Connection
         /// The value of this field are not synchronized over the network.
         /// </summary>
         public object CustomData = null;
+        /// <summary>
+        /// Local tick of the server when this connection last replicated.
+        /// </summary>
+        public uint LocalReplicateTick { get; internal set; }
+        /// <summary>
+        /// Tick of the last packet received from this connection.
+        /// This value is only available on the server.
+        /// </summary>
+        public uint LastPacketTick { get; internal set; }
         #endregion
 
         #region Comparers.
@@ -188,6 +197,12 @@ namespace FishNet.Connection
         /// <param name="immediately">True to disconnect immediately. False to send any pending data first.</param>
         public void Disconnect(bool immediately)
         {
+            if (Disconnecting)
+            {
+                NetworkManager.LogWarning($"ClientId {ClientId} is already disconnecting.");
+                return;
+            }
+
             SetDisconnecting(true);
             //If immediately then force disconnect through transport.
             if (immediately)

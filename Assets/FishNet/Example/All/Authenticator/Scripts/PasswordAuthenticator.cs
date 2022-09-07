@@ -8,12 +8,11 @@ using UnityEngine;
 
 namespace FishNet.Example.Authenticating
 {
-
     /// <summary>
     /// This is an example of a password authenticator.
     /// Never send passwords without encryption.
     /// </summary>
-    public class PasswordAuthenticator : Authenticator
+    public class PasswordAuthenticator : HostAuthenticator
     {
         #region Public.
         /// <summary>
@@ -56,6 +55,9 @@ namespace FishNet.Example.Authenticating
             * example the client tries to authenticate soon as they connect. */
             if (args.ConnectionState != LocalConnectionState.Started)
                 return;
+            //Authentication was sent as host, no need to authenticate normally.
+            if (AuthenticateAsHost())
+                return;
 
             PasswordBroadcast pb = new PasswordBroadcast()
             {
@@ -83,15 +85,7 @@ namespace FishNet.Example.Authenticating
             }
 
             bool correctPassword = (pb.Password == _password);
-            /* Tell client if they authenticated or not. This is
-             * entirely optional but does demonstrate that you can send
-             * broadcasts to client on pass or fail. */
-            ResponseBroadcast rb = new ResponseBroadcast()
-            {
-                Passed = correctPassword
-            };
-            base.NetworkManager.ServerManager.Broadcast(conn, rb, false);
-
+            SendAuthenticationResponse(conn, correctPassword);
             /* Invoke result. This is handled internally to complete the connection or kick client.
              * It's important to call this after sending the broadcast so that the broadcast
              * makes it out to the client before the kick. */
@@ -107,6 +101,31 @@ namespace FishNet.Example.Authenticating
             string result = (rb.Passed) ? "Authentication complete." : "Authenitcation failed.";
             if (NetworkManager.CanLog(LoggingType.Common))
                 Debug.Log(result);
+        }
+
+        /// <summary>
+        /// Sends an authentication result to a connection.
+        /// </summary>
+        private void SendAuthenticationResponse(NetworkConnection conn, bool authenticated)
+        {
+            /* Tell client if they authenticated or not. This is
+            * entirely optional but does demonstrate that you can send
+            * broadcasts to client on pass or fail. */
+            ResponseBroadcast rb = new ResponseBroadcast()
+            {
+                Passed = authenticated
+            };
+            base.NetworkManager.ServerManager.Broadcast(conn, rb, false);
+        }
+        /// <summary>
+        /// Called after handling a host authentication result.
+        /// </summary>
+        /// <param name="conn">Connection authenticating.</param>
+        /// <param name="authenticated">True if authentication passed.</param>
+        protected override void OnHostAuthenticationResult(NetworkConnection conn, bool authenticated)
+        {
+            SendAuthenticationResponse(conn, authenticated);
+            OnAuthenticationResult?.Invoke(conn, authenticated);
         }
     }
 

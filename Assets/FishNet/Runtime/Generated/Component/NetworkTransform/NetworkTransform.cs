@@ -23,7 +23,7 @@ namespace FishNet.Component.Transforming
     /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("FishNet/Component/NetworkTransform")]
-    public class NetworkTransform : NetworkBehaviour
+    public sealed class NetworkTransform : NetworkBehaviour
     {
         #region Types.
         private struct ReceivedData

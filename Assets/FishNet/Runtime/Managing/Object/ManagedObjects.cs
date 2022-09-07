@@ -89,8 +89,7 @@ namespace FishNet.Managing.Object
 
             if (nob == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot despawn a null NetworkObject.");
+                NetworkManager.LogWarning($"Cannot despawn a null NetworkObject.");
                 return;
             }
 

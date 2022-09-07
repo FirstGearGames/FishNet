@@ -65,10 +65,10 @@ namespace FishNet.Connection
             //Cannot send data when disconnecting.
             if (Disconnecting)
                 return;
+
             if (!IsActive)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Data cannot be sent to connection {ClientId} because it is not active.");
+                NetworkManager.LogWarning($"Data cannot be sent to connection {ClientId} because it is not active.");
                 return;
             }
             //If channel is out of bounds then default to the first channel.

@@ -18,7 +18,6 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference InvokeOnReplicateReplay_MethodRef;
         #endregion
 
-
         internal bool ImportReferences()
         {
             //TimeManager infos.

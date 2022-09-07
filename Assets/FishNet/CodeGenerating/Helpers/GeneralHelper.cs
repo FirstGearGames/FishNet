@@ -771,6 +771,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeReference parameterTypeRef, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
         {
+            int currentCount = methodDef.Parameters.Count;
+            if (string.IsNullOrEmpty(name))
+                name = (parameterTypeRef.Name + currentCount);
             ParameterDefinition parameterDef = new ParameterDefinition(name, attributes, parameterTypeRef);
             if (index == -1)
                 methodDef.Parameters.Add(parameterDef);

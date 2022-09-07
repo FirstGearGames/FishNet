@@ -1,6 +1,10 @@
-﻿using FishNet.Managing.Timing;
+﻿using FishNet.Connection;
+using FishNet.Documenting;
+using FishNet.Managing;
 using FishNet.Object;
+using FishNet.Serializing.Helping;
 using FishNet.Transporting;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -9,6 +13,36 @@ namespace FishNet.Component.Prediction
     public partial class PredictedObject : NetworkBehaviour
     {
         #region All.
+        #region Internal.
+        /// <summary>
+        /// Number of instantiated PredictedObjects that are configured for rigidbodies.
+        /// </summary>
+        [APIExclude]
+        [CodegenMakePublic] //To internal.
+        public static int InstantiatedRigidbodyCountInternal { get; private set; }
+
+        #endregion
+
+        #region Private.
+        /// <summary>
+        /// Pauser for rigidbodies when they cannot be rolled back.
+        /// </summary>
+        private RigidbodyPauser _rigidbodyPauser = new RigidbodyPauser();
+        #endregion
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Rigidbodies_OnSpawnServer(NetworkConnection c)
+        {
+            if (!IsRigidbodyPrediction)
+                return;
+            if (c == base.Owner)
+                return;
+
+            if (_predictionType == PredictionType.Rigidbody)
+                SendRigidbodyState(base.TimeManager.LocalTick, c);
+            else
+                SendRigidbody2DState(base.TimeManager.LocalTick, c);
+        }
 
         /// <summary>
         /// Called after a tick occurs; physics would have simulated if using PhysicsMode.TimeManager.
@@ -28,28 +62,78 @@ namespace FishNet.Component.Prediction
                     PredictVelocity(gameObject.scene.GetPhysicsScene2D());
             }
 
-            if (base.IsServer)
-            {
-                uint localTick = base.TimeManager.LocalTick;
-                if (localTick >= _nextSendTick || base.TransformMayChange())
-                {
-                    uint ticksRequired = base.TimeManager.TimeToTicks(SEND_INTERVAL, TickRounding.RoundUp);
-                    _nextSendTick = localTick + ticksRequired;
+            //if (base.IsServer)
+            //{
+            //    uint tick = base.TimeManager.Tick;
+            //    if (tick >= _nextSendTick)
+            //    {
+            //        uint ticksRequired = base.TimeManager.TimeToTicks(SEND_INTERVAL, TickRounding.RoundUp);
+            //        _nextSendTick = tick + ticksRequired;
 
-                    if (!is2D)
-                        SendRigidbodyState();
-                    else
-                        SendRigidbody2DState();
-                }
+            //        if (!is2D)
+            //            SendRigidbodyState();
+            //        else
+            //            SendRigidbody2DState();
+            //    }
+            //}
+        }
+
+        /// <summary>
+        /// Called before performing a reconcile on NetworkBehaviour.
+        /// </summary>
+        private void Rigidbodies_TimeManager_OnPreReconcile(NetworkBehaviour nb)
+        {
+            if (nb.gameObject == gameObject)
+                return;
+            if (!IsRigidbodyPrediction)
+                return;
+
+            bool is2D = (_predictionType == PredictionType.Rigidbody2D);
+            uint lastStateTick = (is2D) ? _receivedRigidbody2DState.LastReplicateTick : _receivedRigidbodyState.LastReplicateTick;
+            uint lastNbTick = nb.GetLastReconcileTick();
+
+            /* If running again on the same reconcile or state is for a different
+             * tick then do make RBs kinematic. Resetting to a different state
+             * could cause a desync and there's no reason to run the same
+             * tick twice. */
+            if (lastStateTick != lastNbTick || lastStateTick == _lastResetTick)
+            {
+                _rigidbodyPauser.ChangeKinematic(true);
+            }
+            //If possible to perhaps reset.
+            else
+            {
+                _lastResetTick = lastStateTick;
+                /* If the reconciling nb won't change then
+                 * there is no reason to rollback. */
+                //if (!nb.TransformMayChange())
+                //{
+                //    _rigidbodyPauser.ChangeKinematic(true);
+                //}
+                //Need to reset / rollback.
+                //else
+                //{
+                if (is2D)
+                    ResetRigidbody2DToData();
+                else
+                    ResetRigidbodyToData();
+                //}
             }
         }
 
+        /// <summary>
+        /// Called after performing a reconcile on a NetworkBehaviour.
+        /// </summary>
+        private void Rigidbodies_TimeManager_OnPostReconcile(NetworkBehaviour nb)
+        {
+            _rigidbodyPauser.ChangeKinematic(false);
+        }
 
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
         /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
         /// </summary>
-        private void Rigidbodies_TimeManager_OnPostReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
+        private void Rigidbodies_TimeManager_OnPreReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
         {
             if (!CanPredict())
                 return;
@@ -58,6 +142,60 @@ namespace FishNet.Component.Prediction
                 PredictVelocity(ps);
             else if (_predictionType == PredictionType.Rigidbody2D)
                 PredictVelocity(ps2d);
+        }
+
+
+        /// <summary>
+        /// Sends rigidbody state before reconciling for a network behaviour.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SendRigidbodyStatesInternal(NetworkBehaviour nb)
+        {
+            NetworkConnection owner = nb.Owner;
+            if (!owner.IsActive)
+                return;
+            NetworkManager nm = nb.NetworkManager;
+            if (nm == null)
+                return;
+
+            //Tell all predictedobjects for the networkmanager to try and send states.
+            if (_predictedObjects.TryGetValue(nm, out List<PredictedObject> collection))
+            {
+                uint tick = nb.GetLastReplicateTick();
+                int count = collection.Count;
+                for (int i = 0; i < count; i++)
+                    collection[i].TrySendRigidbodyState(nb, tick);
+            }
+        }
+
+        /// <summary>
+        /// Send current state to a connection.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void TrySendRigidbodyState(NetworkBehaviour nb, uint tick)
+        {
+            if (!IsRigidbodyPrediction)
+                return;
+            NetworkConnection nbOwner = nb.Owner;
+            //No need to send to self.
+            if (nbOwner == base.Owner)
+                return;
+            /* Not an observer. SendTargetRpc normally
+             * already checks this when ValidateTarget
+             * is true but we want to save perf by exiting
+             * early before checks and serialization when
+             * we know the conn is not an observer. */
+            if (!base.Observers.Contains(nbOwner))
+                return;
+
+            //Only send if transform may change.
+            if (!base.TransformMayChange())
+                return;
+
+            if (_predictionType == PredictionType.Rigidbody)
+                SendRigidbodyState(tick, nbOwner);
+            else
+                SendRigidbody2DState(tick, nbOwner);
         }
 
         /// <summary>
@@ -177,12 +315,11 @@ namespace FishNet.Component.Prediction
         #endregion
 
         #region Rigidbody.
-
         #region Private.
         /// <summary>
-        /// Last SpectatorMotorState received from the server.
+        /// The last received Rigidbody2D state.
         /// </summary>
-        private RigidbodyState? _receivedRigidbodyState;
+        private RigidbodyState _receivedRigidbodyState;
         /// <summary>
         /// Velocity from previous simulation.
         /// </summary>
@@ -205,25 +342,23 @@ namespace FishNet.Component.Prediction
         private PhysicsScene _physicsScene;
         #endregion
 
-
-        /// <summary>
-        /// Resets the rigidbody to last known data.
-        /// </summary>
         private void ResetRigidbodyToData()
         {
-            if (_receivedRigidbodyState == null)
-                return;
-
+            RigidbodyState state = _receivedRigidbodyState;
             //Update transform and rigidbody.
-            _rigidbody.transform.position = _receivedRigidbodyState.Value.Position;
-            _rigidbody.transform.rotation = _receivedRigidbodyState.Value.Rotation;
-            bool isKinematic = _receivedRigidbodyState.Value.IsKinematic;
+            _rigidbody.transform.position = state.Position;
+            _rigidbody.transform.rotation = state.Rotation;
+            bool isKinematic = state.IsKinematic;
             _rigidbody.isKinematic = isKinematic;
             if (!isKinematic)
             {
-                _rigidbody.velocity = _receivedRigidbodyState.Value.Velocity;
-                _rigidbody.angularVelocity = _receivedRigidbodyState.Value.AngularVelocity;
+                _rigidbody.velocity = state.Velocity;
+                _rigidbody.angularVelocity = state.AngularVelocity;
             }
+
+            /* Do not need to sync transforms because it's done internally by the reconcile method.
+             * That is, so long as this is called using OnPreReconcile. */
+
             //Set prediction defaults.
             _velocityBaseline = null;
             _angularVelocityBaseline = null;
@@ -256,45 +391,39 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Sends current states of this object to client.
         /// </summary>
-        private void SendRigidbodyState()
+        private void SendRigidbodyState(uint reconcileTick, NetworkConnection conn)
         {
-            RigidbodyState state = new RigidbodyState
-            {
-                Position = _rigidbody.transform.position,
-                Rotation = _rigidbody.transform.rotation,
-                IsKinematic = _rigidbody.isKinematic,
-                Velocity = _rigidbody.velocity,
-                AngularVelocity = _rigidbody.angularVelocity
-            };
+            if (conn == base.Owner)
+                return;
 
-            ObserversSendRigidbodyState(state);
+            RigidbodyState state = new RigidbodyState(_rigidbody, reconcileTick);
+            TargetSendRigidbodyState(conn, state, false);
         }
 
         /// <summary>
         /// Sends transform and rigidbody state to spectators.
         /// </summary>
-        /// <param name="state"></param>
-        [ObserversRpc(IncludeOwner = false, BufferLast = true)]
-        private void ObserversSendRigidbodyState(RigidbodyState state, Channel channel = Channel.Unreliable)
+        [TargetRpc(ValidateTarget = false)]
+        private void TargetSendRigidbodyState(NetworkConnection c, RigidbodyState state, bool applyImmediately, Channel channel = Channel.Unreliable)
         {
             if (!CanPredict())
                 return;
 
-            SetPreviousTransformProperties();
             _receivedRigidbodyState = state;
-            ResetRigidbodyToData();
-
-            ResetToTransformPreviousProperties();
-            SetTransformMoveRates();
+            if (applyImmediately)
+            {
+                ResetRigidbodyToData();
+                Physics.SyncTransforms();
+            }
         }
         #endregion
 
         #region Rigidbody2D.
         #region Private.
         /// <summary>
-        /// Last SpectatorMotorState received from the server. 
+        /// The last received Rigidbody2D state.
         /// </summary>
-        private Rigidbody2DState? _receivedRigidbody2DState;
+        private Rigidbody2DState _receivedRigidbody2DState;
         /// <summary>
         /// Velocity from previous simulation.
         /// </summary>
@@ -315,27 +444,34 @@ namespace FishNet.Component.Prediction
         /// PhysicsScene for this object when OnPreReconcile is called.
         /// </summary>
         private PhysicsScene2D _physicsScene2D;
+        /// <summary>
+        /// The last tick rigidbodies were reset.
+        /// </summary>
+        private long _lastResetTick = -1;
         #endregion
 
 
         /// <summary>
-        /// Resets the rigidbody to last known data.
+        /// Resets the Rigidbody2D to last received data.
         /// </summary>
         private void ResetRigidbody2DToData()
         {
-            if (_receivedRigidbody2DState == null)
-                return;
-
+            Rigidbody2DState state = _receivedRigidbody2DState;
             //Update transform and rigidbody.
-            _rigidbody2d.transform.position = _receivedRigidbody2DState.Value.Position;
-            _rigidbody2d.transform.rotation = _receivedRigidbody2DState.Value.Rotation;
-            bool simulated = _receivedRigidbody2DState.Value.Simulated;
+            _rigidbody2d.transform.position = state.Position;
+            _rigidbody2d.transform.rotation = state.Rotation;
+            bool simulated = state.Simulated;
             _rigidbody2d.simulated = simulated;
-            if (!simulated)
+            _rigidbody2d.isKinematic = !simulated;
+            if (simulated)
             {
-                _rigidbody2d.velocity = _receivedRigidbody2DState.Value.Velocity;
-                _rigidbody2d.angularVelocity = _receivedRigidbody2DState.Value.AngularVelocity;
+                _rigidbody2d.velocity = state.Velocity;
+                _rigidbody2d.angularVelocity = state.AngularVelocity;
             }
+
+            /* Do not need to sync transforms because it's done internally by the reconcile method.
+             * That is, so long as this is called using OnPreReconcile. */
+
             //Set prediction defaults.
             _velocityBaseline2D = null;
             _angularVelocityBaseline2D = null;
@@ -365,40 +501,30 @@ namespace FishNet.Component.Prediction
             _lastAngularVelocity2D = _rigidbody2d.angularVelocity;
         }
 
-
         /// <summary>
-        /// Sends current states of this object to client.
+        /// Sends current Rigidbody2D state to a connection.
         /// </summary>
-        private void SendRigidbody2DState()
+        private void SendRigidbody2DState(uint reconcileTick, NetworkConnection conn)
         {
-            Rigidbody2DState state = new Rigidbody2DState
-            {
-                Position = _rigidbody2d.transform.position,
-                Rotation = _rigidbody2d.transform.rotation,
-                Simulated = _rigidbody2d.simulated,
-                Velocity = _rigidbody2d.velocity,
-                AngularVelocity = _rigidbody2d.angularVelocity
-            };
-
-            ObserversSendRigidbody2DState(state);
+            Rigidbody2DState state = new Rigidbody2DState(_rigidbody2d, reconcileTick);
+            TargetSendRigidbody2DState(conn, state, false);
         }
 
         /// <summary>
         /// Sends transform and rigidbody state to spectators.
         /// </summary>
-        /// <param name="state"></param>
-        [ObserversRpc(IncludeOwner = false, BufferLast = true)]
-        private void ObserversSendRigidbody2DState(Rigidbody2DState state, Channel channel = Channel.Unreliable)
+        [TargetRpc(ValidateTarget = false)]
+        private void TargetSendRigidbody2DState(NetworkConnection c, Rigidbody2DState state, bool applyImmediately, Channel channel = Channel.Unreliable)
         {
             if (!CanPredict())
                 return;
 
-            SetPreviousTransformProperties();
             _receivedRigidbody2DState = state;
-            ResetRigidbody2DToData();
-
-            ResetToTransformPreviousProperties();
-            SetTransformMoveRates();
+            if (applyImmediately)
+            {
+                ResetRigidbody2DToData();
+                Physics2D.SyncTransforms();
+            }
         }
         #endregion
 

@@ -175,6 +175,11 @@ namespace FishNet.Object
         private bool _disabledNetworkBehavioursInitialized;
         #endregion
 
+        #region Editor Debug.
+#if UNITY_EDITOR
+        private int _editorOwnerId;
+#endif
+        #endregion
 
         private void Awake()
         {
@@ -734,9 +739,9 @@ namespace FishNet.Object
             }
 
         }
-
         private void OnDrawGizmosSelected()
         {
+            _editorOwnerId = (Owner == null) ? -1 : Owner.ClientId;
             SerializeTransformProperties();
         }
 

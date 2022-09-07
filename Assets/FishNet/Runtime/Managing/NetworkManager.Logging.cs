@@ -108,6 +108,7 @@ namespace FishNet.Managing
         /// <param name="txt"></param>
         private void WriteLog(LoggingType loggingType, string txt)
         {
+            return;
             string prefix;
             if (loggingType == LoggingType.Common)
                 prefix = COMMON_LOGGING_PREFIX;

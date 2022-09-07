@@ -2,7 +2,8 @@
     "name": "Unity.FishNet.Codegen",
     "references": [
         "FishNet.Runtime",
-        "FishNet.Codegen.Cecil"
+        "FishNet.Codegen.Cecil",
+        "FishNet.Generated"
     ],
     "includePlatforms": [
         "Editor"

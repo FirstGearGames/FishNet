@@ -358,8 +358,7 @@ namespace FishNet.Managing.Server
             if (id < 0 || id > maxIdValue)
             {
                 NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"The transport you are using supplied an invalid connection Id of {id}. Connection Id values must range between 0 and {maxIdValue}. The client has been disconnected.");
+                NetworkManager.LogError($"The transport you are using supplied an invalid connection Id of {id}. Connection Id values must range between 0 and {maxIdValue}. The client has been disconnected.");
                 return;
             }
             //Valid Id.
@@ -368,8 +367,7 @@ namespace FishNet.Managing.Server
                 //If started then add to authenticated clients.
                 if (args.ConnectionState == RemoteConnectionState.Started)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Common))
-                        Debug.Log($"Remote connection started for Id {id}.");
+                    NetworkManager.Log($"Remote connection started for Id {id}.");
                     NetworkConnection conn = new NetworkConnection(NetworkManager, id);
                     Clients.Add(args.ConnectionId, conn);
 
@@ -399,8 +397,7 @@ namespace FishNet.Managing.Server
                         BroadcastClientConnectionChange(false, conn);
                         conn.Reset();
 
-                        if (NetworkManager.CanLog(LoggingType.Common))
-                            Debug.Log($"Remote connection stopped for Id {id}.");
+                        NetworkManager.Log($"Remote connection stopped for Id {id}.");
                     }
                 }
             }
@@ -461,7 +458,8 @@ namespace FishNet.Managing.Server
 #endif
             using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager))
             {
-                NetworkManager.TimeManager.LastPacketTick = reader.ReadUInt32(AutoPackType.Unpacked);
+                uint tick = reader.ReadUInt32(AutoPackType.Unpacked);
+                NetworkManager.TimeManager.LastPacketTick = tick;
                 /* This is a special condition where a message may arrive split.
                 * When this occurs buffer each packet until all packets are
                 * received. */
@@ -514,6 +512,7 @@ namespace FishNet.Managing.Server
                         NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
                         return;
                     }
+                    conn.LastPacketTick = tick;
                     /* If connection isn't authenticated and isn't a broadcast
                      * then disconnect client. If a broadcast then process
                      * normally; client may still become disconnected if the broadcast

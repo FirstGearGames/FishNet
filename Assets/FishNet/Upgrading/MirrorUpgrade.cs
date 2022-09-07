@@ -1,4 +1,5 @@
-﻿#if UNITY_EDITOR && MIRROR
+﻿#if UNITY_EDITOR
+#if MIRROR
 using UnityEditor;
 using UnityEngine;
 using FishNet.Object;
@@ -435,4 +436,5 @@ namespace FishNet.Upgrading.Mirror.Editing
 
 
 }
+#endif
 #endif

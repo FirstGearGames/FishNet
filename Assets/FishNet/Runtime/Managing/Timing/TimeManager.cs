@@ -74,7 +74,20 @@ namespace FishNet.Managing.Timing
         /// While using Unity for physics timing, this is called during FixedUpdate.
         /// This may be useful if you wish to run physics differently for stacked scenes.
         /// </summary>
+        [Obsolete("Use OnPrePhysicsSimulation.")] //Remove on 2023/01/01
         public event Action<float> OnPhysicsSimulation;
+        /// <summary>
+        /// When using TimeManager for physics timing, this is called immediately before physics simulation will occur for the tick.
+        /// While using Unity for physics timing, this is called during FixedUpdate.
+        /// This may be useful if you wish to run physics differently for stacked scenes.
+        /// </summary>
+        public event Action<float> OnPrePhysicsSimulation;
+        /// <summary>
+        /// When using TimeManager for physics timing, this is called immediately after the physics simulation has occured for the tick.
+        /// While using Unity for physics timing, this is called during Update, only if a physics frame.
+        /// This may be useful if you wish to run physics differently for stacked scenes.
+        /// </summary>
+        public event Action<float> OnPostPhysicsSimulation;
         /// <summary>
         /// Called after a tick occurs; physics would have simulated if using PhysicsMode.TimeManager.
         /// </summary>
@@ -92,7 +105,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public event Action OnFixedUpdate;
         /// <summary>
-        /// RoundTripTime in milliseconds.
+        /// RoundTripTime in milliseconds. This value includes latency from the tick rate.
         /// </summary>
         public long RoundTripTime { get; private set; }
         /// <summary>
@@ -103,6 +116,14 @@ namespace FishNet.Managing.Timing
         /// Tick on the last received packet, be it from server or client.
         /// </summary>
         public uint LastPacketTick { get; internal set; }
+        /// <summary>
+        /// Last tick any object reconciled.
+        /// </summary>
+        public uint LastReconcileTick { get; internal set; }
+        /// <summary>
+        /// Last tick any object replicated.
+        /// </summary>
+        public uint LastReplicateTick { get; internal set; }
         /// <summary>
         /// Current approximate network tick as it is on server.
         /// When running as client only this is an approximation to what the server tick is.
@@ -345,7 +366,10 @@ namespace FishNet.Managing.Timing
             /* Invoke onsimulation if using Unity time.
              * Otherwise let the tick cycling part invoke. */
             if (PhysicsMode == PhysicsMode.Unity)
+            {
                 OnPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                OnPrePhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+            }
         }
 
         /// <summary>
@@ -359,6 +383,12 @@ namespace FishNet.Managing.Timing
                 ClientUptime += Time.deltaTime;
 
             IncreaseTick();
+
+            /* Invoke onsimulation if using Unity time.
+            * Otherwise let the tick cycling part invoke. */
+            if (PhysicsMode == PhysicsMode.Unity && Time.inFixedTimeStep)
+                OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+
             OnUpdate?.Invoke();
         }
 
@@ -685,15 +715,16 @@ namespace FishNet.Managing.Timing
                  * Therefor iterate must occur after OnPreTick.
                  * Iteration will only run once per frame. */
                 TryIterateData(true);
-
                 OnTick?.Invoke();
 
                 if (PhysicsMode == PhysicsMode.TimeManager)
                 {
                     float tick = (float)TickDelta;
                     OnPhysicsSimulation?.Invoke(tick);
+                    OnPrePhysicsSimulation?.Invoke(tick);
                     Physics.Simulate(tick);
                     Physics2D.Simulate(tick);
+                    OnPostPhysicsSimulation?.Invoke(tick);
                 }
 
                 OnPostTick?.Invoke();
@@ -837,7 +868,20 @@ namespace FishNet.Managing.Timing
         /// <param name="previousTick">The previous tick.</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Obsolete("Use TimePassed(uint, uint).")] //remove 2023/01/01.
         public double TicksToTime(uint currentTick, uint previousTick)
+        {
+            return TimePassed(currentTick, previousTick);
+        }
+
+        /// <summary>
+        /// Gets time passed from currentTick to previousTick.
+        /// </summary>
+        /// <param name="currentTick">The current tick.</param>
+        /// <param name="previousTick">The previous tick.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double TimePassed(uint currentTick, uint previousTick)
         {
             double multiplier;
             double result;

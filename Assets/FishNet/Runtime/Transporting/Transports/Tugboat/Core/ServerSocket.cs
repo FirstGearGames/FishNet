@@ -289,7 +289,8 @@ namespace FishNet.Transporting.Tugboat.Server
             try
             {
                 peer.Disconnect();
-                base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionState.Stopped, connectionId, base.Transport.Index));
+                //Let LiteNetLib get the disconnect event which will enqueue a remote connection state.
+                //base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionState.Stopped, connectionId, base.Transport.Index));
             }
             catch
             {

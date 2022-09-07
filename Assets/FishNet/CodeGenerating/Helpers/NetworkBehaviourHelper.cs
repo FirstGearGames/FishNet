@@ -1,5 +1,6 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.Processing;
+using FishNet.Component.Prediction;
 using FishNet.Configuring;
 using FishNet.Managing.Logging;
 using FishNet.Object;
@@ -23,6 +24,7 @@ namespace FishNet.CodeGenerating.Helping
         //Prediction.
         internal MethodReference ClearReplicateCache_MethodRef;
         internal MethodReference SetLastReconcileTick_MethodRef;
+        internal MethodReference SetLastReplicateTick_MethodRef;
         internal MethodReference TransformMayChange_MethodRef;
         internal MethodReference SendReplicateRpc_MethodRef;
         internal MethodReference SendReconcileRpc_MethodRef;
@@ -68,7 +70,7 @@ namespace FishNet.CodeGenerating.Helping
             TypeRef = CodegenSession.ImportReference(networkBehaviourType);
             FullName = networkBehaviourType.FullName;
             CodegenSession.ImportReference(networkBehaviourType);
-        
+
             //ServerRpcDelegate and ClientRpcDelegate constructors.
             ServerRpcDelegateConstructor_MethodRef = CodegenSession.ImportReference(typeof(ServerRpcDelegate).GetConstructors().First());
             ClientRpcDelegateConstructor_MethodRef = CodegenSession.ImportReference(typeof(ClientRpcDelegate).GetConstructors().First());
@@ -104,6 +106,8 @@ namespace FishNet.CodeGenerating.Helping
                 //Prediction.
                 else if (mi.Name == nameof(NetworkBehaviour.SetLastReconcileTick))
                     SetLastReconcileTick_MethodRef = CodegenSession.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.SetLastReplicateTickInternal))
+                    SetLastReplicateTick_MethodRef = CodegenSession.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.ClearReplicateCache))
                     ClearReplicateCache_MethodRef = CodegenSession.ImportReference(mi);
                 //Misc.

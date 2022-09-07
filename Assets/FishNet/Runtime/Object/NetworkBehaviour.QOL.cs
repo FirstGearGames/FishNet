@@ -12,6 +12,7 @@ using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -81,6 +82,10 @@ namespace FishNet.Object
         /// True if client nor server are active.
         /// </summary>
         public bool IsOffline => _networkObjectCache.IsOffline;
+        /// <summary>
+        /// Observers for this NetworkBehaviour.
+        /// </summary>
+        public HashSet<NetworkConnection> Observers => _networkObjectCache.Observers;
         /// <summary>
         /// True if the local client is the owner of this object.
         /// </summary>

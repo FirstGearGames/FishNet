@@ -202,7 +202,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Skips a number of bytes in the reader.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="value">Number of bytes to skip.</param>
         [CodegenExclude]
         public void Skip(int value)
         {
@@ -1075,35 +1075,29 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads into collection and returns amount read.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="collection"></param>
-        /// <returns></returns>
+        /// <param name="allowNullification">True to allow the referenced collection to be nullified when receiving a null collection read.</param>
+        /// <returns>Number of values read into the collection. -1 is returned if the collection were read as null.</returns>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int ReadList<T>(ref List<T> collection)
+        public int ReadList<T>(ref List<T> collection, bool allowNullification = false)
         {
             int count = ReadInt32();
             if (count == -1)
             {
-                return 0;
-            }
-            else if (count == 0)
-            {
-                if (collection == null)
-                    collection = new List<T>();
-
-                return 0;
+                if (allowNullification)
+                    collection = null;
+                return -1;
             }
             else
             {
-                //Initialize buffer if not already done.
                 if (collection == null)
                     collection = new List<T>(count);
-                else if (collection.Count < count)
-                    collection.Capacity = count;
+                else
+                    collection.Clear();
 
                 for (int i = 0; i < count; i++)
-                    collection[i] = Read<T>();
+                    collection.Add(Read<T>());
 
                 return count;
             }
