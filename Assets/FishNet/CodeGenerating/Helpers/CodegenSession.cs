@@ -164,7 +164,7 @@ namespace FishNet.CodeGenerating.Helping
 
 
 
-#region ImportReference.
+        #region ImportReference.
 
         public static MethodReference ImportReference(SR.MethodBase method)
         {
@@ -226,7 +226,7 @@ namespace FishNet.CodeGenerating.Helping
             return Module.ImportReference(field, context);
         }
 
-#endregion
+        #endregion
     }
 
 

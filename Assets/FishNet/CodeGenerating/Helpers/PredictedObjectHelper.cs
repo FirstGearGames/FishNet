@@ -24,7 +24,13 @@ namespace FishNet.CodeGenerating.Helping
         internal bool ImportReferences()
         {
             Type predictedObjectType = typeof(PredictedObject);
-            foreach (MethodInfo mi in predictedObjectType.GetMethods((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
+            FullName = predictedObjectType.FullName;
+
+            //If the same module then do not proceed. These are not used within the same module.
+            if (predictedObjectType.Module.Assembly.FullName == CodegenSession.Module.Assembly.FullName)
+                return true;
+
+            foreach (MethodInfo mi in predictedObjectType.GetMethods())
             {
                 if (mi.Name == nameof(PredictedObject.SendRigidbodyStatesInternal))
                 { 
