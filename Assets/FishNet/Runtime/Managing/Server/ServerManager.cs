@@ -55,6 +55,11 @@ namespace FishNet.Managing.Server
         /// </summary>
         [HideInInspector]
         public NetworkManager NetworkManager { get; private set; }
+        /// <summary>
+        /// Provide public access to the _startOnHeadless bool.
+        /// This must be set in Awake() since _startOnHeadless is read in Start()
+        /// </summary>
+        public bool StartOnHeadless { get { return _startOnHeadless; } set { _startOnHeadless = value; } }
         #endregion
 
         #region Serialized.
