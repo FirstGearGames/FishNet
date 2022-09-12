@@ -111,7 +111,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// True if the number of frames per second are less than the number of expected ticks per second.
         /// </summary>
-        internal bool LowFrameRate => ((Time.unscaledTime - _lastMultipleTicks) < 1f);
+        internal bool LowFrameRate => ((Time.unscaledTime - _lastMultipleTicksTime) < 1f);
         /// <summary>
         /// Tick on the last received packet, be it from server or client.
         /// </summary>
@@ -305,7 +305,11 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Last unscaledTime multiple ticks occurred in a single frame.
         /// </summary>
-        private float _lastMultipleTicks;
+        private float _lastMultipleTicksTime;
+        /// <summary>
+        /// Number of times ticks would have increased last frame.
+        /// </summary>
+        private int _lastTicksCount;
         /// <summary>
         /// Number of TimeManagers open which are using manual physics.
         /// </summary>
@@ -701,9 +705,29 @@ namespace FishNet.Managing.Timing
             _elapsedTickTime += time;
             FrameTicked = (_elapsedTickTime >= timePerSimulation);
 
-            //Multiple ticks will occur this frame.
-            if (_elapsedTickTime > (timePerSimulation * 2d))
-                _lastMultipleTicks = Time.unscaledTime;
+            /* Number of simulations allow during this
+             * increase iteration. If the last increase
+             * resulted in multiple ticks in a single frame
+             * then only allow 1 tick at most this run.
+             * If 1 or less ticks occurred last frame then
+             * allow up to 2 ticks. Anything beyond 2 is
+             * going to likely cause more fps loss and further
+             * desync anyway, so it's better to cap ticks. */
+            int maximumSimulations = (_lastTicksCount > 1) ? 1 : 2;
+            _lastTicksCount = Mathf.FloorToInt((float)(_elapsedTickTime / timePerSimulation));
+            
+            /* If multiple ticks will occur this frame then
+             * set the time when last multiple ticks occurred,
+             * and also see if ticks need to be capped. */
+            if (_lastTicksCount >= 2)
+            {     
+                _lastMultipleTicksTime = Time.unscaledDeltaTime;
+                /* If exceeding maximum ticks then cap
+                 * ticks exactly at the maximum value,
+                 * dropping off excess/rollover time. */
+                if (_lastTicksCount > maximumSimulations)
+                    _elapsedTickTime = (timePerSimulation * (double)maximumSimulations);
+            }
 
             while (_elapsedTickTime >= timePerSimulation)
             {

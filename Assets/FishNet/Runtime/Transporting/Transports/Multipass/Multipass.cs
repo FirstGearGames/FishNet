@@ -216,7 +216,7 @@ namespace FishNet.Transporting.Multipass
             {
                 //Fall through.
                 if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"TransportIdData could not be found for Multiass connectionId of {multipassId}.");
+                    Debug.LogError($"TransportIdData could not be found for Multipass connectionId of {multipassId}.");
                 return false;
             }
 

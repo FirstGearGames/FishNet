@@ -518,6 +518,8 @@ namespace FishNet.Object
                 RemoveClientRpcLinkIndexes();
             }
 
+            //TODO only run this if not being destroyed.
+            //EG despawn w/o destroy such as object pooling or scene object.
             ResetSyncTypes(asServer);
             if (asServer)
                 Observers.Clear();
@@ -694,7 +696,6 @@ namespace FishNet.Object
             {
                 if (parent.TryGetComponent<NetworkObject>(out _))
                 {
-                    //      Debug.Log("Found in parent");
                     IsNested = true;
                     return IsNested;
                 }
@@ -705,7 +706,6 @@ namespace FishNet.Object
             //No NetworkObject found in parents, meaning this is not nested.
             IsNested = false;
             return IsNested;
-
         }
 
         private void OnValidate()

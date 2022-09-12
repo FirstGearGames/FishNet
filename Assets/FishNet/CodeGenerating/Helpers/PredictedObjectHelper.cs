@@ -30,7 +30,7 @@ namespace FishNet.CodeGenerating.Helping
             if (predictedObjectType.Module.Assembly.FullName == CodegenSession.Module.Assembly.FullName)
                 return true;
 
-            foreach (MethodInfo mi in predictedObjectType.GetMethods())
+            foreach (MethodInfo mi in predictedObjectType.GetMethods((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
                 if (mi.Name == nameof(PredictedObject.SendRigidbodyStatesInternal))
                 { 
