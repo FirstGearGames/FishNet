@@ -4,6 +4,7 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Object.Delegating;
 using FishNet.Serializing;
+using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using System.Collections.Generic;
@@ -206,7 +207,7 @@ namespace FishNet.Object
         /// <param name="hash"></param>
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
-        [APIExclude] //codegen this can be made internal then set public via codegen
+        [CodegenMakePublic] //Make internal.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SendServerRpc(uint hash, PooledWriter methodWriter, Channel channel)
         {
@@ -218,50 +219,6 @@ namespace FishNet.Object
             writer.Dispose();
         }
 
-        //        /// <summary>
-        //        /// Sends a RPC to observers.
-        //        /// Internal use.
-        //        /// </summary>
-        //        /// <param name="hash"></param>
-        //        /// <param name="writer"></param>
-        //        /// <param name="channel"></param>
-        //        [APIExclude] //codegen this can be made internal then set public via codegen
-        //        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //        protected internal bool InternalPrepareObserversRpc(uint hash, PooledWriter writer, Channel channel, bool buffered)
-        //        {
-        //            if (!IsSpawnedWithWarning())
-        //                return false;
-
-        //#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        //            if (NetworkManager.DebugManager.ObserverRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
-        //#else
-        //            if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
-        //#endif
-        //                CreateLinkedRpcHeader(link, writer);
-        //            else
-        //                CreateRpcHeader(hash, writer, PacketId.ObserversRpc);
-
-        //            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers);
-
-        //            InternalBufferObserversRpc(hash, writer, channel);
-
-        //            return true;
-        //        }
-
-        //        /// <summary>
-        //        /// Buffers an ObserverRPC.
-        //        /// </summary>
-        //        protected internal void InternalBufferObserversRpc(uint hash, PooledWriter writer, Channel channel)
-        //        {
-        //            /* If buffered then dispose of any already buffered
-        //             * writers and replace with new one. Writers should
-        //             * automatically dispose when references are lost
-        //             * anyway but better safe than sorry. */
-        //            if (_bufferedRpcs.TryGetValueIL2CPP(hash, out (PooledWriter pw, Channel ch) result))
-        //                result.pw.Dispose();
-        //            _bufferedRpcs[hash] = (writer, channel);
-        //        }
-
         /// <summary>
         /// Sends a RPC to observers.
         /// Internal use.
@@ -269,7 +226,8 @@ namespace FishNet.Object
         /// <param name="hash"></param>
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
-        [APIExclude] //codegen this can be made internal then set public via codegen
+        [APIExclude]
+        [CodegenMakePublic] //Make internal.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SendObserversRpc(uint hash, PooledWriter methodWriter, Channel channel, bool buffered)
         {
@@ -308,7 +266,7 @@ namespace FishNet.Object
         /// Sends a RPC to target.
         /// Internal use.
         /// </summary>
-        [APIExclude] //codegen this can be made internal then set public via codegen
+        [CodegenMakePublic] //Make internal.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SendTargetRpc(uint hash, PooledWriter methodWriter, Channel channel, NetworkConnection target, bool validateTarget = true)
         {
@@ -366,17 +324,6 @@ namespace FishNet.Object
 
             return result;
         }
-
-        ///// <summary>
-        ///// Writes a full RPC and returns the writer.
-        ///// </summary>
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //private void CreateRpcHeader(uint hash, PooledWriter writer, PacketId packetId)
-        //{
-        //    writer.WritePacketId(packetId);
-        //    writer.WriteNetworkBehaviour(this);
-        //    WriteRpcHash(hash, writer);
-        //}
 
         /// <summary>
         /// Writes a full RPC and returns the writer.

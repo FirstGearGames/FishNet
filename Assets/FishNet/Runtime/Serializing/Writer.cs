@@ -189,15 +189,15 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes bytes.
         /// </summary>
-        /// <param name="buffer"></param>
+        /// <param name="value"></param>
         /// <param name="offset"></param>
         /// <param name="count"></param>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteBytes(byte[] buffer, int offset, int count)
+        public void WriteBytes(byte[] value, int offset, int count)
         {
             EnsureBufferLength(count);
-            Buffer.BlockCopy(buffer, offset, _buffer, Position, count);
+            Buffer.BlockCopy(value, offset, _buffer, Position, count);
             Position += count;
             Length = Math.Max(Length, Position);
         }
@@ -205,21 +205,21 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes bytes and length of bytes.
         /// </summary>
-        /// <param name="buffer"></param>
+        /// <param name="value"></param>
         /// <param name="offset"></param>
         /// <param name="count"></param>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteBytesAndSize(byte[] buffer, int offset, int count)
+        public void WriteBytesAndSize(byte[] value, int offset, int count)
         {
-            if (buffer == null)
+            if (value == null)
             {
                 WriteInt32(-1);
             }
             else
             {
                 WriteInt32(count);
-                WriteBytes(buffer, offset, count);
+                WriteBytes(value, offset, count);
             }
         }
 

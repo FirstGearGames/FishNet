@@ -266,18 +266,18 @@ namespace FishNet.Serializing
         /// <summary>
         /// Read bytes from position into target.
         /// </summary>
-        /// <returns><paramref name="target"/></returns>
+        /// <param name="buffer">Buffer to read bytes into.</param>
+        /// <param name="count">Number of bytes to read.</param>
         [CodegenExclude]
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ReadBytes(ref byte[] target, int count)
+        public void ReadBytes(ref byte[] buffer, int count)
         {
-            if (target == null)
+            if (buffer == null)
                 throw new EndOfStreamException($"Target is null.");
             //Target isn't large enough.
-            if (count > target.Length)
-                throw new EndOfStreamException($"Count of {count} exceeds target length of {target.Length}.");
+            if (count > buffer.Length)
+                throw new EndOfStreamException($"Count of {count} exceeds target length of {buffer.Length}.");
 
-            BlockCopy(ref target, 0, count);
+            BlockCopy(ref buffer, 0, count);
         }
 
         /// <summary>
@@ -715,7 +715,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[] ReadBytesAllocated(int count)
         {
-            byte[] bytes = ByteArrayPool.Retrieve(count);
+            byte[] bytes = new byte[count];
             ReadBytes(ref bytes, count);
             return bytes;
         }
