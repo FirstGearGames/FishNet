@@ -30,7 +30,7 @@ namespace FishNet.Component.Prediction
             public RigidbodyData(Rigidbody rigidbody)
             {
                 Rigidbody = rigidbody;
-                Rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                Rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
                 Velocity = Vector3.zero;
                 AngularVelocity = Vector3.zero;
             }
