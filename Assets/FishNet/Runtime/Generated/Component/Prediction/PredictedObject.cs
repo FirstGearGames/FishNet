@@ -396,7 +396,7 @@ namespace FishNet.Component.Prediction
             {
                 base.TimeManager.OnUpdate -= TimeManager_OnUpdate;
                 base.TimeManager.OnPreTick -= TimeManager_OnPreTick;
-                base.TimeManager.OnPreReplicateReplay += TimeManager_OnPreReplicateReplay;
+                base.TimeManager.OnPreReplicateReplay -= TimeManager_OnPreReplicateReplay;
                 base.TimeManager.OnPreReconcile -= TimeManager_OnPreReconcile;
                 base.TimeManager.OnPostReconcile -= TimeManager_OnPostReconcile;
             }
@@ -553,7 +553,7 @@ namespace FishNet.Component.Prediction
             _rigidbodyPauser = new RigidbodyPauser();
             if (_predictionType == PredictionType.Rigidbody)
             {
-                _rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
                 _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody, true);
             }
             else
