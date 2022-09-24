@@ -12,6 +12,7 @@ namespace FishNet.Connection
     /// </summary>
     public partial class NetworkConnection : IEquatable<NetworkConnection>
     {
+#pragma warning disable CS0414
         #region Private.
         /// <summary>
         /// Last tick this connection sent a ping.
@@ -33,7 +34,7 @@ namespace FishNet.Connection
         /// </summary>
         private const byte EXCESSIVE_PING_LIMIT = 10;
         #endregion
-
+#pragma warning restore CS0414
         /// <summary>
         /// Initializes for ping.
         /// </summary>
@@ -63,7 +64,7 @@ namespace FishNet.Connection
         {
             /* Only check ping conditions in build. Editors are prone to pausing which can
              * improperly kick clients. */
-#if !UNITY_EDITOR
+#if UNITY_EDITOR
             return true;
 #else
             TimeManager tm = (NetworkManager == null) ? InstanceFinder.TimeManager : NetworkManager.TimeManager;

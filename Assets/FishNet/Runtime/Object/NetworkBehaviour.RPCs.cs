@@ -216,7 +216,7 @@ namespace FishNet.Object
 
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.ServerRpc, channel);
             _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
-            writer.Dispose();
+            writer.DisposeLength();
         }
 
         /// <summary>
@@ -252,13 +252,13 @@ namespace FishNet.Object
             if (buffered)
             {
                 if (_bufferedRpcs.TryGetValueIL2CPP(hash, out (PooledWriter pw, Channel ch) result))
-                    result.pw.Dispose();
+                    result.pw.DisposeLength();
                 _bufferedRpcs[hash] = (writer, channel);
             }
             //If not buffered then dispose immediately.
             else
             {
-                writer.Dispose();
+                writer.DisposeLength();
             }
         }
 
@@ -305,7 +305,7 @@ namespace FishNet.Object
                 writer = CreateRpc(hash, methodWriter, PacketId.TargetRpc, channel);
 
             _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target);
-            writer.Dispose();
+            writer.DisposeLength();
         }
 
 
@@ -331,13 +331,15 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private PooledWriter CreateRpc(uint hash, PooledWriter methodWriter, PacketId packetId, Channel channel)
         {
+            int rpcHeaderBufferLength = GetEstimatedRpcHeaderLength();
+            int methodWriterLength = methodWriter.Length;
             //Writer containing full packet.
-            PooledWriter writer = WriterPool.GetWriter();
+            PooledWriter writer = WriterPool.GetWriter(rpcHeaderBufferLength + methodWriterLength);
             writer.WritePacketId(packetId);
             writer.WriteNetworkBehaviour(this);
             //Only write length if reliable.
             if (channel == Channel.Reliable)
-                writer.WriteLength(methodWriter.Length + _rpcHashSize);
+                writer.WriteLength(methodWriterLength + _rpcHashSize);
             //Hash and data.
             WriteRpcHash(hash, writer);
             writer.WriteArraySegment(methodWriter.GetArraySegment());

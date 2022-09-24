@@ -24,24 +24,6 @@ namespace FishNet.Managing.Timing
     [AddComponentMenu("FishNet/Manager/TimeManager")]
     public sealed partial class TimeManager : MonoBehaviour
     {
-        //#region Types.
-        //public enum BufferPurgeType
-        //{
-        //    /// <summary>
-        //    /// Run an additional input per tick when buffered inputs are higher than normal.
-        //    /// This prevents clients from sending excessive inputs but may briefly disrupt clients synchronization if their timing is drastically off.
-        //    /// Use this option for more secure prediction.
-        //    /// </summary>
-        //    Discard = 0,
-        //    /// <summary>
-        //    /// Run an additional input per tick when buffered inputs are higher than normal.
-        //    /// This is useful for keeping the client synchronized with the server by processing inputs that would normally be discarded.
-        //    /// However, by running extra buffered inputs the client has a better opportunity to cheat.
-        //    /// </summary>
-        //    Run = 1
-        //}
-        //#endregion
-
         #region Public.
         /// <summary>
         /// Called before performing a reconcile on NetworkBehaviour.
@@ -109,10 +91,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public long RoundTripTime { get; private set; }
         /// <summary>
-        /// True if the number of frames per second are less than the number of expected ticks per second.
-        /// </summary>
-        internal bool LowFrameRate => ((Time.unscaledTime - _lastMultipleTicksTime) < 1f);
-        /// <summary>
         /// Tick on the last received packet, be it from server or client.
         /// </summary>
         public uint LastPacketTick { get; internal set; }
@@ -150,7 +128,7 @@ namespace FishNet.Managing.Timing
             }
         }
         /// <summary>
-        /// DeltaTime for TickRate.
+        /// A fixed deltaTime for TickRate.
         /// </summary>
         [HideInInspector]
         public double TickDelta { get; private set; }
@@ -187,6 +165,20 @@ namespace FishNet.Managing.Timing
         #endregion
 
         #region Serialized.
+        /// <summary>
+        /// While true clients may drop local ticks if their devices are unable to maintain the tick rate.
+        /// This could result in a temporary desynchronization but will prevent the client falling further behind on ticks by repeatedly running the logic cycle multiple times per frame.
+        /// </summary>
+        [Tooltip("While true clients may drop local ticks if their devices are unable to maintain the tick rate. This could result in a temporary desynchronization but will prevent the client falling further behind on ticks by repeatedly running the logic cycle multiple times per frame.")]
+        [SerializeField]
+        private bool _allowTickDropping;
+        /// <summary>
+        /// Maximum number of ticks which may occur in a single frame before remainder are dropped for the frame.
+        /// </summary>
+        [Tooltip("Maximum number of ticks which may occur in a single frame before remainder are dropped for the frame.")]
+        [Range(1, 25)]
+        [SerializeField]
+        private byte _maximumFrameTicks = 3;
         /// <summary>
         /// 
         /// </summary>
@@ -302,10 +294,6 @@ namespace FishNet.Managing.Timing
         /// True if client received Pong since last ping.
         /// </summary>
         private bool _receivedPong = true;
-        /// <summary>
-        /// Last unscaledTime multiple ticks occurred in a single frame.
-        /// </summary>
-        private float _lastMultipleTicksTime;
         /// <summary>
         /// Number of times ticks would have increased last frame.
         /// </summary>
@@ -705,28 +693,13 @@ namespace FishNet.Managing.Timing
             _elapsedTickTime += time;
             FrameTicked = (_elapsedTickTime >= timePerSimulation);
 
-            /* Number of simulations allow during this
-             * increase iteration. If the last increase
-             * resulted in multiple ticks in a single frame
-             * then only allow 1 tick at most this run.
-             * If 1 or less ticks occurred last frame then
-             * allow up to 2 ticks. Anything beyond 2 is
-             * going to likely cause more fps loss and further
-             * desync anyway, so it's better to cap ticks. */
-            int maximumSimulations = (_lastTicksCount > 1) ? 1 : 2;
-            _lastTicksCount = Mathf.FloorToInt((float)(_elapsedTickTime / timePerSimulation));
-            
-            /* If multiple ticks will occur this frame then
-             * set the time when last multiple ticks occurred,
-             * and also see if ticks need to be capped. */
-            if (_lastTicksCount >= 2)
-            {     
-                _lastMultipleTicksTime = Time.unscaledDeltaTime;
-                /* If exceeding maximum ticks then cap
-                 * ticks exactly at the maximum value,
-                 * dropping off excess/rollover time. */
-                if (_lastTicksCount > maximumSimulations)
-                    _elapsedTickTime = (timePerSimulation * (double)maximumSimulations);
+            if (_allowTickDropping && !_networkManager.IsServer)
+            {
+                //Number of ticks to occur this frame.
+                int ticksCount = Mathf.FloorToInt((float)(_elapsedTickTime / timePerSimulation));
+                //If ticks require dropping. Set exactly to maximum ticks.
+                if (ticksCount > _maximumFrameTicks)
+                    _elapsedTickTime = (timePerSimulation * (double)_maximumFrameTicks);
             }
 
             while (_elapsedTickTime >= timePerSimulation)

@@ -178,6 +178,14 @@ namespace FishNet.Object
         /// <param name="asServer">True to reset values for server, false to reset values for client.</param>
         public void ClearReplicateCache(bool asServer) { InternalClearReplicateCache(asServer); }
         /// <summary>
+        /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
+        /// </summary>
+        public void ClearReplicateCache()
+        {
+            InternalClearReplicateCache(true);
+            InternalClearReplicateCache(false);
+        }
+        /// <summary>
         /// Clears cached replicates.
         /// For internal use only.
         /// </summary>
@@ -208,7 +216,7 @@ namespace FishNet.Object
 
             Channel channel = Channel.Unreliable;
             //Write history to methodWriter.
-            PooledWriter methodWriter = WriterPool.GetWriter();
+            PooledWriter methodWriter = WriterPool.GetWriter(WriterPool.LENGTH_BRACKET);
             methodWriter.WriteList(replicateBuffer, offset);
 
             PooledWriter writer;
@@ -218,8 +226,8 @@ namespace FishNet.Object
             writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
             NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), false);
 
-            methodWriter.Dispose();
-            writer.Dispose();
+            methodWriter.DisposeLength();
+            writer.DisposeLength();
         }
 
         /// <summary>

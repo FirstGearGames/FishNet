@@ -67,7 +67,26 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Authenticator for this ServerManager. May be null if not using authentication.
         /// </summary>
-        public Authenticator Authenticator { get => _authenticator; set => _authenticator = value; }
+        [Obsolete("Use GetAuthenticator and SetAuthenticator.")]
+        public Authenticator Authenticator
+        {
+            get => GetAuthenticator();
+            set => SetAuthenticator(value);
+        }
+        /// <summary>
+        /// Gets the Authenticator for this manager.
+        /// </summary>
+        /// <returns></returns>
+        public Authenticator GetAuthenticator() => _authenticator;
+        /// <summary>
+        /// Gets the Authenticator for this manager, and initializes it.
+        /// </summary>
+        /// <returns></returns>
+        public void SetAuthenticator(Authenticator value)
+        {
+            _authenticator = value;
+            InitializeAuthenticator();
+        }
         /// <summary>
         /// How to pack object spawns.
         /// </summary>
@@ -161,10 +180,22 @@ namespace FishNet.Managing.Server
             if (_authenticator == null)
                 _authenticator = GetComponent<Authenticator>();
             if (_authenticator != null)
-            {
-                _authenticator.InitializeOnce(manager);
-                _authenticator.OnAuthenticationResult += _authenticator_OnAuthenticationResult;
-            }
+                InitializeAuthenticator();
+        }
+
+        /// <summary>
+        /// Initializes the authenticator to this manager.
+        /// </summary>
+        private void InitializeAuthenticator()
+        {
+            Authenticator auth = GetAuthenticator();
+            if (auth == null || auth.Initialized)
+                return;
+            if (NetworkManager == null)
+                return;
+
+            auth.InitializeOnce(NetworkManager);
+            auth.OnAuthenticationResult += _authenticator_OnAuthenticationResult;
         }
 
         /// <summary>
@@ -377,8 +408,9 @@ namespace FishNet.Managing.Server
                         return;
                     /* If there is an authenticator
                      * and the transport is not a local transport. */
-                    if (Authenticator != null && !NetworkManager.TransportManager.IsLocalTransport(id))
-                        Authenticator.OnRemoteConnection(conn);
+                    Authenticator auth = GetAuthenticator();
+                    if (auth != null && !NetworkManager.TransportManager.IsLocalTransport(id))
+                        auth.OnRemoteConnection(conn);
                     else
                         ClientAuthenticated(conn);
                 }

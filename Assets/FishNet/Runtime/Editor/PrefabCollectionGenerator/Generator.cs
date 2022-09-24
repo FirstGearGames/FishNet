@@ -76,6 +76,16 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         [System.NonSerialized]
         private static bool _ranOnce;
+        /// <summary>
+        /// Last paths of updated nobs during a changed update.
+        /// </summary>
+        [System.NonSerialized]
+        private static List<string> _lastUpdatedNamePaths = new List<string>();
+        /// <summary>
+        /// Last frame changed was updated.
+        /// </summary>
+        [System.NonSerialized]
+        private static int _lastUpdatedFrame = -1;
         #endregion
 
         private static string[] GetPrefabFiles(string startingPath, HashSet<string> excludedPaths, bool recursive)
@@ -204,6 +214,8 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             if (prefabCollection == null)
                 return;
 
+            List<string> changedNobPaths = new List<string>();
+
             System.Type goType = typeof(UnityEngine.GameObject);
             IterateAssetCollection(importedAssets);
             IterateAssetCollection(movedAssets);
@@ -229,6 +241,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(item);
                     if (nob != null)
                     {
+                        changedNobPaths.Add(item);
                         prefabCollection.AddObject(nob, true);
                         dirtied = true;
                     }
@@ -243,11 +256,42 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             if (log && dirtied)
                 UnityEngine.Debug.Log($"Default prefab generator updated prefabs in {sw.ElapsedMilliseconds}ms.{GetDirtiedMessage(settings, dirtied)}");
 
+            //Check for redundancy.
+            int frameCount = Time.frameCount;
+            int changedCount = changedNobPaths.Count;
+            if (frameCount == _lastUpdatedFrame && (changedCount == _lastUpdatedNamePaths.Count) && changedCount > 0)
+            {
+                bool allMatch = true;
+                for (int i = 0; i < changedCount; i++)
+                {
+                    if (changedNobPaths[i] != _lastUpdatedNamePaths[i])
+                    {
+                        allMatch = false;
+                        break;
+                    }
+                }
+
+                /* If the import results are the same as the last attempt, on the same frame
+                 * then there is likely an issue saving the assets. */
+                if (allMatch)
+                {
+                    //Unset dirtied to prevent a save.
+                    dirtied = false;
+                    //Log this no matter what, it's critical.
+                    UnityEngine.Debug.LogError($"Default prefab generator had a problem saving one or more assets. " +
+                        $"This usually occurs when the assets cannot be saved due to missing scripts or serialization errors. " +
+                        $"Please see above any prefabs which could not save any make corrections.");
+                }
+
+            }
+            //Set last values.
+            _lastUpdatedFrame = Time.frameCount;
+            _lastUpdatedNamePaths = changedNobPaths;
+
             EditorUtility.SetDirty(prefabCollection);
             if (dirtied && settings.SaveChanges)
                 AssetDatabase.SaveAssets();
         }
-
 
         /// <summary>
         /// Generates prefabs by iterating all files within settings parameters.

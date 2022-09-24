@@ -163,9 +163,9 @@ namespace FishNet.Managing.Server
         /// Despawns an object over the network. Can only be called on the server.
         /// </summary>
         /// <param name="go">GameObject instance to despawn.</param>
-        /// <param name="disableOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
+        /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Despawn(GameObject go, bool? disableOnDespawnOverride = null)
+        public void Despawn(GameObject go, DespawnType despawnType = DespawnType.Destroy)
         {
             if (!CanSpawnOrDespawn(true))
                 return;
@@ -178,15 +178,15 @@ namespace FishNet.Managing.Server
             }
 
             NetworkObject nob = go.GetComponent<NetworkObject>();
-            Despawn(nob, disableOnDespawnOverride);
+            Despawn(nob, despawnType);
         }
 
         /// <summary>
         /// Despawns an object over the network. Can only be called on the server.
         /// </summary>
         /// <param name="networkObject">NetworkObject instance to despawn.</param>
-        /// <param name="disableOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
-        public void Despawn(NetworkObject networkObject, bool? disableOnDespawnOverride = null)
+        /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
+        public void Despawn(NetworkObject networkObject, DespawnType despawnType = DespawnType.Destroy)
         {
             if (!CanSpawnOrDespawn(true))
                 return;
@@ -197,8 +197,7 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            bool disableOnDespawn = (disableOnDespawnOverride == null) ? networkObject.DisableOnDespawn : disableOnDespawnOverride.Value;
-            Objects.Despawn(networkObject, disableOnDespawn, true);
+            Objects.Despawn(networkObject, despawnType, true);
         }
     }
 

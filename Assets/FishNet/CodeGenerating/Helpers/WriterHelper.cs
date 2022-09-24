@@ -15,6 +15,7 @@ namespace FishNet.CodeGenerating.Helping
     {
         #region Reflection references.
         private MethodReference WriterPool_GetWriter_MethodRef;
+        private MethodReference WriterPool_GetWriterLength_MethodRef;
         private MethodReference Writer_WritePackedWhole_MethodRef;
         internal TypeReference PooledWriter_TypeRef;
         internal TypeReference Writer_TypeRef;
@@ -60,7 +61,21 @@ namespace FishNet.CodeGenerating.Helping
             foreach (var methodInfo in writerPoolType.GetMethods())
             {
                 if (methodInfo.Name == nameof(WriterPool.GetWriter))
-                    WriterPool_GetWriter_MethodRef = CodegenSession.ImportReference(methodInfo);
+                {
+                    //GetWriter().
+                    if (methodInfo.GetParameters().Length == 0)
+                    {
+                        WriterPool_GetWriter_MethodRef = CodegenSession.ImportReference(methodInfo);
+                    }
+                    //GetWriter(?).
+                    else if (methodInfo.GetParameters().Length == 1)
+                    {
+                        ParameterInfo pi = methodInfo.GetParameters()[0];
+                        //GetWriter(int).
+                        if (pi.ParameterType == typeof(int))
+                            WriterPool_GetWriterLength_MethodRef = CodegenSession.ImportReference(methodInfo);
+                    }
+                }
             }
 
             Type pooledWriterType = typeof(PooledWriter);
@@ -313,10 +328,10 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates a PooledWriter within the body/ and returns its variable index.
         /// EG: PooledWriter writer = WriterPool.GetWriter();
         /// </summary>
-        internal VariableDefinition CreatePooledWriter(MethodDefinition methodDef)
+        internal VariableDefinition CreatePooledWriter(MethodDefinition methodDef, int length)
         {
             VariableDefinition resultVd;
-            List<Instruction> insts = CreatePooledWriter(methodDef, out resultVd);
+            List<Instruction> insts = CreatePooledWriter(methodDef, length, out resultVd);
 
             ILProcessor processor = methodDef.Body.GetILProcessor();
             processor.Add(insts);
@@ -329,14 +344,24 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="methodDef"></param>
         /// <returns></returns>
-        internal List<Instruction> CreatePooledWriter(MethodDefinition methodDef, out VariableDefinition resultVd)
+        internal List<Instruction> CreatePooledWriter(MethodDefinition methodDef, int length, out VariableDefinition resultVd)
         {
             List<Instruction> insts = new List<Instruction>();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             resultVd = CodegenSession.GeneralHelper.CreateVariable(methodDef, PooledWriter_TypeRef);
-            //Get a pooled writer from WriterPool and assign it to added PooledWriter.
-            insts.Add(processor.Create(OpCodes.Call, WriterPool_GetWriter_MethodRef));
+            //If length is specified then pass in length.
+            if (length > 0)
+            { 
+                insts.Add(processor.Create(OpCodes.Ldc_I4, length));
+                insts.Add(processor.Create(OpCodes.Call, WriterPool_GetWriterLength_MethodRef));
+            }
+            //Use parameter-less method if no length.
+            else
+            {
+                insts.Add(processor.Create(OpCodes.Call, WriterPool_GetWriter_MethodRef));
+            }
+            //Set value to variable definition.
             insts.Add(processor.Create(OpCodes.Stloc, resultVd));
             return insts;
         }

@@ -111,6 +111,17 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Resets this NetworkBehaviour so that it may be added to an object pool.
+        /// </summary>
+        internal void ResetForObjectPool()
+        {
+            ResetSyncTypes();
+            ClearReplicateCache();
+            ClearBuffedRpcs();
+        }
+
+
+        /// <summary>
         /// Tries to add the NetworkObject component.
         /// </summary>
         private NetworkObject TryAddNetworkObject()

@@ -77,19 +77,7 @@ namespace FishNet.Object
             NetworkObserver = GetComponent<NetworkObserver>();
             NetworkManager.ObserverManager.AddDefaultConditions(this, ref NetworkObserver);
         }
-        /// <summary>
-        /// Initializes NetworkObserver. This will only call once even as host.
-        /// </summary>
-        private void InitializeOnceObservers()
-        {
-            if (_networkObserverInitiliazed)
-                return;
-
-            if (NetworkObserver != null)
-                NetworkObserver.PreInitialize(this);
-
-            _networkObserverInitiliazed = true;
-        }
+  
 
         /// <summary>
         /// Removes a connection from observers for this object.

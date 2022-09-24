@@ -39,6 +39,10 @@ namespace FishNet.Serializing
     {
         #region Public.
         /// <summary>
+        /// Capacity of the buffer.
+        /// </summary>
+        public int Capacity => _buffer.Length;
+        /// <summary>
         /// NetworkManager for this reader. Used to lookup objects.
         /// </summary>
         public NetworkManager NetworkManager;
@@ -78,14 +82,6 @@ namespace FishNet.Serializing
         /// Data being read.
         /// </summary>
         private byte[] _buffer;
-        /// <summary>
-        /// Buffer to copy Guids into.
-        /// </summary>
-        private byte[] _guidBuffer = new byte[16];
-        /// <summary>
-        /// Used to encode strings.
-        /// </summary>
-        private readonly UTF8Encoding _encoding = new UTF8Encoding(false, true);
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -473,7 +469,7 @@ namespace FishNet.Serializing
             if (!CheckAllocationAttack(size))
                 return string.Empty;
             ArraySegment<byte> data = ReadArraySegment(size);
-            return _encoding.GetString(data.Array, data.Offset, data.Count);
+            return ReaderStatics.GetString(data);
         }
 
         /// <summary>
@@ -728,8 +724,9 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public System.Guid ReadGuid()
         {
-            ReadBytes(ref _guidBuffer, 16);
-            return new System.Guid(_guidBuffer);
+            byte[] buffer = ReaderStatics.GetGuidBuffer();
+            ReadBytes(ref buffer, 16);
+            return new System.Guid(buffer);
         }
 
 
@@ -774,19 +771,19 @@ namespace FishNet.Serializing
         /// <returns></returns>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NetworkObject ReadNetworkObject(out int objectId)
+        public NetworkObject ReadNetworkObject(out int objectOrPrefabId)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             LastNetworkBehaviour = null;
 #endif
             bool isSpawned = ReadBoolean();
-            objectId = ReadInt16();
+            objectOrPrefabId = ReadInt16();
             /* -1 indicates that the object
              * is null or no PrefabId is set.
              * PrefabIds are set in Awake within
              * the NetworkManager so that should
              * never happen so long as nob isn't null. */
-            if (objectId == -1)
+            if (objectOrPrefabId == -1)
                 return null;
 
             bool isServer = NetworkManager.ServerManager.Started;
@@ -806,19 +803,18 @@ namespace FishNet.Serializing
                  * use a fake host connection like some lesser solutions the client
                  * has to always be treated as it's own entity. */
                 if (isClient)
-                    NetworkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
+                    NetworkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectOrPrefabId, out result);
                 //If not found on client and server is running then try server.
                 if (result == null && isServer)
-                    NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
+                    NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectOrPrefabId, out result);
             }
             //Not spawned.
             else
             {
-
                 //Only look up asServer if not client, otherwise use client.
                 bool asServer = !isClient;
                 //Look up prefab.
-                result = NetworkManager.SpawnablePrefabs.GetObject(asServer, objectId);
+                result = NetworkManager.GetPooledInstantiated(objectOrPrefabId, asServer);
             }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

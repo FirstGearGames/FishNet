@@ -171,7 +171,10 @@ namespace FishNet.Managing.Statistic
         {
             int decimalPlaces = 2;
             if (bytes == 0)
+            {
+                decimalPlaces = 0;
                 return string.Format("{0:n" + decimalPlaces + "} bytes", 0);
+            }
 
             // mag is 0 for bytes, 1 for KB, 2, for MB, etc.
             int mag = (int)Math.Log(bytes, 1024);
@@ -191,6 +194,7 @@ namespace FishNet.Managing.Statistic
             //Don't show decimals for bytes.
             if (mag == 0)
                 decimalPlaces = 0;
+
             return string.Format("{0:n" + decimalPlaces + "} {1}", adjustedSize, _sizeSuffixes[mag]);
         }
     }

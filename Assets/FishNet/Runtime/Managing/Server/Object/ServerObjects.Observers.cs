@@ -116,7 +116,8 @@ namespace FishNet.Managing.Server
                         else if (osc == ObserverStateChange.Removed)
                         {
                             everyoneWriter.Reset();
-                            WriteDespawn(nob, nob.DisableOnDespawn, ref everyoneWriter);
+                            WriteDespawn(nob, nob.DespawnType, ref everyoneWriter);
+
                         }
                         else
                         {
@@ -330,7 +331,7 @@ namespace FishNet.Managing.Server
             }
 
             void AddChildNetworkObjects(NetworkObject n)
-            {               
+            {
                 cache.AddValue(n);
                 foreach (NetworkObject nob in n.ChildNetworkObjects)
                     AddChildNetworkObjects(nob);
@@ -378,7 +379,7 @@ namespace FishNet.Managing.Server
                     else if (osc == ObserverStateChange.Removed)
                     {
                         everyoneWriter.Reset();
-                        WriteDespawn(n, n.DisableOnDespawn, ref everyoneWriter);
+                        WriteDespawn(n, n.DespawnType, ref everyoneWriter);
                     }
                     else
                     {
@@ -430,7 +431,7 @@ namespace FishNet.Managing.Server
                 if (osc == ObserverStateChange.Added)
                     WriteSpawn(nob, conn, ref everyoneWriter, ref ownerWriter);
                 else if (osc == ObserverStateChange.Removed)
-                    WriteDespawn(nob, nob.DisableOnDespawn, ref everyoneWriter);
+                    WriteDespawn(nob, nob.DespawnType, ref everyoneWriter);
                 else
                     continue;
 

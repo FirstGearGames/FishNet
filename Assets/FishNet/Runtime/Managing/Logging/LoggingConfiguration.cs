@@ -1,5 +1,6 @@
 ﻿using FishNet.Documenting;
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Managing.Logging
@@ -104,20 +105,40 @@ namespace FishNet.Managing.Logging
         }
 
         /// <summary>
-        /// Returns if logging can be written to disk.
+        /// Logs a common value if can log.
         /// </summary>
-        /// <returns></returns>
-        internal bool CanWrite()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual void Log(string value)
         {
-            return false;
-            //return _writeLogs;
+            if (CanLog(LoggingType.Common))
+                Debug.Log(value);
+        }
+
+        /// <summary>
+        /// Logs a warning value if can log.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual void LogWarning(string value)
+        {
+            if (CanLog(LoggingType.Warning))
+                Debug.LogWarning(value);
+        }
+
+        /// <summary>
+        /// Logs an error value if can log.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual void LogError(string value)
+        {
+            if (CanLog(LoggingType.Error))
+                Debug.LogError(value);
         }
 
         /// <summary>
         /// Clones this logging configuration.
         /// </summary>
         /// <returns></returns>
-        internal LoggingConfiguration Clone()
+        public virtual LoggingConfiguration Clone()
         {
             LoggingConfiguration copy = ScriptableObject.CreateInstance<LoggingConfiguration>();
             copy.LoggingConstructor(_loggingEnabled, _developmentLogging, _guiLogging, _headlessLogging);

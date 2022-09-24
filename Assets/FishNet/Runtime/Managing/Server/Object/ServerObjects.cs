@@ -502,12 +502,12 @@ namespace FishNet.Managing.Server
             bool nested = nob.IsNested;
             bool sceneObject = nob.IsSceneObject;
             //Write type of spawn.
-            ObjectSpawnType ost;
+            SpawnType st;
             if (sceneObject)
-                ost = ObjectSpawnType.Scene;
+                st = SpawnType.Scene;
             else
-                ost = (nob.IsGlobal) ? ObjectSpawnType.InstantiatedGlobal : ObjectSpawnType.Instantiated;
-            headerWriter.WriteByte((byte)ost);
+                st = (nob.IsGlobal) ? SpawnType.InstantiatedGlobal : SpawnType.Instantiated;
+            headerWriter.WriteByte((byte)st);
             //ComponentIndex for the nob. 0 is root but more appropriately there's a IsNested boolean as shown above.
             headerWriter.WriteByte(nob.ComponentIndex);
 
@@ -692,12 +692,12 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Despawns an object over the network.
         /// </summary>
-        internal override void Despawn(NetworkObject nob, bool disableOnDespawn, bool asServer)
+        internal override void Despawn(NetworkObject nob, DespawnType despawnType, bool asServer)
         {
             if (nob.CanSpawnOrDespawn(true))
             {
-                FinalizeDespawn(nob, disableOnDespawn);
-                base.Despawn(nob, disableOnDespawn, true);
+                FinalizeDespawn(nob, despawnType);
+                base.Despawn(nob, despawnType, true);
             }
         }
 
@@ -707,7 +707,7 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob)
         {
-            FinalizeDespawn(nob, true);
+            FinalizeDespawn(nob, DespawnType.Destroy);
             base.NetworkObjectUnexpectedlyDestroyed(nob);
         }
 
@@ -715,12 +715,12 @@ namespace FishNet.Managing.Server
         /// Finalizes the despawn process. By the time this is called the object is considered unaccessible.
         /// </summary>
         /// <param name="nob"></param>
-        private void FinalizeDespawn(NetworkObject nob, bool disableOnDespawn)
+        private void FinalizeDespawn(NetworkObject nob, DespawnType despawnType)
         {
             if (nob != null && nob.ObjectId != -1)
             {
                 nob.WriteDirtySyncTypes();
-                WriteDespawnAndSend(nob, disableOnDespawn);
+                WriteDespawnAndSend(nob, despawnType);
                 CacheObjectId(nob);
             }
         }
@@ -729,10 +729,10 @@ namespace FishNet.Managing.Server
         /// Writes a despawn and sends it to clients.
         /// </summary>
         /// <param name="nob"></param>
-        private void WriteDespawnAndSend(NetworkObject nob, bool disableOnDespawn)
+        private void WriteDespawnAndSend(NetworkObject nob, DespawnType despawnType)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
-            WriteDespawn(nob, disableOnDespawn, ref everyoneWriter);
+            WriteDespawn(nob, despawnType, ref everyoneWriter);
 
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
 
@@ -758,11 +758,11 @@ namespace FishNet.Managing.Server
         /// Writes a despawn.
         /// </summary>
         /// <param name="nob"></param>
-        private void WriteDespawn(NetworkObject nob, bool disableOnDespawn, ref PooledWriter everyoneWriter)
+        private void WriteDespawn(NetworkObject nob, DespawnType despawnType, ref PooledWriter everyoneWriter)
         {
             everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
             everyoneWriter.WriteNetworkObject(nob);
-            everyoneWriter.WriteBoolean(disableOnDespawn);
+            everyoneWriter.WriteByte((byte)despawnType);
         }
 
 

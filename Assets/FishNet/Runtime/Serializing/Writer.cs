@@ -9,7 +9,6 @@ using FishNet.Utility.Constant;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text;
 using UnityEngine;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
@@ -33,6 +32,10 @@ namespace FishNet.Serializing
     {
         #region Public.
         /// <summary>
+        /// Capacity of the buffer.
+        /// </summary>
+        public int Capacity => _buffer.Length;
+        /// <summary>
         /// Current write position.
         /// </summary>
         public int Position;
@@ -51,14 +54,6 @@ namespace FishNet.Serializing
         /// Buffer to prevent new allocations. This will grow as needed.
         /// </summary>
         private byte[] _buffer = new byte[64];
-        /// <summary>
-        /// Encoder for strings.
-        /// </summary>
-        private readonly UTF8Encoding _encoding = new UTF8Encoding(false, true);
-        /// <summary>
-        /// StringBuffer to use with encoding.
-        /// </summary>
-        private byte[] _stringBuffer = new byte[64];
         #endregion
 
         /// <summary>
@@ -93,6 +88,16 @@ namespace FishNet.Serializing
                 Write(item.Key);
                 Write(item.Value);
             }
+        }
+
+        /// <summary>
+        /// Ensures the buffer Capacity is of minimum count.
+        /// </summary>
+        /// <param name="count"></param>
+        public void EnsureBufferCapacity(int count)
+        {
+            if (Capacity < count)
+                Array.Resize(ref _buffer, count);
         }
 
         /// <summary>
@@ -434,16 +439,10 @@ namespace FishNet.Serializing
              * never intentionally inflict allocations on itself. 
              * Reader ensures string count cannot exceed received
              * packet size. */
-            int valueMaxBytes = _encoding.GetMaxByteCount(value.Length);
-            if (valueMaxBytes >= _stringBuffer.Length)
-            {
-                int nextSize = (_stringBuffer.Length * 2) + valueMaxBytes;
-                Array.Resize(ref _stringBuffer, nextSize);
-            }
-
-            int size = _encoding.GetBytes(value, 0, value.Length, _stringBuffer, 0);
+            int size;
+            byte[] stringBuffer = WriterStatics.GetStringBuffer(value, out size);
             WriteInt32(size);
-            WriteBytes(_stringBuffer, 0, size);
+            WriteBytes(stringBuffer, 0, size);
         }
 
         /// <summary>

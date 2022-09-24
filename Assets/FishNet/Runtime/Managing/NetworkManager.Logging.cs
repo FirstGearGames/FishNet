@@ -1,5 +1,6 @@
 ﻿using FishNet.Documenting;
 using FishNet.Managing.Logging;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Managing
@@ -44,10 +45,7 @@ namespace FishNet.Managing
         public static bool StaticCanLog(LoggingType loggingType)
         {
             NetworkManager nm = InstanceFinder.NetworkManager;
-            if (nm == null || !nm.CanLog(loggingType))
-                return false;
-            else
-                return true;
+            return (nm == null) ? false : nm.CanLog(loggingType);
         }
 
         /// <summary>
@@ -57,69 +55,49 @@ namespace FishNet.Managing
         /// <returns></returns>
         public bool CanLog(LoggingType loggingType)
         {
-            if (_logging == null)
-                return true;
-            else
-                return _logging.CanLog(loggingType);
+            return _logging.CanLog(loggingType);
         }
+
 
         /// <summary>
         /// Performs a common log, should logging settings permit it.
         /// </summary>
-        /// <param name="o"></param>
-        public void Log(string txt)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void StaticLog(string value) => InstanceFinder.NetworkManager?.Log(value);
+        /// <summary>
+        /// Performs a common log, should logging settings permit it.
+        /// </summary>
+        public void Log(string value)
         {
-            if (CanLog(LoggingType.Common))
-            {
-                Debug.Log(txt);
-                WriteLog(LoggingType.Common, txt);
-            }
+            _logging.Log(value);
         }
 
         /// <summary>
         /// Performs a warning log, should logging settings permit it.
         /// </summary>
-        /// <param name="o"></param>
-        public void LogWarning(string txt)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void StaticLogWarning(string value) => InstanceFinder.NetworkManager?.LogWarning(value);
+        /// <summary>
+        /// Performs a warning log, should logging settings permit it.
+        /// </summary>
+        public void LogWarning(string value)
         {
-            if (CanLog(LoggingType.Warning))
-            {
-                Debug.LogWarning(txt);
-                WriteLog(LoggingType.Warning, txt);
-            }
+            _logging.LogWarning(value);
         }
 
         /// <summary>
         /// Performs an error log, should logging settings permit it.
         /// </summary>
-        /// <param name="o"></param>
-        public void LogError(string txt)
-        {
-            if (CanLog(LoggingType.Error))
-            {
-                Debug.LogError(txt);
-                WriteLog(LoggingType.Error, txt);
-            }
-        }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void StaticLogError(string value) => InstanceFinder.NetworkManager?.LogError(value);
         /// <summary>
-        /// Writes log to file.
+        /// Performs an error log, should logging settings permit it.
         /// </summary>
-        /// <param name="txt"></param>
-        private void WriteLog(LoggingType loggingType, string txt)
+        public void LogError(string value)
         {
-            return;
-            string prefix;
-            if (loggingType == LoggingType.Common)
-                prefix = COMMON_LOGGING_PREFIX;
-            else if (loggingType == LoggingType.Warning)
-                prefix = WARNING_LOGGING_PREFIX;
-            else if (loggingType == LoggingType.Error)
-                prefix = ERROR_LOGGING_PREFIX;
-            else
-                prefix = string.Empty;
-
+            _logging.LogError(value);
         }
+
     }
 
 }

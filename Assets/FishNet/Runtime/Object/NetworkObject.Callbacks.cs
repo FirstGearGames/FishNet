@@ -82,7 +82,7 @@ namespace FishNet.Object
         /// Invokes OnStop callbacks.
         /// </summary>
         /// <param name="asServer"></param>
-        private void InvokeStopCallbacks(bool asServer)
+        internal void InvokeStopCallbacks(bool asServer)
         {
             if (asServer)
             {

@@ -1,5 +1,6 @@
 ﻿using FishNet.Managing.Object;
 using FishNet.Object;
+using System;
 using UnityEngine;
 
 namespace FishNet.Managing
@@ -41,15 +42,16 @@ namespace FishNet.Managing
         }
 
         /// <summary>
-        /// Gets the NetworkObject prefab for index. Can be used in conjuction with GetPrefabIndex.
+        /// Returns a prefab with prefabId.
+        /// This method will bypass object pooling.
         /// </summary>
-        /// <param name="asServer">True if to get from the server collection.</param>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        public NetworkObject GetPrefab(int index, bool asServer)
+        /// <param name="prefabId">PrefabId to get.</param>
+        /// <param name="asServer">True if getting the prefab asServer.</param>
+        public NetworkObject GetPrefab(int prefabId, bool asServer)
         {
-            return SpawnablePrefabs.GetObject(asServer, index);
+            return GetPooledInstantiated(prefabId, asServer);
         }
+
     }
 
 }

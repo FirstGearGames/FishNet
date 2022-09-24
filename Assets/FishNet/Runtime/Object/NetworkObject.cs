@@ -143,28 +143,30 @@ namespace FishNet.Object
             _networkObserverInitiliazed = false;
             IsGlobal = value;
         }
-        [Header("WIP! Not Functional")]
+
+        [Header("Experimental")]
         /// <summary>
-        /// 
+        /// How to handle this object when it despawns. Scene objects are never destroyed when despawning.
         /// </summary>
-        [Tooltip("True to disable rather than destroy this NetworkObject when being despawned. Scene objects are never destroyed.")]
         [SerializeField]
-        private bool _disableOnDespawn;
+        [Tooltip("How to handle this object when it despawns. Scene objects are never destroyed when despawning.")]
+        private DespawnType _despawnType = Object.DespawnType.Destroy;
         /// <summary>
-        /// True to disable rather than destroy this NetworkObject when being despawned. Scene objects are never destroyed.
-        /// </summary> 
-        public bool DisableOnDespawn
+        /// True to use configured ObjectPool rather than destroy this NetworkObject when being despawned. Scene objects are never destroyed.
+        /// </summary>
+        public DespawnType DespawnType
         {
-            get => _disableOnDespawn;
-            private set => _disableOnDespawn = value;
+            get => _despawnType;
+            private set => _despawnType = value;
         }
+
         /// <summary>
         /// Sets AllowDestroy value.
         /// </summary>
         /// <param name="allowDestroy"></param>
-        public void SetDisableOnDespawn(bool disableOnDespawn)
+        public void SetCacheOnDespawn(DespawnType despawnType)
         {
-            DisableOnDespawn = disableOnDespawn;
+            DespawnType = despawnType;
         }
         #endregion
 
@@ -264,6 +266,16 @@ namespace FishNet.Object
                 {
                     if (nextParent.TryGetComponent(out NetworkObject pNob))
                     {
+                        /* If pNob is not the same as ParentNetworkObject
+                         * then that means this object was moved around. It could be
+                         * that this was previously a child of something else
+                         * or that was given a parent later on in it's life cycle.
+                         ^
+                         * When this occurs do not send a despawn for this object.
+                         * Rather, let it destroy from unity callbacks which will force
+                        * the proper destroy/stop cycle. */
+                        if (pNob != ParentNetworkObject)
+                            break;
                         //If nob is deinitialized then this one cannot exist.
                         if (pNob.IsDeinitializing)
                         {
@@ -288,11 +300,14 @@ namespace FishNet.Object
             if (IsDeinitializing)
                 return;
 
-            //Was destroyed without going through the proper methods.
-            if (NetworkManager.IsServer)
-                NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this);
-            if (NetworkManager.IsClient)
-                NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this);
+            if (NetworkManager != null)
+            {
+                //Was destroyed without going through the proper methods.
+                if (NetworkManager.IsServer)
+                    NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this);
+                if (NetworkManager.IsClient)
+                    NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this);
+            }
 
             /* When destroyed unexpectedly it's
              * impossible to know if this occurred on
@@ -317,8 +332,7 @@ namespace FishNet.Object
             Observers.Clear();
             IsDeinitializing = true;
 
-            SetActiveStatus(false, true);
-            SetActiveStatus(false, false);
+            SetActiveStatus(false);
             //Do not need to set state if being destroyed.
             //Don't need to reset sync types if object is being destroyed.
         }
@@ -332,6 +346,14 @@ namespace FishNet.Object
                 IsServer = isActive;
             else
                 IsClient = isActive;
+        }
+        /// <summary>
+        /// Sets IsClient and IsServer to isActive.
+        /// </summary>
+        private void SetActiveStatus(bool isActive)
+        {
+            IsServer = isActive;
+            IsClient = isActive;
         }
         /// <summary>
         /// Initializes this script. This is only called once even when as host.
@@ -368,8 +390,9 @@ namespace FishNet.Object
             /* NetworkObserver uses some information from
              * NetworkBehaviour so it must be preinitialized
              * after NetworkBehaviours are. */
-            if (asServer)
-                InitializeOnceObservers();
+            if (asServer && NetworkObserver != null)
+                NetworkObserver.PreInitialize(this);
+            _networkObserverInitiliazed = true;
 
             //Add to connection objects if owner exist.
             if (owner != null)
@@ -518,26 +541,37 @@ namespace FishNet.Object
                 RemoveClientRpcLinkIndexes();
             }
 
-            //TODO only run this if not being destroyed.
-            //EG despawn w/o destroy such as object pooling or scene object.
-            ResetSyncTypes(asServer);
+            SetActiveStatus(false, asServer);
             if (asServer)
                 Observers.Clear();
-
-            SetActiveStatus(false, asServer);
-            //State = NetworkObjectState.Despawned;
         }
 
-        ///// <summary>
-        ///// Disables this object and resets network values.
-        ///// </summary>
-        //internal void DisableNetworkObject()
-        //{
-        //    SetOwner(null, false);
-        //    ObjectId = -1;
-        //    Observers.Clear();
-        //    NetworkManager = null;
-        //}
+        /// <summary>
+        /// Resets states for object to be pooled.
+        /// </summary>
+        /// <param name="asServer">True if performing as server.</param>
+        public void ResetForObjectPool()
+        {
+            int count = NetworkBehaviours.Length;
+            for (int i = 0; i < count; i++)
+                NetworkBehaviours[i].ResetForObjectPool();
+
+            State = NetworkObjectState.Unset;
+            SetOwner(NetworkManager.EmptyConnection);
+            //QOL references.
+            NetworkManager = null;
+            ServerManager = null;
+            ClientManager = null;
+            ObserverManager = null;
+            TransportManager = null;
+            TimeManager = null;
+            SceneManager = null;
+            RollbackManager = null;
+            //Misc sets.
+            NetworkObserver?.Deinitialize();
+            ObjectId = -1;
+            ClientInitialized = false;
+        }
 
         /// <summary>
         /// Removes ownership from all clients.

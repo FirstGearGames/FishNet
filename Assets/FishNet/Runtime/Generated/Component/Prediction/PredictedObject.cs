@@ -179,6 +179,18 @@ namespace FishNet.Component.Prediction
         private CollectionState _collectionState = CollectionState.Unset;
         #endregion
 
+        private struct MovedTracker
+        {
+            public uint LocalTick;
+            public bool Moved;
+
+            public MovedTracker(uint localTick, bool moved)
+            {
+                LocalTick = localTick;
+                Moved = moved;
+            }
+        }
+
         private void Awake()
         {
             if (Application.isPlaying)
@@ -340,6 +352,7 @@ namespace FishNet.Component.Prediction
 
         private void TimeManager_OnPreTick()
         {
+
             if (CanSmooth())
             {
                 /* Only snap to destination if using tick smoothing.
@@ -483,15 +496,14 @@ namespace FishNet.Component.Prediction
             }
         }
 
-
         /// <summary>
         /// Sets Position and Rotation move rates to reach Target datas.
         /// </summary>
-        /// <param name="durationOverride">Smooth of this duration when not set to -1f. Otherwise TimeManager.TickDelta is used.</param>
         private void SetGraphicalMoveRates()
         {
             float timeManagerDelta = (float)base.TimeManager.TickDelta;
             float delta = (_durationType == SmoothingDurationType.Tick) ? timeManagerDelta : _smoothingDuration;
+            
             /* delta can never be faster than tick rate, otherwise the object will always 
              * get to smoothing goal before the next tick. */
             if (delta < timeManagerDelta)
@@ -514,7 +526,6 @@ namespace FishNet.Component.Prediction
                     _rotationMoveRate = (distance / delta);
             }
         }
-
 
         /// <summary>
         /// Caches the transforms current position and rotation.

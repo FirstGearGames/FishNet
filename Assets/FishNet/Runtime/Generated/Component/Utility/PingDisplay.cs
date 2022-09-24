@@ -21,6 +21,12 @@ namespace FishNet.Component.Utility
 
         #region Serialized.
         /// <summary>
+        /// Color for text.
+        /// </summary>
+        [Tooltip("Color for text.")]
+        [SerializeField]
+        private Color _color = Color.white;
+        /// <summary>
         /// Which corner to display ping in.
         /// </summary>
         [Tooltip("Which corner to display ping in.")]
@@ -43,11 +49,16 @@ namespace FishNet.Component.Utility
 
         private void OnGUI()
         {
+            //No need to perform these actions on server.
+#if !UNITY_EDITOR && UNITY_SERVER
+            return;
+#endif
+
             //Only clients can see pings.
             if (!InstanceFinder.IsClient)
                 return;
 
-            _style.normal.textColor = Color.white;
+            _style.normal.textColor = _color;
             _style.fontSize = 15;
             float width = 85f;
             float height = 15f;

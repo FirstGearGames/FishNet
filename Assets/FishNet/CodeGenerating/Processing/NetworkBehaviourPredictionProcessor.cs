@@ -797,17 +797,17 @@ namespace FishNet.CodeGenerating.Processing
 
             void ClearReplicateCache(bool server, bool client)
             {
-                if (server)
+                if (server && client)
                 {
                     processor.Emit(OpCodes.Ldarg_0);
-                    processor.Emit(OpCodes.Ldc_I4_1);
-                    processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.ClearReplicateCache_MethodRef);
+                    processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.ClearReplicateCache_0P_MethodRef);
                 }
-                if (client)
+                else
                 {
                     processor.Emit(OpCodes.Ldarg_0);
-                    processor.Emit(OpCodes.Ldc_I4_0);
-                    processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.ClearReplicateCache_MethodRef);
+                    OpCode opC = (server) ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0;
+                    processor.Emit(opC);
+                    processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.ClearReplicateCache_1P_MethodRef);
                 }
             }
         }

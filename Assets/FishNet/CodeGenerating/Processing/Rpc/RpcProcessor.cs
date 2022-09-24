@@ -59,6 +59,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         private const string RUNLOCALLY_NAME = "RunLocally";
         private const string INCLUDEOWNER_NAME = "IncludeOwner";
         private const string BUFFERLAST_NAME = "BufferLast";
+        private const string DATALENGTH_NAME = "DataLength";
         private const string VALIDATETARGET_NAME = "ValidateTarget";
         #endregion
 
@@ -351,10 +352,19 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * or if (!base.isClient) */
             
                 CreateClientRpcConditionsForServer(writerMd);
-
+           
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);
-            //Create a local PooledWriter variable.
-            VariableDefinition pooledWriterVariableDef = CodegenSession.WriterHelper.CreatePooledWriter(writerMd);
+            /* Create a local PooledWriter variable. */
+            //Default value for data lenght.
+            int dataLength = -1;
+            //Go through each attribute and see if a larger data length is specified.
+            foreach (AttributeData ad in attributeDatas)
+            {
+                int dl = ad.Attribute.GetField(DATALENGTH_NAME, -1);
+                if (dl > dataLength)
+                    dataLength = dl;
+            }
+            VariableDefinition pooledWriterVariableDef = CodegenSession.WriterHelper.CreatePooledWriter(writerMd, dataLength);
             //Create all writer.WriteType() calls. 
             for (int i = 0; i < serializedParameters.Count; i++)
             {
@@ -398,10 +408,11 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * or if (!base.isClient) */
             
                 CreateServerRpcConditionsForClient(writerMd, cr.Attribute);
-
+            
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);
             //Create a local PooledWriter variable.
-            VariableDefinition pooledWriterVariableDef = CodegenSession.WriterHelper.CreatePooledWriter(writerMd);
+            int dataLength = cr.Attribute.GetField(DATALENGTH_NAME, -1);
+            VariableDefinition pooledWriterVariableDef = CodegenSession.WriterHelper.CreatePooledWriter(writerMd, dataLength);
             //Create all writer.WriteType() calls. 
             for (int i = 0; i < serializedParameters.Count; i++)
             {

@@ -107,6 +107,10 @@ namespace FishNet.Observing
         /// Becomes true when registered with ServerObjects as Timed observers.
         /// </summary>
         private bool _registeredAsTimed;
+        /// <summary>
+        /// True if already pre-initialized.
+        /// </summary>
+        private bool _preintiialized;
         #endregion
 
         private void OnEnable()
@@ -125,62 +129,72 @@ namespace FishNet.Observing
                 UnregisterTimedConditions();
         }
 
+        internal void Deinitialize()
+        {
+            if (_networkObject != null && _networkObject.IsDeinitializing)
+                UnregisterTimedConditions();
+        }
+
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
         /// <param name="networkManager"></param>
         internal void PreInitialize(NetworkObject networkObject)
         {
-            _networkObject = networkObject;
-            bool ignoringManager = (OverrideType == ConditionOverrideType.IgnoreManager);
-
-            //Check to override SetHostVisibility.
-            if (!ignoringManager)
-                UpdateHostVisibility = networkObject.ObserverManager.UpdateHostVisibility;
-
-            bool observerFound = false;
-            for (int i = 0; i < _observerConditions.Count; i++)
+            if (!_preintiialized)
             {
-                if (_observerConditions[i] != null)
-                {
-                    observerFound = true;
+                _preintiialized = true;
+                _networkObject = networkObject;
+                bool ignoringManager = (OverrideType == ConditionOverrideType.IgnoreManager);
 
-                    /* Make an instance of each condition so values are
-                     * not overwritten when the condition exist more than
-                     * once in the scene. Double edged sword of using scriptable
-                     * objects for conditions. */
-                    _observerConditions[i] = _observerConditions[i].Clone();
-                    ObserverCondition oc = _observerConditions[i];
-                    oc.InitializeOnce(_networkObject);
-                    //If timed also register as containing timed conditions.
-                    if (oc.Timed())
-                        _timedConditions.Add(oc);
-                }
-                else
-                {
-                    _observerConditions.RemoveAt(i);
-                    i--;
-                }
-            }
-
-            //No observers specified 
-            if (!observerFound)
-            {
-                /* Print warning and remove component if not using
-                 * IgnoreManager. This is because other overrides would
-                 * suggest conditions should be added in someway, but
-                 * none are specified.
-                 * 
-                 * Where-as no conditions with ignore manager would
-                 * make sense if the manager had conditions, but you wanted
-                 * this object global visible, thus no conditions. */
+                //Check to override SetHostVisibility.
                 if (!ignoringManager)
+                    UpdateHostVisibility = networkObject.ObserverManager.UpdateHostVisibility;
+
+                bool observerFound = false;
+                for (int i = 0; i < _observerConditions.Count; i++)
                 {
-                    if (networkObject.NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"NetworkObserver exist on {gameObject.name} but there are no observer conditions. This script has been removed.");
-                    Destroy(this);
+                    if (_observerConditions[i] != null)
+                    {
+                        observerFound = true;
+
+                        /* Make an instance of each condition so values are
+                         * not overwritten when the condition exist more than
+                         * once in the scene. Double edged sword of using scriptable
+                         * objects for conditions. */
+                        _observerConditions[i] = _observerConditions[i].Clone();
+                        ObserverCondition oc = _observerConditions[i];
+                        oc.InitializeOnce(_networkObject);
+                        //If timed also register as containing timed conditions.
+                        if (oc.Timed())
+                            _timedConditions.Add(oc);
+                    }
+                    else
+                    {
+                        _observerConditions.RemoveAt(i);
+                        i--;
+                    }
                 }
-                return;
+
+                //No observers specified 
+                if (!observerFound)
+                {
+                    /* Print warning and remove component if not using
+                     * IgnoreManager. This is because other overrides would
+                     * suggest conditions should be added in someway, but
+                     * none are specified.
+                     * 
+                     * Where-as no conditions with ignore manager would
+                     * make sense if the manager had conditions, but you wanted
+                     * this object global visible, thus no conditions. */
+                    if (!ignoringManager)
+                    {
+                        if (networkObject.NetworkManager.CanLog(LoggingType.Warning))
+                            Debug.LogWarning($"NetworkObserver exist on {gameObject.name} but there are no observer conditions. This script has been removed.");
+                        Destroy(this);
+                    }
+                    return;
+                }
             }
 
             RegisterTimedConditions();
