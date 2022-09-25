@@ -91,6 +91,10 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public long RoundTripTime { get; private set; }
         /// <summary>
+        /// True if the number of frames per second are less than the number of expected ticks per second.
+        /// </summary>
+        internal bool LowFrameRate => ((Time.unscaledTime - _lastMultipleTicksTime) < 1f);
+        /// <summary>
         /// Tick on the last received packet, be it from server or client.
         /// </summary>
         public uint LastPacketTick { get; internal set; }
@@ -294,6 +298,10 @@ namespace FishNet.Managing.Timing
         /// True if client received Pong since last ping.
         /// </summary>
         private bool _receivedPong = true;
+        /// <summary>
+        /// Last unscaledTime multiple ticks occurred in a single frame.
+        /// </summary>
+        private float _lastMultipleTicksTime;
         /// <summary>
         /// Number of times ticks would have increased last frame.
         /// </summary>
@@ -693,10 +701,13 @@ namespace FishNet.Managing.Timing
             _elapsedTickTime += time;
             FrameTicked = (_elapsedTickTime >= timePerSimulation);
 
+            //Number of ticks to occur this frame.
+            int ticksCount = Mathf.FloorToInt((float)(_elapsedTickTime / timePerSimulation));
+            if (ticksCount > 1)
+                _lastMultipleTicksTime = Time.unscaledDeltaTime;
+
             if (_allowTickDropping && !_networkManager.IsServer)
             {
-                //Number of ticks to occur this frame.
-                int ticksCount = Mathf.FloorToInt((float)(_elapsedTickTime / timePerSimulation));
                 //If ticks require dropping. Set exactly to maximum ticks.
                 if (ticksCount > _maximumFrameTicks)
                     _elapsedTickTime = (timePerSimulation * (double)_maximumFrameTicks);
