@@ -497,7 +497,7 @@ namespace FishNet.Managing.Scened
         /// <param name="sqd"></param>
         private void InvokeOnSceneUnloadEnd(UnloadQueueData sqd, List<Scene> unloadedScenes)
         {
-            int[] handles = new int[unloadedScenes.Count];
+            var handles = unloadedScenes.Select(s => s.handle).ToArray();
             OnUnloadEnd?.Invoke(new SceneUnloadEndEventArgs(sqd, handles));
         }
         /// <summary>
