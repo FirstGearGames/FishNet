@@ -220,7 +220,6 @@ namespace FishNet.Component.Transforming
         public delegate void DataReceivedChanged(TransformData prev, TransformData next);
         /// <summary>
         /// Called when new data is received. Previous and next data are provided. Next data may be manipulated.
-        /// This feature is experimental.
         /// </summary>
         public event DataReceivedChanged OnDataReceived;
         /// <summary>
@@ -1717,7 +1716,7 @@ namespace FishNet.Component.Transforming
         }
 
         /// <summary>
-        /// Updates which properties are synchronized. This feature is experimental.
+        /// Updates which properties are synchronized.
         /// </summary>
         /// <param name="value">Properties to synchronize.</param>
         public void SetSynchronizedProperties(SynchronizedProperty value)

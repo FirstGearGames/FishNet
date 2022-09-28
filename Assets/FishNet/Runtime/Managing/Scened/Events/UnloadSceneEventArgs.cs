@@ -1,4 +1,7 @@
-﻿namespace FishNet.Managing.Scened
+﻿using System.Collections.Generic;
+using UnityEngine.SceneManagement;
+
+namespace FishNet.Managing.Scened
 {
 
     /// <summary>
@@ -28,13 +31,37 @@
         public readonly UnloadQueueData QueueData;
         /// <summary>
         /// Handles of scenes which were successfully unloaded.
+        /// This collection may be populated with empty scenes depending on engine version.
         /// </summary>
-        public int[] UnloadedSceneHandles;
+        public int[] UnloadedSceneHandles
+        {
+            get
+            {
+                if (_unloadedSceneHandlesCache == null)
+                {
+                    _unloadedSceneHandlesCache = new int[UnloadedScenes.Count];
+                    for (int i = 0; i < _unloadedSceneHandlesCache.Length; i++)
+                        _unloadedSceneHandlesCache[i] = UnloadedScenes[i].handle;
+                }
 
-        internal SceneUnloadEndEventArgs(UnloadQueueData sqd, int[] unloadedHandles)
+                return _unloadedSceneHandlesCache;
+            }
+        }
+        /// <summary>
+        /// Scenes which were successfully unloaded.
+        /// This collection may be populated with empty scenes depending on engine version.
+        /// </summary>
+        public List<Scene> UnloadedScenes;
+        /// <summary>
+        /// Cache result of UnloadedSceneHandles.
+        /// </summary>
+        private int[] _unloadedSceneHandlesCache;
+
+        internal SceneUnloadEndEventArgs(UnloadQueueData sqd, List<Scene> unloadedScenes)
         {
             QueueData = sqd;
-            UnloadedSceneHandles = unloadedHandles;
+            UnloadedScenes = unloadedScenes;
+            _unloadedSceneHandlesCache = null;
         }
     }
 

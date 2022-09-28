@@ -497,8 +497,7 @@ namespace FishNet.Managing.Scened
         /// <param name="sqd"></param>
         private void InvokeOnSceneUnloadEnd(UnloadQueueData sqd, List<Scene> unloadedScenes)
         {
-            int[] handles = new int[unloadedScenes.Count];
-            OnUnloadEnd?.Invoke(new SceneUnloadEndEventArgs(sqd, handles));
+            OnUnloadEnd?.Invoke(new SceneUnloadEndEventArgs(sqd, unloadedScenes));
         }
         /// <summary>
         /// Invokes when completion percentage changes while unloading or unloading a scene. Value is between 0f and 1f, while 1f is 100% done.

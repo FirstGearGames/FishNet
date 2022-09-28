@@ -196,7 +196,7 @@ namespace FishNet.Object
         /// Despawns this NetworkObject. Only call from the server.
         /// </summary>
         /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
-        public void Despawn(DespawnType despawnType = Object.DespawnType.Destroy)
+        public void Despawn(DespawnType? despawnType = null)
         {
             NetworkObject nob = this;
             NetworkManager.ServerManager.Despawn(nob, despawnType);

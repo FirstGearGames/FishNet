@@ -1,9 +1,7 @@
 ﻿#if UNITY_EDITOR
 
-using FishNet.Configuring;
 using FishNet.Managing.Object;
 using FishNet.Object;
-using FishNet.Object.Helping;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -86,6 +84,11 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         [System.NonSerialized]
         private static int _lastUpdatedFrame = -1;
+        /// <summary>
+        /// Length of assets strings during the last update.
+        /// </summary>
+        [System.NonSerialized]
+        private static int _lastUpdatedLengths = -1;
         #endregion
 
         private static string[] GetPrefabFiles(string startingPath, HashSet<string> excludedPaths, bool recursive)
@@ -214,6 +217,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             if (prefabCollection == null)
                 return;
 
+            int assetsLength = (importedAssets.Length + deletedAssets.Length + movedAssets.Length + movedFromAssetPaths.Length);
             List<string> changedNobPaths = new List<string>();
 
             System.Type goType = typeof(UnityEngine.GameObject);
@@ -254,12 +258,12 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             dirtied |= prefabCollection.SetAssetPathHashes(firstAddIndex);
 
             if (log && dirtied)
-                UnityEngine.Debug.Log($"Default prefab generator updated prefabs in {sw.ElapsedMilliseconds}ms.{GetDirtiedMessage(settings, dirtied)}");
+                UnityDebug.Log($"Default prefab generator updated prefabs in {sw.ElapsedMilliseconds}ms.{GetDirtiedMessage(settings, dirtied)}");
 
             //Check for redundancy.
             int frameCount = Time.frameCount;
             int changedCount = changedNobPaths.Count;
-            if (frameCount == _lastUpdatedFrame && (changedCount == _lastUpdatedNamePaths.Count) && changedCount > 0)
+            if (frameCount == _lastUpdatedFrame && assetsLength == _lastUpdatedLengths && (changedCount == _lastUpdatedNamePaths.Count) && changedCount > 0)
             {
                 bool allMatch = true;
                 for (int i = 0; i < changedCount; i++)
@@ -278,7 +282,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     //Unset dirtied to prevent a save.
                     dirtied = false;
                     //Log this no matter what, it's critical.
-                    UnityEngine.Debug.LogError($"Default prefab generator had a problem saving one or more assets. " +
+                    UnityDebug.LogError($"Default prefab generator had a problem saving one or more assets. " +
                         $"This usually occurs when the assets cannot be saved due to missing scripts or serialization errors. " +
                         $"Please see above any prefabs which could not save any make corrections.");
                 }
@@ -287,6 +291,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             //Set last values.
             _lastUpdatedFrame = Time.frameCount;
             _lastUpdatedNamePaths = changedNobPaths;
+            _lastUpdatedLengths = assetsLength;
 
             EditorUtility.SetDirty(prefabCollection);
             if (dirtied && settings.SaveChanges)
@@ -341,7 +346,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             //Unhandled.
             else
             {
-                UnityEngine.Debug.LogError($"{settings.SearchScope} is not handled; default prefabs will not generator properly.");
+                UnityDebug.LogError($"{settings.SearchScope} is not handled; default prefabs will not generator properly.");
             }
 
             DefaultPrefabObjects prefabCollection = GetDefaultPrefabObjects(settings);
@@ -355,7 +360,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             bool dirtied = prefabCollection.SetAssetPathHashes(0);
 
             if (log)
-                UnityEngine.Debug.Log($"Default prefab generator found {prefabCollection.GetObjectCount()} prefabs in {sw.ElapsedMilliseconds}ms.{GetDirtiedMessage(settings, dirtied)}");
+                UnityDebug.Log($"Default prefab generator found {prefabCollection.GetObjectCount()} prefabs in {sw.ElapsedMilliseconds}ms.{GetDirtiedMessage(settings, dirtied)}");
 
             EditorUtility.SetDirty(prefabCollection);
             if (settings.SaveChanges)
@@ -427,11 +432,11 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                         //If already retried then throw an error.
                         if (_retryRefreshDefaultPrefabs)
                         {
-                            UnityEngine.Debug.LogError("DefaultPrefabObjects file exists but it could not be loaded by Unity. Use the Fish-Networking menu to Refresh Default Prefabs.");
+                            UnityDebug.LogError("DefaultPrefabObjects file exists but it could not be loaded by Unity. Use the Fish-Networking menu to Refresh Default Prefabs.");
                         }
                         else
                         {
-                            UnityEngine.Debug.Log("DefaultPrefabObjects file exists but it could not be loaded by Unity. Trying to reload the file next frame.");
+                            UnityDebug.Log("DefaultPrefabObjects file exists but it could not be loaded by Unity. Trying to reload the file next frame.");
                             _retryRefreshDefaultPrefabs = true;
                         }
                         return null;
@@ -441,7 +446,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
             if (_cachedDefaultPrefabs == null)
             {
-                UnityEngine.Debug.Log($"Creating a new DefaultPrefabsObject at {assetPath}.");
+                UnityDebug.Log($"Creating a new DefaultPrefabsObject at {assetPath}.");
                 string directory = Path.GetDirectoryName(assetPath);
 
                 if (!Directory.Exists(directory))
@@ -456,7 +461,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             }
 
             if (_cachedDefaultPrefabs != null && _retryRefreshDefaultPrefabs)
-                UnityEngine.Debug.Log("DefaultPrefabObjects found on the second iteration.");
+                UnityDebug.Log("DefaultPrefabObjects found on the second iteration.");
             return _cachedDefaultPrefabs;
         }
 

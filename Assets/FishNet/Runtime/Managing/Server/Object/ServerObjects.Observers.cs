@@ -116,7 +116,7 @@ namespace FishNet.Managing.Server
                         else if (osc == ObserverStateChange.Removed)
                         {
                             everyoneWriter.Reset();
-                            WriteDespawn(nob, nob.DespawnType, ref everyoneWriter);
+                            WriteDespawn(nob, nob.GetDefaultDespawnType(), ref everyoneWriter);
 
                         }
                         else
@@ -379,7 +379,7 @@ namespace FishNet.Managing.Server
                     else if (osc == ObserverStateChange.Removed)
                     {
                         everyoneWriter.Reset();
-                        WriteDespawn(n, n.DespawnType, ref everyoneWriter);
+                        WriteDespawn(n, n.GetDefaultDespawnType(), ref everyoneWriter);
                     }
                     else
                     {
@@ -431,7 +431,7 @@ namespace FishNet.Managing.Server
                 if (osc == ObserverStateChange.Added)
                     WriteSpawn(nob, conn, ref everyoneWriter, ref ownerWriter);
                 else if (osc == ObserverStateChange.Removed)
-                    WriteDespawn(nob, nob.DespawnType, ref everyoneWriter);
+                    WriteDespawn(nob, nob.GetDefaultDespawnType(), ref everyoneWriter);
                 else
                     continue;
 

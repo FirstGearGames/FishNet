@@ -1,5 +1,4 @@
 ﻿using FishNet.Documenting;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Utility.Extension
@@ -15,10 +14,10 @@ namespace FishNet.Utility.Extension
         /// <returns></returns>
         public static bool Matches(this Quaternion a, Quaternion b, bool precise = false)
         {
-            if (!precise)
-                return (a == b);
-            else
+            if (precise)
                 return (a.w == b.w && a.x == b.x && a.y == b.y && a.z == b.z);
+            else
+                return (a == b);
         }
 
         /// <summary>
@@ -30,13 +29,13 @@ namespace FishNet.Utility.Extension
         {
             if (precise)
             {
-                return Quaternion.Angle(a, b);
-            }
-            else
-            {
                 //This is run Unitys implementation without the error tolerance.
                 float dot = (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
                 return (Mathf.Acos(Mathf.Min(Mathf.Abs(dot), 1f)) * 2f * 57.29578f);
+            }
+            else
+            {
+                return Quaternion.Angle(a, b);
             }
         }
     }

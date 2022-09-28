@@ -58,7 +58,7 @@ namespace FishNet.Managing.Editing
             EditorGUILayout.LabelField("Prefabs", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_spawnablePrefabs);
-            EditorGUILayout.PropertyField(_objectPool, new GUIContent("Object Pool (experimental)"));
+            EditorGUILayout.PropertyField(_objectPool);
             EditorGUILayout.PropertyField(_refreshDefaultPrefabs);
 
             EditorGUI.indentLevel--;

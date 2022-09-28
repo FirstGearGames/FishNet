@@ -1,6 +1,5 @@
 using FishNet.Object;
 using FishNet.Utility.Extension;
-using FishNet.Utility.Performance;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,7 +15,7 @@ namespace FishNet.Utility.Performance
         /// </summary>
         [Tooltip("True if to use object pooling.")]
         [SerializeField]
-        private bool _enabled;
+        private bool _enabled = true;
         #endregion
 
         #region Private.

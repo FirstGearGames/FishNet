@@ -165,7 +165,7 @@ namespace FishNet.Managing.Server
         /// <param name="go">GameObject instance to despawn.</param>
         /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Despawn(GameObject go, DespawnType despawnType = DespawnType.Destroy)
+        public void Despawn(GameObject go, DespawnType? despawnType = null)
         {
             if (!CanSpawnOrDespawn(true))
                 return;
@@ -186,7 +186,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="networkObject">NetworkObject instance to despawn.</param>
         /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
-        public void Despawn(NetworkObject networkObject, DespawnType despawnType = DespawnType.Destroy)
+        public void Despawn(NetworkObject networkObject, DespawnType? despawnType = null)
         {
             if (!CanSpawnOrDespawn(true))
                 return;
@@ -197,7 +197,10 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            Objects.Despawn(networkObject, despawnType, true);
+            DespawnType resolvedDespawnType = (despawnType == null)
+                ? networkObject.GetDefaultDespawnType() 
+                : despawnType.Value;
+            Objects.Despawn(networkObject, resolvedDespawnType, true);
         }
     }
 

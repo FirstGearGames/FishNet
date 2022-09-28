@@ -144,29 +144,23 @@ namespace FishNet.Object
             IsGlobal = value;
         }
 
-        [Header("Experimental")]
         /// <summary>
         /// How to handle this object when it despawns. Scene objects are never destroyed when despawning.
         /// </summary>
         [SerializeField]
         [Tooltip("How to handle this object when it despawns. Scene objects are never destroyed when despawning.")]
-        private DespawnType _despawnType = Object.DespawnType.Destroy;
+        private DespawnType _defaultDespawnType = DespawnType.Destroy;
         /// <summary>
         /// True to use configured ObjectPool rather than destroy this NetworkObject when being despawned. Scene objects are never destroyed.
         /// </summary>
-        public DespawnType DespawnType
-        {
-            get => _despawnType;
-            private set => _despawnType = value;
-        }
-
+        public DespawnType GetDefaultDespawnType() => _defaultDespawnType;
         /// <summary>
-        /// Sets AllowDestroy value.
+        /// Sets DespawnType value.
         /// </summary>
-        /// <param name="allowDestroy"></param>
-        public void SetCacheOnDespawn(DespawnType despawnType)
+        /// <param name="despawnType">Default despawn type for this NetworkObject.</param>
+        public void SetDefaultDespawnType(DespawnType despawnType)
         {
-            DespawnType = despawnType;
+            _defaultDespawnType = despawnType;
         }
         #endregion
 
