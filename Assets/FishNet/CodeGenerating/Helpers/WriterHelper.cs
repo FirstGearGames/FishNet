@@ -352,7 +352,7 @@ namespace FishNet.CodeGenerating.Helping
             resultVd = CodegenSession.GeneralHelper.CreateVariable(methodDef, PooledWriter_TypeRef);
             //If length is specified then pass in length.
             if (length > 0)
-            { 
+            {
                 insts.Add(processor.Create(OpCodes.Ldc_I4, length));
                 insts.Add(processor.Create(OpCodes.Call, WriterPool_GetWriterLength_MethodRef));
             }
@@ -560,7 +560,8 @@ namespace FishNet.CodeGenerating.Helping
                 ParameterDefinition writerPd = writerMd.Parameters[0];
 
                 processor.Emit(OpCodes.Ldarg, writerPd);
-                processor.Emit(OpCodes.Ldarg, valuePd);
+                OpCode ldArgOC0 = (valuePd.ParameterType.IsValueType) ? OpCodes.Ldarga : OpCodes.Ldarg;
+                processor.Emit(ldArgOC0, valuePd);
                 processor.Emit(OpCodes.Call, getMr);
                 //If an auto pack method then insert default value.
                 if (_autoPackedMethods.Contains(returnTr))

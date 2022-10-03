@@ -3,6 +3,7 @@ using FishNet.Managing.Logging;
 using FishNet.Observing;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -39,13 +40,28 @@ namespace FishNet.Object
         /// True if renderers have been looked up.
         /// </summary>
         private bool _renderersPopulated;
+        /// <summary>
+        /// Last visibility value for clientHost on this object.
+        /// </summary>
+        private bool _lastClientHostVisibility;
         #endregion
+
+        /// <summary>
+        /// Updates cached renderers used to managing clientHost visibility.
+        /// </summary>
+        /// <param name="updateVisibility">True to also update visibility if clientHost.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void UpdateRenderers(bool updateVisibility = true)
+        {
+            UpdateRenderersInternal(updateVisibility);
+        }
 
         /// <summary>
         /// Sets the renderer visibility for clientHost.
         /// </summary>
         /// <param name="visible">True if renderers are to be visibile.</param>
         /// <param name="force">True to skip blocking checks.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetRenderersVisible(bool visible, bool force = false)
         {
             if (!force)
@@ -56,14 +72,38 @@ namespace FishNet.Object
 
             if (!_renderersPopulated)
             {
-                _renderers = GetComponentsInChildren<Renderer>(true);
+                UpdateRenderersInternal(true);
                 _renderersPopulated = true;
             }
+            else
+            {
+                UpdateRenderVisibility(visible);
+            }
+        }
 
+        /// <summary>
+        /// Clears and updates renderers.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void UpdateRenderersInternal(bool updateVisibility)
+        {
+            _renderers = GetComponentsInChildren<Renderer>(true);
+            if (updateVisibility)
+                UpdateRenderVisibility(_lastClientHostVisibility);
+        }
+
+        /// <summary>
+        /// Updates visibilites on renders without checks.
+        /// </summary>
+        /// <param name="visible"></param>
+        private void UpdateRenderVisibility(bool visible)
+        {
             Renderer[] rs = _renderers;
             int count = rs.Length;
             for (int i = 0; i < count; i++)
                 rs[i].enabled = visible;
+
+            _lastClientHostVisibility = visible;
         }
 
         /// <summary>

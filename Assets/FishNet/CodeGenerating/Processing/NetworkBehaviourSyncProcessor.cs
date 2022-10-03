@@ -609,11 +609,25 @@ namespace FishNet.CodeGenerating.Processing
             processor = createdSetMethodDef.Body.GetILProcessor();
 
             /* Assign to new value. Do this first because SyncVar<T> calls hook 
-             * and value needs to be updated before hook. */
+             * and value needs to be updated before hook. Only update
+             * value if calledByUser(asServer) or (!calledByUser && !base.IsServer).
+             * This ensures clientHost will not overwrite server value. */
+
+            Instruction afterChangeFieldInst = processor.Create(OpCodes.Nop);
+            Instruction beforeChangeFieldInst = processor.Create(OpCodes.Nop);
+            //if (calledByUser || !base.IsServer)
+            processor.Emit(OpCodes.Ldarg, calledByUserParameterDef);
+            processor.Emit(OpCodes.Brtrue, beforeChangeFieldInst);
+            processor.Emit(OpCodes.Ldarg_0); //this.            
+            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.IsServer_MethodRef);
+            processor.Emit(OpCodes.Brtrue, afterChangeFieldInst);
+
             //      _originalField = value;
+            processor.Append(beforeChangeFieldInst);
             processor.Emit(OpCodes.Ldarg_0); //this.
             processor.Emit(OpCodes.Ldarg, valueParameterDef);
             processor.Emit(OpCodes.Stfld, originalFd);
+            processor.Append(afterChangeFieldInst);
 
             Instruction retInst = processor.Create(OpCodes.Ret);
 

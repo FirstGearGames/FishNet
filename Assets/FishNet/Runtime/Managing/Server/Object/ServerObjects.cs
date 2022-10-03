@@ -516,7 +516,7 @@ namespace FishNet.Managing.Server
             {
                 headerWriter.WriteNetworkObject(nob.ParentNetworkObject);
             }
-            //No need to write scene/prefab id, or parent if nested.
+            //If not nested see if has a parent other than one configured at edit.
             else
             {
                 /* Writing a scene object. */
