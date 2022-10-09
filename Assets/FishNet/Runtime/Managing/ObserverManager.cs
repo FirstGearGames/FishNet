@@ -76,8 +76,7 @@ namespace FishNet.Managing.Observing
                 NetworkConnection clientConn = _networkManager.ClientManager.Connection;
                 foreach (NetworkObject n in _networkManager.ServerManager.Objects.Spawned.Values)
                 {
-                    if (n.NetworkObserver != null)
-                        n.NetworkObserver.SetUpdateHostVisibility(value);
+                    n.NetworkObserver.SetUpdateHostVisibility(value);
 
                     //Only check to update renderers if clientHost. If not client then clientConn won't be active.
                     if (clientConn.IsActive)
@@ -94,32 +93,43 @@ namespace FishNet.Managing.Observing
         /// <summary>
         /// Adds default observer conditions to nob and returns the NetworkObserver used.
         /// </summary>
-        internal NetworkObserver AddDefaultConditions(NetworkObject nob, ref NetworkObserver obs)
+        internal NetworkObserver AddDefaultConditions(NetworkObject nob)
         {
             bool isGlobal = (nob.IsGlobal && !nob.IsSceneObject);
-            bool nullObs = (obs == null);
+            bool obsAdded;
+
+            NetworkObserver result;
+            if (!nob.TryGetComponent<NetworkObserver>(out result))
+            {
+                obsAdded = true;
+                result = nob.gameObject.AddComponent<NetworkObserver>();
+            }
+            else
+            {
+                obsAdded = false;
+            }
+
             /* NetworkObserver is null and there are no
              * conditions to add. Nothing will change by adding
              * the NetworkObserver component so exit early. */
-            if (nullObs && _defaultConditions.Count == 0)
-                return obs;
+            if (!obsAdded && _defaultConditions.Count == 0)
+                return result;
 
-            //If NetworkObject does not have a NetworkObserver component.
-            if (nullObs)
+            //If the NetworkObserver component was just added.
+            if (obsAdded)
             {
                 /* Global nobs do not need a NetworkObserver.
                  * Ultimately, a global NetworkObject is one without
                  * any conditions. */
                 if (isGlobal)
-                    return null;
+                    return result;
                 //If there are no conditions then there's nothing to add.
                 if (_defaultConditions.Count == 0)
-                    return null;
+                    return result;
                 /* If here then there not a global networkobject and there are conditions to use.
                  * Since the NetworkObserver is being added fresh, set OverrideType to UseManager
                  * so that the NetworkObserver is populated with the manager conditions. */
-                obs = nob.gameObject.AddComponent<NetworkObserver>();
-                obs.OverrideType = NetworkObserver.ConditionOverrideType.UseManager;
+                result.OverrideType = NetworkObserver.ConditionOverrideType.UseManager;
             }
             //NetworkObject has a NetworkObserver already on it.
             else
@@ -127,26 +137,26 @@ namespace FishNet.Managing.Observing
                 //If global the NetworkObserver has to be cleared and set to ignore manager.
                 if (isGlobal)
                 {
-                    obs.ObserverConditionsInternal.Clear();
-                    obs.OverrideType = NetworkObserver.ConditionOverrideType.IgnoreManager;
+                    result.ObserverConditionsInternal.Clear();
+                    result.OverrideType = NetworkObserver.ConditionOverrideType.IgnoreManager;
                 }
             }
 
             //If ignoring manager then use whatever is already configured.
-            if (obs.OverrideType == NetworkObserver.ConditionOverrideType.IgnoreManager)
+            if (result.OverrideType == NetworkObserver.ConditionOverrideType.IgnoreManager)
             {
                 //Do nothing.
             }
             //If using manager then replace all with conditions.
-            else if (obs.OverrideType == NetworkObserver.ConditionOverrideType.UseManager)
+            else if (result.OverrideType == NetworkObserver.ConditionOverrideType.UseManager)
             {
-                obs.ObserverConditionsInternal.Clear();
-                AddMissing(obs);
+                result.ObserverConditionsInternal.Clear();
+                AddMissing(result);
             }
             //Adding only new.
-            else if (obs.OverrideType == NetworkObserver.ConditionOverrideType.AddMissing)
+            else if (result.OverrideType == NetworkObserver.ConditionOverrideType.AddMissing)
             {
-                AddMissing(obs);
+                AddMissing(result);
             }
 
             void AddMissing(NetworkObserver networkObserver)
@@ -160,7 +170,7 @@ namespace FishNet.Managing.Observing
                 }
             }
 
-            return obs;
+            return result;
         }
     }
 

@@ -1,7 +1,7 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
-using FishNet.Managing.Logging;
 using FishNet.Object;
+using FishNet.Transporting;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -96,9 +96,9 @@ namespace FishNet.Observing
         /// </summary>
         private List<ObserverCondition> _timedConditions = new List<ObserverCondition>();
         /// <summary>
-        /// True if all non-timed conditions passed.
+        /// Connections which have all non-timed conditions met.
         /// </summary>
-        private bool _nonTimedMet;
+        private HashSet<NetworkConnection> _nonTimedMet = new HashSet<NetworkConnection>();
         /// <summary>
         /// NetworkObject this belongs to.
         /// </summary>
@@ -132,7 +132,10 @@ namespace FishNet.Observing
         internal void Deinitialize()
         {
             if (_networkObject != null && _networkObject.IsDeinitializing)
+            {
+                _networkObject.ServerManager.OnRemoteConnectionState -= ServerManager_OnRemoteConnectionState;
                 UnregisterTimedConditions();
+            }
         }
 
         /// <summary>
@@ -176,25 +179,11 @@ namespace FishNet.Observing
                     }
                 }
 
-                //No observers specified 
+                //No observers specified, do not need to take further action.
                 if (!observerFound)
-                {
-                    /* Print warning and remove component if not using
-                     * IgnoreManager. This is because other overrides would
-                     * suggest conditions should be added in someway, but
-                     * none are specified.
-                     * 
-                     * Where-as no conditions with ignore manager would
-                     * make sense if the manager had conditions, but you wanted
-                     * this object global visible, thus no conditions. */
-                    if (!ignoringManager)
-                    {
-                        if (networkObject.NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"NetworkObserver exist on {gameObject.name} but there are no observer conditions. This script has been removed.");
-                        Destroy(this);
-                    }
                     return;
-                }
+
+                _networkObject.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
             }
 
             RegisterTimedConditions();
@@ -229,60 +218,72 @@ namespace FishNet.Observing
         internal ObserverStateChange RebuildObservers(NetworkConnection connection, bool timedOnly)
         {
             bool currentlyAdded = (_networkObject.Observers.Contains(connection));
-
             //True if all conditions are met.
             bool allConditionsMet = true;
-            /* If cnnection is owner then they can see the object. */
-            bool notOwner = (connection != _networkObject.Owner);
 
-            /* Only check conditions if not owner. Owner will always
-            * have visibility. */
-            if (notOwner)
+            //Only need to check beyond this if conditions exist.
+            if (_observerConditions.Count > 0)
             {
-                /* If a timed update and nonTimed
-                 * have not been met then there's
-                 * no reason to check timed. */
-                if (timedOnly && !_nonTimedMet)
+                /* If cnnection is owner then they can see the object. */
+                bool notOwner = (connection != _networkObject.Owner);
+
+                /* Only check conditions if not owner. Owner will always
+                * have visibility. */
+                if (notOwner)
                 {
-                    allConditionsMet = false;
-                }
-                else
-                {
-                    //Return as failed if there is a parent nob which doesn't have visibility.
-                    if (_networkObject.ParentNetworkObject != null && !_networkObject.ParentNetworkObject.Observers.Contains(connection))
+                    //True if connection starts with meeting non-timed conditions.
+                    bool startNonTimedMet = _nonTimedMet.Contains(connection);
+
+                    /* If a timed update and nonTimed
+                     * have not been met then there's
+                     * no reason to check timed. */
+                    if (timedOnly && !startNonTimedMet)
                     {
                         allConditionsMet = false;
                     }
                     else
                     {
-                        //Becomes true if a non-timed condition fails.
-                        bool nonTimedFailed = false;
-
-                        List<ObserverCondition> collection = (timedOnly) ? _timedConditions : _observerConditions;
-                        for (int i = 0; i < collection.Count; i++)
+                        //Return as failed if there is a parent nob which doesn't have visibility.
+                        if (_networkObject.ParentNetworkObject != null && !_networkObject.ParentNetworkObject.Observers.Contains(connection))
                         {
-                            ObserverCondition condition = collection[i];
-                            /* If any observer returns removed then break
-                             * from loop and return removed. If one observer has
-                             * removed then there's no reason to iterate
-                             * the rest. */
-                            bool conditionMet = condition.ConditionMet(connection, currentlyAdded, out bool notProcessed);
-                            if (notProcessed)
-                                conditionMet = currentlyAdded;
+                            allConditionsMet = false;
+                        }
+                        else
+                        {
+                            //Becomes true if a non-timed condition fails.
+                            bool nonTimedMet = true;
 
-                            //Condition not met.
-                            if (!conditionMet)
+                            List<ObserverCondition> collection = (timedOnly) ? _timedConditions : _observerConditions;
+                            for (int i = 0; i < collection.Count; i++)
                             {
-                                allConditionsMet = false;
-                                if (!condition.Timed())
-                                    nonTimedFailed = true;
-                                break;
+                                ObserverCondition condition = collection[i];
+                                /* If any observer returns removed then break
+                                 * from loop and return removed. If one observer has
+                                 * removed then there's no reason to iterate
+                                 * the rest. */
+                                bool conditionMet = condition.ConditionMet(connection, currentlyAdded, out bool notProcessed);
+                                if (notProcessed)
+                                    conditionMet = currentlyAdded;
+
+                                //Condition not met.
+                                if (!conditionMet)
+                                {
+                                    allConditionsMet = false;
+                                    if (!condition.Timed())
+                                        nonTimedMet = false;
+                                    break;
+                                }
+                            }
+
+                            //If all conditions are being checked and nonTimedMet has updated.
+                            if (!timedOnly && (startNonTimedMet != nonTimedMet))
+                            {
+                                if (nonTimedMet)
+                                    _nonTimedMet.Add(connection);
+                                else
+                                    _nonTimedMet.Remove(connection);
                             }
                         }
-
-                        //If all conditions are being checked.
-                        if (!timedOnly)
-                            _nonTimedMet = !nonTimedFailed;
                     }
                 }
             }
@@ -349,6 +350,14 @@ namespace FishNet.Observing
                 return ObserverStateChange.Added;
         }
 
+        /// <summary>
+        /// Called when a remote client state changes with the server.
+        /// </summary>
+        private void ServerManager_OnRemoteConnectionState(NetworkConnection conn, RemoteConnectionStateArgs arg2)
+        {
+            if (arg2.ConnectionState == RemoteConnectionState.Stopped)
+                _nonTimedMet.Remove(conn);
+        }
 
         /// <summary>
         /// Sets a new value for UpdateHostVisibility.
