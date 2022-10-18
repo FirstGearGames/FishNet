@@ -33,7 +33,7 @@ namespace FishNet.CodeGenerating.Helping
             foreach (MethodInfo mi in predictedObjectType.GetMethods((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
                 if (mi.Name == nameof(PredictedObject.SendRigidbodyStatesInternal))
-                { 
+                {
                     SendRigidbodyStatesInternal_MethodRef = CodegenSession.ImportReference(mi);
                     break;
                 }

@@ -56,13 +56,13 @@ namespace FishNet.Object
 
         /// <summary>
         /// Registers a RPC method.
-        /// Internal use.
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="del"></param>
-        [APIExclude] //codegen this can be made protected internal then set public via codegen
+        [APIExclude]
+        [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterServerRpc(uint hash, ServerRpcDelegate del)
+        protected internal void RegisterServerRpcInternal(uint hash, ServerRpcDelegate del)
         {
             bool contains = _serverRpcDelegates.ContainsKey(hash);
             _serverRpcDelegates[hash] = del;
@@ -71,13 +71,13 @@ namespace FishNet.Object
         }
         /// <summary>
         /// Registers a RPC method.
-        /// Internal use.
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="del"></param>
-        [APIExclude] //codegen this can be made protected internal then set public via codegen
+        [APIExclude]
+        [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterObserversRpc(uint hash, ClientRpcDelegate del)
+        protected internal void RegisterObserversRpcInternal(uint hash, ClientRpcDelegate del)
         {
             bool contains = _observersRpcDelegates.ContainsKey(hash);
             _observersRpcDelegates[hash] = del;
@@ -86,13 +86,13 @@ namespace FishNet.Object
         }
         /// <summary>
         /// Registers a RPC method.
-        /// Internal use.
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="del"></param>
-        [APIExclude] //codegen this can be made protected internal then set public via codegen
+        [APIExclude]
+        [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterTargetRpc(uint hash, ClientRpcDelegate del)
+        protected internal void RegisterTargetRpcInternal(uint hash, ClientRpcDelegate del)
         {
             bool contains = _targetRpcDelegates.ContainsKey(hash);
             _targetRpcDelegates[hash] = del;
@@ -202,14 +202,13 @@ namespace FishNet.Object
 
         /// <summary>
         /// Sends a RPC to server.
-        /// Internal use.
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
-        [CodegenMakePublic] //Make internal.
+        [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendServerRpc(uint hash, PooledWriter methodWriter, Channel channel)
+        public void SendServerRpcInternal(uint hash, PooledWriter methodWriter, Channel channel)
         {
             if (!IsSpawnedWithWarning())
                 return;
@@ -221,7 +220,6 @@ namespace FishNet.Object
 
         /// <summary>
         /// Sends a RPC to observers.
-        /// Internal use.
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="methodWriter"></param>
@@ -229,7 +227,7 @@ namespace FishNet.Object
         [APIExclude]
         [CodegenMakePublic] //Make internal.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendObserversRpc(uint hash, PooledWriter methodWriter, Channel channel, bool buffered)
+        public void SendObserversRpcInternal(uint hash, PooledWriter methodWriter, Channel channel, bool buffered)
         {
             if (!IsSpawnedWithWarning())
                 return;
@@ -264,11 +262,10 @@ namespace FishNet.Object
 
         /// <summary>
         /// Sends a RPC to target.
-        /// Internal use.
         /// </summary>
         [CodegenMakePublic] //Make internal.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendTargetRpc(uint hash, PooledWriter methodWriter, Channel channel, NetworkConnection target, bool validateTarget = true)
+        public void SendTargetRpcInternal(uint hash, PooledWriter methodWriter, Channel channel, NetworkConnection target, bool validateTarget = true)
         {
             if (!IsSpawnedWithWarning())
                 return;

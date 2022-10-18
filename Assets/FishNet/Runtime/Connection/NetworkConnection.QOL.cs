@@ -10,6 +10,17 @@ namespace FishNet.Connection
     public partial class NetworkConnection : IEquatable<NetworkConnection>
     {
 
+        #region Public.
+        /// <summary>
+        /// Returns true if this connection is a clientHost.
+        /// </summary>
+        public bool IsHost => (NetworkManager == null) ? false : (NetworkManager.IsServer && (this == NetworkManager.ClientManager.Connection));
+        /// <summary>
+        /// Returns if this connection is for the local client.
+        /// </summary>
+        public bool IsLocalClient => (NetworkManager == null) ? false : (NetworkManager.ClientManager.Connection == this);
+        #endregion
+
         /// <summary>
         /// Returns the address of this connection.
         /// </summary>

@@ -139,7 +139,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             SR.MethodInfo locMi;
 
-            ClearReplicateCache_Method_Name = nameof(NetworkBehaviour.InternalClearReplicateCache);
+            ClearReplicateCache_Method_Name = nameof(NetworkBehaviour.ClearReplicateCacheInternal);
 
             //GetGameObject.
             locMi = typeof(UnityEngine.Component).GetMethod("get_gameObject");
@@ -1118,13 +1118,6 @@ namespace FishNet.CodeGenerating.Processing
 
             /* Remove entries which exceed maximum buffer. */
             VariableDefinition queueCountVd = CodegenSession.GeneralHelper.CreateVariable(createdMd, typeof(int));
-            //Get maximum buffered.
-            //      byte maximumBufferdInputs = base.TimeManager.MaximumBufferedInputs.
-            VariableDefinition maximumBufferedVd = CodegenSession.GeneralHelper.CreateVariable(createdMd, typeof(byte));
-            processor.Emit(OpCodes.Ldarg_0); //base.
-            processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.TimeManager_MethodRef);
-            processor.Emit(OpCodes.Callvirt, CodegenSession.TimeManagerHelper.MaximumBufferedInputs_MethodRef);
-            processor.Emit(OpCodes.Stloc, maximumBufferedVd);
             //Set queueCountVd to new count.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateDatas);
@@ -1134,7 +1127,8 @@ namespace FishNet.CodeGenerating.Processing
             //Get number of inputs to remove. Will be positive if there are too many buffered inputs.
             //      int queueCount -= maximumBuffered.
             processor.Emit(OpCodes.Ldloc, queueCountVd);
-            processor.Emit(OpCodes.Ldloc, maximumBufferedVd);
+            //processor.Emit(OpCodes.Ldloc, maximumBufferedVd);
+            processor.Emit(OpCodes.Ldc_I4, 15); //maximumBufferedInputs const value.
             processor.Emit(OpCodes.Sub);
             processor.Emit(OpCodes.Stloc, queueCountVd);
             //If remove count is positive.
@@ -1244,6 +1238,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Call, CodegenSession.NetworkBehaviourHelper.SetLastReconcileTick_MethodRef);
 
             Instruction afterSendRigidbodyStatesInst = processor.Create(OpCodes.Nop);
+
             //      if (firstSend)
             //          PredictedObject.SendRigidbodyStatesInternal(this).
             processor.Emit(OpCodes.Ldloc, firstSendVd);

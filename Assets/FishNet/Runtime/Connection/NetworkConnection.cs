@@ -61,10 +61,6 @@ namespace FishNet.Connection
         /// </summary>
         public int ClientId = -1;
         /// <summary>
-        /// Returns if this connection is for the local client.
-        /// </summary>
-        public bool IsLocalClient => (NetworkManager == null) ? false : (NetworkManager.ClientManager.Connection == this);
-        /// <summary>
         /// 
         /// </summary>
         private HashSet<NetworkObject> _objects = new HashSet<NetworkObject>();

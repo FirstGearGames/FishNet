@@ -26,8 +26,6 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (pi.Name == nameof(TimeManager.LocalTick))
                     LocalTick_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
-                else if (pi.Name == nameof(TimeManager.MaximumBufferedInputs))
-                    MaximumBufferedInputs_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(TimeManager.PhysicsMode))
                     PhysicsMode_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(TimeManager.TickDelta))
@@ -36,9 +34,9 @@ namespace FishNet.CodeGenerating.Helping
 
             foreach (System.Reflection.MethodInfo mi in timeManagerType.GetMethods())
             {
-                if (mi.Name == nameof(TimeManager.InvokeOnReconcile))
+                if (mi.Name == nameof(TimeManager.InvokeOnReconcileInternal))
                     InvokeOnReconcile_MethodRef = CodegenSession.ImportReference(mi);
-                else if (mi.Name == nameof(TimeManager.InvokeOnReplicateReplay))
+                else if (mi.Name == nameof(TimeManager.InvokeOnReplicateReplayInternal))
                     InvokeOnReplicateReplay_MethodRef = CodegenSession.ImportReference(mi);
             }
 

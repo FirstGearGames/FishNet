@@ -227,7 +227,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal override void OnStartCallback(bool asServer)
+        public override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
 

@@ -482,6 +482,8 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
+            if (Application.isPlaying)
+                return;
             //If retrying next frame don't bother updating, next frame will do a full refresh.
             if (_retryRefreshDefaultPrefabs)
                 return;

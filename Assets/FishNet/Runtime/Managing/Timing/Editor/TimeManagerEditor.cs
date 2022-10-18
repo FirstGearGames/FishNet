@@ -61,11 +61,11 @@ namespace FishNet.Managing.Timing.Editing
                 EditorGUILayout.HelpBox("If you are using physics interactions be sure to change the PhysicsMode to TimeManager and implement physics within the TimeManager tick events.", MessageType.None);
             EditorGUI.indentLevel--;
 
-            //Prediction.
-            EditorGUILayout.LabelField("Prediction", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_maximumBufferedInputs);
-            EditorGUI.indentLevel--;
+            ////Prediction.
+            //EditorGUILayout.LabelField("Prediction", EditorStyles.boldLabel);
+            //EditorGUI.indentLevel++;
+            //EditorGUILayout.PropertyField(_maximumBufferedInputs);
+            //EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();
         }

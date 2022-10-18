@@ -216,7 +216,6 @@ namespace FishNet.Component.Animating
         #region Public.
         /// <summary>
         /// Parameters which will not be synchronized.
-        /// Internal use only.
         /// </summary>
         [SerializeField, HideInInspector]
         internal List<string> IgnoredParameters = new List<string>();

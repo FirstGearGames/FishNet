@@ -114,7 +114,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        protected internal virtual void OnStartCallback(bool asServer) { }
+        public virtual void OnStartCallback(bool asServer) { }
 
         /// <summary>
         /// Dirties this Sync and the NetworkBehaviour.

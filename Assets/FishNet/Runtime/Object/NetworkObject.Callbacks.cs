@@ -22,7 +22,7 @@ namespace FishNet.Object
 
             //Invoke OnStartNetwork.
             for (int i = 0; i < NetworkBehaviours.Length; i++)
-                NetworkBehaviours[i].InvokeOnNetwork(true);            
+                NetworkBehaviours[i].InvokeOnNetwork(true);
 
             //As server.
             if (asServer)
@@ -32,11 +32,8 @@ namespace FishNet.Object
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].InvokeSyncTypeCallbacks(true);
 
-                if (Owner.IsValid)
-                {
-                    for (int i = 0; i < NetworkBehaviours.Length; i++)
-                        NetworkBehaviours[i].OnOwnershipServer(FishNet.Managing.NetworkManager.EmptyConnection);
-                }
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].OnOwnershipServer(FishNet.Managing.NetworkManager.EmptyConnection);
             }
             //As client.
             else
@@ -46,11 +43,8 @@ namespace FishNet.Object
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].InvokeSyncTypeCallbacks(false);
 
-                if (IsOwner)
-                {
-                    for (int i = 0; i < NetworkBehaviours.Length; i++)
-                        NetworkBehaviours[i].OnOwnershipClient(FishNet.Managing.NetworkManager.EmptyConnection);
-                }
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].OnOwnershipClient(FishNet.Managing.NetworkManager.EmptyConnection);
             }
         }
 

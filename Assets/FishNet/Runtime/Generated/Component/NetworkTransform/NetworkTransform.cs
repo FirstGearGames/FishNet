@@ -18,9 +18,6 @@ using UnityEngine;
 
 namespace FishNet.Component.Transforming
 {
-    /// <summary> 
-    /// A somewhat basic but reliable NetworkTransform that will be improved upon greatly after release.
-    /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("FishNet/Component/NetworkTransform")]
     public sealed class NetworkTransform : NetworkBehaviour

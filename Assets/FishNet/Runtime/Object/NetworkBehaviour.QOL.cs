@@ -124,11 +124,10 @@ namespace FishNet.Object
         public NetworkConnection LocalConnection => _networkObjectCache.LocalConnection;
         /// <summary>
         /// Returns if a connection is the owner of this object.
-        /// Internal use.
         /// </summary>
         /// <param name="connection"></param>
         /// <returns></returns>
-        public bool CompareOwner(NetworkConnection connection)
+        public bool OwnerMatches(NetworkConnection connection)
         {
             return (_networkObjectCache.Owner == connection);
         }

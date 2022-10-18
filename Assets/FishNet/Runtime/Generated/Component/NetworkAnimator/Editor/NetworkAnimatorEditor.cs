@@ -82,6 +82,7 @@ namespace FishNet.Component.Animating.Editing
         private void DrawParameters(NetworkAnimator na)
         {
             EditorGUILayout.LabelField("* Synchronized Parameters", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("This setting allows you to optionally completely prevent the synchronization of certain parameters. Both Fish-Networking free and Pro will only synchronize changes as they occur.", MessageType.Info);
 
             if (Application.isPlaying)
             {

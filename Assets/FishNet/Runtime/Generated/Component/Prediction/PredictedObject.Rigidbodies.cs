@@ -19,8 +19,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         [APIExclude]
         [CodegenMakePublic] //To internal.
-        public static int InstantiatedRigidbodyCountInternal { get; private set; }
-
+        public static int InstantiatedRigidbodyCountInternal { get; set; }
         #endregion
 
         #region Private.
@@ -98,11 +97,13 @@ namespace FishNet.Component.Prediction
              * tick twice. */
             if (lastStateTick != lastNbTick || lastStateTick == _lastResetTick)
             {
+                _spectatorSmoother.SetLocalReconcileTick(-1);
                 _rigidbodyPauser.ChangeKinematic(true);
             }
             //If possible to perhaps reset.
             else
             {
+                _spectatorSmoother.SetLocalReconcileTick(lastNbTick);
                 _lastResetTick = lastStateTick;
                 /* If the reconciling nb won't change then
                  * there is no reason to rollback. */
@@ -237,7 +238,23 @@ namespace FishNet.Component.Prediction
                     //Velocity difference is close enough to the baseline to where it doesn't need to be reset, so use prediction.
                     else
                     {
-                        result = Vector3.Lerp(velocity, lastVelocity, _predictionRatio);
+                        Vector3 changeMultiplied = (velocity - lastVelocity) * _maintainedVelocity;
+                        //Retaining velocity.
+                        if (_maintainedVelocity > 0f)
+                        {
+                            result = (velocity + changeMultiplied);
+                        }
+                        //Reducing velocity.
+                        else
+                        {
+                            result = (velocity + changeMultiplied);
+                            /* When reducing velocity make sure the direction
+                             * did not change. When this occurs it means the velocity
+                             * was reduced into the opposite direction. To prevent
+                             * this from happening just zero out velocity instead. */
+                            if (velocity.normalized != result.normalized)
+                                result = Vector3.zero;
+                        }
                         return true;
                     }
                 }
@@ -287,7 +304,23 @@ namespace FishNet.Component.Prediction
                     //Velocity difference is close enough to the baseline to where it doesn't need to be reset, so use prediction.
                     else
                     {
-                        result = Mathf.Lerp(velocity, lastVelocity, _predictionRatio);
+                        float changeMultiplied = (velocity - lastVelocity) * _maintainedVelocity;
+                        //Retaining velocity.
+                        if (_maintainedVelocity > 0f)
+                        {
+                            result = (velocity + changeMultiplied);
+                        }
+                        //Reducing velocity.
+                        else
+                        {
+                            result = (velocity + changeMultiplied);
+                            /* When reducing velocity make sure the direction
+                             * did not change. When this occurs it means the velocity
+                             * was reduced into the opposite direction. To prevent
+                             * this from happening just zero out velocity instead. */
+                            if (Mathf.Abs(velocity) != Mathf.Abs(result))
+                                result = 0f;
+                        }
                         return true;
                     }
                 }
@@ -372,7 +405,7 @@ namespace FishNet.Component.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PredictVelocity(PhysicsScene ps)
         {
-            if (_predictionRatio <= 0f)
+            if (_maintainedVelocity == 0f)
                 return;
             if (ps != _physicsScene)
                 return;
@@ -485,7 +518,7 @@ namespace FishNet.Component.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PredictVelocity(PhysicsScene2D ps)
         {
-            if (_predictionRatio <= 0f)
+            if (_maintainedVelocity == 0f)
                 return;
             if (ps != _physicsScene2D)
                 return;
@@ -520,11 +553,6 @@ namespace FishNet.Component.Prediction
                 return;
 
             _receivedRigidbody2DState = state;
-            if (applyImmediately)
-            {
-                ResetRigidbody2DToData();
-                Physics2D.SyncTransforms();
-            }
         }
         #endregion
 

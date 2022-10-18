@@ -222,17 +222,17 @@ namespace FishNet.Managing.Timing
         /// How to perform physics.
         /// </summary>
         public PhysicsMode PhysicsMode => _physicsMode;
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("Maximum number of buffered inputs which will be accepted from client before old inputs are discarded.")]
-        [Range(1, 100)]
-        [SerializeField]
-        private byte _maximumBufferedInputs = 15;
-        /// <summary>
-        /// Maximum number of buffered inputs which will be accepted from client before old inputs are discarded.
-        /// </summary>
-        public byte MaximumBufferedInputs => _maximumBufferedInputs;
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //[Tooltip("Maximum number of buffered inputs which will be accepted from client before old inputs are discarded.")]
+        //[Range(1, 100)]
+        //[SerializeField]
+        //private byte _maximumBufferedInputs = 15;
+        ///// <summary>
+        ///// Maximum number of buffered inputs which will be accepted from client before old inputs are discarded.
+        ///// </summary>
+        //public byte MaximumBufferedInputs => _maximumBufferedInputs;
         #endregion
 
         #region Private.
@@ -479,7 +479,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         [APIExclude]
         [CodegenMakePublic] //To internal.
-        public void InvokeOnReconcile(NetworkBehaviour nb, bool before)
+        public void InvokeOnReconcileInternal(NetworkBehaviour nb, bool before)
         {
             nb.IsReconciling = before;
             if (before)
@@ -494,7 +494,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         [APIExclude]
         [CodegenMakePublic] //To internal.
-        public void InvokeOnReplicateReplay(UnityScene scene, PhysicsScene ps, PhysicsScene2D ps2d, bool before)
+        public void InvokeOnReplicateReplayInternal(UnityScene scene, PhysicsScene ps, PhysicsScene2D ps2d, bool before)
         {
             _isReplaying = before;
             if (before)
