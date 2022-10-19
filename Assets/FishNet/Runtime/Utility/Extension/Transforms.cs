@@ -6,6 +6,18 @@ namespace FishNet.Utility.Extension
     [APIExclude]
     public static class TransformFN
     {
+        /// <summary>
+        /// Sets the offset values of target from a transform.
+        /// </summary>
+        /// <param name="pos">Position offset result.</param>
+        /// <param name="rot">Rotation offset result.</param>
+        public static void SetTransformOffsets(this Transform t, Transform target, ref Vector3 pos, ref Quaternion rot)
+        {
+            if (target == null)
+                return;
+            pos = (t.position - target.position);
+            rot = (t.rotation * Quaternion.Inverse(target.rotation));
+        }
 
         /// <summary>
         /// Sets local position and rotation for a transform.

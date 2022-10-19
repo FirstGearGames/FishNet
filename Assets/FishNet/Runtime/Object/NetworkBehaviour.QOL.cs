@@ -1,4 +1,4 @@
-﻿#if UNITY_2020_3_OR_NEWER
+﻿#if UNITY_2020_3_OR_NEWER && UNITY_EDITOR_WIN
 using FishNet.CodeAnalysis.Annotations;
 #endif
 using FishNet.Component.ColliderRollback;
@@ -89,7 +89,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if the local client is the owner of this object.
         /// </summary>
-#if UNITY_2020_3_OR_NEWER
+#if UNITY_2020_3_OR_NEWER && UNITY_EDITOR_WIN
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartServer", "")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartNetwork", " Use base.Owner.IsLocalClient instead.")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]

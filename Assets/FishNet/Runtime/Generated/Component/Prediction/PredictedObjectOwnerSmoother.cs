@@ -1,4 +1,6 @@
-﻿using FishNet.Object;
+﻿using FishNet.Utility.Extension;
+using FishNet.Object;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Component.Prediction
@@ -14,7 +16,11 @@ namespace FishNet.Component.Prediction
         /// Sets GraphicalObject.
         /// </summary>
         /// <param name="value"></param>
-        public void SetGraphicalObject(Transform value) => _graphicalObject = value;
+        public void SetGraphicalObject(Transform value)
+        { 
+            _graphicalObject = value;
+            _networkBehaviour.transform.SetTransformOffsets(value, ref _graphicalInstantiatedOffsetPosition, ref _graphicalInstantiatedOffsetRotation);
+        }
         /// <summary>
         /// NetworkBehaviour which is using this object.
         /// </summary>
@@ -44,31 +50,35 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private Quaternion _graphicalStartRotation;
         /// <summary>
-        /// Local position of transform when instantiated.
+        /// GraphicalObject position difference from the PredictedObject when this is initialized.
         /// </summary>
-        private Vector3 _graphicalInstantiatedLocalPosition;
+        private Vector3 _graphicalInstantiatedOffsetPosition;
         /// <summary>
         /// How quickly to move towards TargetPosition.
         /// </summary>
         private float _positionMoveRate = -2;
         /// <summary>
-        /// Local rotation of transform when instantiated.
+        /// GraphicalObject rotation difference from the PredictedObject when this is initialized.
         /// </summary>
-        private Quaternion _graphicalInstantiatedLocalRotation;
+        private Quaternion _graphicalInstantiatedOffsetRotation;
         /// <summary>
         /// How quickly to move towards TargetRotation.
         /// </summary>
         private float _rotationMoveRate = -2;
+        /// <summary>
+        /// True if OnPreTick was received this frame.
+        /// </summary>
+        private bool _preTickReceived;
         #endregion
-    
+
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        public void Initialize(NetworkBehaviour nb, Vector3 instantiatedLocalPosition, Quaternion instantiatedLocalRotation, Transform graphicalObject, byte interpolation, float teleportThreshold)
+        public void Initialize(NetworkBehaviour nb, Vector3 instantiatedOffsetPosition, Quaternion instantiatedOffsetRotation, Transform graphicalObject, byte interpolation, float teleportThreshold)
         {
             _networkBehaviour = nb;
-            _graphicalInstantiatedLocalPosition = instantiatedLocalPosition;
-            _graphicalInstantiatedLocalRotation = instantiatedLocalRotation;
+            _graphicalInstantiatedOffsetPosition = instantiatedOffsetPosition;
+            _graphicalInstantiatedOffsetRotation = instantiatedOffsetRotation;
 
             _graphicalObject = graphicalObject;
             _interpolation = interpolation;
@@ -90,22 +100,22 @@ namespace FishNet.Component.Prediction
         {
             if (CanSmooth())
             {
+                _preTickReceived = true;
                 /* Only snap to destination if interpolation is 1.
                  * This ensures the graphics will be at the proper location
                  * before the next movement rates are calculated. */
                 if (_interpolation == 1)
-                {
-                    _graphicalObject.localPosition = _graphicalInstantiatedLocalPosition;
-                    _graphicalObject.localRotation = _graphicalInstantiatedLocalRotation;
-                }
+                    ResetGraphicalToInstantiatedProperties(true, true);
+
                 SetGraphicalPreviousProperties();
             }
         }
 
         public void OnPostTick()
         {
-            if (CanSmooth())
+            if (CanSmooth() && _preTickReceived)
             {
+                _preTickReceived = false;
                 ResetGraphicalToPreviousProperties();
                 SetGraphicalMoveRates();
             }
@@ -129,11 +139,15 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void MoveToTarget()
         {
             //Not set, meaning movement doesnt need to happen or completed.
             if (_positionMoveRate == -2f && _rotationMoveRate == -2f)
                 return;
+
+            Vector3 posGoal = GetGraphicalGoalPosition();
+            Quaternion rotGoal = GetGraphicalGoalRotation();
 
             /* Only try to update properties if they have a valid move rate.
              * Properties may have 0f move rate if they did not change. */
@@ -141,16 +155,17 @@ namespace FishNet.Component.Prediction
             float delta = Time.deltaTime;
             //Position.
             if (_positionMoveRate == -1f)
-                t.localPosition = _graphicalInstantiatedLocalPosition;
+                ResetGraphicalToInstantiatedProperties(true, false);
             else if (_positionMoveRate > 0f)
-                t.localPosition = Vector3.MoveTowards(t.localPosition, _graphicalInstantiatedLocalPosition, _positionMoveRate * delta);
+                t.position = Vector3.MoveTowards(t.position, posGoal, _positionMoveRate * delta);
+
             //Rotation.
             if (_rotationMoveRate == -1f)
-                t.localRotation = _graphicalInstantiatedLocalRotation;
+                ResetGraphicalToInstantiatedProperties(false, true);
             else if (_rotationMoveRate > 0f)
-                t.localRotation = Quaternion.RotateTowards(t.localRotation, _graphicalInstantiatedLocalRotation, _rotationMoveRate * delta);
+                t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, _rotationMoveRate * delta);
 
-            if (GraphicalObjectMatches(_graphicalInstantiatedLocalPosition, _graphicalInstantiatedLocalRotation))
+            if (GraphicalObjectMatches(posGoal, rotGoal))
             {
                 _positionMoveRate = -2f;
                 _rotationMoveRate = -2f;
@@ -161,9 +176,9 @@ namespace FishNet.Component.Prediction
         /// Returns if this transform matches arguments.
         /// </summary>
         /// <returns></returns>
-        private bool GraphicalObjectMatches(Vector3 localPosition, Quaternion localRotation)
+        private bool GraphicalObjectMatches(Vector3 position, Quaternion rotation)
         {
-            return (_graphicalObject.localPosition == localPosition && _graphicalObject.localRotation == localRotation);
+            return (_graphicalObject.position == position && _graphicalObject.rotation == rotation);
         }
 
         /// <summary>
@@ -174,7 +189,7 @@ namespace FishNet.Component.Prediction
             float delta = ((float)_networkBehaviour.TimeManager.TickDelta * _interpolation);
 
             float distance;
-            distance = Vector3.Distance(_graphicalInstantiatedLocalPosition, _graphicalObject.localPosition);
+            distance = Vector3.Distance(_graphicalObject.position, GetGraphicalGoalPosition());
             //If qualifies for teleporting.
             if (_teleportThreshold != -1f && distance >= _teleportThreshold)
             {
@@ -185,14 +200,31 @@ namespace FishNet.Component.Prediction
             else
             {
                 _positionMoveRate = (distance / delta);
-                distance = Quaternion.Angle(_graphicalInstantiatedLocalRotation, _graphicalObject.localRotation);
+                distance = Quaternion.Angle(_graphicalObject.rotation, GetGraphicalGoalRotation());
                 if (distance > 0f)
                     _rotationMoveRate = (distance / delta);
             }
         }
 
         /// <summary>
-        /// Caches the transforms current position and rotation.
+        /// Gets a goal position for the graphical object.
+        /// </summary>
+        /// <returns></returns>
+        private Vector3 GetGraphicalGoalPosition()
+        {
+            return (_networkBehaviour.transform.position + _graphicalInstantiatedOffsetPosition);
+        }
+
+        /// <summary>
+        /// Gets a goal rotation for the graphical object.
+        /// </summary>
+        /// <returns></returns>
+        private Quaternion GetGraphicalGoalRotation()
+        {
+            return (_graphicalInstantiatedOffsetRotation * _networkBehaviour.transform.rotation);
+        }
+        /// <summary>
+        /// Caches the graphical object' current position and rotation.
         /// </summary>
         private void SetGraphicalPreviousProperties()
         {
@@ -201,12 +233,26 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
-        /// Resets the transform to cached position and rotation of the transform.
+        /// Resets the graphical object to cached position and rotation of the transform.
         /// </summary>
         private void ResetGraphicalToPreviousProperties()
         {
             _graphicalObject.SetPositionAndRotation(_graphicalStartPosition, _graphicalStartRotation);
         }
+
+        /// <summary>
+        /// Resets the graphical object to it's transform offsets during instantiation.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ResetGraphicalToInstantiatedProperties(bool position, bool rotation)
+        {
+            Transform nbTransform = _networkBehaviour.transform;
+            if (position)
+                _graphicalObject.position = GetGraphicalGoalPosition();
+            if (rotation)
+                _graphicalObject.rotation = GetGraphicalGoalRotation();
+        }
+
 
     }
 

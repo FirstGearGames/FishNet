@@ -931,9 +931,12 @@ namespace FishNet.Serializing
                         //If found in client collection then return.
                         if (NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(value, out result))
                             return result;
-                        //Otherwise make a new instance.
+                        /* Otherwise make a new instance.
+                         * We do not know if this is for the server or client so
+                         * initialize it either way. Connections rarely come through
+                         * without being in server/client side collection. */
                         else
-                            return new NetworkConnection(NetworkManager, value);
+                            return new NetworkConnection(NetworkManager, value, true);
 
                     }
                     //Only server and not found.
@@ -953,9 +956,12 @@ namespace FishNet.Serializing
                     //Try client side dictionary.
                     else if (NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(value, out NetworkConnection result))
                         return result;
-                    //Otherwise return a new connection.
+                    /* Otherwise make a new instance.
+                    * We do not know if this is for the server or client so
+                    * initialize it either way. Connections rarely come through
+                    * without being in server/client side collection. */        
                     else
-                        return new NetworkConnection(NetworkManager, value); //todo make and use NC cache.
+                        return new NetworkConnection(NetworkManager, value, true);
                 }
 
             }

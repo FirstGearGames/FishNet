@@ -149,7 +149,7 @@ namespace FishNet.Managing.Server
                     base.DespawnSpawnedWithoutSynchronization(true);
                     base.SceneObjects.Clear();
                     _objectIdCache.Clear();
-                    base.NetworkManager.ServerManager.Clients.Clear();
+                    base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients);
                 }
             }
         }

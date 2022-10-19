@@ -1,4 +1,5 @@
 ﻿using FishNet.Component.Transforming;
+using FishNet.Utility.Extension;
 using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Object;
@@ -57,6 +58,7 @@ namespace FishNet.Component.Prediction
         public void SetGraphicalObject(Transform value)
         {
             _graphicalObject = value;
+            SetInstantiatedOffsetValues();
             _spectatorSmoother?.SetGraphicalObject(value);
             _ownerSmoother?.SetGraphicalObject(value);
         }
@@ -178,13 +180,13 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private bool _subscribed;
         /// <summary>
-        /// Local position of GraphicalObject when this is instantiated.
+        /// GraphicalObject position difference from this object when this is instantiated.
         /// </summary>
-        private Vector3 _graphicalInstantiatedLocalPosition;
+        private Vector3 _graphicalInstantiatedOffsetPosition;
         /// <summary>
-        /// Local rotation of GraphicalObject when this is instantiated.
+        /// GraphicalObject rotation difference from this object when this is instantiated.
         /// </summary>
-        private Quaternion _graphicalInstantiatedLocalRotation;
+        private Quaternion _graphicalInstantiatedOffsetRotation;
         /// <summary>
         /// PredictedObjects that are spawned for each NetworkManager.
         /// Ideally PredictedObjects will be under the RollbackManager but that requires cross-linking assemblies which isn't possible.
@@ -209,17 +211,7 @@ namespace FishNet.Component.Prediction
 
         private void Awake()
         {
-            if (Application.isPlaying)
-            {
-                //No graphical object, cannot smooth.
-                if (_graphicalObject == null)
-                {
-                    NetworkManager.StaticLogError($"GraphicalObject is not set on {gameObject.name}. Initialization will fail.");
-                    this.enabled = false;
-                    return;
-                }
-            }
-
+            SetInstantiatedOffsetValues();
         }
 
         private void OnEnable()
@@ -290,8 +282,8 @@ namespace FishNet.Component.Prediction
              * for more real time graphical results. */
             if (base.IsOwner || base.IsHost)
                 InitializeSmoother(true);
-            //Not owner nor server, initialize spectator smoother.
-            else
+            //Not owner nor server, initialize spectator smoother if using rigidbodies.
+            else if (_predictionType != PredictionType.Other)
                 InitializeSmoother(false);
         }
 
@@ -325,6 +317,14 @@ namespace FishNet.Component.Prediction
         private void OnDestroy()
         {
             RemoveFromPredictedObjects();
+        }
+
+        /// <summary>
+        /// Sets instantiated offset values for the graphical object.
+        /// </summary>
+        private void SetInstantiatedOffsetValues()
+        {
+            transform.SetTransformOffsets(_graphicalObject, ref _graphicalInstantiatedOffsetPosition, ref _graphicalInstantiatedOffsetRotation);
         }
 
         /// <summary>
@@ -472,7 +472,7 @@ namespace FishNet.Component.Prediction
             {
                 _ownerSmoother = new PredictedObjectOwnerSmoother();
                 float teleportThreshold = (_enableTeleport) ? _teleportThreshold : -1f;
-                _ownerSmoother.Initialize(this, _graphicalInstantiatedLocalPosition, _graphicalInstantiatedLocalRotation, _graphicalObject, _ownerInterpolation, teleportThreshold);
+                _ownerSmoother.Initialize(this, _graphicalInstantiatedOffsetPosition, _graphicalInstantiatedOffsetRotation, _graphicalObject, _ownerInterpolation, teleportThreshold);
             }
             else
             {
@@ -486,8 +486,8 @@ namespace FishNet.Component.Prediction
 
             void ResetGraphicalTransform()
             {
-                _graphicalObject.localPosition = _graphicalInstantiatedLocalPosition;
-                _graphicalObject.localRotation = _graphicalInstantiatedLocalRotation;
+                _graphicalObject.position = (transform.position + _graphicalInstantiatedOffsetPosition);
+                _graphicalObject.rotation = (_graphicalInstantiatedOffsetRotation * transform.rotation);
             }
         }
 
@@ -528,7 +528,8 @@ namespace FishNet.Component.Prediction
             if (Application.isPlaying)
             {
                 InitializeSmoother(true);
-                InitializeSmoother(false);
+                if (_predictionType != PredictionType.Other)
+                    InitializeSmoother(false);
             }
 
             ConfigureNetworkTransform();

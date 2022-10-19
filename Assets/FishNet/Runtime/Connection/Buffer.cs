@@ -47,10 +47,11 @@ namespace FishNet.Connection
             Reset();
         }
 
-        ~ByteBuffer()
+        public void Dispose()
         {
             if (Data != null)
                 ByteArrayPool.Store(Data);
+            Data = null;
         }
 
         /// <summary>
@@ -124,6 +125,12 @@ namespace FishNet.Connection
             AddBuffer();
 
             Reset();
+        }
+
+        public void Dispose()
+        {
+            for (int i = 0; i < _buffers.Count; i++)
+                _buffers[i].Dispose();
         }
 
         /// <summary>

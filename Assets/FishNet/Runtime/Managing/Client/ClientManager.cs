@@ -125,13 +125,17 @@ namespace FishNet.Managing.Client
 
             if (args.Connected)
             {
-                Clients[args.Id] = new NetworkConnection(NetworkManager, args.Id);
+                Clients[args.Id] = new NetworkConnection(NetworkManager, args.Id, false);
                 OnRemoteConnectionState?.Invoke(rcs);
             }
             else
             {
                 OnRemoteConnectionState?.Invoke(rcs);
-                Clients.Remove(args.Id);
+                if (Clients.TryGetValue(args.Id, out NetworkConnection c))
+                {
+                    c.Dispose();
+                    Clients.Remove(args.Id);
+                }
             }
         }
 
@@ -141,17 +145,16 @@ namespace FishNet.Managing.Client
         /// <param name="args"></param>
         private void OnConnectedClientsBroadcast(ConnectedClientsBroadcast args)
         {
-            Clients.Clear();
+            NetworkManager.ClearClientsCollection(Clients);
 
             List<int> collection = args.Ids;
             int count = collection.Count;
             for (int i = 0; i < count; i++)
             {
                 int id = collection[i];
-                Clients[id] = new NetworkConnection(NetworkManager, id);
+                Clients[id] = new NetworkConnection(NetworkManager, id, false);
             }
         }
-
 
         /// <summary>
         /// Changes subscription status to transport.
@@ -223,7 +226,7 @@ namespace FishNet.Managing.Client
             if (!Started)
             {
                 Connection = NetworkManager.EmptyConnection;
-                Clients.Clear();
+                NetworkManager.ClearClientsCollection(Clients);
             }
 
             if (NetworkManager.CanLog(LoggingType.Common))
@@ -457,7 +460,7 @@ namespace FishNet.Managing.Client
                     if (networkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"Unable to lookup LocalConnection for {connectionId} as host.");
 
-                    Connection = new NetworkConnection(networkManager, connectionId);
+                    Connection = new NetworkConnection(networkManager, connectionId, false);
                 }
             }
 

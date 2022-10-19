@@ -143,21 +143,32 @@ namespace FishNet.Connection
         [APIExclude]
         public NetworkConnection() { }
         [APIExclude]
-        public NetworkConnection(NetworkManager manager, int clientId)
+        public NetworkConnection(NetworkManager manager, int clientId, bool asServer)
         {
-            Initialize(manager, clientId);
+            Initialize(manager, clientId, asServer);
+        }
+
+        public void Dispose()
+        {
+            foreach (PacketBundle p in _toClientBundles)
+                p.Dispose();
+            _toClientBundles.Clear();
         }
 
         /// <summary>
         /// Initializes this for use.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Initialize(NetworkManager nm, int clientId)
+        private void Initialize(NetworkManager nm, int clientId, bool asServer)
         {
             NetworkManager = nm;
             ClientId = clientId;
-            InitializeBuffer();
-            InitializePing();
+            //Only the server uses the ping and buffer.
+            if (asServer)
+            {
+                InitializeBuffer();
+                InitializePing();
+            }
         }
 
         /// <summary>

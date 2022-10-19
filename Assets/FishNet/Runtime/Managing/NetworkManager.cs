@@ -538,6 +538,18 @@ namespace FishNet.Managing
                 ClientManager = gameObject.AddComponent<ClientManager>();
         }
 
+        /// <summary>
+        /// Clears a client collection after disposing of the NetworkConnections.
+        /// </summary>
+        /// <param name="clients"></param>
+        internal void ClearClientsCollection(Dictionary<int, NetworkConnection> clients)
+        {
+            foreach (NetworkConnection conn in clients.Values)
+                conn.Dispose();
+
+            clients.Clear();
+        }
+
         #region Object pool.
         /// <summary>
         /// Returns an instantiated copy of prefab.
