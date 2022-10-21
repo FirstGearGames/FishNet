@@ -161,26 +161,16 @@ namespace FishNet.Object
                 if (isSyncObject)
                 {
                     if (_syncObjects.TryGetValueIL2CPP(index, out SyncBase sb))
-                    {
                         sb.Read(reader);
-                    }
                     else
-                    {
-                        if (NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"SyncObject not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
-                    }
+                        NetworkManager.LogWarning($"SyncObject not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
                 }
                 else
                 {
                     if (_syncVars.ContainsKey(index))
-                    {
                         ReadSyncVar(reader, index);
-                    }
                     else
-                    {
-                        if (NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"SyncVar not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
-                    }
+                        NetworkManager.LogWarning($"SyncVar not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
                 }
             }
         }

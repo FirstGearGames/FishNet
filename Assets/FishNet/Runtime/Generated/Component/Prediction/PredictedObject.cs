@@ -31,6 +31,11 @@ namespace FishNet.Component.Prediction
             Rigidbody = 1,
             Rigidbody2D = 2
         }
+        internal enum ResendType : byte
+        {
+            Disabled = 0,
+            Interval = 1,
+        }
         #endregion
 
         #region Public.
@@ -115,7 +120,7 @@ namespace FishNet.Component.Prediction
             else
             {
                 _spectatorInterpolation = value;
-                _spectatorSmoother.SetInterpolation(value);
+                _spectatorSmoother?.SetInterpolation(value);
             }
         }
         /// <summary>
@@ -158,12 +163,6 @@ namespace FishNet.Component.Prediction
         [SerializeField]
         private float _overflowMultiplier = 0.1f;
         /// <summary>
-        /// NetworkTransform to configure.
-        /// </summary>
-        [Tooltip("NetworkTransform to configure.")]
-        [SerializeField]
-        private NetworkTransform _networkTransform;
-        /// <summary>
         /// Multiplier applied to difference in velocity between ticks.
         /// Positive values will result in more velocity while lowers will result in less.
         /// A value of 1f will prevent any velocity from being lost between ticks, unless indicated by the server.
@@ -172,6 +171,24 @@ namespace FishNet.Component.Prediction
         [Range(-10f, 10f)]
         [SerializeField]
         private float _maintainedVelocity = 0f;
+        /// <summary>
+        /// How often to resend current values regardless if the state has changed. Using this value will consume more bandwidth but may be preferred if you want to force synchronization the object move on the client but not on the server.
+        /// </summary>
+        [Tooltip("How often to resend current values regardless if the state has changed. Using this value will consume more bandwidth but may be preferred if you want to force synchronization the object move on the client but not on the server.")]
+        [SerializeField]
+        private ResendType _resendType = ResendType.Disabled;
+        /// <summary>
+        /// How often in ticks to resend values.
+        /// </summary>
+        [Tooltip("How often in ticks to resend values.")]
+        [SerializeField]
+        private ushort _resendInterval = 30;
+        /// <summary>
+        /// NetworkTransform to configure.
+        /// </summary>
+        [Tooltip("NetworkTransform to configure.")]
+        [SerializeField]
+        private NetworkTransform _networkTransform;
         #endregion
 
         #region Private.

@@ -227,7 +227,7 @@ namespace FishNet.Object.Synchronizing
                 base.WriteDelta(writer, resetSyncTick);
                 //False for not full write.
                 writer.WriteBoolean(false);
-                writer.WriteUInt32((uint)_changed.Count);
+                writer.WriteInt32(_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
                 {
@@ -258,7 +258,7 @@ namespace FishNet.Object.Synchronizing
             //True for full write.
             writer.WriteBoolean(true);
             int count = Collection.Count;
-            writer.WriteUInt32((uint)count);
+            writer.WriteInt32(count);
             foreach (T item in Collection)
             {
                 writer.WriteByte((byte)SyncHashSetOperation.Add);
@@ -287,7 +287,7 @@ namespace FishNet.Object.Synchronizing
             if (fullWrite)
                 collection.Clear();
 
-            int changes = (int)reader.ReadUInt32();
+            int changes = reader.ReadInt32();
             for (int i = 0; i < changes; i++)
             {
                 SyncHashSetOperation operation = (SyncHashSetOperation)reader.ReadByte();

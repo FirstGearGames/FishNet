@@ -277,11 +277,11 @@ namespace FishNet.Object.Synchronizing
                     }
                     else if (change.Operation == SyncListOperation.RemoveAt)
                     {
-                        writer.WriteUInt32((uint)change.Index);
+                        writer.WriteInt32(change.Index);
                     }
                     else if (change.Operation == SyncListOperation.Insert || change.Operation == SyncListOperation.Set)
                     {
-                        writer.WriteUInt32((uint)change.Index);
+                        writer.WriteInt32(change.Index);
                         writer.Write(change.Item);
                     }
                 }
@@ -302,7 +302,7 @@ namespace FishNet.Object.Synchronizing
             base.WriteHeader(writer, false);
             //True for full write.
             writer.WriteBoolean(true);
-            writer.WriteUInt32((uint)Collection.Count);
+            writer.WriteInt32(Collection.Count);
             for (int i = 0; i < Collection.Count; i++)
             {
                 writer.WriteByte((byte)SyncListOperation.Add);
@@ -355,21 +355,21 @@ namespace FishNet.Object.Synchronizing
                 //Insert.
                 else if (operation == SyncListOperation.Insert)
                 {
-                    index = (int)reader.ReadUInt32();
+                    index = reader.ReadInt32();
                     next = reader.Read<T>();
                     collection.Insert(index, next);
                 }
                 //RemoveAt.
                 else if (operation == SyncListOperation.RemoveAt)
                 {
-                    index = (int)reader.ReadUInt32();
+                    index = reader.ReadInt32();
                     prev = collection[index];
                     collection.RemoveAt(index);
                 }
                 //Set
                 else if (operation == SyncListOperation.Set)
                 {
-                    index = (int)reader.ReadUInt32();
+                    index = reader.ReadInt32();
                     next = reader.Read<T>();
                     prev = collection[index];
                     collection[index] = next;
