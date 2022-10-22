@@ -79,6 +79,10 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void Rigidbodies_TimeManager_OnPreReconcile(NetworkBehaviour nb)
         {
+            /* Exit if owner because the owner should
+             * only be using CSP to rollback. */
+            if (base.IsOwner)
+                return;
             if (nb.gameObject == gameObject)
                 return;
             if (!IsRigidbodyPrediction)
