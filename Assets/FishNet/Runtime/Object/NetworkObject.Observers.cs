@@ -101,8 +101,10 @@ namespace FishNet.Object
             Renderer[] rs = _renderers;
             int count = rs.Length;
             for (int i = 0; i < count; i++)
+            {
+                if (rs[i] == null) continue;
                 rs[i].enabled = visible;
-
+                }
             _lastClientHostVisibility = visible;
         }
 
