@@ -133,7 +133,7 @@ namespace FishNet.Connection
                 if (nm != null)
                 {
                     uint diff = (nm.TimeManager.Tick - _serverLatestTick);
-                    return (diff - _latestTick);
+                    return (diff + _latestTick);
                 }
 
                 //Fall through, could not process.

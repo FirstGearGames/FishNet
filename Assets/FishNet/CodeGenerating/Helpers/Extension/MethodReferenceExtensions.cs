@@ -5,7 +5,7 @@ using System;
 namespace FishNet.CodeGenerating.Helping.Extension
 {
 
-    public static class MethodReferenceExtensions
+    internal static class MethodReferenceExtensions
     {
         /// <summary>
         /// Makes a generic method with specified arguments.
@@ -38,9 +38,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Gets a Resolve favoring cached results first.
         /// </summary>
-        internal static MethodDefinition CachedResolve(this MethodReference methodRef)
+        internal static MethodDefinition CachedResolve(this MethodReference methodRef, CodegenSession session)
         {
-            return CodegenSession.GeneralHelper.GetMethodReferenceResolve(methodRef);
+            return session.GetClass<GeneralHelper>().GetMethodReferenceResolve(methodRef);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="self"></param>
         /// <param name="instanceType"></param>
         /// <returns></returns>
-        public static MethodReference MakeHostInstanceGeneric(this MethodReference self, GenericInstanceType instanceType)
+        public static MethodReference MakeHostInstanceGeneric(this MethodReference self, CodegenSession session, GenericInstanceType instanceType)
         {
             MethodReference reference = new MethodReference(self.Name, self.ReturnType, instanceType)
             {
@@ -67,7 +67,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
             foreach (GenericParameter generic_parameter in self.GenericParameters)
                 reference.GenericParameters.Add(new GenericParameter(generic_parameter.Name, reference));
 
-            return CodegenSession.ImportReference(reference);
+            return session.ImportReference(reference);
         }
         /// <summary>
         /// Given a method of a generic class such as ArraySegment`T.get_Count,
@@ -80,7 +80,6 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         public static MethodReference MakeHostInstanceGeneric(this MethodReference self, TypeReference typeRef, params TypeReference[] args)
         {
-
             GenericInstanceType git = typeRef.MakeGenericInstanceType(args);
             MethodReference reference = new MethodReference(self.Name, self.ReturnType, git)
             {

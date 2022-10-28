@@ -13,17 +13,17 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Gets a Resolve favoring cached results first.
         /// </summary>
-        internal static TypeDefinition CachedResolve(this TypeReference typeRef)
+        internal static TypeDefinition CachedResolve(this TypeReference typeRef, CodegenSession session)
         {
-            return CodegenSession.GeneralHelper.GetTypeReferenceResolve(typeRef);
+            return session.GetClass<GeneralHelper>().GetTypeReferenceResolve(typeRef);
         }
 
         /// <summary>
         /// Returns if typeRef is a class or struct.
         /// </summary>
-        internal static bool IsClassOrStruct(this TypeReference typeRef)
+        internal static bool IsClassOrStruct(this TypeReference typeRef, CodegenSession session)
         {
-            TypeDefinition typeDef = typeRef.CachedResolve();
+            TypeDefinition typeDef = typeRef.CachedResolve(session);
             return (!typeDef.IsPrimitive && (typeDef.IsClass || typeDef.IsValueType));
         }
 
@@ -32,9 +32,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeReference typeRef, bool excludeGenerics = true, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeReference typeRef, CodegenSession session, bool excludeGenerics = true, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
-            return typeRef.CachedResolve().FindAllPublicProperties(excludeGenerics, excludedBaseTypes, excludedAssemblyPrefixes);
+            return typeRef.CachedResolve(session).FindAllPublicProperties(session, excludeGenerics, excludedBaseTypes, excludedAssemblyPrefixes);
         }
 
 
@@ -43,12 +43,12 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static IEnumerable<FieldDefinition> FindAllPublicFields(this TypeReference typeRef, bool ignoreStatic, bool ignoreNonSerialized, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<FieldDefinition> FindAllPublicFields(this TypeReference typeRef, CodegenSession session, bool ignoreStatic, bool ignoreNonSerialized, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
-            return typeRef.Resolve().FindAllPublicFields(ignoreStatic, ignoreNonSerialized, excludedBaseTypes, excludedAssemblyPrefixes);
+            return typeRef.Resolve().FindAllPublicFields(session, ignoreStatic, ignoreNonSerialized, excludedBaseTypes, excludedAssemblyPrefixes);
         }
 
-    
+
         /// <summary>
         /// Returns if a typeRef is type.
         /// </summary>
@@ -81,7 +81,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static bool CanBeResolved(this TypeReference typeRef)
+        public static bool CanBeResolved(this TypeReference typeRef, CodegenSession session)
         {
             while (typeRef != null)
             {
@@ -92,13 +92,13 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
                 if (typeRef.Scope.Name == "mscorlib")
                 {
-                    TypeDefinition resolved = typeRef.CachedResolve();
+                    TypeDefinition resolved = typeRef.CachedResolve(session);
                     return resolved != null;
                 }
 
                 try
                 {
-                    typeRef = typeRef.CachedResolve().BaseType;
+                    typeRef = typeRef.CachedResolve(session).BaseType;
                 }
                 catch
                 {
@@ -118,7 +118,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
             if (type.HasGenericParameters)
             {
                 // get all the generic parameters and make a generic instance out of it
-                var genericTypes = new TypeReference[type.GenericParameters.Count];
+                TypeReference[] genericTypes = new TypeReference[type.GenericParameters.Count];
                 for (int i = 0; i < type.GenericParameters.Count; i++)
                 {
                     genericTypes[i] = type.GenericParameters[i].GetElementType();

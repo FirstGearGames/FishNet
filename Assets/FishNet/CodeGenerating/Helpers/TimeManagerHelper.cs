@@ -6,7 +6,7 @@ using UnityEngine;
 namespace FishNet.CodeGenerating.Helping
 {
 
-    internal class TimeManagerHelper
+    internal class TimeManagerHelper : CodegenBase
     {
 
         #region Reflection references.
@@ -18,26 +18,28 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference InvokeOnReplicateReplay_MethodRef;
         #endregion
 
-        internal bool ImportReferences()
+        public override bool ImportReferences()
         {
             //TimeManager infos.
             Type timeManagerType = typeof(TimeManager);
             foreach (System.Reflection.PropertyInfo pi in timeManagerType.GetProperties())
             {
                 if (pi.Name == nameof(TimeManager.LocalTick))
-                    LocalTick_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+                    LocalTick_MethodRef = base.ImportReference(pi.GetMethod);
+                //else if (pi.Name == nameof(TimeManager.MaximumBufferedInputs))
+                //    MaximumBufferedInputs_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(TimeManager.PhysicsMode))
-                    PhysicsMode_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+                    PhysicsMode_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(TimeManager.TickDelta))
-                    TickDelta_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+                    TickDelta_MethodRef = base.ImportReference(pi.GetMethod);
             }
 
             foreach (System.Reflection.MethodInfo mi in timeManagerType.GetMethods())
             {
                 if (mi.Name == nameof(TimeManager.InvokeOnReconcileInternal))
-                    InvokeOnReconcile_MethodRef = CodegenSession.ImportReference(mi);
+                    InvokeOnReconcile_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(TimeManager.InvokeOnReplicateReplayInternal))
-                    InvokeOnReplicateReplay_MethodRef = CodegenSession.ImportReference(mi);
+                    InvokeOnReplicateReplay_MethodRef = base.ImportReference(mi);
             }
 
             return true;

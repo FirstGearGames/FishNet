@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    public static class Constructors
+    internal static class Constructors
     {
 
         /// <summary>
@@ -14,9 +14,9 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static MethodDefinition GetFirstConstructor(this TypeReference typeRef, bool requireParameters)
+        public static MethodDefinition GetFirstConstructor(this TypeReference typeRef, CodegenSession session, bool requireParameters)
         {
-            return typeRef.CachedResolve().GetFirstConstructor(requireParameters);
+            return typeRef.CachedResolve(session).GetFirstConstructor(requireParameters);
         }
         /// <summary>
         /// Gets the first constructor that optionally has, or doesn't have parameters.
@@ -45,9 +45,9 @@ namespace FishNet.CodeGenerating.Helping
         /// Gets the first public constructor with no parameters.
         /// </summary>
         /// <returns></returns>
-        public static MethodDefinition GetConstructor(this TypeReference typeRef)
+        public static MethodDefinition GetConstructor(this TypeReference typeRef, CodegenSession session)
         {
-            return typeRef.CachedResolve().GetConstructor();
+            return typeRef.CachedResolve(session).GetConstructor();
         }
         /// <summary>
         /// Gets the first public constructor with no parameters.
@@ -86,9 +86,9 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static MethodDefinition GetConstructor(this TypeReference typeRef, Type[] arguments)
+        public static MethodDefinition GetConstructor(this TypeReference typeRef, CodegenSession session, Type[] arguments)
         {
-            return typeRef.CachedResolve().GetConstructor(arguments);
+            return typeRef.CachedResolve(session).GetConstructor(arguments);
         }
 
         /// <summary>
@@ -126,9 +126,9 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static MethodDefinition GetConstructor(this TypeReference typeRef, TypeReference[] arguments)
+        public static MethodDefinition GetConstructor(this TypeReference typeRef, CodegenSession session, TypeReference[] arguments)
         {
-            return typeRef.CachedResolve().GetConstructor(arguments);
+            return typeRef.CachedResolve(session).GetConstructor(arguments);
         }
 
         /// <summary>
@@ -165,9 +165,9 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static MethodDefinition GetConstructor(this TypeReference typeRef, int parameterCount)
+        public static MethodDefinition GetConstructor(this TypeReference typeRef, CodegenSession session, int parameterCount)
         {
-            return typeRef.CachedResolve().GetConstructor(parameterCount);
+            return typeRef.CachedResolve(session).GetConstructor(parameterCount);
         }
 
 

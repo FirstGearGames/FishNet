@@ -1,8 +1,5 @@
-﻿
-using FishNet.CodeGenerating.Helping;
-using FishNet.CodeGenerating.Helping.Extension;
+﻿using FishNet.CodeGenerating.Helping.Extension;
 using MonoFN.Cecil;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Extension
 {
@@ -10,55 +7,147 @@ namespace FishNet.CodeGenerating.Extension
 
     internal static class TypeDefinitionExtensions
     {
-        /// <summary>
-        /// Returns a method in the next base class.
-        /// </summary>
-        public static MethodReference GetMethodReferenceInBase(this TypeDefinition td, string methodName)
+        public static MethodReference GetMethodReferenceInBase(this TypeDefinition td, CodegenSession session, string methodName)
         {
-            if (td == null)
-            {
-                CodegenSession.LogError($"TypeDefinition is null.");
-                return null;
-            }
-            if (td.BaseType == null)
-            {
-                CodegenSession.LogError($"BaseType for {td.FullName} is null.");
-                return null;
-            }
-
-            TypeDefinition baseTd = td.BaseType.CachedResolve();
-            MethodDefinition baseMd = baseTd.GetMethod(methodName);
-            //Not found.
+            MethodDefinition baseMd = td.GetMethodDefinitionInBase(session, methodName);
             if (baseMd == null)
                 return null;
 
-            //Is generic.
-            if (baseTd.HasGenericParameters)
-            {
-                TypeReference baseTr = td.BaseType;
-                GenericInstanceType baseGit = (GenericInstanceType)baseTr;
 
-                CodegenSession.ImportReference(baseMd.ReturnType);
-                MethodReference mr = new MethodReference(methodName, baseMd.ReturnType)
+            MethodReference baseMr;
+            TypeReference baseTr = td.BaseType;
+            if (baseTr.CachedResolve(session).HasGenericParameters)
+            {
+                GenericInstanceType git = (GenericInstanceType)baseTr;
+                baseMr = new MethodReference(baseMd.Name, baseMd.ReturnType, git)
                 {
-                    DeclaringType = baseGit,
-                    CallingConvention = baseMd.CallingConvention,
                     HasThis = baseMd.HasThis,
+                    CallingConvention = baseMd.CallingConvention,
                     ExplicitThis = baseMd.ExplicitThis,
                 };
-                return mr;
             }
-            //Not generic.
             else
             {
-                return CodegenSession.ImportReference(baseMd);
+                baseMr = session.ImportReference(baseMd);
             }
+
+            return baseMr;
         }
+        /// <summary>
+        /// Returns a method in the next base class.
+        /// </summary>
+        public static MethodDefinition GetMethodDefinitionInBase(this TypeDefinition td, CodegenSession session, string methodName)
+        {
+            if (td.BaseType == null)
+            {
+                session.LogError($"BaseType for {td.FullName} is null.");
+                return null;
+            }
+
+            TypeDefinition baseTd = td.BaseType.CachedResolve(session);
+            return baseTd.GetMethod(methodName);
+        }
+
+
+        /// <summary>
+        /// Returns a method in the next base class.
+        /// </summary>
+        public static MethodReference GetMethodReference(this TypeDefinition td, CodegenSession session, string methodName)
+        {
+            MethodDefinition md = td.GetMethod(methodName);
+            //Not found.
+            if (md == null)
+                return null;
+
+            return md.GetMethodReference(session);
+        }
+
+        /// <summary>
+        /// Gets a MethodReference or creates one if missing.
+        /// </summary>
+        public static MethodReference GetOrCreateMethodReference(this TypeDefinition td, CodegenSession session, string methodName, MethodAttributes attributes, TypeReference returnType, out bool created)
+        {
+            MethodDefinition md = td.GetMethod(methodName);
+            //Not found.
+            if (md == null)
+            {
+                md = new MethodDefinition(methodName, attributes, returnType);
+                td.Methods.Add(md);
+                created = true;
+            }
+            else
+            {
+                created = false;
+            }
+
+            return md.GetMethodReference(session);
+        }
+
+
+        /// <summary>
+        /// Gets a MethodDefinition or creates one if missing.
+        /// </summary>
+        public static MethodDefinition GetOrCreateMethodDefinition(this TypeDefinition td, CodegenSession session, string methodName, MethodAttributes attributes, TypeReference returnType, out bool created)
+        {
+            MethodDefinition md = td.GetMethod(methodName);
+            //Not found.
+            if (md == null)
+            {
+                md = new MethodDefinition(methodName, attributes, returnType);
+                td.Methods.Add(md);
+                created = true;
+            }
+            else
+            {
+                created = false;
+            }
+
+            return md;
+        }
+
+        /// <summary>
+        /// Gets a MethodDefinition or creates one if missing.
+        /// </summary>
+        public static MethodDefinition GetOrCreateMethodDefinition(this TypeDefinition td, CodegenSession session, string methodName, MethodDefinition methodTemplate, bool copyParameters, out bool created)
+        {
+            MethodDefinition md = td.GetMethod(methodName);
+            //Not found.
+            if (md == null)
+            {
+                TypeReference returnType = session.ImportReference(methodTemplate.ReturnType);
+                md = new MethodDefinition(methodName, methodTemplate.Attributes, returnType)
+                {
+                    ExplicitThis = methodTemplate.ExplicitThis,
+                    AggressiveInlining = methodTemplate.AggressiveInlining,
+                    Attributes = methodTemplate.Attributes,
+                    CallingConvention = methodTemplate.CallingConvention,
+                    HasThis = methodTemplate.HasThis,
+                };
+                md.Body.InitLocals = methodTemplate.Body.InitLocals;
+
+                if (copyParameters)
+                {
+                    foreach (ParameterDefinition pd in methodTemplate.Parameters)
+                        md.Parameters.Add(pd);
+                }
+
+                td.Methods.Add(md);
+                created = true;
+            }
+            else
+            {
+                created = false;
+            }
+
+            return md;
+        }
+
+
 
         /// <summary>
         /// Returns a method in any inherited classes. The first found method is returned.
         /// </summary>
-        public static MethodDefinition GetMethodDefinitionInAnyBase(this TypeDefinition td, string methodName)
+        public static MethodDefinition GetMethodDefinitionInAnyBase(this TypeDefinition td, CodegenSession session, string methodName)
         {
             while (td != null)
             {
@@ -70,7 +159,7 @@ namespace FishNet.CodeGenerating.Extension
 
                 try
                 {
-                    td = td.GetNextBaseTypeDefinition();
+                    td = td.GetNextBaseTypeDefinition(session);
                 }
                 catch
                 {
@@ -84,10 +173,63 @@ namespace FishNet.CodeGenerating.Extension
         /// <summary>
         /// Returns the next base type.
         /// </summary>
-        internal static TypeDefinition GetNextBaseTypeDefinition(this TypeDefinition typeDef)
+        public static TypeDefinition GetNextBaseTypeDefinition(this TypeDefinition typeDef, CodegenSession session)
         {
-            return (typeDef.BaseType == null) ? null : typeDef.BaseType.CachedResolve();
+            return (typeDef.BaseType == null) ? null : typeDef.BaseType.CachedResolve(session);
         }
+
+        /// <summary>
+        /// Creates a FieldReference.
+        /// </summary>
+        public static FieldReference CreateFieldReference(this FieldDefinition fd, CodegenSession session)
+        {
+            FieldReference fr;
+            TypeDefinition declaringType = fd.DeclaringType;
+            //Is generic.
+            if (declaringType.HasGenericParameters)
+            {
+                GenericInstanceType git = new GenericInstanceType(declaringType);
+                foreach (GenericParameter item in declaringType.GenericParameters)
+                    git.GenericArguments.Add(item);
+                fr = new FieldReference(fd.Name, fd.FieldType, git);
+                return fr;
+            }
+            //Not generic.
+            else
+            {
+                return session.ImportReference(fd);
+            }
+        }
+
+        /// <summary>
+        /// Gets a FieldReference or creates it if missing.
+        /// </summary>
+        public static FieldReference GetOrCreateFieldReference(this TypeDefinition td, CodegenSession session, string fieldName, FieldAttributes attributes, TypeReference fieldTypeRef, out bool created)
+        {
+            FieldReference fr = td.GetField(fieldName);
+            if (fr == null)
+            {
+                fr = td.CreateFieldDefinition(session, fieldName, attributes, fieldTypeRef);
+                created = true;
+            }
+            else
+            {
+                created = false;
+            }
+
+            return fr;
+        }
+
+        /// <summary>
+        /// Creates a FieldReference.
+        /// </summary>
+        public static FieldReference CreateFieldDefinition(this TypeDefinition td, CodegenSession session, string fieldName, FieldAttributes attributes, TypeReference fieldTypeRef)
+        {
+            FieldDefinition fd = new FieldDefinition(fieldName, attributes, fieldTypeRef);
+            td.Fields.Add(fd);
+            return fd.CreateFieldReference(session);
+        }
+
 
 
     }

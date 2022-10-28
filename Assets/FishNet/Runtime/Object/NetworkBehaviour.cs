@@ -75,14 +75,15 @@ namespace FishNet.Object
             if (gameObject.activeInHierarchy)
                 return;
 
-            NetworkInitializeIfDisabledInternal();
+            NetworkInitializeIfDisabled();
         }
         /// <summary>
         /// Long name is to prevent users from potentially creating their own method named the same.
         /// </summary>
-        [CodegenMakePublic] //internal.
+        [CodegenMakePublic]
         [APIExclude]
-        protected internal virtual void NetworkInitializeIfDisabledInternal() { }
+        internal virtual void NetworkInitializeIfDisabled() { }
+
         #region Editor.
         protected virtual void Reset()
         {

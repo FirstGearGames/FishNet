@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    internal class ObjectHelper
+    internal class ObjectHelper : CodegenBase
     {
         #region Reflection references.
         //Fullnames.
@@ -26,40 +26,40 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodReference NetworkConnection_GetIsLocalClient_MethodRef;
         #endregion
 
-        internal bool ImportReferences()
+        public override bool ImportReferences()
         {
             Type tmpType;
             /* SyncObject names. */
             //SyncList.
             tmpType = typeof(SyncList<>);
-            CodegenSession.ImportReference(tmpType);
+            base.ImportReference(tmpType);
             SyncList_Name = tmpType.Name;
             //SyncDictionary.
             tmpType = typeof(SyncDictionary<,>);
-            CodegenSession.ImportReference(tmpType);
+            base.ImportReference(tmpType);
             SyncDictionary_Name = tmpType.Name;
             //SyncHashSet.
             tmpType = typeof(SyncHashSet<>);
-            CodegenSession.ImportReference(tmpType);
+            base.ImportReference(tmpType);
             SyncHashSet_Name = tmpType.Name;
 
             tmpType = typeof(NetworkConnection);
-            TypeReference networkConnectionTr = CodegenSession.ImportReference(tmpType);
-            foreach (PropertyDefinition item in networkConnectionTr.CachedResolve().Properties)
+            TypeReference networkConnectionTr = base.ImportReference(tmpType);
+            foreach (PropertyDefinition item in networkConnectionTr.CachedResolve(base.Session).Properties)
             {
                 if (item.Name == nameof(NetworkConnection.IsLocalClient))
-                    NetworkConnection_GetIsLocalClient_MethodRef = CodegenSession.ImportReference(item.GetMethod);
+                    NetworkConnection_GetIsLocalClient_MethodRef = base.ImportReference(item.GetMethod);
             }
 
             //Dictionary.Add(ushort, SyncBase).
             Type dictType = typeof(Dictionary<ushort, SyncBase>);
-            TypeReference dictTypeRef = CodegenSession.ImportReference(dictType);
-            //Dictionary_Add_UShort_SyncBase_MethodRef = dictTypeRef.CachedResolve().GetMethod("add_Item", )
-            foreach (MethodDefinition item in dictTypeRef.CachedResolve().Methods)
+            TypeReference dictTypeRef = base.ImportReference(dictType);
+            //Dictionary_Add_UShort_SyncBase_MethodRef = dictTypeRef.CachedResolve(base.Session).GetMethod("add_Item", )
+            foreach (MethodDefinition item in dictTypeRef.CachedResolve(base.Session).Methods)
             {
                 if (item.Name == nameof(Dictionary<ushort, SyncBase>.Add))
                 {
-                    Dictionary_Add_UShort_SyncBase_MethodRef = CodegenSession.ImportReference(item);
+                    Dictionary_Add_UShort_SyncBase_MethodRef = base.ImportReference(item);
                     break;
                 }
             }
@@ -69,18 +69,18 @@ namespace FishNet.CodeGenerating.Helping
             foreach (PropertyInfo pi in instanceFinderType.GetProperties())
             {
                 if (pi.Name == nameof(InstanceFinder.IsClient))
-                    InstanceFinder_IsClient_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+                    InstanceFinder_IsClient_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(InstanceFinder.IsServer))
-                    InstanceFinder_IsServer_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+                    InstanceFinder_IsServer_MethodRef = base.ImportReference(pi.GetMethod);
             }
 
             //NetworkConnection.
             foreach (PropertyInfo pi in typeof(NetworkConnection).GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
                 if (pi.Name == nameof(NetworkConnection.IsValid))
-                    NetworkConnection_IsValid_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+                    NetworkConnection_IsValid_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkConnection.IsActive))
-                    NetworkConnection_IsActive_MethodRef = CodegenSession.ImportReference(pi.GetMethod);
+                    NetworkConnection_IsActive_MethodRef = base.ImportReference(pi.GetMethod);
             }
 
             return true;

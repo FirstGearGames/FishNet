@@ -44,7 +44,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public event SyncTypeChanged OnChange;
         /// <summary>
-        /// Time remaining on the timer. When the timer is expired this value will be -1f.
+        /// Time remaining on the timer. When the timer is expired this value will be 0f.
         /// </summary>
         public float Remaining { get; private set; }
         /// <summary>

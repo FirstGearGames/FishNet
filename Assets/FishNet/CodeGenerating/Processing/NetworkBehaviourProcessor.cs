@@ -1,6 +1,7 @@
 ﻿using FishNet.CodeGenerating.Extension;
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.CodeGenerating.Processing.Rpc;
 using FishNet.Configuring;
 using FishNet.Object;
 using MonoFN.Cecil;
@@ -8,11 +9,10 @@ using MonoFN.Cecil.Cil;
 using MonoFN.Collections.Generic;
 using System.Collections.Generic;
 using System.Linq;
-using DebugX = UnityEngine.Debug;
 
 namespace FishNet.CodeGenerating.Processing
 {
-    internal class NetworkBehaviourProcessor
+    internal class NetworkBehaviourProcessor : CodegenBase
     {
         #region Types.
         private class NetworkInitializeMethodData
@@ -78,9 +78,8 @@ namespace FishNet.CodeGenerating.Processing
             do
             {
                 typeDefs.Add(copyTypeDef);
-                copyTypeDef = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(copyTypeDef);
+                copyTypeDef = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(copyTypeDef, base.Session);
             } while (copyTypeDef != null);
-
 
             /* Iterate from child-most to parent first
              * while creating network initialize methods.
@@ -99,18 +98,18 @@ namespace FishNet.CodeGenerating.Processing
                 ICollection<TypeDefinition> nestedTds = td.NestedTypes;
                 foreach (TypeDefinition item in nestedTds)
                 {
-                    if (item.InheritsNetworkBehaviour())
+                    if (item.InheritsNetworkBehaviour(base.Session))
                     {
-                        CodegenSession.LogError($"{td.FullName} contains nested NetworkBehaviours. These are not supported.");
+                        base.LogError($"{td.FullName} contains nested NetworkBehaviours. These are not supported.");
                         return modified;
                     }
                 }
 
                 /* Create NetworkInitialize before-hand so the other procesors
                  * can use it. */
-                MethodDefinition networkInitializeInternalMd;
-                CreateNetworkInitializeMethods(td, out networkInitializeInternalMd);
-                CallNetworkInitializeMethods(networkInitializeInternalMd);
+                MethodDefinition networkInitializeIfDisabledMd;
+                CreateNetworkInitializeMethods(td, out networkInitializeIfDisabledMd);
+                CallNetworkInitializeMethods(networkInitializeIfDisabledMd);
             }
 
             /* Reverse and do RPCs/SyncTypes.
@@ -136,11 +135,11 @@ namespace FishNet.CodeGenerating.Processing
                  * user data passed into prediction methods. Because of this
                  * other RPCs should use the modified version and reader/writers
                  * made for prediction. */
-                modified |= CodegenSession.NetworkBehaviourPredictionProcessor.Process(td, ref rpcCount);
+                modified |= base.GetClass<NetworkBehaviourPredictionProcessor>().Process(td, ref rpcCount);
                 //25ms 
 
                 /* RPCs. */
-                modified |= CodegenSession.RpcProcessor.Process(td, ref rpcCount);
+                modified |= base.GetClass<RpcProcessor>().Process(td, ref rpcCount);
                 //30ms
                 /* //perf rpcCounts can be optimized by having different counts
                  * for target, observers, server, replicate, and reoncile rpcs. Since
@@ -151,7 +150,7 @@ namespace FishNet.CodeGenerating.Processing
                 /* SyncTypes. */
                 uint syncTypeStartCount;
                 childSyncTypeCounts.TryGetValue(td, out syncTypeStartCount);
-                modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(td, allProcessedSyncs, ref syncTypeStartCount);
+                modified |= base.GetClass<NetworkBehaviourSyncProcessor>().Process(td, allProcessedSyncs, ref syncTypeStartCount);
                 //70ms
                 _processedClasses.Add(td);
             }
@@ -159,7 +158,7 @@ namespace FishNet.CodeGenerating.Processing
             int maxAllowSyncTypes = 256;
             if (allProcessedSyncs.Count > maxAllowSyncTypes)
             {
-                CodegenSession.LogError($"Found {allProcessedSyncs.Count} SyncTypes within {firstTypeDef.FullName}. The maximum number of allowed SyncTypes within type and inherited types is {maxAllowSyncTypes}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
+                base.LogError($"Found {allProcessedSyncs.Count} SyncTypes within {firstTypeDef.FullName}. The maximum number of allowed SyncTypes within type and inherited types is {maxAllowSyncTypes}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
                 return false;
             }
 
@@ -174,7 +173,7 @@ namespace FishNet.CodeGenerating.Processing
             List<AwakeMethodData> awakeDatas = new List<AwakeMethodData>();
             if (!CreateOrModifyAwakeMethods(firstTypeDef, ref awakeDatas))
             {
-                CodegenSession.LogError($"Was unable to make Awake methods public virtual starting on type {firstTypeDef.FullName}.");
+                base.LogError($"Was unable to make Awake methods public virtual starting on type {firstTypeDef.FullName}.");
                 return modified;
             }
 
@@ -188,7 +187,7 @@ namespace FishNet.CodeGenerating.Processing
             //Since awake methods are erased ret has to be added at the end.
             AddReturnsToAwake(awakeDatas);
 
-            CodegenSession.NetworkBehaviourSyncProcessor.CallBaseReadSyncVar(firstTypeDef);
+            base.GetClass<NetworkBehaviourSyncProcessor>().CallBaseReadSyncVar(firstTypeDef);
 
             return modified;
         }
@@ -215,25 +214,25 @@ namespace FishNet.CodeGenerating.Processing
             foreach (TypeDefinition typeDef in typeDefs)
             {
                 //Inherits, don't need to check.
-                if (typeDef.InheritsNetworkBehaviour())
+                if (typeDef.InheritsNetworkBehaviour(base.Session))
                     continue;
 
                 //Check each method for attribute.
                 foreach (MethodDefinition md in typeDef.Methods)
                 {
                     //Has RPC attribute but doesn't inherit from NB.
-                    if (CodegenSession.RpcProcessor.Attributes.HasRpcAttributes(md))
+                    if (base.GetClass<RpcProcessor>().Attributes.HasRpcAttributes(md))
                     {
-                        CodegenSession.LogError($"{typeDef.FullName} has one or more RPC attributes but does not inherit from NetworkBehaviour.");
+                        base.LogError($"{typeDef.FullName} has one or more RPC attributes but does not inherit from NetworkBehaviour.");
                         error = true;
                     }
                 }
                 //Check fields for attribute.
                 foreach (FieldDefinition fd in typeDef.Fields)
                 {
-                    if (CodegenSession.NetworkBehaviourSyncProcessor.GetSyncType(fd, false, out _) != SyncType.Unset)
+                    if (base.GetClass<NetworkBehaviourSyncProcessor>().GetSyncType(fd, false, out _) != SyncType.Unset)
                     {
-                        CodegenSession.LogError($"{typeDef.FullName} has one or more SyncType attributes but does not inherit from NetworkBehaviour.");
+                        base.LogError($"{typeDef.FullName} has one or more SyncType attributes but does not inherit from NetworkBehaviour.");
                         error = true;
                     }
                 }
@@ -261,32 +260,33 @@ namespace FishNet.CodeGenerating.Processing
                 if (!amd.Created)
                     continue;
 
-                TypeDefinition copyTypeDef = amd.AwakeMethodDef.DeclaringType;
+                TypeDefinition typeDef = amd.AwakeMethodDef.DeclaringType;
 
-                /* Get next base awake first.
-                 * If it doesn't exist then nothing can be called. */
-                MethodReference baseAwakeMethodRef = copyTypeDef.GetMethodReferenceInBase(NetworkBehaviourHelper.AWAKE_METHOD_NAME);// GetNextAwake(i);
-                if (baseAwakeMethodRef == null)
-                    return;
-                //MethodReference baseAwakeMethodRef = CodegenSession.ImportReference(baseAwakeMd);
                 /* Awake will always exist because it was added previously.
                  * Get awake for the current declaring type. */
-                MethodDefinition copyAwakeMd = copyTypeDef.GetMethod(NetworkBehaviourHelper.AWAKE_METHOD_NAME);
+                MethodDefinition awakeMd = typeDef.GetMethod(NetworkBehaviourHelper.AWAKE_METHOD_NAME);
+
+                MethodReference baseAwakeMr = typeDef.GetMethodReferenceInBase(base.Session, NetworkBehaviourHelper.AWAKE_METHOD_NAME);
+                if (baseAwakeMr == null)
+                    return;
+                MethodDefinition baseAwakeMd = baseAwakeMr.CachedResolve(base.Session);
+                //MethodDefinition baseAwakeMd = typeDef.GetMethodDefinitionInBase(base.Session, NetworkBehaviourHelper.AWAKE_METHOD_NAME);
+                if (baseAwakeMd == null)
+                    return;
 
                 //Check if they already call base.
-                ILProcessor processor = copyAwakeMd.Body.GetILProcessor();
+                ILProcessor processor = awakeMd.Body.GetILProcessor();
                 bool alreadyHasBaseCall = false;
                 //Check if already calls baseAwake.
-                foreach (var item in copyAwakeMd.Body.Instructions)
+                foreach (var item in awakeMd.Body.Instructions)
                 {
-
                     //If a call or call virt. Although, callvirt should never occur.
                     if (item.OpCode == OpCodes.Call || item.OpCode == OpCodes.Callvirt)
                     {
                         if (item.Operand != null && item.Operand.GetType().Name == nameof(MethodDefinition))
                         {
                             MethodDefinition md = (MethodDefinition)item.Operand;
-                            if (md == baseAwakeMethodRef.Resolve())
+                            if (md == baseAwakeMd)
                             {
                                 alreadyHasBaseCall = true;
                                 break;
@@ -299,7 +299,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     //Create instructions for base call.
                     processor.Emit(OpCodes.Ldarg_0); //base.
-                    processor.Emit(OpCodes.Call, baseAwakeMethodRef);
+                    processor.Emit(OpCodes.Call, baseAwakeMr);
                 }
             }
         }
@@ -324,9 +324,8 @@ namespace FishNet.CodeGenerating.Processing
                     continue;
 
                 MethodDefinition awakeMd = amd.AwakeMethodDef;
-                CodegenSession.GeneralHelper.CallCopiedMethod(awakeMd, amd.UserLogicMethodDef);
+                base.GetClass<GeneralHelper>().CallCopiedMethod(awakeMd, amd.UserLogicMethodDef);
             }
-
         }
 
 
@@ -334,9 +333,8 @@ namespace FishNet.CodeGenerating.Processing
         /// Adds a check to NetworkInitialize to see if it has already run.
         /// </summary>
         /// <param name="typeDef"></param>
-        private void AddNetworkInitializeExecutedCheck(TypeDefinition firstTypeDef, bool initializeEarly, bool checkForExisting)
+        private void AddNetworkInitializeExecutedCheck(TypeDefinition firstTypeDef, bool initializeEarly)
         {
-
             TypeDefinition copyTypeDef = firstTypeDef;
             AddCheck(copyTypeDef, initializeEarly);
 
@@ -359,53 +357,28 @@ namespace FishNet.CodeGenerating.Processing
                 if (md == null)
                     return;
 
-                FieldDefinition fd = copyTypeDef.GetField(fieldName)?.Resolve();
-                if (fd == null)
+                TypeReference boolTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(bool));
+                FieldReference fr = copyTypeDef.GetOrCreateFieldReference(base.Session, fieldName, FieldAttributes.Private, boolTr, out bool created);
+
+                if (created)
                 {
-                    TypeReference boolTr = CodegenSession.GeneralHelper.GetTypeReference(typeof(bool));
-                    //Add fields to see if it already ran.
-                    fd = new FieldDefinition(fieldName, FieldAttributes.Private, boolTr);
-                    td.Fields.Add(fd);
+                    List<Instruction> insts = new List<Instruction>();
+                    ILProcessor processor = md.Body.GetILProcessor();
+                    //Add check if already called.
+                    //if (alreadyInitialized) return;
+                    Instruction skipFirstRetInst = processor.Create(OpCodes.Nop);
+                    insts.Add(processor.Create(OpCodes.Ldarg_0));
+                    insts.Add(processor.Create(OpCodes.Ldfld, fr));
+                    insts.Add(processor.Create(OpCodes.Brfalse_S, skipFirstRetInst));
+                    insts.Add(processor.Create(OpCodes.Ret));
+                    insts.Add(skipFirstRetInst);
+                    //Set field to true.
+                    insts.Add(processor.Create(OpCodes.Ldarg_0));
+                    insts.Add(processor.Create(OpCodes.Ldc_I4_1));
+                    insts.Add(processor.Create(OpCodes.Stfld, fr));
+                    processor.InsertFirst(insts);
                 }
-
-                if (checkForExisting)
-                {
-                    bool alreadyChecked = false;
-                    //Check if already calls baseAwake.
-                    foreach (Instruction item in md.Body.Instructions)
-                    {
-                        //If a call or call virt. Although, callvirt should never occur.
-                        if (item.OpCode == OpCodes.Ldfld && item.Operand != null && item.Operand is FieldDefinition opFd)
-                        {
-                            if (opFd == fd)
-                            {
-                                alreadyChecked = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (alreadyChecked)
-                        return;
-                }
-
-                List<Instruction> insts = new List<Instruction>();
-                ILProcessor processor = md.Body.GetILProcessor();
-                //Add check if already called.
-                //if (alreadyInitialized) return;
-                Instruction skipFirstRetInst = processor.Create(OpCodes.Nop);
-                insts.Add(processor.Create(OpCodes.Ldarg_0));
-                insts.Add(processor.Create(OpCodes.Ldfld, fd));
-                insts.Add(processor.Create(OpCodes.Brfalse_S, skipFirstRetInst));
-                insts.Add(processor.Create(OpCodes.Ret));
-                insts.Add(skipFirstRetInst);
-                //Set field to true.
-                insts.Add(processor.Create(OpCodes.Ldarg_0));
-                insts.Add(processor.Create(OpCodes.Ldc_I4_1));
-                insts.Add(processor.Create(OpCodes.Stfld, fd));
-                processor.InsertFirst(insts);
             }
-
         }
         /// <summary>
         /// Gets the top-most parent away method.
@@ -420,61 +393,56 @@ namespace FishNet.CodeGenerating.Processing
 
             do
             {
-                bool canCallBase = thisTypeDef.CanProcessBaseType();
+                bool canCallBase = thisTypeDef.CanProcessBaseType(base.Session);
 
                 foreach (string mdName in initializeMethodNames)
                 {
                     /* There are no more base calls to make but we still
                     * need to check if the initialize methods have already ran, so do that
                     * here. */
-                    if (!canCallBase)
+                    if (canCallBase)
                     {
-                        AddNetworkInitializeExecutedCheck(thisTypeDef, (mdName == NETWORKINITIALIZE_EARLY_INTERNAL_NAME), true);
-                        continue;
-                    }
+                        /* Awake will always exist because it was added previously.
+                         * Get awake for copy and base of copy. */
+                        MethodDefinition thisMd = thisTypeDef.GetMethod(mdName);
+                        MethodReference baseMr = thisTypeDef.GetMethodReferenceInBase(base.Session, mdName);
+                        MethodDefinition baseMd = baseMr.CachedResolve(base.Session);
+                        ILProcessor processor = thisMd.Body.GetILProcessor();
 
-                    /* Awake will always exist because it was added previously.
-                     * Get awake for copy and base of copy. */
-                    MethodDefinition thisMd = thisTypeDef.GetMethod(mdName);
-                    MethodDefinition baseMd = thisTypeDef.BaseType.CachedResolve().GetMethod(mdName);
-                    MethodReference baseMr = thisTypeDef.GetMethodReferenceInBase(mdName);
-                    ILProcessor processor = thisMd.Body.GetILProcessor();
-
-                    bool alreadyHasBaseCall = false;
-                    //Check if already calls baseAwake.
-                    foreach (Instruction item in thisMd.Body.Instructions)
-                    {
-
-                        //If a call or call virt. Although, callvirt should never occur.
-                        if (item.OpCode == OpCodes.Call || item.OpCode == OpCodes.Callvirt)
+                        bool alreadyHasBaseCall = false;
+                        //Check if already calls baseAwake.
+                        foreach (Instruction item in thisMd.Body.Instructions)
                         {
-                            if (item.Operand != null && item.Operand.GetType().Name == nameof(MethodDefinition))
+                            //If a call or call virt. Although, callvirt should never occur.
+                            if (item.OpCode == OpCodes.Call || item.OpCode == OpCodes.Callvirt)
                             {
-                                MethodDefinition md = (MethodDefinition)item.Operand;
-                                if (md == baseMd)
+                                if (item.Operand != null && item.Operand.GetType().Name == nameof(MethodDefinition))
                                 {
-                                    alreadyHasBaseCall = true;
-                                    break;
+                                    MethodDefinition md = (MethodDefinition)item.Operand;
+                                    if (md == baseMd)
+                                    {
+                                        alreadyHasBaseCall = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
+
+                        if (!alreadyHasBaseCall)
+                        {
+                            //Create instructions for base call.
+                            List<Instruction> instructions = new List<Instruction>();
+                            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+                            instructions.Add(processor.Create(OpCodes.Call, baseMr));
+                            processor.InsertFirst(instructions);
+                        }
                     }
 
-                    if (!alreadyHasBaseCall)
-                    {
-                        //Create instructions for base call.
-                        List<Instruction> instructions = new List<Instruction>();
-                        instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-                        instructions.Add(processor.Create(OpCodes.Call, baseMr));
-                        processor.InsertFirst(instructions);
-
-                        AddNetworkInitializeExecutedCheck(thisTypeDef, (mdName == NETWORKINITIALIZE_EARLY_INTERNAL_NAME), false);
-                    }
+                    AddNetworkInitializeExecutedCheck(thisTypeDef, (mdName == NETWORKINITIALIZE_EARLY_INTERNAL_NAME));
                 }
 
-                thisTypeDef = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(thisTypeDef);
+                thisTypeDef = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(thisTypeDef, base.Session);
             } while (thisTypeDef != null);
-
         }
 
         /// <summary>
@@ -511,41 +479,42 @@ namespace FishNet.CodeGenerating.Processing
                     NETWORKINITIALIZE_LATE_INTERNAL_NAME;
 
                 TypeDefinition td = amd.AwakeMethodDef.DeclaringType;
-                MethodDefinition initializeMd = td.GetMethod(methodName);
-                MethodReference initializeMr = CodegenSession.ImportReference(initializeMd);
+                MethodReference initializeMr = td.GetMethodReference(base.Session, methodName);
 
                 ILProcessor processor = amd.AwakeMethodDef.Body.GetILProcessor();
                 processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(OpCodes.Call, initializeMr);
+                processor.Emit(OpCodes.Callvirt, initializeMr);
             }
         }
 
         /// <summary>
         /// Creates an 'NetworkInitialize' method which is called by the childmost class to initialize scripts on Awake.
         /// </summary>
-        private void CreateNetworkInitializeMethods(TypeDefinition typeDef, out MethodDefinition networkInitializeInternalMd)
+        private void CreateNetworkInitializeMethods(TypeDefinition typeDef, out MethodDefinition networkInitializeIfDisabledMd)
         {
             CreateMethod(NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             CreateMethod(NETWORKINITIALIZE_LATE_INTERNAL_NAME);
-            networkInitializeInternalMd = CreateMethod(CodegenSession.NetworkBehaviourHelper.NetworkInitializeInternal_MethodRef.Name);
 
-            MethodDefinition CreateMethod(string name)
+            MethodDefinition baseInitIfDisabled = base.GetClass<NetworkBehaviourHelper>().NetworkInitializeIfDisabled_MethodRef.CachedResolve(base.Session);
+            networkInitializeIfDisabledMd = CreateMethod(baseInitIfDisabled.Name, baseInitIfDisabled);
+
+            MethodDefinition CreateMethod(string name, MethodDefinition copied = null)
             {
-                MethodDefinition md = typeDef.GetMethod(name);
-                //Already made.
-                if (md != null)
-                    return md;
+                MethodDefinition md;
+                bool created;
+                if (copied == null)
+                    md = typeDef.GetOrCreateMethodDefinition(base.Session, name, PUBLIC_VIRTUAL_ATTRIBUTES, typeDef.Module.TypeSystem.Void, out created);
+                else
+                    md = typeDef.GetOrCreateMethodDefinition(base.Session, name, copied, true, out created);
 
-                //Create new public virtual method and add it to typedef.
-                md = new MethodDefinition(name,
-                    PUBLIC_VIRTUAL_ATTRIBUTES,
-                    typeDef.Module.TypeSystem.Void);
-                typeDef.Methods.Add(md);
+                if (created)
+                {
+                    //Emit ret into new method.
+                    ILProcessor processor = md.Body.GetILProcessor();
+                    //End of method return.
+                    processor.Emit(OpCodes.Ret);
+                }
 
-                //Emit ret into new method.
-                ILProcessor processor = md.Body.GetILProcessor();
-                //End of method return.
-                processor.Emit(OpCodes.Ret);
                 return md;
             }
         }
@@ -554,20 +523,18 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates an 'NetworkInitialize' method which is called by the childmost class to initialize scripts on Awake.
         /// </summary>
-        private void CallNetworkInitializeMethods(MethodDefinition networkInitializeInternalMd)
+        private void CallNetworkInitializeMethods(MethodDefinition networkInitializeIfDisabledMd)
         {
-            ILProcessor processor = networkInitializeInternalMd.Body.GetILProcessor();
+            ILProcessor processor = networkInitializeIfDisabledMd.Body.GetILProcessor();
 
-            networkInitializeInternalMd.Body.Instructions.Clear();
+            networkInitializeIfDisabledMd.Body.Instructions.Clear();
             CallMethod(NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             CallMethod(NETWORKINITIALIZE_LATE_INTERNAL_NAME);
             processor.Emit(OpCodes.Ret);
 
             void CallMethod(string name)
             {
-                MethodDefinition md = networkInitializeInternalMd.DeclaringType.GetMethod(name);
-                MethodReference mr = CodegenSession.ImportReference(md);
-
+                MethodReference mr = networkInitializeIfDisabledMd.DeclaringType.GetMethodReference(base.Session, name);
                 processor.Emit(OpCodes.Ldarg_0);
                 processor.Emit(OpCodes.Callvirt, mr);
             }
@@ -584,49 +551,38 @@ namespace FishNet.CodeGenerating.Processing
             TypeDefinition copyTypeDef = typeDef;
             do
             {
-                MethodDefinition tmpMd = copyTypeDef.GetMethod(NetworkBehaviourHelper.AWAKE_METHOD_NAME);
-                string logicMethodName = $"{NetworkBehaviourHelper.AWAKE_METHOD_NAME}___UserLogic";
-                bool create = (tmpMd == null);
+                bool created;
+                MethodDefinition awakeMd = copyTypeDef.GetOrCreateMethodDefinition(base.Session, NetworkBehaviourHelper.AWAKE_METHOD_NAME, PUBLIC_VIRTUAL_ATTRIBUTES, copyTypeDef.Module.TypeSystem.Void, out created);
 
-                //Awake is found.
-                if (!create)
+                //Awake is found. Check for invalid return type.
+                if (!created)
                 {
-                    if (tmpMd.ReturnType != copyTypeDef.Module.TypeSystem.Void)
+                    if (awakeMd.ReturnType != copyTypeDef.Module.TypeSystem.Void)
                     {
-                        CodegenSession.LogError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
+                        base.LogError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
                         return false;
                     }
-                    tmpMd.Attributes = PUBLIC_VIRTUAL_ATTRIBUTES;
+                    awakeMd.Attributes = PUBLIC_VIRTUAL_ATTRIBUTES;
                 }
-                //No awake yet.
+                //Aways was made.
                 else
                 {
-                    //Make awake.
-                    tmpMd = new MethodDefinition(NetworkBehaviourHelper.AWAKE_METHOD_NAME, PUBLIC_VIRTUAL_ATTRIBUTES, copyTypeDef.Module.TypeSystem.Void);
-                    copyTypeDef.Methods.Add(tmpMd);
-                    ILProcessor processor = tmpMd.Body.GetILProcessor();
+                    ILProcessor processor = awakeMd.Body.GetILProcessor();
                     processor.Emit(OpCodes.Ret);
                 }
 
-                //If logic already exist then awake has been processed already.
-                MethodDefinition logicMd = copyTypeDef.GetMethod(logicMethodName);
-                if (logicMd == null)
-                {
-                    logicMd = CodegenSession.GeneralHelper.CopyMethod(tmpMd, logicMethodName, out _);
-                    //Clear awakeMethod.
-                    tmpMd.Body.Instructions.Clear();
-                }
-                datas.Add(new AwakeMethodData(tmpMd, logicMd, create));
+                MethodDefinition logicMd = base.GetClass<GeneralHelper>().CopyIntoNewMethod(awakeMd, $"{NetworkBehaviourHelper.AWAKE_METHOD_NAME}___UserLogic", out _);
+                //Clear original awake.
+                awakeMd.Body.Instructions.Clear();
+                datas.Add(new AwakeMethodData(awakeMd, logicMd, created));
 
-                copyTypeDef = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(copyTypeDef);
+                copyTypeDef = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(copyTypeDef, base.Session);
 
             } while (copyTypeDef != null);
 
 
             return true;
         }
-
-
 
         /// <summary>
         /// Makes all Awake methods within typeDef and base classes public and virtual.

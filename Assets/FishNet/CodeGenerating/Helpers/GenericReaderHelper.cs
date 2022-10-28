@@ -9,7 +9,7 @@ using System.Collections.Generic;
 namespace FishNet.CodeGenerating.Helping
 {
 
-    internal class GenericReaderHelper
+    internal class GenericReaderHelper : CodegenBase
     {
 
         #region Reflection references.
@@ -43,22 +43,22 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        internal bool ImportReferences()
+        public override bool ImportReferences()
         {
-            _genericReaderTypeRef = CodegenSession.ImportReference(typeof(GenericReader<>));
-            _readerTypeRef = CodegenSession.ImportReference(typeof(Reader));
-            _functionT2TypeRef = CodegenSession.ImportReference(typeof(Func<,>));
-            _functionT3TypeRef = CodegenSession.ImportReference(typeof(Func<,,>));
-            _functionT2ConstructorMethodRef = CodegenSession.ImportReference(typeof(Func<,>).GetConstructors()[0]);
-            _functionT3ConstructorMethodRef = CodegenSession.ImportReference(typeof(Func<,,>).GetConstructors()[0]);
+            _genericReaderTypeRef = base.ImportReference(typeof(GenericReader<>));
+            _readerTypeRef = base.ImportReference(typeof(Reader));
+            _functionT2TypeRef = base.ImportReference(typeof(Func<,>));
+            _functionT3TypeRef = base.ImportReference(typeof(Func<,,>));
+            _functionT2ConstructorMethodRef = base.ImportReference(typeof(Func<,>).GetConstructors()[0]);
+            _functionT3ConstructorMethodRef = base.ImportReference(typeof(Func<,,>).GetConstructors()[0]);
 
-            _autoPackTypeRef = CodegenSession.ImportReference(typeof(AutoPackType));
+            _autoPackTypeRef = base.ImportReference(typeof(AutoPackType));
 
             System.Reflection.PropertyInfo writePropertyInfo;
             writePropertyInfo = typeof(GenericReader<>).GetProperty(nameof(GenericReader<int>.Read));
-            _readGetSetMethodRef = CodegenSession.ImportReference(writePropertyInfo.GetSetMethod());
+            _readGetSetMethodRef = base.ImportReference(writePropertyInfo.GetSetMethod());
             writePropertyInfo = typeof(GenericReader<>).GetProperty(nameof(GenericReader<int>.ReadAutoPack));
-            _readAutoPackGetSetMethodRef = CodegenSession.ImportReference(writePropertyInfo.GetSetMethod());
+            _readAutoPackGetSetMethodRef = base.ImportReference(writePropertyInfo.GetSetMethod());
 
             return true;
         }
@@ -76,14 +76,14 @@ namespace FishNet.CodeGenerating.Helping
             * now is the first entry. That would mean the class was just
             * generated. */
             if (_generatedReaderWriterClassTypeDef == null)
-                _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, ReaderGenerator.GENERATED_TYPE_ATTRIBUTES, ReaderGenerator.GENERATED_READERS_CLASS_NAME, null);
+                _generatedReaderWriterClassTypeDef = base.GetClass<GeneralHelper>().GetOrCreateClass(out _, ReaderGenerator.GENERATED_TYPE_ATTRIBUTES, ReaderGenerator.GENERATED_READERS_CLASS_NAME, null);
             /* If constructor isn't set then try to get or create it
              * and also add it to methods if were created. */
             if (_generatedReaderWriterOnLoadMethodDef == null)
             {
-                _generatedReaderWriterOnLoadMethodDef = CodegenSession.GeneralHelper.GetOrCreateMethod(_generatedReaderWriterClassTypeDef, out created, INITIALIZEONCE_METHOD_ATTRIBUTES, INITIALIZEONCE_METHOD_NAME, CodegenSession.Module.TypeSystem.Void);
+                _generatedReaderWriterOnLoadMethodDef = base.GetClass<GeneralHelper>().GetOrCreateMethod(_generatedReaderWriterClassTypeDef, out created, INITIALIZEONCE_METHOD_ATTRIBUTES, INITIALIZEONCE_METHOD_NAME, base.Module.TypeSystem.Void);
                 if (created)
-                    CodegenSession.GeneralHelper.CreateRuntimeInitializeOnLoadMethodAttribute(_generatedReaderWriterOnLoadMethodDef);
+                    base.GetClass<GeneralHelper>().CreateRuntimeInitializeOnLoadMethodAttribute(_generatedReaderWriterOnLoadMethodDef);
             }
             //Check if ret already exist, if so remove it; ret will be added on again in this method.
             if (_generatedReaderWriterOnLoadMethodDef.Body.Instructions.Count != 0)
@@ -97,7 +97,7 @@ namespace FishNet.CodeGenerating.Helping
             TypeReference dataTypeRef = readMethodRef.ReturnType;
             if (_delegatedTypes.Contains(dataTypeRef))
             {
-                CodegenSession.LogError($"Generic read already created for {dataTypeRef.FullName}.");
+                base.LogError($"Generic read already created for {dataTypeRef.FullName}.");
                 return;
             }
             else
@@ -111,19 +111,19 @@ namespace FishNet.CodeGenerating.Helping
 
             GenericInstanceType functionGenericInstance;
             MethodReference functionConstructorInstanceMethodRef;
-            bool isAutoPacked = CodegenSession.ReaderHelper.IsAutoPackedType(dataTypeRef);
+            bool isAutoPacked = base.GetClass<ReaderHelper>().IsAutoPackedType(dataTypeRef);
 
             //Generate for autopacktype.
             if (isAutoPacked)
             {
                 functionGenericInstance = _functionT3TypeRef.MakeGenericInstanceType(_readerTypeRef, _autoPackTypeRef, dataTypeRef);
-                functionConstructorInstanceMethodRef = _functionT3ConstructorMethodRef.MakeHostInstanceGeneric(functionGenericInstance);
+                functionConstructorInstanceMethodRef = _functionT3ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, functionGenericInstance);
             }
             //Not autopacked.
             else
             {
                 functionGenericInstance = _functionT2TypeRef.MakeGenericInstanceType(_readerTypeRef, dataTypeRef);
-                functionConstructorInstanceMethodRef = _functionT2ConstructorMethodRef.MakeHostInstanceGeneric(functionGenericInstance);
+                functionConstructorInstanceMethodRef = _functionT2ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, functionGenericInstance);
             }
 
             processor.Emit(OpCodes.Newobj, functionConstructorInstanceMethodRef);
@@ -131,8 +131,8 @@ namespace FishNet.CodeGenerating.Helping
             //Call delegate to GeneratedReader<T>.Read
             GenericInstanceType genericInstance = _genericReaderTypeRef.MakeGenericInstanceType(dataTypeRef);
             MethodReference genericReaderMethodRef = (isAutoPacked) ?
-                _readAutoPackGetSetMethodRef.MakeHostInstanceGeneric(genericInstance) :
-                _readGetSetMethodRef.MakeHostInstanceGeneric(genericInstance);
+                _readAutoPackGetSetMethodRef.MakeHostInstanceGeneric(base.Session, genericInstance) :
+                _readGetSetMethodRef.MakeHostInstanceGeneric(base.Session, genericInstance);
             processor.Emit(OpCodes.Call, genericReaderMethodRef);
 
             processor.Emit(OpCodes.Ret);

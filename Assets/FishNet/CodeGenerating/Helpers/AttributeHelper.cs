@@ -8,7 +8,7 @@ using MonoFN.Cecil;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    public class AttributeHelper
+    internal class AttributeHelper : CodegenBase
     {
         #region Reflection references.
         internal string ReplicateAttribute_FullName;
@@ -22,7 +22,7 @@ namespace FishNet.CodeGenerating.Helping
         private string SyncObjectAttribute_FullName;
         #endregion   
 
-        internal bool ImportReferences()
+        public override bool ImportReferences()
         {
             ServerAttribute_FullName = typeof(ServerAttribute).FullName;
             ClientAttribute_FullName = typeof(ClientAttribute).FullName;

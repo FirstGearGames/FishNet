@@ -49,7 +49,7 @@ namespace FishNet.Managing
         /// <param name="asServer">True if getting the prefab asServer.</param>
         public NetworkObject GetPrefab(int prefabId, bool asServer)
         {
-            return GetPooledInstantiated(prefabId, asServer);
+            return SpawnablePrefabs.GetObject(asServer, prefabId);
         }
 
     }

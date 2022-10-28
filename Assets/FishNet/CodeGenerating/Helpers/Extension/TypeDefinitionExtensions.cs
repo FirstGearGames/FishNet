@@ -30,7 +30,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="variable"></param>
         /// <returns></returns>
-        public static IEnumerable<FieldDefinition> FindAllPublicFields(this TypeDefinition typeDef, bool ignoreStatic, bool ignoreNonSerialized, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<FieldDefinition> FindAllPublicFields(this TypeDefinition typeDef, CodegenSession session, bool ignoreStatic, bool ignoreNonSerialized, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
             while (typeDef != null)
             {
@@ -45,13 +45,13 @@ namespace FishNet.CodeGenerating.Helping.Extension
                         continue;
                     if (ignoreNonSerialized && fd.IsNotSerialized)
                         continue;
-                    if (CodegenSession.GeneralHelper.CodegenExclude(fd))
+                    if (session.GetClass<GeneralHelper>().CodegenExclude(fd))
                         continue;
 
                     yield return fd;
                 }
 
-                try { typeDef = typeDef.BaseType?.CachedResolve(); }
+                try { typeDef = typeDef.BaseType?.CachedResolve(session); }
                 catch { break; }
             }
         }
@@ -61,7 +61,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeDefinition typeDef, bool excludeGenerics = true, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeDefinition typeDef, CodegenSession session, bool excludeGenerics = true, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
             while (typeDef != null)
             {
@@ -78,13 +78,13 @@ namespace FishNet.CodeGenerating.Helping.Extension
                         continue;
                     if (excludeGenerics && pd.GetMethod.ReturnType.IsGenericParameter)
                         continue;
-                    if (CodegenSession.GeneralHelper.CodegenExclude(pd))
+                    if (session.GetClass<GeneralHelper>().CodegenExclude(pd))
                         continue;
 
                     yield return pd;
                 }
 
-                try { typeDef = typeDef.BaseType?.CachedResolve(); }
+                try { typeDef = typeDef.BaseType?.CachedResolve(session); }
                 catch { break; }
             }
 
@@ -140,9 +140,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static bool InheritsNetworkBehaviour(this TypeDefinition typeDef)
+        internal static bool InheritsNetworkBehaviour(this TypeDefinition typeDef, CodegenSession session)
         {
-            string nbFullName = CodegenSession.NetworkBehaviourHelper.FullName;
+            string nbFullName = session.GetClass<NetworkBehaviourHelper>().FullName;
 
             TypeDefinition copyTd = typeDef;
             while (copyTd != null)
@@ -150,7 +150,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 if (copyTd.FullName == nbFullName)
                     return true;
 
-                copyTd = copyTd.GetNextBaseTypeDefinition();
+                copyTd = copyTd.GetNextBaseTypeDefinition(session);
             }
 
             //Fall through, network behaviour not found.
@@ -176,28 +176,28 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static bool CanProcessBaseType(this TypeDefinition typeDef)
+        internal static bool CanProcessBaseType(this TypeDefinition typeDef, CodegenSession session)
         {
-            return (typeDef != null && typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.NetworkBehaviourHelper.FullName);
+            return (typeDef != null && typeDef.BaseType != null && typeDef.BaseType.FullName != session.GetClass<NetworkBehaviourHelper>().FullName);
         }
         /// <summary>
         /// Returns if the BaseType for TypeDef exist and is not NetworkBehaviour,
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static TypeDefinition GetNextBaseClassToProcess(this TypeDefinition typeDef)
+        internal static TypeDefinition GetNextBaseClassToProcess(this TypeDefinition typeDef, CodegenSession session)
         {
-            if (typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.NetworkBehaviourHelper.FullName)
-                return typeDef.BaseType.CachedResolve();
+            if (typeDef.BaseType != null && typeDef.BaseType.FullName != session.GetClass<NetworkBehaviourHelper>().FullName)
+                return typeDef.BaseType.CachedResolve(session);
             else
                 return null;
         }
 
-        internal static TypeDefinition GetLastBaseClass(this TypeDefinition typeDef)
+        internal static TypeDefinition GetLastBaseClass(this TypeDefinition typeDef, CodegenSession session)
         {
             TypeDefinition copyTd = typeDef;
             while (copyTd.BaseType != null)
-                copyTd = copyTd.BaseType.CachedResolve();
+                copyTd = copyTd.BaseType.CachedResolve(session);
 
             return copyTd;
         }
@@ -205,7 +205,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Searches for a type in current and inherited types.
         /// </summary>
-        internal static TypeDefinition GetClassInInheritance(this TypeDefinition typeDef, string typeFullName)
+        internal static TypeDefinition GetClassInInheritance(this TypeDefinition typeDef, CodegenSession session, string typeFullName)
         {
             TypeDefinition copyTd = typeDef;
             do
@@ -214,7 +214,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     return copyTd;
 
                 if (copyTd.BaseType != null)
-                    copyTd = copyTd.BaseType.CachedResolve();
+                    copyTd = copyTd.BaseType.CachedResolve(session);
                 else
                     copyTd = null;
 
@@ -227,7 +227,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Searches for a type in current and inherited types.
         /// </summary>
-        internal static TypeDefinition GetClassInInheritance(this TypeDefinition typeDef, TypeDefinition targetTypeDef)
+        internal static TypeDefinition GetClassInInheritance(this TypeDefinition typeDef, CodegenSession session, TypeDefinition targetTypeDef)
         {
             if (typeDef == null)
                 return null;
@@ -239,7 +239,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     return copyTd;
 
                 if (copyTd.BaseType != null)
-                    copyTd = copyTd.BaseType.CachedResolve();
+                    copyTd = copyTd.BaseType.CachedResolve(session);
                 else
                     copyTd = null;
 
@@ -281,9 +281,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <typeparam name="T"></typeparam>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static bool InheritsFrom<T>(this TypeDefinition typeDef)
+        internal static bool InheritsFrom<T>(this TypeDefinition typeDef, CodegenSession session)
         {
-            return InheritsFrom(typeDef, typeof(T));
+            return typeDef.InheritsFrom(session, typeof(T));
         }
 
         /// <summary>
@@ -292,7 +292,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="typeDef"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        internal static bool InheritsFrom(this TypeDefinition typeDef, Type type)
+        internal static bool InheritsFrom(this TypeDefinition typeDef, CodegenSession session, Type type)
         {
             if (!typeDef.IsClass)
                 return false;
@@ -303,7 +303,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 if (copyTd.BaseType.IsType(type))
                     return true;
 
-                copyTd = copyTd.GetNextBaseTypeDefinition();
+                copyTd = copyTd.GetNextBaseTypeDefinition(session);
             }
 
             //Fall through.
@@ -365,7 +365,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="typeDef"></param>
         /// <param name="ClassTypeFullName"></param>
         /// <returns></returns>
-        internal static bool IsSubclassOf(this TypeDefinition typeDef, string ClassTypeFullName)
+        internal static bool IsSubclassOf(this TypeDefinition typeDef,CodegenSession session, string ClassTypeFullName)
         {
             if (!typeDef.IsClass) return false;
 
@@ -379,7 +379,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
                 try
                 {
-                    baseTypeRef = baseTypeRef.CachedResolve().BaseType;
+                    baseTypeRef = baseTypeRef.CachedResolve(session).BaseType;
                 }
                 catch
                 {
@@ -437,7 +437,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <typeparam name="TInterface"></typeparam>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        public static bool ImplementsInterfaceRecursive<TInterface>(this TypeDefinition typeDef)
+        public static bool ImplementsInterfaceRecursive<TInterface>(this TypeDefinition typeDef, CodegenSession session)
         {
             TypeDefinition climbTypeDef = typeDef;
 
@@ -449,7 +449,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 try
                 {
                     if (climbTypeDef.BaseType != null)
-                        climbTypeDef = climbTypeDef.BaseType.CachedResolve();
+                        climbTypeDef = climbTypeDef.BaseType.CachedResolve(session);
                     else
                         climbTypeDef = null;
                 }

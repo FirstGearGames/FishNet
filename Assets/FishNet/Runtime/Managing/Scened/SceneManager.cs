@@ -1038,7 +1038,7 @@ namespace FishNet.Managing.Scened
                     if (_networkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"Unable to move objects to a new scene because new scene lookup has failed.");
                 }
-                //Move objects.
+                //Move objects from movedobejctsscene to first valid scene.
                 else
                 {
                     Scene s = GetMovedObjectsScene();

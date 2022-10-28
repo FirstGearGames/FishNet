@@ -814,7 +814,7 @@ namespace FishNet.Serializing
                 //Only look up asServer if not client, otherwise use client.
                 bool asServer = !isClient;
                 //Look up prefab.
-                result = NetworkManager.GetPooledInstantiated(objectOrPrefabId, asServer);
+                result = NetworkManager.GetPrefab(objectOrPrefabId, asServer);
             }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

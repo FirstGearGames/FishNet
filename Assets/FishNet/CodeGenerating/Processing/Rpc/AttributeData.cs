@@ -24,7 +24,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// <summary>
         /// Gets CustomAttribute for rpcType
         /// </summary>
-        public static CustomAttribute GetAttribute(this List<AttributeData> datas, RpcType rpcType)
+        public static CustomAttribute GetAttribute(this List<AttributeData> datas, CodegenSession session, RpcType rpcType)
         {
             for (int i = 0; i < datas.Count; i++)
             {
@@ -32,7 +32,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                     return datas[i].Attribute;
             }
 
-            CodegenSession.LogError($"RpcType {rpcType} not found in datas.");
+            session.LogError($"RpcType {rpcType} not found in datas.");
             return null;
         }
 

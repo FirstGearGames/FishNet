@@ -1,4 +1,5 @@
-﻿using FishNet.CodeGenerating.Processing;
+﻿using FishNet.CodeGenerating.Helping;
+using FishNet.CodeGenerating.Processing;
 using FishNet.CodeGenerating.Processing.Rpc;
 using MonoFN.Cecil;
 using System.Collections.Generic;
@@ -8,69 +9,90 @@ using UnityEngine;
 #endif
 using SR = System.Reflection;
 
-namespace FishNet.CodeGenerating.Helping
+
+namespace FishNet.CodeGenerating
 {
 
-    internal static class CodegenSession
+    internal class CodegenSession
     {
-        [System.ThreadStatic]
-        internal static ModuleDefinition Module;
-        [System.ThreadStatic]
-        internal static List<DiagnosticMessage> Diagnostics;
-
-        [System.ThreadStatic]
-        internal static TimeManagerHelper TimeManagerHelper;
-        [System.ThreadStatic]
-        internal static AttributeHelper AttributeHelper;
-        [System.ThreadStatic]
-        internal static GeneralHelper GeneralHelper;
-        [System.ThreadStatic]
-        internal static GenericReaderHelper GenericReaderHelper;
-        [System.ThreadStatic]
-        internal static GenericWriterHelper GenericWriterHelper;
-        [System.ThreadStatic]
-        internal static ObjectHelper ObjectHelper;
-        [System.ThreadStatic]
-        internal static NetworkBehaviourHelper NetworkBehaviourHelper;
-        [System.ThreadStatic]
-        internal static ReaderGenerator ReaderGenerator;
-        [System.ThreadStatic]
-        internal static ReaderHelper ReaderHelper;
-        [System.ThreadStatic]
-        internal static CreatedSyncVarGenerator CreatedSyncVarGenerator;
-        [System.ThreadStatic]
-        internal static TransportHelper TransportHelper;
-        [System.ThreadStatic]
-        internal static WriterGenerator WriterGenerator;
-        [System.ThreadStatic]
-        internal static WriterHelper WriterHelper;
-        [System.ThreadStatic]
-        internal static CustomSerializerProcessor CustomSerializerProcessor;
-        [System.ThreadStatic]
-        internal static NetworkBehaviourProcessor NetworkBehaviourProcessor;
-        [System.ThreadStatic]
-        internal static QolAttributeProcessor QolAttributeProcessor;
-        [System.ThreadStatic]
-        internal static RpcProcessor RpcProcessor;
-        [System.ThreadStatic]
-        internal static NetworkBehaviourSyncProcessor NetworkBehaviourSyncProcessor;
-        [System.ThreadStatic]
-        internal static NetworkBehaviourPredictionProcessor NetworkBehaviourPredictionProcessor;
-        [System.ThreadStatic]
-        internal static NetworkConnectionHelper NetworkConnectionHelper;
-        [System.ThreadStatic]
-        internal static PredictedObjectHelper PredictedObjectHelper;
+        /// <summary>
+        /// Current module for this session.
+        /// </summary>
+        internal ModuleDefinition Module;
+        /// <summary>
+        /// Outputs errors when codegen fails.
+        /// </summary>
+        internal List<DiagnosticMessage> Diagnostics;
         /// <summary>
         /// SyncVars that are being accessed from an assembly other than the currently being processed one.
         /// </summary>
-        [System.ThreadStatic]
-        internal static List<FieldDefinition> DifferentAssemblySyncVars;
+        internal List<FieldDefinition> DifferentAssemblySyncVars = new List<FieldDefinition>();
 
+
+        /// <summary>
+        /// CodegenBase classes for processing a module.
+        /// </summary>
+        private List<CodegenBase> _bases;
+        /// <summary>
+        /// Quick lookup of base classes.
+        /// </summary>
+        private Dictionary<string, CodegenBase> _basesCache = new Dictionary<string, CodegenBase>();
+
+        /// <summary>
+        /// Returns class of type if found within CodegenBase classes.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        internal T GetClass<T>() where T : CodegenBase
+        {
+            string tName = typeof(T).Name;
+            return (T)_basesCache[tName];
+        }
+        /// <summary>
+        /// Resets all helpers while importing any information needed by them.
+        /// </summary>
+        /// <param name="module"></param>
+        /// <returns></returns>
+        internal bool Initialize(ModuleDefinition module)
+        {
+            Module = module;
+            Diagnostics = new List<DiagnosticMessage>();
+
+            _bases = new List<CodegenBase>()
+            {
+                new TimeManagerHelper(), new AttributeHelper(), new GeneralHelper(), new GenericReaderHelper()
+                , new GenericWriterHelper(), new ObjectHelper(), new NetworkBehaviourHelper(), new ReaderGenerator()
+                , new ReaderHelper(), new CreatedSyncVarGenerator(), new TransportHelper(), new WriterGenerator()
+                , new WriterHelper(), new NetworkConnectionHelper(), new PredictedObjectHelper(), new GeneratorHelper()
+
+                , new CustomSerializerProcessor(), new NetworkBehaviourProcessor(), new QolAttributeProcessor()
+                , new RpcProcessor(), new NetworkBehaviourSyncProcessor(), new NetworkBehaviourPredictionProcessor()
+            };
+
+            //Initialize and cache all bases.
+            foreach (CodegenBase item in _bases)
+            {
+                item.Initialize(this);
+                if (!item.ImportReferences())
+                    return false;
+
+                string tName = item.GetType().Name;
+                _basesCache.Add(tName, item);
+            }
+
+
+            return true;
+        }
+
+
+
+
+        #region Logging.
         /// <summary>
         /// Logs a warning.
         /// </summary>
         /// <param name="msg"></param>
-        internal static void LogWarning(string msg)
+        internal void LogWarning(string msg)
         {
 #if UNITY_2020_1_OR_NEWER
             Diagnostics.AddWarning(msg);
@@ -82,7 +104,7 @@ namespace FishNet.CodeGenerating.Helping
         /// Logs an error.
         /// </summary>
         /// <param name="msg"></param>
-        internal static void LogError(string msg)
+        internal void LogError(string msg)
         {
 #if UNITY_2020_1_OR_NEWER
             Diagnostics.AddError(msg);
@@ -90,143 +112,72 @@ namespace FishNet.CodeGenerating.Helping
             Debug.LogError(msg);
 #endif
         }
-        /// <summary>
-        /// Resets all helpers while importing any information needed by them.
-        /// </summary>
-        /// <param name="module"></param>
-        /// <returns></returns>
-        internal static bool Reset(ModuleDefinition module)
-        {
-            Module = module;
-            Diagnostics = new List<DiagnosticMessage>();
+        #endregion
 
-            TimeManagerHelper = new TimeManagerHelper();
-            AttributeHelper = new AttributeHelper();
-            GeneralHelper = new GeneralHelper();
-            GenericReaderHelper = new GenericReaderHelper();
-            GenericWriterHelper = new GenericWriterHelper();
-            ObjectHelper = new ObjectHelper();
-            NetworkBehaviourHelper = new NetworkBehaviourHelper();
-            ReaderGenerator = new ReaderGenerator();
-            ReaderHelper = new ReaderHelper();
-            CreatedSyncVarGenerator = new CreatedSyncVarGenerator();
-            TransportHelper = new TransportHelper();
-            WriterGenerator = new WriterGenerator();
-            WriterHelper = new WriterHelper();
-            NetworkConnectionHelper = new NetworkConnectionHelper();
-            PredictedObjectHelper = new PredictedObjectHelper();
+        #region ImportReference.
 
-            CustomSerializerProcessor = new CustomSerializerProcessor();
-            NetworkBehaviourProcessor = new NetworkBehaviourProcessor();
-            QolAttributeProcessor = new QolAttributeProcessor();
-            RpcProcessor = new RpcProcessor();
-            NetworkBehaviourSyncProcessor = new NetworkBehaviourSyncProcessor();
-            NetworkBehaviourPredictionProcessor = new NetworkBehaviourPredictionProcessor();
-            DifferentAssemblySyncVars = new List<FieldDefinition>();
-
-            if (!TimeManagerHelper.ImportReferences())
-                return false;
-            if (!NetworkBehaviourPredictionProcessor.ImportReferences())
-                return false;
-            if (!NetworkBehaviourSyncProcessor.ImportReferences())
-                return false;
-            if (!GeneralHelper.ImportReferences())
-                return false;
-            if (!AttributeHelper.ImportReferences())
-                return false;
-            if (!GenericReaderHelper.ImportReferences())
-                return false;
-            if (!GenericWriterHelper.ImportReferences())
-                return false;
-            if (!ObjectHelper.ImportReferences())
-                return false;
-            if (!NetworkBehaviourHelper.ImportReferences())
-                return false;
-            if (!ReaderGenerator.ImportReferences())
-                return false;
-            if (!ReaderHelper.ImportReferences())
-                return false;
-            if (!CreatedSyncVarGenerator.ImportReferences())
-                return false;
-            if (!TransportHelper.ImportReferences())
-                return false;
-            if (!WriterGenerator.ImportReferences())
-                return false;
-            if (!WriterHelper.ImportReferences())
-                return false;
-            if (!NetworkConnectionHelper.ImportReferences())
-                return false;
-            if (!PredictedObjectHelper.ImportReferences())
-                return false;
-
-            return true;
-        }
-
-
-
-#region ImportReference.
-
-        public static MethodReference ImportReference(SR.MethodBase method)
+        public MethodReference ImportReference(SR.MethodBase method)
         {
             return Module.ImportReference(method);
         }
 
-        public static MethodReference ImportReference(SR.MethodBase method, IGenericParameterProvider context)
+        public MethodReference ImportReference(SR.MethodBase method, IGenericParameterProvider context)
         {
             return Module.ImportReference(method, context);
         }
 
-        public static TypeReference ImportReference(TypeReference type)
+        public TypeReference ImportReference(TypeReference type)
         {
             return Module.ImportReference(type);
         }
 
-        public static TypeReference ImportReference(TypeReference type, IGenericParameterProvider context)
+        public TypeReference ImportReference(TypeReference type, IGenericParameterProvider context)
         {
             return Module.ImportReference(type, context);
         }
 
-        public static FieldReference ImportReference(FieldReference field)
+        public FieldReference ImportReference(FieldReference field)
         {
             return Module.ImportReference(field);
         }
 
-        public static FieldReference ImportReference(FieldReference field, IGenericParameterProvider context)
+        public FieldReference ImportReference(FieldReference field, IGenericParameterProvider context)
         {
             return Module.ImportReference(field, context);
         }
-        public static MethodReference ImportReference(MethodReference method)
+        public MethodReference ImportReference(MethodReference method)
         {
             return Module.ImportReference(method);
         }
 
-        public static MethodReference ImportReference(MethodReference method, IGenericParameterProvider context)
+        public MethodReference ImportReference(MethodReference method, IGenericParameterProvider context)
         {
             return Module.ImportReference(method, context);
         }
-        public static TypeReference ImportReference(System.Type type)
+        public TypeReference ImportReference(System.Type type)
         {
             return ImportReference(type, null);
         }
 
 
-        public static TypeReference ImportReference(System.Type type, IGenericParameterProvider context)
+        public TypeReference ImportReference(System.Type type, IGenericParameterProvider context)
         {
             return Module.ImportReference(type, context);
         }
 
 
-        public static FieldReference ImportReference(SR.FieldInfo field)
+        public FieldReference ImportReference(SR.FieldInfo field)
         {
             return Module.ImportReference(field);
         }
 
-        public static FieldReference ImportReference(SR.FieldInfo field, IGenericParameterProvider context)
+        public FieldReference ImportReference(SR.FieldInfo field, IGenericParameterProvider context)
         {
             return Module.ImportReference(field, context);
         }
 
-#endregion
+        #endregion
+
     }
 
 

@@ -24,6 +24,14 @@ namespace FishNet.Managing.Timing
     [AddComponentMenu("FishNet/Manager/TimeManager")]
     public sealed partial class TimeManager : MonoBehaviour
     {
+        #region Types.
+        private enum UpdateOrder : byte
+        {
+            BeforeTick = 0,
+            AfterTick = 1,
+        }
+        #endregion
+
         #region Public.
         /// <summary>
         /// Called before performing a reconcile on NetworkBehaviour.
@@ -170,6 +178,12 @@ namespace FishNet.Managing.Timing
 
         #region Serialized.
         /// <summary>
+        /// When to invoke OnUpdate.
+        /// </summary>
+        [Tooltip("When to invoke OnUpdate.")]
+        [SerializeField]
+        private UpdateOrder _updateOrder = UpdateOrder.BeforeTick;
+        /// <summary>
         /// While true clients may drop local ticks if their devices are unable to maintain the tick rate.
         /// This could result in a temporary desynchronization but will prevent the client falling further behind on ticks by repeatedly running the logic cycle multiple times per frame.
         /// </summary>
@@ -182,7 +196,7 @@ namespace FishNet.Managing.Timing
         [Tooltip("Maximum number of ticks which may occur in a single frame before remainder are dropped for the frame.")]
         [Range(1, 25)]
         [SerializeField]
-        private byte _maximumFrameTicks = 3;
+        private byte _maximumFrameTicks = 2;
         /// <summary>
         /// 
         /// </summary>
@@ -382,14 +396,26 @@ namespace FishNet.Managing.Timing
             if (_networkManager.IsClient)
                 ClientUptime += Time.deltaTime;
 
-            IncreaseTick();
+            bool beforeTick = (_updateOrder == UpdateOrder.BeforeTick);
+            if (beforeTick)
+            {
+                OnUpdate?.Invoke();
+                MethodLogic();
+            }
+            else
+            {
+                MethodLogic();
+                OnUpdate?.Invoke();
+            }
 
-            /* Invoke onsimulation if using Unity time.
-            * Otherwise let the tick cycling part invoke. */
-            if (PhysicsMode == PhysicsMode.Unity && Time.inFixedTimeStep)
-                OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
-
-            OnUpdate?.Invoke();
+            void MethodLogic()
+            {
+                IncreaseTick();
+                /* Invoke onsimulation if using Unity time.
+                * Otherwise let the tick cycling part invoke. */
+                if (PhysicsMode == PhysicsMode.Unity && Time.inFixedTimeStep)
+                    OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+            }
         }
 
         /// <summary>

@@ -64,7 +64,7 @@ namespace FishNet.Connection
         }
 
         /// <summary>
-        /// Copies segments without error checking.
+        /// Copies segments without error checking, including tick for the first time data is added.
         /// </summary>
         /// <param name="segment"></param>
         internal void CopySegment(uint tick, ArraySegment<byte> segment)
@@ -81,6 +81,17 @@ namespace FishNet.Connection
             Length += segment.Count;
             HasData = true;
         }
+        /// <summary>
+        /// Copies segments without error checking.
+        /// </summary>
+        /// <param name="segment"></param>
+        internal void CopySegment(ArraySegment<byte> segment)
+        {
+            Buffer.BlockCopy(segment.Array, segment.Offset, Data, Length, segment.Count);
+            Length += segment.Count;
+            HasData = true;
+        }
+
     }
 
     internal class PacketBundle

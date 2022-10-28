@@ -1,5 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Object;
+using FishNet.Serializing.Helping;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
