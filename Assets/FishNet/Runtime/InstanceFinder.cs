@@ -161,7 +161,7 @@ namespace FishNet
         /// <summary>
         /// True if client nor server are active.
         /// </summary>
-        public static bool IsOffline => (NetworkManager == null) ? true : (!NetworkManager.IsServer && !NetworkManager.IsClient);
+        public static bool IsOffline => (_networkManager == null) ? true : (!NetworkManager.IsServer && !NetworkManager.IsClient);
         #endregion
 
         #region Private.

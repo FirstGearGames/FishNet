@@ -72,13 +72,11 @@ namespace FishNet.Object
 
             if (!_renderersPopulated)
             {
-                UpdateRenderersInternal(true);
+                UpdateRenderersInternal(false);
                 _renderersPopulated = true;
             }
-            else
-            {
-                UpdateRenderVisibility(visible);
-            }
+
+            UpdateRenderVisibility(visible);
         }
 
         /// <summary>
@@ -98,12 +96,26 @@ namespace FishNet.Object
         /// <param name="visible"></param>
         private void UpdateRenderVisibility(bool visible)
         {
+            bool rebuildRenderers = false;
+
             Renderer[] rs = _renderers;
             int count = rs.Length;
             for (int i = 0; i < count; i++)
-                rs[i].enabled = visible;
+            {
+                Renderer r = rs[i];
+                if (r == null)
+                {
+                    rebuildRenderers = true;
+                    break;
+                }
+
+                r.enabled = visible;
+            }
 
             _lastClientHostVisibility = visible;
+            //If to rebuild then do so, while updating visibility.
+            if (rebuildRenderers)
+                UpdateRenderers(true);
         }
 
         /// <summary>

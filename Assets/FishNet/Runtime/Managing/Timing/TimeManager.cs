@@ -178,9 +178,9 @@ namespace FishNet.Managing.Timing
 
         #region Serialized.
         /// <summary>
-        /// When to invoke OnUpdate.
+        /// When to invoke OnUpdate and other Unity callbacks relayed by the TimeManager.
         /// </summary>
-        [Tooltip("When to invoke OnUpdate.")]
+        [Tooltip("When to invoke OnUpdate and other Unity callbacks relayed by the TimeManager.")]
         [SerializeField]
         private UpdateOrder _updateOrder = UpdateOrder.BeforeTick;
         /// <summary>
