@@ -3,7 +3,7 @@
 ### UPM Install Link
 
 ```
-"https://github.com/LiamBoog/FishNet.git?path=/Assets/FishNet"
+https://github.com/LiamBoog/FishNet.git?path=/Assets/FishNet
 ```
 
 A feature-rich Unity networking solution aimed towards reliability, ease of use, efficiency, and flexibility.
