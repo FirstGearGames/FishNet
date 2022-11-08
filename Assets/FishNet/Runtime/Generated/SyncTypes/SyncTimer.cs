@@ -307,7 +307,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        public override void OnStartCallback(bool asServer)
+        protected override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
             List<ChangeData> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
