@@ -1,0 +1,3 @@
+[submodule "Assets/FIshNet/Plugins/Bayou"]
+	path = Assets/FIshNet/Plugins/Bayou
+	url = https://github.com/LiamBoog/Bayou
