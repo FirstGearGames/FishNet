@@ -8,7 +8,7 @@ namespace FishNet.Utility.Extension
         /// <summary>
         /// Returns the highest numeric value for T.
         /// </summary>
-        public static int GetHighestValue<T>()
+        internal static int GetHighestValue<T>()
         {
             Type enumType = typeof(T);
             /* Brute force enum values. 

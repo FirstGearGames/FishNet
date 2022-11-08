@@ -93,11 +93,10 @@ GameObject:
   m_Component:
   - component: {fileID: 9117857247562382215}
   - component: {fileID: 9117857247562382208}
-  - component: {fileID: 9117857247562382210}
-  - component: {fileID: 9144896207351220584}
+  - component: {fileID: 3798075853944769288}
+  - component: {fileID: 4683792985876699736}
   - component: {fileID: 9144896207351220583}
-  - component: {fileID: 4742920392281400910}
-  - component: {fileID: -947403508163804576}
+  - component: {fileID: 4305833223647329659}
   m_Layer: 0
   m_Name: CharacterControllerPrediction
   m_TagString: Untagged
@@ -135,7 +134,7 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &9117857247562382210
+--- !u!114 &3798075853944769288
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -144,28 +143,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 9117857247562382221}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
+  m_Script: {fileID: 11500000, guid: 0eb74ec1241bc684bae20513265a8fe0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
-  _networkBehaviours:
-  - {fileID: 9144896207351220584}
-  - {fileID: 4742920392281400910}
-  - {fileID: -947403508163804576}
+  _networkBehaviours: []
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
   _isGlobal: 0
-  _defaultDespawnType: 0
+  _disableOnDespawn: 0
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 36
+  <PrefabId>k__BackingField: -1
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 14762131302109388384
-  _sceneNetworkObjects:
-  - {fileID: 9117857247562382210}
---- !u!114 &9144896207351220584
+  <AssetPathHash>k__BackingField: 0
+  _sceneNetworkObjects: []
+--- !u!114 &4683792985876699736
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -174,13 +169,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 9117857247562382221}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6bb7bd88fd11b5d4aa7fca3d42172ab8, type: 3}
+  m_Script: {fileID: 11500000, guid: 83d04c5ffd36fb044b26ed0dc1f75c02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
-  _addedNetworkObject: {fileID: 9117857247562382210}
-  _networkObjectCache: {fileID: 9117857247562382210}
-  _moveRate: 5
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 3798075853944769288}
+  _networkObjectCache: {fileID: 0}
+  _graphicalObject: {fileID: 8274935638305073705}
+  _smoothTicks: 1
+  _durationType: 0
+  _smoothingDuration: 0.125
+  _enableTeleport: 0
+  _teleportThreshold: 1
+  _predictionType: 0
+  _rigidbody: {fileID: 0}
+  _rigidbody2d: {fileID: 0}
+  _networkTransform: {fileID: 4305833223647329659}
+  _predictionRatio: 0
 --- !u!143 &9144896207351220583
 CharacterController:
   m_ObjectHideFlags: 0
@@ -199,7 +204,7 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4742920392281400910
+--- !u!114 &4305833223647329659
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -208,46 +213,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 9117857247562382221}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
+  m_Script: {fileID: 11500000, guid: 81e1fbea11be54f429fa51cf6d5ae298, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 1
-  _addedNetworkObject: {fileID: 9117857247562382210}
-  _networkObjectCache: {fileID: 9117857247562382210}
-  _graphicalObject: {fileID: 8274935638305073705}
-  _enableTeleport: 0
-  _teleportThreshold: 1
-  _ownerInterpolation: 1
-  _predictionType: 0
-  _rigidbody: {fileID: 0}
-  _rigidbody2d: {fileID: 0}
-  _spectatorSmoothingDuration: 0.025
-  _spectatorInterpolation: 1
-  _overflowMultiplier: 0.1
-  _networkTransform: {fileID: -947403508163804576}
-  _maintainedVelocity: 0
---- !u!114 &-947403508163804576
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9117857247562382221}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 2
-  _addedNetworkObject: {fileID: 9117857247562382210}
-  _networkObjectCache: {fileID: 9117857247562382210}
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 3798075853944769288}
+  _networkObjectCache: {fileID: 0}
   _synchronizeParent: 0
   _packing:
     Position: 1
     Rotation: 1
     Scale: 0
   _interpolation: 2
-  _extrapolation: 2
+  _extrapolation: 0
   _enableTeleport: 0
   _teleportThreshold: 1
   _clientAuthoritative: 0

@@ -230,7 +230,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        public override void OnStartCallback(bool asServer)
+        protected internal override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
             List<CachedOnChange> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
@@ -263,7 +263,7 @@ namespace FishNet.Object.Synchronizing
                 base.WriteDelta(writer, resetSyncTick);
                 //False for not full write.
                 writer.WriteBoolean(false);
-                writer.WriteInt32(_changed.Count);
+                writer.WriteUInt32((uint)_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
                 {
@@ -277,11 +277,11 @@ namespace FishNet.Object.Synchronizing
                     }
                     else if (change.Operation == SyncListOperation.RemoveAt)
                     {
-                        writer.WriteInt32(change.Index);
+                        writer.WriteUInt32((uint)change.Index);
                     }
                     else if (change.Operation == SyncListOperation.Insert || change.Operation == SyncListOperation.Set)
                     {
-                        writer.WriteInt32(change.Index);
+                        writer.WriteUInt32((uint)change.Index);
                         writer.Write(change.Item);
                     }
                 }
@@ -302,7 +302,7 @@ namespace FishNet.Object.Synchronizing
             base.WriteHeader(writer, false);
             //True for full write.
             writer.WriteBoolean(true);
-            writer.WriteInt32(Collection.Count);
+            writer.WriteUInt32((uint)Collection.Count);
             for (int i = 0; i < Collection.Count; i++)
             {
                 writer.WriteByte((byte)SyncListOperation.Add);
@@ -331,7 +331,7 @@ namespace FishNet.Object.Synchronizing
             if (fullWrite)
                 collection.Clear();
 
-            int changes = reader.ReadInt32();
+            int changes = (int)reader.ReadUInt32();
 
             for (int i = 0; i < changes; i++)
             {
@@ -355,21 +355,21 @@ namespace FishNet.Object.Synchronizing
                 //Insert.
                 else if (operation == SyncListOperation.Insert)
                 {
-                    index = reader.ReadInt32();
+                    index = (int)reader.ReadUInt32();
                     next = reader.Read<T>();
                     collection.Insert(index, next);
                 }
                 //RemoveAt.
                 else if (operation == SyncListOperation.RemoveAt)
                 {
-                    index = reader.ReadInt32();
+                    index = (int)reader.ReadUInt32();
                     prev = collection[index];
                     collection.RemoveAt(index);
                 }
                 //Set
                 else if (operation == SyncListOperation.Set)
                 {
-                    index = reader.ReadInt32();
+                    index = (int)reader.ReadUInt32();
                     next = reader.Read<T>();
                     prev = collection[index];
                     collection[index] = next;

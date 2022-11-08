@@ -384,7 +384,7 @@ namespace FishNet.Object
             /* NetworkObserver uses some information from
              * NetworkBehaviour so it must be preinitialized
              * after NetworkBehaviours are. */
-            if (asServer)
+            if (asServer && NetworkObserver != null)
                 NetworkObserver.PreInitialize(this);
             _networkObserverInitiliazed = true;
 
@@ -552,7 +552,6 @@ namespace FishNet.Object
 
             State = NetworkObjectState.Unset;
             SetOwner(NetworkManager.EmptyConnection);
-            NetworkObserver.Deinitialize();
             //QOL references.
             NetworkManager = null;
             ServerManager = null;
@@ -563,6 +562,7 @@ namespace FishNet.Object
             SceneManager = null;
             RollbackManager = null;
             //Misc sets.
+            NetworkObserver?.Deinitialize();
             ObjectId = -1;
             ClientInitialized = false;
         }

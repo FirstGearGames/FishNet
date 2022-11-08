@@ -1,4 +1,5 @@
 ﻿using MonoFN.Cecil;
+using System;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
@@ -9,17 +10,17 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Gets a Resolve favoring cached results first.
         /// </summary>
-        internal static FieldDefinition CachedResolve(this FieldReference fieldRef, CodegenSession session)
+        internal static FieldDefinition CachedResolve(this FieldReference fieldRef)
         {
-            return session.GetClass<GeneralHelper>().GetFieldReferenceResolve(fieldRef);
+            return CodegenSession.GeneralHelper.GetFieldReferenceResolve(fieldRef);
         }
 
 
-        public static FieldReference MakeHostGenericIfNeeded(this FieldReference fd, CodegenSession session)
+        public static FieldReference MakeHostGenericIfNeeded(this FieldReference fd)
         {
             if (fd.DeclaringType.HasGenericParameters)
             {
-                return new FieldReference(fd.Name, fd.FieldType, fd.DeclaringType.CachedResolve(session).ConvertToGenericIfNeeded());
+                return new FieldReference(fd.Name, fd.FieldType, fd.DeclaringType.CachedResolve().ConvertToGenericIfNeeded());
             }
 
             return fd;

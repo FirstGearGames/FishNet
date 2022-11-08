@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace FishNet.Component.Prediction
 {
@@ -60,12 +59,6 @@ namespace FishNet.Component.Prediction
                 Rigidbody2d.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
                 Velocity = Vector2.zero;
                 AngularVelocity = 0f;
-            }
-
-            public void Update(Rigidbody2D rb)
-            {
-                Velocity = rb.velocity;
-                AngularVelocity = rb.angularVelocity;
             }
         }
         #endregion
@@ -234,8 +227,8 @@ namespace FishNet.Component.Prediction
                     else
                     {
                         rb.isKinematic = false;
-                        rb.velocity = rbData.Velocity;
-                        rb.angularVelocity = rbData.AngularVelocity;
+                        rb.AddForce(rbData.Velocity, ForceMode.Impulse);
+                        rb.AddTorque(rbData.AngularVelocity, ForceMode.Impulse);
                     }
 
                     return true;
@@ -249,7 +242,7 @@ namespace FishNet.Component.Prediction
                 for (int i = 0; i < _colliders2d.Count; i++)
                     _colliders2d[i].enabled = simulated;
 
-                for (int i = 0; i < _rigidbody2dDatas.Count; i++)
+                for (int i = 0; i < _rigidbodyDatas.Count; i++)
                 {
                     if (!SetSimulated(i))
                     {
@@ -268,12 +261,10 @@ namespace FishNet.Component.Prediction
 
                     if (!simulated)
                     {
-                        rbData.Update(rb);
-                        rb.velocity = Vector2.zero;
-                        rb.angularVelocity = 0f;
+                        rbData.Velocity = rb.velocity;
+                        rbData.AngularVelocity = rb.angularVelocity;
                         rb.isKinematic = true;
                         rb.simulated = false;
-                        _original = rb.gameObject.scene;
                         //Update data.
                         _rigidbody2dDatas[index] = rbData;
                     }
@@ -281,8 +272,8 @@ namespace FishNet.Component.Prediction
                     {
                         rb.isKinematic = false;
                         rb.simulated = true;
-                        rb.velocity = rbData.Velocity;
-                        rb.angularVelocity = rbData.AngularVelocity;
+                        rb.AddForce(rbData.Velocity, ForceMode2D.Impulse);
+                        rb.AddTorque(rbData.AngularVelocity, ForceMode2D.Impulse);
                     }
 
                     return true;
@@ -290,19 +281,6 @@ namespace FishNet.Component.Prediction
             }
         }
 
-        private Scene SSS
-        {
-            get
-            {
-                if (!_sdfkj43fkjsd.IsValid())
-                    _sdfkj43fkjsd = SceneManager.CreateScene("sdfsdfs", new CreateSceneParameters() { localPhysicsMode = LocalPhysicsMode.Physics2D });
-
-                return _sdfkj43fkjsd;
-            }
-        }
-
-        private Scene _sdfkj43fkjsd;
-        private Scene _original;
     }
 
 

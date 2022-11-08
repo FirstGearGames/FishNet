@@ -13,10 +13,6 @@ namespace FishNet.Transporting.Tugboat
     [AddComponentMenu("FishNet/Transport/Tugboat")]
     public class Tugboat : Transport
     {
-        ~Tugboat()
-        {
-            Shutdown();
-        }
 
         #region Serialized.
         [Header("Channels")]

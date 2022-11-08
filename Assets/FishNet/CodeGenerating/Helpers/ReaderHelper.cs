@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    internal class ReaderHelper : CodegenBase
+    internal class ReaderHelper
     {
         #region Reflection references.
         internal TypeReference PooledReader_TypeRef;
@@ -43,11 +43,11 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        public override bool ImportReferences()
+        internal bool ImportReferences()
         {
-            PooledReader_TypeRef = base.ImportReference(typeof(PooledReader));
-            Reader_TypeRef = base.ImportReference(typeof(Reader));
-            NetworkConnection_TypeRef = base.ImportReference(typeof(NetworkConnection));
+            PooledReader_TypeRef = CodegenSession.ImportReference(typeof(PooledReader));
+            Reader_TypeRef = CodegenSession.ImportReference(typeof(Reader));
+            NetworkConnection_TypeRef = CodegenSession.ImportReference(typeof(NetworkConnection));
 
             Type pooledReaderType = typeof(PooledReader);
 
@@ -57,23 +57,23 @@ namespace FishNet.CodeGenerating.Helping
                 //ReadPackedWhole.
                 if (methodInfo.Name == nameof(PooledReader.ReadPackedWhole))
                 {
-                    Reader_ReadPackedWhole_MethodRef = base.ImportReference(methodInfo);
+                    Reader_ReadPackedWhole_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;
                 }
                 //ReadToCollection.
                 else if (methodInfo.Name == nameof(PooledReader.ReadArray))
                 {
-                    Reader_ReadToCollection_MethodRef = base.ImportReference(methodInfo);
+                    Reader_ReadToCollection_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;
                 }
                 //ReadDictionary.
                 else if (methodInfo.Name == nameof(PooledReader.ReadDictionary))
                 {
-                    Reader_ReadDictionary_MethodRef = base.ImportReference(methodInfo);
+                    Reader_ReadDictionary_MethodRef = CodegenSession.ImportReference(methodInfo);
                     continue;
                 }
 
-                else if (base.GetClass<GeneralHelper>().CodegenExclude(methodInfo))
+                else if (CodegenSession.GeneralHelper.CodegenExclude(methodInfo))
                     continue;
                 //Generic methods are not supported.
                 else if (methodInfo.IsGenericMethod)
@@ -99,8 +99,8 @@ namespace FishNet.CodeGenerating.Helping
 
                 /* TypeReference for the return type
                  * of the read method. */
-                TypeReference typeRef = base.ImportReference(methodInfo.ReturnType);
-                MethodReference methodRef = base.ImportReference(methodInfo);
+                TypeReference typeRef = CodegenSession.ImportReference(methodInfo.ReturnType);
+                MethodReference methodRef = CodegenSession.ImportReference(methodInfo);
 
                 /* If here all checks pass. */
                 AddReaderMethod(typeRef, methodRef, true, true);
@@ -112,7 +112,7 @@ namespace FishNet.CodeGenerating.Helping
 
             foreach (MethodInfo methodInfo in readerExtensionsType.GetMethods())
             {
-                if (base.GetClass<GeneralHelper>().CodegenExclude(methodInfo))
+                if (CodegenSession.GeneralHelper.CodegenExclude(methodInfo))
                     continue;
                 //Generic methods are not supported.
                 if (methodInfo.IsGenericMethod)
@@ -141,8 +141,8 @@ namespace FishNet.CodeGenerating.Helping
 
                 /* TypeReference for the return type
                  * of the read method. */
-                TypeReference typeRef = base.ImportReference(methodInfo.ReturnType);
-                MethodReference methodRef = base.ImportReference(methodInfo);
+                TypeReference typeRef = CodegenSession.ImportReference(methodInfo.ReturnType);
+                MethodReference methodRef = CodegenSession.ImportReference(methodInfo);
 
                 /* If here all checks pass. */
                 AddReaderMethod(typeRef, methodRef, false, true);
@@ -158,11 +158,18 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         internal bool CreateGenericDelegates()
         {
+            bool modified = false;
             /* Only write statics. This will include extensions and generated. */
             foreach (KeyValuePair<TypeReference, MethodReference> item in _staticReaderMethods)
-                    base.GetClass<GenericReaderHelper>().CreateReadDelegate(item.Value);
+            {
+                if (FishNetILPP.CODEGEN_THIS_NAMESPACE.Length == 0 || item.Key.FullName.Contains(FishNetILPP.CODEGEN_THIS_NAMESPACE))
+                {
+                    CodegenSession.GenericReaderHelper.CreateReadDelegate(item.Value);
+                    modified = true;
+                }
+            }
 
-            return true;
+            return modified;
         }
 
 
@@ -179,9 +186,9 @@ namespace FishNet.CodeGenerating.Helping
 
             if (!result && createMissing)
             {
-                if (!base.GetClass<GeneralHelper>().HasNonSerializableAttribute(typeRef.CachedResolve(base.Session)))
+                if (!CodegenSession.GeneralHelper.HasNonSerializableAttribute(typeRef.CachedResolve()))
                 {
-                    MethodReference methodRef = base.GetClass<ReaderGenerator>().CreateReader(typeRef);
+                    MethodReference methodRef = CodegenSession.ReaderGenerator.CreateReader(typeRef);
                     result = (methodRef != null);
                 }
             }
@@ -239,7 +246,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="value"></param>
         internal void CreateReadBool(ILProcessor processor, ParameterDefinition readerParameterDef, VariableDefinition localBoolVariableDef)
         {
-            MethodReference readBoolMethodRef = GetFavoredReadMethodReference(base.GetClass<GeneralHelper>().GetTypeReference(typeof(bool)), true);
+            MethodReference readBoolMethodRef = GetFavoredReadMethodReference(CodegenSession.GeneralHelper.GetTypeReference(typeof(bool)), true);
             processor.Emit(OpCodes.Ldarg, readerParameterDef);
             processor.Emit(OpCodes.Callvirt, readBoolMethodRef);
             processor.Emit(OpCodes.Stloc, localBoolVariableDef);
@@ -317,9 +324,9 @@ namespace FishNet.CodeGenerating.Helping
             //Try to get existing writer, if not present make one.
             MethodReference readMethodRef = GetFavoredReadMethodReference(typeRef, favorInstanced);
             if (readMethodRef == null)
-                readMethodRef = base.GetClass<ReaderGenerator>().CreateReader(typeRef);
+                readMethodRef = CodegenSession.ReaderGenerator.CreateReader(typeRef);
             if (readMethodRef == null)
-                base.LogError($"Could not create deserializer for {typeRef.FullName}.");
+                CodegenSession.LogError($"Could not create deserializer for {typeRef.FullName}.");
 
             return readMethodRef;
         }
@@ -370,13 +377,13 @@ namespace FishNet.CodeGenerating.Helping
             if (readerMethodRef != null)
             {
                 //Make a local variable. 
-                createdVariableDef = base.GetClass<GeneralHelper>().CreateVariable(methodDef, readTypeRef);
+                createdVariableDef = CodegenSession.GeneralHelper.CreateVariable(methodDef, readTypeRef);
                 //pooledReader.ReadBool();
                 insts.Add(processor.Create(OpCodes.Ldarg, readerParameterDef));
                 //If an auto pack method then insert default value.
                 if (_autoPackedMethods.Contains(readTypeRef))
                 {
-                    AutoPackType packType = base.GetClass<GeneralHelper>().GetDefaultAutoPackType(readTypeRef);
+                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(readTypeRef);
                     insts.Add(processor.Create(OpCodes.Ldc_I4, (int)packType));
                 }
                 insts.Add(processor.Create(OpCodes.Call, readerMethodRef));
@@ -386,7 +393,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                base.LogError("Reader not found for " + readTypeRef.ToString());
+                CodegenSession.LogError("Reader not found for " + readTypeRef.ToString());
                 createdVariableDef = null;
                 return null;
             }
@@ -413,7 +420,7 @@ namespace FishNet.CodeGenerating.Helping
                 processor.Emit(OpCodes.Ldarg, readerPd);
                 if (IsAutoPackedType(valueFr.FieldType))
                 {
-                    AutoPackType packType = base.GetClass<GeneralHelper>().GetDefaultAutoPackType(valueFr.FieldType);
+                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(valueFr.FieldType);
                     processor.Emit(OpCodes.Ldc_I4, (int)packType);
                 }
                 //reader.ReadXXXX().
@@ -425,7 +432,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                base.LogError($"Reader not found for {valueFr.FullName}.");
+                CodegenSession.LogError($"Reader not found for {valueFr.FullName}.");
                 return false;
             }
         }
@@ -451,7 +458,7 @@ namespace FishNet.CodeGenerating.Helping
                 processor.Emit(OpCodes.Ldarg, readerPd);
                 if (IsAutoPackedType(readTr))
                 {
-                    AutoPackType packType = base.GetClass<GeneralHelper>().GetDefaultAutoPackType(readTr);
+                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(readTr);
                     processor.Emit(OpCodes.Ldc_I4, (int)packType);
                 }
                 //reader.ReadXXXX().
@@ -463,7 +470,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                base.LogError($"Reader not found for {readTr.FullName}.");
+                CodegenSession.LogError($"Reader not found for {readTr.FullName}.");
                 return false;
             }
         }

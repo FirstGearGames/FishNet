@@ -1,4 +1,4 @@
-﻿#if UNITY_2020_3_OR_NEWER && UNITY_EDITOR_WIN
+﻿#if UNITY_2020_3_OR_NEWER
 using FishNet.CodeAnalysis.Annotations;
 #endif
 using FishNet.Component.ColliderRollback;
@@ -89,7 +89,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if the local client is the owner of this object.
         /// </summary>
-#if UNITY_2020_3_OR_NEWER && UNITY_EDITOR_WIN
+#if UNITY_2020_3_OR_NEWER
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartServer", "")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartNetwork", " Use base.Owner.IsLocalClient instead.")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]
@@ -124,10 +124,11 @@ namespace FishNet.Object
         public NetworkConnection LocalConnection => _networkObjectCache.LocalConnection;
         /// <summary>
         /// Returns if a connection is the owner of this object.
+        /// Internal use.
         /// </summary>
         /// <param name="connection"></param>
         /// <returns></returns>
-        public bool OwnerMatches(NetworkConnection connection)
+        public bool CompareOwner(NetworkConnection connection)
         {
             return (_networkObjectCache.Owner == connection);
         }

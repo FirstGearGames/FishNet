@@ -1,7 +1,8 @@
 {
     "name": "FishNet.Generated",
+    "rootNamespace": "",
     "references": [
-        "GUID:7c88a4a7926ee5145ad2dfa06f454c67"
+        "GUID:c90ae9c52047cd549af4607e4a6676a2"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

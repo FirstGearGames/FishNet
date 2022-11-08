@@ -149,7 +149,7 @@ namespace FishNet.Managing.Server
                     base.DespawnSpawnedWithoutSynchronization(true);
                     base.SceneObjects.Clear();
                     _objectIdCache.Clear();
-                    base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients);
+                    base.NetworkManager.ServerManager.Clients.Clear();
                 }
             }
         }
@@ -516,7 +516,7 @@ namespace FishNet.Managing.Server
             {
                 headerWriter.WriteNetworkObject(nob.ParentNetworkObject);
             }
-            //If not nested see if has a parent other than one configured at edit.
+            //No need to write scene/prefab id, or parent if nested.
             else
             {
                 /* Writing a scene object. */

@@ -1,4 +1,5 @@
 ﻿using FishNet.Managing;
+using FishNet.Managing.Logging;
 using FishNet.Managing.Timing;
 using System;
 using UnityEngine;
@@ -82,7 +83,8 @@ namespace FishNet.Connection
                 //Ping limit hit.
                 if (_excessivePingCount >= EXCESSIVE_PING_LIMIT)
                 {
-                    NetworkManager.LogWarning($"Kicked connectionId {ClientId} for excessive pings.");
+                    if (NetworkManager.CanLog(LoggingType.Warning))
+                        Debug.LogWarning($"Kicked connectionId {ClientId} for excessive pings.");
                     Disconnect(true);
                 }
 

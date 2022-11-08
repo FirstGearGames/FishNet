@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    internal class NetworkConnectionHelper : CodegenBase
+    internal class NetworkConnectionHelper
     {
         #region Reflection references.
         //Names.
@@ -18,10 +18,10 @@ namespace FishNet.CodeGenerating.Helping
         internal const string DISABLE_LOGGING_TEXT = "This message may be disabled by setting the Logging field in your attribute to LoggingType.Off";
         #endregion
 
-        public override bool ImportReferences()
+        internal bool ImportReferences()
         {
             Type type = typeof(NetworkConnection);
-            base.ImportReference(type);
+            CodegenSession.ImportReference(type);
 
             FullName = type.FullName;
 

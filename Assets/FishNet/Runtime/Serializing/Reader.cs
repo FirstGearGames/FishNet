@@ -814,7 +814,7 @@ namespace FishNet.Serializing
                 //Only look up asServer if not client, otherwise use client.
                 bool asServer = !isClient;
                 //Look up prefab.
-                result = NetworkManager.GetPrefab(objectOrPrefabId, asServer);
+                result = NetworkManager.GetPooledInstantiated(objectOrPrefabId, asServer);
             }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -931,12 +931,9 @@ namespace FishNet.Serializing
                         //If found in client collection then return.
                         if (NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(value, out result))
                             return result;
-                        /* Otherwise make a new instance.
-                         * We do not know if this is for the server or client so
-                         * initialize it either way. Connections rarely come through
-                         * without being in server/client side collection. */
+                        //Otherwise make a new instance.
                         else
-                            return new NetworkConnection(NetworkManager, value, true);
+                            return new NetworkConnection(NetworkManager, value);
 
                     }
                     //Only server and not found.
@@ -956,12 +953,9 @@ namespace FishNet.Serializing
                     //Try client side dictionary.
                     else if (NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(value, out NetworkConnection result))
                         return result;
-                    /* Otherwise make a new instance.
-                    * We do not know if this is for the server or client so
-                    * initialize it either way. Connections rarely come through
-                    * without being in server/client side collection. */        
+                    //Otherwise return a new connection.
                     else
-                        return new NetworkConnection(NetworkManager, value, true);
+                        return new NetworkConnection(NetworkManager, value); //todo make and use NC cache.
                 }
 
             }

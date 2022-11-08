@@ -62,9 +62,8 @@ namespace FishNet.Managing
         /// <summary>
         /// Performs a common log, should logging settings permit it.
         /// </summary>
-        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StaticLog(string value) => InstanceFinder.NetworkManager?.Log(value);
+        public void StaticLog(string value) => InstanceFinder.NetworkManager?.Log(value);
         /// <summary>
         /// Performs a common log, should logging settings permit it.
         /// </summary>
@@ -76,10 +75,8 @@ namespace FishNet.Managing
         /// <summary>
         /// Performs a warning log, should logging settings permit it.
         /// </summary>
-        /// 
-        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StaticLogWarning(string value) => InstanceFinder.NetworkManager?.LogWarning(value);
+        public void StaticLogWarning(string value) => InstanceFinder.NetworkManager?.LogWarning(value);
         /// <summary>
         /// Performs a warning log, should logging settings permit it.
         /// </summary>
@@ -91,9 +88,8 @@ namespace FishNet.Managing
         /// <summary>
         /// Performs an error log, should logging settings permit it.
         /// </summary>
-        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StaticLogError(string value) => InstanceFinder.NetworkManager?.LogError(value);
+        public void StaticLogError(string value) => InstanceFinder.NetworkManager?.LogError(value);
         /// <summary>
         /// Performs an error log, should logging settings permit it.
         /// </summary>

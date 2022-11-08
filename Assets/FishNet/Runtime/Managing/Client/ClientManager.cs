@@ -29,11 +29,6 @@ namespace FishNet.Managing.Client
         /// </summary>
         public event Action<ClientConnectionStateArgs> OnClientConnectionState;
         /// <summary>
-        /// Called when a client other than self connects.
-        /// This is only available when using ServerManager.ShareIds.
-        /// </summary>
-        public event Action<RemoteConnectionStateArgs> OnRemoteConnectionState;
-        /// <summary>
         /// True if the client connection is connected to the server.
         /// </summary>
         public bool Started { get; private set; }
@@ -120,23 +115,10 @@ namespace FishNet.Managing.Client
         /// <param name="args"></param>
         private void OnClientConnectionBroadcast(ClientConnectionChangeBroadcast args)
         {
-            //If connecting invoke after added to clients, otherwise invoke before removed.
-            RemoteConnectionStateArgs rcs = new RemoteConnectionStateArgs((args.Connected) ? RemoteConnectionState.Started : RemoteConnectionState.Stopped, args.Id, -1);
-
             if (args.Connected)
-            {
-                Clients[args.Id] = new NetworkConnection(NetworkManager, args.Id, false);
-                OnRemoteConnectionState?.Invoke(rcs);
-            }
+                Clients[args.Id] = new NetworkConnection(NetworkManager, args.Id);
             else
-            {
-                OnRemoteConnectionState?.Invoke(rcs);
-                if (Clients.TryGetValue(args.Id, out NetworkConnection c))
-                {
-                    c.Dispose();
-                    Clients.Remove(args.Id);
-                }
-            }
+                Clients.Remove(args.Id);
         }
 
         /// <summary>
@@ -145,16 +127,17 @@ namespace FishNet.Managing.Client
         /// <param name="args"></param>
         private void OnConnectedClientsBroadcast(ConnectedClientsBroadcast args)
         {
-            NetworkManager.ClearClientsCollection(Clients);
+            Clients.Clear();
 
             List<int> collection = args.Ids;
             int count = collection.Count;
             for (int i = 0; i < count; i++)
             {
                 int id = collection[i];
-                Clients[id] = new NetworkConnection(NetworkManager, id, false);
+                Clients[id] = new NetworkConnection(NetworkManager, id);
             }
         }
+
 
         /// <summary>
         /// Changes subscription status to transport.
@@ -226,7 +209,7 @@ namespace FishNet.Managing.Client
             if (!Started)
             {
                 Connection = NetworkManager.EmptyConnection;
-                NetworkManager.ClearClientsCollection(Clients);
+                Clients.Clear();
             }
 
             if (NetworkManager.CanLog(LoggingType.Common))
@@ -460,7 +443,7 @@ namespace FishNet.Managing.Client
                     if (networkManager.CanLog(LoggingType.Error))
                         Debug.LogError($"Unable to lookup LocalConnection for {connectionId} as host.");
 
-                    Connection = new NetworkConnection(networkManager, connectionId, false);
+                    Connection = new NetworkConnection(networkManager, connectionId);
                 }
             }
 

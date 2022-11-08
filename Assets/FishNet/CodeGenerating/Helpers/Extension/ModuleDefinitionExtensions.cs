@@ -10,13 +10,18 @@ namespace FishNet.CodeGenerating.Helping.Extension
     public static class ModuleDefinitionExtensions
     {
         /// <summary>
-        /// Gets a class within a module.
+        /// Gets a class within CodegenSession.Module.
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
         public static TypeDefinition GetClass(this ModuleDefinition moduleDef, string className)
         {
-            return moduleDef.GetType(FishNetILPP.RUNTIME_ASSEMBLY_NAME, className);
+            return CodegenSession.Module.GetType(FishNetILPP.RUNTIME_ASSEMBLY_NAME, className);
+        }
+
+        public static TypeReference ImportReference<T>(this ModuleDefinition moduleDef)
+        {
+            return CodegenSession.ImportReference(typeof(T));
         }
 
         public static MethodReference ImportReference(this ModuleDefinition moduleDef, Expression<Action> expression)

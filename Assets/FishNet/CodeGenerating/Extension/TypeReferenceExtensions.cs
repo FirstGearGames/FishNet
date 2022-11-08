@@ -14,24 +14,11 @@ namespace FishNet.CodeGenerating.Extension
         /// <summary>
         /// Returns a method in the next base class.
         /// </summary>
-        public static MethodReference GetMethodInBase(this TypeReference tr, CodegenSession session, string methodName)
+        public static MethodReference GetMethodInBase(this TypeReference tr, string methodName)
         {
-            return tr.CachedResolve(session).GetMethodInBase(session, methodName);
+            return GetMethodInBase(tr.CachedResolve(), methodName);
         }
-
-		/// <summary>
-		/// Makes a GenericInstanceType.
-		/// </summary>
-		public static GenericInstanceType MakeGenericInstanceType(this TypeReference self)
-		{
-			GenericInstanceType instance = new GenericInstanceType(self);
-			foreach (GenericParameter argument in self.GenericParameters)
-				instance.GenericArguments.Add(argument);
-
-			return instance;
-		}
-
-	}
+    }
 
 
 }

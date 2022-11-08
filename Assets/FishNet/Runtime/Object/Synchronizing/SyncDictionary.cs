@@ -207,7 +207,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        public override void OnStartCallback(bool asServer)
+        protected internal override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
             List<CachedOnChange> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
@@ -245,7 +245,7 @@ namespace FishNet.Object.Synchronizing
             {
                 //False for not full write.
                 writer.WriteBoolean(false);
-                writer.WriteInt32(_changed.Count);
+                writer.WriteUInt32((uint)_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
                 {
@@ -285,7 +285,7 @@ namespace FishNet.Object.Synchronizing
             base.WriteHeader(writer, false);
             //True for full write.
             writer.WriteBoolean(true);
-            writer.WriteInt32(Collection.Count);
+            writer.WriteUInt32((uint)Collection.Count);
             foreach (KeyValuePair<TKey, TValue> item in Collection)
             {
                 writer.WriteByte((byte)SyncDictionaryOperation.Add);
@@ -318,7 +318,7 @@ namespace FishNet.Object.Synchronizing
             if (fullWrite)
                 collection.Clear();
 
-            int changes = reader.ReadInt32();
+            int changes = (int)reader.ReadUInt32();
             for (int i = 0; i < changes; i++)
             {
                 SyncDictionaryOperation operation = (SyncDictionaryOperation)reader.ReadByte();

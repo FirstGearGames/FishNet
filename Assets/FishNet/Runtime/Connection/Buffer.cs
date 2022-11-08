@@ -47,11 +47,10 @@ namespace FishNet.Connection
             Reset();
         }
 
-        public void Dispose()
+        ~ByteBuffer()
         {
             if (Data != null)
                 ByteArrayPool.Store(Data);
-            Data = null;
         }
 
         /// <summary>
@@ -64,7 +63,7 @@ namespace FishNet.Connection
         }
 
         /// <summary>
-        /// Copies segments without error checking, including tick for the first time data is added.
+        /// Copies segments without error checking.
         /// </summary>
         /// <param name="segment"></param>
         internal void CopySegment(uint tick, ArraySegment<byte> segment)
@@ -81,17 +80,6 @@ namespace FishNet.Connection
             Length += segment.Count;
             HasData = true;
         }
-        /// <summary>
-        /// Copies segments without error checking.
-        /// </summary>
-        /// <param name="segment"></param>
-        internal void CopySegment(ArraySegment<byte> segment)
-        {
-            Buffer.BlockCopy(segment.Array, segment.Offset, Data, Length, segment.Count);
-            Length += segment.Count;
-            HasData = true;
-        }
-
     }
 
     internal class PacketBundle
@@ -136,12 +124,6 @@ namespace FishNet.Connection
             AddBuffer();
 
             Reset();
-        }
-
-        public void Dispose()
-        {
-            for (int i = 0; i < _buffers.Count; i++)
-                _buffers[i].Dispose();
         }
 
         /// <summary>

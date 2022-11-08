@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 namespace FishNet.Managing.Server
 {
+
     public struct ClientConnectionChangeBroadcast : IBroadcast
     {
         public bool Connected;
@@ -13,7 +14,6 @@ namespace FishNet.Managing.Server
 
     public struct ConnectedClientsBroadcast : IBroadcast
     {
-        [System.NonSerialized]
         public ListCache<int> ListCache;
         public List<int> Ids;
     }

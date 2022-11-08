@@ -78,6 +78,7 @@ namespace FishNet.Managing.Server
             int observerIndex = 0;
             foreach (NetworkConnection conn in serverManager.Clients.Values)
             {
+
                 int cacheIndex = 0;
                 using (PooledWriter largeWriter = WriterPool.GetWriter())
                 {

@@ -225,18 +225,16 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <returns></returns>
         private NetPeer GetNetPeer(int connectionId, bool connectedOnly)
         {
+            NetPeer peer = null;
             if (_server != null)
             {
-                NetPeer peer = _server.GetPeerById(connectionId);
+                if (connectionId >= 0 || connectionId < _server.ConnectedPeersCount)
+                    peer = _server.GetPeerById(connectionId);
                 if (connectedOnly && peer != null && peer.ConnectionState != ConnectionState.Connected)
                     peer = null;
+            }
 
-                return peer;
-            }
-            else
-            {
-                return null;
-            }
+            return peer;
         }
 
         /// <summary>
