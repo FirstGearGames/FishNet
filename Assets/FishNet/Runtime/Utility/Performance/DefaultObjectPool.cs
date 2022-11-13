@@ -25,6 +25,16 @@ namespace FishNet.Utility.Performance
         private Dictionary<int, Stack<NetworkObject>> _cached = new Dictionary<int, Stack<NetworkObject>>();
         #endregion
 
+        private Stack<NetworkObject> GetOrCreateCache(int prefabId) {
+            Stack<NetworkObject> cache;
+            //No cache for prefabId yet, make one.
+            if (!_cached.TryGetValueIL2CPP(prefabId, out cache)) {
+                cache = new Stack<NetworkObject>();
+                _cached[prefabId] = cache;
+            }
+            return cache;
+        }
+
         /// <summary>
         /// Returns an object that has been stored. A new object will be created if no stored objects are available.
         /// </summary>
@@ -40,13 +50,7 @@ namespace FishNet.Utility.Performance
                 return Instantiate(prefab);
             }
 
-            Stack<NetworkObject> cache;
-            //No cache for prefabId yet, make one.
-            if (!_cached.TryGetValueIL2CPP(prefabId, out cache))
-            {
-                cache = new Stack<NetworkObject>();
-                _cached[prefabId] = cache;
-            }
+            Stack<NetworkObject> cache = GetOrCreateCache(prefabId);
 
             NetworkObject nob;
             //Iterate until nob is populated just in case cache entries have been destroyed.
@@ -88,15 +92,9 @@ namespace FishNet.Utility.Performance
                 return;
             }
 
-            Stack<NetworkObject> cache;
-            if (!_cached.TryGetValue(prefabId, out cache))
-            {
-                cache = new Stack<NetworkObject>();
-                _cached[prefabId] = cache;
-            }
-
             instantiated.gameObject.SetActive(false);
             instantiated.ResetForObjectPool();
+            Stack<NetworkObject> cache = GetOrCreateCache(prefabId);
             cache.Push(instantiated);
         }
     }
