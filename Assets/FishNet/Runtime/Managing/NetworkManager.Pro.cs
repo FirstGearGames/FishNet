@@ -14,18 +14,6 @@ namespace FishNet.Managing
         #endregion
 
 
-        /// <summary>
-        /// Adds RollbackManager.
-        /// </summary>
-        private void AddRollbackManager()
-        {
-            if (gameObject.TryGetComponent<RollbackManager>(out RollbackManager result))
-                RollbackManager = result;
-            else
-                RollbackManager = gameObject.AddComponent<RollbackManager>();
-        }
-
-
     }
 
 
