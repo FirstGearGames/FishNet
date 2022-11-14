@@ -151,7 +151,7 @@ namespace FishNet.Object
 
             if (_serverRpcDelegates.TryGetValueIL2CPP(methodHash, out ServerRpcDelegate data))
             {
-                data.Invoke(this, reader, channel, sendingClient);
+                data.Invoke(reader, channel, sendingClient);
             }
             else
             {
@@ -171,7 +171,7 @@ namespace FishNet.Object
 
             if (_observersRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ClientRpcDelegate del))
             {
-                del.Invoke(this, reader, channel);
+                del.Invoke(reader, channel);
             }
             else
             {
@@ -191,7 +191,7 @@ namespace FishNet.Object
 
             if (_targetRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ClientRpcDelegate del))
             {
-                del.Invoke(this, reader, channel);
+                del.Invoke(reader, channel);
             }
             else
             {

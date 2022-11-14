@@ -7,6 +7,8 @@
 
 using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -227,6 +229,10 @@ namespace FishNet.Component.Transforming
         /// Called when the transform has reached it's goal.
         /// </summary>
         public event Action OnInterpolationComplete;
+        /// <summary>
+        /// True if the local client used TakeOwnership and is awaiting an ownership change.
+        /// </summary>
+        public bool TakenOwnership { get; private set; }
         #endregion
 
         #region Serialized.
@@ -517,6 +523,7 @@ namespace FishNet.Component.Transforming
         {
             base.OnOwnershipClient(prevOwner);
             _intervalsRemaining = 0;
+
             /* If newOwner is self then client
              * must subscribe to ticks. Client can also
              * unsubscribe from ticks if not owner,
@@ -650,6 +657,13 @@ namespace FishNet.Component.Transforming
         [ServerRpc(RunLocally = true)]
         private void ServerSetInterval(byte value)
         {
+            if (!_clientAuthoritative)
+            {
+
+                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
+                return;
+            }
+
             SetIntervalInternal(value);
         }
         /// <summary>
@@ -999,11 +1013,18 @@ namespace FishNet.Component.Transforming
             if (!base.IsServer && !base.IsClient)
                 return;
             //If client auth and the owner don't move towards target.
-            if (_clientAuthoritative && base.IsOwner)
-                return;
-            //If not client authoritative, is owner, and don't sync to owner.
-            if (!_clientAuthoritative && base.IsOwner && !_sendToOwner)
-                return;
+            if (_clientAuthoritative)
+            {
+                if (base.IsOwner || TakenOwnership)
+                    return;
+            }
+            else
+            {
+                //If not client authoritative, is owner, and don't sync to owner.
+                if (base.IsOwner && !_sendToOwner)
+                    return;
+            }
+
             //True if not client controlled.
             bool controlledByClient = (_clientAuthoritative && base.Owner.IsActive);
             //If not controlled by client and is server then no reason to move.
@@ -1550,6 +1571,12 @@ namespace FishNet.Component.Transforming
         [ServerRpc]
         private void ServerUpdateTransform(ArraySegment<byte> data, Channel channel)
         {
+            if (!_clientAuthoritative)
+            {
+                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
+                return;
+            }
+
             //Not new data.
             uint lastPacketTick = base.TimeManager.LastPacketTick;
             if (lastPacketTick <= _lastServerRpcTick)
@@ -1746,10 +1773,11 @@ namespace FishNet.Component.Transforming
         [ServerRpc]
         private void ServerSetSynchronizedProperties(SynchronizedProperty value)
         {
-            /* Client is trying to be sneaky ...
-             * a client should not be able to call this when NT isnt client auth. */
             if (!_clientAuthoritative)
+            {
+                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
                 return;
+            }
 
             SetSynchronizedPropertiesInternal(value);
             ObserversSetSynchronizedProperties(value);

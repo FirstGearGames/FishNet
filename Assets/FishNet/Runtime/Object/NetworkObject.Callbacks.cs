@@ -116,8 +116,21 @@ namespace FishNet.Object
             }
             else
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnOwnershipClient(prevOwner);
+                /* If local client is owner and not server then only
+                 * invoke if the prevOwner is different. This prevents
+                 * the owner change callback from happening twice when
+                 * using TakeOwnership. 
+                 * 
+                 * Further explained, the TakeOwnership sets local client
+                 * as owner client-side, which invokes the OnOwnership method.
+                 * Then when the server approves the owner change it would invoke
+                 * again, which is not needed. */
+                bool blockInvoke = ((IsOwner && !IsServer) && (prevOwner == Owner));
+                if (!blockInvoke)
+                {
+                    for (int i = 0; i < NetworkBehaviours.Length; i++)
+                        NetworkBehaviours[i].OnOwnershipClient(prevOwner);
+                }
             }
         }
     }

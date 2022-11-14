@@ -358,7 +358,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * or if (!base.isClient) */
             
                 CreateClientRpcConditionsForServer(writerMd);
-           
+
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);
             /* Create a local PooledWriter variable. */
             //Default value for data lenght.
@@ -414,7 +414,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * or if (!base.isClient) */
             
                 CreateServerRpcConditionsForClient(writerMd, cr.Attribute);
-            
+
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);
             //Create a local PooledWriter variable.
             int dataLength = cr.Attribute.GetField(DATALENGTH_NAME, -1);
@@ -429,7 +429,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 base.GetClass<WriterHelper>().CreateWrite(writerMd, pooledWriterVariableDef, serializedParameters[i], writeMethodRef);
             }
 
-            //uint methodHash = originalMethodDef.FullName.GetStableHash32();
             //Call the method on NetworkBehaviour responsible for sending out the rpc.
             processor.Add(CreateSendServerRpc(writerMd, cr.MethodHash, pooledWriterVariableDef, channelVariableDef));
             //Dispose of writer.
@@ -941,8 +940,11 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             //More than one which means it's an observer/targetRpc combo.
             else
             {
-                MethodReference observerWriterMr = base.ImportReference(createdRpcs.GetCreatedRpc(RpcType.Observers).WriterMethodDef);
-                MethodReference targetWriterMr = base.ImportReference(createdRpcs.GetCreatedRpc(RpcType.Target).WriterMethodDef);
+                CreatedRpc observersRpc = createdRpcs.GetCreatedRpc(RpcType.Observers);
+                MethodReference observerWriterMr = base.ImportReference(observersRpc.WriterMethodDef);
+
+                CreatedRpc targetRpc = createdRpcs.GetCreatedRpc(RpcType.Target);
+                MethodReference targetWriterMr = base.ImportReference(targetRpc.WriterMethodDef);
 
                 Instruction targetRpcInst = processor.Create(OpCodes.Nop);
                 Instruction afterTargetRpcInst = processor.Create(OpCodes.Nop);
@@ -957,6 +959,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 foreach (ParameterDefinition pd in originalMd.Parameters)
                     processor.Emit(OpCodes.Ldarg, pd);
                 processor.Emit(OpCodes.Call, observerWriterMr);
+                AddRunLocally(observersRpc);
                 //else (target).
                 processor.Emit(OpCodes.Br_S, afterTargetRpcInst);
                 processor.Append(targetRpcInst);
@@ -965,17 +968,23 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 foreach (ParameterDefinition pd in originalMd.Parameters)
                     processor.Emit(OpCodes.Ldarg, pd);
                 processor.Emit(OpCodes.Call, targetWriterMr);
+                AddRunLocally(targetRpc);
                 processor.Append(afterTargetRpcInst);
             }
 
-            //Runlocally.
-            if (createdRpcs[0].RunLocally)
+            //Adds run locally logic if needed.
+            void AddRunLocally(CreatedRpc cRpc)
             {
-                processor.Emit(OpCodes.Ldarg_0); //this.
-                                                 //Parameters.
-                foreach (ParameterDefinition pd in originalMd.Parameters)
-                    processor.Emit(OpCodes.Ldarg, pd);
-                processor.Emit(OpCodes.Call, createdRpcs[0].LogicMethodDef);
+                //Runlocally.
+                if (cRpc.RunLocally)
+                {
+                    processor.Emit(OpCodes.Ldarg_0); //this.
+                                                     //Parameters.
+                    foreach (ParameterDefinition pd in originalMd.Parameters)
+                        processor.Emit(OpCodes.Ldarg, pd);
+                    processor.Emit(OpCodes.Call, cRpc.LogicMethodDef);
+                }
+
             }
 
             processor.Emit(OpCodes.Ret);

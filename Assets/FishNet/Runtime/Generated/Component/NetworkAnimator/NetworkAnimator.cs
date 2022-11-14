@@ -1,6 +1,8 @@
 using FishNet.Component.Transforming;
 using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Utility;
@@ -1386,7 +1388,10 @@ namespace FishNet.Component.Animating
             if (!_isAnimatorEnabled)
                 return;
             if (!ClientAuthoritative)
+            {
+                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
                 return;
+            }
 
             /* Server does not need to apply interpolation.
              * Even as clientHost when CSP is being used the

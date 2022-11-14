@@ -185,9 +185,6 @@ namespace FishNet.Object
         private void Start()
         {
             TryStartDeactivation();
-            ////Also deactivate children.
-            //foreach (NetworkObject nob in ChildNetworkObjects)
-            //    nob.TryStartDeactivation();
         }
 
         /// <summary>
@@ -711,6 +708,18 @@ namespace FishNet.Object
 
         #region Editor.
 #if UNITY_EDITOR
+        /// <summary>
+        /// Removes duplicate NetworkObject components on this object returning the removed count.
+        /// </summary>
+        /// <returns></returns>
+        internal int RemoveDuplicateNetworkObjects()
+        {
+            NetworkObject[] nobs = GetComponents<NetworkObject>();
+            for (int i = 1; i < nobs.Length; i++)
+                DestroyImmediate(nobs[i]);
+
+            return (nobs.Length - 1);
+        }
 
         /// <summary>
         /// Sets IsNested and returns the result.

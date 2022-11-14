@@ -25,6 +25,11 @@ namespace FishNet.CodeGenerating.Extension
                     CallingConvention = baseMd.CallingConvention,
                     ExplicitThis = baseMd.ExplicitThis,
                 };
+                foreach (ParameterDefinition pd in baseMd.Parameters)
+                {
+                    session.ImportReference(pd.ParameterType);
+                    baseMr.Parameters.Add(pd);
+                }
             }
             else
             {
@@ -206,7 +211,7 @@ namespace FishNet.CodeGenerating.Extension
         /// </summary>
         public static FieldReference GetOrCreateFieldReference(this TypeDefinition td, CodegenSession session, string fieldName, FieldAttributes attributes, TypeReference fieldTypeRef, out bool created)
         {
-            FieldReference fr = td.GetField(fieldName);
+            FieldReference fr = td.GetFieldReference(fieldName, session);
             if (fr == null)
             {
                 fr = td.CreateFieldDefinition(session, fieldName, attributes, fieldTypeRef);

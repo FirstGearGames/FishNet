@@ -91,7 +91,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         private static int _lastUpdatedLengths = -1;
         #endregion
 
-        private static string[] GetPrefabFiles(string startingPath, HashSet<string> excludedPaths, bool recursive)
+        public static string[] GetPrefabFiles(string startingPath, HashSet<string> excludedPaths, bool recursive)
         {
             //Opportunity to exit early if there are no excluded paths.
             if (excludedPaths.Count == 0)

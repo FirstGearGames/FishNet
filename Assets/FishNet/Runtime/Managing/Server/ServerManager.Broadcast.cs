@@ -128,9 +128,7 @@ namespace FishNet.Managing.Server
                 //If requires authentication and client isn't authenticated.
                 if (requireAuthentication && !connection.Authenticated)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"ConnectionId {connection.ClientId} sent broadcast {typeof(T).Name} which requires authentication, but client was not authenticated. Client has been disconnected.");
-                    NetworkManager.TransportManager.Transport.StopConnection(connection.ClientId, true);
+                    connection.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {connection.ClientId} sent broadcast {typeof(T).Name} which requires authentication, but client was not authenticated. Client has been disconnected.");
                     return;
                 }
 
@@ -266,7 +264,7 @@ namespace FishNet.Managing.Server
             }
         }
 
-        
+
         /// <summary>
         /// Sends a broadcast to connections except excluded.
         /// </summary>
@@ -328,7 +326,7 @@ namespace FishNet.Managing.Server
             foreach (NetworkConnection ec in excludedConnections)
                 connections.Remove(ec);
 
-            Broadcast(connections,message, requireAuthenticated, channel);
+            Broadcast(connections, message, requireAuthenticated, channel);
         }
 
         /// <summary>

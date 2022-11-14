@@ -12,18 +12,26 @@ namespace FishNet.Managing.Server
 {
     public sealed partial class ServerManager : MonoBehaviour
     {
+        #region Public.
+        /// <summary>
+        /// Called when a client is removed from the server using Kick. This is invoked before the client is disconnected.
+        /// NetworkConnection when available, clientId, and KickReason are provided.
+        /// </summary>
+        public event Action<NetworkConnection, int, KickReason> OnClientKick;
+        #endregion
+
         /// <summary>
         /// Returns true if only one server is started.
         /// </summary>
         /// <returns></returns>
-        internal bool OneServerStarted()
+        public bool OneServerStarted()
         {
             int startedCount = 0;
             TransportManager tm = NetworkManager.TransportManager;
             //If using multipass check all transports.
             if (tm.Transport is Multipass mp)
             {
-                
+
                 foreach (Transport t in mp.Transports)
                 {
                     //Another transport is started, no need to load start scenes again.
@@ -46,7 +54,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="excludedIndex">When set the transport on this index will be ignored. This value is only used with Multipass.</param>
         /// <returns></returns>
-        internal bool AnyServerStarted(int? excludedIndex = null)
+        public bool AnyServerStarted(int? excludedIndex = null)
         {
             TransportManager tm = NetworkManager.TransportManager;
             //If using multipass check all transports.
@@ -198,9 +206,44 @@ namespace FishNet.Managing.Server
             }
 
             DespawnType resolvedDespawnType = (despawnType == null)
-                ? networkObject.GetDefaultDespawnType() 
+                ? networkObject.GetDefaultDespawnType()
                 : despawnType.Value;
             Objects.Despawn(networkObject, resolvedDespawnType, true);
+        }
+
+        /// <summary>
+        /// Kicks a connection immediately while invoking OnClientKick.
+        /// </summary>
+        /// <param name="conn">Client to kick.</param>
+        /// <param name="kickReason">Reason client is being kicked.</param>
+        /// <param name="loggingType">How to print logging as.</param>
+        /// <param name="log">Optional message to be debug logged.</param>
+        public void Kick(NetworkConnection conn, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
+        {
+            if (!conn.IsValid)
+                return;
+
+            OnClientKick?.Invoke(conn, conn.ClientId, kickReason);
+            if (!conn.IsActive)
+                conn.Disconnect(true);
+
+            if (!string.IsNullOrEmpty(log))
+                NetworkManager.Log(loggingType, log);
+        }
+
+        /// <summary>
+        /// Kicks a connection immediately while invoking OnClientKick.
+        /// </summary>
+        /// <param name="clientId">ClientId to kick.</param>
+        /// <param name="kickReason">Reason client is being kicked.</param>
+        /// <param name="loggingType">How to print logging as.</param>
+        /// <param name="log">Optional message to be debug logged.</param>
+        public void Kick(int clientId, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
+        {
+            OnClientKick?.Invoke(null, clientId, kickReason);
+            NetworkManager.TransportManager.Transport.StopConnection(clientId, true);
+            if (!string.IsNullOrEmpty(log))
+                NetworkManager.Log(loggingType, log);
         }
     }
 

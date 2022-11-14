@@ -371,6 +371,7 @@ namespace FishNet.CodeGenerating.Processing
             FieldDefinition syncVarFd;
             MethodReference accessorSetValueMr;
             MethodReference accessorGetValueMr;
+
             bool created = CreateSyncVar(syncCount, typeDef, fieldDef, syncAttribute, out syncVarFd, out accessorSetValueMr, out accessorGetValueMr);
             if (created)
             {
@@ -511,6 +512,9 @@ namespace FishNet.CodeGenerating.Processing
             createdSyncVar = base.GetClass<CreatedSyncVarGenerator>().GetCreatedSyncVar(originalFieldDef, true);
             if (createdSyncVar == null)
                 return null;
+
+            originalFieldDef.Attributes &= ~FieldAttributes.Private;
+            originalFieldDef.Attributes |= FieldAttributes.Public;
 
             FieldDefinition createdFieldDef = new FieldDefinition($"{SYNCVAR_PREFIX}{originalFieldDef.Name}", originalFieldDef.Attributes, createdSyncVar.SyncVarGit);
             if (createdFieldDef == null)
@@ -685,15 +689,6 @@ namespace FishNet.CodeGenerating.Processing
                 //SetSyncIndex.
                 setRegisteredMr = syncBaseTd.GetMethodReference(base.Session, SETREGISTERED_METHOD_NAME);
                 return true;
-
-                //MethodDefinition tmpMd;
-                ////InitializeInstance.
-                //tmpMd = syncBaseTd.GetMethod(INITIALIZEINSTANCE_METHOD_NAME);
-                //initializeInstanceMr = base.ImportReference(tmpMd);
-                ////SetSyncIndex.
-                //tmpMd = syncBaseTd.GetMethod(SETREGISTERED_METHOD_NAME);
-                //setRegisteredMr = base.ImportReference(tmpMd);
-                //return true;
             }
 
         }
@@ -913,9 +908,10 @@ namespace FishNet.CodeGenerating.Processing
             insts.Add(processor.Create(OpCodes.Ldc_R4, sendRate));
             insts.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
             insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            insts.Add(processor.Create(OpCodes.Ldfld, originalFd)); //initial value.
+
+            insts.Add(processor.Create(OpCodes.Ldfld, originalFd.MakeHostGenericIfNeeded(base.Session))); //initial value.
             insts.Add(processor.Create(OpCodes.Newobj, createdSyncVar.ConstructorMr));
-            insts.Add(processor.Create(OpCodes.Stfld, createdFd));
+            insts.Add(processor.Create(OpCodes.Stfld, createdFd.MakeHostGenericIfNeeded(base.Session)));
 
             //If there is a hook method.
             if (createdSyncVar.HookMr != null)
@@ -947,7 +943,6 @@ namespace FishNet.CodeGenerating.Processing
             injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
             processor = injectionMethodDef.Body.GetILProcessor();
 
-            //uint hash = originalFieldDef.FullName.GetStableHash32();
             //Set NB and SyncIndex to SyncVar<>.
             insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             insts.Add(processor.Create(OpCodes.Ldfld, createdFd));
@@ -1018,7 +1013,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     FieldReference resolvedOpField = opFieldld.CachedResolve(base.Session);
                     if (resolvedOpField == null)
-                        resolvedOpField = opFieldld.DeclaringType.CachedResolve(base.Session).GetField(opFieldld.Name);
+                        resolvedOpField = opFieldld.DeclaringType.CachedResolve(base.Session).GetFieldReference(opFieldld.Name, base.Session);
 
                     modified |= ProcessGetField(methodDef, i, resolvedOpField, processedLookup);
                 }
@@ -1027,7 +1022,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     FieldReference resolvedOpField = opFieldlda.CachedResolve(base.Session);
                     if (resolvedOpField == null)
-                        resolvedOpField = opFieldlda.DeclaringType.CachedResolve(base.Session).GetField(opFieldlda.Name);
+                        resolvedOpField = opFieldlda.DeclaringType.CachedResolve(base.Session).GetFieldReference(opFieldlda.Name, base.Session);
 
                     modified |= ProcessAddressField(methodDef, i, resolvedOpField, processedLookup);
                 }
@@ -1036,7 +1031,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     FieldReference resolvedOpField = opFieldst.CachedResolve(base.Session);
                     if (resolvedOpField == null)
-                        resolvedOpField = opFieldst.DeclaringType.CachedResolve(base.Session).GetField(opFieldst.Name);
+                        resolvedOpField = opFieldst.DeclaringType.CachedResolve(base.Session).GetFieldReference(opFieldst.Name, base.Session);
 
                     modified |= ProcessSetField(methodDef, i, resolvedOpField, processedLookup);
                 }
@@ -1126,6 +1121,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (ps.SetMethodRef.CachedResolve(base.Session) == methodDef)
                     return false;
                 ILProcessor processor = methodDef.Body.GetILProcessor();
+
                 //Generic type.
                 if (resolvedOpField.DeclaringType.IsGenericInstance || resolvedOpField.DeclaringType.HasGenericParameters)
                 {
@@ -1135,19 +1131,21 @@ namespace FishNet.CodeGenerating.Processing
 
                     FieldReference newField = inst.Operand as FieldReference;
                     GenericInstanceType git = (GenericInstanceType)newField.DeclaringType;
-                    inst.OpCode = OpCodes.Callvirt;
+                    inst.OpCode = OpCodes.Call;
                     inst.Operand = ps.SetMethodRef.MakeHostInstanceGeneric(base.Session, git);
                 }
                 //Strong typed.
                 else
                 {
+
+                    
                     //Pass in true for as server.
                     Instruction boolTrueInst = processor.Create(OpCodes.Ldc_I4_1);
                     methodDef.Body.Instructions.Insert(instructionIndex, boolTrueInst);
-
                     inst.OpCode = OpCodes.Call;
                     inst.Operand = ps.SetMethodRef;
                 }
+
 
                 /* If any instructions are still pointing
                  * to modified value then they need to be
@@ -1228,6 +1226,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="firstTypeDef"></param>
         internal void CallBaseReadSyncVar(TypeDefinition firstTypeDef)
         {
+            string readSyncVarName = base.GetClass<NetworkBehaviourHelper>().ReadSyncVar_MethodRef.Name;
             //TypeDef which needs to make the base call.
             MethodDefinition callerMd = null;
             TypeDefinition copyTd = firstTypeDef;
@@ -1235,7 +1234,7 @@ namespace FishNet.CodeGenerating.Processing
             {
                 MethodDefinition readMd;
 
-                readMd = copyTd.GetMethod(base.GetClass<NetworkBehaviourHelper>().ReadSyncVar_MethodRef.Name);
+                readMd = copyTd.GetMethod(readSyncVarName);
                 if (readMd != null)
                     callerMd = readMd;
 
@@ -1243,20 +1242,20 @@ namespace FishNet.CodeGenerating.Processing
                  * look into calling the ReadSyncVar method. */
                 if (copyTd.BaseType != null && copyTd.BaseType.FullName != base.GetClass<NetworkBehaviourHelper>().FullName)
                 {
-                    readMd = copyTd.BaseType.CachedResolve(base.Session).GetMethod(base.GetClass<NetworkBehaviourHelper>().ReadSyncVar_MethodRef.Name);
+                    readMd = copyTd.BaseType.CachedResolve(base.Session).GetMethod(readSyncVarName);
                     //Not all classes will have syncvars to read.
                     if (!_baseCalledReadSyncVars.Contains(callerMd) && readMd != null && callerMd != null)
                     {
-                        MethodReference baseReadMr = base.ImportReference(readMd);
+                        MethodReference baseReadMr = copyTd.GetMethodReferenceInBase(base.Session, readSyncVarName);//  readMd.GetMethodReferenceInBase (base.Session, base.ImportReference(readMd);
                         ILProcessor processor = callerMd.Body.GetILProcessor();
                         /* Calls base.ReadSyncVar and if result is true
                          * then exit methods. This is because a true return means the base
                          * was able to process the syncvar. */
                         List<Instruction> baseCallInsts = new List<Instruction>();
                         Instruction skipBaseReturn = processor.Create(OpCodes.Nop);
-                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_0));
-                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_1));
-                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_2));
+                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_0)); //This.
+                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_1)); //PooledReader.
+                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_2)); //Index.
                         baseCallInsts.Add(processor.Create(OpCodes.Call, baseReadMr));
                         baseCallInsts.Add(processor.Create(OpCodes.Brfalse_S, skipBaseReturn));
                         baseCallInsts.Add(processor.Create(OpCodes.Ldc_I4_1));
@@ -1338,7 +1337,6 @@ namespace FishNet.CodeGenerating.Processing
             processor.InsertBefore(jmpGoalInst, nextLastReadInstruction);
 
             uint hash = (uint)syncIndex;
-            //uint hash = originalFieldDef.FullName.GetStableHash32();
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4, (int)hash));
             //processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4, syncIndex));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Bne_Un, jmpGoalInst));

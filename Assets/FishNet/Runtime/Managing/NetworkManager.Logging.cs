@@ -74,6 +74,19 @@ namespace FishNet.Managing
         }
 
         /// <summary>
+        /// Performs a log using the loggingType, should logging settings permit it.
+        /// </summary>
+        public void Log(LoggingType loggingType, string value)
+        {
+            if (loggingType == LoggingType.Common)
+                _logging.Log(value);
+            else if (loggingType == LoggingType.Warning)
+                _logging.LogWarning(value);
+            else if (loggingType == LoggingType.Error)
+                _logging.LogError(value);
+        }
+
+        /// <summary>
         /// Performs a warning log, should logging settings permit it.
         /// </summary>
         /// 

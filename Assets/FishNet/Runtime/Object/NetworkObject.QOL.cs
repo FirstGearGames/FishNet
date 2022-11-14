@@ -192,10 +192,29 @@ namespace FishNet.Object
 
             return NetworkBehaviours[componentIndex];
         }
+
+        /// <summary>
+        /// Despawns a GameObject. Only call from the server.
+        /// </summary>
+        /// <param name="go">GameObject to despawn.</param>
+        /// <param name="despawnType">What happens to the object after being despawned.</param>
+        public void Despawn(GameObject go, DespawnType? despawnType = null)
+        {
+            NetworkManager.ServerManager.Despawn(go, despawnType);
+        }
+        /// <summary>
+        /// Despawns  a NetworkObject. Only call from the server.
+        /// </summary>
+        /// <param name="nob">NetworkObject to despawn.</param>
+        /// <param name="despawnType">What happens to the object after being despawned.</param>
+        public void Despawn(NetworkObject nob, DespawnType? despawnType = null)
+        {
+            NetworkManager.ServerManager.Despawn(nob, despawnType);
+        }
         /// <summary>
         /// Despawns this NetworkObject. Only call from the server.
         /// </summary>
-        /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
+        /// <param name="despawnType">What happens to the object after being despawned.</param>
         public void Despawn(DespawnType? despawnType = null)
         {
             NetworkObject nob = this;
@@ -250,6 +269,51 @@ namespace FishNet.Object
 
             return canExecute;
         }
+
+        /// <summary>
+        /// Takes ownership of this object and child network objects, allowing immediate control.
+        /// </summary>
+        /// <param name="caller">Connection to give ownership to.</param>
+        public void SetLocalOwnership(NetworkConnection caller)
+        {
+            NetworkConnection prevOwner = Owner;
+            SetOwner(caller);
+
+            int count;
+            count = NetworkBehaviours.Length;
+            for (int i = 0; i < count; i++)
+                NetworkBehaviours[i].OnOwnershipClient(prevOwner);
+            count = ChildNetworkObjects.Count;
+            for (int i = 0; i < count; i++)
+                ChildNetworkObjects[i].SetLocalOwnership(caller);
+        }
+
+        #region Registered components
+        /// <summary>
+        /// Invokes a delegate when a specified component becomes registered. Delegate will invoke immediately if already registered.
+        /// </summary>
+        /// <typeparam name="T">Component type.</typeparam>
+        /// <param name="del">Delegate to invoke.</param>
+        public void InvokeOnInstance<T>(ComponentRegisteredDelegate del) where T : UnityEngine.Component => NetworkManager.InvokeOnInstance<T>(del);
+        /// <summary>
+        /// Returns class of type if found within CodegenBase classes.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public T GetInstance<T>() where T : UnityEngine.Component => NetworkManager.GetInstance<T>();
+        /// <summary>
+        /// Registers a new component to this NetworkManager.
+        /// </summary>
+        /// <typeparam name="T">Type to register.</typeparam>
+        /// <param name="component">Reference of the component being registered.</param>
+        /// <param name="replace">True to replace existing references.</param>
+        public void RegisterInstance<T>(T component, bool replace = true) where T : UnityEngine.Component => NetworkManager.RegisterInstance<T>(component, replace);
+        /// <summary>
+        /// Unregisters a component from this NetworkManager.
+        /// </summary>
+        /// <typeparam name="T">Type to unregister.</typeparam>
+        public void UnregisterInstance<T>() where T : UnityEngine.Component => NetworkManager.UnregisterInstance<T>();
+        #endregion
 
     }
 

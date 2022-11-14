@@ -959,7 +959,7 @@ namespace FishNet.Serializing
                     /* Otherwise make a new instance.
                     * We do not know if this is for the server or client so
                     * initialize it either way. Connections rarely come through
-                    * without being in server/client side collection. */        
+                    * without being in server/client side collection. */
                     else
                         return new NetworkConnection(NetworkManager, value, true);
                 }
@@ -1164,16 +1164,15 @@ namespace FishNet.Serializing
         {
             if (IsAutoPackType<T>(out AutoPackType packType))
             {
-                Func<Reader, AutoPackType, T> del = GenericReader<T>.ReadAutoPack;
-                if (del == null)
+                Func<Reader, AutoPackType, T> autopackDel = GenericReader<T>.ReadAutoPack;
+                if (autopackDel == null)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    NetworkManager.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
                     return default;
                 }
                 else
                 {
-                    return del.Invoke(this, packType);
+                    return autopackDel.Invoke(this, packType);
                 }
             }
             else
@@ -1181,8 +1180,7 @@ namespace FishNet.Serializing
                 Func<Reader, T> del = GenericReader<T>.Read;
                 if (del == null)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    NetworkManager.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
                     return default;
                 }
                 else

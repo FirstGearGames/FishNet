@@ -1,4 +1,5 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Managing;
 using FishNet.Serializing;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
@@ -15,8 +16,8 @@ namespace FishNet.CodeGenerating.Helping
         #region Reflection references.
         private TypeReference _genericReaderTypeRef;
         private TypeReference _readerTypeRef;
-        private MethodReference _readGetSetMethodRef;
-        private MethodReference _readAutoPackGetSetMethodRef;
+        private MethodReference _readSetMethodRef;
+        private MethodReference _readAutoPackSetMethodRef;
         private TypeReference _functionT2TypeRef;
         private TypeReference _functionT3TypeRef;
         private MethodReference _functionT2ConstructorMethodRef;
@@ -56,9 +57,9 @@ namespace FishNet.CodeGenerating.Helping
 
             System.Reflection.PropertyInfo writePropertyInfo;
             writePropertyInfo = typeof(GenericReader<>).GetProperty(nameof(GenericReader<int>.Read));
-            _readGetSetMethodRef = base.ImportReference(writePropertyInfo.GetSetMethod());
+            _readSetMethodRef = base.ImportReference(writePropertyInfo.GetSetMethod());
             writePropertyInfo = typeof(GenericReader<>).GetProperty(nameof(GenericReader<int>.ReadAutoPack));
-            _readAutoPackGetSetMethodRef = base.ImportReference(writePropertyInfo.GetSetMethod());
+            _readAutoPackSetMethodRef = base.ImportReference(writePropertyInfo.GetSetMethod());
 
             return true;
         }
@@ -130,10 +131,10 @@ namespace FishNet.CodeGenerating.Helping
 
             //Call delegate to GeneratedReader<T>.Read
             GenericInstanceType genericInstance = _genericReaderTypeRef.MakeGenericInstanceType(dataTypeRef);
-            MethodReference genericReaderMethodRef = (isAutoPacked) ?
-                _readAutoPackGetSetMethodRef.MakeHostInstanceGeneric(base.Session, genericInstance) :
-                _readGetSetMethodRef.MakeHostInstanceGeneric(base.Session, genericInstance);
-            processor.Emit(OpCodes.Call, genericReaderMethodRef);
+            MethodReference genericReadMethodRef = (isAutoPacked) ?
+                    _readAutoPackSetMethodRef.MakeHostInstanceGeneric(base.Session, genericInstance) :
+                    _readSetMethodRef.MakeHostInstanceGeneric(base.Session, genericInstance);
+            processor.Emit(OpCodes.Call, genericReadMethodRef);
 
             processor.Emit(OpCodes.Ret);
         }

@@ -29,7 +29,11 @@ namespace FishNet.CodeGenerating.Extension
                     DeclaringType = git,
                     CallingConvention = md.CallingConvention,
                 };
-
+                foreach (ParameterDefinition pd in md.Parameters)
+                {
+                    session.ImportReference(pd.ParameterType);
+                    result.Parameters.Add(pd);
+                }
                 return result;
             }
             //Not generic.

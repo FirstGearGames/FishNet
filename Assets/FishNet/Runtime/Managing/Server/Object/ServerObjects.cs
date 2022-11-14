@@ -146,7 +146,7 @@ namespace FishNet.Managing.Server
                 //If no servers are started then reset.
                 if (!base.NetworkManager.ServerManager.AnyServerStarted())
                 {
-                    base.DespawnSpawnedWithoutSynchronization(true);
+                    base.DespawnWithoutSynchronization(true);
                     base.SceneObjects.Clear();
                     _objectIdCache.Clear();
                     base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients);

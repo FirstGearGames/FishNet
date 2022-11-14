@@ -1,4 +1,6 @@
 ﻿using FishNet.Managing;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Server;
 using System;
 
 namespace FishNet.Connection
@@ -34,6 +36,18 @@ namespace FishNet.Connection
 
             return NetworkManager.TransportManager.Transport.GetConnectionAddress(ClientId);
         }
+
+        /// <summary>
+        /// Kicks a connection immediately while invoking OnClientKick.
+        /// </summary>
+        /// <param name="kickReason">Reason client is being kicked.</param>
+        /// <param name="loggingType">How to print logging as.</param>
+        /// <param name="log">Optional message to be debug logged.</param>
+        public void Kick(KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
+        {
+            NetworkManager.ServerManager.Kick(this, kickReason, loggingType, log);
+        }
+
     }
 
 

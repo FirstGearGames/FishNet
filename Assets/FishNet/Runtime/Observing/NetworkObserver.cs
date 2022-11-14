@@ -260,8 +260,12 @@ namespace FishNet.Observing
                                 /* If any observer returns removed then break
                                  * from loop and return removed. If one observer has
                                  * removed then there's no reason to iterate
-                                 * the rest. */
-                                bool conditionMet = condition.ConditionMet(connection, currentlyAdded, out bool notProcessed);
+                                 * the rest.
+                                 * 
+                                 * A condition is automatically met if it's not enabled. */
+                                bool notProcessed = false;
+                                bool conditionMet = (!condition.GetIsEnabled() || condition.ConditionMet(connection, currentlyAdded, out notProcessed));
+
                                 if (notProcessed)
                                     conditionMet = currentlyAdded;
 

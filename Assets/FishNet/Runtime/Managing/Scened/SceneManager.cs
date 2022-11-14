@@ -338,15 +338,9 @@ namespace FishNet.Managing.Scened
         {
             //Already received, shouldn't be happening again.
             if (conn.LoadedStartScenes)
-            {
-                if (_networkManager.CanLog(LoggingType.Common))
-                    Debug.LogError($"Received multiple EmptyStartSceneBroadcast from connectionId {conn.ClientId}. Connection will be kicked immediately.");
-                _networkManager.TransportManager.Transport.StopConnection(conn.ClientId, true);
-            }
+                conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Received multiple EmptyStartSceneBroadcast from connectionId {conn.ClientId}. Connection will be kicked immediately.");
             else
-            {
                 OnClientLoadedScenes(conn, new ClientScenesLoadedBroadcast());
-            }
         }
         #endregion
 
@@ -405,10 +399,7 @@ namespace FishNet.Managing.Scened
             //There's no loads or unloads pending, kick client.
             if (pendingLoads == 0)
             {
-                if (_networkManager.CanLog(LoggingType.Common))
-                    Debug.LogError($"Received excessive ClientScenesLoadedBroadcast from connectionId {conn.ClientId}. Connection will be kicked immediately.");
-                _networkManager.TransportManager.Transport.StopConnection(conn.ClientId, true);
-
+                conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Received excessive ClientScenesLoadedBroadcast from connectionId {conn.ClientId}. Connection will be kicked immediately.");
                 return;
             }
             //If there is a load pending then update pending count.
@@ -932,7 +923,7 @@ namespace FishNet.Managing.Scened
                     float percent = _sceneProcessor.GetPercentComplete();
                     InvokePercentageChange(i, maximumIndexWorth, percent);
                     yield return null;
-                }    
+                }
 
                 //Invokes OnScenePercentChange with progress.
                 void InvokePercentageChange(int index, float maximumWorth, float currentScenePercent)

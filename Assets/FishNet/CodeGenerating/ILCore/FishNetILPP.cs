@@ -57,17 +57,12 @@ namespace FishNet.CodeGenerating.ILCore
             //Check WillProcess again; somehow certain editor scripts skip the WillProcess check.
             if (!WillProcess(compiledAssembly))
                 return null;
-
+            
             CodegenSession session = new CodegenSession();
             if (!session.Initialize(assemblyDef.MainModule))
                 return null;
 
             bool modified = false;
-
-            /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
-             * then don't bother processing the rest. */
-            if (session.GetClass<NetworkBehaviourProcessor>().NonNetworkBehaviourHasInvalidAttributes(session.Module.Types))
-                return new ILPostProcessResult(null, session.Diagnostics);
 
             if (IsFishNetAssembly(compiledAssembly))
             {
@@ -75,6 +70,11 @@ namespace FishNet.CodeGenerating.ILCore
             }
             else
             {
+                /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
+                 * then don't bother processing the rest. */
+                if (session.GetClass<NetworkBehaviourProcessor>().NonNetworkBehaviourHasInvalidAttributes(session.Module.Types))
+                    return new ILPostProcessResult(null, session.Diagnostics);
+
                 //before 226ms, after 17ms                   
                 modified |= CreateDeclaredSerializerDelegates(session);
                 //before 5ms, after 5ms

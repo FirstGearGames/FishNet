@@ -17,7 +17,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         /// <param name="value"></param>
         public void SetGraphicalObject(Transform value)
-        { 
+        {
             _graphicalObject = value;
             _networkBehaviour.transform.SetTransformOffsets(value, ref _graphicalInstantiatedOffsetPosition, ref _graphicalInstantiatedOffsetRotation);
         }
@@ -69,18 +69,30 @@ namespace FishNet.Component.Prediction
         /// True if OnPreTick was received this frame.
         /// </summary>
         private bool _preTickReceived;
+        /// <summary>
+        /// True to move towards position goals.
+        /// </summary>
+        private bool _smoothPosition;
+        /// <summary>
+        /// True to move towards rotation goals.
+        /// </summary>
+        private bool _smoothRotation;
         #endregion
 
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        public void Initialize(NetworkBehaviour nb, Vector3 instantiatedOffsetPosition, Quaternion instantiatedOffsetRotation, Transform graphicalObject, byte interpolation, float teleportThreshold)
+        public void Initialize(NetworkBehaviour nb, Vector3 instantiatedOffsetPosition, Quaternion instantiatedOffsetRotation, Transform graphicalObject
+              , bool smoothPosition, bool smoothRotation, byte interpolation, float teleportThreshold)
         {
             _networkBehaviour = nb;
             _graphicalInstantiatedOffsetPosition = instantiatedOffsetPosition;
             _graphicalInstantiatedOffsetRotation = instantiatedOffsetRotation;
-
             _graphicalObject = graphicalObject;
+
+            _smoothPosition = smoothPosition;
+            _smoothRotation = smoothRotation;
+
             _interpolation = interpolation;
             _teleportThreshold = teleportThreshold;
         }
@@ -153,17 +165,24 @@ namespace FishNet.Component.Prediction
              * Properties may have 0f move rate if they did not change. */
             Transform t = _graphicalObject;
             float delta = Time.deltaTime;
+
             //Position.
-            if (_positionMoveRate == -1f)
-                ResetGraphicalToInstantiatedProperties(true, false);
-            else if (_positionMoveRate > 0f)
-                t.position = Vector3.MoveTowards(t.position, posGoal, _positionMoveRate * delta);
+            if (SmoothPosition())
+            {
+                if (_positionMoveRate == -1f)
+                    ResetGraphicalToInstantiatedProperties(true, false);
+                else if (_positionMoveRate > 0f)
+                    t.position = Vector3.MoveTowards(t.position, posGoal, _positionMoveRate * delta);
+            }
 
             //Rotation.
-            if (_rotationMoveRate == -1f)
-                ResetGraphicalToInstantiatedProperties(false, true);
-            else if (_rotationMoveRate > 0f)
-                t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, _rotationMoveRate * delta);
+            if (SmoothRotation())
+            {
+                if (_rotationMoveRate == -1f)
+                    ResetGraphicalToInstantiatedProperties(false, true);
+                else if (_rotationMoveRate > 0f)
+                    t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, _rotationMoveRate * delta);
+            }
 
             if (GraphicalObjectMatches(posGoal, rotGoal))
             {
@@ -178,8 +197,21 @@ namespace FishNet.Component.Prediction
         /// <returns></returns>
         private bool GraphicalObjectMatches(Vector3 position, Quaternion rotation)
         {
-            return (_graphicalObject.position == position && _graphicalObject.rotation == rotation);
+            bool positionMatches = (!_smoothPosition || (_graphicalObject.position == position));
+            bool rotationMatches = (!_smoothRotation || (_graphicalObject.rotation == rotation));
+            return (positionMatches && rotationMatches);
         }
+
+        /// <summary>
+        /// True to smooth position. When false the graphicalObjects property will not be updated.
+        /// </summary>
+        /// <returns></returns>
+        private bool SmoothPosition() => (_smoothPosition || _networkBehaviour.IsOwner);
+        /// <summary>
+        /// True to smooth rotation. When false the graphicalObjects property will not be updated.
+        /// </summary>
+        /// <returns></returns>
+        private bool SmoothRotation() => (_smoothRotation || _networkBehaviour.IsOwner);
 
         /// <summary>
         /// Sets Position and Rotation move rates to reach Target datas.
@@ -210,18 +242,26 @@ namespace FishNet.Component.Prediction
         /// Gets a goal position for the graphical object.
         /// </summary>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private Vector3 GetGraphicalGoalPosition()
         {
-            return (_networkBehaviour.transform.position + _graphicalInstantiatedOffsetPosition);
+            if (SmoothPosition())
+                return (_networkBehaviour.transform.position + _graphicalInstantiatedOffsetPosition);
+            else
+                return _graphicalObject.position;
         }
 
         /// <summary>
         /// Gets a goal rotation for the graphical object.
         /// </summary>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private Quaternion GetGraphicalGoalRotation()
         {
-            return (_graphicalInstantiatedOffsetRotation * _networkBehaviour.transform.rotation);
+            if (SmoothRotation())
+                return (_graphicalInstantiatedOffsetRotation * _networkBehaviour.transform.rotation);
+            else
+                return _graphicalObject.rotation;
         }
         /// <summary>
         /// Caches the graphical object' current position and rotation.
@@ -246,7 +286,6 @@ namespace FishNet.Component.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ResetGraphicalToInstantiatedProperties(bool position, bool rotation)
         {
-            Transform nbTransform = _networkBehaviour.transform;
             if (position)
                 _graphicalObject.position = GetGraphicalGoalPosition();
             if (rotation)

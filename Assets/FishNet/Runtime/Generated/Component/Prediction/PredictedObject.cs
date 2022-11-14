@@ -142,6 +142,18 @@ namespace FishNet.Component.Prediction
         [SerializeField]
         private Rigidbody2D _rigidbody2d;
         /// <summary>
+        /// True to smooth position on spectated objects.
+        /// </summary>
+        [Tooltip("True to smooth position on spectated objects.")]
+        [SerializeField]
+        private bool _spectatorSmoothPosition = true;
+        /// <summary>
+        /// True to smooth rotation on spectated objects.
+        /// </summary>
+        [Tooltip("True to smooth rotation on spectated objects.")]
+        [SerializeField]
+        private bool _spectatorSmoothRotation = true;
+        /// <summary>
         /// Time to smooth initial velocities when an object was previously stopped.
         /// </summary>
         [Tooltip("Time to smooth initial velocities when an object was previously stopped.")]
@@ -429,7 +441,6 @@ namespace FishNet.Component.Prediction
                 base.TimeManager.OnPreReplicateReplay += TimeManager_OnPreReplicateReplay;
                 base.TimeManager.OnPostReplicateReplay += TimeManager_OnPostReplicateReplay;
                 base.TimeManager.OnPreReconcile += TimeManager_OnPreReconcile;
-                base.TimeManager.OnPostReconcile += TimeManager_OnPostReconcile;
             }
             else
             {
@@ -438,7 +449,6 @@ namespace FishNet.Component.Prediction
                 base.TimeManager.OnPreReplicateReplay -= TimeManager_OnPreReplicateReplay;
                 base.TimeManager.OnPostReplicateReplay -= TimeManager_OnPostReplicateReplay;
                 base.TimeManager.OnPreReconcile -= TimeManager_OnPreReconcile;
-                base.TimeManager.OnPostReconcile -= TimeManager_OnPostReconcile;
             }
 
             _subscribed = subscribe;
@@ -471,14 +481,6 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
-        /// Called after performing a reconcile on a NetworkBehaviour.
-        /// </summary>
-        private void TimeManager_OnPostReconcile(NetworkBehaviour nb)
-        {
-            Rigidbodies_TimeManager_OnPostReconcile(nb);
-        }
-
-        /// <summary>
         /// Initializes a smoother with configured values.
         /// </summary>
         private void InitializeSmoother(bool ownerSmoother)
@@ -489,7 +491,7 @@ namespace FishNet.Component.Prediction
             {
                 _ownerSmoother = new PredictedObjectOwnerSmoother();
                 float teleportThreshold = (_enableTeleport) ? _teleportThreshold : -1f;
-                _ownerSmoother.Initialize(this, _graphicalInstantiatedOffsetPosition, _graphicalInstantiatedOffsetRotation, _graphicalObject, _ownerInterpolation, teleportThreshold);
+                _ownerSmoother.Initialize(this, _graphicalInstantiatedOffsetPosition, _graphicalInstantiatedOffsetRotation, _graphicalObject, _spectatorSmoothPosition, _spectatorSmoothRotation, _ownerInterpolation, teleportThreshold);
             }
             else
             {
@@ -497,8 +499,7 @@ namespace FishNet.Component.Prediction
                 RigidbodyType rbType = (_predictionType == PredictionType.Rigidbody) ?
                     RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
                 float teleportThreshold = (_enableTeleport) ? _teleportThreshold : -1f;
-                _spectatorSmoother.Initialize(this, rbType, _rigidbody, _rigidbody2d, _graphicalObject, _spectatorSmoothingDuration, _spectatorInterpolation, _overflowMultiplier, teleportThreshold);
-
+                _spectatorSmoother.Initialize(this, rbType, _rigidbody, _rigidbody2d, _graphicalObject, _spectatorSmoothPosition, _spectatorSmoothRotation, _spectatorSmoothingDuration, _spectatorInterpolation, _overflowMultiplier, teleportThreshold);
             }
 
             void ResetGraphicalTransform()

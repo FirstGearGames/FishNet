@@ -234,7 +234,7 @@ namespace FishNet.Managing.Client
                         /* Do not log unless not nested. Nested nobs sometimes
                          * could be destroyed if parent was first. */
                         if (!_networkManager.IsHost && cnob.NetworkObject == null && !cnob.IsNested)
-                            _networkManager.LogError($"NetworkObject for ObjectId of {cnob.ObjectId} was found null. Unable to despawn object.");
+                            _networkManager.Log($"NetworkObject for ObjectId of {cnob.ObjectId} was found null. Unable to despawn object. This may occur if a nested NetworkObject had it's parent object unexpectedly destroyed. This incident is often safe to ignore.");
                     }
                     NetworkObject nob = cnob.NetworkObject;
                     //No need to error here, the other Gets above would have.

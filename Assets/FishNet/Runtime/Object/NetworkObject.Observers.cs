@@ -16,7 +16,7 @@ namespace FishNet.Object
         /// </summary>
         public event Action<NetworkObject> OnObserversActive;
         /// <summary>
-        /// NetworkObserver on this object. May be null if not using observers.
+        /// NetworkObserver on this object.
         /// </summary>
         [HideInInspector]
         public NetworkObserver NetworkObserver = null;

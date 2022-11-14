@@ -144,7 +144,7 @@ namespace FishNet.Object
 
             if (_replicateRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReplicateRpcDelegate del))
             {
-                del.Invoke(this, reader, sendingClient);
+                del.Invoke(reader, sendingClient);
             }
             else
             {
@@ -165,7 +165,7 @@ namespace FishNet.Object
 
             if (_reconcileRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReconcileRpcDelegate del))
             {
-                del.Invoke(this, reader);
+                del.Invoke(reader);
             }
             else
             {

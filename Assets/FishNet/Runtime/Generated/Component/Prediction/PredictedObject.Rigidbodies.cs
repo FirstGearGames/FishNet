@@ -63,6 +63,7 @@ namespace FishNet.Component.Prediction
             if (!IsRigidbodyPrediction)
                 return;
 
+            _rigidbodyPauser.Unpause();
             bool is2D = (_predictionType == PredictionType.Rigidbody2D);
 
             if (CanPredict())
@@ -99,7 +100,7 @@ namespace FishNet.Component.Prediction
             if (lastStateTick != lastNbTick || lastStateTick == _lastResetTick)
             {
                 _spectatorSmoother?.SetLocalReconcileTick(-1);
-                _rigidbodyPauser.ChangeKinematic(true);
+                _rigidbodyPauser.Pause();
             }
             //If possible to perhaps reset.
             else
@@ -111,14 +112,6 @@ namespace FishNet.Component.Prediction
                 else
                     ResetRigidbodyToData();
             }
-        }
-
-        /// <summary>
-        /// Called after performing a reconcile on a NetworkBehaviour.
-        /// </summary>
-        private void Rigidbodies_TimeManager_OnPostReconcile(NetworkBehaviour nb)
-        {
-            _rigidbodyPauser.ChangeKinematic(false);
         }
 
         /// <summary>

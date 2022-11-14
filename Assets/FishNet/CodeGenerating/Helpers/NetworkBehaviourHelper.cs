@@ -209,12 +209,10 @@ namespace FishNet.CodeGenerating.Helping
 
             List<Instruction> insts = new List<Instruction>();
             insts.Add(processor.Create(OpCodes.Ldarg_0));
-
-            //uint methodHash = originalMethodDef.FullName.GetStableHash32();
             insts.Add(processor.Create(OpCodes.Ldc_I4, (int)methodHash));
 
             /* Create delegate and call NetworkBehaviour method. */
-            insts.Add(processor.Create(OpCodes.Ldnull));
+            insts.Add(processor.Create(OpCodes.Ldarg_0));
             insts.Add(processor.Create(OpCodes.Ldftn, readerMethodDef));
             //Server.
             if (rpcType == RpcType.Server)

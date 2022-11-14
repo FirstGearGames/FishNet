@@ -36,7 +36,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             MethodReference methodRefResult = null;
             TypeDefinition objectTd;
-            SerializerType serializerType = base.GetClass<GeneratorHelper>().GetSerializerType(objectTr, true, out objectTd); 
+            SerializerType serializerType = base.GetClass<GeneratorHelper>().GetSerializerType(objectTr, true, out objectTd);
 
             if (serializerType != SerializerType.Invalid)
             {
@@ -151,14 +151,14 @@ namespace FishNet.CodeGenerating.Helping
             tmpMd = objectTd.GetMethod("get_HasValue");
             MethodReference genericHasValueMr = tmpMd.MakeHostInstanceGeneric(base.Session, objectGit);
 
-
             /* Stubs generate Method(Writer writer, T value). */
             MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
+            AddToStaticWriters(objectTr, createdWriterMd);
+
             ILProcessor processor = createdWriterMd.Body.GetILProcessor();
 
             //Value parameter.
             ParameterDefinition valuePd = createdWriterMd.Parameters[1];
-
             ParameterDefinition writerPd = createdWriterMd.Parameters[0];
 
             //Have to write a new ret on null because nullables use hasValue for null checks.
@@ -169,7 +169,6 @@ namespace FishNet.CodeGenerating.Helping
             base.GetClass<WriterHelper>().CreateWriteBool(processor, writerPd, true);
             processor.Emit(OpCodes.Ret);
             processor.Append(afterNullRetInst);
-
 
             //Code will only execute here and below if not null.
             base.GetClass<WriterHelper>().CreateWriteBool(processor, writerPd, false);
@@ -201,7 +200,6 @@ namespace FishNet.CodeGenerating.Helping
             /*Stubs generate Method(Writer writer, T value). */
             MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
             AddToStaticWriters(objectTr, createdWriterMd);
-
             ILProcessor processor = createdWriterMd.Body.GetILProcessor();
 
             //If not a value type then add a null check.

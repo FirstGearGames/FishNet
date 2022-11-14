@@ -253,7 +253,7 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Despawns Spawned NetworkObjects. Scene objects will be disabled, others will be destroyed.
         /// </summary>
-        protected virtual void DespawnSpawnedWithoutSynchronization(bool asServer)
+        internal virtual void DespawnWithoutSynchronization(bool asServer)
         {
             foreach (NetworkObject nob in Spawned.Values)
                 DespawnWithoutSynchronization(nob, asServer, nob.GetDefaultDespawnType(), false);
@@ -265,7 +265,7 @@ namespace FishNet.Managing.Object
         /// Despawns a network object.
         /// </summary>
         /// <param name="nob"></param>
-        protected virtual void DespawnWithoutSynchronization(NetworkObject nob, bool asServer, DespawnType despawnType, bool removeFromSpawned)
+        internal virtual void DespawnWithoutSynchronization(NetworkObject nob, bool asServer, DespawnType despawnType, bool removeFromSpawned)
         {
             //Null can occur when running as host and server already despawns such as wehen stopping.
             if (nob == null)

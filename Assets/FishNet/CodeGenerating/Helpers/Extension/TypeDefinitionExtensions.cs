@@ -396,16 +396,14 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <param name="typeDef"></param>
         /// <param name="fieldName"></param>
         /// <returns></returns>
-        public static FieldReference GetField(this TypeDefinition typeDef, string fieldName)
+        public static FieldReference GetFieldReference(this TypeDefinition typeDef, string fieldName, CodegenSession session)
         {
             if (typeDef.HasFields)
             {
                 for (int i = 0; i < typeDef.Fields.Count; i++)
                 {
                     if (typeDef.Fields[i].Name == fieldName)
-                    {
-                        return typeDef.Fields[i];
-                    }
+                        return session.ImportReference(typeDef.Fields[i]);
                 }
             }
 

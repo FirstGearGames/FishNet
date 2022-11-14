@@ -8,8 +8,8 @@ using System.Runtime.CompilerServices;
 namespace FishNet.Object.Prediction.Delegating
 {
     [APIExclude]
-    public delegate void ReplicateRpcDelegate(NetworkBehaviour obj, PooledReader reader, NetworkConnection sender);
+    public delegate void ReplicateRpcDelegate(PooledReader reader, NetworkConnection sender);
     [APIExclude]
-    public delegate void ReconcileRpcDelegate(NetworkBehaviour obj, PooledReader reader);
+    public delegate void ReconcileRpcDelegate(PooledReader reader);
 
 }

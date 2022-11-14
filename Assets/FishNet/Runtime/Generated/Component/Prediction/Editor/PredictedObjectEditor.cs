@@ -18,6 +18,8 @@ namespace FishNet.Component.Prediction
 
         private SerializedProperty _rigidbody;
         private SerializedProperty _rigidbody2d;
+        private SerializedProperty _spectatorSmoothPosition;
+        private SerializedProperty _spectatorSmoothRotation;
         private SerializedProperty _spectatorSmoothingDuration;
         private SerializedProperty _spectatorInterpolation;
         private SerializedProperty _overflowMultiplier;
@@ -37,6 +39,8 @@ namespace FishNet.Component.Prediction
 
             _rigidbody = serializedObject.FindProperty("_rigidbody");
             _rigidbody2d = serializedObject.FindProperty("_rigidbody2d");
+            _spectatorSmoothPosition = serializedObject.FindProperty("_spectatorSmoothPosition");
+            _spectatorSmoothRotation = serializedObject.FindProperty("_spectatorSmoothRotation");
             _spectatorSmoothingDuration = serializedObject.FindProperty("_spectatorSmoothingDuration");
             _spectatorInterpolation = serializedObject.FindProperty("_spectatorInterpolation");
             _overflowMultiplier = serializedObject.FindProperty("_overflowMultiplier");
@@ -83,9 +87,14 @@ namespace FishNet.Component.Prediction
 
                 EditorGUILayout.LabelField("Spectator Settings");
                 EditorGUI.indentLevel++;
+                EditorGUILayout.LabelField("Smoothing");
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_spectatorSmoothPosition, new GUIContent("Smooth Position"));
+                EditorGUILayout.PropertyField(_spectatorSmoothRotation, new GUIContent("Smooth Rotation"));
                 EditorGUILayout.PropertyField(_spectatorSmoothingDuration, new GUIContent("Smoothing Duration"));
                 EditorGUILayout.PropertyField(_spectatorInterpolation, new GUIContent("Interpolation"));
                 EditorGUILayout.PropertyField(_overflowMultiplier);
+                EditorGUI.indentLevel--;
                 EditorGUILayout.PropertyField(_maintainedVelocity);
 
                 EditorGUILayout.PropertyField(_resendType);

@@ -1,8 +1,10 @@
 ﻿using FishNet.CodeGenerating.Helping;
+using FishNet.CodeGenerating.ILCore;
 using FishNet.CodeGenerating.Processing;
 using FishNet.CodeGenerating.Processing.Rpc;
 using MonoFN.Cecil;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.CompilationPipeline.Common.Diagnostics;
 #if !UNITY_2020_1_OR_NEWER
 using UnityEngine;
@@ -58,29 +60,31 @@ namespace FishNet.CodeGenerating
             Module = module;
             Diagnostics = new List<DiagnosticMessage>();
 
-            _bases = new List<CodegenBase>()
+            //FishNet.Runtime does not need to do any of this.
+            if (!FishNetILPP.IsFishNetAssembly(module))
             {
-                new TimeManagerHelper(), new AttributeHelper(), new GeneralHelper(), new GenericReaderHelper()
-                , new GenericWriterHelper(), new ObjectHelper(), new NetworkBehaviourHelper(), new ReaderGenerator()
-                , new ReaderHelper(), new CreatedSyncVarGenerator(), new TransportHelper(), new WriterGenerator()
-                , new WriterHelper(), new NetworkConnectionHelper(), new PredictedObjectHelper(), new GeneratorHelper()
+                _bases = new List<CodegenBase>()
+                {
+                    new TimeManagerHelper(), new AttributeHelper(), new GeneralHelper(), new GenericReaderHelper()
+                    , new GenericWriterHelper(), new ObjectHelper(), new NetworkBehaviourHelper(), new ReaderGenerator()
+                    , new ReaderHelper(), new CreatedSyncVarGenerator(), new TransportHelper(), new WriterGenerator()
+                    , new WriterHelper(), new NetworkConnectionHelper(), new PredictedObjectHelper(), new GeneratorHelper()    
+                    , new CustomSerializerProcessor(), new NetworkBehaviourProcessor(), new QolAttributeProcessor()
+                    , new RpcProcessor(), new NetworkBehaviourSyncProcessor(), new NetworkBehaviourPredictionProcessor()
+                };
 
-                , new CustomSerializerProcessor(), new NetworkBehaviourProcessor(), new QolAttributeProcessor()
-                , new RpcProcessor(), new NetworkBehaviourSyncProcessor(), new NetworkBehaviourPredictionProcessor()
-            };
+                //Initialize and cache all bases.
+                foreach (CodegenBase item in _bases)
+                {
+                    item.Initialize(this);
+                    if (!item.ImportReferences())
+                        return false;
 
-            //Initialize and cache all bases.
-            foreach (CodegenBase item in _bases)
-            {
-                item.Initialize(this);
-                if (!item.ImportReferences())
-                    return false;
-
-                string tName = item.GetType().Name;
-                _basesCache.Add(tName, item);
+                    string tName = item.GetType().Name;
+                    _basesCache.Add(tName, item);
+                }
             }
-
-
+ 
             return true;
         }
 

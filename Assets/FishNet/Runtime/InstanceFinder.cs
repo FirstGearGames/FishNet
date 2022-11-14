@@ -172,6 +172,33 @@ namespace FishNet
         #endregion
 
 
+        #region Registered components
+        /// <summary>
+        /// Invokes a delegate when a specified component becomes registered. Delegate will invoke immediately if already registered.
+        /// </summary>
+        /// <typeparam name="T">Component type.</typeparam>
+        /// <param name="del">Delegate to invoke.</param>
+        public static void InvokeOnInstance<T>(ComponentRegisteredDelegate del) where T : UnityEngine.Component => NetworkManager?.InvokeOnInstance<T>(del);
+        /// <summary>
+        /// Returns class of type if found within CodegenBase classes.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static T GetInstance<T>() where T : UnityEngine.Component => NetworkManager?.GetInstance<T>();
+        /// <summary>
+        /// Registers a new component to this NetworkManager.
+        /// </summary>
+        /// <typeparam name="T">Type to register.</typeparam>
+        /// <param name="component">Reference of the component being registered.</param>
+        /// <param name="replace">True to replace existing references.</param>
+        public static void RegisterInstance<T>(T component, bool replace = true) where T : UnityEngine.Component => NetworkManager?.RegisterInstance<T>(component, replace);
+        /// <summary>
+        /// Unregisters a component from this NetworkManager.
+        /// </summary>
+        /// <typeparam name="T">Type to unregister.</typeparam>
+        public static void UnregisterInstance<T>() where T : UnityEngine.Component => NetworkManager?.UnregisterInstance<T>();
+        #endregion
+
     }
 
 

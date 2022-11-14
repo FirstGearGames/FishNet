@@ -1,4 +1,5 @@
-﻿using MonoFN.Cecil;
+﻿using FishNet.CodeGenerating.Extension;
+using MonoFN.Cecil;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
@@ -15,14 +16,20 @@ namespace FishNet.CodeGenerating.Helping.Extension
         }
 
 
-        public static FieldReference MakeHostGenericIfNeeded(this FieldReference fd, CodegenSession session)
+        public static FieldReference MakeHostGenericIfNeeded(this FieldDefinition fd, CodegenSession session)
         {
-            if (fd.DeclaringType.HasGenericParameters)
-            {
-                return new FieldReference(fd.Name, fd.FieldType, fd.DeclaringType.CachedResolve(session).ConvertToGenericIfNeeded());
-            }
+            TypeReference declaringTr = fd.DeclaringType;
 
-            return fd;
+            if (declaringTr.HasGenericParameters)
+            {
+                GenericInstanceType git = declaringTr.MakeGenericInstanceType();
+                FieldReference result = new FieldReference(fd.Name, fd.FieldType, git);
+                return result;
+            }
+            else
+            {
+                return session.ImportReference(fd);
+            }
         }
 
 

@@ -72,7 +72,7 @@ namespace FishNet.Managing.Client
                 //If not server then deinitialize normally.
                 if (!base.NetworkManager.IsServer)
                 {
-                    base.DespawnSpawnedWithoutSynchronization(false);
+                    base.DespawnWithoutSynchronization(false);
                 }
                 //Otherwise invoke stop callbacks only for client side.
                 else

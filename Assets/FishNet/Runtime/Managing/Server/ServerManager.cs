@@ -361,8 +361,11 @@ namespace FishNet.Managing.Server
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
             //If no servers are started then reset match conditions.
             if (!Started)
+            { 
                 MatchCondition.ClearMatchesWithoutRebuilding();
-
+                //Despawn without synchronizing network objects.
+                Objects.DespawnWithoutSynchronization(true);
+            }
             Objects.OnServerConnectionState(args);
 
             LocalConnectionState state = args.ConnectionState;
@@ -388,8 +391,7 @@ namespace FishNet.Managing.Server
             int maxIdValue = short.MaxValue;
             if (id < 0 || id > maxIdValue)
             {
-                NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
-                NetworkManager.LogError($"The transport you are using supplied an invalid connection Id of {id}. Connection Id values must range between 0 and {maxIdValue}. The client has been disconnected.");
+                Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"The transport you are using supplied an invalid connection Id of {id}. Connection Id values must range between 0 and {maxIdValue}. The client has been disconnected.");
                 return;
             }
             //Valid Id.
@@ -539,9 +541,7 @@ namespace FishNet.Managing.Server
                      * Force an immediate disconnect. */
                     if (!Clients.TryGetValueIL2CPP(args.ConnectionId, out conn))
                     {
-                        if (NetworkManager.CanLog(LoggingType.Common))
-                            Debug.LogError($"ConnectionId {conn.ClientId} not found within Clients. Connection will be kicked immediately.");
-                        NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                        Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"ConnectionId {conn.ClientId} not found within Clients. Connection will be kicked immediately.");
                         return;
                     }
                     conn.SetLastPacketTick(tick);
@@ -551,9 +551,7 @@ namespace FishNet.Managing.Server
                      * does not allow to be called while not authenticated. */
                     if (!conn.Authenticated && packetId != PacketId.Broadcast)
                     {
-                        if (NetworkManager.CanLog(LoggingType.Common))
-                            Debug.LogError($"ConnectionId {conn.ClientId} send a Broadcast without being authenticated. Connection will be kicked immediately.");
-                        conn.Disconnect(true);
+                        conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} send a Broadcast without being authenticated. Connection will be kicked immediately.");
                         return;
                     }
 
@@ -593,19 +591,14 @@ namespace FishNet.Managing.Server
             }
             catch (Exception e)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately. Message: {e.Message}.");
-                //Kick client immediately.
-                NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                Kick(args.ConnectionId, KickReason.MalformedData, LoggingType.Error, $"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately. Message: {e.Message}.");
             }
 #endif
 
             //Kicks connection for exceeding MTU.
             void ExceededMTUKick()
             {
-                NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
-                if (NetworkManager.CanLog(LoggingType.Common))
-                    Debug.Log($"ConnectionId {args.ConnectionId} sent a message larger than allowed amount. Connection will be kicked immediately.");
+                Kick(args.ConnectionId, KickReason.ExploitExcessiveData, LoggingType.Common, $"ConnectionId {args.ConnectionId} sent a message larger than allowed amount. Connection will be kicked immediately.");
             }
 
         }

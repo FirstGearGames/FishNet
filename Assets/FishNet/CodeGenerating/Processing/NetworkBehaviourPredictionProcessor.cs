@@ -10,6 +10,7 @@ using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using SR = System.Reflection;
 
@@ -376,7 +377,7 @@ namespace FishNet.CodeGenerating.Processing
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
                 insts.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
                 /* Create delegate and call NetworkBehaviour method. */
-                insts.Add(processor.Create(OpCodes.Ldnull));
+                insts.Add(processor.Create(OpCodes.Ldarg_0));
                 insts.Add(processor.Create(OpCodes.Ldftn, readerMd));
 
                 MethodReference ctorMr;
@@ -733,11 +734,11 @@ namespace FishNet.CodeGenerating.Processing
 
             void Add(TypeDefinition td, bool replicate)
             {
-                FieldReference fr = td.GetField(DATA_TICK_FIELD_NAME);
+                FieldReference fr = td.GetFieldReference(DATA_TICK_FIELD_NAME, base.Session);
                 if (fr == null)
                 {
-                    FieldDefinition fd = new FieldDefinition(DATA_TICK_FIELD_NAME, FieldAttributes.Public,
-                        base.GetClass<GeneralHelper>().GetTypeReference(typeof(uint)));
+                    TypeReference uintTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(uint));
+                    FieldDefinition fd = new FieldDefinition(DATA_TICK_FIELD_NAME, FieldAttributes.Public, uintTr);
                     td.Fields.Add(fd);
                     fr = base.ImportReference(fd);
                 }

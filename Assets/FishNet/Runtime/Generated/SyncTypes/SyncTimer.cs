@@ -48,6 +48,14 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public float Remaining { get; private set; }
         /// <summary>
+        /// How much time has passed since the timer started.
+        /// </summary>
+        public float Elapsed => (Duration - Remaining);
+        /// <summary>
+        /// Starting duration of the timer.
+        /// </summary>
+        public float Duration { get; private set; }
+        /// <summary>
         /// True if the SyncTimer is currently paused. Calls to Update(float) will be ignored when paused.
         /// </summary>
         public bool Paused { get; private set; }
@@ -80,6 +88,7 @@ namespace FishNet.Object.Synchronizing
                 StopTimer(sendRemainingOnStop);
 
             Remaining = remaining;
+            Duration = remaining;
             AddOperation(SyncTimerOperation.Start, -1f, remaining);
         }
 
@@ -205,7 +214,9 @@ namespace FishNet.Object.Synchronizing
             if (includeOperationByte)
                 w.WriteByte((byte)SyncTimerOperation.Start);
             w.WriteSingle(Remaining);
+            w.WriteSingle(Duration);
         }
+
         /// <summary>
         /// Reads and sets the current values.
         /// </summary>
@@ -220,7 +231,9 @@ namespace FishNet.Object.Synchronizing
                 if (op == SyncTimerOperation.Start)
                 {
                     float next = reader.ReadSingle();
+                    float duration = reader.ReadSingle();
                     Remaining = next;
+                    Duration = duration;
                     InvokeOnChange(op, -1f, next, asServer);
                 }
                 else if (op == SyncTimerOperation.Pause || op == SyncTimerOperation.PauseUpdated
