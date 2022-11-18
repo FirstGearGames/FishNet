@@ -1,4 +1,4 @@
-﻿/* If nested then the nested NB should be sent every tick.
+/* If nested then the nested NB should be sent every tick.
  * This is because if that tick happens to drop then the
  * sent data is now wrong given the parent information is wrong.
  * Once EC is added in we won't have to send every time since
@@ -367,6 +367,10 @@ namespace FishNet.Component.Transforming
         /// </summary>
         /// <param name="axes">Axes to snap.</param>
         public void SetScaleSnapping(SnappedAxes axes) => _scaleSnapping = axes;
+        /// <summary>
+        /// Call to force an instant rate reset. This will instantly teleport the object to their target position and ignore interpolation.
+        /// </summary>
+        public void ForceResync() => forceResync = true;
         #endregion
 
         #region Private.
@@ -451,6 +455,10 @@ namespace FishNet.Component.Transforming
         /// Number of intervals remaining before synchronization.
         /// </summary>
         private short _intervalsRemaining;
+        /// <summary>
+        /// Used to force resync. Acts the same as having Teleport enabled but is only active for one frame.
+        /// </summary>
+        private bool forceResync = false;
         #endregion
 
         #region Const.
@@ -502,7 +510,7 @@ namespace FishNet.Component.Transforming
                 }
             }
 
-            
+
         }
 
         public override void OnStartClient()
@@ -600,7 +608,7 @@ namespace FishNet.Component.Transforming
                     _intervalsRemaining = -1;
             }
 
-            
+
             if (base.IsServer)
                 SendToClients();
             if (base.IsClient)
@@ -999,7 +1007,7 @@ namespace FishNet.Component.Transforming
             }
         }
 
-        
+
 
         /// <summary>
         /// Moves to a GoalData. Automatically determins if to use data from server or client.
@@ -1039,7 +1047,7 @@ namespace FishNet.Component.Transforming
             TransformData td = _currentGoalData.Transforms;
             RateData rd = _currentGoalData.Rates;
 
-            
+
 
             float multiplier = 1f;
             int queueCount = _goalDataQueue.Count;
@@ -1105,16 +1113,16 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-                    
-                        /* If everything matches up then end queue.
-                        * Otherwise let it play out until stuff
-                        * aligns. Generally the time remaining is enough
-                        * but every once in awhile something goes funky
-                        * and it's thrown off. */
-                        if (!HasChanged(td))
-                            _queueReady = false;
-                        OnInterpolationComplete?.Invoke();
-                        
+
+                    /* If everything matches up then end queue.
+                    * Otherwise let it play out until stuff
+                    * aligns. Generally the time remaining is enough
+                    * but every once in awhile something goes funky
+                    * and it's thrown off. */
+                    if (!HasChanged(td))
+                        _queueReady = false;
+                    OnInterpolationComplete?.Invoke();
+
                 }
             }
 
@@ -1430,9 +1438,10 @@ namespace FishNet.Component.Transforming
                 Vector3 lastPosition = prevTd.Position;
                 distance = Vector3.Distance(lastPosition, td.Position);
                 //If distance teleports assume rest do.
-                if (_enableTeleport && distance >= _teleportThreshold)
+                if (forceResync || _enableTeleport && distance >= _teleportThreshold)
                 {
                     SetInstantRates(rd);
+                    forceResync = false;
                     return;
                 }
 
@@ -1526,7 +1535,7 @@ namespace FishNet.Component.Transforming
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-            
+
         }
 
 
@@ -1706,7 +1715,7 @@ namespace FishNet.Component.Transforming
         [TargetRpc]
         private void TargetSetParent(NetworkConnection conn, NetworkBehaviour parent)
         {
-            
+
         }
 
         /// <summary>
@@ -1812,6 +1821,4 @@ namespace FishNet.Component.Transforming
             }
         }
     }
-
-
 }
