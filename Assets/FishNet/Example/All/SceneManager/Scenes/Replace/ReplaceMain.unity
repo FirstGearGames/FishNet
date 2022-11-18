@@ -353,7 +353,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _moveObject: 1
   _moveAllObjects: 0
-  _replaceScenes: 1
+  _replaceOption: 0
   _scenes:
   - ReplaceConnection
   _connectionOnly: 1
@@ -485,7 +485,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _moveObject: 0
   _moveAllObjects: 1
-  _replaceScenes: 1
+  _replaceOption: 0
   _scenes:
   - ReplaceGlobal
   _connectionOnly: 0
@@ -1048,7 +1048,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d3606bfdac5a4743890fc1a5ecd8f24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _autoStartType: 0
+  _autoStartType: 2
   _stoppedColor: {r: 0.25490198, g: 0.25490198, b: 0.25490198, a: 1}
   _changingColor: {r: 0.78431374, g: 0.6862745, b: 0, a: 1}
   _startedColor: {r: 0, g: 0.5882353, b: 0.64705884, a: 1}
@@ -1151,6 +1151,7 @@ GameObject:
   - component: {fileID: 7443408887680269493}
   - component: {fileID: 7443408887680269500}
   - component: {fileID: 7443408887680269501}
+  - component: {fileID: 7443408887680269502}
   m_Layer: 0
   m_Name: 'NetworkManager '
   m_TagString: Untagged
@@ -1175,6 +1176,7 @@ MonoBehaviour:
   _refreshDefaultPrefabs: 1
   _runInBackground: 1
   _dontDestroyOnLoad: 1
+  _objectPool: {fileID: 0}
   _persistence: 0
 --- !u!114 &7443408887680269500
 MonoBehaviour:
@@ -1188,11 +1190,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _updateOrder: 0
+  _allowTickDropping: 0
+  _maximumFrameTicks: 2
   _tickRate: 30
   _pingInterval: 1
   _timingInterval: 2
   _physicsMode: 0
-  _maximumBufferedInputs: 15
 --- !u!114 &7443408887680269501
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1206,13 +1210,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _unreliableMTU: 1023
-  _attackResponseType: 1
   _ipv4BindAddress: 
   _ipv6BindAddress: 
   _port: 7770
   _maximumClients: 4095
   _clientAddress: localhost
   _timeout: 15
+--- !u!114 &7443408887680269502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408887680269498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15895a51081447d46bda466e7e830c08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _sceneProcessor: {fileID: 0}
+  _lightProbeUpdating: 0
+  _moveClientHostObjects: 1
+  _setActiveScene: 1
 --- !u!224 &9208822351047973834
 RectTransform:
   m_ObjectHideFlags: 0

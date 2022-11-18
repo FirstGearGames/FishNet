@@ -1,16 +1,13 @@
 ﻿using FishNet.Managing.Object;
 using FishNet.Object;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityComponent = UnityEngine.Component;
+
 
 namespace FishNet.Managing
 {
-    /// <summary>
-    /// Delegate for InvokeOnInstance.
-    /// </summary>
-    /// <param name="component">Component which must be registered to invoke.</param>
-    public delegate void ComponentRegisteredDelegate(UnityEngine.Component component);
-
     public partial class NetworkManager : MonoBehaviour
     {
         #region Serialized.
@@ -30,11 +27,11 @@ namespace FishNet.Managing
         /// <summary>
         /// Delegates waiting to be invoked when a component is registered.
         /// </summary>
-        private Dictionary<string, List<ComponentRegisteredDelegate>> _pendingInvokes = new Dictionary<string, List<ComponentRegisteredDelegate>>();
+        private Dictionary<string, List<Action<UnityComponent>>> _pendingInvokes = new Dictionary<string, List<Action<UnityComponent>>>();
         /// <summary>
         /// Currently registered components.
         /// </summary>
-        private Dictionary<string, UnityEngine.Component> _registeredComponents = new Dictionary<string, UnityEngine.Component>();
+        private Dictionary<string, UnityComponent> _registeredComponents = new Dictionary<string, UnityComponent>();
         #endregion
 
         /// <summary>
@@ -71,43 +68,59 @@ namespace FishNet.Managing
 
         #region Registered components
         /// <summary>
-        /// Invokes a delegate when a specified component becomes registered. Delegate will invoke immediately if already registered.
+        /// Invokes an action when a specified component becomes registered. Action will invoke immediately if already registered.
         /// </summary>
         /// <typeparam name="T">Component type.</typeparam>
-        /// <param name="del">Delegate to invoke.</param>
-        public void InvokeOnInstance<T>(ComponentRegisteredDelegate del) where T : UnityEngine.Component
+        /// <param name="handler">Action to invoke.</param>
+        public void RegisterInvokeOnInstance<T>(Action<UnityComponent> handler) where T : UnityComponent
         {
-            T result = GetInstance<T>();
+            T result = GetInstance<T>(false);
             //If not found yet make a pending invoke.
             if (result == default(T))
             {
                 string tName = GetInstanceName<T>();
-                List<ComponentRegisteredDelegate> dels;
-                if (!_pendingInvokes.TryGetValue(tName, out dels))
+                List<Action<UnityComponent>> handlers;
+                if (!_pendingInvokes.TryGetValue(tName, out handlers))
                 {
-                    dels = new List<ComponentRegisteredDelegate>();
-                    _pendingInvokes[tName] = dels;
+                    handlers = new List<Action<UnityComponent>>();
+                    _pendingInvokes[tName] = handlers;
                 }
 
-                dels.Add(del);
+                handlers.Add(handler);
             }
             //Already exist, invoke right away.
             else
             {
-                del.Invoke(result);
+                handler.Invoke(result);
             }
+        }
+        /// <summary>
+        /// Removes an action to be invokes when a specified component becomes registered.
+        /// </summary>
+        /// <typeparam name="T">Component type.</typeparam>
+        /// <param name="handler">Action to invoke.</param>
+        public void UnregisterInvokeOnInstance<T>(Action<UnityComponent> handler) where T : UnityComponent
+        {
+            string tName = GetInstanceName<T>();
+            List<Action<UnityComponent>> handlers;
+            if (!_pendingInvokes.TryGetValue(tName, out handlers))
+                return;
+
+            handlers.Remove(handler);
+            //Do not remove pending to prevent garbage collection later on list recreation.
         }
         /// <summary>
         /// Returns class of type if found within CodegenBase classes.
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="warn">True to warn if component is not registered.</param>
         /// <returns></returns>
-        public T GetInstance<T>() where T : UnityEngine.Component
+        public T GetInstance<T>(bool warn = true) where T : UnityComponent
         {
             string tName = GetInstanceName<T>();
-            if (_registeredComponents.TryGetValue(tName, out UnityEngine.Component result))
+            if (_registeredComponents.TryGetValue(tName, out UnityComponent result))
                 return (T)result;
-            else
+            else if (warn)
                 LogWarning($"Component {tName} is not registered.");
 
             return default(T);
@@ -118,7 +131,7 @@ namespace FishNet.Managing
         /// <typeparam name="T">Type to register.</typeparam>
         /// <param name="component">Reference of the component being registered.</param>
         /// <param name="replace">True to replace existing references.</param>
-        public void RegisterInstance<T>(T component, bool replace = true) where T : UnityEngine.Component
+        public void RegisterInstance<T>(T component, bool replace = true) where T : UnityComponent
         {
             string tName = GetInstanceName<T>();
             if (_registeredComponents.ContainsKey(tName) && !replace)
@@ -130,7 +143,7 @@ namespace FishNet.Managing
                 _registeredComponents[tName] = component;
                 RemoveNullPendingDelegates();
                 //If in pending invokes also send these out.
-                if (_pendingInvokes.TryGetValue(tName, out List<ComponentRegisteredDelegate> dels))
+                if (_pendingInvokes.TryGetValue(tName, out List<Action<UnityComponent>> dels))
                 {
                     for (int i = 0; i < dels.Count; i++)
                         dels[i].Invoke(component);
@@ -144,7 +157,7 @@ namespace FishNet.Managing
         /// Unregisters a component from this NetworkManager.
         /// </summary>
         /// <typeparam name="T">Type to unregister.</typeparam>
-        public void UnregisterInstance<T>() where T : UnityEngine.Component
+        public void UnregisterInstance<T>() where T : UnityComponent
         {
             string tName = GetInstanceName<T>();
             _registeredComponents.Remove(tName);
@@ -154,13 +167,13 @@ namespace FishNet.Managing
         /// </summary>
         private void RemoveNullPendingDelegates()
         {
-            foreach (List<ComponentRegisteredDelegate> dels in _pendingInvokes.Values)
+            foreach (List<Action<UnityComponent>> handlers in _pendingInvokes.Values)
             {
-                for (int i = 0; i < dels.Count; i++)
+                for (int i = 0; i < handlers.Count; i++)
                 {
-                    if (dels[i] == null)
+                    if (handlers[i] == null)
                     {
-                        dels.RemoveAt(i);
+                        handlers.RemoveAt(i);
                         i--;
                     }
                 }

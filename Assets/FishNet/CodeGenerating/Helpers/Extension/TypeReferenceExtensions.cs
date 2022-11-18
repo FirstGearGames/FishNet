@@ -32,9 +32,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeReference typeRef, CodegenSession session, bool excludeGenerics = true, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<PropertyDefinition> FindAllSerializableProperties(this TypeReference typeRef, CodegenSession session, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
-            return typeRef.CachedResolve(session).FindAllPublicProperties(session, excludeGenerics, excludedBaseTypes, excludedAssemblyPrefixes);
+            return typeRef.CachedResolve(session).FindAllPublicProperties(session, excludedBaseTypes, excludedAssemblyPrefixes);
         }
 
 
@@ -43,9 +43,10 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        public static IEnumerable<FieldDefinition> FindAllPublicFields(this TypeReference typeRef, CodegenSession session, bool ignoreStatic, bool ignoreNonSerialized, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<FieldDefinition> FindAllSerializableFields(this TypeReference typeRef, CodegenSession session, 
+            System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
-            return typeRef.Resolve().FindAllPublicFields(session, ignoreStatic, ignoreNonSerialized, excludedBaseTypes, excludedAssemblyPrefixes);
+            return typeRef.Resolve().FindAllPublicFields(session, excludedBaseTypes, excludedAssemblyPrefixes);
         }
 
 

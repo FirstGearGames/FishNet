@@ -10,12 +10,13 @@ namespace FishNet.Serializing.Helping
     /// </summary>
     internal class CodegenMakePublicAttribute : Attribute { }
     /// <summary>
-    /// Type will be excluded from codegen.
+    /// Field or type will be excluded from codegen serialization.
     /// </summary>
     public class CodegenExcludeAttribute : Attribute { }
-    ///// <summary>
-    ///// Type will be included in codegen without needing to have any references.
-    ///// </summary>
-    //internal class CodegenIncludeAttribute : Attribute { }
+    /// <summary>
+    /// THIS DOES NOT DO ANYTHING AT THIS TIME.
+    /// It would do -> Type will be included in codegen serialization.
+    /// </summary>
+    internal class CodegenIncludeAttribute : Attribute { }
 
 }

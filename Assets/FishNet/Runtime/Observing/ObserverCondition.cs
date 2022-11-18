@@ -23,7 +23,7 @@ namespace FishNet.Observing
         /// <summary>
         /// True if this condition is enabled.
         /// </summary>
-        private bool _isEnabled;
+        private bool _isEnabled = true;
         /// <summary>
         /// Gets the enabled state of this condition.
         /// </summary>

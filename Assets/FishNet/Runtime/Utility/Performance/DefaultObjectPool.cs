@@ -1,6 +1,7 @@
 using FishNet.Object;
 using FishNet.Utility.Extension;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Utility.Performance
@@ -31,6 +32,7 @@ namespace FishNet.Utility.Performance
         /// <param name="prefabId">PrefabId of the object to return.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override NetworkObject RetrieveObject(int prefabId, bool asServer)
         {
             //Quick exit/normal retrieval when not using pooling.
@@ -40,14 +42,7 @@ namespace FishNet.Utility.Performance
                 return Instantiate(prefab);
             }
 
-            Stack<NetworkObject> cache;
-            //No cache for prefabId yet, make one.
-            if (!_cached.TryGetValueIL2CPP(prefabId, out cache))
-            {
-                cache = new Stack<NetworkObject>();
-                _cached[prefabId] = cache;
-            }
-
+            Stack<NetworkObject> cache = GetOrCreateCache(prefabId);
             NetworkObject nob;
             //Iterate until nob is populated just in case cache entries have been destroyed.
             do
@@ -79,6 +74,7 @@ namespace FishNet.Utility.Performance
         /// <param name="prefabId">PrefabId of the object.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void StoreObject(NetworkObject instantiated, int prefabId, bool asServer)
         {
             //Pooling is not enabled.
@@ -88,16 +84,27 @@ namespace FishNet.Utility.Performance
                 return;
             }
 
+            instantiated.gameObject.SetActive(false);
+            instantiated.ResetForObjectPool();
+            Stack<NetworkObject> cache = GetOrCreateCache(prefabId);
+            cache.Push(instantiated);
+        }
+
+        /// <summary>
+        /// Gets a cache for an id or creates one if does not exist.
+        /// </summary>
+        /// <param name="prefabId"></param>
+        /// <returns></returns>
+        private Stack<NetworkObject> GetOrCreateCache(int prefabId)
+        {
             Stack<NetworkObject> cache;
-            if (!_cached.TryGetValue(prefabId, out cache))
+            //No cache for prefabId yet, make one.
+            if (!_cached.TryGetValueIL2CPP(prefabId, out cache))
             {
                 cache = new Stack<NetworkObject>();
                 _cached[prefabId] = cache;
             }
-
-            instantiated.gameObject.SetActive(false);
-            instantiated.ResetForObjectPool();
-            cache.Push(instantiated);
+            return cache;
         }
     }
 

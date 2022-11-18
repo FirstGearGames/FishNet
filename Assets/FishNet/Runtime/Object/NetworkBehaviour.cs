@@ -99,7 +99,7 @@ namespace FishNet.Object
         {
 #if UNITY_EDITOR
             if (Application.isPlaying)
-                return;
+                return; 
 
             TryAddNetworkObject();
 #endif
@@ -151,7 +151,8 @@ namespace FishNet.Object
             else
                 _addedNetworkObject = transform.root.gameObject.AddComponent<NetworkObject>();
 
-            AlertToDuplicateNetworkObjects(result.transform);
+
+            AlertToDuplicateNetworkObjects(_addedNetworkObject.transform);
             return _addedNetworkObject;
 
             //Removes duplicate network objects from t.

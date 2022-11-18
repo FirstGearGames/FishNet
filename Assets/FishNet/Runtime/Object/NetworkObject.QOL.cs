@@ -290,11 +290,17 @@ namespace FishNet.Object
 
         #region Registered components
         /// <summary>
-        /// Invokes a delegate when a specified component becomes registered. Delegate will invoke immediately if already registered.
+        /// Invokes an action when a specified component becomes registered. Action will invoke immediately if already registered.
         /// </summary>
         /// <typeparam name="T">Component type.</typeparam>
-        /// <param name="del">Delegate to invoke.</param>
-        public void InvokeOnInstance<T>(ComponentRegisteredDelegate del) where T : UnityEngine.Component => NetworkManager.InvokeOnInstance<T>(del);
+        /// <param name="handler">Action to invoke.</param>
+        public void RegisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager.RegisterInvokeOnInstance<T>(handler);
+        /// <summary>
+        /// Removes an action to be invoked when a specified component becomes registered.
+        /// </summary>
+        /// <typeparam name="T">Component type.</typeparam>
+        /// <param name="handler">Action to invoke.</param>
+        public void UnregisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager.UnregisterInvokeOnInstance<T>(handler);
         /// <summary>
         /// Returns class of type if found within CodegenBase classes.
         /// </summary>

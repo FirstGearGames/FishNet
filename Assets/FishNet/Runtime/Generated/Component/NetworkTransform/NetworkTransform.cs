@@ -1285,7 +1285,13 @@ namespace FishNet.Component.Transforming
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ChangedDelta GetChanged(TransformData transformData)
         {
-            return GetChanged(ref transformData.Position, ref transformData.Rotation, ref transformData.Scale, transformData.ParentBehaviour);
+            /* If parent behaviour exist.
+            * Parent isn't sent as a delta so
+            * if it exist always send regardless
+            * of the previously sent transform
+            * data. */
+            NetworkBehaviour parentBehaviour = _parentBehaviour;
+            return GetChanged(ref transformData.Position, ref transformData.Rotation, ref transformData.Scale, parentBehaviour);
         }
         /// <summary>
         /// Gets transform values that have changed against specified proprties.
@@ -1319,7 +1325,6 @@ namespace FishNet.Component.Transforming
             if (scale.z != lastScale.z)
                 changed |= ChangedDelta.ScaleZ;
 
-            //Parent behaviour exist.
             if (parentBehaviour != null)
                 changed |= ChangedDelta.Nested;
 

@@ -19,40 +19,41 @@ namespace FishNet.CodeGenerating.Helping
     internal class GeneralHelper : CodegenBase
     {
         #region Reflection references.
-        internal string CodegenExcludeAttribute_FullName;
-        internal MethodReference Queue_Enqueue_MethodRef;
-        internal MethodReference Queue_get_Count_MethodRef;
-        internal MethodReference Queue_Dequeue_MethodRef;
-        internal MethodReference Queue_Clear_MethodRef;
-        internal TypeReference List_TypeRef;
-        internal MethodReference List_Clear_MethodRef;
-        internal MethodReference List_get_Item_MethodRef;
-        internal MethodReference List_get_Count_MethodRef;
-        internal MethodReference List_Add_MethodRef;
-        internal MethodReference List_RemoveRange_MethodRef;
-        private MethodReference InstanceFinder_NetworkManager_MethodRef;
-        private MethodReference NetworkBehaviour_CanLog_MethodRef;
-        private MethodReference NetworkManager_CanLog_MethodRef;
-        private MethodReference NetworkBehaviour_NetworkManager_MethodRef;
-        private MethodReference NetworkManager_LogCommon_MethodRef;
-        private MethodReference NetworkManager_LogWarning_MethodRef;
-        private MethodReference NetworkManager_LogError_MethodRef;
-        internal MethodReference Debug_LogCommon_MethodRef;
-        internal MethodReference Debug_LogWarning_MethodRef;
-        internal MethodReference Debug_LogError_MethodRef;
-        internal MethodReference Comparers_EqualityCompare_MethodRef;
-        internal MethodReference Comparers_IsDefault_MethodRef;
-        internal MethodReference IsServer_MethodRef;
-        internal MethodReference IsClient_MethodRef;
-        internal MethodReference NetworkObject_Deinitializing_MethodRef;
-        internal MethodReference Application_IsPlaying_MethodRef;
+        public string CodegenExcludeAttribute_FullName;
+        public string CodegenIncludeAttribute_FullName;
+        public MethodReference Queue_Enqueue_MethodRef;
+        public MethodReference Queue_get_Count_MethodRef;
+        public MethodReference Queue_Dequeue_MethodRef;
+        public MethodReference Queue_Clear_MethodRef;
+        public TypeReference List_TypeRef;
+        public MethodReference List_Clear_MethodRef;
+        public MethodReference List_get_Item_MethodRef;
+        public MethodReference List_get_Count_MethodRef;
+        public MethodReference List_Add_MethodRef;
+        public MethodReference List_RemoveRange_MethodRef;
+        public MethodReference InstanceFinder_NetworkManager_MethodRef;
+        public MethodReference NetworkBehaviour_CanLog_MethodRef;
+        public MethodReference NetworkManager_CanLog_MethodRef;
+        public MethodReference NetworkBehaviour_NetworkManager_MethodRef;
+        public MethodReference NetworkManager_LogCommon_MethodRef;
+        public MethodReference NetworkManager_LogWarning_MethodRef;
+        public MethodReference NetworkManager_LogError_MethodRef;
+        public MethodReference Debug_LogCommon_MethodRef;
+        public MethodReference Debug_LogWarning_MethodRef;
+        public MethodReference Debug_LogError_MethodRef;
+        public MethodReference Comparers_EqualityCompare_MethodRef;
+        public MethodReference Comparers_IsDefault_MethodRef;
+        public MethodReference IsServer_MethodRef;
+        public MethodReference IsClient_MethodRef;
+        public MethodReference NetworkObject_Deinitializing_MethodRef;
+        public MethodReference Application_IsPlaying_MethodRef;
+        public string NonSerialized_Attribute_FullName;
+        public string Single_FullName;
         private Dictionary<Type, TypeReference> _importedTypeReferences = new Dictionary<Type, TypeReference>();
         private Dictionary<FieldDefinition, FieldReference> _importedFieldReferences = new Dictionary<FieldDefinition, FieldReference>();
         private Dictionary<MethodReference, MethodDefinition> _methodReferenceResolves = new Dictionary<MethodReference, MethodDefinition>();
         private Dictionary<TypeReference, TypeDefinition> _typeReferenceResolves = new Dictionary<TypeReference, TypeDefinition>();
         private Dictionary<FieldReference, FieldDefinition> _fieldReferenceResolves = new Dictionary<FieldReference, FieldDefinition>();
-        private string NonSerialized_Attribute_FullName;
-        private string Single_FullName;
         #endregion
 
         #region Const.
@@ -69,6 +70,7 @@ namespace FishNet.CodeGenerating.Helping
             Single_FullName = typeof(float).FullName;
 
             CodegenExcludeAttribute_FullName = typeof(CodegenExcludeAttribute).FullName;
+            CodegenIncludeAttribute_FullName = typeof(CodegenIncludeAttribute).FullName;
 
             tmpType = typeof(Queue<>);
             base.ImportReference(tmpType);
@@ -319,6 +321,20 @@ namespace FishNet.CodeGenerating.Helping
         }
 
         /// <summary>
+        /// Returns if type uses CodegenIncludeAttribute.
+        /// </summary>
+        internal bool CodegenInclude(FieldDefinition fieldDef)
+        {
+            foreach (CustomAttribute item in fieldDef.CustomAttributes)
+            {
+                if (item.AttributeType.FullName == CodegenIncludeAttribute_FullName)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Returns if type uses CodegenExcludeAttribute.
         /// </summary>
         internal bool CodegenExclude(PropertyDefinition propDef)
@@ -326,6 +342,21 @@ namespace FishNet.CodeGenerating.Helping
             foreach (CustomAttribute item in propDef.CustomAttributes)
             {
                 if (item.AttributeType.FullName == CodegenExcludeAttribute_FullName)
+                    return true;
+            }
+
+            return false;
+        }
+
+
+        /// <summary>
+        /// Returns if type uses CodegenExcludeAttribute.
+        /// </summary>
+        internal bool CodegenInclude(PropertyDefinition propDef)
+        {
+            foreach (CustomAttribute item in propDef.CustomAttributes)
+            {
+                if (item.AttributeType.FullName == CodegenIncludeAttribute_FullName)
                     return true;
             }
 

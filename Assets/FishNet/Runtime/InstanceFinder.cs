@@ -8,6 +8,7 @@ using FishNet.Managing.Statistic;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using FishNet.Utility;
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -171,14 +172,19 @@ namespace FishNet
         private static NetworkManager _networkManager;
         #endregion
 
-
         #region Registered components
         /// <summary>
-        /// Invokes a delegate when a specified component becomes registered. Delegate will invoke immediately if already registered.
+        /// Registers to invoke an action when a specified component becomes registered. Action will invoke immediately if already registered.
         /// </summary>
         /// <typeparam name="T">Component type.</typeparam>
-        /// <param name="del">Delegate to invoke.</param>
-        public static void InvokeOnInstance<T>(ComponentRegisteredDelegate del) where T : UnityEngine.Component => NetworkManager?.InvokeOnInstance<T>(del);
+        /// <param name="handler">Action to invoke.</param>
+        public static void RegisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager?.RegisterInvokeOnInstance<T>(handler);
+        /// <summary>
+        /// Unrgisters to invoke an action when a specified component becomes registered. Action will invoke immediately if already registered.
+        /// </summary>
+        /// <typeparam name="T">Component type.</typeparam>
+        /// <param name="handler">Action to invoke.</param>
+        public static void UnregisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager?.UnregisterInvokeOnInstance<T>(handler);
         /// <summary>
         /// Returns class of type if found within CodegenBase classes.
         /// </summary>

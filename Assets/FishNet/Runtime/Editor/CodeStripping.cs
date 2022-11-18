@@ -113,6 +113,6 @@ namespace FishNet.Configuring
                 BuildingEnded();
         }
 #endif
-        }
+    }
 
 }

@@ -30,8 +30,11 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="variable"></param>
         /// <returns></returns>
-        public static IEnumerable<FieldDefinition> FindAllPublicFields(this TypeDefinition typeDef, CodegenSession session, bool ignoreStatic, bool ignoreNonSerialized, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<FieldDefinition> FindAllPublicFields(this TypeDefinition typeDef, CodegenSession session
+            , System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
+
+            GeneralHelper gh = session.GetClass<GeneralHelper>();
             while (typeDef != null)
             {
                 if (IsExcluded(typeDef, excludedBaseTypes, excludedAssemblyPrefixes))
@@ -39,13 +42,13 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
                 foreach (FieldDefinition fd in typeDef.Fields)
                 {
-                    if (ignoreStatic && fd.IsStatic)
+                    if (fd.IsStatic)
+                        continue;
+                    if (fd.IsNotSerialized)
+                        continue;
+                    if (gh.CodegenExclude(fd))
                         continue;
                     if (fd.IsPrivate)
-                        continue;
-                    if (ignoreNonSerialized && fd.IsNotSerialized)
-                        continue;
-                    if (session.GetClass<GeneralHelper>().CodegenExclude(fd))
                         continue;
 
                     yield return fd;
@@ -61,8 +64,10 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeDefinition typeDef, CodegenSession session, bool excludeGenerics = true, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeDefinition typeDef, CodegenSession session
+            , System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
+            GeneralHelper gh = session.GetClass<GeneralHelper>();
             while (typeDef != null)
             {
                 if (IsExcluded(typeDef, excludedBaseTypes, excludedAssemblyPrefixes))
@@ -73,12 +78,13 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     //Missing get or set method.
                     if (pd.GetMethod == null || pd.SetMethod == null)
                         continue;
-                    //Get or set is private.
-                    if (pd.GetMethod.IsPrivate || pd.SetMethod.IsPrivate)
+                    if (gh.CodegenExclude(pd))
                         continue;
-                    if (excludeGenerics && pd.GetMethod.ReturnType.IsGenericParameter)
+                    if (pd.GetMethod.IsPrivate)
                         continue;
-                    if (session.GetClass<GeneralHelper>().CodegenExclude(pd))
+                    if (pd.SetMethod.IsPrivate)
+                        continue;
+                    if (pd.GetMethod.ReturnType.IsGenericParameter)
                         continue;
 
                     yield return pd;
@@ -87,8 +93,6 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 try { typeDef = typeDef.BaseType?.CachedResolve(session); }
                 catch { break; }
             }
-
-
         }
 
         /// <summary>

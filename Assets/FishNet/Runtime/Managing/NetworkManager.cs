@@ -19,6 +19,7 @@ using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using FishNet.Managing.Statistic;
 using FishNet.Utility.Performance;
+using FishNet.Component.ColliderRollback;
 #if UNITY_EDITOR
 using FishNet.Editing.PrefabCollectionGenerator;
 #endif
@@ -267,15 +268,19 @@ namespace FishNet.Managing
             SpawnablePrefabs.InitializePrefabRange(0);
             SetDontDestroyOnLoad();
             SetRunInBackground();
-            AddDebugManager();
-            AddTransportManager();
-            AddServerAndClientManagers();
-            AddTimeManager();
-            AddSceneManager();
-            AddObserverManager();
-            AddRollbackManager();
-            AddStatisticsManager();
-            AddObjectPool();
+            DebugManager = GetOrCreateComponent<DebugManager>();
+            TransportManager = GetOrCreateComponent<TransportManager>();
+
+            ServerManager = GetOrCreateComponent<ServerManager>();
+            ClientManager = GetOrCreateComponent<ClientManager>();
+            TimeManager = GetOrCreateComponent<TimeManager>();
+            SceneManager = GetOrCreateComponent<SceneManager>();
+            ObserverManager = GetOrCreateComponent<ObserverManager>();
+            RollbackManager = GetOrCreateComponent<RollbackManager>();
+            StatisticsManager = GetOrCreateComponent<StatisticsManager>();
+            if (_objectPool == null)
+                _objectPool = GetOrCreateComponent<DefaultObjectPool>();
+
             InitializeComponents();
 
             _instances.Add(this);
@@ -437,105 +442,20 @@ namespace FishNet.Managing
             Application.runInBackground = _runInBackground;
         }
 
-
         /// <summary>
-        /// Adds DebugManager.
+        /// Gets a component, creating and adding it if it does not exist.
         /// </summary>
-        private void AddDebugManager()
+        /// <param name="presetValue">Value which may already be set. When not null this is returned instead.</param>
+        private T GetOrCreateComponent<T>(T presetValue = null) where T : UnityEngine.Component
         {
-            if (gameObject.TryGetComponent<DebugManager>(out DebugManager result))
-                DebugManager = result;
+            //If already set then return set value.
+            if (presetValue != null)
+                return presetValue;
+
+            if (gameObject.TryGetComponent<T>(out T result))
+                return result;
             else
-                DebugManager = gameObject.AddComponent<DebugManager>();
-        }
-
-        /// <summary>
-        /// Adds TransportManager.
-        /// </summary>
-        private void AddTransportManager()
-        {
-            if (gameObject.TryGetComponent<TransportManager>(out TransportManager result))
-                TransportManager = result;
-            else
-                TransportManager = gameObject.AddComponent<TransportManager>();
-        }
-
-        /// <summary>
-        /// Adds TimeManager.
-        /// </summary>
-        private void AddTimeManager()
-        {
-            if (gameObject.TryGetComponent<TimeManager>(out TimeManager result))
-                TimeManager = result;
-            else
-                TimeManager = gameObject.AddComponent<TimeManager>();
-        }
-
-
-        /// <summary>
-        /// Adds SceneManager.
-        /// </summary>
-        private void AddSceneManager()
-        {
-            if (gameObject.TryGetComponent<SceneManager>(out SceneManager result))
-                SceneManager = result;
-            else
-                SceneManager = gameObject.AddComponent<SceneManager>();
-        }
-
-        /// <summary>
-        /// Adds ObserverManager.
-        /// </summary>
-        private void AddObserverManager()
-        {
-            if (gameObject.TryGetComponent<ObserverManager>(out ObserverManager result))
-                ObserverManager = result;
-            else
-                ObserverManager = gameObject.AddComponent<ObserverManager>();
-        }
-
-        /// <summary>
-        /// Adds StatisticsManager
-        /// </summary>
-        private void AddStatisticsManager()
-        {
-            if (gameObject.TryGetComponent<StatisticsManager>(out StatisticsManager result))
-                StatisticsManager = result;
-            else
-                StatisticsManager = gameObject.AddComponent<StatisticsManager>();
-        }
-
-        /// <summary>
-        /// Adds DefaultObjectPool if no ObjectPool is specified.
-        /// </summary>
-        private void AddObjectPool()
-        {
-            if (_objectPool == null)
-            {
-                if (gameObject.TryGetComponent<DefaultObjectPool>(out DefaultObjectPool result))
-                    _objectPool = result;
-                else
-                    _objectPool = gameObject.AddComponent<DefaultObjectPool>();
-            }
-        }
-
-
-        /// <summary>
-        /// Adds and assigns NetworkServer and NetworkClient if they are not already setup.
-        /// </summary>
-        private void AddServerAndClientManagers()
-        {
-            //Add servermanager.
-            if (gameObject.TryGetComponent<ServerManager>(out ServerManager sm))
-                ServerManager = sm;
-            else
-                ServerManager = gameObject.AddComponent<ServerManager>();
-
-            //Add clientmanager.
-            if (gameObject.TryGetComponent<ClientManager>(out ClientManager cm))
-                ClientManager = cm;
-            else
-                ClientManager = gameObject.AddComponent<ClientManager>();
+                return gameObject.AddComponent<T>();
         }
 
         /// <summary>

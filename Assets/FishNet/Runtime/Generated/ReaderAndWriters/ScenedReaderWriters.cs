@@ -38,6 +38,7 @@ namespace FishNet.Runtime
             else
             {
                 writer.WriteBoolean(false);
+                writer.WriteByte((byte)value.ScopeType);
                 ScenedReadersAndWriters.Write___FishNetu002EManagingu002EScenedu002EDatau002ESceneLoadData(writer, value.SceneLoadData);
                 ScenedReadersAndWriters.Write___Systemu002EStringu005Bu005D(writer, value.GlobalScenes);
             }
@@ -175,6 +176,7 @@ namespace FishNet.Runtime
                 return (LoadQueueData)null;
             return new LoadQueueData()
             {
+                ScopeType = (SceneScopeType)reader.ReadByte(),
                 SceneLoadData = ScenedReadersAndWriters.Read___FishNetu002EManagingu002EScenedu002EDatau002ESceneLoadData(reader),
                 GlobalScenes = ScenedReadersAndWriters.Read___Systemu002EStringu005Bu005D(reader)
             };

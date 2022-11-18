@@ -233,15 +233,15 @@ namespace FishNet.CodeGenerating.Helping
                 objectTr = base.ImportReference(objectTr.CachedResolve(base.Session));
 
             //Fields
-            foreach (FieldDefinition fieldDef in objectTr.FindAllPublicFields(base.Session, true, true))//, WriterHelper.EXCLUDED_AUTO_SERIALIZER_TYPES))
+            foreach (FieldDefinition fieldDef in objectTr.FindAllSerializableFields(base.Session))//, WriterHelper.EXCLUDED_AUTO_SERIALIZER_TYPES))
             {
                 if (GetWriteMethod(fieldDef.FieldType, out MethodReference writeMr))
                     base.GetClass<WriterHelper>().CreateWrite(writerMd, valuePd, fieldDef, writeMr);
             }
 
             //Properties.
-            foreach (PropertyDefinition propertyDef in objectTr.FindAllPublicProperties(base.Session,
-                true, WriterHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, WriterHelper.EXCLUDED_ASSEMBLY_PREFIXES))
+            foreach (PropertyDefinition propertyDef in objectTr.FindAllSerializableProperties(base.Session
+                , WriterHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, WriterHelper.EXCLUDED_ASSEMBLY_PREFIXES))
             {
                 if (GetWriteMethod(propertyDef.PropertyType, out MethodReference writerMr))
                 {

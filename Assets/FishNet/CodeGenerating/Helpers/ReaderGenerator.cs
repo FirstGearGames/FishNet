@@ -435,8 +435,8 @@ namespace FishNet.CodeGenerating.Helping
                 objectTr = base.ImportReference(objectTr.CachedResolve(base.Session));
 
             //Fields.
-            foreach (FieldDefinition fieldDef in objectTr.FindAllPublicFields(base.Session, true, true,
-                ReaderHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderHelper.EXCLUDED_ASSEMBLY_PREFIXES))
+            foreach (FieldDefinition fieldDef in objectTr.FindAllSerializableFields(base.Session
+                , ReaderHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderHelper.EXCLUDED_ASSEMBLY_PREFIXES))
             {
                 FieldReference importedFr = base.ImportReference(fieldDef);
                 if (GetReadMethod(fieldDef.FieldType, out MethodReference readMr))
@@ -444,8 +444,8 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             //Properties.
-            foreach (PropertyDefinition propertyDef in objectTr.FindAllPublicProperties(base.Session,
-                true, ReaderHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderHelper.EXCLUDED_ASSEMBLY_PREFIXES))
+            foreach (PropertyDefinition propertyDef in objectTr.FindAllSerializableProperties(base.Session
+                , ReaderHelper.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderHelper.EXCLUDED_ASSEMBLY_PREFIXES))
             {
                 if (GetReadMethod(propertyDef.PropertyType, out MethodReference readMr))
                 {
