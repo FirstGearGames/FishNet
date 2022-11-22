@@ -936,6 +936,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 //Call method.
                 MethodReference writerMr = base.ImportReference(createdRpcs[0].WriterMethodDef);
                 processor.Emit(OpCodes.Call, writerMr);
+
+                AddRunLocally(createdRpcs[0]);
             }
             //More than one which means it's an observer/targetRpc combo.
             else

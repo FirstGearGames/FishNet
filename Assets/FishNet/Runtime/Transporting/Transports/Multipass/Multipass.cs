@@ -1,5 +1,4 @@
 using FishNet.Managing;
-using FishNet.Managing.Logging;
 using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
@@ -278,7 +277,7 @@ namespace FishNet.Transporting.Multipass
             if (!GetTransportIdData(connectionId, out data))
                 return RemoteConnectionState.Stopped;
 
-            return _transports[data.TransportIndex].GetConnectionState(connectionId);
+            return _transports[data.TransportIndex].GetConnectionState(data.TransportId);
         }
         /// <summary>
         /// Gets the current ConnectionState of a remote client on the server of the transport on index.
@@ -881,7 +880,7 @@ namespace FishNet.Transporting.Multipass
             if (!GetTransportIdData(connectionId, out data))
                 return false;
 
-            return _transports[data.TransportIndex].StopConnection(connectionId, immediately);
+            return _transports[data.TransportIndex].StopConnection(data.TransportId, immediately);
         }
         #endregion
         #endregion
