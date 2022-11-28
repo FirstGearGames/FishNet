@@ -221,7 +221,7 @@ namespace FishNet.Component.Prediction
 
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;
-                    SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, rbData.SimulatedScene);
+                    SceneManager.MoveGameObjectToScene(rb.gameObject, rbData.SimulatedScene);
                     rb.transform.SetParent(rbData.Parent);
                     return true;
                 }
@@ -248,7 +248,7 @@ namespace FishNet.Component.Prediction
 
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;
-                    SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, rbData.SimulatedScene);
+                    SceneManager.MoveGameObjectToScene(rb.gameObject, rbData.SimulatedScene);
                     rb.transform.SetParent(rbData.Parent);
                     return true;
                 }
