@@ -51,6 +51,7 @@ namespace FishNet.Component.Prediction
                 Velocity = rb.velocity;
                 AngularVelocity = rb.angularVelocity;
                 SimulatedScene = rb.gameObject.scene;
+                Parent = rb.transform.parent;
             }
         }
         /// <summary>
@@ -94,6 +95,7 @@ namespace FishNet.Component.Prediction
                 Velocity = rb.velocity;
                 AngularVelocity = rb.angularVelocity;
                 SimulatedScene = rb.gameObject.scene;
+                Parent = rb.transform.parent;
             }
         }
         #endregion
