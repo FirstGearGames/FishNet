@@ -31,6 +31,10 @@ namespace FishNet.Component.Prediction
             /// Scene of this rigidbody when being set kinematic.
             /// </summary>
             public Scene SimulatedScene;
+            /// <summary>
+            /// Cached parent of the 
+            /// </summary>
+            public Transform Parent;
 
             public RigidbodyData(Rigidbody rb)
             {
@@ -39,6 +43,7 @@ namespace FishNet.Component.Prediction
                 Velocity = Vector3.zero;
                 AngularVelocity = Vector3.zero;
                 SimulatedScene = rb.gameObject.scene;
+                Parent = rb.transform.parent;
             }
 
             public void Update(Rigidbody rb)
@@ -69,6 +74,10 @@ namespace FishNet.Component.Prediction
             /// Scene of this rigidbody when being set kinematic.
             /// </summary>
             public Scene SimulatedScene;
+            /// <summary>
+            /// Cached parent of the 
+            /// </summary>
+            public Transform Parent;
 
             public Rigidbody2DData(Rigidbody2D rb)
             {
@@ -77,6 +86,7 @@ namespace FishNet.Component.Prediction
                 Velocity = Vector2.zero;
                 AngularVelocity = 0f;
                 SimulatedScene = rb.gameObject.scene;
+                Parent = rb.transform.parent;
             }
 
             public void Update(Rigidbody2D rb)
@@ -210,6 +220,7 @@ namespace FishNet.Component.Prediction
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;
                     SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, rbData.SimulatedScene);
+                    rb.transform.SetParent(rbData.Parent);
                     return true;
                 }
             }
@@ -236,6 +247,7 @@ namespace FishNet.Component.Prediction
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;
                     SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, rbData.SimulatedScene);
+                    rb.transform.SetParent(rbData.Parent);
                     return true;
                 }
             }
@@ -275,7 +287,9 @@ namespace FishNet.Component.Prediction
 
                     rbData.Update(rb);
                     _rigidbodyDatas[index] = rbData;
-                    SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, kinematicScene);
+
+                    rb.transform.SetParent(null);
+                    SceneManager.MoveGameObjectToScene(rb.gameObject, kinematicScene);
                     return true;
                 }
             }
@@ -301,7 +315,8 @@ namespace FishNet.Component.Prediction
 
                     rbData.Update(rb);
                     _rigidbody2dDatas[index] = rbData;
-                    SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, kinematicScene);
+                    rb.transform.SetParent(null);
+                    SceneManager.MoveGameObjectToScene(rb.gameObject, kinematicScene);
                     return true;
                 }
             }
