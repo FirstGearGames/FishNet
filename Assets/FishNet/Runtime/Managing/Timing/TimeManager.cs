@@ -622,6 +622,8 @@ namespace FishNet.Managing.Timing
         /// <param name="enabled"></param>
         public void SetPhysicsMode(PhysicsMode mode)
         {
+            _physicsMode = mode;
+            
             //Disable.
             if (mode == PhysicsMode.Disabled || mode == PhysicsMode.TimeManager)
             {
