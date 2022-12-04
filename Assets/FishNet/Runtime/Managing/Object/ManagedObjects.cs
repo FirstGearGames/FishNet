@@ -344,10 +344,7 @@ namespace FishNet.Managing.Object
         {
             NetworkObject r;
             if (!Spawned.TryGetValueIL2CPP(objectId, out r))
-            {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Spawned NetworkObject not found for ObjectId {objectId}.");
-            }
+                NetworkManager.LogError($"Spawned NetworkObject not found for ObjectId {objectId}.");
 
             return r;
         }
@@ -381,8 +378,7 @@ namespace FishNet.Managing.Object
                 /* Default logging for server is errors only. Use error on client and warning
                  * on servers to reduce chances of allocation attacks. */
 #if DEVELOPMENT_BUILD || UNITY_EDITOR || !UNITY_SERVER
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError(msg);
+                NetworkManager.LogError(msg);
 #else
                 if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning(msg);

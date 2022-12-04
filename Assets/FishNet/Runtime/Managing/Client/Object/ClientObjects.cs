@@ -76,7 +76,7 @@ namespace FishNet.Managing.Client
                 }
                 //Otherwise invoke stop callbacks only for client side.
                 else
-                {                    
+                {
                     foreach (NetworkObject n in Spawned.Values)
                         n.InvokeStopCallbacks(false);
                 }
@@ -160,14 +160,9 @@ namespace FishNet.Managing.Client
             NetworkObject nob = reader.ReadNetworkObject();
             NetworkConnection newOwner = reader.ReadNetworkConnection();
             if (nob != null)
-            {
                 nob.GiveOwnership(newOwner, false);
-            }
             else
-            {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkBehaviour could not be found when trying to parse OwnershipChange packet.");
-            }
+                NetworkManager.LogWarning($"NetworkBehaviour could not be found when trying to parse OwnershipChange packet.");
         }
 
         /// <summary>
@@ -463,8 +458,7 @@ namespace FishNet.Managing.Client
             //If still null, that's not good.
             if (rootNob == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Nested spawned object with componentIndex of {componentIndex} and a parentId of {rootObjectId} could not be spawned because parent was not found.");
+                NetworkManager.LogError($"Nested spawned object with componentIndex of {componentIndex} and a parentId of {rootObjectId} could not be spawned because parent was not found.");
                 return null;
             }
 
@@ -482,8 +476,7 @@ namespace FishNet.Managing.Client
             //If child nob was not found.
             if (nob == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Nested spawned object with componentIndex of {componentIndex} could not be found as a child NetworkObject of {rootNob.name}.");
+                NetworkManager.LogError($"Nested spawned object with componentIndex of {componentIndex} could not be found as a child NetworkObject of {rootNob.name}.");
                 return null;
             }
 
@@ -512,8 +505,7 @@ namespace FishNet.Managing.Client
             //Not found in scene objects. Shouldn't ever happen.
             else
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"SceneId of {sceneId} not found in SceneObjects. This may occur if your scene differs between client and server, if client does not have the scene loaded, or if networked scene objects do not have a SceneCondition. See ObserverManager in the documentation for more on conditions.");
+                NetworkManager.LogError($"SceneId of {sceneId} not found in SceneObjects. This may occur if your scene differs between client and server, if client does not have the scene loaded, or if networked scene objects do not have a SceneCondition. See ObserverManager in the documentation for more on conditions.");
                 return null;
             }
         }
@@ -525,8 +517,7 @@ namespace FishNet.Managing.Client
         {
             if (cnob.PrefabId == null)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"PrefabId for {cnob.ObjectId} is null. Object will not spawn.");
+                NetworkManager.LogError($"PrefabId for {cnob.ObjectId} is null. Object will not spawn.");
                 return null;
             }
 
@@ -536,8 +527,7 @@ namespace FishNet.Managing.Client
 
             if (prefabId == -1)
             {
-                if (networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Spawned object has an invalid prefabId. Make sure all objects which are being spawned over the network are within SpawnableObjects on the NetworkManager.");
+                NetworkManager.LogError($"Spawned object has an invalid prefabId. Make sure all objects which are being spawned over the network are within SpawnableObjects on the NetworkManager.");
             }
             else
             {

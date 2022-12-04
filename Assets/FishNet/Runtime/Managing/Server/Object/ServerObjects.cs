@@ -240,8 +240,7 @@ namespace FishNet.Managing.Server
             //Either something went wrong or user actually managed to spawn ~32K networked objects.
             if (_objectIdCache.Count == 0)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"No more available ObjectIds. How the heck did you manage to have {short.MaxValue} objects spawned at once?");
+                base.NetworkManager.LogError($"No more available ObjectIds. How the heck did you manage to have {short.MaxValue} objects spawned at once?");
                 return -1;
             }
             else
@@ -380,37 +379,31 @@ namespace FishNet.Managing.Server
         {
             if (!NetworkManager.ServerManager.Started)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning("Cannot spawn object because the server is not active.");
+                base.NetworkManager.LogWarning("Cannot spawn object because the server is not active.");
                 return;
             }
             if (networkObject == null)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Specified networkObject is null.");
+                base.NetworkManager.LogError($"Specified networkObject is null.");
                 return;
             }
             if (!networkObject.gameObject.scene.IsValid())
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
+                base.NetworkManager.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
                 return;
             }
             if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+                base.NetworkManager.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
             }
             if (networkObject.IsSpawned)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"{networkObject.name} is already spawned.");
+                base.NetworkManager.LogWarning($"{networkObject.name} is already spawned.");
                 return;
             }
             if (networkObject.ParentNetworkObject != null && !networkObject.ParentNetworkObject.IsSpawned)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"{networkObject.name} cannot be spawned because it has a parent NetworkObject {networkObject.ParentNetworkObject} which is not spawned.");
+                base.NetworkManager.LogError($"{networkObject.name} cannot be spawned because it has a parent NetworkObject {networkObject.ParentNetworkObject} which is not spawned.");
                 return;
             }
 
@@ -576,8 +569,8 @@ namespace FishNet.Managing.Server
                                 /* Only log if pNob exist. Otherwise this would print if the user 
                                  * was parenting any object, which may not be desirable as they could be
                                  * simply doing it for organization reasons. */
-                                if (!isNull && base.NetworkManager.CanLog(LoggingType.Warning))
-                                    Debug.LogWarning($"Parent {t.name} is not spawned. {nob.name} will not have it's parent sent in the spawn message.");
+                                if (!isNull)
+                                    base.NetworkManager.LogWarning($"Parent {t.name} is not spawned. {nob.name} will not have it's parent sent in the spawn message.");
                                 return false;
                             }
 

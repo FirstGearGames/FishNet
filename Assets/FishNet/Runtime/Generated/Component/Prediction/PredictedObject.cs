@@ -314,6 +314,8 @@ namespace FishNet.Component.Prediction
             //Not owner nor server, initialize spectator smoother if using rigidbodies.
             else if (_predictionType != PredictionType.Other)
                 InitializeSmoother(false);
+
+            Rigidbodies_OnOwnershipClient(prevOwner);
         }
 
         public override void OnStopClient()

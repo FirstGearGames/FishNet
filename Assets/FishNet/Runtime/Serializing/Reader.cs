@@ -843,8 +843,7 @@ namespace FishNet.Serializing
             {
                 if (componentIndex >= nob.NetworkBehaviours.Length)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name} [id {nob.ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
+                    NetworkManager.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name} [id {nob.ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
                     result = null;
                 }
                 else
@@ -942,8 +941,7 @@ namespace FishNet.Serializing
                     //Only server and not found.
                     else
                     {
-                        if (NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"Unable to find connection for read Id {value}. An empty connection will be returned.");
+                        NetworkManager.LogWarning($"Unable to find connection for read Id {value}. An empty connection will be returned.");
                         return FishNet.Managing.NetworkManager.EmptyConnection;
                     }
                 }
@@ -979,14 +977,12 @@ namespace FishNet.Serializing
             * than what bytes are available. */
             if (size < -1)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Size of {size} is invalid.");
+                NetworkManager.LogError($"Size of {size} is invalid.");
                 return false;
             }
             if (size > Remaining)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Read size of {size} is larger than remaining data of {Remaining}.");
+                NetworkManager.LogError($"Read size of {size} is larger than remaining data of {Remaining}.");
                 return false;
             }
 

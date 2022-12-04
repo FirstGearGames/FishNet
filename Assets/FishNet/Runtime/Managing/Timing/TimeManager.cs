@@ -25,6 +25,20 @@ namespace FishNet.Managing.Timing
     public sealed partial class TimeManager : MonoBehaviour
     {
         #region Types.
+        /// <summary>
+        /// How networking timing is performed.
+        /// </summary>
+        private enum TimingType
+        {
+            /// <summary>
+            /// Send and read data on tick.
+            /// </summary>
+            Tick = 0,
+            /// <summary>
+            /// Send and read data as soon as possible. This does not include built-in components, which will still run on tick.
+            /// </summary>
+            Variable = 1
+        }
         private enum UpdateOrder : byte
         {
             BeforeTick = 0,
@@ -184,6 +198,12 @@ namespace FishNet.Managing.Timing
         [SerializeField]
         private UpdateOrder _updateOrder = UpdateOrder.BeforeTick;
         /// <summary>
+        /// Timing for sending and receiving data.
+        /// </summary>
+        [Tooltip("Timing for sending and receiving data.")]
+        [SerializeField]
+        private TimingType _timingType = TimingType.Tick;
+        /// <summary>
         /// While true clients may drop local ticks if their devices are unable to maintain the tick rate.
         /// This could result in a temporary desynchronization but will prevent the client falling further behind on ticks by repeatedly running the logic cycle multiple times per frame.
         /// </summary>
@@ -236,17 +256,6 @@ namespace FishNet.Managing.Timing
         /// How to perform physics.
         /// </summary>
         public PhysicsMode PhysicsMode => _physicsMode;
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        //[Tooltip("Maximum number of buffered inputs which will be accepted from client before old inputs are discarded.")]
-        //[Range(1, 100)]
-        //[SerializeField]
-        //private byte _maximumBufferedInputs = 15;
-        ///// <summary>
-        ///// Maximum number of buffered inputs which will be accepted from client before old inputs are discarded.
-        ///// </summary>
-        //public byte MaximumBufferedInputs => _maximumBufferedInputs;
         #endregion
 
         #region Private.
@@ -590,10 +599,8 @@ namespace FishNet.Managing.Timing
                 {
                     //If at least one time manager is already running manual physics.
                     if (_manualPhysics > 0)
-                    {
-                        if (_networkManager.CanLog(LoggingType.Error))
-                            Debug.LogError($"There are multiple TimeManagers instantiated which are using manual physics. Manual physics with multiple TimeManagers is not supported.");
-                    }
+                        _networkManager.LogError($"There are multiple TimeManagers instantiated which are using manual physics. Manual physics with multiple TimeManagers is not supported.");
+
                     _manualPhysics++;
                 }
 
@@ -622,6 +629,8 @@ namespace FishNet.Managing.Timing
         /// <param name="enabled"></param>
         public void SetPhysicsMode(PhysicsMode mode)
         {
+            _physicsMode = mode;
+
             //Disable.
             if (mode == PhysicsMode.Disabled || mode == PhysicsMode.TimeManager)
             {
@@ -739,47 +748,61 @@ namespace FishNet.Managing.Timing
                     _elapsedTickTime = (timePerSimulation * (double)_maximumFrameTicks);
             }
 
-            while (_elapsedTickTime >= timePerSimulation)
-            {
-                _elapsedTickTime -= timePerSimulation;
+            bool variableTiming = (_timingType == TimingType.Variable);
+            bool frameTicked = FrameTicked;
 
-                OnPreTick?.Invoke();
+            do
+            {
+                if (frameTicked)
+                {
+                    _elapsedTickTime -= timePerSimulation;
+                    OnPreTick?.Invoke();
+                }
+
                 /* This has to be called inside the loop because
                  * OnPreTick promises data hasn't been read yet.
                  * Therefor iterate must occur after OnPreTick.
                  * Iteration will only run once per frame. */
-                TryIterateData(true);
-                OnTick?.Invoke();
+                if (frameTicked || variableTiming)
+                    TryIterateData(true);
 
-                if (PhysicsMode == PhysicsMode.TimeManager)
+                if (frameTicked)
                 {
-                    float tick = (float)TickDelta;
-                    OnPhysicsSimulation?.Invoke(tick);
-                    OnPrePhysicsSimulation?.Invoke(tick);
-                    Physics.Simulate(tick);
-                    Physics2D.Simulate(tick);
-                    OnPostPhysicsSimulation?.Invoke(tick);
+                    OnTick?.Invoke();
+
+                    if (PhysicsMode == PhysicsMode.TimeManager)
+                    {
+                        float tick = (float)TickDelta;
+                        OnPhysicsSimulation?.Invoke(tick);
+                        OnPrePhysicsSimulation?.Invoke(tick);
+                        Physics.Simulate(tick);
+                        Physics2D.Simulate(tick);
+                        OnPostPhysicsSimulation?.Invoke(tick);
+                    }
+
+                    OnPostTick?.Invoke();
+                    /* If isClient this is the
+                     * last tick during this loop. */
+                    if (isClient && (_elapsedTickTime < timePerSimulation))
+                        TrySendPing(LocalTick + 1);
+
+                    if (_networkManager.IsServer)
+                        SendTimingAdjustment();
                 }
 
-                OnPostTick?.Invoke();
-
-                /* If isClient this is the
-                 * last tick during this loop. */
-                if (isClient && (_elapsedTickTime < timePerSimulation))
-                    TrySendPing(LocalTick + 1);
-
-                if (_networkManager.IsServer)
-                    SendTimingAdjustment();
-
                 //Send out data.
-                TryIterateData(false);
+                if (frameTicked || variableTiming)
+                    TryIterateData(false);
 
-                if (_networkManager.IsClient)
-                    _clientTicks++;
+                if (frameTicked)
+                {
+                    if (_networkManager.IsClient)
+                        _clientTicks++;
 
-                Tick++;
-                LocalTick++;
-            }
+                    Tick++;
+                    LocalTick++;
+                }
+            } while (_elapsedTickTime >= timePerSimulation);
 
         }
 
@@ -837,8 +860,7 @@ namespace FishNet.Managing.Timing
             }
             else
             {
-                if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"TickType {tickType.ToString()} is unhandled.");
+                _networkManager.LogError($"TickType {tickType.ToString()} is unhandled.");
                 return default;
             }
         }
@@ -866,8 +888,7 @@ namespace FishNet.Managing.Timing
             }
             else
             {
-                if (_networkManager != null && _networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"TickType {tickType} is unhandled.");
+                _networkManager.LogError($"TickType {tickType} is unhandled.");
                 return 0d;
             }
         }

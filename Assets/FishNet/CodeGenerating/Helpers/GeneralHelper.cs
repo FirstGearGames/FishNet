@@ -33,7 +33,6 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference List_RemoveRange_MethodRef;
         public MethodReference InstanceFinder_NetworkManager_MethodRef;
         public MethodReference NetworkBehaviour_CanLog_MethodRef;
-        public MethodReference NetworkManager_CanLog_MethodRef;
         public MethodReference NetworkBehaviour_NetworkManager_MethodRef;
         public MethodReference NetworkManager_LogCommon_MethodRef;
         public MethodReference NetworkManager_LogWarning_MethodRef;
@@ -130,8 +129,6 @@ namespace FishNet.CodeGenerating.Helping
                     NetworkManager_LogWarning_MethodRef = base.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(NetworkManager.LogError))
                     NetworkManager_LogError_MethodRef = base.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkManager.CanLog))
-                    NetworkManager_CanLog_MethodRef = base.ImportReference(methodInfo);
             }
 
             //Lists.

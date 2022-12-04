@@ -154,8 +154,7 @@ namespace FishNet.Object
             //If not a valid connection.
             if (!connection.IsValid)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"An invalid connection was used when rebuilding observers.");
+                NetworkManager.LogWarning($"An invalid connection was used when rebuilding observers.");
                 return ObserverStateChange.Unchanged;
             }
             //Valid not not active.

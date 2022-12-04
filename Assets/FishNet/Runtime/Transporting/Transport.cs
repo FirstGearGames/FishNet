@@ -153,9 +153,12 @@ namespace FishNet.Transporting
         /// <returns>Maximum clients transport allows.</returns>
         public virtual int GetMaximumClients()
         {
-            bool canLog = (NetworkManager == null) ? NetworkManager.StaticCanLog(LoggingType.Warning) : NetworkManager.CanLog(LoggingType.Warning);
-            if (canLog)
-                Debug.LogWarning($"The current transport does not support this feature.");
+            string message = $"The current transport does not support this feature.";
+            if (NetworkManager == null)
+                NetworkManager.StaticLogWarning(message);
+            else
+                NetworkManager.LogWarning(message);
+
             return -1;
         }
         /// <summary>
@@ -164,9 +167,11 @@ namespace FishNet.Transporting
         /// <param name="value">Maximum clients to allow.</param>
         public virtual void SetMaximumClients(int value)
         {
-            bool canLog = (NetworkManager == null) ? NetworkManager.StaticCanLog(LoggingType.Warning) : NetworkManager.CanLog(LoggingType.Warning);
-            if (canLog)
-                Debug.LogWarning($"The current transport does not support this feature.");
+            string message = $"The current transport does not support this feature.";
+            if (NetworkManager == null)
+                NetworkManager.StaticLogWarning(message);
+            else
+                NetworkManager.LogWarning(message);
         }
         /// <summary>
         /// Sets which address the client will connect to.

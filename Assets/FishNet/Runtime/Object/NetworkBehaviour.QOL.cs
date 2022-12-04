@@ -198,10 +198,7 @@ namespace FishNet.Object
         {
             bool isNull = (_networkObjectCache == null);
             if (isNull && warn)
-            {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkObject is null. This can occur if this object is not spawned, or initialized yet.");
-            }
+                NetworkManager.LogWarning($"NetworkObject is null. This can occur if this object is not spawned, or initialized yet.");
 
             return isNull;
         }

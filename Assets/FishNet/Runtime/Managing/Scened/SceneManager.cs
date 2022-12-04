@@ -613,42 +613,35 @@ namespace FishNet.Managing.Scened
         /// <returns></returns>
         private bool CanMoveNetworkObject(NetworkObject nob)
         {
-            bool canLog = _networkManager.CanLog(LoggingType.Warning);
-
             //Null.
             if (nob == null)
             {
-                if (canLog)
-                    Debug.LogWarning($"NetworkObject is null.");
+                _networkManager.LogWarning($"NetworkObject is null.");
                 return false;
             }
             //Not networked.
             if (!nob.IsNetworked)
             {
-                if (canLog)
-                    Debug.LogWarning($"NetworkObject {nob.name} cannot be moved as it is not networked.");
+                _networkManager.LogWarning($"NetworkObject {nob.name} cannot be moved as it is not networked.");
                 return false;
             }
 
             //Not spawned.
             if (!nob.IsSpawned)
             {
-                if (canLog)
-                    Debug.LogWarning($"NetworkObject {nob.name} canot be moved as it is not spawned.");
+                _networkManager.LogWarning($"NetworkObject {nob.name} canot be moved as it is not spawned.");
                 return false;
             }
             //SceneObject.
             if (nob.IsSceneObject)
             {
-                if (canLog)
-                    Debug.LogWarning($"NetworkObject {nob.name} cannot be moved as it is a scene object.");
+                _networkManager.LogWarning($"NetworkObject {nob.name} cannot be moved as it is a scene object.");
                 return false;
             }
             //Not root.
             if (nob.transform.parent != null)
             {
-                if (canLog)
-                    Debug.LogWarning($"NetworkObject {nob.name} cannot be moved because it is not the root object. Unity can only move root objects between scenes.");
+                _networkManager.LogWarning($"NetworkObject {nob.name} cannot be moved because it is not the root object. Unity can only move root objects between scenes.");
                 return false;
             }
 
@@ -674,8 +667,7 @@ namespace FishNet.Managing.Scened
             /* Scene sanity checks. */
             if (data.SceneLoadData.SceneLookupDatas.Length == 0)
             {
-                if (_networkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"No scenes specified to load.");
+                _networkManager.LogWarning($"No scenes specified to load.");
                 yield break;
             }
 
@@ -988,14 +980,9 @@ namespace FishNet.Managing.Scened
                         /* Shouldn't be possible since the scene will always exist either by 
                          * just being loaded or already loaded. */
                         if (string.IsNullOrEmpty(lastSameSceneName.name))
-                        {
-                            if (_networkManager.CanLog(LoggingType.Error))
-                                Debug.LogError($"Scene {data.SceneLoadData.SceneLookupDatas[0].Name} could not be found in loaded scenes.");
-                        }
+                            _networkManager.LogError($"Scene {data.SceneLoadData.SceneLookupDatas[0].Name} could not be found in loaded scenes.");
                         else
-                        {
                             firstValidScene = lastSameSceneName;
-                        }
                     }
                 }
                 //Not stacking.
@@ -1019,8 +1006,7 @@ namespace FishNet.Managing.Scened
                 //If firstValidScene is still invalid then throw.
                 if (string.IsNullOrEmpty(firstValidScene.name))
                 {
-                    if (_networkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"Unable to move objects to a new scene because new scene lookup has failed.");
+                    _networkManager.LogError($"Unable to move objects to a new scene because new scene lookup has failed.");
                 }
                 //Move objects from movedobejctsscene to first valid scene.
                 else
@@ -1089,8 +1075,7 @@ namespace FishNet.Managing.Scened
                         }
 
                         //If here there are no null entries.
-                        if (_networkManager.CanLog(LoggingType.Error))
-                            Debug.LogError($"Cannot add scene to broadcastLookupDatas, collection is full.");
+                        _networkManager.LogError($"Cannot add scene to broadcastLookupDatas, collection is full.");
                     }
                 }
             }
@@ -1260,8 +1245,7 @@ namespace FishNet.Managing.Scened
              * the unload should continue. */
             if (scenes.Length == 0 && !asClientHost)
             {
-                if (_networkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"No scenes were found to unload.");
+                _networkManager.LogWarning($"No scenes were found to unload.");
                 yield break;
             }
 
@@ -1486,8 +1470,7 @@ namespace FishNet.Managing.Scened
             //No owner.
             if (!nob.Owner.IsValid)
             {
-                if (_networkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkObject {nob.name} does not have an owner.");
+                _networkManager.LogWarning($"NetworkObject {nob.name} does not have an owner.");
                 return;
             }
             //Won't add to default if there are globals.
@@ -1979,12 +1962,8 @@ namespace FishNet.Managing.Scened
         private bool SceneDataInvalid(SceneLoadData data, bool error)
         {
             bool result = data.DataInvalid();
-
             if (result && error)
-            {
-                if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError(INVALID_SCENELOADDATA);
-            }
+                _networkManager.LogError(INVALID_SCENELOADDATA);
 
             return result;
         }
@@ -1998,10 +1977,8 @@ namespace FishNet.Managing.Scened
         {
             bool result = data.DataInvalid();
             if (result && error)
-            {
-                if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError(INVALID_SCENEUNLOADDATA);
-            }
+                _networkManager.LogError(INVALID_SCENEUNLOADDATA);
+
 
             return result;
         }
@@ -2027,19 +2004,13 @@ namespace FishNet.Managing.Scened
             {
                 result = _networkManager.IsServer;
                 if (!result && warn)
-                {
-                    if (_networkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Method cannot be called as the server is not active.");
-                }
+                    _networkManager.LogWarning($"Method cannot be called as the server is not active.");
             }
             else
             {
                 result = _networkManager.IsClient;
                 if (!result && warn)
-                {
-                    if (_networkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Method cannot be called as the client is not active.");
-                }
+                    _networkManager.LogWarning($"Method cannot be called as the client is not active.");
             }
 
             return result;

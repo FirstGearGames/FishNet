@@ -10,6 +10,7 @@ using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
@@ -293,7 +294,18 @@ namespace FishNet.Component.Transforming
         /// </summary>
         [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
         [SerializeField]
+        [SyncVar]
         private bool _sendToOwner = true;
+        /// <summary>
+        /// Gets SendToOwner.
+        /// </summary>
+        public bool GetSendToOwner() => _sendToOwner;
+        /// <summary>
+        /// Sets SendToOwner. Only the server may call this method.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        [Server]
+        public void SetSendToOwner(bool value) => _sendToOwner = value;
         /// <summary>
         /// How often in ticks to synchronize. A value of 1 will synchronize every tick, a value of 10 will synchronize every 10 ticks.
         /// </summary>
@@ -620,6 +632,16 @@ namespace FishNet.Component.Transforming
                 base.NetworkManager.TimeManager.OnPostTick += TimeManager_OnPostTick;
             else
                 base.NetworkManager.TimeManager.OnPostTick -= TimeManager_OnPostTick;
+        }
+
+        /// <summary>
+        /// Resets last sent information to force a resend of current values.
+        /// </summary>
+        public void ForceSend()
+        {
+            _lastSentTransformData.Reset();
+            if (_receivedClientData.Writer != null)
+                _receivedClientData.HasData = true;
         }
 
         /// <summary>
@@ -1492,6 +1514,8 @@ namespace FishNet.Component.Transforming
 
                 //abnormalCorrection = 1f;
                 positionRate = (unalteredPositionRate * abnormalCorrection);
+                if (positionRate <= 0f)
+                    positionRate = -1f;
             }
 
             //Rotation.
@@ -1500,6 +1524,8 @@ namespace FishNet.Component.Transforming
                 Quaternion lastRotation = prevTd.Rotation;
                 distance = lastRotation.Angle(td.Rotation, true);
                 rotationRate = (distance / timePassed) * abnormalCorrection;
+                if (rotationRate <= 0f)
+                    rotationRate = -1f;
             }
 
             //Scale.
@@ -1508,6 +1534,8 @@ namespace FishNet.Component.Transforming
                 Vector3 lastScale = prevTd.Scale;
                 distance = Vector3.Distance(lastScale, td.Scale);
                 scaleRate = (distance / timePassed) * abnormalCorrection;
+                if (scaleRate <= 0f)
+                    scaleRate = -1f;
             }
 
             rd.Update(positionRate, rotationRate, scaleRate, unalteredPositionRate, tickDifference, abnormalRateDetected, timePassed);
@@ -1692,6 +1720,10 @@ namespace FishNet.Component.Transforming
                     GoalData tmpGd = _goalDataQueue.Dequeue();
                     _goalDataCache.Push(tmpGd);
                 }
+                //Snap to the next data to fix any smoothing timings.
+                SetCurrentGoalData(_goalDataQueue.Dequeue());
+                SetInstantRates(_currentGoalData.Rates);
+                SnapProperties(_currentGoalData.Transforms);
             }
         }
 

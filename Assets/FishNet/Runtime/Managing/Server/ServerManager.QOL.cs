@@ -96,8 +96,7 @@ namespace FishNet.Managing.Server
                 return;
             if (go == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"GameObject cannot be spawned because it is null.");
+                NetworkManager.LogWarning($"GameObject cannot be spawned because it is null.");
                 return;
             }
 
@@ -117,8 +116,7 @@ namespace FishNet.Managing.Server
                 return;
             if (nob == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkObject cannot be spawned because it is null.");
+                NetworkManager.LogWarning($"NetworkObject cannot be spawned because it is null.");
                 return;
             }
 
@@ -139,8 +137,7 @@ namespace FishNet.Managing.Server
                 return;
             if (nob == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkObject cannot be spawned because it is null.");
+                NetworkManager.LogWarning($"NetworkObject cannot be spawned because it is null.");
                 return;
             }
 
@@ -155,11 +152,10 @@ namespace FishNet.Managing.Server
         /// <returns></returns>
         private bool CanSpawnOrDespawn(bool warn)
         {
-            bool canLog = (warn && NetworkManager.CanLog(LoggingType.Warning));
             if (!Started)
             {
-                if (canLog)
-                    Debug.Log($"The server must be active to spawn or despawn networked objects.");
+                if (warn)
+                    NetworkManager.LogWarning($"The server must be active to spawn or despawn networked objects.");
                 return false;
             }
 
@@ -180,8 +176,7 @@ namespace FishNet.Managing.Server
 
             if (go == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"GameObject cannot be despawned because it is null.");
+                NetworkManager.LogWarning($"GameObject cannot be despawned because it is null.");
                 return;
             }
 
@@ -200,8 +195,7 @@ namespace FishNet.Managing.Server
                 return;
             if (networkObject == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"NetworkObject cannot be despawned because it is null.");
+                NetworkManager.LogWarning($"NetworkObject cannot be despawned because it is null.");
                 return;
             }
 

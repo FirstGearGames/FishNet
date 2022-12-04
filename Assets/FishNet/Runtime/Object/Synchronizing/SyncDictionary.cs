@@ -173,8 +173,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
+                NetworkManager.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
                 return;
             }
 
@@ -467,16 +466,14 @@ namespace FishNet.Object.Synchronizing
         {
             if (offset <= -1 || offset >= array.Length)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Index is out of range.");
+                base.NetworkManager.LogError($"Index is out of range.");
                 return;
             }
 
             int remaining = array.Length - offset;
             if (remaining < Count)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Array is not large enough to copy data. Array is of length {array.Length}, index is {offset}, and number of values to be copied is {Count.ToString()}.");
+                base.NetworkManager.LogError($"Array is not large enough to copy data. Array is of length {array.Length}, index is {offset}, and number of values to be copied is {Count.ToString()}.");
                 return;
             }
 
@@ -553,8 +550,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 

@@ -46,14 +46,9 @@ namespace FishNet.Connection
         public void Broadcast<T>(T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!IsActive)
-            {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Connection is not valid, cannot send broadcast.");
-            }
+                    NetworkManager.LogError($"Connection is not valid, cannot send broadcast.");
             else
-            {
                 NetworkManager.ServerManager.Broadcast<T>(this, message, requireAuthenticated, channel);
-            }
         }
 
         /// <summary>

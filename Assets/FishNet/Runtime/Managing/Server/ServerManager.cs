@@ -361,7 +361,7 @@ namespace FishNet.Managing.Server
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
             //If no servers are started then reset match conditions.
             if (!Started)
-            { 
+            {
                 MatchCondition.ClearMatchesWithoutRebuilding();
                 //Despawn without synchronizing network objects.
                 Objects.DespawnWithoutSynchronization(true);
@@ -573,16 +573,13 @@ namespace FishNet.Managing.Server
                     }
                     else
                     {
-                        if (NetworkManager.CanLog(LoggingType.Error))
-                        {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                            Debug.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
-                            _parseLogger.Print(NetworkManager);
+                        NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
+                        _parseLogger.Print(NetworkManager);
 #else
-                            Debug.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately.");
-                            NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                        NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately.");
+                        NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
 #endif
-                        }
                         return;
                     }
                 }

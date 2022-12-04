@@ -37,10 +37,7 @@ namespace FishNet
                     {
                         _networkManager = NetworkManager.Instances.First();
                         if (managersCount > 1)
-                        {
-                            if (_networkManager.CanLog(LoggingType.Warning))
-                                Debug.LogWarning($"Multiple NetworkManagers found, the first result will be returned. If you only wish to have one NetworkManager then uncheck 'Allow Multiple' within your NetworkManagers.");
-                        }
+                            _networkManager.LogWarning($"Multiple NetworkManagers found, the first result will be returned. If you only wish to have one NetworkManager then uncheck 'Allow Multiple' within your NetworkManagers.");
                     }
                     //No managers.
                     else

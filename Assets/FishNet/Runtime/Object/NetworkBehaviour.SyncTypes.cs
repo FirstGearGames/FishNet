@@ -262,14 +262,9 @@ namespace FishNet.Object
                     }
 
                     if (writer == null)
-                    {
-                        if (NetworkManager.CanLog(LoggingType.Error))
-                            Debug.LogError($"Writer couldn't be found for permissions {sb.Settings.ReadPermission} on channel {channel}.");
-                    }
+                        NetworkManager.LogError($"Writer couldn't be found for permissions {sb.Settings.ReadPermission} on channel {channel}.");
                     else
-                    {
                         sb.WriteDelta(writer);
-                    }
                 }
             }
 

@@ -198,8 +198,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 
@@ -650,8 +649,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 
@@ -669,14 +667,9 @@ namespace FishNet.Object.Synchronizing
         {
             int index = Collection.IndexOf(obj);
             if (index != -1)
-            {
                 Dirty(index);
-            }
             else
-            {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Could not find object within SyncList, dirty will not be set.");
-            }
+                base.NetworkManager.LogError($"Could not find object within SyncList, dirty will not be set.");
         }
         /// <summary>
         /// Marks an index as dirty.

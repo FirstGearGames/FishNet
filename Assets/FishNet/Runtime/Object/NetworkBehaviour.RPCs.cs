@@ -144,20 +144,14 @@ namespace FishNet.Object
 
             if (sendingClient == null)
             {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"NetworkConnection is null. ServerRpc {methodHash} on object {gameObject.name} [id {ObjectId}] will not complete. Remainder of packet may become corrupt.");
+                _networkObjectCache.NetworkManager.LogError($"NetworkConnection is null. ServerRpc {methodHash} on object {gameObject.name} [id {ObjectId}] will not complete. Remainder of packet may become corrupt.");
                 return;
             }
 
             if (_serverRpcDelegates.TryGetValueIL2CPP(methodHash, out ServerRpcDelegate data))
-            {
                 data.Invoke(reader, channel, sendingClient);
-            }
             else
-            {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"ServerRpc not found for hash {methodHash} on object {gameObject.name} [id {ObjectId}]. Remainder of packet may become corrupt.");
-            }
+                _networkObjectCache.NetworkManager.LogWarning($"ServerRpc not found for hash {methodHash} on object {gameObject.name} [id {ObjectId}]. Remainder of packet may become corrupt.");
         }
 
         /// <summary>
@@ -170,14 +164,9 @@ namespace FishNet.Object
                 methodHash = ReadRpcHash(reader);
 
             if (_observersRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ClientRpcDelegate del))
-            {
                 del.Invoke(reader, channel);
-            }
             else
-            {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"ObserversRpc not found for hash {methodHash.Value} on object {gameObject.name} [id {ObjectId}] . Remainder of packet may become corrupt.");
-            }
+                _networkObjectCache.NetworkManager.LogWarning($"ObserversRpc not found for hash {methodHash.Value} on object {gameObject.name} [id {ObjectId}] . Remainder of packet may become corrupt.");
         }
 
         /// <summary>
@@ -190,14 +179,9 @@ namespace FishNet.Object
                 methodHash = ReadRpcHash(reader);
 
             if (_targetRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ClientRpcDelegate del))
-            {
                 del.Invoke(reader, channel);
-            }
             else
-            {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"TargetRpc not found for hash {methodHash.Value} on object {gameObject.name} [id {ObjectId}] . Remainder of packet may become corrupt.");
-            }
+                _networkObjectCache.NetworkManager.LogWarning($"TargetRpc not found for hash {methodHash.Value} on object {gameObject.name} [id {ObjectId}] . Remainder of packet may become corrupt.");
         }
 
         /// <summary>
@@ -274,8 +258,7 @@ namespace FishNet.Object
             {
                 if (target == null)
                 {
-                    if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Action cannot be completed as no Target is specified.");
+                    _networkObjectCache.NetworkManager.LogWarning($"Action cannot be completed as no Target is specified.");
                     return;
                 }
                 else
@@ -283,8 +266,7 @@ namespace FishNet.Object
                     //If target is not an observer.
                     if (!_networkObjectCache.Observers.Contains(target))
                     {
-                        if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"Action cannot be completed as Target is not an observer for object {gameObject.name} [id {ObjectId}].");
+                        _networkObjectCache.NetworkManager.LogWarning($"Action cannot be completed as Target is not an observer for object {gameObject.name} [id {ObjectId}].");
                         return;
                     }
                 }
@@ -314,10 +296,7 @@ namespace FishNet.Object
         {
             bool result = this.IsSpawned;
             if (!result)
-            {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Action cannot be completed as object {gameObject.name} [Id {ObjectId}] is not spawned.");
-            }
+                _networkObjectCache.NetworkManager.LogWarning($"Action cannot be completed as object {gameObject.name} [Id {ObjectId}] is not spawned.");
 
             return result;
         }

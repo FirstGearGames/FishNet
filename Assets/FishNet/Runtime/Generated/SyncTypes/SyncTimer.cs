@@ -87,6 +87,7 @@ namespace FishNet.Object.Synchronizing
             if (Remaining > 0f)
                 StopTimer(sendRemainingOnStop);
 
+            Paused = false;
             Remaining = remaining;
             Duration = remaining;
             AddOperation(SyncTimerOperation.Start, -1f, remaining);
@@ -128,8 +129,9 @@ namespace FishNet.Object.Synchronizing
             if (Remaining <= 0f)
                 return;
 
+            bool asServer = true;
             float prev = Remaining;
-            StopTimer();
+            StopTimer_Internal(asServer);
             SyncTimerOperation op = (sendRemaining) ? SyncTimerOperation.StopUpdated : SyncTimerOperation.Stop;
             AddOperation(op, prev, 0f);
         }
@@ -198,10 +200,13 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             base.WriteDelta(writer, false);
-            //Write that there is one entry.
-            writer.WriteInt32(1);
-            //And the operation.
+            //There will be 1 or 2 entries. If paused 2, if not 1.
+            int entries = (Paused) ? 2 : 1;
+            writer.WriteInt32(entries);
+            //And the operations.
             WriteStartTimer(writer, true);
+            if (Paused)
+                writer.WriteByte((byte)SyncTimerOperation.Pause);
         }
 
         /// <summary>
@@ -215,6 +220,14 @@ namespace FishNet.Object.Synchronizing
                 w.WriteByte((byte)SyncTimerOperation.Start);
             w.WriteSingle(Remaining);
             w.WriteSingle(Duration);
+        }
+
+        /// <summary>
+        /// Returns if values can be updated.
+        /// </summary>
+        private bool CanSetValues(bool asServer)
+        {
+            return (asServer || !base.NetworkManager.IsServer);
         }
 
         /// <summary>
@@ -232,8 +245,12 @@ namespace FishNet.Object.Synchronizing
                 {
                     float next = reader.ReadSingle();
                     float duration = reader.ReadSingle();
-                    Remaining = next;
-                    Duration = duration;
+                    if (CanSetValues(asServer))
+                    {
+                        Paused = false;
+                        Remaining = next;
+                        Duration = duration;
+                    }
                     InvokeOnChange(op, -1f, next, asServer);
                 }
                 else if (op == SyncTimerOperation.Pause || op == SyncTimerOperation.PauseUpdated
@@ -244,7 +261,7 @@ namespace FishNet.Object.Synchronizing
                 else if (op == SyncTimerOperation.Stop)
                 {
                     float prev = Remaining;
-                    StopTimer();
+                    StopTimer_Internal(asServer);
                     InvokeOnChange(op, prev, 0f, false);
                 }
                 //
@@ -252,7 +269,7 @@ namespace FishNet.Object.Synchronizing
                 {
                     float prev = Remaining;
                     float next = reader.ReadSingle();
-                    Remaining = next;
+                    StopTimer_Internal(asServer);
                     InvokeOnChange(op, prev, next, asServer);
                 }
             }
@@ -269,15 +286,13 @@ namespace FishNet.Object.Synchronizing
                 {
                     prev = Remaining;
                     next = reader.ReadSingle();
-                    Remaining = next;
+                    if (CanSetValues(asServer))
+                        Remaining = next;
                 }
 
-                //If paused changed.
-                if (Paused != newPauseState)
-                {
+                if (CanSetValues(asServer))
                     Paused = newPauseState;
-                    InvokeOnChange(op, prev, next, asServer);
-                }
+                InvokeOnChange(op, prev, next, asServer);
             }
 
             if (changes > 0)
@@ -287,8 +302,11 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Stops the timer and resets.
         /// </summary>
-        private void StopTimer()
+        private void StopTimer_Internal(bool asServer)
         {
+            if (!CanSetValues(asServer))
+                return;
+
             Paused = false;
             Remaining = 0f;
         }

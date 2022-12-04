@@ -162,9 +162,7 @@ namespace FishNet.Transporting.Tugboat.Server
             string ipv6FailText = (ipv6 == null) ? $"IPv6 address {_ipv6BindAddress} failed to parse. " : string.Empty;
             if (ipv4FailText != string.Empty || ipv6FailText != string.Empty)
             {
-                if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.Log($"{ipv4FailText}{ipv6FailText}Clear the bind address field to use any bind address.");
-
+                base.Transport.NetworkManager.Log($"{ipv4FailText}{ipv6FailText}Clear the bind address field to use any bind address.");
                 StopConnection();
                 return;
             }
@@ -178,9 +176,7 @@ namespace FishNet.Transporting.Tugboat.Server
             //Failed to start.
             else
             {
-                if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Server failed to start. This usually occurs when the specified port is unavailable, be it closed or already in use.");
-
+                base.Transport.NetworkManager.LogError($"Server failed to start. This usually occurs when the specified port is unavailable, be it closed or already in use.");
                 StopConnection();
             }
         }
@@ -393,8 +389,7 @@ namespace FishNet.Transporting.Tugboat.Server
                     //If over the MTU.
                     if (outgoing.Channel == (byte)Channel.Unreliable && segment.Count > _mtu)
                     {
-                        if (base.Transport.NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"Server is sending of {segment.Count} length on the unreliable channel, while the MTU is only {_mtu}. The channel has been changed to reliable for this send.");
+                        base.Transport.NetworkManager.LogWarning($"Server is sending of {segment.Count} length on the unreliable channel, while the MTU is only {_mtu}. The channel has been changed to reliable for this send.");
                         dm = DeliveryMethod.ReliableOrdered;
                     }
 

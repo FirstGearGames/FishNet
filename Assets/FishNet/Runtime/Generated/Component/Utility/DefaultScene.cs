@@ -83,8 +83,8 @@ public class DefaultScene : MonoBehaviour
         _networkManager = GetComponentInParent<NetworkManager>();
         if (_networkManager == null)
         {
-            if (NetworkManager.StaticCanLog(LoggingType.Error))
-                Debug.LogError($"NetworkManager not found on {gameObject.name} or any parent objects. DefaultScene will not work.");
+
+            NetworkManager.StaticLogError($"NetworkManager not found on {gameObject.name} or any parent objects. DefaultScene will not work.");
             return;
         }
         //A NetworkManager won't be initialized if it's being destroyed.
@@ -92,8 +92,8 @@ public class DefaultScene : MonoBehaviour
             return;
         if (_onlineScene == string.Empty || _offlineScene == string.Empty)
         {
-            if (_networkManager.CanLog(LoggingType.Warning))
-                Debug.LogWarning("Online or Offline scene is not specified. Default scenes will not load.");
+
+            NetworkManager.StaticLogWarning("Online or Offline scene is not specified. Default scenes will not load.");
             return;
         }
 

@@ -119,8 +119,7 @@ namespace FishNet.Example.CustomSyncObject
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 

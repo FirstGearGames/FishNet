@@ -159,8 +159,8 @@ namespace FishNet.Transporting.Tugboat.Client
             if (base.GetConnectionState() == LocalConnectionState.Stopped || base.GetConnectionState() == LocalConnectionState.Stopping)
                 return false;
 
-            if (info != null && base.Transport.NetworkManager.CanLog(LoggingType.Common))
-                Debug.Log($"Local client disconnect reason: {info.Value.Reason}.");
+            if (info != null)
+                base.Transport.NetworkManager.Log($"Local client disconnect reason: {info.Value.Reason}.");
 
             base.SetConnectionState(LocalConnectionState.Stopping, false);
             StopSocketOnThread();
@@ -232,8 +232,7 @@ namespace FishNet.Transporting.Tugboat.Client
                     //If over the MTU.
                     if (outgoing.Channel == (byte)Channel.Unreliable && segment.Count > _mtu)
                     {
-                        if (base.Transport.NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"Client is sending of {segment.Count} length on the unreliable channel, while the MTU is only {_mtu}. The channel has been changed to reliable for this send.");
+                        base.Transport.NetworkManager.LogWarning($"Client is sending of {segment.Count} length on the unreliable channel, while the MTU is only {_mtu}. The channel has been changed to reliable for this send.");
                         dm = DeliveryMethod.ReliableOrdered;
                     }
 

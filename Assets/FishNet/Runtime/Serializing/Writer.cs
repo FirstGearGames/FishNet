@@ -1034,8 +1034,10 @@ namespace FishNet.Serializing
                 Action<Writer, T, AutoPackType> del = GenericWriter<T>.WriteAutoPack;
                 if (del == null)
                 {
-                    if (NetworkManager.StaticCanLog(LoggingType.Error))
-                        Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    if (NetworkManager == null)
+                        NetworkManager.StaticLogError(GetLogMessage());
+                    else
+                        NetworkManager.LogError(GetLogMessage());
                 }
                 else
                 {
@@ -1047,14 +1049,18 @@ namespace FishNet.Serializing
                 Action<Writer, T> del = GenericWriter<T>.Write;
                 if (del == null)
                 {
-                    if (NetworkManager.StaticCanLog(LoggingType.Error))
-                        Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    if (NetworkManager == null)
+                        NetworkManager.StaticLogError(GetLogMessage());
+                    else
+                        NetworkManager.LogError(GetLogMessage());
                 }
                 else
                 {
                     del.Invoke(this, value);
                 }
             }
+
+            string GetLogMessage() => $"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.";
         }
 
         /// <summary>

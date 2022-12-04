@@ -11,6 +11,7 @@ namespace FishNet.Managing.Timing.Editing
     public class TimeManagerEditor : Editor
     {
         private SerializedProperty _updateOrder;
+        private SerializedProperty _timingType;
         private SerializedProperty _tickRate;
         private SerializedProperty _allowTickDropping;
         private SerializedProperty _maximumFrameTicks;
@@ -21,6 +22,7 @@ namespace FishNet.Managing.Timing.Editing
         protected virtual void OnEnable()
         {
             _updateOrder = serializedObject.FindProperty("_updateOrder");
+            _timingType = serializedObject.FindProperty("_timingType");
             _tickRate = serializedObject.FindProperty("_tickRate");
             _allowTickDropping = serializedObject.FindProperty("_allowTickDropping");
             _maximumFrameTicks = serializedObject.FindProperty("_maximumFrameTicks");
@@ -41,6 +43,7 @@ namespace FishNet.Managing.Timing.Editing
             EditorGUILayout.LabelField("Timing", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_updateOrder);
+            EditorGUILayout.PropertyField(_timingType);
             EditorGUILayout.PropertyField(_allowTickDropping);
             if (_allowTickDropping.boolValue == true)
             {

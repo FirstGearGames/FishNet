@@ -137,20 +137,14 @@ namespace FishNet.Object
 
             if (sendingClient == null)
             {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"NetworkConnection is null. Replicate {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name} will not complete. Remainder of packet may become corrupt.");
+                _networkObjectCache.NetworkManager.LogError($"NetworkConnection is null. Replicate {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name} will not complete. Remainder of packet may become corrupt.");
                 return;
             }
 
             if (_replicateRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReplicateRpcDelegate del))
-            {
                 del.Invoke(reader, sendingClient);
-            }
             else
-            {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Replicate not found for hash {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
-            }
+                _networkObjectCache.NetworkManager.LogWarning($"Replicate not found for hash {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
         }
 
 
@@ -164,14 +158,9 @@ namespace FishNet.Object
                 methodHash = ReadRpcHash(reader);
 
             if (_reconcileRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReconcileRpcDelegate del))
-            {
                 del.Invoke(reader);
-            }
             else
-            {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Reconcile not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
-            }
+                _networkObjectCache.NetworkManager.LogWarning($"Reconcile not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
         }
 
         /// <summary>
