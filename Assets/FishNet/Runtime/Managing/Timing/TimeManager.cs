@@ -1,6 +1,5 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
-using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
@@ -78,13 +77,6 @@ namespace FishNet.Managing.Timing
         /// While using Unity for physics timing, this is called during FixedUpdate.
         /// This may be useful if you wish to run physics differently for stacked scenes.
         /// </summary>
-        [Obsolete("Use OnPrePhysicsSimulation.")] //Remove on 2023/01/01
-        public event Action<float> OnPhysicsSimulation;
-        /// <summary>
-        /// When using TimeManager for physics timing, this is called immediately before physics simulation will occur for the tick.
-        /// While using Unity for physics timing, this is called during FixedUpdate.
-        /// This may be useful if you wish to run physics differently for stacked scenes.
-        /// </summary>
         public event Action<float> OnPrePhysicsSimulation;
         /// <summary>
         /// When using TimeManager for physics timing, this is called immediately after the physics simulation has occured for the tick.
@@ -137,22 +129,6 @@ namespace FishNet.Managing.Timing
         /// Use LocalTick for values that only increase.
         /// </summary>
         public uint Tick { get; internal set; }
-        /// <summary>
-        /// Percentage as 0-100 of how much into next tick the time is.
-        /// </summary>
-        [Obsolete("Use GetPreciseTick or GetTickPercent instead.")] //Remove on 2023/01/01
-        public byte TickPercent
-        {
-            get
-            {
-                if (_networkManager == null)
-                    return 0;
-
-                double delta = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
-                double percent = (_elapsedTickTime / delta) * 100;
-                return (byte)Mathf.Clamp((float)percent, 0, 100);
-            }
-        }
         /// <summary>
         /// A fixed deltaTime for TickRate.
         /// </summary>
@@ -389,10 +365,7 @@ namespace FishNet.Managing.Timing
             /* Invoke onsimulation if using Unity time.
              * Otherwise let the tick cycling part invoke. */
             if (PhysicsMode == PhysicsMode.Unity)
-            {
-                OnPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
                 OnPrePhysicsSimulation?.Invoke(Time.fixedDeltaTime);
-            }
         }
 
         /// <summary>
@@ -773,7 +746,6 @@ namespace FishNet.Managing.Timing
                     if (PhysicsMode == PhysicsMode.TimeManager)
                     {
                         float tick = (float)TickDelta;
-                        OnPhysicsSimulation?.Invoke(tick);
                         OnPrePhysicsSimulation?.Invoke(tick);
                         Physics.Simulate(tick);
                         Physics2D.Simulate(tick);
@@ -893,20 +865,6 @@ namespace FishNet.Managing.Timing
             }
         }
 
-        /// <summary>
-        /// Converts current ticks to time.
-        /// </summary>
-        /// <param name="useLocalTick">True to use the LocalTick, false to use Tick.</param>
-        /// <returns></returns>
-        [Obsolete("Use TicksToTime(TickType) instead.")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] //Remove on 2023/01/01
-        public double TicksToTime(bool useLocalTick = true)
-        {
-            if (useLocalTick)
-                return TicksToTime(LocalTick);
-            else
-                return TicksToTime(Tick);
-        }
         /// <summary>
         /// Converts a number ticks to time.
         /// </summary>

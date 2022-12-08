@@ -19,41 +19,21 @@ namespace FishNet.Utility.Performance
         /// </summary>
         private static Stack<ListCache<NetworkObject>> _networkObjectCaches = new Stack<ListCache<NetworkObject>>();
         /// <summary>
-        /// Cache for NetworkObjects.
-        /// </summary>
-        [Obsolete("Use GetNetworkObjectCache instead.")] //Remove on 2023/01/01
-        public static ListCache<NetworkObject> NetworkObjectCache = new ListCache<NetworkObject>();
-        /// <summary>
         /// Cache collection for NetworkObjects.
         /// </summary>
         private static Stack<ListCache<NetworkBehaviour>> _networkBehaviourCaches = new Stack<ListCache<NetworkBehaviour>>();
-        /// <summary>
-        /// Cache for NetworkBehaviours.
-        /// </summary>
-        [Obsolete("Use GetNetworkBehaviourCache instead.")] //Remove on 2023/01/01
-        public static ListCache<NetworkBehaviour> NetworkBehaviourCache = new ListCache<NetworkBehaviour>();
         /// <summary>
         /// Cache collection for NetworkObjects.
         /// </summary>
         private static Stack<ListCache<Transform>> _transformCaches = new Stack<ListCache<Transform>>();
         /// <summary>
-        /// Cache for Transforms.
-        /// </summary>
-        [Obsolete("Use GetTransformCache instead.")] //Remove on 2023/01/01
-        public static ListCache<Transform> TransformCache = new ListCache<Transform>();
-        /// <summary>
         /// Cache collection for NetworkConnections.
         /// </summary>
         private static Stack<ListCache<NetworkConnection>> _networkConnectionCaches = new Stack<ListCache<NetworkConnection>>();
         /// <summary>
-        /// Cache for NetworkConnectios.
-        /// </summary>
-        [Obsolete("Use GetNetworkConnectionCache instead.")] //Remove on 2023/01/01
-        public static ListCache<NetworkConnection> NetworkConnectionCache = new ListCache<NetworkConnection>();
-        /// <summary>
-        /// Cache for ints.
-        /// </summary>
-        public static ListCache<int> IntCache = new ListCache<int>();
+        /// Cache collection for ints.
+        /// </summary>        
+        private static Stack<ListCache<int>> _intCaches = new Stack<ListCache<int>>();
 
 
         #region GetCache.
@@ -113,8 +93,21 @@ namespace FishNet.Utility.Performance
 
             return result;
         }
-        #endregion
+        /// <summary>
+        /// Returns an int cache. Use StoreCache to return the cache.
+        /// </summary>
+        /// <returns></returns>
+        public static ListCache<int> GetIntCache()
+        {
+            ListCache<int> result;
+            if (_intCaches.Count == 0)
+                result = new ListCache<int>();
+            else
+                result = _intCaches.Pop();
 
+            return result;
+        }
+        #endregion
 
         #region StoreCache.
         /// <summary>
@@ -152,6 +145,15 @@ namespace FishNet.Utility.Performance
         {
             cache.Reset();
             _networkBehaviourCaches.Push(cache);
+        }
+        /// <summary>
+        /// Stores an int cache.
+        /// </summary>
+        /// <param name="cache"></param>
+        public static void StoreCache(ListCache<int> cache)
+        {
+            cache.Reset();
+            _intCaches.Push(cache);
         }
         #endregion
 

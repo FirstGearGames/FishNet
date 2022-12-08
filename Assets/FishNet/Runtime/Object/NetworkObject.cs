@@ -30,8 +30,6 @@ namespace FishNet.Object
         /// </summary>
         /// <returns></returns>
         public bool IsSceneObject => (SceneId > 0);
-        [Obsolete("Use IsSceneObject instead.")] //Remove on 2023/01/01
-        public bool SceneObject => IsSceneObject;
         /// <summary>
         /// ComponentIndex for this NetworkBehaviour.
         /// </summary>

@@ -186,17 +186,6 @@ namespace FishNet.Transporting
         /// Sets which address the server will bind to.
         /// </summary>
         /// <param name="address">Address server will bind to.</param>
-        [Obsolete("Use SetServerBindAddress(string, IPAddressType)")] //Remove on 01/01/2023
-        public virtual void SetServerBindAddress(string address) { }
-        /// <summary>
-        /// Gets which address the server will bind to.
-        /// </summary>
-        [Obsolete("Use GetServerBindAddress(IPAddressType)")] //Remove on 01/01/2023
-        public virtual string GetServerBindAddress() => string.Empty;
-        /// <summary>
-        /// Sets which address the server will bind to.
-        /// </summary>
-        /// <param name="address">Address server will bind to.</param>
         /// <param name="addressType">Address type to set.</param>
         public virtual void SetServerBindAddress(string address, IPAddressType addressType) { }
         /// <summary>

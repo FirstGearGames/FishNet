@@ -5,7 +5,6 @@ using FishNet.Component.ColliderRollback;
 using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Managing.Client;
-using FishNet.Managing.Logging;
 using FishNet.Managing.Observing;
 using FishNet.Managing.Scened;
 using FishNet.Managing.Server;
@@ -25,8 +24,6 @@ namespace FishNet.Object
         /// True if the NetworkObject for this NetworkBehaviour is deinitializing.
         /// </summary>
         public bool IsDeinitializing => _networkObjectCache.IsDeinitializing;
-        [Obsolete("Use IsDeinitializing instead.")]
-        public bool Deinitializing => IsDeinitializing; //Remove on 2023/01/01.
         /// <summary>
         /// NetworkManager for this object.
         /// </summary>
