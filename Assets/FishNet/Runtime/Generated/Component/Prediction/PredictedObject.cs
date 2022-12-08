@@ -551,8 +551,6 @@ namespace FishNet.Component.Prediction
                 if (_predictionType != PredictionType.Other)
                     InitializeSmoother(false);
             }
-
-            ConfigureNetworkTransform();
         }
 #endif
     }
