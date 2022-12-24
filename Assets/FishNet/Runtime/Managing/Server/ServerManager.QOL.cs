@@ -218,7 +218,7 @@ namespace FishNet.Managing.Server
                 return;
 
             OnClientKick?.Invoke(conn, conn.ClientId, kickReason);
-            if (!conn.IsActive)
+            if (conn.IsActive)
                 conn.Disconnect(true);
 
             if (!string.IsNullOrEmpty(log))
