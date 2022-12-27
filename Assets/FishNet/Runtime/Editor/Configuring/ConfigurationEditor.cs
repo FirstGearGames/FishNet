@@ -193,7 +193,7 @@ namespace FishNet.Editing
             EditorApplication.update -= ShowGettingStarted;
 
             string showedSplash = "ShowedFishNetGettingStarted";
-            bool shown = EditorPrefs.GetBool(showedSplash, false);
+            bool shown = EditorPrefs.GetBool(showedSplash, false) || Application.isBatchMode;
 
             if (!shown)
             {
