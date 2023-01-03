@@ -688,7 +688,7 @@ namespace FishNet.Managing.Scened
             else if (asServer && data.ScopeType == SceneScopeType.Global)
             {
                 _globalSceneLoadData = data.SceneLoadData;
-                string[] names = data.SceneLoadData.SceneLookupDatas.GetNames();
+                string[] names = data.SceneLoadData.SceneLookupDatas.GetReferences();
                 //If replacing.
                 if (replaceScenes != ReplaceOption.None)
                 {
@@ -915,7 +915,7 @@ namespace FishNet.Managing.Scened
                 * 1f / 2f is 0.5f. */
                 float maximumIndexWorth = (1f / (float)loadableScenes.Count);
 
-                _sceneProcessor.BeginLoadAsync(loadableScenes[i].Name, loadSceneParameters);
+                _sceneProcessor.BeginLoadAsync(loadableScenes[i].Reference, loadSceneParameters);
                 while (!_sceneProcessor.IsPercentComplete())
                 {
                     float percent = _sceneProcessor.GetPercentComplete();
@@ -979,8 +979,10 @@ namespace FishNet.Managing.Scened
 
                         /* Shouldn't be possible since the scene will always exist either by 
                          * just being loaded or already loaded. */
-                        if (string.IsNullOrEmpty(lastSameSceneName.name))
-                            _networkManager.LogError($"Scene {data.SceneLoadData.SceneLookupDatas[0].Name} could not be found in loaded scenes.");
+                        if (data.SceneLoadData.SceneLookupDatas[0].IsPath && string.IsNullOrEmpty(lastSameSceneName.path))
+                            _networkManager.LogError($"Scene {data.SceneLoadData.SceneLookupDatas[0].Reference} could not be found in loaded scenes.");
+                        else if (!data.SceneLoadData.SceneLookupDatas[0].IsPath && string.IsNullOrEmpty(lastSameSceneName.name))
+                            _networkManager.LogError($"Scene {data.SceneLoadData.SceneLookupDatas[0].Reference} could not be found in loaded scenes.");
                         else
                             firstValidScene = lastSameSceneName;
                     }
@@ -1808,7 +1810,7 @@ namespace FishNet.Managing.Scened
             int startCount = newGlobalScenes.Count;
             //Remove scenes.
             for (int i = 0; i < datas.Length; i++)
-                newGlobalScenes.Remove(datas[i].Name);
+                newGlobalScenes.Remove(datas[i].Reference);
 
             //If any were removed remake globalscenes.
             if (startCount != newGlobalScenes.Count)

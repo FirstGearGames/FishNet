@@ -12,17 +12,17 @@ namespace FishNet.Managing.Scened
     internal static class SceneLookupDataExtensions
     {
         /// <summary>
-        /// Returns Names from SceneLookupData.
+        /// Returns References from SceneLookupData.
         /// </summary>
         /// <param name="datas"></param>
         /// <returns></returns>
-        public static string[] GetNames(this SceneLookupData[] datas)
+        public static string[] GetReferences(this SceneLookupData[] datas)
         {
-            string[] names = new string[datas.Length];
+            string[] references = new string[datas.Length];
             for (int i = 0; i < datas.Length; i++)
-                names[i] = datas[i].Name;
+                references[i] = datas[i].Reference;
 
-            return names;
+            return references;
         }
     }
 
@@ -36,13 +36,15 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public int Handle;
         /// <summary>
-        /// Name of the scene.
+        /// Reference to the scene.
         /// </summary>
-        public string Name = string.Empty;
+        public string Reference = string.Empty;
+        
         /// <summary>
-        /// Returns the scene name without a directory path should one exist.
+        /// True if the Reference is a path to a scene.
+        /// False if the Reference is the name of a scene.
         /// </summary>
-        public string NameOnly => System.IO.Path.GetFileNameWithoutExtension(Name);
+        public bool IsPath = false;
 
         #region Const
         /// <summary>
@@ -67,10 +69,12 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="name">Scene name to generate from.</param>
-        public SceneLookupData(string name)
+        /// <param name="scene">Scene to generate from.</param>
+        /// <param name="isPath">True if scene is a scene path.</param>
+        public SceneLookupData(string scene, bool isPath = false)
         {
-            Name = name;
+            Reference = scene;
+            IsPath = isPath;
         }
         /// <summary>
         /// 
@@ -84,11 +88,13 @@ namespace FishNet.Managing.Scened
         /// 
         /// </summary>
         /// <param name="handle">Scene handle to generate from.</param>
-        /// <param name="name">Name to generate from if handle is 0.</param>
-        public SceneLookupData(int handle, string name)
+        /// <param name="scene">Name to generate from if handle is 0.</param>
+        /// <param name="isPath">True if scene is a scene path.</param>
+        public SceneLookupData(int handle, string scene, bool isPath = false)
         {
             Handle = handle;
-            Name = name;
+            Reference = scene;
+            IsPath = isPath;
         }
 
         #region Comparers.
@@ -151,7 +157,8 @@ namespace FishNet.Managing.Scened
         {
             int hashCode = 2053068273;
             hashCode = hashCode * -1521134295 + Handle.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Name);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Reference);
+            hashCode = hashCode * -1521134295 + EqualityComparer<bool>.Default.GetHashCode(IsPath);
             return hashCode;
         }
 
@@ -176,9 +183,10 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Returns a new SceneLookupData.
         /// </summary>
-        /// <param name="scene">Scene name to create from.</param>
+        /// <param name="scene">Scene to create from.</param>
+        /// <param name="path">True if scene is a path to the scene.</param>
         /// <returns></returns>
-        public static SceneLookupData CreateData(string name) => new SceneLookupData(name);
+        public static SceneLookupData CreateData(string scene, bool isPath = false) => new SceneLookupData(scene, isPath);
         /// <summary>
         /// Returns a new SceneLookupData.
         /// </summary>
@@ -231,22 +239,25 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
-        /// <param name="names">Scene names to create from.</param>
+        /// <param name="scenes">Scenes to create from.</param>
+        /// <param name="paths">True if scenes are paths to scenes. False if scenes are scene names.</param>
         /// <returns></returns>
-        public static SceneLookupData[] CreateData(string[] names)
+        public static SceneLookupData[] CreateData(string[] scenes, bool paths = false)
         {
             bool invalidFound = false;
             List<SceneLookupData> result = new List<SceneLookupData>();
-            foreach (string item in names)
+            foreach (string item in scenes)
             {
                 if (string.IsNullOrEmpty(item))
                 {
                     invalidFound = true;
                     continue;
                 }
-
-                string nameOnly = System.IO.Path.GetFileNameWithoutExtension(item);
-                result.Add(CreateData(nameOnly));
+                
+                if (paths)
+                    result.Add(CreateData(item, true));
+                else
+                    result.Add(CreateData(System.IO.Path.GetFileNameWithoutExtension(item)));
             }
 
             if (invalidFound)
@@ -282,7 +293,7 @@ namespace FishNet.Managing.Scened
         #endregion
 
         /// <summary>
-        /// Returns the first scene found using Handle or Name, preferring Handle.
+        /// Returns the first scene found using Handle or Reference, preferring Handle.
         /// </summary>
         /// <returns></returns>
         /// <param name="foundByHandle">True if scene was found by handle. Handle is always checked first.</param>
@@ -290,9 +301,9 @@ namespace FishNet.Managing.Scened
         {
             foundByHandle = false;
 
-            if (Handle == 0 && string.IsNullOrEmpty(Name))
+            if (Handle == 0 && string.IsNullOrEmpty(Reference))
             {
-                NetworkManager.StaticLogWarning("Scene handle and name is unset; scene cannot be returned.");
+                NetworkManager.StaticLogWarning("Scene handle and reference is unset; scene cannot be returned.");
                 return default;
             }
 
@@ -308,7 +319,7 @@ namespace FishNet.Managing.Scened
 
             //If couldnt find handle try by string.
             if (!foundByHandle)
-                result = SceneManager.GetScene(NameOnly);
+                result = SceneManager.GetScene(Reference);
 
             return result;
         }
