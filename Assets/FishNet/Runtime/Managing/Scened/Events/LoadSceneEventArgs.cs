@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Scened
@@ -72,6 +73,26 @@ namespace FishNet.Managing.Scened
             UnloadedSceneNames = unloadedSceneNames;
         }
 
+
+    }
+
+    public struct SceneAwaitingActivationEventArgs
+    {
+        /// <summary>
+        /// Queue data used by the current scene action.
+        /// </summary>
+        public readonly LoadQueueData QueueData;
+
+        /// <summary>
+        /// List of scene AsyncOperation awaiting activation.
+        /// </summary>
+        public readonly List<AsyncOperation> AwaitingActivation;
+
+        public SceneAwaitingActivationEventArgs(LoadQueueData queueData, List<AsyncOperation> awaitingActivation)
+        {
+            QueueData = queueData;
+            AwaitingActivation = awaitingActivation;
+        }
 
     }
 

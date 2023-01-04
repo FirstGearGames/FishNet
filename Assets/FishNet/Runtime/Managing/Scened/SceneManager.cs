@@ -59,6 +59,10 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public event Action<SceneLoadPercentEventArgs> OnLoadPercentChange;
         /// <summary>
+        /// Called after every scene in QueueData has finished initial load and is awaiting activation from AutomaticallyActivate Option being false.
+        /// </summary>
+        public event Action<SceneAwaitingActivationEventArgs> OnAwaitingActivation;
+        /// <summary>
         /// Called when a scene load ends.
         /// </summary>
         public event Action<SceneLoadEndEventArgs> OnLoadEnd;
@@ -449,6 +453,16 @@ namespace FishNet.Managing.Scened
         {
             TryInvokeOnQueueStart();
             OnLoadStart?.Invoke(new SceneLoadStartEventArgs(qd));
+        }
+        /// <summary>
+        /// Invokes that scenes are loaded, but is awaiting activation.
+        /// </summary>
+        /// <param name="qd"></param>
+        /// <param name="scenesAwaitingActivation">List of AsyncOperations(partially loaded scenes) waiting to be activated</param>
+        private void InvokeOnAwaitingActivation(LoadQueueData qd, List<AsyncOperation> scenesAwaitingActivation)
+        {
+            SceneAwaitingActivationEventArgs args = new SceneAwaitingActivationEventArgs(qd, scenesAwaitingActivation);
+            OnAwaitingActivation?.Invoke(args);
         }
         /// <summary>
         /// Invokes that a scene load has ended. Only called after a valid scene has loaded.
@@ -897,8 +911,8 @@ namespace FishNet.Managing.Scened
             }
             _sceneProcessor.UnloadEnd(data);
 
-            //Scenes loaded.
-            List<Scene> loadedScenes = new List<Scene>();
+            //Scenes loaded that are awaiting activation.
+            List<Scene> awaitingActivationScenes = new List<Scene>();
             /* Scene loading.
             /* Use additive to not thread lock server. */
             for (int i = 0; i < loadableScenes.Count; i++)
@@ -936,18 +950,20 @@ namespace FishNet.Managing.Scened
                     InvokeOnScenePercentChange(data, totalPercent);
                 }
 
-                //Add to loaded scenes.
+                //Add to awaiting activation scenes.
                 Scene loaded = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
-                loadedScenes.Add(loaded);
+                awaitingActivationScenes.Add(loaded);
                 _sceneProcessor.AddLoadedScene(loaded);
             }
             //When all scenes are loaded invoke with 100% done.
             InvokeOnScenePercentChange(data, 1f);
 
+            //At this stage, all loadable scenes are loaded but awaiting activation.
+
             /* Add to ManuallyUnloadScenes. */
             if (data.AsServer && !data.SceneLoadData.Options.AutomaticallyUnload)
             {
-                foreach (Scene s in loadedScenes)
+                foreach (Scene s in awaitingActivationScenes)
                     _manualUnloadScenes.Add(s);
             }
             /* Move identities to first scene. */
@@ -997,8 +1013,8 @@ namespace FishNet.Managing.Scened
                 //Gets first scene loaded this method call.
                 Scene GetFirstLoadedScene()
                 {
-                    if (loadedScenes.Count > 0)
-                        return loadedScenes[0];
+                    if (awaitingActivationScenes.Count > 0)
+                        return awaitingActivationScenes[0];
                     else
                         return default;
                 }
@@ -1019,46 +1035,11 @@ namespace FishNet.Managing.Scened
                 }
             }
 
-            _sceneProcessor.ActivateLoadedScenes();
-            //Wait until everything is loaded (done).
-            yield return _sceneProcessor.AsyncsIsDone();
-            _sceneProcessor.LoadEnd(data);
-
-            /* Wait until loadedScenes are all marked as done.
-             * This is an extra precautionary step because on some devices
-             * the AsyncIsDone returns true before scenes are actually loaded. */
-            bool allScenesLoaded = true;
-            do
-            {
-                foreach (Scene s in loadedScenes)
-                {
-                    if (!s.isLoaded)
-                    {
-                        allScenesLoaded = false;
-                        break;
-                    }
-                }
-                yield return null;
-            } while (!allScenesLoaded);
-
-            Scene preferredActiveScene = default;
-            /* Populate preferred scene to first loaded if replacing
-             * scenes for connection. Does not need to be set for
-             * global because when a global exist it's always set
-             * as the active scene.
-             * 
-             * Do not set preferred scene if server as this could cause
-             * problems when stacking or connection specific scenes. Let the
-             * user make those changes. */
-            if (data.SceneLoadData.ReplaceScenes != ReplaceOption.None && data.ScopeType == SceneScopeType.Connections && !_networkManager.IsServer)
-                preferredActiveScene = data.SceneLoadData.GetFirstLookupScene();
-            SetActiveScene(preferredActiveScene);
-
             //Only the server needs to find scene handles to send to client. Client will send these back to the server.
             if (asServer)
             {
                 //Populate broadcastLookupDatas with any loaded scenes.
-                foreach (Scene s in loadedScenes)
+                foreach (Scene s in awaitingActivationScenes)
                 {
                     SetInFirstNullIndex(s);
 
@@ -1080,6 +1061,7 @@ namespace FishNet.Managing.Scened
                 }
             }
 
+            //Send broadcast data to clients.
             /* If running as server and server is
              * active then send scene changes to client.
              * Making sure server is still active should it maybe
@@ -1111,11 +1093,58 @@ namespace FishNet.Managing.Scened
                     }
                 }
             }
+
+            //Handle Activating Scenes
+            if (data.SceneLoadData.Options.AutomaticallyActivate)
+            {
+                _sceneProcessor.ActivateLoadedScenes();
+
+            }
+            else if (!asHost)
+            {
+                List<AsyncOperation> scenesAwaitingActivation = _sceneProcessor.GetLoadingAsyncOperations();
+                InvokeOnAwaitingActivation(data, scenesAwaitingActivation);
+            }
+
+            //Wait until everything is loaded fully (activated) (done).
+            yield return _sceneProcessor.AsyncsIsDone();
+            _sceneProcessor.LoadEnd(data);
+
+            /* Wait until loadedScenes are all marked as done.
+             * This is an extra precautionary step because on some devices
+             * the AsyncIsDone returns true before scenes are actually loaded. */
+            bool allScenesLoaded = true;
+            do
+            {
+                foreach (Scene s in awaitingActivationScenes)
+                {
+                    if (!s.isLoaded)
+                    {
+                        allScenesLoaded = false;
+                        break;
+                    }
+                }
+                yield return null;
+            } while (!allScenesLoaded);
+
+            Scene preferredActiveScene = default;
+            /* Populate preferred scene to first loaded if replacing
+             * scenes for connection. Does not need to be set for
+             * global because when a global exist it's always set
+             * as the active scene.
+             * 
+             * Do not set preferred scene if server as this could cause
+             * problems when stacking or connection specific scenes. Let the
+             * user make those changes. */
+            if (data.SceneLoadData.ReplaceScenes != ReplaceOption.None && data.ScopeType == SceneScopeType.Connections && !_networkManager.IsServer)
+                preferredActiveScene = data.SceneLoadData.GetFirstLookupScene();
+            SetActiveScene(preferredActiveScene);
+
             /* If running as client then send a message
              * to the server to tell them the scene was loaded.
              * This allows the server to add the client
              * to the scene for checkers. */
-            else if (!data.AsServer && _networkManager.IsClient)
+            if (!data.AsServer && _networkManager.IsClient)
             {
                 ClientScenesLoadedBroadcast msg = new ClientScenesLoadedBroadcast()
                 {
@@ -1124,8 +1153,11 @@ namespace FishNet.Managing.Scened
                 _clientManager.Broadcast(msg);
             }
 
-            InvokeOnSceneLoadEnd(data, requestedLoadSceneNames, loadedScenes, unloadedNames);
+
+
+            InvokeOnSceneLoadEnd(data, requestedLoadSceneNames, awaitingActivationScenes, unloadedNames);
         }
+
 
         /// <summary>
         /// Received on client when connection scenes must be loaded.

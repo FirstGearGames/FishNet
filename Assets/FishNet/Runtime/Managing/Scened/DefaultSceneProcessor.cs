@@ -117,6 +117,14 @@ namespace FishNet.Managing.Scened
         }
 
         /// <summary>
+        /// Returns list of loading Async Operations.
+        /// </summary>
+        public override List<AsyncOperation> GetLoadingAsyncOperations()
+        {
+            return _loadingAsyncOperations;
+        }
+
+        /// <summary>
         /// Activates scenes which were loaded.
         /// </summary>
         public override void ActivateLoadedScenes()

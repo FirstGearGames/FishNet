@@ -142,6 +142,7 @@ namespace FishNet.Runtime
                 writer.WriteBoolean(true);
             else
                 writer.WriteBoolean(false);
+            writer.WriteBoolean(value.AutomaticallyActivate);
         }
 
         public static void Write___Systemu002EStringu005Bu005D(this Writer writer, string[] value)
@@ -247,7 +248,14 @@ namespace FishNet.Runtime
         public static LoadOptions Read___FishNetu002EManagingu002EScenedu002EDatau002ELoadOptions(
           this Reader reader)
         {
-            return reader.ReadBoolean() ? (LoadOptions)null : new LoadOptions();
+            if (reader.ReadBoolean())
+            {
+                return (LoadOptions)null;
+            }
+            return new LoadOptions()
+            {
+                AutomaticallyActivate = reader.ReadBoolean()
+            };
         }
 
         public static string[] Read___Systemu002EStringu005Bu005D(this Reader reader)

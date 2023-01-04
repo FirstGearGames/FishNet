@@ -18,3 +18,9 @@ Documentation
 *.csproj
 *.vs/
 *.vsconfig
+Assets/FishNet/Runtime/FishNet.Runtime.csproj.meta
+Assets/FishNet/Runtime/UpgradeLog.htm
+Assets/FishNet/Runtime/UpgradeLog2.htm
+Assets/FishNet/Runtime/obj/Debug/.NETFramework,Version=v4.0.AssemblyAttributes.cs
+Assets/FishNet/Runtime/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
+Assets/FishNet/Runtime/obj/Debug/FishNet.Runtime.csproj.AssemblyReference.cache

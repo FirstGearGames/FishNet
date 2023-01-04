@@ -13,8 +13,16 @@ namespace FishNet.Managing.Scened
         [System.NonSerialized]
         public bool AutomaticallyUnload = true;
         /// <summary>
+        /// Automatically Activate by default will be set to true, this means that when loading scenes at the end of the load the scene will Activate.
+        /// To get control of when a scene activates, set this to false. You will then have to subscribe to OnAwaitingActivation in the SceneManager,
+        /// and set the AsyncOperation.allowSceneActivation to true for the scene to finish the load and activate.
+        /// </summary>
+        [System.NonSerialized]
+        public bool AutomaticallyActivate = true;
+        /// <summary>
         /// False if to only load scenes which are not yet loaded. When true a scene may load multiple times; this is known as scene stacking. Only the server is able to stack scenes; clients will load a single instance. Global scenes cannot be stacked.
         /// </summary>
+        /// 
         [System.NonSerialized]
         public bool AllowStacking;
         /// <summary>
@@ -23,6 +31,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         [System.NonSerialized]
         public LocalPhysicsMode LocalPhysics = LocalPhysicsMode.None;
+        
         /// <summary>
         /// True to reload a scene if it's already loaded.
         /// This does not function yet.
