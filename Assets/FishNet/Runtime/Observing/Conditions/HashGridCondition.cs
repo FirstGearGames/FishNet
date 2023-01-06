@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace MMO
+namespace FishNet.Component.Observing
 {
     public struct GridCell
     {
@@ -115,7 +115,7 @@ namespace MMO
         /// <summary>
         /// Keeps track of the Network Objects current cell.
         /// </summary>
-        private GridCell _currectCell = new GridCell();
+        private GridCell _currentCell = new GridCell();
 
         //Public Getters & Setters
         //************************
@@ -173,13 +173,13 @@ namespace MMO
             }
             notProcessed = false;
             //Update the Hash Grid with the current position of the network object, returns the update cell.
-            _currectCell = StaticHashGrid.UpdateGridWithPosition(NetworkObject, NetworkObject.transform.position, _currectCell);
+            _currentCell = StaticHashGrid.UpdateGridWithPosition(NetworkObject, NetworkObject.transform.position, _currentCell);
 
             //If visible add padding to search distance. Otherwise use regular search distance.
             int serachDistance = currentlyAdded ? _cellSearchDistance + _hideDistancePadding : _cellSearchDistance;
 
             //Returns a list of network objects in all of the cells, within the search distance.
-            var nobs = StaticHashGrid.GetNearbyNobs(_currectCell, serachDistance);
+            var nobs = StaticHashGrid.GetNearbyNobs(_currentCell, serachDistance);
 
             //If a network object is in the grid return true.
             foreach (NetworkObject nob in nobs)
