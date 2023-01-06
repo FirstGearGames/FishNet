@@ -9,11 +9,11 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Clears the method content and returns ret.
         /// </summary>
-        internal static void ClearMethodWithRet(this MethodDefinition md, ModuleDefinition importReturnModule = null)
+        internal static void ClearMethodWithRet(this MethodDefinition md, CodegenSession session, ModuleDefinition importReturnModule = null)
         {
             md.Body.Instructions.Clear();
             ILProcessor processor = md.Body.GetILProcessor();
-            processor.Add(CodegenSession.GeneralHelper.CreateRetDefault(md, importReturnModule));
+            processor.Add(session.GetClass<GeneralHelper>().CreateRetDefault(md, importReturnModule));
         }
 
         /// <summary>
@@ -45,9 +45,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Creates a variable type within the body and returns it's VariableDef.
         /// </summary>
-        internal static VariableDefinition CreateVariable(this MethodDefinition methodDef, System.Type variableType)
+        internal static VariableDefinition CreateVariable(this MethodDefinition methodDef, CodegenSession session, System.Type variableType)
         {
-            return CreateVariable(methodDef, CodegenSession.GeneralHelper.GetTypeReference(variableType));
+            return CreateVariable(methodDef, session.GetClass<GeneralHelper>().GetTypeReference(variableType));
         }
     }
 

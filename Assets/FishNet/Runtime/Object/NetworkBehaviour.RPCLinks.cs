@@ -71,17 +71,29 @@ namespace FishNet.Object
             }
         }
 
+        /// <summary>
+        /// Returns an estimated length for any Rpc header.
+        /// </summary>
+        /// <returns></returns>
+        private int GetEstimatedRpcHeaderLength()
+        {
+            /* Imaginary number for how long RPC headers are.
+            * They are well under this value but this exist to
+            * ensure a writer of appropriate length is pulled
+            * from the pool. */
+            return 20;
+        }
 
         /// <summary>
         /// Creates a PooledWriter and writes the header for a rpc.
         /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="rpcHash"></param>
-        /// <param name="packetId"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private PooledWriter CreateLinkedRpc(RpcLinkType link, PooledWriter methodWriter, Channel channel)
         {
-            PooledWriter writer = WriterPool.GetWriter();
+            int rpcHeaderBufferLength = GetEstimatedRpcHeaderLength();
+            int methodWriterLength = methodWriter.Length;
+            //Writer containing full packet.
+            PooledWriter writer = WriterPool.GetWriter(rpcHeaderBufferLength + methodWriterLength);
             writer.WriteUInt16(link.LinkIndex);
             //Write length only if reliable.
             if (channel == Channel.Reliable)

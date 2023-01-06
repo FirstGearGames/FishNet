@@ -31,7 +31,7 @@ namespace FishNet.Example.Scened
         /// </summary>
         [Tooltip("True to replace current scenes with new scenes. First scene loaded will become active scene.")]
         [SerializeField]
-        private bool _replaceScenes;
+        private ReplaceOption _replaceOption = ReplaceOption.None;
         /// <summary>
         /// Scenes to load.
         /// </summary>
@@ -124,7 +124,7 @@ namespace FishNet.Example.Scened
 
             //Make scene data.
             SceneLoadData sld = new SceneLoadData(_scenes);
-            sld.ReplaceScenes = (_replaceScenes) ? ReplaceOption.All : ReplaceOption.None;
+            sld.ReplaceScenes = _replaceOption;
             sld.Options = loadOptions;
             sld.MovedNetworkObjects = movedObjects.ToArray();
 

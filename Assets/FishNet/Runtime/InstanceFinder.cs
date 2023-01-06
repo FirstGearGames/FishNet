@@ -8,6 +8,7 @@ using FishNet.Managing.Statistic;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using FishNet.Utility;
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -36,10 +37,7 @@ namespace FishNet
                     {
                         _networkManager = NetworkManager.Instances.First();
                         if (managersCount > 1)
-                        {
-                            if (_networkManager.CanLog(LoggingType.Warning))
-                                Debug.LogWarning($"Multiple NetworkManagers found, the first result will be returned. If you only wish to have one NetworkManager then uncheck 'Allow Multiple' within your NetworkManagers.");
-                        }
+                            _networkManager.LogWarning($"Multiple NetworkManagers found, the first result will be returned. If you only wish to have one NetworkManager then uncheck 'Allow Multiple' within your NetworkManagers.");
                     }
                     //No managers.
                     else
@@ -161,7 +159,7 @@ namespace FishNet
         /// <summary>
         /// True if client nor server are active.
         /// </summary>
-        public static bool IsOffline => (NetworkManager == null) ? true : (!NetworkManager.IsServer && !NetworkManager.IsClient);
+        public static bool IsOffline => (_networkManager == null) ? true : (!NetworkManager.IsServer && !NetworkManager.IsClient);
         #endregion
 
         #region Private.
@@ -171,6 +169,38 @@ namespace FishNet
         private static NetworkManager _networkManager;
         #endregion
 
+        #region Registered components
+        /// <summary>
+        /// Registers to invoke an action when a specified component becomes registered. Action will invoke immediately if already registered.
+        /// </summary>
+        /// <typeparam name="T">Component type.</typeparam>
+        /// <param name="handler">Action to invoke.</param>
+        public static void RegisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager?.RegisterInvokeOnInstance<T>(handler);
+        /// <summary>
+        /// Unrgisters to invoke an action when a specified component becomes registered. Action will invoke immediately if already registered.
+        /// </summary>
+        /// <typeparam name="T">Component type.</typeparam>
+        /// <param name="handler">Action to invoke.</param>
+        public static void UnregisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager?.UnregisterInvokeOnInstance<T>(handler);
+        /// <summary>
+        /// Returns class of type if found within CodegenBase classes.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static T GetInstance<T>() where T : UnityEngine.Component => NetworkManager?.GetInstance<T>();
+        /// <summary>
+        /// Registers a new component to this NetworkManager.
+        /// </summary>
+        /// <typeparam name="T">Type to register.</typeparam>
+        /// <param name="component">Reference of the component being registered.</param>
+        /// <param name="replace">True to replace existing references.</param>
+        public static void RegisterInstance<T>(T component, bool replace = true) where T : UnityEngine.Component => NetworkManager?.RegisterInstance<T>(component, replace);
+        /// <summary>
+        /// Unregisters a component from this NetworkManager.
+        /// </summary>
+        /// <typeparam name="T">Type to unregister.</typeparam>
+        public static void UnregisterInstance<T>() where T : UnityEngine.Component => NetworkManager?.UnregisterInstance<T>();
+        #endregion
 
     }
 

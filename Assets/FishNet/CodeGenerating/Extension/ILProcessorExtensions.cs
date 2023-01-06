@@ -10,9 +10,9 @@ namespace FishNet.CodeGenerating.Extension
         /// <summary>
         /// Creates a variable type within the body and returns it's VariableDef.
         /// </summary>
-        internal static VariableDefinition CreateVariable(this ILProcessor processor, System.Type variableType)
+        internal static VariableDefinition CreateVariable(this ILProcessor processor, CodegenSession session, System.Type variableType)
         {
-            return processor.Body.Method.CreateVariable(variableType);
+            return processor.Body.Method.CreateVariable(session, variableType);
         }
     }
 

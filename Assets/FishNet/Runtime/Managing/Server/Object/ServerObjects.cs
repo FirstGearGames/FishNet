@@ -146,10 +146,10 @@ namespace FishNet.Managing.Server
                 //If no servers are started then reset.
                 if (!base.NetworkManager.ServerManager.AnyServerStarted())
                 {
-                    base.DespawnSpawnedWithoutSynchronization(true);
+                    base.DespawnWithoutSynchronization(true);
                     base.SceneObjects.Clear();
                     _objectIdCache.Clear();
-                    base.NetworkManager.ServerManager.Clients.Clear();
+                    base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients);
                 }
             }
         }
@@ -240,8 +240,7 @@ namespace FishNet.Managing.Server
             //Either something went wrong or user actually managed to spawn ~32K networked objects.
             if (_objectIdCache.Count == 0)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"No more available ObjectIds. How the heck did you manage to have {short.MaxValue} objects spawned at once?");
+                base.NetworkManager.LogError($"No more available ObjectIds. How the heck did you manage to have {short.MaxValue} objects spawned at once?");
                 return -1;
             }
             else
@@ -380,37 +379,31 @@ namespace FishNet.Managing.Server
         {
             if (!NetworkManager.ServerManager.Started)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning("Cannot spawn object because the server is not active.");
+                base.NetworkManager.LogWarning("Cannot spawn object because the server is not active.");
                 return;
             }
             if (networkObject == null)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Specified networkObject is null.");
+                base.NetworkManager.LogError($"Specified networkObject is null.");
                 return;
             }
             if (!networkObject.gameObject.scene.IsValid())
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
+                base.NetworkManager.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
                 return;
             }
             if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
+                base.NetworkManager.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
             }
             if (networkObject.IsSpawned)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"{networkObject.name} is already spawned.");
+                base.NetworkManager.LogWarning($"{networkObject.name} is already spawned.");
                 return;
             }
             if (networkObject.ParentNetworkObject != null && !networkObject.ParentNetworkObject.IsSpawned)
             {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"{networkObject.name} cannot be spawned because it has a parent NetworkObject {networkObject.ParentNetworkObject} which is not spawned.");
+                base.NetworkManager.LogError($"{networkObject.name} cannot be spawned because it has a parent NetworkObject {networkObject.ParentNetworkObject} which is not spawned.");
                 return;
             }
 
@@ -502,12 +495,12 @@ namespace FishNet.Managing.Server
             bool nested = nob.IsNested;
             bool sceneObject = nob.IsSceneObject;
             //Write type of spawn.
-            ObjectSpawnType ost;
+            SpawnType st;
             if (sceneObject)
-                ost = ObjectSpawnType.Scene;
+                st = SpawnType.Scene;
             else
-                ost = (nob.IsGlobal) ? ObjectSpawnType.InstantiatedGlobal : ObjectSpawnType.Instantiated;
-            headerWriter.WriteByte((byte)ost);
+                st = (nob.IsGlobal) ? SpawnType.InstantiatedGlobal : SpawnType.Instantiated;
+            headerWriter.WriteByte((byte)st);
             //ComponentIndex for the nob. 0 is root but more appropriately there's a IsNested boolean as shown above.
             headerWriter.WriteByte(nob.ComponentIndex);
 
@@ -516,7 +509,7 @@ namespace FishNet.Managing.Server
             {
                 headerWriter.WriteNetworkObject(nob.ParentNetworkObject);
             }
-            //No need to write scene/prefab id, or parent if nested.
+            //If not nested see if has a parent other than one configured at edit.
             else
             {
                 /* Writing a scene object. */
@@ -576,8 +569,8 @@ namespace FishNet.Managing.Server
                                 /* Only log if pNob exist. Otherwise this would print if the user 
                                  * was parenting any object, which may not be desirable as they could be
                                  * simply doing it for organization reasons. */
-                                if (!isNull && base.NetworkManager.CanLog(LoggingType.Warning))
-                                    Debug.LogWarning($"Parent {t.name} is not spawned. {nob.name} will not have it's parent sent in the spawn message.");
+                                if (!isNull)
+                                    base.NetworkManager.LogWarning($"Parent {t.name} is not spawned. {nob.name} will not have it's parent sent in the spawn message.");
                                 return false;
                             }
 
@@ -692,12 +685,12 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Despawns an object over the network.
         /// </summary>
-        internal override void Despawn(NetworkObject nob, bool disableOnDespawn, bool asServer)
+        internal override void Despawn(NetworkObject nob, DespawnType despawnType, bool asServer)
         {
             if (nob.CanSpawnOrDespawn(true))
             {
-                FinalizeDespawn(nob, disableOnDespawn);
-                base.Despawn(nob, disableOnDespawn, true);
+                FinalizeDespawn(nob, despawnType);
+                base.Despawn(nob, despawnType, true);
             }
         }
 
@@ -707,7 +700,7 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob)
         {
-            FinalizeDespawn(nob, true);
+            FinalizeDespawn(nob, DespawnType.Destroy);
             base.NetworkObjectUnexpectedlyDestroyed(nob);
         }
 
@@ -715,12 +708,12 @@ namespace FishNet.Managing.Server
         /// Finalizes the despawn process. By the time this is called the object is considered unaccessible.
         /// </summary>
         /// <param name="nob"></param>
-        private void FinalizeDespawn(NetworkObject nob, bool disableOnDespawn)
+        private void FinalizeDespawn(NetworkObject nob, DespawnType despawnType)
         {
             if (nob != null && nob.ObjectId != -1)
             {
                 nob.WriteDirtySyncTypes();
-                WriteDespawnAndSend(nob, disableOnDespawn);
+                WriteDespawnAndSend(nob, despawnType);
                 CacheObjectId(nob);
             }
         }
@@ -729,10 +722,10 @@ namespace FishNet.Managing.Server
         /// Writes a despawn and sends it to clients.
         /// </summary>
         /// <param name="nob"></param>
-        private void WriteDespawnAndSend(NetworkObject nob, bool disableOnDespawn)
+        private void WriteDespawnAndSend(NetworkObject nob, DespawnType despawnType)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
-            WriteDespawn(nob, disableOnDespawn, ref everyoneWriter);
+            WriteDespawn(nob, despawnType, ref everyoneWriter);
 
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
 
@@ -758,11 +751,11 @@ namespace FishNet.Managing.Server
         /// Writes a despawn.
         /// </summary>
         /// <param name="nob"></param>
-        private void WriteDespawn(NetworkObject nob, bool disableOnDespawn, ref PooledWriter everyoneWriter)
+        private void WriteDespawn(NetworkObject nob, DespawnType despawnType, ref PooledWriter everyoneWriter)
         {
             everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
             everyoneWriter.WriteNetworkObject(nob);
-            everyoneWriter.WriteBoolean(disableOnDespawn);
+            everyoneWriter.WriteByte((byte)despawnType);
         }
 
 

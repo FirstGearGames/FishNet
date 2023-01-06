@@ -24,6 +24,12 @@ namespace FishNet.Managing.Scened
         [System.NonSerialized]
         public LocalPhysicsMode LocalPhysics = LocalPhysicsMode.None;
         /// <summary>
+        /// True to reload a scene if it's already loaded.
+        /// This does not function yet.
+        /// </summary>
+        [System.Obsolete("This feature is not functional yet but will be at a later release.")]
+        public bool ReloadScenes;
+        /// <summary>
         /// True if scenes should be loaded using addressables. This field only exists for optional use so the user may know if their queue data is using addressables.
         /// </summary>
         public bool Addressables;

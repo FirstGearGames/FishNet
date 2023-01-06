@@ -27,6 +27,12 @@ namespace FishNet.Managing.Transporting
         private PooledWriter _writer = WriterPool.GetWriter();
         #endregion
 
+        internal SplitReader()
+        {
+            //Increase capacity to reduce the chance of resizing.
+            _writer.EnsureBufferCapacity(20000);
+        }
+
         /// <summary>
         /// Gets split header values.
         /// </summary>
@@ -44,6 +50,12 @@ namespace FishNet.Managing.Transporting
             if (tick != _tick)
                 Reset(tick, expectedMessages);
 
+            /* This is just a guess as to how large the end
+             * message could be. If the writer is not the minimum
+             * of this length then resize it. */
+            int estimatedBufferSize = (expectedMessages * 1500);
+            if (_writer.Capacity < estimatedBufferSize)
+                _writer.EnsureBufferCapacity(estimatedBufferSize);
             /* Empty remainder of reader into the writer.
              * It does not matter if parts of the reader
              * contain data added after the split because

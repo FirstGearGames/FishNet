@@ -1,0 +1,12 @@
+
+blank_issues_enabled: false
+contact_links:
+  - name: Feature Request
+    url: https://github.com/FirstGearGames/FishNet/discussions/categories/feature-request
+    about: Suggest an idea for this project.
+  - name: Documentation
+    url: https://github.com/FirstGearGames/FishNet/discussions/categories/documentation
+    about: Anything to do with documentation!
+  - name: Question
+    url: https://github.com/FirstGearGames/FishNet/discussions/categories/q-a
+    about: Please ask and answer questions here.

@@ -35,7 +35,7 @@ namespace FishNet.Managing.Scened
         [System.NonSerialized]
         public readonly bool AsServer;
 
-        internal UnloadQueueData() { }
+        public UnloadQueueData() { }
         internal UnloadQueueData(SceneScopeType scopeType, NetworkConnection[] conns, SceneUnloadData sceneUnloadData, string[] globalScenes, bool asServer)
         {
             ScopeType = scopeType;

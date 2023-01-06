@@ -162,8 +162,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 
@@ -195,7 +194,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        protected internal override void OnStartCallback(bool asServer)
+        public override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
             List<CachedOnChange> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
@@ -227,7 +226,7 @@ namespace FishNet.Object.Synchronizing
                 base.WriteDelta(writer, resetSyncTick);
                 //False for not full write.
                 writer.WriteBoolean(false);
-                writer.WriteUInt32((uint)_changed.Count);
+                writer.WriteInt32(_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
                 {
@@ -258,7 +257,7 @@ namespace FishNet.Object.Synchronizing
             //True for full write.
             writer.WriteBoolean(true);
             int count = Collection.Count;
-            writer.WriteUInt32((uint)count);
+            writer.WriteInt32(count);
             foreach (T item in Collection)
             {
                 writer.WriteByte((byte)SyncHashSetOperation.Add);
@@ -287,7 +286,7 @@ namespace FishNet.Object.Synchronizing
             if (fullWrite)
                 collection.Clear();
 
-            int changes = (int)reader.ReadUInt32();
+            int changes = reader.ReadInt32();
             for (int i = 0; i < changes; i++)
             {
                 SyncHashSetOperation operation = (SyncHashSetOperation)reader.ReadByte();
@@ -457,8 +456,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 
@@ -483,8 +481,7 @@ namespace FishNet.Object.Synchronizing
             }
 
             //Not found.
-            if (base.NetworkManager.CanLog(LoggingType.Error))
-                Debug.LogError($"Could not find object within SyncHashSet, dirty will not be set.");
+            base.NetworkManager.LogError($"Could not find object within SyncHashSet, dirty will not be set.");
         }
 
         /// <summary>

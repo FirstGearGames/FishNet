@@ -161,26 +161,16 @@ namespace FishNet.Object
                 if (isSyncObject)
                 {
                     if (_syncObjects.TryGetValueIL2CPP(index, out SyncBase sb))
-                    {
                         sb.Read(reader);
-                    }
                     else
-                    {
-                        if (NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"SyncObject not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
-                    }
+                        NetworkManager.LogWarning($"SyncObject not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
                 }
                 else
                 {
                     if (_syncVars.ContainsKey(index))
-                    {
                         ReadSyncVar(reader, index);
-                    }
                     else
-                    {
-                        if (NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"SyncVar not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
-                    }
+                        NetworkManager.LogWarning($"SyncVar not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
                 }
             }
         }
@@ -272,14 +262,9 @@ namespace FishNet.Object
                     }
 
                     if (writer == null)
-                    {
-                        if (NetworkManager.CanLog(LoggingType.Error))
-                            Debug.LogError($"Writer couldn't be found for permissions {sb.Settings.ReadPermission} on channel {channel}.");
-                    }
+                        NetworkManager.LogError($"Writer couldn't be found for permissions {sb.Settings.ReadPermission} on channel {channel}.");
                     else
-                    {
                         sb.WriteDelta(writer);
-                    }
                 }
             }
 
@@ -347,6 +332,18 @@ namespace FishNet.Object
             /* Fall through. If here then sync types are still pending
              * being written or were just written this frame. */
             return false;
+        }
+
+
+        /// <summary>
+        /// Resets all SyncTypes for this NetworkBehaviour for server and client side.
+        /// </summary>
+        internal void ResetSyncTypes()
+        {
+            foreach (SyncBase item in _syncVars.Values)
+                item.Reset();
+            foreach (SyncBase item in _syncObjects.Values)
+                item.Reset();
         }
 
 

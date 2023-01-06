@@ -75,14 +75,15 @@ namespace FishNet.Object
             if (gameObject.activeInHierarchy)
                 return;
 
-            NetworkInitializeIfDisabledInternal();
+            NetworkInitializeIfDisabled();
         }
         /// <summary>
         /// Long name is to prevent users from potentially creating their own method named the same.
         /// </summary>
-        [CodegenMakePublic] //internal.
+        [CodegenMakePublic]
         [APIExclude]
-        protected internal virtual void NetworkInitializeIfDisabledInternal() { }
+        internal virtual void NetworkInitializeIfDisabled() { }
+
         #region Editor.
         protected virtual void Reset()
         {
@@ -90,9 +91,7 @@ namespace FishNet.Object
             if (Application.isPlaying)
                 return;
 
-            //NetworkObject nob = TryAddNetworkObject();
             TryAddNetworkObject();
-            //nob.UpdateNetworkBehaviours();
 #endif
         }
 
@@ -100,15 +99,22 @@ namespace FishNet.Object
         {
 #if UNITY_EDITOR
             if (Application.isPlaying)
-                return;
+                return; 
 
             TryAddNetworkObject();
-            //NetworkObject nob = TryAddNetworkObject();
-            ////If componentIndex has not been set.
-            //if (ComponentIndex == byte.MaxValue)
-            //    nob.UpdateNetworkBehaviours();
 #endif
         }
+
+        /// <summary>
+        /// Resets this NetworkBehaviour so that it may be added to an object pool.
+        /// </summary>
+        internal void ResetForObjectPool()
+        {
+            ResetSyncTypes();
+            ClearReplicateCache();
+            ClearBuffedRpcs();
+        }
+
 
         /// <summary>
         /// Tries to add the NetworkObject component.
@@ -116,8 +122,14 @@ namespace FishNet.Object
         private NetworkObject TryAddNetworkObject()
         {
 #if UNITY_EDITOR
-            if (Application.isPlaying || _addedNetworkObject != null)
+            if (Application.isPlaying)
                 return _addedNetworkObject;
+
+            if (_addedNetworkObject != null)
+            {
+                AlertToDuplicateNetworkObjects(_addedNetworkObject.transform);
+                return _addedNetworkObject;
+            }
 
             /* Manually iterate up the chain because GetComponentInParent doesn't
              * work when modifying prefabs in the inspector. Unity, you're starting
@@ -133,12 +145,40 @@ namespace FishNet.Object
                     climb = climb.parent;
             }
 
-            _addedNetworkObject = (result != null) ? result : transform.root.gameObject.AddComponent<NetworkObject>();
+            if (result != null)
+                _addedNetworkObject = result;
+            //Not found, add a new nob.
+            else
+                _addedNetworkObject = transform.root.gameObject.AddComponent<NetworkObject>();
+
+
+            AlertToDuplicateNetworkObjects(_addedNetworkObject.transform);
             return _addedNetworkObject;
+
+            //Removes duplicate network objects from t.
+            void AlertToDuplicateNetworkObjects(Transform t)
+            {
+                NetworkObject[] nobs = t.GetComponents<NetworkObject>();
+                //This shouldn't be possible but does occur sometimes; maybe a unity bug?
+                if (nobs.Length > 1)
+                { 
+                    //Update added to first entryt.
+                    _addedNetworkObject = nobs[0];
+ 
+                    string useMenu = " You may also use the Fish-Networking menu to automatically remove duplicate NetworkObjects.";
+                    string sceneName = t.gameObject.scene.name;
+                    if (string.IsNullOrEmpty(sceneName))
+                        Debug.LogError($"Prefab {t.name} has multiple NetworkObject components. Please remove the extra component(s) to prevent errors.{useMenu}");
+                    else
+                        Debug.LogError($"Object {t.name} in scene {sceneName} has multiple NetworkObject components. Please remove the extra component(s) to prevent errors.{useMenu}");
+                }
+
+            } 
 #else
             return null;
 #endif
         }
+
         #endregion
     }
 

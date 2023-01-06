@@ -10,24 +10,29 @@ namespace FishNet.Managing.Timing.Editing
     [CanEditMultipleObjects]
     public class TimeManagerEditor : Editor
     {
+        private SerializedProperty _updateOrder;
+        private SerializedProperty _timingType;
         private SerializedProperty _tickRate;
+        private SerializedProperty _allowTickDropping;
+        private SerializedProperty _maximumFrameTicks;
         private SerializedProperty _pingInterval;
         private SerializedProperty _timingInterval;
-        private SerializedProperty _physicsMode;
-        private SerializedProperty _maximumBufferedInputs;
+        private SerializedProperty _physicsMode;        
 
         protected virtual void OnEnable()
         {
+            _updateOrder = serializedObject.FindProperty("_updateOrder");
+            _timingType = serializedObject.FindProperty("_timingType");
             _tickRate = serializedObject.FindProperty("_tickRate");
+            _allowTickDropping = serializedObject.FindProperty("_allowTickDropping");
+            _maximumFrameTicks = serializedObject.FindProperty("_maximumFrameTicks");
             _pingInterval = serializedObject.FindProperty("_pingInterval");
             _timingInterval = serializedObject.FindProperty("_timingInterval");
             _physicsMode = serializedObject.FindProperty("_physicsMode");
-            _maximumBufferedInputs = serializedObject.FindProperty("_maximumBufferedInputs");
         }
 
         public override void OnInspectorGUI()
         {
-
             serializedObject.Update();
 
             GUI.enabled = false;
@@ -37,6 +42,15 @@ namespace FishNet.Managing.Timing.Editing
             //Timing.
             EditorGUILayout.LabelField("Timing", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_updateOrder);
+            EditorGUILayout.PropertyField(_timingType);
+            EditorGUILayout.PropertyField(_allowTickDropping);
+            if (_allowTickDropping.boolValue == true)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_maximumFrameTicks);
+                EditorGUI.indentLevel--;
+            }
             EditorGUILayout.PropertyField(_tickRate);
             EditorGUILayout.PropertyField(_pingInterval);
             EditorGUILayout.PropertyField(_timingInterval);            
@@ -51,11 +65,11 @@ namespace FishNet.Managing.Timing.Editing
                 EditorGUILayout.HelpBox("If you are using physics interactions be sure to change the PhysicsMode to TimeManager and implement physics within the TimeManager tick events.", MessageType.None);
             EditorGUI.indentLevel--;
 
-            //Prediction.
-            EditorGUILayout.LabelField("Prediction", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_maximumBufferedInputs);
-            EditorGUI.indentLevel--;
+            ////Prediction.
+            //EditorGUILayout.LabelField("Prediction", EditorStyles.boldLabel);
+            //EditorGUI.indentLevel++;
+            //EditorGUILayout.PropertyField(_maximumBufferedInputs);
+            //EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();
         }

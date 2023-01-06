@@ -1,5 +1,5 @@
 ﻿using FishNet.Broadcast;
-using FishNet.Managing.Logging;
+using FishNet.Managing;
 using FishNet.Transporting;
 using UnityEngine;
 
@@ -19,8 +19,7 @@ namespace FishNet.Object
         {
             if (NetworkManager == null)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot send broadcast from {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
+                NetworkManager.StaticLogWarning($"Cannot send broadcast from {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
                 return;
             }
 

@@ -173,8 +173,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
+                NetworkManager.LogWarning($"Cannot complete operation {operation} as server when server is not active.");
                 return;
             }
 
@@ -207,7 +206,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        protected internal override void OnStartCallback(bool asServer)
+        public override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
             List<CachedOnChange> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
@@ -245,7 +244,7 @@ namespace FishNet.Object.Synchronizing
             {
                 //False for not full write.
                 writer.WriteBoolean(false);
-                writer.WriteUInt32((uint)_changed.Count);
+                writer.WriteInt32(_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
                 {
@@ -285,7 +284,7 @@ namespace FishNet.Object.Synchronizing
             base.WriteHeader(writer, false);
             //True for full write.
             writer.WriteBoolean(true);
-            writer.WriteUInt32((uint)Collection.Count);
+            writer.WriteInt32(Collection.Count);
             foreach (KeyValuePair<TKey, TValue> item in Collection)
             {
                 writer.WriteByte((byte)SyncDictionaryOperation.Add);
@@ -318,7 +317,7 @@ namespace FishNet.Object.Synchronizing
             if (fullWrite)
                 collection.Clear();
 
-            int changes = (int)reader.ReadUInt32();
+            int changes = reader.ReadInt32();
             for (int i = 0; i < changes; i++)
             {
                 SyncDictionaryOperation operation = (SyncDictionaryOperation)reader.ReadByte();
@@ -467,16 +466,14 @@ namespace FishNet.Object.Synchronizing
         {
             if (offset <= -1 || offset >= array.Length)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Index is out of range.");
+                base.NetworkManager.LogError($"Index is out of range.");
                 return;
             }
 
             int remaining = array.Length - offset;
             if (remaining < Count)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Array is not large enough to copy data. Array is of length {array.Length}, index is {offset}, and number of values to be copied is {Count.ToString()}.");
+                base.NetworkManager.LogError($"Array is not large enough to copy data. Array is of length {array.Length}, index is {offset}, and number of values to be copied is {Count.ToString()}.");
                 return;
             }
 
@@ -553,8 +550,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 

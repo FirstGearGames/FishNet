@@ -304,8 +304,7 @@ namespace FishNet.Managing.Transporting
         {
             if (requiredMessages <= 1)
             {
-                if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"SendSplitData was called with {requiredMessages} required messages. This method should only be called if messages must be split into 2 pieces or more.");
+                _networkManager.LogError($"SendSplitData was called with {requiredMessages} required messages. This method should only be called if messages must be split into 2 pieces or more.");
                 return;
             }
 

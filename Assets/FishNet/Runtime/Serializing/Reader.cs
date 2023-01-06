@@ -39,6 +39,10 @@ namespace FishNet.Serializing
     {
         #region Public.
         /// <summary>
+        /// Capacity of the buffer.
+        /// </summary>
+        public int Capacity => _buffer.Length;
+        /// <summary>
         /// NetworkManager for this reader. Used to lookup objects.
         /// </summary>
         public NetworkManager NetworkManager;
@@ -78,14 +82,6 @@ namespace FishNet.Serializing
         /// Data being read.
         /// </summary>
         private byte[] _buffer;
-        /// <summary>
-        /// Buffer to copy Guids into.
-        /// </summary>
-        private byte[] _guidBuffer = new byte[16];
-        /// <summary>
-        /// Used to encode strings.
-        /// </summary>
-        private readonly UTF8Encoding _encoding = new UTF8Encoding(false, true);
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -266,18 +262,18 @@ namespace FishNet.Serializing
         /// <summary>
         /// Read bytes from position into target.
         /// </summary>
-        /// <returns><paramref name="target"/></returns>
+        /// <param name="buffer">Buffer to read bytes into.</param>
+        /// <param name="count">Number of bytes to read.</param>
         [CodegenExclude]
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ReadBytes(ref byte[] target, int count)
+        public void ReadBytes(ref byte[] buffer, int count)
         {
-            if (target == null)
+            if (buffer == null)
                 throw new EndOfStreamException($"Target is null.");
             //Target isn't large enough.
-            if (count > target.Length)
-                throw new EndOfStreamException($"Count of {count} exceeds target length of {target.Length}.");
+            if (count > buffer.Length)
+                throw new EndOfStreamException($"Count of {count} exceeds target length of {buffer.Length}.");
 
-            BlockCopy(ref target, 0, count);
+            BlockCopy(ref buffer, 0, count);
         }
 
         /// <summary>
@@ -473,7 +469,7 @@ namespace FishNet.Serializing
             if (!CheckAllocationAttack(size))
                 return string.Empty;
             ArraySegment<byte> data = ReadArraySegment(size);
-            return _encoding.GetString(data.Array, data.Offset, data.Count);
+            return ReaderStatics.GetString(data);
         }
 
         /// <summary>
@@ -715,7 +711,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[] ReadBytesAllocated(int count)
         {
-            byte[] bytes = ByteArrayPool.Retrieve(count);
+            byte[] bytes = new byte[count];
             ReadBytes(ref bytes, count);
             return bytes;
         }
@@ -728,8 +724,9 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public System.Guid ReadGuid()
         {
-            ReadBytes(ref _guidBuffer, 16);
-            return new System.Guid(_guidBuffer);
+            byte[] buffer = ReaderStatics.GetGuidBuffer();
+            ReadBytes(ref buffer, 16);
+            return new System.Guid(buffer);
         }
 
 
@@ -774,19 +771,19 @@ namespace FishNet.Serializing
         /// <returns></returns>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NetworkObject ReadNetworkObject(out int objectId)
+        public NetworkObject ReadNetworkObject(out int objectOrPrefabId)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             LastNetworkBehaviour = null;
 #endif
             bool isSpawned = ReadBoolean();
-            objectId = ReadInt16();
+            objectOrPrefabId = ReadInt16();
             /* -1 indicates that the object
              * is null or no PrefabId is set.
              * PrefabIds are set in Awake within
              * the NetworkManager so that should
              * never happen so long as nob isn't null. */
-            if (objectId == -1)
+            if (objectOrPrefabId == -1)
                 return null;
 
             bool isServer = NetworkManager.ServerManager.Started;
@@ -806,19 +803,18 @@ namespace FishNet.Serializing
                  * use a fake host connection like some lesser solutions the client
                  * has to always be treated as it's own entity. */
                 if (isClient)
-                    NetworkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
+                    NetworkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectOrPrefabId, out result);
                 //If not found on client and server is running then try server.
                 if (result == null && isServer)
-                    NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
+                    NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectOrPrefabId, out result);
             }
             //Not spawned.
             else
             {
-
                 //Only look up asServer if not client, otherwise use client.
                 bool asServer = !isClient;
                 //Look up prefab.
-                result = NetworkManager.SpawnablePrefabs.GetObject(asServer, objectId);
+                result = NetworkManager.GetPrefab(objectOrPrefabId, asServer);
             }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -847,8 +843,7 @@ namespace FishNet.Serializing
             {
                 if (componentIndex >= nob.NetworkBehaviours.Length)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name} [id {nob.ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
+                    NetworkManager.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name} [id {nob.ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
                     result = null;
                 }
                 else
@@ -935,16 +930,18 @@ namespace FishNet.Serializing
                         //If found in client collection then return.
                         if (NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(value, out result))
                             return result;
-                        //Otherwise make a new instance.
+                        /* Otherwise make a new instance.
+                         * We do not know if this is for the server or client so
+                         * initialize it either way. Connections rarely come through
+                         * without being in server/client side collection. */
                         else
-                            return new NetworkConnection(NetworkManager, value);
+                            return new NetworkConnection(NetworkManager, value, true);
 
                     }
                     //Only server and not found.
                     else
                     {
-                        if (NetworkManager.CanLog(LoggingType.Warning))
-                            Debug.LogWarning($"Unable to find connection for read Id {value}. An empty connection will be returned.");
+                        NetworkManager.LogWarning($"Unable to find connection for read Id {value}. An empty connection will be returned.");
                         return FishNet.Managing.NetworkManager.EmptyConnection;
                     }
                 }
@@ -957,9 +954,12 @@ namespace FishNet.Serializing
                     //Try client side dictionary.
                     else if (NetworkManager.ClientManager.Clients.TryGetValueIL2CPP(value, out NetworkConnection result))
                         return result;
-                    //Otherwise return a new connection.
+                    /* Otherwise make a new instance.
+                    * We do not know if this is for the server or client so
+                    * initialize it either way. Connections rarely come through
+                    * without being in server/client side collection. */
                     else
-                        return new NetworkConnection(NetworkManager, value); //todo make and use NC cache.
+                        return new NetworkConnection(NetworkManager, value, true);
                 }
 
             }
@@ -977,14 +977,12 @@ namespace FishNet.Serializing
             * than what bytes are available. */
             if (size < -1)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Size of {size} is invalid.");
+                NetworkManager.LogError($"Size of {size} is invalid.");
                 return false;
             }
             if (size > Remaining)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Read size of {size} is larger than remaining data of {Remaining}.");
+                NetworkManager.LogError($"Read size of {size} is larger than remaining data of {Remaining}.");
                 return false;
             }
 
@@ -1162,16 +1160,15 @@ namespace FishNet.Serializing
         {
             if (IsAutoPackType<T>(out AutoPackType packType))
             {
-                Func<Reader, AutoPackType, T> del = GenericReader<T>.ReadAutoPack;
-                if (del == null)
+                Func<Reader, AutoPackType, T> autopackDel = GenericReader<T>.ReadAutoPack;
+                if (autopackDel == null)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    NetworkManager.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
                     return default;
                 }
                 else
                 {
-                    return del.Invoke(this, packType);
+                    return autopackDel.Invoke(this, packType);
                 }
             }
             else
@@ -1179,8 +1176,7 @@ namespace FishNet.Serializing
                 Func<Reader, T> del = GenericReader<T>.Read;
                 if (del == null)
                 {
-                    if (NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    NetworkManager.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
                     return default;
                 }
                 else

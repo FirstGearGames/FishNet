@@ -157,6 +157,23 @@ namespace FishNet.Managing.Scened
         }
 
         /// <summary>
+        /// Gets the first Scene in SceneLookupDatas.
+        /// </summary>
+        /// <returns></returns>
+        public Scene GetFirstLookupScene()
+        {
+            foreach (SceneLookupData sld in SceneLookupDatas)
+            {
+                Scene result = sld.GetScene(out _);
+                if (!string.IsNullOrEmpty(result.name))
+                    return result;
+            }
+
+            return default;
+        }
+
+
+        /// <summary>
         /// Returns if any data is invalid, such as null entries.
         /// </summary>
         /// <returns></returns>

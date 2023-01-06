@@ -242,7 +242,7 @@ MonoBehaviour:
   <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
   _isGlobal: 0
-  _disableOnDespawn: 0
+  _defaultDespawnType: 0
 --- !u!114 &1950515033
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -256,7 +256,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _overrideType: 3
-  _setHostVisibility: 1
+  _updateHostVisibility: 1
   _observerConditions:
   - {fileID: 11400000, guid: 2033f54fd2794464bae08fa5a55c8996, type: 2}
 --- !u!1 &1722183419489630397
@@ -524,7 +524,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _moveObject: 0
   _moveAllObjects: 1
-  _replaceScenes: 1
+  _replaceOption: 0
   _scenes:
   - ReplaceMain
   _connectionOnly: 0

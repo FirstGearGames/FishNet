@@ -19,8 +19,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         [APIExclude]
         [CodegenMakePublic] //To internal.
-        public static int InstantiatedRigidbodyCountInternal { get; private set; }
-
+        public static int InstantiatedRigidbodyCountInternal { get; set; }
         #endregion
 
         #region Private.
@@ -28,6 +27,26 @@ namespace FishNet.Component.Prediction
         /// Pauser for rigidbodies when they cannot be rolled back.
         /// </summary>
         private RigidbodyPauser _rigidbodyPauser = new RigidbodyPauser();
+        /// <summary>
+        /// Next tick to resend data when resend type is set to interval.
+        /// </summary>
+        private uint _nextIntervalResend;
+        /// <summary>
+        /// Number of resends remaining when the object has not changed.
+        /// </summary>
+        private ushort _resendsRemaining;
+        /// <summary>
+        /// True if object was changed previous tick.
+        /// </summary>
+        private bool _previouslyChanged;
+        /// <summary>
+        /// Animators found on the graphical object.
+        /// </summary>
+        private Animator[] _graphicalAnimators;
+        /// <summary>
+        /// True if GraphicalAniamtors have been intialized.
+        /// </summary>
+        private bool _animatorsInitialized;
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,6 +64,51 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
+        /// Called on client when ownership changes for this object.
+        /// </summary>
+        /// <param name="prevOwner"></param>
+        private void Rigidbodies_OnOwnershipClient(NetworkConnection prevOwner)
+        {
+            if (!IsRigidbodyPrediction)
+                return;
+            //If owner no need to fix for animators.
+            if (base.IsOwner)
+                return;
+            //Would have already fixed if animators are set.
+            if (_animatorsInitialized)
+                return;
+
+            _animatorsInitialized = true;
+            _graphicalAnimators = _graphicalObject.GetComponentsInChildren<Animator>(true);
+
+            if (_graphicalAnimators.Length > 0)
+            {
+                for (int i = 0; i < _graphicalAnimators.Length; i++)
+                    _graphicalAnimators[i].keepAnimatorControllerStateOnDisable = true;
+
+                /* True if at least one animator is on the graphical root. 
+                * Unity gets components in order so it's safe to assume
+                 * 0 would be the topmost animator. This has to be done
+                 * to prevent animation jitter when pausing the rbs. */
+                if (_graphicalAnimators[0].transform == _graphicalObject)
+                {
+                    Transform graphicalHolder = new GameObject().transform;
+                    graphicalHolder.name = "GraphicalObjectHolder";
+                    graphicalHolder.SetParent(transform);
+                    //ref _graphicalInstantiatedOffsetPosition, ref _graphicalInstantiatedOffsetRotation);
+                    graphicalHolder.localPosition = _graphicalInstantiatedOffsetPosition;
+                    graphicalHolder.localRotation = _graphicalInstantiatedOffsetRotation;
+                    graphicalHolder.localScale = _graphicalObject.localScale;
+                    _graphicalObject.SetParent(graphicalHolder);
+                    _graphicalObject.localPosition = Vector3.zero;
+                    _graphicalObject.localRotation = Quaternion.identity;
+                    _graphicalObject.localScale = Vector3.one;
+                    SetGraphicalObject(graphicalHolder);
+                }
+            }
+        }
+
+        /// <summary>
         /// Called after a tick occurs; physics would have simulated if using PhysicsMode.TimeManager.
         /// </summary>
         private void Rigidbodies_TimeManager_OnPostTick()
@@ -52,6 +116,7 @@ namespace FishNet.Component.Prediction
             if (!IsRigidbodyPrediction)
                 return;
 
+            _rigidbodyPauser.Unpause();
             bool is2D = (_predictionType == PredictionType.Rigidbody2D);
 
             if (CanPredict())
@@ -61,21 +126,6 @@ namespace FishNet.Component.Prediction
                 else
                     PredictVelocity(gameObject.scene.GetPhysicsScene2D());
             }
-
-            //if (base.IsServer)
-            //{
-            //    uint tick = base.TimeManager.Tick;
-            //    if (tick >= _nextSendTick)
-            //    {
-            //        uint ticksRequired = base.TimeManager.TimeToTicks(SEND_INTERVAL, TickRounding.RoundUp);
-            //        _nextSendTick = tick + ticksRequired;
-
-            //        if (!is2D)
-            //            SendRigidbodyState();
-            //        else
-            //            SendRigidbody2DState();
-            //    }
-            //}
         }
 
         /// <summary>
@@ -83,6 +133,10 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void Rigidbodies_TimeManager_OnPreReconcile(NetworkBehaviour nb)
         {
+            /* Exit if owner because the owner should
+             * only be using CSP to rollback. */
+            if (base.IsOwner)
+                return;
             if (nb.gameObject == gameObject)
                 return;
             if (!IsRigidbodyPrediction)
@@ -98,35 +152,19 @@ namespace FishNet.Component.Prediction
              * tick twice. */
             if (lastStateTick != lastNbTick || lastStateTick == _lastResetTick)
             {
-                _rigidbodyPauser.ChangeKinematic(true);
+                _spectatorSmoother?.SetLocalReconcileTick(-1);
+                _rigidbodyPauser.Pause();
             }
             //If possible to perhaps reset.
             else
             {
+                _spectatorSmoother?.SetLocalReconcileTick(lastNbTick);
                 _lastResetTick = lastStateTick;
-                /* If the reconciling nb won't change then
-                 * there is no reason to rollback. */
-                //if (!nb.TransformMayChange())
-                //{
-                //    _rigidbodyPauser.ChangeKinematic(true);
-                //}
-                //Need to reset / rollback.
-                //else
-                //{
                 if (is2D)
                     ResetRigidbody2DToData();
                 else
                     ResetRigidbodyToData();
-                //}
             }
-        }
-
-        /// <summary>
-        /// Called after performing a reconcile on a NetworkBehaviour.
-        /// </summary>
-        private void Rigidbodies_TimeManager_OnPostReconcile(NetworkBehaviour nb)
-        {
-            _rigidbodyPauser.ChangeKinematic(false);
         }
 
         /// <summary>
@@ -188,9 +226,43 @@ namespace FishNet.Component.Prediction
             if (!base.Observers.Contains(nbOwner))
                 return;
 
-            //Only send if transform may change.
-            if (!base.TransformMayChange())
-                return;
+            bool hasChanged = base.TransformMayChange();
+            if (!hasChanged)
+            {
+                //Not changed but was previous tick. Reset resends.
+                if (_previouslyChanged)
+                    _resendsRemaining = base.TimeManager.TickRate;
+
+                uint currentTick = base.TimeManager.Tick;
+                //Resends remain.
+                if (_resendsRemaining > 0)
+                {
+                    _resendsRemaining--;
+                    //If now 0 then update next send interval.
+                    if (_resendsRemaining == 0)
+                        UpdateNextIntervalResend();
+                }
+                //No more resends.
+                else
+                { 
+                    //No resend interval.
+                    if (_resendType == ResendType.Disabled)
+                        return;
+                    //Interval not yet met.
+                    if (currentTick < _nextIntervalResend)
+                        return;
+
+                    UpdateNextIntervalResend();
+                }
+
+                //Updates the next tick when a resend should occur.
+                void UpdateNextIntervalResend()
+                {
+                    _nextIntervalResend = (currentTick + _resendInterval);
+                }
+
+            }
+            _previouslyChanged = hasChanged;
 
             if (_predictionType == PredictionType.Rigidbody)
                 SendRigidbodyState(tick, nbOwner);
@@ -237,7 +309,23 @@ namespace FishNet.Component.Prediction
                     //Velocity difference is close enough to the baseline to where it doesn't need to be reset, so use prediction.
                     else
                     {
-                        result = Vector3.Lerp(velocity, lastVelocity, _predictionRatio);
+                        Vector3 changeMultiplied = (velocity - lastVelocity) * _maintainedVelocity;
+                        //Retaining velocity.
+                        if (_maintainedVelocity > 0f)
+                        {
+                            result = (velocity + changeMultiplied);
+                        }
+                        //Reducing velocity.
+                        else
+                        {
+                            result = (velocity + changeMultiplied);
+                            /* When reducing velocity make sure the direction
+                             * did not change. When this occurs it means the velocity
+                             * was reduced into the opposite direction. To prevent
+                             * this from happening just zero out velocity instead. */
+                            if (velocity.normalized != result.normalized)
+                                result = Vector3.zero;
+                        }
                         return true;
                     }
                 }
@@ -287,7 +375,23 @@ namespace FishNet.Component.Prediction
                     //Velocity difference is close enough to the baseline to where it doesn't need to be reset, so use prediction.
                     else
                     {
-                        result = Mathf.Lerp(velocity, lastVelocity, _predictionRatio);
+                        float changeMultiplied = (velocity - lastVelocity) * _maintainedVelocity;
+                        //Retaining velocity.
+                        if (_maintainedVelocity > 0f)
+                        {
+                            result = (velocity + changeMultiplied);
+                        }
+                        //Reducing velocity.
+                        else
+                        {
+                            result = (velocity + changeMultiplied);
+                            /* When reducing velocity make sure the direction
+                             * did not change. When this occurs it means the velocity
+                             * was reduced into the opposite direction. To prevent
+                             * this from happening just zero out velocity instead. */
+                            if (Mathf.Abs(velocity) != Mathf.Abs(result))
+                                result = 0f;
+                        }
                         return true;
                     }
                 }
@@ -372,7 +476,7 @@ namespace FishNet.Component.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PredictVelocity(PhysicsScene ps)
         {
-            if (_predictionRatio <= 0f)
+            if (_maintainedVelocity == 0f)
                 return;
             if (ps != _physicsScene)
                 return;
@@ -485,7 +589,7 @@ namespace FishNet.Component.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PredictVelocity(PhysicsScene2D ps)
         {
-            if (_predictionRatio <= 0f)
+            if (_maintainedVelocity == 0f)
                 return;
             if (ps != _physicsScene2D)
                 return;
@@ -520,11 +624,6 @@ namespace FishNet.Component.Prediction
                 return;
 
             _receivedRigidbody2DState = state;
-            if (applyImmediately)
-            {
-                ResetRigidbody2DToData();
-                Physics2D.SyncTransforms();
-            }
         }
         #endregion
 

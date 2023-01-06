@@ -20,6 +20,12 @@ namespace FishNet.Object
         /// True to also run the RPC logic locally.
         /// </summary>
         public bool RunLocally = false;
+        /// <summary>
+        /// Estimated length of data being sent.
+        /// When a value other than -1 the minimum length of the used serializer will be this value.
+        /// This is useful for writing large packets which otherwise resize the serializer.
+        /// </summary>
+        public int DataLength = -1;
     }
 
     /// <summary>
@@ -41,6 +47,12 @@ namespace FishNet.Object
         /// True to also run the RPC logic locally.
         /// </summary>
         public bool RunLocally = false;
+        /// <summary>
+        /// Estimated length of data being sent.
+        /// When a value other than -1 the minimum length of the used serializer will be this value.
+        /// This is useful for writing large packets which otherwise resize the serializer.
+        /// </summary>
+        public int DataLength = -1;
     }
 
     /// <summary>
@@ -58,6 +70,12 @@ namespace FishNet.Object
         /// Use this field with caution as it may create undesired results when set to false.
         /// </summary>
         public bool ValidateTarget = true;
+        /// <summary>
+        /// Estimated length of data being sent.
+        /// When a value other than -1 the minimum length of the used serializer will be this value.
+        /// This is useful for writing large packets which otherwise resize the serializer.
+        /// </summary>
+        public int DataLength = -1;
     }
 
     /// <summary>

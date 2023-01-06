@@ -14,8 +14,7 @@ namespace FishNet.Managing.Editing
         private SerializedProperty _dontDestroyOnLoad;
         private SerializedProperty _persistence;
         private SerializedProperty _spawnablePrefabs;
-        private SerializedProperty _incomingIterationOrder;
-        private SerializedProperty _outgoingIterationOrder;
+        private SerializedProperty _objectPool;
 
         private void OnEnable()
         {
@@ -25,8 +24,7 @@ namespace FishNet.Managing.Editing
             _dontDestroyOnLoad = serializedObject.FindProperty("_dontDestroyOnLoad");
             _persistence = serializedObject.FindProperty("_persistence");
             _spawnablePrefabs = serializedObject.FindProperty("_spawnablePrefabs");
-            _incomingIterationOrder = serializedObject.FindProperty("_incomingIterationOrder");
-            _outgoingIterationOrder = serializedObject.FindProperty("_outgoingIterationOrder");
+            _objectPool = serializedObject.FindProperty("_objectPool");
         }
 
         public override void OnInspectorGUI()
@@ -60,6 +58,7 @@ namespace FishNet.Managing.Editing
             EditorGUILayout.LabelField("Prefabs", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_spawnablePrefabs);
+            EditorGUILayout.PropertyField(_objectPool);
             EditorGUILayout.PropertyField(_refreshDefaultPrefabs);
 
             EditorGUI.indentLevel--;

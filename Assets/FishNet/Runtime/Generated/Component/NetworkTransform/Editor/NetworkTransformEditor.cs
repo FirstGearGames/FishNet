@@ -100,7 +100,7 @@ namespace FishNet.Component.Transforming.Editing
             EditorGUILayout.LabelField("Synchronizing.", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             //Interval.
-            EditorGUILayout.PropertyField(_interval, new GUIContent("Interval (experimental)", "How often in ticks to synchronize. A value of 1 will synchronize every tick, a value of 10 will synchronize every 10 ticks."));
+            EditorGUILayout.PropertyField(_interval, new GUIContent("Interval", "How often in ticks to synchronize. A value of 1 will synchronize every tick, a value of 10 will synchronize every 10 ticks."));
             //Position.
             EditorGUILayout.PropertyField(_synchronizePosition);
             if (_synchronizePosition.boolValue)

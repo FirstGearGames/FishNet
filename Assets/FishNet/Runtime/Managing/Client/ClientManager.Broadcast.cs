@@ -160,8 +160,7 @@ namespace FishNet.Managing.Client
             //Check local connection state.
             if (!Started)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot send broadcast to server because client is not active.");
+                NetworkManager.LogWarning($"Cannot send broadcast to server because client is not active.");
                 return;
             }
 

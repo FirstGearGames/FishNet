@@ -99,8 +99,7 @@ namespace FishNet.Example.Authenticating
         private void OnResponseBroadcast(ResponseBroadcast rb)
         {
             string result = (rb.Passed) ? "Authentication complete." : "Authenitcation failed.";
-            if (NetworkManager.CanLog(LoggingType.Common))
-                Debug.Log(result);
+            NetworkManager.Log(result);
         }
 
         /// <summary>

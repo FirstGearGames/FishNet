@@ -180,26 +180,44 @@ namespace FishNet.Object
             {
                 if (error)
                 {
-                    bool staticLog = (NetworkManager == null);
-                    string errMsg = $"ComponentIndex of {componentIndex} is out of bounds on {gameObject.name} [id {ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.";
+                    string message = $"ComponentIndex of {componentIndex} is out of bounds on {gameObject.name} [id {ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.";
+                    if (NetworkManager == null)
+                        NetworkManager.StaticLogError(message);
+                    else
+                        NetworkManager.LogError(message);
 
-                    if (staticLog && NetworkManager.StaticCanLog(LoggingType.Error))
-                        Debug.LogError(errMsg);
-                    else if (!staticLog && NetworkManager.CanLog(LoggingType.Error))
-                        Debug.LogError(errMsg);
                 }
             }
 
             return NetworkBehaviours[componentIndex];
         }
+
+        /// <summary>
+        /// Despawns a GameObject. Only call from the server.
+        /// </summary>
+        /// <param name="go">GameObject to despawn.</param>
+        /// <param name="despawnType">What happens to the object after being despawned.</param>
+        public void Despawn(GameObject go, DespawnType? despawnType = null)
+        {
+            NetworkManager.ServerManager.Despawn(go, despawnType);
+        }
+        /// <summary>
+        /// Despawns  a NetworkObject. Only call from the server.
+        /// </summary>
+        /// <param name="nob">NetworkObject to despawn.</param>
+        /// <param name="despawnType">What happens to the object after being despawned.</param>
+        public void Despawn(NetworkObject nob, DespawnType? despawnType = null)
+        {
+            NetworkManager.ServerManager.Despawn(nob, despawnType);
+        }
         /// <summary>
         /// Despawns this NetworkObject. Only call from the server.
         /// </summary>
-        /// <param name="disableOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
-        public void Despawn(bool? disableOnDespawnOverride = null)
+        /// <param name="despawnType">What happens to the object after being despawned.</param>
+        public void Despawn(DespawnType? despawnType = null)
         {
             NetworkObject nob = this;
-            NetworkManager.ServerManager.Despawn(nob, disableOnDespawnOverride);
+            NetworkManager.ServerManager.Despawn(nob, despawnType);
         }
         /// <summary>
         /// Spawns an object over the network. Only call from the server.
@@ -233,23 +251,68 @@ namespace FishNet.Object
             {
                 canExecute = false;
                 if (warn)
-                {
-                    if (NetworkManager.StaticCanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Cannot despawn {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
-                }
+                    NetworkManager.StaticLogWarning($"Cannot despawn {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
             }
             else if (IsDeinitializing)
             {
                 canExecute = false;
                 if (warn)
-                {
-                    if (NetworkManager.CanLog(LoggingType.Warning))
-                        Debug.LogWarning($"Cannot despawn {gameObject.name}, it is already deinitializing.");
-                }
+                    Debug.LogWarning($"Cannot despawn {gameObject.name}, it is already deinitializing.");
             }
 
             return canExecute;
         }
+
+        /// <summary>
+        /// Takes ownership of this object and child network objects, allowing immediate control.
+        /// </summary>
+        /// <param name="caller">Connection to give ownership to.</param>
+        public void SetLocalOwnership(NetworkConnection caller)
+        {
+            NetworkConnection prevOwner = Owner;
+            SetOwner(caller);
+
+            int count;
+            count = NetworkBehaviours.Length;
+            for (int i = 0; i < count; i++)
+                NetworkBehaviours[i].OnOwnershipClient(prevOwner);
+            count = ChildNetworkObjects.Count;
+            for (int i = 0; i < count; i++)
+                ChildNetworkObjects[i].SetLocalOwnership(caller);
+        }
+
+        #region Registered components
+        /// <summary>
+        /// Invokes an action when a specified component becomes registered. Action will invoke immediately if already registered.
+        /// </summary>
+        /// <typeparam name="T">Component type.</typeparam>
+        /// <param name="handler">Action to invoke.</param>
+        public void RegisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager.RegisterInvokeOnInstance<T>(handler);
+        /// <summary>
+        /// Removes an action to be invoked when a specified component becomes registered.
+        /// </summary>
+        /// <typeparam name="T">Component type.</typeparam>
+        /// <param name="handler">Action to invoke.</param>
+        public void UnregisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager.UnregisterInvokeOnInstance<T>(handler);
+        /// <summary>
+        /// Returns class of type if found within CodegenBase classes.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public T GetInstance<T>() where T : UnityEngine.Component => NetworkManager.GetInstance<T>();
+        /// <summary>
+        /// Registers a new component to this NetworkManager.
+        /// </summary>
+        /// <typeparam name="T">Type to register.</typeparam>
+        /// <param name="component">Reference of the component being registered.</param>
+        /// <param name="replace">True to replace existing references.</param>
+        public void RegisterInstance<T>(T component, bool replace = true) where T : UnityEngine.Component => NetworkManager.RegisterInstance<T>(component, replace);
+        /// <summary>
+        /// Unregisters a component from this NetworkManager.
+        /// </summary>
+        /// <typeparam name="T">Type to unregister.</typeparam>
+        public void UnregisterInstance<T>() where T : UnityEngine.Component => NetworkManager.UnregisterInstance<T>();
+        #endregion
 
     }
 

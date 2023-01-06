@@ -31,7 +31,7 @@ namespace FishNet.Object
         /// For internal use only.
         /// </summary>
         [CodegenMakePublic] //Internal only.
-        protected internal void SetLastReconcileTick(uint value)
+        protected internal void SetLastReconcileTickInternal(uint value)
         {
             _lastReconcileTick = value;
             //Also set on the timemanager.
@@ -49,7 +49,7 @@ namespace FishNet.Object
         /// Sets the last tick this NetworkBehaviour replicated with.
         /// For internal use only.
         /// </summary>
-        [CodegenMakePublic] //Make public.
+        [CodegenMakePublic] 
         protected internal void SetLastReplicateTickInternal(uint value)
         {
             Owner.LocalReplicateTick = TimeManager.LocalTick;
@@ -104,9 +104,10 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="del"></param>
-        [APIExclude] //codegen this can be made protected internal then set public via codegen
+        [APIExclude]
+        [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterReplicateRpc(uint hash, ReplicateRpcDelegate del)
+        protected internal void RegisterReplicateRpcInternal(uint hash, ReplicateRpcDelegate del)
         {
             _replicateRpcDelegates[hash] = del;
         }
@@ -116,9 +117,10 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="del"></param>
-        [APIExclude] //codegen this can be made protected internal then set public via codegen
+        [APIExclude]
+        [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterReconcileRpc(uint hash, ReconcileRpcDelegate del)
+        protected internal void RegisterReconcileRpcInternal(uint hash, ReconcileRpcDelegate del)
         {
             _reconcileRpcDelegates[hash] = del;
         }
@@ -135,20 +137,14 @@ namespace FishNet.Object
 
             if (sendingClient == null)
             {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"NetworkConnection is null. Replicate {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name} will not complete. Remainder of packet may become corrupt.");
+                _networkObjectCache.NetworkManager.LogError($"NetworkConnection is null. Replicate {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name} will not complete. Remainder of packet may become corrupt.");
                 return;
             }
 
             if (_replicateRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReplicateRpcDelegate del))
-            {
-                del.Invoke(this, reader, sendingClient);
-            }
+                del.Invoke(reader, sendingClient);
             else
-            {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Replicate not found for hash {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
-            }
+                _networkObjectCache.NetworkManager.LogWarning($"Replicate not found for hash {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
         }
 
 
@@ -162,35 +158,40 @@ namespace FishNet.Object
                 methodHash = ReadRpcHash(reader);
 
             if (_reconcileRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReconcileRpcDelegate del))
-            {
-                del.Invoke(this, reader);
-            }
+                del.Invoke(reader);
             else
-            {
-                if (_networkObjectCache.NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Reconcile not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
-            }
+                _networkObjectCache.NetworkManager.LogWarning($"Reconcile not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
         }
 
         /// <summary>
         /// Clears cached replicates. This can be useful to call on server and client after teleporting.
         /// </summary>
         /// <param name="asServer">True to reset values for server, false to reset values for client.</param>
-        public void ClearReplicateCache(bool asServer) { InternalClearReplicateCache(asServer); }
+        public void ClearReplicateCache(bool asServer) { ClearReplicateCacheInternal(asServer); }
+        /// <summary>
+        /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
+        /// </summary>
+        public void ClearReplicateCache()
+        {
+            ClearReplicateCacheInternal(true);
+            ClearReplicateCacheInternal(false);
+        }
         /// <summary>
         /// Clears cached replicates.
         /// For internal use only.
         /// </summary>
         /// <param name="asServer"></param>
+        [CodegenMakePublic]
         [APIExclude]
-        protected internal virtual void InternalClearReplicateCache(bool asServer) { }
+        protected internal virtual void ClearReplicateCacheInternal(bool asServer) { }
 
         /// <summary>
         /// Writes number of past inputs from buffer to writer and sends it to the server.
         /// Internal use. 
-        /// </summary> //codegen can be made internal, then public via codegen
+        /// </summary>
+        [CodegenMakePublic]//internal.
         [APIExclude]
-        public void SendReplicateRpc<T>(uint hash, List<T> replicateBuffer, int count)
+        public void SendReplicateRpcInternal<T>(uint hash, List<T> replicateBuffer, int count)
         {
             if (!IsSpawnedWithWarning())
                 return;
@@ -208,7 +209,7 @@ namespace FishNet.Object
 
             Channel channel = Channel.Unreliable;
             //Write history to methodWriter.
-            PooledWriter methodWriter = WriterPool.GetWriter();
+            PooledWriter methodWriter = WriterPool.GetWriter(WriterPool.LENGTH_BRACKET);
             methodWriter.WriteList(replicateBuffer, offset);
 
             PooledWriter writer;
@@ -218,17 +219,18 @@ namespace FishNet.Object
             writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
             NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), false);
 
-            methodWriter.Dispose();
-            writer.Dispose();
+            methodWriter.DisposeLength();
+            writer.DisposeLength();
         }
 
         /// <summary>
         /// Sends a RPC to target.
         /// Internal use.
         /// </summary>
-        [APIExclude] //codegen this can be made internal then set public via codegen
+        [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendReconcileRpc<T>(uint hash, T reconcileData, Channel channel)
+        [CodegenMakePublic] //internal.
+        public void SendReconcileRpcInternal<T>(uint hash, T reconcileData, Channel channel)
         {
             if (!IsSpawned)
                 return;

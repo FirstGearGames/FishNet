@@ -1,10 +1,15 @@
+using FishNet.Component.Transforming;
 using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Utility;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 
@@ -14,6 +19,37 @@ namespace FishNet.Component.Animating
     public sealed class NetworkAnimator : NetworkBehaviour
     {
         #region Types.
+        /// <summary>
+        /// Data received from the server.
+        /// </summary>
+        private struct ReceivedServerData
+        {
+            /// <summary>
+            /// Gets an Arraysegment of received data.
+            /// </summary>
+            public ArraySegment<byte> GetArraySegment() => new ArraySegment<byte>(_data, 0, _length);
+            /// <summary>
+            /// How much data written.
+            /// </summary>
+            private int _length;
+            /// <summary>
+            /// Buffer which contains data.
+            /// </summary>
+            private byte[] _data;
+
+            public ReceivedServerData(ArraySegment<byte> segment)
+            {
+                _length = segment.Count;
+                _data = ByteArrayPool.Retrieve(_length);
+                Buffer.BlockCopy(segment.Array, segment.Offset, _data, 0, _length);
+            }
+
+            public void Dispose()
+            {
+                if (_data != null)
+                    ByteArrayPool.Store(_data);
+            }
+        }
         private struct StateChange
         {
             /// <summary>
@@ -119,7 +155,6 @@ namespace FishNet.Component.Animating
 
                 /* If here, can write to buffer. */
                 byte[] buffer = _buffers[BufferCount];
-
                 Buffer.BlockCopy(data.Array, data.Offset, buffer, 0, dataCount);
                 _bufferLengths[BufferCount] = dataCount;
                 BufferCount++;
@@ -216,7 +251,6 @@ namespace FishNet.Component.Animating
         #region Public.
         /// <summary>
         /// Parameters which will not be synchronized.
-        /// Internal use only.
         /// </summary>
         [SerializeField, HideInInspector]
         internal List<string> IgnoredParameters = new List<string>();
@@ -240,12 +274,19 @@ namespace FishNet.Component.Animating
         [SerializeField]
         private bool _smoothFloats = true;
         /// <summary>
-        /// How often to synchronize this animator.
+        /// How many ticks to interpolate.
         /// </summary>
-        [Tooltip("How often to synchronize this animator.")]
-        [Range(0.01f, 0.5f)]
+        [Tooltip("How many ticks to interpolate.")]
+        [Range(1, NetworkTransform.MAX_INTERPOLATION)]
         [SerializeField]
-        private float _synchronizeInterval = 0.1f;
+        private ushort _interpolation = 2;
+        ///// <summary>
+        ///// How often to synchronize this animator.
+        ///// </summary>
+        //[Tooltip("How often to synchronize this animator.")]
+        //[Range(0.01f, 0.5f)]
+        //[SerializeField]
+        //private float _synchronizeInterval = 0.1f;
         /// <summary>
         /// 
         /// </summary>
@@ -289,14 +330,14 @@ namespace FishNet.Component.Animating
         /// Last speed.
         /// </summary>
         private float _speed;
-        /// <summary>
-        /// Next time client may send parameter updates.
-        /// </summary>
-        private float _nextClientSendTime = -1f;
-        /// <summary>
-        /// Next time server may send parameter updates.
-        /// </summary>
-        private float _nextServerSendTime = -1f;
+        ///// <summary>
+        ///// Next time client may send parameter updates.
+        ///// </summary>
+        //private float _nextClientSendTime = -1f;
+        ///// <summary>
+        ///// Next time server may send parameter updates.
+        ///// </summary>
+        //private float _nextServerSendTime = -1f;
         /// <summary>
         /// Trigger values set by using SetTrigger and ResetTrigger.
         /// </summary>
@@ -340,7 +381,7 @@ namespace FishNet.Component.Animating
                 //Fall through.
                 return true;
             }
-        }        
+        }
         /// <summary>
         /// Layers which need to have their state synchronized. Key is the layer, Value is the state change information.
         /// </summary>
@@ -369,13 +410,21 @@ namespace FishNet.Component.Animating
         /// True to forceAll next timed send.
         /// </summary>
         private bool _forceAllOnTimed;
+        /// <summary>
+        /// Animations received which should be applied.
+        /// </summary>
+        private Queue<ReceivedServerData> _fromServerBuffer = new Queue<ReceivedServerData>();
+        /// <summary>
+        /// Tick when the buffer may begin to run.
+        /// </summary>
+        private uint _startTick = uint.MaxValue;
         #endregion
 
         #region Const.
-        /// <summary>
-        /// How much time to fall behind when using smoothing. Only increase value if the smoothing is sometimes jittery. Recommended values are between 0 and 0.04.
-        /// </summary>
-        private const float INTERPOLATION = 0.02f;
+        ///// <summary>
+        ///// How much time to fall behind when using smoothing. Only increase value if the smoothing is sometimes jittery. Recommended values are between 0 and 0.04.
+        ///// </summary>
+        //private const float INTERPOLATION = 0.02f;
         /// <summary>
         /// ParameterDetails index which indicates a layer weight change.
         /// </summary>
@@ -409,6 +458,13 @@ namespace FishNet.Component.Animating
                 TargetAnimatorUpdated(connection, updatedBytes);
         }
 
+        public override void OnStartNetwork()
+        {
+            base.OnStartNetwork();
+            base.TimeManager.OnPreTick += TimeManager_OnPreTick;
+            base.TimeManager.OnPostTick += TimeManager_OnPostTick;
+        }
+
         [APIExclude]
         public override void OnStartServer()
         {
@@ -427,23 +483,70 @@ namespace FishNet.Component.Animating
             }
         }
 
-        private void Update()
+        public override void OnStopNetwork()
+        {
+            base.OnStopNetwork();
+            base.TimeManager.OnPreTick -= TimeManager_OnPreTick;
+            base.TimeManager.OnPostTick -= TimeManager_OnPostTick;
+        }
+
+
+        /// <summary>
+        /// Called right before a tick occurs, as well before data is read.
+        /// </summary>
+        private void TimeManager_OnPreTick()
+        {
+            if (!_isAnimatorEnabled)
+            {
+                _fromServerBuffer.Clear();
+                return;
+            }
+            //Disabled/cannot start.
+            if (_startTick == uint.MaxValue)
+                return;
+            //Nothing in queue.
+            if (_fromServerBuffer.Count == 0)
+            {
+                _startTick = uint.MaxValue;
+                return;
+            }
+            //Not enough time has passed to start queue.
+            if (base.TimeManager.LocalTick < _startTick)
+                return;
+
+            ReceivedServerData rd = _fromServerBuffer.Dequeue();
+            ArraySegment<byte> segment = rd.GetArraySegment();
+            ApplyParametersUpdated(ref segment);
+            rd.Dispose();
+        }
+
+
+        /* Use post tick values are checked after
+         * client has an opportunity to use OnTick. */
+        /// <summary>
+        /// Called after a tick occurs; physics would have simulated if using PhysicsMode.TimeManager.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void TimeManager_OnPostTick()
         {
             //One check rather than per each method.
             if (!_isAnimatorEnabled)
                 return;
 
             if (base.IsClient)
-            {
                 CheckSendToServer();
-                SmoothFloats();
-            }
             if (base.IsServer)
-            {
                 CheckSendToClients();
-            }
         }
 
+        private void Update()
+        {
+            if (!_isAnimatorEnabled)
+                return;
+
+            if (base.IsClient)
+                SmoothFloats();
+        }
 
         /// <summary>
         /// Initializes this script for use.
@@ -562,10 +665,10 @@ namespace FishNet.Component.Animating
             //Cannot send to server if not client authoritative or don't have authority.
             if (!ClientAuthoritative || !base.IsOwner)
                 return;
-            //Not enough time passed to send.
-            if (Time.time < _nextClientSendTime)
-                return;
-            _nextClientSendTime = Time.time + _synchronizeInterval;
+            ////Not enough time passed to send.
+            //if (Time.time < _nextClientSendTime)
+            //    return;
+            //_nextClientSendTime = Time.time + _synchronizeInterval;
 
             /* If there are updated parameters to send.
              * Don't really need to worry about mtu here
@@ -586,10 +689,10 @@ namespace FishNet.Component.Animating
             //Cannot send to clients if not server.
             if (!base.IsServer)
                 return;
-            //Not enough time passed to send.
-            if (Time.time < _nextServerSendTime)
-                return;
-            _nextServerSendTime = Time.time + _synchronizeInterval;
+            ////Not enough time passed to send.
+            //if (Time.time < _nextServerSendTime)
+            //    return;
+            //_nextServerSendTime = Time.time + _synchronizeInterval;
 
             bool sendFromServer;
             //If client authoritative.
@@ -940,7 +1043,8 @@ namespace FishNet.Component.Animating
                                 if (_canSmoothFloats)
                                 {
                                     float currentValue = _animator.GetFloat(_parameterDetails[parameterIndex].Hash);
-                                    float past = _synchronizeInterval + INTERPOLATION;
+                                    float past = (float)base.TimeManager.TickDelta;
+                                    //float past = _synchronizeInterval + INTERPOLATION;
                                     float rate = Mathf.Abs(currentValue - value) / past;
                                     _smoothedFloats[_parameterDetails[parameterIndex].Hash] = new SmoothedFloat(rate, value);
                                 }
@@ -1008,8 +1112,8 @@ namespace FishNet.Component.Animating
         /// </summary>
         public void ForceSend()
         {
-            _nextClientSendTime = 0f;
-            _nextServerSendTime = 0f;
+            //_nextClientSendTime = 0f;
+            //_nextServerSendTime = 0f;
         }
 
         /// <summary>
@@ -1284,8 +1388,16 @@ namespace FishNet.Component.Animating
             if (!_isAnimatorEnabled)
                 return;
             if (!ClientAuthoritative)
+            {
+                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
                 return;
+            }
 
+            /* Server does not need to apply interpolation.
+             * Even as clientHost when CSP is being used the
+             * clientHost will always be on the latest tick.
+             * Spectators on the other hand will remain behind
+             * a little depending on their components interpolation. */
             ApplyParametersUpdated(ref data);
             _clientAuthoritativeUpdates.AddToBuffer(ref data);
         }
@@ -1312,7 +1424,12 @@ namespace FishNet.Component.Animating
                     return;
             }
 
-            ApplyParametersUpdated(ref data);
+            ReceivedServerData rd = new ReceivedServerData(data);
+            _fromServerBuffer.Enqueue(rd);
+
+            if (_startTick == uint.MaxValue)
+                _startTick = (base.TimeManager.LocalTick + _interpolation);
+            //ApplyParametersUpdated(ref data);
         }
         #endregion
 

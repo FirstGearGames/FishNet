@@ -1,4 +1,6 @@
 ﻿using FishNet.Managing;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Server;
 using System;
 
 namespace FishNet.Connection
@@ -9,6 +11,17 @@ namespace FishNet.Connection
     /// </summary>
     public partial class NetworkConnection : IEquatable<NetworkConnection>
     {
+
+        #region Public.
+        /// <summary>
+        /// Returns true if this connection is a clientHost.
+        /// </summary>
+        public bool IsHost => (NetworkManager == null) ? false : (NetworkManager.IsServer && (this == NetworkManager.ClientManager.Connection));
+        /// <summary>
+        /// Returns if this connection is for the local client.
+        /// </summary>
+        public bool IsLocalClient => (NetworkManager == null) ? false : (NetworkManager.ClientManager.Connection == this);
+        #endregion
 
         /// <summary>
         /// Returns the address of this connection.
@@ -23,6 +36,18 @@ namespace FishNet.Connection
 
             return NetworkManager.TransportManager.Transport.GetConnectionAddress(ClientId);
         }
+
+        /// <summary>
+        /// Kicks a connection immediately while invoking OnClientKick.
+        /// </summary>
+        /// <param name="kickReason">Reason client is being kicked.</param>
+        /// <param name="loggingType">How to print logging as.</param>
+        /// <param name="log">Optional message to be debug logged.</param>
+        public void Kick(KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
+        {
+            NetworkManager.ServerManager.Kick(this, kickReason, loggingType, log);
+        }
+
     }
 
 

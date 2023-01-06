@@ -49,14 +49,10 @@ namespace FishNet.Managing.Utility
             //Logs an error message.
             void LogError(string message)
             {
-                bool canLog;
                 if (reader.NetworkManager != null)
-                    canLog = reader.NetworkManager.CanLog(Logging.LoggingType.Error);
+                    reader.NetworkManager.LogError(message);
                 else
-                    canLog = NetworkManager.StaticCanLog(Logging.LoggingType.Error);
-
-                if (canLog)
-                    Debug.LogError(message);
+                    NetworkManager.StaticLogError(message);
             }
 
         }

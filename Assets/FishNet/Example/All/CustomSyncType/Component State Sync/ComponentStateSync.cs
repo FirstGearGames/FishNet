@@ -23,7 +23,7 @@ namespace FishNet.Example.ComponentStateSync
         {
             get => (Component == null) ? false : GetState();
             set => SetState(value);
-        } 
+        }
         /// <summary>
         /// Component to state sync.
         /// </summary>
@@ -57,10 +57,7 @@ namespace FishNet.Example.ComponentStateSync
                 return;
 
             if (Component == null)
-            {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"State cannot be changed as Initialize has not been called with a valid component.");
-            }
+                NetworkManager.LogError($"State cannot be changed as Initialize has not been called with a valid component.");
 
             //If hasn't changed then ignore.
             bool prev = GetState();
@@ -91,8 +88,7 @@ namespace FishNet.Example.ComponentStateSync
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 

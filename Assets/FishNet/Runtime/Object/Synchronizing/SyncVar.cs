@@ -168,10 +168,15 @@ namespace FishNet.Object.Synchronizing
                  * but this has been changed because clients may want
                  * to update values locally while occasionally
                  * letting the syncvar adjust their side. */
-
                 T prev = _previousClientValue;
-                UpdateValues(nextValue);
-                InvokeOnChange(prev, _value, calledByUser);
+                /* If also server do not update value.
+                 * Server side has say of the current value. */
+                if (!base.NetworkManager.IsServer)
+                    UpdateValues(nextValue);
+                else
+                    _previousClientValue = nextValue;
+
+                InvokeOnChange(prev, nextValue, calledByUser);
                 TryDirty();
             }
 
@@ -222,7 +227,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal override void OnStartCallback(bool asServer)
+        public override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
 

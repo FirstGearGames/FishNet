@@ -12,7 +12,6 @@ namespace FishNet.Serializing
 
     /// <summary>
     /// Extensions to Write methods. Used by Write<T>.
-    /// Internal use.
     /// </summary>
     [APIExclude]
     public static class WriterExtensions

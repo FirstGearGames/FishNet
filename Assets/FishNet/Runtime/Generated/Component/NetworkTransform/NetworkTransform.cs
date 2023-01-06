@@ -7,7 +7,10 @@
 
 using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Server;
 using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
@@ -18,9 +21,6 @@ using UnityEngine;
 
 namespace FishNet.Component.Transforming
 {
-    /// <summary> 
-    /// A somewhat basic but reliable NetworkTransform that will be improved upon greatly after release.
-    /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("FishNet/Component/NetworkTransform")]
     public sealed class NetworkTransform : NetworkBehaviour
@@ -220,7 +220,6 @@ namespace FishNet.Component.Transforming
         public delegate void DataReceivedChanged(TransformData prev, TransformData next);
         /// <summary>
         /// Called when new data is received. Previous and next data are provided. Next data may be manipulated.
-        /// This feature is experimental.
         /// </summary>
         public event DataReceivedChanged OnDataReceived;
         /// <summary>
@@ -231,6 +230,10 @@ namespace FishNet.Component.Transforming
         /// Called when the transform has reached it's goal.
         /// </summary>
         public event Action OnInterpolationComplete;
+        /// <summary>
+        /// True if the local client used TakeOwnership and is awaiting an ownership change.
+        /// </summary>
+        public bool TakenOwnership { get; private set; }
         #endregion
 
         #region Serialized.
@@ -291,7 +294,18 @@ namespace FishNet.Component.Transforming
         /// </summary>
         [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
         [SerializeField]
+        [SyncVar]
         private bool _sendToOwner = true;
+        /// <summary>
+        /// Gets SendToOwner.
+        /// </summary>
+        public bool GetSendToOwner() => _sendToOwner;
+        /// <summary>
+        /// Sets SendToOwner. Only the server may call this method.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        [Server]
+        public void SetSendToOwner(bool value) => _sendToOwner = value;
         /// <summary>
         /// How often in ticks to synchronize. A value of 1 will synchronize every tick, a value of 10 will synchronize every 10 ticks.
         /// </summary>
@@ -448,7 +462,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Number of intervals remaining before synchronization.
         /// </summary>
-        private byte _intervalsRemaining;
+        private short _intervalsRemaining;
         #endregion
 
         #region Const.
@@ -521,6 +535,7 @@ namespace FishNet.Component.Transforming
         {
             base.OnOwnershipClient(prevOwner);
             _intervalsRemaining = 0;
+
             /* If newOwner is self then client
              * must subscribe to ticks. Client can also
              * unsubscribe from ticks if not owner,
@@ -569,18 +584,32 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            /* If more than 1 interval is remaining than then means
-             * there are more ticks to be waited upon. */
-            if (_intervalsRemaining > 1)
+            /* Intervals remaining is only used when the interval value
+             * is set higher than 1. An interval of 1 indicates to send
+             * every tick. Only check to wait more ticks if interval
+             * is larger than 1. */
+            if (_interval > 1)
             {
+                /* If intervalsRemaining is unset then that means the transform
+                 * did not change last tick. See if transform changed and if so then
+                 * update remaining to _interval. */
+                if (_intervalsRemaining == -1)
+                {
+                    //Transform didn't change, no reason to start remaining.
+                    if (!transform.hasChanged)
+                        return;
+
+                    _intervalsRemaining = _interval;
+                }
+
+                //If here then intervalsRemaining can be deducted.
                 _intervalsRemaining--;
-                return;
-            }
-            /* If there is 0 or 1 interval remaining then this
-             * tick would be the one to send data and reset the interval. */
-            else
-            {
-                _intervalsRemaining = _interval;
+                //Interval not met yet.
+                if (_intervalsRemaining > 0)
+                    return;
+                //Intervals remainin is met. Reset to -1 to await new change.
+                else
+                    _intervalsRemaining = -1;
             }
 
             
@@ -589,16 +618,6 @@ namespace FishNet.Component.Transforming
             if (base.IsClient)
                 SendToServer();
         }
-
-        /* 
-         * //todo make a special method for handling network transforms that iterates all
-         * of them at once and ALWAYS send the packetId TransformUpdate. This packet will
-         * have the total length of all updates. theres a chance a nob might not exist since
-         * these packets are unreliable and can arrive after a nob destruction. if thats
-         * the case then the packet can still be parsed out and recovered because the updateflags
-         * indicates exactly what data needs to be read.
-         */
-
 
         /// <summary>
         /// Tries to subscribe to TimeManager ticks.
@@ -613,6 +632,69 @@ namespace FishNet.Component.Transforming
                 base.NetworkManager.TimeManager.OnPostTick += TimeManager_OnPostTick;
             else
                 base.NetworkManager.TimeManager.OnPostTick -= TimeManager_OnPostTick;
+        }
+
+        /// <summary>
+        /// Resets last sent information to force a resend of current values.
+        /// </summary>
+        public void ForceSend()
+        {
+            _lastSentTransformData.Reset();
+            if (_receivedClientData.Writer != null)
+                _receivedClientData.HasData = true;
+        }
+
+        /// <summary>
+        /// Updates the interval value over the network.
+        /// </summary>
+        /// <param name="value">New interval.</param>
+        public void SetInterval(byte value)
+        {
+            bool canSet = (base.IsServer && !_clientAuthoritative)
+                || (base.IsServer && _clientAuthoritative && !base.Owner.IsValid)
+                || (_clientAuthoritative && base.IsOwner);
+
+            if (!canSet)
+                return;
+
+            if (base.IsServer)
+                ObserversSetInterval(value);
+            else
+                ServerSetInterval(value);
+        }
+
+        /// <summary>
+        /// Updates the interval value.
+        /// </summary>
+        /// <param name="value"></param>
+        private void SetIntervalInternal(byte value)
+        {
+            value = (byte)Mathf.Max(value, 1);
+            _interval = value;
+        }
+
+        /// <summary>
+        /// Sets interval over the network.
+        /// </summary>
+        [ServerRpc(RunLocally = true)]
+        private void ServerSetInterval(byte value)
+        {
+            if (!_clientAuthoritative)
+            {
+
+                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
+                return;
+            }
+
+            SetIntervalInternal(value);
+        }
+        /// <summary>
+        /// Sets interval over the network.
+        /// </summary>
+        [ObserversRpc(RunLocally = true)]
+        private void ObserversSetInterval(byte value)
+        {
+            SetIntervalInternal(value);
         }
 
 
@@ -953,11 +1035,18 @@ namespace FishNet.Component.Transforming
             if (!base.IsServer && !base.IsClient)
                 return;
             //If client auth and the owner don't move towards target.
-            if (_clientAuthoritative && base.IsOwner)
-                return;
-            //If not client authoritative, is owner, and don't sync to owner.
-            if (!_clientAuthoritative && base.IsOwner && !_sendToOwner)
-                return;
+            if (_clientAuthoritative)
+            {
+                if (base.IsOwner || TakenOwnership)
+                    return;
+            }
+            else
+            {
+                //If not client authoritative, is owner, and don't sync to owner.
+                if (base.IsOwner && !_sendToOwner)
+                    return;
+            }
+
             //True if not client controlled.
             bool controlledByClient = (_clientAuthoritative && base.Owner.IsActive);
             //If not controlled by client and is server then no reason to move.
@@ -1218,7 +1307,13 @@ namespace FishNet.Component.Transforming
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ChangedDelta GetChanged(TransformData transformData)
         {
-            return GetChanged(ref transformData.Position, ref transformData.Rotation, ref transformData.Scale, transformData.ParentBehaviour);
+            /* If parent behaviour exist.
+            * Parent isn't sent as a delta so
+            * if it exist always send regardless
+            * of the previously sent transform
+            * data. */
+            NetworkBehaviour parentBehaviour = _parentBehaviour;
+            return GetChanged(ref transformData.Position, ref transformData.Rotation, ref transformData.Scale, parentBehaviour);
         }
         /// <summary>
         /// Gets transform values that have changed against specified proprties.
@@ -1252,7 +1347,6 @@ namespace FishNet.Component.Transforming
             if (scale.z != lastScale.z)
                 changed |= ChangedDelta.ScaleZ;
 
-            //Parent behaviour exist.
             if (parentBehaviour != null)
                 changed |= ChangedDelta.Nested;
 
@@ -1420,6 +1514,8 @@ namespace FishNet.Component.Transforming
 
                 //abnormalCorrection = 1f;
                 positionRate = (unalteredPositionRate * abnormalCorrection);
+                if (positionRate <= 0f)
+                    positionRate = -1f;
             }
 
             //Rotation.
@@ -1428,6 +1524,8 @@ namespace FishNet.Component.Transforming
                 Quaternion lastRotation = prevTd.Rotation;
                 distance = lastRotation.Angle(td.Rotation, true);
                 rotationRate = (distance / timePassed) * abnormalCorrection;
+                if (rotationRate <= 0f)
+                    rotationRate = -1f;
             }
 
             //Scale.
@@ -1436,6 +1534,8 @@ namespace FishNet.Component.Transforming
                 Vector3 lastScale = prevTd.Scale;
                 distance = Vector3.Distance(lastScale, td.Scale);
                 scaleRate = (distance / timePassed) * abnormalCorrection;
+                if (scaleRate <= 0f)
+                    scaleRate = -1f;
             }
 
             rd.Update(positionRate, rotationRate, scaleRate, unalteredPositionRate, tickDifference, abnormalRateDetected, timePassed);
@@ -1504,6 +1604,12 @@ namespace FishNet.Component.Transforming
         [ServerRpc]
         private void ServerUpdateTransform(ArraySegment<byte> data, Channel channel)
         {
+            if (!_clientAuthoritative)
+            {
+                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
+                return;
+            }
+
             //Not new data.
             uint lastPacketTick = base.TimeManager.LastPacketTick;
             if (lastPacketTick <= _lastServerRpcTick)
@@ -1614,6 +1720,10 @@ namespace FishNet.Component.Transforming
                     GoalData tmpGd = _goalDataQueue.Dequeue();
                     _goalDataCache.Push(tmpGd);
                 }
+                //Snap to the next data to fix any smoothing timings.
+                SetCurrentGoalData(_goalDataQueue.Dequeue());
+                SetInstantRates(_currentGoalData.Rates);
+                SnapProperties(_currentGoalData.Transforms);
             }
         }
 
@@ -1667,7 +1777,7 @@ namespace FishNet.Component.Transforming
         }
 
         /// <summary>
-        /// Updates which properties are synchronized. This feature is experimental.
+        /// Updates which properties are synchronized.
         /// </summary>
         /// <param name="value">Properties to synchronize.</param>
         public void SetSynchronizedProperties(SynchronizedProperty value)
@@ -1700,10 +1810,11 @@ namespace FishNet.Component.Transforming
         [ServerRpc]
         private void ServerSetSynchronizedProperties(SynchronizedProperty value)
         {
-            /* Client is trying to be sneaky ...
-             * a client should not be able to call this when NT isnt client auth. */
             if (!_clientAuthoritative)
+            {
+                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
                 return;
+            }
 
             SetSynchronizedPropertiesInternal(value);
             ObserversSetSynchronizedProperties(value);

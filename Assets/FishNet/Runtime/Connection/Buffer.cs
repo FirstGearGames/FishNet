@@ -47,10 +47,11 @@ namespace FishNet.Connection
             Reset();
         }
 
-        ~ByteBuffer()
+        public void Dispose()
         {
             if (Data != null)
                 ByteArrayPool.Store(Data);
+            Data = null;
         }
 
         /// <summary>
@@ -63,7 +64,7 @@ namespace FishNet.Connection
         }
 
         /// <summary>
-        /// Copies segments without error checking.
+        /// Copies segments without error checking, including tick for the first time data is added.
         /// </summary>
         /// <param name="segment"></param>
         internal void CopySegment(uint tick, ArraySegment<byte> segment)
@@ -80,6 +81,17 @@ namespace FishNet.Connection
             Length += segment.Count;
             HasData = true;
         }
+        /// <summary>
+        /// Copies segments without error checking.
+        /// </summary>
+        /// <param name="segment"></param>
+        internal void CopySegment(ArraySegment<byte> segment)
+        {
+            Buffer.BlockCopy(segment.Array, segment.Offset, Data, Length, segment.Count);
+            Length += segment.Count;
+            HasData = true;
+        }
+
     }
 
     internal class PacketBundle
@@ -126,6 +138,12 @@ namespace FishNet.Connection
             Reset();
         }
 
+        public void Dispose()
+        {
+            for (int i = 0; i < _buffers.Count; i++)
+                _buffers[i].Dispose();
+        }
+
         /// <summary>
         /// Adds a buffer using current settings.
         /// </summary>
@@ -163,8 +181,7 @@ namespace FishNet.Connection
              * split packets that exceed MTU into reliable ordered. */
             if (segment.Count > _maximumTransportUnit)
             {
-                if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Segment is length of {segment.Count} while MTU is {_maximumTransportUnit}. Packet was not split properly and will not be sent.");
+                _networkManager.LogError($"Segment is length of {segment.Count} while MTU is {_maximumTransportUnit}. Packet was not split properly and will not be sent.");
                 return;
             }
 
@@ -205,14 +222,12 @@ namespace FishNet.Connection
 
             if (index >= _buffers.Count || index < 0)
             {
-                if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Index of {index} is out of bounds. There are {_buffers.Count} available.");
+                _networkManager.LogError($"Index of {index} is out of bounds. There are {_buffers.Count} available.");
                 return false;
             }
             if (index > _bufferIndex)
             {
-                if (_networkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Index of {index} exceeds the number of written buffers. There are {WrittenBuffers} written buffers.");
+                _networkManager.LogError($"Index of {index} exceeds the number of written buffers. There are {WrittenBuffers} written buffers.");
                 return false;
             }
 

@@ -89,25 +89,24 @@ namespace FishNet.Component.Prediction
             if (subscribe)
             {
                 _timeManager.OnPreReconcile += _timeManager_OnPreReconcile;
-                _timeManager.OnPostReconcile += _timeManager_OnPostReconcile;
+                _timeManager.OnPostTick += _timeManager_OnPostTick;
             }
             else
             {
                 _timeManager.OnPreReconcile -= _timeManager_OnPreReconcile;
-                _timeManager.OnPostReconcile -= _timeManager_OnPostReconcile;
+                _timeManager.OnPostTick -= _timeManager_OnPostTick;
             }
         }
 
         private void _timeManager_OnPreReconcile(Object.NetworkBehaviour obj)
         {
             //Make rbs all kinematic/!simulated before reconciling, which would also result in replays.
-            _rigidbodyPauser.ChangeKinematic(true);
+            _rigidbodyPauser.Pause();
         }
 
-        private void _timeManager_OnPostReconcile(Object.NetworkBehaviour obj)
+        private void _timeManager_OnPostTick()
         {
-            //After reconcile finishes set back to !kinematic/simulated.
-            _rigidbodyPauser.ChangeKinematic(false);
+            _rigidbodyPauser.Unpause();
         }
 
     }

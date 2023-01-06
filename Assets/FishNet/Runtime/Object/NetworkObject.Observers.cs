@@ -3,6 +3,7 @@ using FishNet.Managing.Logging;
 using FishNet.Observing;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -15,7 +16,7 @@ namespace FishNet.Object
         /// </summary>
         public event Action<NetworkObject> OnObserversActive;
         /// <summary>
-        /// NetworkObserver on this object. May be null if not using observers.
+        /// NetworkObserver on this object.
         /// </summary>
         [HideInInspector]
         public NetworkObserver NetworkObserver = null;
@@ -39,31 +40,82 @@ namespace FishNet.Object
         /// True if renderers have been looked up.
         /// </summary>
         private bool _renderersPopulated;
+        /// <summary>
+        /// Last visibility value for clientHost on this object.
+        /// </summary>
+        private bool _lastClientHostVisibility;
         #endregion
+
+        /// <summary>
+        /// Updates cached renderers used to managing clientHost visibility.
+        /// </summary>
+        /// <param name="updateVisibility">True to also update visibility if clientHost.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void UpdateRenderers(bool updateVisibility = true)
+        {
+            UpdateRenderersInternal(updateVisibility);
+        }
 
         /// <summary>
         /// Sets the renderer visibility for clientHost.
         /// </summary>
         /// <param name="visible">True if renderers are to be visibile.</param>
         /// <param name="force">True to skip blocking checks.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetRenderersVisible(bool visible, bool force = false)
         {
             if (!force)
             {
-                if (NetworkObserver != null && !NetworkObserver.UpdateHostVisibility)
+                if (!NetworkObserver.UpdateHostVisibility)
                     return;
             }
 
             if (!_renderersPopulated)
             {
-                _renderers = GetComponentsInChildren<Renderer>(true);
+                UpdateRenderersInternal(false);
                 _renderersPopulated = true;
             }
+
+            UpdateRenderVisibility(visible);
+        }
+
+        /// <summary>
+        /// Clears and updates renderers.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void UpdateRenderersInternal(bool updateVisibility)
+        {
+            _renderers = GetComponentsInChildren<Renderer>(true);
+            if (updateVisibility)
+                UpdateRenderVisibility(_lastClientHostVisibility);
+        }
+
+        /// <summary>
+        /// Updates visibilites on renders without checks.
+        /// </summary>
+        /// <param name="visible"></param>
+        private void UpdateRenderVisibility(bool visible)
+        {
+            bool rebuildRenderers = false;
 
             Renderer[] rs = _renderers;
             int count = rs.Length;
             for (int i = 0; i < count; i++)
-                rs[i].enabled = visible;
+            {
+                Renderer r = rs[i];
+                if (r == null)
+                {
+                    rebuildRenderers = true;
+                    break;
+                }
+
+                r.enabled = visible;
+            }
+
+            _lastClientHostVisibility = visible;
+            //If to rebuild then do so, while updating visibility.
+            if (rebuildRenderers)
+                UpdateRenderers(true);
         }
 
         /// <summary>
@@ -74,25 +126,12 @@ namespace FishNet.Object
             if (_networkObserverInitiliazed)
                 return;
 
-            NetworkObserver = GetComponent<NetworkObserver>();
-            NetworkManager.ObserverManager.AddDefaultConditions(this, ref NetworkObserver);
-        }
-        /// <summary>
-        /// Initializes NetworkObserver. This will only call once even as host.
-        /// </summary>
-        private void InitializeOnceObservers()
-        {
-            if (_networkObserverInitiliazed)
-                return;
-
-            if (NetworkObserver != null)
-                NetworkObserver.PreInitialize(this);
-
-            _networkObserverInitiliazed = true;
+            NetworkObserver = NetworkManager.ObserverManager.AddDefaultConditions(this);
         }
 
+
         /// <summary>
-        /// Removes a connection from observers for this object.
+        /// Removes a connection from observers for this object returning if the connection was removed.
         /// </summary>
         /// <param name="connection"></param>
         internal bool RemoveObserver(NetworkConnection connection)
@@ -115,8 +154,7 @@ namespace FishNet.Object
             //If not a valid connection.
             if (!connection.IsValid)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"An invalid connection was used when rebuilding observers.");
+                NetworkManager.LogWarning($"An invalid connection was used when rebuilding observers.");
                 return ObserverStateChange.Unchanged;
             }
             //Valid not not active.
@@ -137,29 +175,16 @@ namespace FishNet.Object
             }
 
             int startCount = Observers.Count;
-            //Not using observer system, this object is seen by everything.
-            if (NetworkObserver == null)
-            {
-                bool added = Observers.Add(connection);
-                if (added)
-                    TryInvokeOnObserversActive(startCount);
+            ObserverStateChange osc = NetworkObserver.RebuildObservers(connection, timedOnly);
+            if (osc == ObserverStateChange.Added)
+                Observers.Add(connection);
+            else if (osc == ObserverStateChange.Removed)
+                Observers.Remove(connection);
 
-                return (added) ? ObserverStateChange.Added : ObserverStateChange.Unchanged;
-            }
-            else
-            {
-                ObserverStateChange osc = NetworkObserver.RebuildObservers(connection, timedOnly);
-                if (osc == ObserverStateChange.Added)
-                    Observers.Add(connection);
-                else if (osc == ObserverStateChange.Removed)
-                    Observers.Remove(connection);
+            if (osc != ObserverStateChange.Unchanged)
+                TryInvokeOnObserversActive(startCount);
 
-                if (osc != ObserverStateChange.Unchanged)
-                    TryInvokeOnObserversActive(startCount);
-
-                return osc;
-            }
-
+            return osc;
         }
 
         /// <summary>

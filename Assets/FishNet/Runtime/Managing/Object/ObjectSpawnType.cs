@@ -1,6 +1,6 @@
 ﻿namespace FishNet.Managing.Object
 {
-    internal enum ObjectSpawnType : byte
+    internal enum SpawnType : byte
     {
         Unset = 0,
         Scene = 1,

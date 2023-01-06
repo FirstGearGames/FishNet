@@ -3,7 +3,7 @@ using MonoFN.Cecil;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    internal class TransportHelper
+    internal class TransportHelper : CodegenBase
     {
         #region Reflection references.        
         internal TypeReference Channel_TypeRef;
@@ -23,11 +23,11 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        internal bool ImportReferences()
+        public override bool ImportReferences()
         {
             ResetValues();
 
-            Channel_TypeRef = CodegenSession.ImportReference(typeof(Channel));
+            Channel_TypeRef = base.ImportReference(typeof(Channel));
 
             return true;
         }

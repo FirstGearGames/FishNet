@@ -47,27 +47,23 @@ namespace FishNet.Managing.Debugging
         internal void Print(NetworkManager nm)
         {
             if (nm == null)
-            {
-                if (!NetworkManager.StaticCanLog(LoggingType.Error))
-                    return;
-            }
-            else
-            {
-                if (!nm.CanLog(LoggingType.Error))
-                    return;
-            }
-            
-            StringBuilder sb = new StringBuilder();
-            foreach (PacketId item in _incomingPacketIds)
-                sb.Insert(0, $"{item.ToString()}{Environment.NewLine}");
+                nm = InstanceFinder.NetworkManager;
 
-            NetworkObject lastNob = Reader.LastNetworkObject;
-            string nobData = (lastNob == null) ? "Unset" : $"Id {lastNob.ObjectId} on gameObject {lastNob.name}";
-            NetworkBehaviour lastNb = Reader.LastNetworkBehaviour;
-            string nbData = (lastNb == null) ? "Unset" : lastNb.GetType().Name;
+            //Only log if a NM was found.
+            if (nm != null)
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (PacketId item in _incomingPacketIds)
+                    sb.Insert(0, $"{item.ToString()}{Environment.NewLine}");
 
-            Debug.LogError($"The last {_incomingPacketIds.Count} packets to arrive are: {Environment.NewLine}{sb.ToString()}");
-            Debug.LogError($"The last parsed NetworkObject is {nobData}, and NetworkBehaviour {nbData}.");
+                NetworkObject lastNob = Reader.LastNetworkObject;
+                string nobData = (lastNob == null) ? "Unset" : $"Id {lastNob.ObjectId} on gameObject {lastNob.name}";
+                NetworkBehaviour lastNb = Reader.LastNetworkBehaviour;
+                string nbData = (lastNb == null) ? "Unset" : lastNb.GetType().Name;
+
+                nm.LogError($"The last {_incomingPacketIds.Count} packets to arrive are: {Environment.NewLine}{sb.ToString()}");
+                nm.LogError($"The last parsed NetworkObject is {nobData}, and NetworkBehaviour {nbData}.");
+            }
 
             Reset();
         }

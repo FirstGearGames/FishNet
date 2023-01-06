@@ -1,5 +1,5 @@
-﻿using MonoFN.Cecil;
-using System;
+﻿using FishNet.CodeGenerating.Extension;
+using MonoFN.Cecil;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
@@ -10,20 +10,26 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Gets a Resolve favoring cached results first.
         /// </summary>
-        internal static FieldDefinition CachedResolve(this FieldReference fieldRef)
+        internal static FieldDefinition CachedResolve(this FieldReference fieldRef, CodegenSession session)
         {
-            return CodegenSession.GeneralHelper.GetFieldReferenceResolve(fieldRef);
+            return session.GetClass<GeneralHelper>().GetFieldReferenceResolve(fieldRef);
         }
 
 
-        public static FieldReference MakeHostGenericIfNeeded(this FieldReference fd)
+        public static FieldReference MakeHostGenericIfNeeded(this FieldDefinition fd, CodegenSession session)
         {
-            if (fd.DeclaringType.HasGenericParameters)
-            {
-                return new FieldReference(fd.Name, fd.FieldType, fd.DeclaringType.CachedResolve().ConvertToGenericIfNeeded());
-            }
+            TypeReference declaringTr = fd.DeclaringType;
 
-            return fd;
+            if (declaringTr.HasGenericParameters)
+            {
+                GenericInstanceType git = declaringTr.MakeGenericInstanceType();
+                FieldReference result = new FieldReference(fd.Name, fd.FieldType, git);
+                return result;
+            }
+            else
+            {
+                return session.ImportReference(fd);
+            }
         }
 
 

@@ -198,8 +198,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 
@@ -230,7 +229,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        protected internal override void OnStartCallback(bool asServer)
+        public override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
             List<CachedOnChange> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
@@ -263,7 +262,7 @@ namespace FishNet.Object.Synchronizing
                 base.WriteDelta(writer, resetSyncTick);
                 //False for not full write.
                 writer.WriteBoolean(false);
-                writer.WriteUInt32((uint)_changed.Count);
+                writer.WriteInt32(_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
                 {
@@ -277,11 +276,11 @@ namespace FishNet.Object.Synchronizing
                     }
                     else if (change.Operation == SyncListOperation.RemoveAt)
                     {
-                        writer.WriteUInt32((uint)change.Index);
+                        writer.WriteInt32(change.Index);
                     }
                     else if (change.Operation == SyncListOperation.Insert || change.Operation == SyncListOperation.Set)
                     {
-                        writer.WriteUInt32((uint)change.Index);
+                        writer.WriteInt32(change.Index);
                         writer.Write(change.Item);
                     }
                 }
@@ -302,7 +301,7 @@ namespace FishNet.Object.Synchronizing
             base.WriteHeader(writer, false);
             //True for full write.
             writer.WriteBoolean(true);
-            writer.WriteUInt32((uint)Collection.Count);
+            writer.WriteInt32(Collection.Count);
             for (int i = 0; i < Collection.Count; i++)
             {
                 writer.WriteByte((byte)SyncListOperation.Add);
@@ -331,7 +330,7 @@ namespace FishNet.Object.Synchronizing
             if (fullWrite)
                 collection.Clear();
 
-            int changes = (int)reader.ReadUInt32();
+            int changes = reader.ReadInt32();
 
             for (int i = 0; i < changes; i++)
             {
@@ -355,21 +354,21 @@ namespace FishNet.Object.Synchronizing
                 //Insert.
                 else if (operation == SyncListOperation.Insert)
                 {
-                    index = (int)reader.ReadUInt32();
+                    index = reader.ReadInt32();
                     next = reader.Read<T>();
                     collection.Insert(index, next);
                 }
                 //RemoveAt.
                 else if (operation == SyncListOperation.RemoveAt)
                 {
-                    index = (int)reader.ReadUInt32();
+                    index = reader.ReadInt32();
                     prev = collection[index];
                     collection.RemoveAt(index);
                 }
                 //Set
                 else if (operation == SyncListOperation.Set)
                 {
-                    index = (int)reader.ReadUInt32();
+                    index = reader.ReadInt32();
                     next = reader.Read<T>();
                     prev = collection[index];
                     collection[index] = next;
@@ -650,8 +649,7 @@ namespace FishNet.Object.Synchronizing
 
             if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning($"Cannot complete operation as server when server is not active.");
+                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 
@@ -669,14 +667,9 @@ namespace FishNet.Object.Synchronizing
         {
             int index = Collection.IndexOf(obj);
             if (index != -1)
-            {
                 Dirty(index);
-            }
             else
-            {
-                if (base.NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Could not find object within SyncList, dirty will not be set.");
-            }
+                base.NetworkManager.LogError($"Could not find object within SyncList, dirty will not be set.");
         }
         /// <summary>
         /// Marks an index as dirty.

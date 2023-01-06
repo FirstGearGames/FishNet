@@ -15,7 +15,7 @@ namespace FishNet.Utility.Performance
         private static Queue<byte[]> _byteArrays = new Queue<byte[]>();
 
         /// <summary>
-        /// Returns a byte array which will be of at lesat minimum length. The returns array must manually be stored.
+        /// Returns a byte array which will be of at lesat minimum length. The returned array must manually be stored.
         /// </summary>
         public static byte[] Retrieve(int minimumLength)
         {
