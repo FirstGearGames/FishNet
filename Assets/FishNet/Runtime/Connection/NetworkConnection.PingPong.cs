@@ -1,7 +1,9 @@
 ﻿using FishNet.Managing;
 using FishNet.Managing.Timing;
 using System;
+#pragma warning disable IDE0005
 using UnityEngine;
+#pragma warning restore IDE0005
 
 namespace FishNet.Connection
 {
