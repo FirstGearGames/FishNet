@@ -1,9 +1,6 @@
 ﻿using FishNet.Managing;
 using FishNet.Managing.Timing;
 using System;
-#pragma warning disable IDE0005
-using UnityEngine;
-#pragma warning restore IDE0005
 
 namespace FishNet.Connection
 {
@@ -94,7 +91,7 @@ namespace FishNet.Connection
             //Ping isnt too fast.
             else
             {
-                _excessivePingCount = Mathf.Max(0f, _excessivePingCount - 0.5f);
+                _excessivePingCount = UnityEngine.Mathf.Max(0f, _excessivePingCount - 0.5f);
                 return true;
             }
 #endif
