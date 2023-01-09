@@ -1,4 +1,6 @@
-﻿using FishNet.Managing.Timing;
+﻿using FishNet.Managing.Predicting;
+using FishNet.Managing.Timing;
+using FishNet.Object;
 using UnityEngine;
 
 namespace FishNet.Component.Prediction
@@ -13,6 +15,19 @@ namespace FishNet.Component.Prediction
         [Tooltip("Type of prediction movement which is being used.")]
         [SerializeField]
         private RigidbodyType _rigidbodyType;
+        /// <summary>
+        /// GraphicalObject to unparent when pausing.
+        /// </summary>
+        private Transform _graphicalObject;
+        /// <summary>
+        /// Sets GraphicalObject.
+        /// </summary>
+        /// <param name="value"></param>
+        public void SetGraphicalObject(Transform value)
+        {
+            _graphicalObject = value;
+            UpdateRigidbodies();
+        }               
         /// <summary>
         /// True to also get rigidbody components within children.
         /// </summary>
@@ -29,7 +44,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// TimeManager subscribed to.
         /// </summary>
-        private TimeManager _timeManager;
+        private PredictionManager _predictionManager;
         #endregion
 
 
@@ -49,7 +64,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void InitializeOnce()
         {
-            _timeManager = InstanceFinder.TimeManager;
+            _predictionManager = InstanceFinder.PredictionManager;
             UpdateRigidbodies();
             ChangeSubscription(true);
         }
@@ -58,15 +73,15 @@ namespace FishNet.Component.Prediction
         /// Sets a new TimeManager to use.
         /// </summary>
         /// <param name="tm"></param>
-        public void SetTimeManager(TimeManager tm)
+        public void SetPredictionManager(PredictionManager pm)
         {
-            if (tm == _timeManager)
+            if (pm == _predictionManager)
                 return;
 
             //Unsub from current.
             ChangeSubscription(false);
             //Sub to newest.
-            _timeManager = tm;
+            _predictionManager = pm;
             ChangeSubscription(true);
         }
 
@@ -75,7 +90,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         public void UpdateRigidbodies()
         {
-            _rigidbodyPauser.UpdateRigidbodies(transform, _rigidbodyType, _getInChildren);
+            _rigidbodyPauser.UpdateRigidbodies(transform, _rigidbodyType, _getInChildren, _graphicalObject);
         }
 
         /// <summary>
@@ -83,28 +98,28 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void ChangeSubscription(bool subscribe)
         {
-            if (_timeManager == null)
+            if (_predictionManager == null)
                 return;
 
             if (subscribe)
             {
-                _timeManager.OnPreReconcile += _timeManager_OnPreReconcile;
-                _timeManager.OnPostTick += _timeManager_OnPostTick;
+                _predictionManager.OnPreReconcile += _predictionManager_OnPreReconcile;
+                _predictionManager.OnPostReconcile += _predictionManager_OnPostReconcile;
             }
             else
             {
-                _timeManager.OnPreReconcile -= _timeManager_OnPreReconcile;
-                _timeManager.OnPostTick -= _timeManager_OnPostTick;
+                _predictionManager.OnPreReconcile -= _predictionManager_OnPreReconcile;
+                _predictionManager.OnPostReconcile -= _predictionManager_OnPostReconcile;
             }
         }
 
-        private void _timeManager_OnPreReconcile(Object.NetworkBehaviour obj)
+        private void _predictionManager_OnPreReconcile(NetworkBehaviour obj)
         {
             //Make rbs all kinematic/!simulated before reconciling, which would also result in replays.
             _rigidbodyPauser.Pause();
         }
 
-        private void _timeManager_OnPostTick()
+        private void _predictionManager_OnPostReconcile(NetworkBehaviour obj)
         {
             _rigidbodyPauser.Unpause();
         }

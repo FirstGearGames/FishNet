@@ -16,10 +16,15 @@ namespace FishNet.Object
         #region Serialized.
 
         /// <summary>
-        /// 
+        /// Networked PrefabId assigned to this Prefab.
         /// </summary>
         [field: SerializeField, HideInInspector]
         public short PrefabId { get; internal set; } = -1;
+        /// <summary>
+        /// Spawn collection to use assigned to this Prefab.
+        /// </summary>
+        [field: SerializeField, HideInInspector]
+        public ushort SpawnableCollectionId { get; internal set; } = 0;
 #pragma warning disable 414 //Disabled because Unity thinks tihs is unused when building.
         /// <summary>
         /// Hash to the scene which this object resides.

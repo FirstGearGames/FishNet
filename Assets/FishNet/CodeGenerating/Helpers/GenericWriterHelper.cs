@@ -35,8 +35,10 @@ namespace FishNet.CodeGenerating.Helping
         #endregion
 
         #region Const.
-        internal const string INITIALIZEONCE_METHOD_NAME = "InitializeOnce";
-        internal const MethodAttributes INITIALIZEONCE_METHOD_ATTRIBUTES = MethodAttributes.Static;
+        public const string INITIALIZEONCE_METHOD_NAME = "InitializeOnce";
+        public const MethodAttributes INITIALIZEONCE_METHOD_ATTRIBUTES = MethodAttributes.Static;
+        public const MethodAttributes GENERATED_METHOD_ATTRIBUTES = (MethodAttributes.Static | MethodAttributes.Public | MethodAttributes.HideBySig);
+        public const string GENERATED_WRITER_NAMESPACE = "FishNet.Serializing.Generated";
         #endregion
 
         /// <summary>
@@ -77,7 +79,7 @@ namespace FishNet.CodeGenerating.Helping
 
             MethodDefinition writeMethodDef = writeMethodRef.CachedResolve(base.Session);
             MethodDefinition createdMethodDef = new MethodDefinition($"Static___{writeMethodRef.Name}",
-                (MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig),
+                GENERATED_METHOD_ATTRIBUTES,
                 _generatedReaderWriterClassTypeDef.Module.TypeSystem.Void);
             _generatedReaderWriterClassTypeDef.Methods.Add(createdMethodDef);
 
@@ -109,13 +111,18 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Ret);
         }
 
-
         /// <summary>
         /// Creates a Write delegate for writeMethodRef and places it within the generated reader/writer constructor.
         /// </summary>
-        /// <param name="writeMethodRef"></param>
-        internal void CreateWriteDelegate(MethodReference writeMethodRef, bool isStatic)
+        /// <param name="writeMr"></param>
+        internal void CreateWriteDelegate(MethodReference writeMr, bool isStatic)
         {
+            if (!isStatic)
+            {
+                //Supporting Write<T> with types containing generics is more trouble than it's worth.
+                if (writeMr.IsGenericInstance || writeMr.HasGenericParameters)
+                    return;
+            }
             /* If class for generated reader/writers isn't known yet.
             * It's possible this is the case if the entry being added
             * now is the first entry. That would mean the class was just
@@ -123,7 +130,7 @@ namespace FishNet.CodeGenerating.Helping
             bool created;
 
             if (_generatedReaderWriterClassTypeDef == null)
-                _generatedReaderWriterClassTypeDef = base.GetClass<GeneralHelper>().GetOrCreateClass(out created, WriterGenerator.GENERATED_TYPE_ATTRIBUTES, WriterGenerator.GENERATED_WRITERS_CLASS_NAME, null);
+                _generatedReaderWriterClassTypeDef = base.GetClass<GeneralHelper>().GetOrCreateClass(out created, WriterGenerator.GENERATED_TYPE_ATTRIBUTES, WriterGenerator.GENERATED_WRITERS_CLASS_NAME, null, GENERATED_WRITER_NAMESPACE);
             /* If constructor isn't set then try to get or create it
              * and also add it to methods if were created. */
             if (_generatedReaderWriterOnLoadMethodDef == null)
@@ -144,9 +151,10 @@ namespace FishNet.CodeGenerating.Helping
             TypeReference dataTypeRef;
             //Static methods will have the data type as the second parameter (1). 
             if (isStatic)
-                dataTypeRef = writeMethodRef.Parameters[1].ParameterType;
+                dataTypeRef = writeMr.Parameters[1].ParameterType;
             else
-                dataTypeRef = writeMethodRef.Parameters[0].ParameterType;
+                dataTypeRef = writeMr.Parameters[0].ParameterType;
+
             //Check if writer already exist.
             if (_delegatedTypes.Contains(dataTypeRef))
             {
@@ -162,7 +170,7 @@ namespace FishNet.CodeGenerating.Helping
              * May also be Action<Writer, AutoPackType, T> delegate
              * for packed types. */
             processor.Emit(OpCodes.Ldnull);
-            processor.Emit(OpCodes.Ldftn, writeMethodRef);
+            processor.Emit(OpCodes.Ldftn, writeMr);
 
             GenericInstanceType actionGenericInstance;
             MethodReference actionConstructorInstanceMethodRef;

@@ -435,7 +435,7 @@ namespace LiteNetLib
         {
             if (deliveryMethod != DeliveryMethod.ReliableOrdered && deliveryMethod != DeliveryMethod.ReliableUnordered)
                 throw new ArgumentException("Delivery event will work only for ReliableOrdered/Unordered packets");
-            SendInternal(data, 0, data.Length, channelNumber, deliveryMethod, userData);
+            Send_Internal(data, 0, data.Length, channelNumber, deliveryMethod, userData);
         }
 
         /// <summary>
@@ -454,7 +454,7 @@ namespace LiteNetLib
         {
             if (deliveryMethod != DeliveryMethod.ReliableOrdered && deliveryMethod != DeliveryMethod.ReliableUnordered)
                 throw new ArgumentException("Delivery event will work only for ReliableOrdered/Unordered packets");
-            SendInternal(data, start, length, channelNumber, deliveryMethod, userData);
+            Send_Internal(data, start, length, channelNumber, deliveryMethod, userData);
         }
 
         /// <summary>
@@ -471,7 +471,7 @@ namespace LiteNetLib
         {
             if (deliveryMethod != DeliveryMethod.ReliableOrdered && deliveryMethod != DeliveryMethod.ReliableUnordered)
                 throw new ArgumentException("Delivery event will work only for ReliableOrdered/Unordered packets");
-            SendInternal(dataWriter.Data, 0, dataWriter.Length, channelNumber, deliveryMethod, userData);
+            Send_Internal(dataWriter.Data, 0, dataWriter.Length, channelNumber, deliveryMethod, userData);
         }
 
         /// <summary>
@@ -486,7 +486,7 @@ namespace LiteNetLib
         /// </exception>
         public void Send(byte[] data, DeliveryMethod deliveryMethod)
         {
-            SendInternal(data, 0, data.Length, 0, deliveryMethod, null);
+            Send_Internal(data, 0, data.Length, 0, deliveryMethod, null);
         }
 
         /// <summary>
@@ -501,7 +501,7 @@ namespace LiteNetLib
         /// </exception>
         public void Send(NetDataWriter dataWriter, DeliveryMethod deliveryMethod)
         {
-            SendInternal(dataWriter.Data, 0, dataWriter.Length, 0, deliveryMethod, null);
+            Send_Internal(dataWriter.Data, 0, dataWriter.Length, 0, deliveryMethod, null);
         }
 
         /// <summary>
@@ -518,7 +518,7 @@ namespace LiteNetLib
         /// </exception>
         public void Send(byte[] data, int start, int length, DeliveryMethod options)
         {
-            SendInternal(data, start, length, 0, options, null);
+            Send_Internal(data, start, length, 0, options, null);
         }
 
         /// <summary>
@@ -534,7 +534,7 @@ namespace LiteNetLib
         /// </exception>
         public void Send(byte[] data, byte channelNumber, DeliveryMethod deliveryMethod)
         {
-            SendInternal(data, 0, data.Length, channelNumber, deliveryMethod, null);
+            Send_Internal(data, 0, data.Length, channelNumber, deliveryMethod, null);
         }
 
         /// <summary>
@@ -550,7 +550,7 @@ namespace LiteNetLib
         /// </exception>
         public void Send(NetDataWriter dataWriter, byte channelNumber, DeliveryMethod deliveryMethod)
         {
-            SendInternal(dataWriter.Data, 0, dataWriter.Length, channelNumber, deliveryMethod, null);
+            Send_Internal(dataWriter.Data, 0, dataWriter.Length, channelNumber, deliveryMethod, null);
         }
 
         /// <summary>
@@ -568,10 +568,10 @@ namespace LiteNetLib
         /// </exception>
         public void Send(byte[] data, int start, int length, byte channelNumber, DeliveryMethod deliveryMethod)
         {
-            SendInternal(data, start, length, channelNumber, deliveryMethod, null);
+            Send_Internal(data, start, length, channelNumber, deliveryMethod, null);
         }
 
-        private void SendInternal(
+        private void Send_Internal(
             byte[] data,
             int start,
             int length,
@@ -678,7 +678,7 @@ namespace LiteNetLib
         {
             if (deliveryMethod != DeliveryMethod.ReliableOrdered && deliveryMethod != DeliveryMethod.ReliableUnordered)
                 throw new ArgumentException("Delivery event will work only for ReliableOrdered/Unordered packets");
-            SendInternal(data, channelNumber, deliveryMethod, userData);
+            Send_Internal(data, channelNumber, deliveryMethod, userData);
         }
 
         /// <summary>
@@ -693,7 +693,7 @@ namespace LiteNetLib
         /// </exception>
         public void Send(ReadOnlySpan<byte> data, DeliveryMethod deliveryMethod)
         {
-            SendInternal(data, 0, deliveryMethod, null);
+            Send_Internal(data, 0, deliveryMethod, null);
         }
 
         /// <summary>
@@ -709,10 +709,10 @@ namespace LiteNetLib
         /// </exception>
         public void Send(ReadOnlySpan<byte> data, byte channelNumber, DeliveryMethod deliveryMethod)
         {
-            SendInternal(data, channelNumber, deliveryMethod, null);
+            Send_Internal(data, channelNumber, deliveryMethod, null);
         }
 
-        private void SendInternal(
+        private void Send_Internal(
             ReadOnlySpan<byte> data,
             byte channelNumber,
             DeliveryMethod deliveryMethod,

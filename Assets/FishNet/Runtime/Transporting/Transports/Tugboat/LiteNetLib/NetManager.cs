@@ -38,7 +38,7 @@ namespace LiteNetLib
             SetSource(packet.RawData, headerSize, packet.Size);
         }
 
-        internal void RecycleInternal()
+        internal void Recycle_Internal()
         {
             Clear();
             if (_packet != null)
@@ -51,7 +51,7 @@ namespace LiteNetLib
         {
             if (_manager.AutoRecycle)
                 return;
-            RecycleInternal();
+            Recycle_Internal();
         }
     }
 
@@ -428,11 +428,11 @@ namespace LiteNetLib
         private void RemovePeer(NetPeer peer)
         {
             _peersLock.EnterWriteLock();
-            RemovePeerInternal(peer);
+            RemovePeer_Internal(peer);
             _peersLock.ExitWriteLock();
         }
 
-        private void RemovePeerInternal(NetPeer peer)
+        private void RemovePeer_Internal(NetPeer peer)
         {
             if (!_peersDict.Remove(peer.EndPoint))
                 return;
@@ -620,7 +620,7 @@ namespace LiteNetLib
             if (emptyData)
                 RecycleEvent(evt);
             else if (AutoRecycle)
-                evt.DataReader.RecycleInternal();
+                evt.DataReader.Recycle_Internal();
         }
 
         internal void RecycleEvent(NetEvent evt)
@@ -669,7 +669,7 @@ namespace LiteNetLib
                     {
                         _peersLock.EnterWriteLock();
                         for (int i = 0; i < peersToRemove.Count; i++)
-                            RemovePeerInternal(peersToRemove[i]);
+                            RemovePeer_Internal(peersToRemove[i]);
                         _peersLock.ExitWriteLock();
                         peersToRemove.Clear();
                     }
@@ -752,7 +752,7 @@ namespace LiteNetLib
             {
                 if (netPeer.ConnectionState == ConnectionState.Disconnected && netPeer.TimeSinceLastPacket > DisconnectTimeout)
                 {
-                    RemovePeerInternal(netPeer);
+                    RemovePeer_Internal(netPeer);
                 }
                 else
                 {

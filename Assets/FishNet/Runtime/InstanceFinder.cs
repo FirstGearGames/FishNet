@@ -1,7 +1,7 @@
 using FishNet.Component.ColliderRollback;
 using FishNet.Managing;
 using FishNet.Managing.Client;
-using FishNet.Managing.Logging;
+using FishNet.Managing.Predicting;
 using FishNet.Managing.Scened;
 using FishNet.Managing.Server;
 using FishNet.Managing.Statistic;
@@ -122,6 +122,17 @@ namespace FishNet
             {
                 NetworkManager nm = NetworkManager;
                 return (nm == null) ? null : nm.RollbackManager;
+            }
+        }
+        /// <summary>
+        /// Returns the first instance of PredictionManager.
+        /// </summary>
+        public static PredictionManager PredictionManager
+        {
+            get
+            {
+                NetworkManager nm = NetworkManager;
+                return (nm == null) ? null : nm.PredictionManager;
             }
         }
         /// <summary>

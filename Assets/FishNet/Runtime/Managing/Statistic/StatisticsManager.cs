@@ -12,9 +12,9 @@ namespace FishNet.Managing.Statistic
         /// </summary>
         public NetworkTraficStatistics NetworkTraffic = new NetworkTraficStatistics();
 
-        internal void InitializeOnceInternal(NetworkManager manager)
+        internal void InitializeOnce_Internal(NetworkManager manager)
         {
-            NetworkTraffic.InitializeOnceInternal(manager);
+            NetworkTraffic.InitializeOnce_Internal(manager);
         }
   
     }

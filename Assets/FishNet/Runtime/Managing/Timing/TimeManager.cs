@@ -47,24 +47,6 @@ namespace FishNet.Managing.Timing
 
         #region Public.
         /// <summary>
-        /// Called before performing a reconcile on NetworkBehaviour.
-        /// </summary>
-        public event Action<NetworkBehaviour> OnPreReconcile;
-        /// <summary>
-        /// Called after performing a reconcile on a NetworkBehaviour.
-        /// </summary>
-        public event Action<NetworkBehaviour> OnPostReconcile;
-        /// <summary>
-        /// Called before physics is simulated when replaying a replicate method.
-        /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
-        /// </summary>
-        public event Action<PhysicsScene, PhysicsScene2D> OnPreReplicateReplay;
-        /// <summary>
-        /// Called after physics is simulated when replaying a replicate method.
-        /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
-        /// </summary>
-        public event Action<PhysicsScene, PhysicsScene2D> OnPostReplicateReplay;
-        /// <summary>
         /// Called right before a tick occurs, as well before data is read.
         /// </summary>
         public event Action OnPreTick;
@@ -113,14 +95,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public uint LastPacketTick { get; internal set; }
         /// <summary>
-        /// Last tick any object reconciled.
-        /// </summary>
-        public uint LastReconcileTick { get; internal set; }
-        /// <summary>
-        /// Last tick any object replicated.
-        /// </summary>
-        public uint LastReplicateTick { get; internal set; }
-        /// <summary>
         /// Current approximate network tick as it is on server.
         /// When running as client only this is an approximation to what the server tick is.
         /// The value of this field may increase and decrease as timing adjusts.
@@ -146,24 +120,6 @@ namespace FishNet.Managing.Timing
         /// How long the local client has been connected.
         /// </summary>
         public float ClientUptime { get; private set; }
-        /// <summary>
-        /// 
-        /// </summary>
-        private bool _isReplaying;
-        /// <summary>
-        /// Returns if any prediction is replaying.
-        /// </summary>
-        /// <returns></returns>
-        public bool IsReplaying() => _isReplaying;
-        /// <summary>
-        /// Returns if scene is replaying.
-        /// </summary>
-        /// <param name="scene"></param>
-        /// <returns></returns>
-        public bool IsReplaying(UnityScene scene) => _replayingScenes.Contains(scene);
-        /// <summary>
-        /// True if any predictions are replaying.
-        /// </summary>
         #endregion
 
         #region Serialized.
@@ -235,10 +191,6 @@ namespace FishNet.Managing.Timing
         #endregion
 
         #region Private.
-        /// <summary>
-        /// Scenes which are currently replaying prediction.
-        /// </summary>
-        private HashSet<UnityScene> _replayingScenes = new HashSet<UnityScene>(new SceneHandleEqualityComparer());
         /// <summary>
         /// Ticks that have passed on client since the last time server sent an UpdateTicksBroadcast.
         /// </summary>
@@ -333,16 +285,10 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private const string SAVED_FIXED_TIME_TEXT = "SavedFixedTimeFN";
         #endregion
-        private void OnEnable()
-        {
-            UnityEngine.SceneManagement.SceneManager.sceneUnloaded += SceneManager_sceneUnloaded;
-        }
 
 #if UNITY_EDITOR
         private void OnDisable()
         {
-            UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= SceneManager_sceneUnloaded;
-
             //If closing/stopping.
             if (ApplicationState.IsQuitting())
             {
@@ -412,7 +358,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        internal void InitializeOnceInternal(NetworkManager networkManager)
+        internal void InitializeOnce_Internal(NetworkManager networkManager)
         {
             _networkManager = networkManager;
             SetInitialValues();
@@ -437,23 +383,12 @@ namespace FishNet.Managing.Timing
 
 
         /// <summary>
-        /// Called when a scene unloads.
-        /// </summary>
-        /// <param name="arg0"></param>
-        private void SceneManager_sceneUnloaded(UnityScene s)
-        {
-            _replayingScenes.Remove(s);
-        }
-
-
-        /// <summary>
         /// Called after the local client connection state changes.
         /// </summary>
         private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
         {
             if (obj.ConnectionState != LocalConnectionState.Started)
             {
-                _replayingScenes.Clear();
                 _pingStopwatch.Stop();
                 ClientUptime = 0f;
                 LocalTick = 0;
@@ -478,42 +413,6 @@ namespace FishNet.Managing.Timing
             {
                 ServerUptime = 0f;
                 Tick = 0;
-            }
-        }
-
-        /// <summary>
-        /// Invokes OnPre/PostReconcile events.
-        /// Internal use.
-        /// </summary>
-        [APIExclude]
-        [CodegenMakePublic] //To internal.
-        public void InvokeOnReconcileInternal(NetworkBehaviour nb, bool before)
-        {
-            nb.IsReconciling = before;
-            if (before)
-                OnPreReconcile?.Invoke(nb);
-            else
-                OnPostReconcile?.Invoke(nb);
-        }
-
-        /// <summary>
-        /// Invokes OnReplicateReplay.
-        /// Internal use.
-        /// </summary>
-        [APIExclude]
-        [CodegenMakePublic] //To internal.
-        public void InvokeOnReplicateReplayInternal(UnityScene scene, PhysicsScene ps, PhysicsScene2D ps2d, bool before)
-        {
-            _isReplaying = before;
-            if (before)
-            {
-                _replayingScenes.Add(scene);
-                OnPreReplicateReplay?.Invoke(ps, ps2d);
-            }
-            else
-            {
-                _replayingScenes.Remove(scene);
-                OnPostReplicateReplay?.Invoke(ps, ps2d);
             }
         }
 

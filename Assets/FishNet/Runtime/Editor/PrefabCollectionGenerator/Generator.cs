@@ -1,5 +1,6 @@
 ﻿#if UNITY_EDITOR
 
+using FishNet.Configuring;
 using FishNet.Managing.Object;
 using FishNet.Object;
 using System.Collections.Generic;
@@ -191,7 +192,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// <summary>
         /// Returns a message to attach to logs if objects were dirtied.
         /// </summary>
-        private static string GetDirtiedMessage(Settings settings, bool dirtied)
+        private static string GetDirtiedMessage(PrefabGeneratorConfigurations settings, bool dirtied)
         {
             if (!settings.SaveChanges && dirtied)
                 return " One or more NetworkObjects were dirtied. Please save your project.";
@@ -202,10 +203,10 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// <summary>
         /// Updates prefabs by using only changed information.
         /// </summary>
-        public static void GenerateChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths, Settings settings = null)
+        public static void GenerateChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths, PrefabGeneratorConfigurations settings = null)
         {
             if (settings == null)
-                settings = Settings.Load();
+                settings = Configuration.Configurations.PrefabGenerator;
             if (!settings.Enabled)
                 return;
 
@@ -301,10 +302,10 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// <summary>
         /// Generates prefabs by iterating all files within settings parameters.
         /// </summary>
-        public static void GenerateFull(Settings settings = null, bool forced = false)
+        public static void GenerateFull(PrefabGeneratorConfigurations settings = null, bool forced = false)
         {
             if (settings == null)
-                settings = Settings.Load();
+                settings = Configuration.Configurations.PrefabGenerator;
             if (!forced && !settings.Enabled)
                 return;
             bool log = settings.LogToConsole;
@@ -314,7 +315,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             HashSet<string> excludedPaths = new HashSet<string>(settings.ExcludedFolders);
 
             //If searching the entire project.
-            if (settings.SearchScope == Settings.SearchScopeType.EntireProject)
+            if (settings.SearchScope == (int)SearchScopeType.EntireProject)
             {
                 foreach (string path in GetPrefabFiles("Assets", excludedPaths, true))
                 {
@@ -324,9 +325,9 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 }
             }
             //Specific folders.
-            else if (settings.SearchScope == Settings.SearchScopeType.SpecificFolders)
+            else if (settings.SearchScope == (int)SearchScopeType.SpecificFolders)
             {
-                List<SpecifiedFolder> folders = GetSpecifiedFolders(settings.IncludedFolders);
+                List<SpecifiedFolder> folders = GetSpecifiedFolders(settings.IncludedFolders.ToList());
                 RemoveOverlappingFolders(folders);
 
                 foreach (SpecifiedFolder sf in folders)
@@ -359,12 +360,19 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             prefabCollection.AddObjects(foundNobs, false);
             bool dirtied = prefabCollection.SetAssetPathHashes(0);
 
+            int newCount = prefabCollection.GetObjectCount();
             if (log)
-                UnityDebug.Log($"Default prefab generator found {prefabCollection.GetObjectCount()} prefabs in {sw.ElapsedMilliseconds}ms.{GetDirtiedMessage(settings, dirtied)}");
-
-            EditorUtility.SetDirty(prefabCollection);
-            if (settings.SaveChanges)
-                AssetDatabase.SaveAssets();
+            {
+                string dirtiedMessage = (newCount > 0) ? GetDirtiedMessage(settings, dirtied) : string.Empty;
+                UnityDebug.Log($"Default prefab generator found {newCount} prefabs in {sw.ElapsedMilliseconds}ms.{dirtiedMessage}");
+            }
+            //Only set dirty if and save if prefabs were found.
+            if (newCount > 0)
+            {
+                EditorUtility.SetDirty(prefabCollection);
+                if (settings.SaveChanges)
+                    AssetDatabase.SaveAssets();
+            }
         }
 
         /// <summary>
@@ -403,30 +411,30 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// <summary>
         /// Returns the DefaultPrefabObjects file.
         /// </summary>
-        private static DefaultPrefabObjects GetDefaultPrefabObjects(Settings settings = null)
+        private static DefaultPrefabObjects GetDefaultPrefabObjects(PrefabGeneratorConfigurations settings = null)
         {
             if (settings == null)
-                settings = Settings.Load();
+                settings = Configuration.Configurations.PrefabGenerator;
 
-            //Load the prefab collection
-            string assetPath = settings.AssetPath;
-
+            //Load the prefab collection 
+            string defaultPrefabsPath = settings.DefaultPrefabObjectsPath;
+            string fullDefaultPrefabsPath = (defaultPrefabsPath.Length > 0) ? Path.GetFullPath(defaultPrefabsPath) : string.Empty;
             //If cached prefabs is not the same path as assetPath.
             if (_cachedDefaultPrefabs != null)
             {
-                string foundPath = Path.GetFullPath(AssetDatabase.GetAssetPath(_cachedDefaultPrefabs));
-                string assetPathFull = Path.GetFullPath(assetPath);
-                if (foundPath != assetPathFull)
+                string unityAssetPath = AssetDatabase.GetAssetPath(_cachedDefaultPrefabs);
+                string fullCachedPath = (unityAssetPath.Length > 0) ? Path.GetFullPath(unityAssetPath) : string.Empty;
+                if (fullCachedPath != fullDefaultPrefabsPath)
                     _cachedDefaultPrefabs = null;
-            }
+            } 
 
             //If cached is null try to get it.
             if (_cachedDefaultPrefabs == null)
             {
                 //Only try to load it if file exist.
-                if (File.Exists(assetPath))
+                if (File.Exists(fullDefaultPrefabsPath))
                 {
-                    _cachedDefaultPrefabs = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(assetPath);
+                    _cachedDefaultPrefabs = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(defaultPrefabsPath);
                     if (_cachedDefaultPrefabs == null)
                     {
                         //If already retried then throw an error.
@@ -446,17 +454,18 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
             if (_cachedDefaultPrefabs == null)
             {
-                UnityDebug.Log($"Creating a new DefaultPrefabsObject at {assetPath}.");
-                string directory = Path.GetDirectoryName(assetPath);
+                string fullPath = Path.GetFullPath(defaultPrefabsPath);
+                UnityDebug.Log($"Creating a new DefaultPrefabsObject at {fullPath}.");
+                string directory = Path.GetDirectoryName(fullPath);
 
                 if (!Directory.Exists(directory))
-                {
+                { 
                     Directory.CreateDirectory(directory);
                     AssetDatabase.Refresh();
                 }
 
                 _cachedDefaultPrefabs = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
-                AssetDatabase.CreateAsset(_cachedDefaultPrefabs, assetPath);
+                AssetDatabase.CreateAsset(_cachedDefaultPrefabs, defaultPrefabsPath);
                 AssetDatabase.SaveAssets();
             }
 
@@ -499,7 +508,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             DefaultPrefabObjects prefabCollection = GetDefaultPrefabObjects();
             if (prefabCollection == null)
                 return;
-            Settings settings = Settings.Load();
+            PrefabGeneratorConfigurations settings = Configuration.Configurations.PrefabGenerator;
 
             if (prefabCollection.GetObjectCount() == 0)
             {
@@ -514,7 +523,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     return;
 
                 //normalizes path.
-                string dpoPath = Path.GetFullPath(settings.AssetPath);
+                string dpoPath = Path.GetFullPath(settings.DefaultPrefabObjectsPath);
                 //If total changes is 1 and the only changed file is the default prefab collection then do nothing.
                 if (totalChanges == 1)
                 {

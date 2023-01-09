@@ -127,6 +127,11 @@ namespace FishNet.Object.Synchronizing
         /// Clients which may receive value updates.
         /// </summary>
         public ReadPermission ReadPermissions = ReadPermission.Observers;
+        /// <summary>
+        /// True if to require the readonly attribute.
+        /// Setting to false will allow inspector serialization of this object, but you must never manually initialize this object.
+        /// </summary>
+        public bool RequireReadOnly = true;
     }
 
     /// <summary>

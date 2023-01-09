@@ -445,7 +445,11 @@ namespace FishNet.CodeGenerating.Processing
                 //SyncObject readonly check.
                 if (syncObject && !fieldDef.Attributes.HasFlag(FieldAttributes.InitOnly))
                 {
-                    base.LogError($"{fieldDef.Name} SyncObject must be readonly.");
+                    /* If missing readonly see if the user specified
+                     * they want the object to be serialized. */
+                    bool requireReadOnly = customAttribute.GetField(nameof(SyncObjectAttribute.RequireReadOnly), true);
+                    if (requireReadOnly)
+                        base.LogError($"{fieldDef.Name} SyncObject must be readonly.");
                     error = true;
                 }
 
@@ -635,7 +639,7 @@ namespace FishNet.CodeGenerating.Processing
 
             Instruction retInst = processor.Create(OpCodes.Ret);
 
-            if (!Configuration.ConfigurationData.IsBuilding)
+            if (!Configuration.Configurations.CodeStripping.IsBuilding)
             {
                 processor.Emit(OpCodes.Call, base.GetClass<GeneralHelper>().Application_IsPlaying_MethodRef);
                 processor.Emit(OpCodes.Brfalse_S, retInst);
@@ -1138,7 +1142,7 @@ namespace FishNet.CodeGenerating.Processing
                 else
                 {
 
-                    
+
                     //Pass in true for as server.
                     Instruction boolTrueInst = processor.Create(OpCodes.Ldc_I4_1);
                     methodDef.Body.Instructions.Insert(instructionIndex, boolTrueInst);

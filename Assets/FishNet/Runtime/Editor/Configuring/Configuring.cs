@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Xml.Serialization;
+using UnityEngine;
 
 #if UNITY_EDITOR
 using UnityEditor.Compilation;
@@ -18,23 +19,23 @@ namespace FishNet.Configuring
         /// <summary>
         /// 
         /// </summary>
-        private static ConfigurationData _configurationData;
+        private static ConfigurationData _configurations;
         /// <summary>
         /// ConfigurationData to use.
         /// </summary>
-        public static ConfigurationData ConfigurationData
+        public static ConfigurationData Configurations
         {
             get
             {
-                if (_configurationData == null)
-                    _configurationData = LoadConfigurationData();
-                if (_configurationData == null)
-                    throw new System.Exception("Fish-Networking ConfigurationData could not be loaded. Certain features such as code-stripping may not function.");
-                return _configurationData;
+                if (_configurations == null)
+                    _configurations = LoadConfigurationData();
+                if (_configurations == null)
+                    throw new System.Exception("Fish-Networking Configurations could not be loaded. Certain features such as code-stripping may not function.");
+                return _configurations;
             }
             private set
             {
-                _configurationData = value;
+                _configurations = value;
             }
         }
 
@@ -61,31 +62,37 @@ namespace FishNet.Configuring
         internal static ConfigurationData LoadConfigurationData()
         {
             //return new ConfigurationData();
-            if (_configurationData == null || !_configurationData.Loaded)
+            if (_configurations == null || !_configurations.Loaded)
             {
                 string configPath = GetAssetsPath(CONFIG_FILE_NAME);
                 //string configPath = string.Empty;
                 //File is on disk.
                 if (File.Exists(configPath))
                 {
-                    XmlSerializer serializer = new XmlSerializer(typeof(ConfigurationData));
-                    FileStream fs = new FileStream(configPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    _configurationData = (ConfigurationData)serializer.Deserialize(fs);
-                    fs.Close();
-
-                    _configurationData.Loaded = true;
+                    FileStream fs = null;
+                    try
+                    {
+                        XmlSerializer serializer = new XmlSerializer(typeof(ConfigurationData));
+                        fs = new FileStream(configPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        _configurations = (ConfigurationData)serializer.Deserialize(fs);
+                    }
+                    finally
+                    {
+                        fs?.Close();
+                    }
+                    _configurations.Loaded = true;
                 }
                 else
                 {
                     //If null then make a new instance.
-                    if (_configurationData == null)
-                        _configurationData = new ConfigurationData();
+                    if (_configurations == null)
+                        _configurations = new ConfigurationData();
                     //Don't unset loaded, if its true then it should have proper info.
                     //_configurationData.Loaded = false;
                 }
             }
 
-            return _configurationData;
+            return _configurations;
 
         }
 

@@ -99,7 +99,7 @@ namespace FishNet.Managing.Client
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void InitializeOnceInternal(NetworkManager manager)
+        internal void InitializeOnce_Internal(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ClientObjects(manager);
@@ -147,7 +147,11 @@ namespace FishNet.Managing.Client
         {
             NetworkManager.ClearClientsCollection(Clients);
 
-            List<int> collection = args.Ids;
+            List<int> collection = args.ListCache.Collection;// args.Ids;
+            //No connected clients except self.
+            if (collection == null)
+                return;
+
             int count = collection.Count;
             for (int i = 0; i < count; i++)
             {

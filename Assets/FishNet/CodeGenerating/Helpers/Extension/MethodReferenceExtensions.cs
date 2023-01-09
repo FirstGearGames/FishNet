@@ -36,6 +36,39 @@ namespace FishNet.CodeGenerating.Helping.Extension
         }
 
         /// <summary>
+        /// Returns a method reference for a generic method.
+        /// </summary>
+        public static MethodReference GetMethodReference(this MethodReference mr, CodegenSession session, TypeReference typeReference)
+        {
+            return mr.GetMethodReference(session, new TypeReference[] { typeReference });
+        }
+
+        /// <summary>
+        /// Returns a method reference for a generic method.
+        /// </summary>
+        public static MethodReference GetMethodReference(this MethodReference mr, CodegenSession session, TypeReference[] typeReferences)
+        {
+            if (mr.HasGenericParameters)
+            {
+                if (typeReferences == null || typeReferences.Length == 0)
+                {
+                    session.LogError($"Method {mr.Name} has generic parameters but TypeReferences are null or 0 length.");
+                    return null;
+                }
+                else
+                {
+                    GenericInstanceMethod gim = mr.MakeGenericMethod(typeReferences);
+                    return gim;
+                }
+            }
+            else
+            {
+                return mr;
+            }
+        }
+
+
+        /// <summary>
         /// Gets a Resolve favoring cached results first.
         /// </summary>
         internal static MethodDefinition CachedResolve(this MethodReference methodRef, CodegenSession session)
