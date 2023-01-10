@@ -1923,40 +1923,49 @@ namespace FishNet.Managing.Scened
             //Need to figure out which scene to use.
             else
             {
+                Scene s = default;
+
                 //Feature is disabled.
                 if (!_setActiveScene)
-                    return;
-
-                Scene s = default;
-                if (_globalScenes != null && _globalScenes.Length > 0)
-                    s = GetScene(_globalScenes[0]);
-                else if (preferredScene.IsValid())
-                    s = preferredScene;
-
-                /* If scene isn't set from global then make
-                 * sure currently active isn't the movedobjectscene.
-                 * If it is, then use the fallback scene. */
-                if (string.IsNullOrEmpty(s.name) && UnitySceneManager.GetActiveScene() == _movedObjectsScene)
-                    s = GetFallbackActiveScene();
-
-                if (s.IsValid())
+                {
+                    //Still call complete to invoke events.
                     CompleteSetActive(s);
+                }
+                else
+                {
+                    if (_globalScenes != null && _globalScenes.Length > 0)
+                        s = GetScene(_globalScenes[0]);
+                    else if (preferredScene.IsValid())
+                        s = preferredScene;
+
+                    /* If scene isn't set from global then make
+                     * sure currently active isn't the movedobjectscene.
+                     * If it is, then use the fallback scene. */
+                    if (string.IsNullOrEmpty(s.name) && UnitySceneManager.GetActiveScene() == _movedObjectsScene)
+                        s = GetFallbackActiveScene();
+
+                    CompleteSetActive(s);
+                }
             }
 
             //Completes setting the active scene with specified value.
             void CompleteSetActive(Scene scene)
             {
-                UnitySceneManager.SetActiveScene(scene);
+                bool sceneValid = scene.IsValid();
+                if (sceneValid)
+                    UnitySceneManager.SetActiveScene(scene);
 
                 OnActiveSceneSet?.Invoke(byUser);
                 OnActiveSceneSetInternal?.Invoke();
 
-                //Also update light probes.
-                if (_lightProbeUpdating == LightProbeUpdateType.Asynchronous)
-                    LightProbes.TetrahedralizeAsync();
-                else if (_lightProbeUpdating == LightProbeUpdateType.BlockThread)
-                    LightProbes.Tetrahedralize();
-
+                if (sceneValid)
+                {
+                    //Also update light probes.
+                    if (_lightProbeUpdating == LightProbeUpdateType.Asynchronous)
+                        LightProbes.TetrahedralizeAsync();
+                    else if (_lightProbeUpdating == LightProbeUpdateType.BlockThread)
+                        LightProbes.Tetrahedralize();
+                }
             }
         }
 
