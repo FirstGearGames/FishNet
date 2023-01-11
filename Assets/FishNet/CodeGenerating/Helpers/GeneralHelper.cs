@@ -412,8 +412,23 @@ namespace FishNet.CodeGenerating.Helping
             return false;
         }
 
+        /// <summary>
+        /// Returns an OpCode for loading a parameter.
+        /// </summary>
+        public OpCode GetLoadParameterOpCode(ParameterDefinition pd)
+        {
+            return (pd.ParameterType.IsValueType) ? OpCodes.Ldarga : OpCodes.Ldarg;
+        }
 
-
+        /// <summary>
+        /// Returns an instruction for loading a parameter.s
+        /// </summary>
+        public Instruction GetLoadParameterInstruction(MethodDefinition md, ParameterDefinition pd)
+        {
+            ILProcessor processor = md.Body.GetILProcessor();
+            OpCode oc = GetLoadParameterOpCode(pd);
+            return processor.Create(oc, pd);
+        }
 
         /// <summary>
         /// Calls copiedMd with the assumption md shares the same parameters.
@@ -1091,9 +1106,9 @@ namespace FishNet.CodeGenerating.Helping
                     , null, WriterHelper.EXCLUDED_ASSEMBLY_PREFIXES))
                 {
                     base.ImportReference(fieldDef);
-                    processor.Emit(OpCodes.Ldarg, v0Pd);
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
                     processor.Emit(OpCodes.Ldfld, fieldDef);
-                    processor.Emit(OpCodes.Ldarg, v1Pd);
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
                     processor.Emit(OpCodes.Ldfld, fieldDef);
                     FinishTypeReferenceCompare(fieldDef.FieldType);
                     //processor.Emit(OpCodes.Bne_Un, exitMethodInst);
@@ -1104,12 +1119,11 @@ namespace FishNet.CodeGenerating.Helping
                     , null, WriterHelper.EXCLUDED_ASSEMBLY_PREFIXES))
                 {
                     MethodReference getMr = base.Module.ImportReference(propertyDef.GetMethod);
-                    processor.Emit(OpCodes.Ldarg, v0Pd);
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
                     processor.Emit(OpCodes.Call, getMr);
-                    processor.Emit(OpCodes.Ldarg, v1Pd);
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
                     processor.Emit(OpCodes.Call, getMr);
                     FinishTypeReferenceCompare(propertyDef.PropertyType);
-                    //processor.Emit(OpCodes.Bne_Un, exitMethodInst);
                 }
 
                 //Return true;
