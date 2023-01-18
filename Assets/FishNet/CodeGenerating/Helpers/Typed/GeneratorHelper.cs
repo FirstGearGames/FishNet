@@ -22,7 +22,7 @@ namespace FishNet.CodeGenerating.Helping
             /* Check if already has a serializer. */
             if (writer)
             {
-                if (base.GetClass<WriterHelper>().GetFavoredWriteMethodReference(objectTr, true) != null)
+                if (base.GetClass<WriterProcessor>().GetWriteMethodReference(objectTr) != null)
                 {
                     base.LogError($"Writer already exist for {objectTr.FullName}.");
                     return SerializerType.Invalid;
@@ -30,7 +30,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                if (base.GetClass<ReaderHelper>().GetFavoredReadMethodReference(objectTr, true) != null)
+                if (base.GetClass<ReaderProcessor>().GetReadMethodReference(objectTr) != null)
                 {
                     base.LogError($"Reader already exist for {objectTr.FullName}.");
                     return SerializerType.Invalid;

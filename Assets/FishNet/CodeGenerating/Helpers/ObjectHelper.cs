@@ -1,5 +1,6 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Connection;
+using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using MonoFN.Cecil;
@@ -13,17 +14,18 @@ namespace FishNet.CodeGenerating.Helping
     {
         #region Reflection references.
         //Fullnames.
-        internal string SyncList_Name;
-        internal string SyncDictionary_Name;
-        internal string SyncHashSet_Name;
+        public string SyncList_Name;
+        public string SyncDictionary_Name;
+        public string SyncHashSet_Name;
         //Is checks.
-        internal MethodReference InstanceFinder_IsServer_MethodRef;
-        internal MethodReference InstanceFinder_IsClient_MethodRef;
+        public MethodReference InstanceFinder_IsServer_MethodRef;
+        public MethodReference InstanceFinder_IsClient_MethodRef;
         //Misc.
-        internal MethodReference NetworkConnection_IsValid_MethodRef;
-        internal MethodReference NetworkConnection_IsActive_MethodRef;
-        internal MethodReference Dictionary_Add_UShort_SyncBase_MethodRef;
-        internal MethodReference NetworkConnection_GetIsLocalClient_MethodRef;
+        public TypeReference NetworkBehaviour_TypeRef;
+        public MethodReference NetworkConnection_IsValid_MethodRef;
+        public MethodReference NetworkConnection_IsActive_MethodRef;
+        public MethodReference Dictionary_Add_UShort_SyncBase_MethodRef;
+        public MethodReference NetworkConnection_GetIsLocalClient_MethodRef;
         #endregion
 
         public override bool ImportReferences()
@@ -42,6 +44,8 @@ namespace FishNet.CodeGenerating.Helping
             tmpType = typeof(SyncHashSet<>);
             base.ImportReference(tmpType);
             SyncHashSet_Name = tmpType.Name;
+
+            NetworkBehaviour_TypeRef = base.ImportReference(typeof(NetworkBehaviour));
 
             tmpType = typeof(NetworkConnection);
             TypeReference networkConnectionTr = base.ImportReference(tmpType);

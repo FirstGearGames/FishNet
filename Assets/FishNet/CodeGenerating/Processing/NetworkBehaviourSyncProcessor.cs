@@ -892,6 +892,8 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         internal void InitializeSyncVar(uint syncCount, FieldDefinition createdFd, TypeDefinition typeDef, FieldDefinition originalFd, CustomAttribute attribute, CreatedSyncVar createdSyncVar)
         {
+            GeneralHelper gh = base.GetClass<GeneralHelper>();
+
             //Get all possible attributes.
             float sendRate = attribute.GetField("SendRate", 0.1f);
             WritePermission writePermissions = WritePermission.ServerOnly;
@@ -927,10 +929,10 @@ namespace FishNet.CodeGenerating.Processing
                 MethodReference genericAddMr = addMd.MakeHostInstanceGeneric(base.Session, svGit);
 
                 //Action<dataType, dataType, bool> constructor.
-                GenericInstanceType actionGit = base.GetClass<GenericWriterHelper>().ActionT3TypeRef.MakeGenericInstanceType(
+                GenericInstanceType actionGit = gh.ActionT3TypeRef.MakeGenericInstanceType(
                     originalFd.FieldType, originalFd.FieldType,
                     base.GetClass<GeneralHelper>().GetTypeReference(typeof(bool)));
-                MethodReference gitActionCtorMr = base.GetClass<GenericWriterHelper>().ActionT3ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, actionGit);
+                MethodReference gitActionCtorMr = gh.ActionT3ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, actionGit);
 
                 //      syncVar___field.OnChanged += UserHookMethod;
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
@@ -1275,7 +1277,6 @@ namespace FishNet.CodeGenerating.Processing
 
             } while (copyTd != null);
 
-
         }
 
         /// <summary>
@@ -1345,7 +1346,7 @@ namespace FishNet.CodeGenerating.Processing
             //processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4, syncIndex));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Bne_Un, jmpGoalInst));
             //PooledReader.ReadXXXX()
-            readInsts = base.GetClass<ReaderHelper>().CreateRead(readSyncMethodDef, pooledReaderParameterDef,
+            readInsts = base.GetClass<ReaderProcessor>().CreateRead(readSyncMethodDef, pooledReaderParameterDef,
                  originalFieldDef.FieldType, out nextValueVariableDef);
             if (readInsts == null)
                 return null;

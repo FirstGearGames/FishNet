@@ -10,6 +10,50 @@ namespace FishNet.CodeGenerating.Extension
 
     internal static class MethodDefinitionExtensions
     {
+        /// <summary>
+        /// Adds otherMd parameters to thisMR and returns added parameters.
+        /// </summary>
+        public static List<ParameterDefinition> CreateParameters(this MethodReference thisMr, CodegenSession session, MethodDefinition otherMd)
+        {
+            return thisMr.CachedResolve(session).CreateParameters(session, otherMd);
+        }
+        /// <summary>
+        /// Adds otherMr parameters to thisMR and returns added parameters.
+        /// </summary>
+        public static List<ParameterDefinition> CreateParameters(this MethodReference thisMr, CodegenSession session, MethodReference otherMr)
+        {
+            return thisMr.CachedResolve(session).CreateParameters(session, otherMr.CachedResolve(session));
+        }
+
+        /// <summary>
+        /// Adds otherMd parameters to thisMd and returns added parameters.
+        /// </summary>
+        public static List<ParameterDefinition> CreateParameters(this MethodDefinition thisMd, CodegenSession session, MethodDefinition otherMd)
+        {
+            List<ParameterDefinition> results = new List<ParameterDefinition>();
+
+            foreach (ParameterDefinition pd in otherMd.Parameters)
+            {
+                session.ImportReference(pd.ParameterType);
+                int currentCount = thisMd.Parameters.Count;
+                string name = (pd.Name + currentCount);
+                ParameterDefinition parameterDef = new ParameterDefinition(name, pd.Attributes, pd.ParameterType);
+                //Set any default values.
+                parameterDef.Constant = pd.Constant;
+                parameterDef.IsReturnValue = pd.IsReturnValue;
+                parameterDef.IsOut = pd.IsOut;
+                foreach (CustomAttribute item in pd.CustomAttributes)
+                    parameterDef.CustomAttributes.Add(item);
+                parameterDef.HasConstant = pd.HasConstant;
+                parameterDef.HasDefault = pd.HasDefault;
+                
+                thisMd.Parameters.Add(parameterDef);
+
+                results.Add(parameterDef);
+            }
+
+            return results;
+        }
 
         /// <summary>
         /// Returns a method reference while considering if declaring type is generic.

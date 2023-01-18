@@ -336,6 +336,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// </summary>
         private bool CreateClientRpcWriterMethod(List<ParameterDefinition> serializedParameters, List<AttributeData> attributeDatas, CreatedRpc cr)
         {
+            WriterProcessor wp = base.GetClass<WriterProcessor>();
+
             MethodDefinition writerMd = cr.WriterMethodDef;
             MethodDefinition originalMd = cr.OriginalMethodDef;
 
@@ -370,15 +372,15 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 if (dl > dataLength)
                     dataLength = dl;
             }
-            VariableDefinition pooledWriterVariableDef = base.GetClass<WriterHelper>().CreatePooledWriter(writerMd, dataLength);
+            VariableDefinition pooledWriterVariableDef = wp.CreatePooledWriter(writerMd, dataLength);
             //Create all writer.WriteType() calls. 
             for (int i = 0; i < serializedParameters.Count; i++)
             {
-                MethodReference writeMethodRef = base.GetClass<WriterHelper>().GetOrCreateFavoredWriteMethodReference(serializedParameters[i].ParameterType, true);
+                MethodReference writeMethodRef = wp.GetOrCreateWriteMethodReference(serializedParameters[i].ParameterType);
                 if (writeMethodRef == null)
                     return false;
 
-                base.GetClass<WriterHelper>().CreateWrite(writerMd, pooledWriterVariableDef, serializedParameters[i], writeMethodRef);
+                wp.CreateWrite(writerMd, pooledWriterVariableDef, serializedParameters[i], writeMethodRef);
             }
 
             /* Call the method on NetworkBehaviour responsible for sending out the rpc. */
@@ -387,7 +389,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             else if (cr.RpcType == RpcType.Target)
                 processor.Add(CreateSendTargetRpc(writerMd, cr.MethodHash, pooledWriterVariableDef, channelVariableDef, targetConnectionParameterDef, attributeDatas));
             //Dispose of writer.
-            processor.Add(base.GetClass<WriterHelper>().DisposePooledWriter(writerMd, pooledWriterVariableDef));
+            processor.Add(base.GetClass<WriterProcessor>().DisposePooledWriter(writerMd, pooledWriterVariableDef));
             //Add end of method.
             processor.Emit(OpCodes.Ret);
 
@@ -399,6 +401,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// </summary>
         private bool CreateServerRpcWriterMethod(List<ParameterDefinition> serializedParameters, CreatedRpc cr)
         {
+            WriterProcessor wp = base.GetClass<WriterProcessor>();
+
             MethodDefinition writerMd = cr.WriterMethodDef;
             MethodDefinition originalMd = cr.OriginalMethodDef;
             ILProcessor processor = writerMd.Body.GetILProcessor();
@@ -418,21 +422,21 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);
             //Create a local PooledWriter variable.
             int dataLength = cr.Attribute.GetField(DATALENGTH_NAME, -1);
-            VariableDefinition pooledWriterVariableDef = base.GetClass<WriterHelper>().CreatePooledWriter(writerMd, dataLength);
+            VariableDefinition pooledWriterVariableDef = wp.CreatePooledWriter(writerMd, dataLength);
             //Create all writer.WriteType() calls. 
             for (int i = 0; i < serializedParameters.Count; i++)
             {
-                MethodReference writeMethodRef = base.GetClass<WriterHelper>().GetOrCreateFavoredWriteMethodReference(serializedParameters[i].ParameterType, true);
+                MethodReference writeMethodRef = wp.GetOrCreateWriteMethodReference(serializedParameters[i].ParameterType);
                 if (writeMethodRef == null)
                     return false;
 
-                base.GetClass<WriterHelper>().CreateWrite(writerMd, pooledWriterVariableDef, serializedParameters[i], writeMethodRef);
+                wp.CreateWrite(writerMd, pooledWriterVariableDef, serializedParameters[i], writeMethodRef);
             }
 
             //Call the method on NetworkBehaviour responsible for sending out the rpc.
             processor.Add(CreateSendServerRpc(writerMd, cr.MethodHash, pooledWriterVariableDef, channelVariableDef));
             //Dispose of writer.
-            processor.Add(base.GetClass<WriterHelper>().DisposePooledWriter(writerMd, pooledWriterVariableDef));
+            processor.Add(wp.DisposePooledWriter(writerMd, pooledWriterVariableDef));
             //Add end of method.
             processor.Emit(OpCodes.Ret);
 
@@ -525,7 +529,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             bool requireOwnership = rpcAttribute.GetField(REQUIREOWNERSHIP_NAME, true);
             //Create PooledReader parameter.
-            ParameterDefinition readerParameterDef = base.GetClass<GeneralHelper>().CreateParameter(createdMd, base.GetClass<ReaderHelper>().PooledReader_TypeRef);
+            ParameterDefinition readerParameterDef = base.GetClass<GeneralHelper>().CreateParameter(createdMd, base.GetClass<ReaderImports>().PooledReader_TypeRef);
 
             //Add connection parameter to the read method. Internals pass the connection into this.
             ParameterDefinition channelParameterDef = GetOrCreateChannelParameter(createdMd, RpcType.Server);
@@ -604,7 +608,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             ILProcessor processor = createdMd.Body.GetILProcessor();
 
             //Create PooledReader parameter.
-            ParameterDefinition readerParameterDef = base.GetClass<GeneralHelper>().CreateParameter(createdMd, base.GetClass<ReaderHelper>().PooledReader_TypeRef);
+            ParameterDefinition readerParameterDef = base.GetClass<GeneralHelper>().CreateParameter(createdMd, base.GetClass<ReaderImports>().PooledReader_TypeRef);
             ParameterDefinition channelParameterDef = GetOrCreateChannelParameter(createdMd, rpcType);
             /* It's very important to read everything
              * from the PooledReader before applying any
@@ -803,7 +807,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             for (int i = 0; i < serializedParameters.Count; i++)
             {
                 //Get read instructions and insert it before the return.
-                List<Instruction> insts = base.GetClass<ReaderHelper>().CreateRead(methodDef, readerParameterDef, serializedParameters[i].ParameterType, out readVariableDefs[i]);
+                List<Instruction> insts = base.GetClass<ReaderProcessor>().CreateRead(methodDef, readerParameterDef, serializedParameters[i].ParameterType, out readVariableDefs[i]);
                 allReadInsts.AddRange(insts);
             }
 

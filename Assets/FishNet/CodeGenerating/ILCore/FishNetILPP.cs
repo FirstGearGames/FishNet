@@ -47,7 +47,7 @@ namespace FishNet.CodeGenerating.ILCore
             return referencesFishNet;
         }
         public override ILPostProcessor GetInstance() => this;
-         
+
         public override ILPostProcessResult Process(ICompiledAssembly compiledAssembly)
         {
             AssemblyDefinition assemblyDef = ILCoreHelper.GetAssemblyDefinition(compiledAssembly);
@@ -57,50 +57,35 @@ namespace FishNet.CodeGenerating.ILCore
             //Check WillProcess again; somehow certain editor scripts skip the WillProcess check.
             if (!WillProcess(compiledAssembly))
                 return null;
-            
+
             CodegenSession session = new CodegenSession();
             if (!session.Initialize(assemblyDef.MainModule))
                 return null;
 
             bool modified = false;
 
-            if (IsFishNetAssembly(compiledAssembly))
-            {
+            bool fnAssembly = IsFishNetAssembly(compiledAssembly);
+            if (fnAssembly)
                 modified |= ModifyMakePublicMethods(session);
+            /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
+             * then don't bother processing the rest. */
+            if (session.GetClass<NetworkBehaviourProcessor>().NonNetworkBehaviourHasInvalidAttributes(session.Module.Types))
+                return new ILPostProcessResult(null, session.Diagnostics);
 
-                /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
-                 * then don't bother processing the rest. */
-                if (session.GetClass<NetworkBehaviourProcessor>().NonNetworkBehaviourHasInvalidAttributes(session.Module.Types))
-                    return new ILPostProcessResult(null, session.Diagnostics);
+            modified |= session.GetClass<WriterProcessor>().Process();
+            modified |= session.GetClass<ReaderProcessor>().Process();
+            modified |= CreateDeclaredSerializerDelegates(session);
+            modified |= CreateDeclaredSerializers(session);
+            modified |= CreateIBroadcast(session);
+            modified |= CreateQOLAttributes(session);
+            modified |= CreateNetworkBehaviours(session);
+            modified |= CreateGenericReadWriteDelegates(session);
 
-                modified |= CreateDeclaredSerializerDelegates(session);
-                modified |= CreateDeclaredSerializers(session);
-                modified |= CreateIBroadcast(session);
-                modified |= CreateQOLAttributes(session);
-                modified |= CreateNetworkBehaviours(session);
-                modified |= CreateGenericReadWriteDelegates(session);
-
-                //modified |= ModifyMakePublicMethods(session);
-                //modified |= CreateIBroadcast(session);
-                //modified |= CreateGenericReadWriteDelegates(session);
-
+            if (fnAssembly)
+            {
                 AssemblyNameReference anr = session.Module.AssemblyReferences.FirstOrDefault<AssemblyNameReference>(x => x.FullName == session.Module.Assembly.FullName);
                 if (anr != null)
                     session.Module.AssemblyReferences.Remove(anr);
-            }
-            else
-            {
-                /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
-                 * then don't bother processing the rest. */
-                if (session.GetClass<NetworkBehaviourProcessor>().NonNetworkBehaviourHasInvalidAttributes(session.Module.Types))
-                    return new ILPostProcessResult(null, session.Diagnostics);
-
-                modified |= CreateDeclaredSerializerDelegates(session);
-                modified |= CreateDeclaredSerializers(session);
-                modified |= CreateIBroadcast(session);
-                modified |= CreateQOLAttributes(session);
-                modified |= CreateNetworkBehaviours(session);
-                modified |= CreateGenericReadWriteDelegates(session);
             }
 
             /* If there are warnings about SyncVars being in different assemblies.
@@ -488,11 +473,10 @@ namespace FishNet.CodeGenerating.ILCore
         /// <param name="diagnostics"></param>
         private bool CreateGenericReadWriteDelegates(CodegenSession session)
         {
-            bool modified = false;
-            modified |= session.GetClass<WriterHelper>().CreateGenericDelegates();
-            modified |= session.GetClass<ReaderHelper>().CreateGenericDelegates();
+            session.GetClass<WriterProcessor>().CreateStaticMethodDelegates();
+            session.GetClass<ReaderProcessor>().CreateStaticMethodDelegates();
 
-            return modified;
+            return true;
         }
 
         internal static bool IsFishNetAssembly(ICompiledAssembly assembly) => (assembly.Name == FishNetILPP.RUNTIME_ASSEMBLY_NAME);
