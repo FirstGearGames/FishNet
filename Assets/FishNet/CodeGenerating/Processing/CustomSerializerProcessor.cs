@@ -5,6 +5,7 @@ using FishNet.Serializing;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -21,6 +22,7 @@ namespace FishNet.CodeGenerating.Processing
 
         #endregion
 
+        private int _count = 0;
         internal bool CreateSerializerDelegates(TypeDefinition typeDef, bool replace)
         {
             bool modified = false;            
@@ -44,7 +46,7 @@ namespace FishNet.CodeGenerating.Processing
                     modified = true;
                 }
                 else if (extensionType == ExtensionType.Read)
-                {
+                { 
                     base.GetClass<ReaderHelper>().AddReaderMethod(methodRef.ReturnType, methodRef, false, !replace);
                     modified = true;
                 }

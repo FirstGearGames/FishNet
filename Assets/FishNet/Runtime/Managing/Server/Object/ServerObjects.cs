@@ -1,5 +1,4 @@
 ﻿using FishNet.Connection;
-using FishNet.Managing.Logging;
 using FishNet.Managing.Object;
 using FishNet.Object;
 using FishNet.Serializing;
@@ -61,7 +60,7 @@ namespace FishNet.Managing.Server
 
         internal ServerObjects(NetworkManager networkManager)
         {
-            base.NetworkManager = networkManager;
+            base.Initialize(networkManager);
             networkManager.SceneManager.OnLoadStart += SceneManager_OnLoadStart;
             networkManager.SceneManager.OnActiveSceneSetInternal += SceneManager_OnActiveSceneSet;
             networkManager.TimeManager.OnUpdate += TimeManager_OnUpdate;
@@ -333,7 +332,7 @@ namespace FishNet.Managing.Server
                 //Only setup if a scene object and not initialzied.
                 if (nob.IsNetworked && nob.IsSceneObject && nob.IsDeinitializing)
                 {
-                    base.UpdateNetworkBehaviours(nob, true);
+                    base.UpdateNetworkBehavioursForSceneObject(nob, true);
                     base.AddToSceneObjects(nob);
                     /* If was active in the editor (before hitting play), or currently active
                      * then PreInitialize without synchronizing to clients. There is no reason
@@ -362,10 +361,10 @@ namespace FishNet.Managing.Server
             if (nob.IsNetworked)
             {
                 int objectId = GetNextNetworkObjectId();
-                nob.PreinitializeInternal(NetworkManager, objectId, ownerConnection, true);
+                nob.Preinitialize_Internal(NetworkManager, objectId, ownerConnection, true);
                 base.AddToSpawned(nob, true);
                 nob.gameObject.SetActive(true);
-                nob.Initialize(true);
+                nob.Initialize(true, true);
             }
         }
         #endregion
@@ -392,7 +391,7 @@ namespace FishNet.Managing.Server
                 base.NetworkManager.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
                 return;
             }
-            if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes)
+            if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes(true))
             {
                 base.NetworkManager.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
             }
@@ -457,193 +456,6 @@ namespace FishNet.Managing.Server
             }
 
             ListCaches.StoreCache(spawnCacheCopy);
-        }
-
-        /// <summary>
-        /// Writes a spawn into writers.
-        /// </summary>
-        /// <param name="nob"></param>
-        /// <param name="connection">Connection spawn is being written for.</param>
-        /// <param name="everyoneWriter"></param>
-        /// <param name="ownerWriter"></param>
-        private void WriteSpawn(NetworkObject nob, NetworkConnection connection, ref PooledWriter everyoneWriter, ref PooledWriter ownerWriter)
-        {
-            /* Using a number of writers to prevent rebuilding the
-             * packets excessively for values that are owner only
-             * vs values that are everyone. To save performance the
-             * owner writer is only written to if owner is valid.
-             * This makes the code a little uglier but will scale
-             * significantly better with more connections.
-             * 
-             * EG:
-             * with this technique networkBehaviours are iterated
-             * twice if there is an owner; once for data to send to everyone
-             * and again for data only going to owner. 
-             *
-             * The alternative would be to iterate the networkbehaviours
-             * for every connection it's going to and filling a single
-             * writer with values based on if owner or not. This would
-             * result in significantly more iterations. */
-            PooledWriter headerWriter = WriterPool.GetWriter();
-            headerWriter.WritePacketId(PacketId.ObjectSpawn);
-            headerWriter.WriteNetworkObject(nob);
-            if (base.NetworkManager.ServerManager.ShareIds || connection == nob.Owner)
-                headerWriter.WriteNetworkConnection(nob.Owner);
-            else
-                headerWriter.WriteInt16(-1);
-
-            bool nested = nob.IsNested;
-            bool sceneObject = nob.IsSceneObject;
-            //Write type of spawn.
-            SpawnType st;
-            if (sceneObject)
-                st = SpawnType.Scene;
-            else
-                st = (nob.IsGlobal) ? SpawnType.InstantiatedGlobal : SpawnType.Instantiated;
-            headerWriter.WriteByte((byte)st);
-            //ComponentIndex for the nob. 0 is root but more appropriately there's a IsNested boolean as shown above.
-            headerWriter.WriteByte(nob.ComponentIndex);
-
-            /* When nested the parent nob needs to be written. */
-            if (nested)
-            {
-                headerWriter.WriteNetworkObject(nob.ParentNetworkObject);
-            }
-            //If not nested see if has a parent other than one configured at edit.
-            else
-            {
-                /* Writing a scene object. */
-                if (sceneObject)
-                {
-                    //Write Guid.
-                    headerWriter.WriteUInt64(nob.SceneId, AutoPackType.Unpacked);
-                }
-                /* Writing a spawned object. */
-                else
-                {
-                    //Check to write parent behaviour or nob.
-                    NetworkBehaviour parentNb;
-                    Transform t = nob.transform.parent;
-                    if (t != null)
-                    {
-                        parentNb = t.GetComponent<NetworkBehaviour>();
-                        /* Check for a NetworkObject if there is no NetworkBehaviour.
-                         * There is a small chance the parent object will only contain
-                         * a NetworkObject. */
-                        if (parentNb == null)
-                        {
-                            //If null check if there is a nob.
-                            NetworkObject parentNob = t.GetComponent<NetworkObject>();
-                            //ParentNob is null or not spawned.
-                            if (!ParentIsSpawned(parentNob))
-                            {
-                                headerWriter.WriteByte((byte)SpawnParentType.Unset);
-                            }
-                            else
-                            {
-                                headerWriter.WriteByte((byte)SpawnParentType.NetworkObject);
-                                headerWriter.WriteNetworkObject(parentNob);
-                            }
-                        }
-                        //NetworkBehaviour found on parent.
-                        else
-                        {
-                            //ParentNb is null or not spawned.
-                            if (!ParentIsSpawned(parentNb.NetworkObject))
-                            {
-                                headerWriter.WriteByte((byte)SpawnParentType.Unset);
-                            }
-                            else
-                            {
-                                headerWriter.WriteByte((byte)SpawnParentType.NetworkBehaviour);
-                                headerWriter.WriteNetworkBehaviour(parentNb);
-                            }
-                        }
-
-                        //True if pNob is not null, and is spawned.
-                        bool ParentIsSpawned(NetworkObject pNob)
-                        {
-                            bool isNull = (pNob == null);
-                            if (isNull || !pNob.IsSpawned)
-                            {
-                                /* Only log if pNob exist. Otherwise this would print if the user 
-                                 * was parenting any object, which may not be desirable as they could be
-                                 * simply doing it for organization reasons. */
-                                if (!isNull)
-                                    base.NetworkManager.LogWarning($"Parent {t.name} is not spawned. {nob.name} will not have it's parent sent in the spawn message.");
-                                return false;
-                            }
-
-                            return true;
-                        }
-
-                    }
-                    //No parent.
-                    else
-                    {
-                        headerWriter.WriteByte((byte)SpawnParentType.Unset);
-                    }
-
-                    headerWriter.WriteInt16(nob.PrefabId);
-                }
-            }
-
-            /* Write changed transform properties. */
-            ChangedTransformProperties ctp;
-            //If a scene object then get it from scene properties.
-            if (sceneObject || nested)
-                ctp = nob.GetTransformChanges(nob.SerializedTransformProperties);
-            else
-                ctp = nob.GetTransformChanges(base.NetworkManager.SpawnablePrefabs.GetObject(true, nob.PrefabId).gameObject);
-            headerWriter.WriteByte((byte)ctp);
-            //If properties have changed.
-            if (ctp != ChangedTransformProperties.Unset)
-            {
-                //Write any changed properties.
-                if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalPosition))
-                    headerWriter.WriteVector3(nob.transform.localPosition);
-                if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalRotation))
-                    headerWriter.WriteQuaternion(nob.transform.localRotation, base.NetworkManager.ServerManager.SpawnPacking.Rotation);
-                if (Enums.TransformPropertiesContains(ctp, ChangedTransformProperties.LocalScale))
-                    headerWriter.WriteVector3(nob.transform.localScale);
-            }
-
-            //Write headers first.
-            everyoneWriter.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
-            if (nob.Owner.IsValid)
-                ownerWriter.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
-
-            /* Used to write latest data which must be sent to
-             * clients, such as SyncTypes and RpcLinks. */
-            PooledWriter tempWriter = WriterPool.GetWriter();
-            //Send RpcLinks first.
-            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                nb.WriteRpcLinks(tempWriter);
-            //Add to everyone/owner.
-            everyoneWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
-            if (nob.Owner.IsValid)
-                ownerWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
-
-            //Add most recent sync type values.
-            /* SyncTypes have to be populated for owner and everyone.
-            * The data may be unique for owner if synctypes are set
-            * to only go to owner. */
-            tempWriter.Reset();
-            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                nb.WriteSyncTypesForSpawn(tempWriter, false);
-            everyoneWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
-            //If owner is valid then populate owner writer as well.
-            if (nob.Owner.IsValid)
-            {
-                tempWriter.Reset();
-                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                    nb.WriteSyncTypesForSpawn(tempWriter, true);
-                ownerWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
-            }
-
-            //Dispose of writers created in this method.
-            headerWriter.Dispose();
-            tempWriter.Dispose();
         }
         #endregion
 
@@ -725,7 +537,7 @@ namespace FishNet.Managing.Server
         private void WriteDespawnAndSend(NetworkObject nob, DespawnType despawnType)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
-            WriteDespawn(nob, despawnType, ref everyoneWriter);
+            WriteDespawn(nob, despawnType, everyoneWriter);
 
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
 
@@ -747,22 +559,9 @@ namespace FishNet.Managing.Server
             everyoneWriter.Dispose();
             ListCaches.StoreCache(cache);
         }
-        /// <summary>
-        /// Writes a despawn.
-        /// </summary>
-        /// <param name="nob"></param>
-        private void WriteDespawn(NetworkObject nob, DespawnType despawnType, ref PooledWriter everyoneWriter)
-        {
-            everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
-            everyoneWriter.WriteNetworkObject(nob);
-            everyoneWriter.WriteByte((byte)despawnType);
-        }
-
-
 
     }
     #endregion
-
-
+    
 
 }

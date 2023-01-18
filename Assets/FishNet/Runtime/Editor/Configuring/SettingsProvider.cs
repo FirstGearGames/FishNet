@@ -59,18 +59,18 @@ namespace FishNet.Configuring.Editing
                 richText = true,
             };
 
-            configuration.StripReleaseBuilds = GUILayout.Toggle(configuration.StripReleaseBuilds, $"{ObjectNames.NicifyVariableName(nameof(configuration.StripReleaseBuilds))} <color=yellow>(Pro Only)</color>", toggleStyle);
+            configuration.CodeStripping.StripReleaseBuilds = GUILayout.Toggle(configuration.CodeStripping.StripReleaseBuilds, $"{ObjectNames.NicifyVariableName(nameof(configuration.CodeStripping.StripReleaseBuilds))} <color=yellow>(Pro Only)</color>", toggleStyle);
 
             EditorGUILayout.EndHorizontal();
 
-            if (configuration.StripReleaseBuilds)
+            if (configuration.CodeStripping.StripReleaseBuilds)
             {
                 EditorGUI.indentLevel++;
                 //Stripping Method.
                 List<string> enumStrings = new List<string>();
                 foreach (string item in System.Enum.GetNames(typeof(StrippingTypes)))
                     enumStrings.Add(item);
-                configuration.StrippingType = EditorGUILayout.Popup($"{ObjectNames.NicifyVariableName(nameof(configuration.StrippingType))}", (int)configuration.StrippingType, enumStrings.ToArray());
+                configuration.CodeStripping.StrippingType = EditorGUILayout.Popup($"{ObjectNames.NicifyVariableName(nameof(configuration.CodeStripping.StrippingType))}", (int)configuration.CodeStripping.StrippingType, enumStrings.ToArray());
 
                 EditorGUILayout.HelpBox("Development builds will not have code stripped. Additionally, if you plan to run as host disable code stripping.", MessageType.Warning);
                 EditorGUI.indentLevel--;
@@ -78,7 +78,7 @@ namespace FishNet.Configuring.Editing
 
             GUILayout.EndScrollView();
 
-            if (EditorGUI.EndChangeCheck()) Configuration.ConfigurationData.Write(true);
+            if (EditorGUI.EndChangeCheck()) Configuration.Configurations.Write(true);
         }
     }
 }

@@ -1,9 +1,8 @@
 ﻿using FishNet.Connection;
-using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Object;
-using FishNet.Serializing.Helping;
 using FishNet.Transporting;
+using FishNet.Utility;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -13,15 +12,6 @@ namespace FishNet.Component.Prediction
     public partial class PredictedObject : NetworkBehaviour
     {
         #region All.
-        #region Internal.
-        /// <summary>
-        /// Number of instantiated PredictedObjects that are configured for rigidbodies.
-        /// </summary>
-        [APIExclude]
-        [CodegenMakePublic] //To internal.
-        public static int InstantiatedRigidbodyCountInternal { get; set; }
-        #endregion
-
         #region Private.
         /// <summary>
         /// Pauser for rigidbodies when they cannot be rolled back.
@@ -47,6 +37,10 @@ namespace FishNet.Component.Prediction
         /// True if GraphicalAniamtors have been intialized.
         /// </summary>
         private bool _animatorsInitialized;
+        /// <summary>
+        /// Tick on the last received state.
+        /// </summary>
+        private uint _lastStateLocalTick;
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,9 +52,25 @@ namespace FishNet.Component.Prediction
                 return;
 
             if (_predictionType == PredictionType.Rigidbody)
-                SendRigidbodyState(base.TimeManager.LocalTick, c);
+                SendRigidbodyState(base.TimeManager.LocalTick, c, true);
             else
-                SendRigidbody2DState(base.TimeManager.LocalTick, c);
+                SendRigidbody2DState(base.TimeManager.LocalTick, c, true);
+        }
+
+        /// <summary>
+        /// Called when the client starts.
+        /// </summary>
+        private void Rigidbodies_OnStartClient()
+        {
+            //Store up to 1 second of states.
+            int capacity = base.TimeManager.TickRate;
+            /* Only need to check one collection capacity since they both will be the same.
+             * If capacity does not line up then re-initialize. */
+            if (capacity != _rigidbodyStates.Capacity)
+            {
+                _rigidbodyStates.Initialize(capacity);
+                _rigidbody2dStates.Initialize(capacity);
+            }
         }
 
         /// <summary>
@@ -115,9 +125,20 @@ namespace FishNet.Component.Prediction
         {
             if (!IsRigidbodyPrediction)
                 return;
+            if (base.IsServer)
+                return;
 
-            _rigidbodyPauser.Unpause();
             bool is2D = (_predictionType == PredictionType.Rigidbody2D);
+            uint localTick = base.TimeManager.LocalTick;
+
+            /* Can check either one. They may not be initialized yet if host. */
+            if (_rigidbodyStates.Initialized)
+            {
+                if (!is2D)
+                    _rigidbodyStates.Add(new RigidbodyState(_rigidbody, localTick));
+                else
+                    _rigidbody2dStates.Add(new Rigidbody2DState(_rigidbody2d, localTick));
+            }
 
             if (CanPredict())
             {
@@ -143,35 +164,47 @@ namespace FishNet.Component.Prediction
                 return;
 
             bool is2D = (_predictionType == PredictionType.Rigidbody2D);
-            uint lastStateTick = (is2D) ? _receivedRigidbody2DState.LastReplicateTick : _receivedRigidbodyState.LastReplicateTick;
             uint lastNbTick = nb.GetLastReconcileTick();
-
+            int stateIndex = GetCachedStateIndex(lastNbTick, is2D);
             /* If running again on the same reconcile or state is for a different
              * tick then do make RBs kinematic. Resetting to a different state
              * could cause a desync and there's no reason to run the same
              * tick twice. */
-            if (lastStateTick != lastNbTick || lastStateTick == _lastResetTick)
+            if (stateIndex == -1)
             {
                 _spectatorSmoother?.SetLocalReconcileTick(-1);
                 _rigidbodyPauser.Pause();
             }
-            //If possible to perhaps reset.
+            //If state was found then reset to it.
             else
             {
                 _spectatorSmoother?.SetLocalReconcileTick(lastNbTick);
-                _lastResetTick = lastStateTick;
                 if (is2D)
-                    ResetRigidbody2DToData();
+                {
+                    _rigidbody2dStates.RemoveRange(true, stateIndex);
+                    ResetRigidbody2DToData(_rigidbody2dStates[0]);
+                }
                 else
-                    ResetRigidbodyToData();
+                {
+                    _rigidbodyStates.RemoveRange(true, stateIndex);
+                    ResetRigidbodyToData(_rigidbodyStates[0]);
+                }
             }
+        }
+
+        /// <summary>
+        /// Called after performing a reconcile on NetworkBehaviour.
+        /// </summary>
+        private void Rigidbodies_TimeManager_OnPostReconcile(NetworkBehaviour nb)
+        {
+            _rigidbodyPauser.Unpause();
         }
 
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
         /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
         /// </summary>
-        private void Rigidbodies_TimeManager_OnPreReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
+        private void Rigidbodies_PredictionManager_OnPreReplicateReplay(uint tick, PhysicsScene ps, PhysicsScene2D ps2d)
         {
             if (!CanPredict())
                 return;
@@ -182,12 +215,38 @@ namespace FishNet.Component.Prediction
                 PredictVelocity(ps2d);
         }
 
+        /// <summary>
+        /// Called before physics is simulated when replaying a replicate method.
+        /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
+        /// </summary>
+        private void Rigidbodies_PredictionManager_OnPostReplicateReplay(uint tick, PhysicsScene ps, PhysicsScene2D ps2d)
+        {
+            if (!CanPredict())
+                return;
+            if (_rigidbodyPauser.Paused)
+                return;
+
+            if (_predictionType == PredictionType.Rigidbody)
+            {
+                int index = GetCachedStateIndex(tick, false);
+                if (index != -1)
+                    _rigidbodyStates[index] = new RigidbodyState(_rigidbody, tick);
+            }
+            if (_predictionType == PredictionType.Rigidbody2D)
+            {
+                int index = GetCachedStateIndex(tick, true);
+                if (index != -1)
+                    _rigidbody2dStates[index] = new Rigidbody2DState(_rigidbody2d, tick);
+            }
+        }
+
+
 
         /// <summary>
-        /// Sends rigidbody state before reconciling for a network behaviour.
+        /// Sends the rigidbodies state to Observers of a NetworkBehaviour.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SendRigidbodyStatesInternal(NetworkBehaviour nb)
+        private void SendRigidbodyState(NetworkBehaviour nb)
         {
             NetworkConnection owner = nb.Owner;
             if (!owner.IsActive)
@@ -196,14 +255,8 @@ namespace FishNet.Component.Prediction
             if (nm == null)
                 return;
 
-            //Tell all predictedobjects for the networkmanager to try and send states.
-            if (_predictedObjects.TryGetValue(nm, out List<PredictedObject> collection))
-            {
-                uint tick = nb.GetLastReplicateTick();
-                int count = collection.Count;
-                for (int i = 0; i < count; i++)
-                    collection[i].TrySendRigidbodyState(nb, tick);
-            }
+            uint tick = nb.GetLastReplicateTick();
+            TrySendRigidbodyState(nb, tick);
         }
 
         /// <summary>
@@ -244,7 +297,7 @@ namespace FishNet.Component.Prediction
                 }
                 //No more resends.
                 else
-                { 
+                {
                     //No resend interval.
                     if (_resendType == ResendType.Disabled)
                         return;
@@ -265,10 +318,48 @@ namespace FishNet.Component.Prediction
             _previouslyChanged = hasChanged;
 
             if (_predictionType == PredictionType.Rigidbody)
-                SendRigidbodyState(tick, nbOwner);
+                SendRigidbodyState(tick, nbOwner, false);
             else
-                SendRigidbody2DState(tick, nbOwner);
+                SendRigidbody2DState(tick, nbOwner, false);
         }
+
+        /// <summary>
+        /// Gets a cached state index in actual array position.
+        /// </summary>
+        /// <returns></returns>
+        private int GetCachedStateIndex(uint tick, bool is2d)
+        {
+            int count;
+            uint firstTick;
+            //3d.
+            if (!is2d)
+            {
+                count = _rigidbodyStates.Count;
+                if (count == 0)
+                    return -1;
+                firstTick = _rigidbodyStates[0].LocalTick;
+            }
+            //2d.
+            else
+            {
+                count = _rigidbody2dStates.Count;
+                if (count == 0)
+                    return -1;
+                firstTick = _rigidbody2dStates[0].LocalTick;
+            }
+
+            //First tick is higher than current, no match is possibloe.
+            if (firstTick > tick)
+                return -1;
+
+            long difference = (tick - firstTick);
+            //Desired tick would be out of bounds. This should never happen.
+            if (difference >= count)
+                return -1;
+
+            return (int)difference;
+        }
+
 
         /// <summary>
         /// Tries to predict velocity for a Vector3.
@@ -421,9 +512,9 @@ namespace FishNet.Component.Prediction
         #region Rigidbody.
         #region Private.
         /// <summary>
-        /// The last received Rigidbody2D state.
+        /// Past RigidbodyStates.
         /// </summary>
-        private RigidbodyState _receivedRigidbodyState;
+        private RingBuffer<RigidbodyState> _rigidbodyStates = new RingBuffer<RigidbodyState>();
         /// <summary>
         /// Velocity from previous simulation.
         /// </summary>
@@ -446,9 +537,8 @@ namespace FishNet.Component.Prediction
         private PhysicsScene _physicsScene;
         #endregion
 
-        private void ResetRigidbodyToData()
+        private void ResetRigidbodyToData(RigidbodyState state)
         {
-            RigidbodyState state = _receivedRigidbodyState;
             //Update transform and rigidbody.
             _rigidbody.transform.position = state.Position;
             _rigidbody.transform.rotation = state.Rotation;
@@ -495,13 +585,16 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Sends current states of this object to client.
         /// </summary>
-        private void SendRigidbodyState(uint reconcileTick, NetworkConnection conn)
+        private void SendRigidbodyState(uint reconcileTick, NetworkConnection conn, bool applyImmediately)
         {
             if (conn == base.Owner)
                 return;
 
             RigidbodyState state = new RigidbodyState(_rigidbody, reconcileTick);
-            TargetSendRigidbodyState(conn, state, false);
+            if (applyImmediately)
+                state.Velocity = Vector3.forward * 20f;
+
+            TargetSendRigidbodyState(conn, state, applyImmediately);
         }
 
         /// <summary>
@@ -513,17 +606,27 @@ namespace FishNet.Component.Prediction
             if (!CanPredict())
                 return;
 
-            _receivedRigidbodyState = state;
+            uint localTick = state.LocalTick;
+            if (!applyImmediately && !CanProcessReceivedState(localTick))
+                    return;
+
+            int index = GetCachedStateIndex(localTick, false);
+            /* Index will always be found so long as the tick is not
+             * extremely old. The buffer only holds 1000ms worth of snapshots. */
+            if (index != -1)
+                _rigidbodyStates[index] = state;
+
             if (applyImmediately)
-            {
-                ResetRigidbodyToData();
-                Physics.SyncTransforms();
-            }
+                ResetRigidbodyToData(state);
         }
         #endregion
 
         #region Rigidbody2D.
         #region Private.
+        /// <summary>
+        /// Past RigidbodyStates.
+        /// </summary>
+        private RingBuffer<Rigidbody2DState> _rigidbody2dStates = new RingBuffer<Rigidbody2DState>();
         /// <summary>
         /// The last received Rigidbody2D state.
         /// </summary>
@@ -548,19 +651,14 @@ namespace FishNet.Component.Prediction
         /// PhysicsScene for this object when OnPreReconcile is called.
         /// </summary>
         private PhysicsScene2D _physicsScene2D;
-        /// <summary>
-        /// The last tick rigidbodies were reset.
-        /// </summary>
-        private long _lastResetTick = -1;
         #endregion
 
 
         /// <summary>
         /// Resets the Rigidbody2D to last received data.
         /// </summary>
-        private void ResetRigidbody2DToData()
+        private void ResetRigidbody2DToData(Rigidbody2DState state)
         {
-            Rigidbody2DState state = _receivedRigidbody2DState;
             //Update transform and rigidbody.
             _rigidbody2d.transform.position = state.Position;
             _rigidbody2d.transform.rotation = state.Rotation;
@@ -605,13 +703,14 @@ namespace FishNet.Component.Prediction
             _lastAngularVelocity2D = _rigidbody2d.angularVelocity;
         }
 
+
         /// <summary>
         /// Sends current Rigidbody2D state to a connection.
         /// </summary>
-        private void SendRigidbody2DState(uint reconcileTick, NetworkConnection conn)
+        private void SendRigidbody2DState(uint reconcileTick, NetworkConnection conn, bool applyImmediately)
         {
             Rigidbody2DState state = new Rigidbody2DState(_rigidbody2d, reconcileTick);
-            TargetSendRigidbody2DState(conn, state, false);
+            TargetSendRigidbody2DState(conn, state, applyImmediately);
         }
 
         /// <summary>
@@ -622,8 +721,34 @@ namespace FishNet.Component.Prediction
         {
             if (!CanPredict())
                 return;
+            uint localTick = state.LocalTick;
+            if (!applyImmediately && !CanProcessReceivedState(localTick))
+                return;
 
-            _receivedRigidbody2DState = state;
+            int index = GetCachedStateIndex(localTick, true);
+            /* Index will always be found so long as the tick is not
+             * extremely old. The buffer only holds 1000ms worth of snapshots. */
+
+            if (index != -1)
+                _rigidbody2dStates[index] = state;
+
+            if (applyImmediately)
+                ResetRigidbody2DToData(state);
+        }
+
+        /// <summary>
+        /// Returns if a received state can be processed based on it's tick.
+        /// </summary>
+        /// <param name="stateTick"></param>
+        /// <returns></returns>
+        private bool CanProcessReceivedState(uint stateTick)
+        {
+            //Older than another received value.
+            if (stateTick <= _lastStateLocalTick)
+                return false;
+            _lastStateLocalTick = stateTick;
+
+            return true;
         }
         #endregion
 

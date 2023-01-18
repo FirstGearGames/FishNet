@@ -1,4 +1,5 @@
 ﻿using FishNet.Connection;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -8,7 +9,8 @@ namespace FishNet.Object
         /// <summary>
         /// Called after all data is synchronized with this NetworkObject.
         /// </summary>
-        private void InitializeCallbacks(bool asServer)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void InitializeCallbacks(bool asServer, bool invokeSyncTypeCallbacks)
         {
             /* Note: When invoking OnOwnership here previous owner will
              * always be an empty connection, since the object is just
@@ -30,10 +32,9 @@ namespace FishNet.Object
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnStartServer();
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].InvokeSyncTypeCallbacks(true);
-
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnOwnershipServer(FishNet.Managing.NetworkManager.EmptyConnection);
+                if (invokeSyncTypeCallbacks)
+                    InvokeSyncTypeCallbacks(true);
             }
             //As client.
             else
@@ -41,11 +42,21 @@ namespace FishNet.Object
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnStartClient();
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].InvokeSyncTypeCallbacks(false);
-
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnOwnershipClient(FishNet.Managing.NetworkManager.EmptyConnection);
+                if (invokeSyncTypeCallbacks)
+                    InvokeSyncTypeCallbacks(false);
             }
+        }
+
+
+        /// <summary>
+        /// Invokes pending SyncType callbacks.
+        /// </summary>
+        /// <param name="asServer"></param>
+        internal void InvokeSyncTypeCallbacks(bool asServer)
+        {
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].InvokeSyncTypeCallbacks(asServer);
         }
 
         /// <summary>

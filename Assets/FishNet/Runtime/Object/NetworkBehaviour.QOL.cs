@@ -6,6 +6,7 @@ using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Managing.Client;
 using FishNet.Managing.Observing;
+using FishNet.Managing.Predicting;
 using FishNet.Managing.Scened;
 using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
@@ -52,6 +53,10 @@ namespace FishNet.Object
         /// SceneManager for this object.
         /// </summary>
         public SceneManager SceneManager => _networkObjectCache.SceneManager;
+        /// <summary>
+        /// PredictionManager for this object.
+        /// </summary>
+        public PredictionManager PredictionManager => _networkObjectCache.PredictionManager;
         /// <summary>
         /// RollbackManager for this object.
         /// </summary>

@@ -35,7 +35,17 @@ namespace FishNet.Connection
         /// <summary>
         /// True if connection has loaded start scenes. Available to this connection and server.
         /// </summary>
-        public bool LoadedStartScenes => (_loadedStartScenesAsServer || _loadedStartScenesAsClient);
+        public bool LoadedStartScenes() => (_loadedStartScenesAsServer || _loadedStartScenesAsClient);
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool LoadedStartScenes(bool asServer)
+        {
+            if (asServer)
+                return _loadedStartScenesAsServer;
+            else
+                return _loadedStartScenesAsClient;
+        }
         /// <summary>
         /// True if loaded start scenes as server.
         /// </summary>
@@ -90,7 +100,7 @@ namespace FishNet.Connection
         /// </summary>
         public object CustomData = null;
         /// <summary>
-        /// Local tick of the server when this connection last replicated.
+        /// Local tick when the connection last replicated.
         /// </summary>
         public uint LocalReplicateTick { get; internal set; }
         /// <summary>
@@ -122,10 +132,12 @@ namespace FishNet.Connection
         /// Tick on the server when latestTick was set.
         /// </summary>
         private uint _serverLatestTick;
+        [Obsolete("Use LocalTick instead.")] //Remove on 2023/06/01
+        public uint Tick => LocalTick;
         /// <summary>
-        /// Current approximate network tick as it is on this connection.
+        /// Current approximate local tick as it is on this connection.
         /// </summary>
-        public uint Tick
+        public uint LocalTick
         {
             get
             {
@@ -139,8 +151,8 @@ namespace FishNet.Connection
                 //Fall through, could not process.
                 return 0;
             }
-        }
 
+        }
         #endregion
 
         #region Comparers.

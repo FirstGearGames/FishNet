@@ -23,11 +23,11 @@ namespace FishNet.Configuring
         /// <summary>
         /// True if making a release build for client.
         /// </summary>
-        public static bool ReleasingForClient => (Configuration.ConfigurationData.IsBuilding && !Configuration.ConfigurationData.IsHeadless && !Configuration.ConfigurationData.IsDevelopment);
+        public static bool ReleasingForClient => (Configuration.Configurations.CodeStripping.IsBuilding && !Configuration.Configurations.CodeStripping.IsHeadless && !Configuration.Configurations.CodeStripping.IsDevelopment);
         /// <summary>
         /// True if making a release build for server.
         /// </summary>
-        public static bool ReleasingForServer => (Configuration.ConfigurationData.IsBuilding && Configuration.ConfigurationData.IsHeadless && !Configuration.ConfigurationData.IsDevelopment);
+        public static bool ReleasingForServer => (Configuration.Configurations.CodeStripping.IsBuilding && Configuration.Configurations.CodeStripping.IsHeadless && !Configuration.Configurations.CodeStripping.IsDevelopment);
         /// <summary>
         /// Returns if to remove server logic.
         /// </summary>
@@ -64,7 +64,7 @@ namespace FishNet.Configuring
         /// <summary>
         /// Technique to strip methods.
         /// </summary>
-        public static StrippingTypes StrippingType => (StrippingTypes)Configuration.ConfigurationData.StrippingType;
+        public static StrippingTypes StrippingType => (StrippingTypes)Configuration.Configurations.CodeStripping.StrippingType;
 
         private static object _compilationContext;
         public int callbackOrder => 0;

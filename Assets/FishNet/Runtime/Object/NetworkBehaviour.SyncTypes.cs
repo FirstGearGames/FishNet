@@ -195,10 +195,7 @@ namespace FishNet.Object
              * pushed through when despawn is called. */
             if (!IsSpawned)
             {
-                Dictionary<uint, SyncBase> c1 = (isSyncObject) ? _syncObjects : _syncVars;
-                foreach (SyncBase sb in c1.Values)
-                    sb.ResetDirty();
-
+                ResetSyncTypes();
                 return true;
             }
 
@@ -344,6 +341,9 @@ namespace FishNet.Object
                 item.Reset();
             foreach (SyncBase item in _syncObjects.Values)
                 item.Reset();
+
+            _syncObjectDirty = false;
+            _syncVarDirty = false;
         }
 
 

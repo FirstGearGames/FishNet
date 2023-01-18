@@ -9,6 +9,7 @@ using FishNet.Serializing;
 using FishNet.Serializing.Helping;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
+using MonoFN.Cecil.Rocks;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -40,14 +41,24 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference Debug_LogCommon_MethodRef;
         public MethodReference Debug_LogWarning_MethodRef;
         public MethodReference Debug_LogError_MethodRef;
-        public MethodReference Comparers_EqualityCompare_MethodRef;
-        public MethodReference Comparers_IsDefault_MethodRef;
         public MethodReference IsServer_MethodRef;
         public MethodReference IsClient_MethodRef;
         public MethodReference NetworkObject_Deinitializing_MethodRef;
         public MethodReference Application_IsPlaying_MethodRef;
         public string NonSerialized_Attribute_FullName;
         public string Single_FullName;
+        public TypeReference FunctionT2TypeRef;
+        public TypeReference FunctionT3TypeRef;
+        public MethodReference FunctionT2ConstructorMethodRef;
+        public MethodReference FunctionT3ConstructorMethodRef;
+        //GeneratedComparer
+        public MethodReference GeneratedComparer_Compare_Set_MethodRef;
+        public MethodReference GeneratedComparer_IsDefault_Set_MethodRef;
+        public TypeReference GeneratedComparer_TypeRef;
+        public TypeDefinition GeneratedComparer_ClassTypeDef;
+        public MethodDefinition GeneratedComparer_OnLoadMethodDef;
+        public TypeReference IEquatable_TypeRef;
+
         private Dictionary<Type, TypeReference> _importedTypeReferences = new Dictionary<Type, TypeReference>();
         private Dictionary<FieldDefinition, FieldReference> _importedFieldReferences = new Dictionary<FieldDefinition, FieldReference>();
         private Dictionary<MethodReference, MethodDefinition> _methodReferenceResolves = new Dictionary<MethodReference, MethodDefinition>();
@@ -86,15 +97,6 @@ namespace FishNet.CodeGenerating.Helping
                     Queue_Clear_MethodRef = base.ImportReference(mi);
             }
 
-            Type comparers = typeof(Comparers);
-            foreach (SR.MethodInfo mi in comparers.GetMethods())
-            {
-                if (mi.Name == nameof(Comparers.EqualityCompare))
-                    Comparers_EqualityCompare_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(Comparers.IsDefault))
-                    Comparers_IsDefault_MethodRef = base.ImportReference(mi);
-            }
-
             //Misc.
             tmpType = typeof(UnityEngine.Application);
             tmpPi = tmpType.GetProperty(nameof(UnityEngine.Application.isPlaying));
@@ -123,7 +125,7 @@ namespace FishNet.CodeGenerating.Helping
             Type networkManagerType = typeof(NetworkManager);
             foreach (SR.MethodInfo methodInfo in networkManagerType.GetMethods())
             {
-                if (methodInfo.Name == nameof(NetworkManager.Log))
+                if (methodInfo.Name == nameof(NetworkManager.Log) && methodInfo.GetParameters().Length == 1)
                     NetworkManager_LogCommon_MethodRef = base.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(NetworkManager.LogWarning))
                     NetworkManager_LogWarning_MethodRef = base.ImportReference(methodInfo);
@@ -169,6 +171,38 @@ namespace FishNet.CodeGenerating.Helping
                     IsServer_MethodRef = base.ImportReference(methodInfo);
             }
 
+            //Generic functions.
+            FunctionT2TypeRef = base.ImportReference(typeof(Func<,>));
+            FunctionT3TypeRef = base.ImportReference(typeof(Func<,,>));
+            FunctionT2ConstructorMethodRef = base.ImportReference(typeof(Func<,>).GetConstructors()[0]);
+            FunctionT3ConstructorMethodRef = base.ImportReference(typeof(Func<,,>).GetConstructors()[0]);
+
+            DoGeneratedComparers();
+
+            void DoGeneratedComparers()
+            {
+                GeneralHelper gh = base.GetClass<GeneralHelper>();
+                GeneratedComparer_ClassTypeDef = gh.GetOrCreateClass(out _, WriterGenerator.GENERATED_TYPE_ATTRIBUTES, "GeneratedComparers___Internal", null, GenericWriterHelper.GENERATED_WRITER_NAMESPACE);
+                bool created;
+                GeneratedComparer_OnLoadMethodDef = gh.GetOrCreateMethod(GeneratedComparer_ClassTypeDef, out created, GenericWriterHelper.INITIALIZEONCE_METHOD_ATTRIBUTES, GenericWriterHelper.INITIALIZEONCE_METHOD_NAME, base.Module.TypeSystem.Void);
+                if (created)
+                {
+                    gh.CreateRuntimeInitializeOnLoadMethodAttribute(GeneratedComparer_OnLoadMethodDef);
+                    GeneratedComparer_OnLoadMethodDef.Body.GetILProcessor().Emit(OpCodes.Ret);
+                }
+
+                System.Type repComparerType = typeof(GeneratedComparer<>);
+                GeneratedComparer_TypeRef = base.ImportReference(repComparerType);
+                System.Reflection.PropertyInfo pi;
+                pi = repComparerType.GetProperty(nameof(GeneratedComparer<int>.Compare));
+                GeneratedComparer_Compare_Set_MethodRef = base.ImportReference(pi.GetSetMethod());
+                pi = repComparerType.GetProperty(nameof(GeneratedComparer<int>.IsDefault));
+                GeneratedComparer_IsDefault_Set_MethodRef = base.ImportReference(pi.GetSetMethod());
+
+                System.Type iEquatableType = typeof(IEquatable<>);
+                IEquatable_TypeRef = base.ImportReference(iEquatableType);
+            }
+
             return true;
         }
 
@@ -178,7 +212,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Adds a typeRef to TypeReferenceResolves.
         /// </summary>
-        internal void AddTypeReferenceResolve(TypeReference typeRef, TypeDefinition typeDef)
+        public void AddTypeReferenceResolve(TypeReference typeRef, TypeDefinition typeDef)
         {
             _typeReferenceResolves[typeRef] = typeDef;
         }
@@ -186,7 +220,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Gets a TypeDefinition for typeRef.
         /// </summary>
-        internal TypeDefinition GetTypeReferenceResolve(TypeReference typeRef)
+        public TypeDefinition GetTypeReferenceResolve(TypeReference typeRef)
         {
             TypeDefinition result;
             if (_typeReferenceResolves.TryGetValue(typeRef, out result))
@@ -205,7 +239,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Adds a methodRef to MethodReferenceResolves.
         /// </summary>
-        internal void AddMethodReferenceResolve(MethodReference methodRef, MethodDefinition methodDef)
+        public void AddMethodReferenceResolve(MethodReference methodRef, MethodDefinition methodDef)
         {
             _methodReferenceResolves[methodRef] = methodDef;
         }
@@ -213,7 +247,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Gets a TypeDefinition for typeRef.
         /// </summary>
-        internal MethodDefinition GetMethodReferenceResolve(MethodReference methodRef)
+        public MethodDefinition GetMethodReferenceResolve(MethodReference methodRef)
         {
             MethodDefinition result;
             if (_methodReferenceResolves.TryGetValue(methodRef, out result))
@@ -233,7 +267,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Adds a fieldRef to FieldReferenceResolves.
         /// </summary>
-        internal void AddFieldReferenceResolve(FieldReference fieldRef, FieldDefinition fieldDef)
+        public void AddFieldReferenceResolve(FieldReference fieldRef, FieldDefinition fieldDef)
         {
             _fieldReferenceResolves[fieldRef] = fieldDef;
         }
@@ -241,7 +275,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Gets a FieldDefinition for fieldRef.
         /// </summary>
-        internal FieldDefinition GetFieldReferenceResolve(FieldReference fieldRef)
+        public FieldDefinition GetFieldReferenceResolve(FieldReference fieldRef)
         {
             FieldDefinition result;
             if (_fieldReferenceResolves.TryGetValue(fieldRef, out result))
@@ -260,11 +294,29 @@ namespace FishNet.CodeGenerating.Helping
 
 
         /// <summary>
+        /// This is a stupid hack to remove generic brackets for string matching. Need to make this not stupid. //todo
+        /// </summary>
+        /// <param name="str"></param>
+        public string RemoveGenericBrackets(string str)
+        {
+            int startIndex = str.IndexOf("<");
+            int endIndex = str.IndexOf(">");
+            if (startIndex > 0 && endIndex > startIndex)
+            {
+                string a = str.Substring(0, startIndex);
+                string b = str.Substring(endIndex + 1);
+                str = a + b;
+            }
+
+            return str;
+        }
+
+        /// <summary>
         /// Returns if typeDef should be ignored.
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal bool IgnoreTypeDefinition(TypeDefinition typeDef)
+        public bool IgnoreTypeDefinition(TypeDefinition typeDef)
         {
             foreach (CustomAttribute item in typeDef.CustomAttributes)
             {
@@ -278,7 +330,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Returns if type uses CodegenExcludeAttribute.
         /// </summary>
-        internal bool CodegenExclude(SR.MethodInfo methodInfo)
+        public bool CodegenExclude(SR.MethodInfo methodInfo)
         {
             foreach (SR.CustomAttributeData item in methodInfo.CustomAttributes)
             {
@@ -292,7 +344,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Returns if type uses CodegenExcludeAttribute.
         /// </summary>
-        internal bool CodegenExclude(MethodDefinition methodDef)
+        public bool CodegenExclude(MethodDefinition methodDef)
         {
             foreach (CustomAttribute item in methodDef.CustomAttributes)
             {
@@ -306,7 +358,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Returns if type uses CodegenExcludeAttribute.
         /// </summary>
-        internal bool CodegenExclude(FieldDefinition fieldDef)
+        public bool CodegenExclude(FieldDefinition fieldDef)
         {
             foreach (CustomAttribute item in fieldDef.CustomAttributes)
             {
@@ -320,7 +372,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Returns if type uses CodegenIncludeAttribute.
         /// </summary>
-        internal bool CodegenInclude(FieldDefinition fieldDef)
+        public bool CodegenInclude(FieldDefinition fieldDef)
         {
             foreach (CustomAttribute item in fieldDef.CustomAttributes)
             {
@@ -334,7 +386,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Returns if type uses CodegenExcludeAttribute.
         /// </summary>
-        internal bool CodegenExclude(PropertyDefinition propDef)
+        public bool CodegenExclude(PropertyDefinition propDef)
         {
             foreach (CustomAttribute item in propDef.CustomAttributes)
             {
@@ -349,7 +401,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Returns if type uses CodegenExcludeAttribute.
         /// </summary>
-        internal bool CodegenInclude(PropertyDefinition propDef)
+        public bool CodegenInclude(PropertyDefinition propDef)
         {
             foreach (CustomAttribute item in propDef.CustomAttributes)
             {
@@ -360,13 +412,28 @@ namespace FishNet.CodeGenerating.Helping
             return false;
         }
 
+        /// <summary>
+        /// Returns an OpCode for loading a parameter.
+        /// </summary>
+        public OpCode GetLoadParameterOpCode(ParameterDefinition pd)
+        {
+            return (pd.ParameterType.IsValueType) ? OpCodes.Ldarga : OpCodes.Ldarg;
+        }
 
-
+        /// <summary>
+        /// Returns an instruction for loading a parameter.s
+        /// </summary>
+        public Instruction GetLoadParameterInstruction(MethodDefinition md, ParameterDefinition pd)
+        {
+            ILProcessor processor = md.Body.GetILProcessor();
+            OpCode oc = GetLoadParameterOpCode(pd);
+            return processor.Create(oc, pd);
+        }
 
         /// <summary>
         /// Calls copiedMd with the assumption md shares the same parameters.
         /// </summary>
-        internal void CallCopiedMethod(MethodDefinition md, MethodDefinition copiedMd)
+        public void CallCopiedMethod(MethodDefinition md, MethodDefinition copiedMd)
         {
             ILProcessor processor = md.Body.GetILProcessor();
             processor.Emit(OpCodes.Ldarg_0);
@@ -379,9 +446,50 @@ namespace FishNet.CodeGenerating.Helping
         }
 
         /// <summary>
+        /// Removes countVd from list of dataFd starting at index 0.
+        /// </summary>
+        public List<Instruction> ListRemoveRange(MethodDefinition methodDef, FieldDefinition dataFd, TypeReference dataTr, VariableDefinition countVd)
+        {
+            /* Remove entries which exceed maximum buffer. */
+            //Method references for uint/data list:
+            //get_count, RemoveRange. */
+            GenericInstanceType dataListGit;
+            GetGenericLists(dataTr, out dataListGit);
+            MethodReference lstDataRemoveRangeMr = base.GetClass<GeneralHelper>().List_RemoveRange_MethodRef.MakeHostInstanceGeneric(base.Session, dataListGit);
+
+            List<Instruction> insts = new List<Instruction>();
+            ILProcessor processor = methodDef.Body.GetILProcessor();
+
+            //Index 1 is the uint, 0 is the data.
+            insts.Add(processor.Create(OpCodes.Ldarg_0));//this.
+            insts.Add(processor.Create(OpCodes.Ldfld, dataFd));
+            insts.Add(processor.Create(OpCodes.Ldc_I4_0));
+            insts.Add(processor.Create(OpCodes.Ldloc, countVd));
+            insts.Add(processor.Create(OpCodes.Callvirt, lstDataRemoveRangeMr));
+
+            return insts;
+        }
+        /// <summary>
+        /// Outputs generic lists for dataTr and uint.
+        /// </summary>
+        public void GetGenericLists(TypeReference dataTr, out GenericInstanceType lstData)
+        {
+            TypeReference listDataTr = base.ImportReference(typeof(List<>));
+            lstData = listDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
+        }
+        /// <summary>
+        /// Outputs generic lists for dataTr and uint.
+        /// </summary>
+        public void GetGenericQueues(TypeReference dataTr, out GenericInstanceType queueData)
+        {
+            TypeReference queueDataTr = base.ImportReference(typeof(Queue<>));
+            queueData = queueDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
+        }
+
+        /// <summary>
         /// Copies one method to another while transferring diagnostic paths.
         /// </summary>
-        internal MethodDefinition CopyIntoNewMethod(MethodDefinition originalMd, string toMethodName, out bool alreadyCreated)
+        public MethodDefinition CopyIntoNewMethod(MethodDefinition originalMd, string toMethodName, out bool alreadyCreated)
         {
             TypeDefinition typeDef = originalMd.DeclaringType;
 
@@ -408,7 +516,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates the RuntimeInitializeOnLoadMethod attribute for a method.
         /// </summary>
-        internal void CreateRuntimeInitializeOnLoadMethodAttribute(MethodDefinition methodDef, string loadType = "")
+        public void CreateRuntimeInitializeOnLoadMethodAttribute(MethodDefinition methodDef, string loadType = "")
         {
             TypeReference attTypeRef = GetTypeReference(typeof(RuntimeInitializeOnLoadMethodAttribute));
             foreach (CustomAttribute item in methodDef.CustomAttributes)
@@ -446,7 +554,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        internal AutoPackType GetDefaultAutoPackType(TypeReference typeRef)
+        public AutoPackType GetDefaultAutoPackType(TypeReference typeRef)
         {
             //Singles are defauled to unpacked.
             if (typeRef.FullName == Single_FullName)
@@ -460,7 +568,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal MethodDefinition GetOrCreateMethod(TypeDefinition typeDef, out bool created, MethodAttributes methodAttr, string methodName, TypeReference returnType)
+        public MethodDefinition GetOrCreateMethod(TypeDefinition typeDef, out bool created, MethodAttributes methodAttr, string methodName, TypeReference returnType)
         {
             MethodDefinition result = typeDef.GetMethod(methodName);
             if (result == null)
@@ -483,9 +591,12 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        internal TypeDefinition GetOrCreateClass(out bool created, TypeAttributes typeAttr, string className, TypeReference baseTypeRef)
+        public TypeDefinition GetOrCreateClass(out bool created, TypeAttributes typeAttr, string className, TypeReference baseTypeRef, string namespaceName = GenericWriterHelper.GENERATED_WRITER_NAMESPACE)
         {
-            TypeDefinition type = base.Module.GetClass(className);
+            if (namespaceName.Length == 0)
+                namespaceName = FishNetILPP.RUNTIME_ASSEMBLY_NAME;
+
+            TypeDefinition type = base.Module.GetClass(className, namespaceName);
             if (type != null)
             {
                 created = false;
@@ -494,7 +605,7 @@ namespace FishNet.CodeGenerating.Helping
             else
             {
                 created = true;
-                type = new TypeDefinition(FishNetILPP.RUNTIME_ASSEMBLY_NAME, className,
+                type = new TypeDefinition(namespaceName, className,
                     typeAttr, base.ImportReference(typeof(object)));
                 //Add base class if specified.
                 if (baseTypeRef != null)
@@ -511,7 +622,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="fieldDef"></param>
         /// <returns></returns>
-        internal bool HasNonSerializableAttribute(FieldDefinition fieldDef)
+        public bool HasNonSerializableAttribute(FieldDefinition fieldDef)
         {
             foreach (CustomAttribute customAttribute in fieldDef.CustomAttributes)
             {
@@ -527,7 +638,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal bool HasNonSerializableAttribute(TypeDefinition typeDef)
+        public bool HasNonSerializableAttribute(TypeDefinition typeDef)
         {
             foreach (CustomAttribute customAttribute in typeDef.CustomAttributes)
             {
@@ -544,7 +655,7 @@ namespace FishNet.CodeGenerating.Helping
         /// Gets a TypeReference for a type.
         /// </summary>
         /// <param name="type"></param>
-        internal TypeReference GetTypeReference(Type type)
+        public TypeReference GetTypeReference(Type type)
         {
             TypeReference result;
             if (!_importedTypeReferences.TryGetValue(type, out result))
@@ -560,7 +671,7 @@ namespace FishNet.CodeGenerating.Helping
         /// Gets a FieldReference for a type.
         /// </summary>
         /// <param name="type"></param>
-        internal FieldReference GetFieldReference(FieldDefinition fieldDef)
+        public FieldReference GetFieldReference(FieldDefinition fieldDef)
         {
             FieldReference result;
             if (!_importedFieldReferences.TryGetValue(fieldDef, out result))
@@ -577,7 +688,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal MethodDefinition GetOrCreateConstructor(TypeDefinition typeDef, out bool created, bool makeStatic)
+        public MethodDefinition GetOrCreateConstructor(TypeDefinition typeDef, out bool created, bool makeStatic)
         {
             // find constructor
             MethodDefinition constructorMethodDef = typeDef.GetMethod(".cctor");
@@ -622,7 +733,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="result"></param>
-        internal void CreateRetBoolean(ILProcessor processor, bool result)
+        public void CreateRetBoolean(ILProcessor processor, bool result)
         {
             OpCode code = (result) ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0;
             processor.Emit(code);
@@ -631,113 +742,140 @@ namespace FishNet.CodeGenerating.Helping
 
         #region Debug logging.
         /// <summary>
-        /// Creates a debug print if NetworkManager.CanLog is true.
+        /// Creates instructions to log using a NetworkManager or Unity logging.
         /// </summary>
-        /// <param name="processor"></param>
-        /// <param name="loggingType"></param>
-        /// <param name="useStatic">True to use InstanceFinder, false to use base.</param>
-        /// <returns></returns>
-        internal List<Instruction> CreateDebugWithCanLogInstructions(ILProcessor processor, string message, LoggingType loggingType, bool useStatic, bool useNetworkManagerLog)
+        /// <param name="preferNetworkManager">NetworkManager will be used to log first. If the NetworkManager is unavailable Unity logging will be used.</param>
+        public List<Instruction> LogMessage(MethodDefinition md, string message, LoggingType loggingType)
         {
+            ILProcessor processor = md.Body.GetILProcessor();
             List<Instruction> instructions = new List<Instruction>();
             if (loggingType == LoggingType.Off)
+            {
+                base.LogError($"LogMessage called with LoggingType.Off.");
                 return instructions;
+            }
 
-            List<Instruction> debugPrint = CreateDebugInstructions(processor, message, loggingType, useNetworkManagerLog);
-            //Couldn't make debug print.
-            if (debugPrint.Count == 0)
-                return instructions;
-
-
+            /* Try to store NetworkManager from base to a variable.
+             * If the base does not exist, such as not inheriting from NetworkBehaviour,
+             * or if null because the object is not initialized, then use InstanceFinder to
+             * retrieve the NetworkManager. Then if NetworkManager was found, perform the log. */
             VariableDefinition networkManagerVd = CreateVariable(processor.Body.Method, typeof(NetworkManager));
-            //Using InstanceFinder(static).
+
+            bool useStatic = (md.IsStatic || !md.DeclaringType.InheritsFrom<NetworkBehaviour>(base.Session));
+            //If does not inherit NB then use InstanceFinder.
             if (useStatic)
             {
-                //Store instancefinder to nm variable.
-                instructions.Add(processor.Create(OpCodes.Call, InstanceFinder_NetworkManager_MethodRef));
-                instructions.Add(processor.Create(OpCodes.Stloc, networkManagerVd));
+                SetNetworkManagerFromInstanceFinder();
             }
-            //Using networkBehaviour.
+            //Inherits NB, load from base.NetworkManager.
             else
             {
-                //Store nm reference.
                 instructions.Add(processor.Create(OpCodes.Ldarg_0));
                 instructions.Add(processor.Create(OpCodes.Call, NetworkBehaviour_NetworkManager_MethodRef));
                 instructions.Add(processor.Create(OpCodes.Stloc, networkManagerVd));
-                //If was set to null then try to log with instancefinder.
-                Instruction skipStaticSetInst = processor.Create(OpCodes.Nop);
+
+                //If null from NB then use instancefinder.
+                Instruction skipSetFromInstanceFinderInst = processor.Create(OpCodes.Nop);
                 //if (nmVd == null) nmVd = InstanceFinder.NetworkManager.
                 instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerVd));
-                instructions.Add(processor.Create(OpCodes.Brtrue_S, skipStaticSetInst));
-                //Store instancefinder to nm variable.
+                instructions.Add(processor.Create(OpCodes.Brtrue_S, skipSetFromInstanceFinderInst));
+                SetNetworkManagerFromInstanceFinder();
+                instructions.Add(skipSetFromInstanceFinderInst);
+            }
+
+            //Sets NetworkManager variable from instancefinder.
+            void SetNetworkManagerFromInstanceFinder()
+            {
                 instructions.Add(processor.Create(OpCodes.Call, InstanceFinder_NetworkManager_MethodRef));
                 instructions.Add(processor.Create(OpCodes.Stloc, networkManagerVd));
-                instructions.Add(skipStaticSetInst);
             }
 
-            Instruction skipDebugInst = processor.Create(OpCodes.Nop);
-            //null check nm reference. If null then skip logging.
+            VariableDefinition networkManagerIsNullVd = CreateVariable(md, typeof(bool));
+            //bool networkManagerIsNull = (networkManager == null);
             instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerVd));
-            instructions.Add(processor.Create(OpCodes.Brfalse_S, skipDebugInst));
+            instructions.Add(processor.Create(OpCodes.Ldnull));
+            instructions.Add(processor.Create(OpCodes.Ceq));
+            instructions.Add(processor.Create(OpCodes.Stloc, networkManagerIsNullVd));
 
-            //Only need to call CanLog if not using networkmanager logging.
-            if (!useNetworkManagerLog)
-            {
-                //Call canlog.
-                instructions.Add(processor.Create(OpCodes.Ldarg_0));
-                instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)loggingType));
-                instructions.Add(processor.Create(OpCodes.Call, NetworkBehaviour_CanLog_MethodRef));
-                instructions.Add(processor.Create(OpCodes.Brfalse_S, skipDebugInst));
-            }
-
-            instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerVd));
-            instructions.AddRange(debugPrint);
-            instructions.Add(skipDebugInst);
+            /* If (networkManagerIsNull)
+             *      networkManager.Log...
+             * else
+             *      UnityEngine.Debug.Log... */
+            Instruction afterNetworkManagerLogInst = processor.Create(OpCodes.Nop);
+            Instruction afterUnityLogInst = processor.Create(OpCodes.Nop);
+            instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerIsNullVd));
+            instructions.Add(processor.Create(OpCodes.Brtrue, afterNetworkManagerLogInst));
+            instructions.AddRange(LogNetworkManagerMessage(md, networkManagerVd, message, loggingType));
+            instructions.Add(processor.Create(OpCodes.Br, afterUnityLogInst));
+            instructions.Add(afterNetworkManagerLogInst);
+            instructions.AddRange(LogUnityDebugMessage(md, message, loggingType));
+            instructions.Add(afterUnityLogInst);
 
             return instructions;
         }
 
         /// <summary>
-        /// Creates a debug print if NetworkManager.CanLog is true.
+        /// Creates instructions to log using NetworkManager without error checking.
         /// </summary>
-        /// <param name="processor"></param>
-        /// <param name="loggingType"></param>
-        /// <param name="useStatic">True to use InstanceFinder, false to use base.</param>
-        /// <returns></returns>
-        internal void CreateDebugWithCanLog(ILProcessor processor, string message, LoggingType loggingType, bool useStatic, bool useNetworkManagerLog)
-        {
-            List<Instruction> instructions = CreateDebugWithCanLogInstructions(processor, message, loggingType, useStatic, useNetworkManagerLog);
-            if (instructions.Count == 0)
-                return;
-
-            processor.Add(instructions);
-        }
-        /// <summary>
-        /// Creates a debug and returns instructions.
-        /// </summary>
-        /// <param name="processor"></param>
-        private List<Instruction> CreateDebugInstructions(ILProcessor processor, string message, LoggingType loggingType, bool useNetworkManagerLog)
+        public List<Instruction> LogNetworkManagerMessage(MethodDefinition md, VariableDefinition networkManagerVd, string message, LoggingType loggingType)
         {
             List<Instruction> instructions = new List<Instruction>();
-            if (loggingType == LoggingType.Off)
-            {
-                base.LogError($"CreateDebug called with LoggingType.Off.");
+            if (!CanUseLogging(loggingType))
                 return instructions;
-            }
 
-            instructions.Add(processor.Create(OpCodes.Ldstr, message));
+            ILProcessor processor = md.Body.GetILProcessor();
 
             MethodReference methodRef;
             if (loggingType == LoggingType.Common)
-                methodRef = (useNetworkManagerLog) ? NetworkManager_LogCommon_MethodRef : Debug_LogCommon_MethodRef;
+                methodRef = NetworkManager_LogCommon_MethodRef;
             else if (loggingType == LoggingType.Warning)
-                methodRef = (useNetworkManagerLog) ? NetworkManager_LogWarning_MethodRef : Debug_LogWarning_MethodRef;
+                methodRef = NetworkManager_LogWarning_MethodRef;
             else
-                methodRef = (useNetworkManagerLog) ? NetworkManager_LogError_MethodRef : Debug_LogError_MethodRef;
+                methodRef = NetworkManager_LogError_MethodRef;
 
+            instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerVd));
+            instructions.Add(processor.Create(OpCodes.Ldstr, message));
             instructions.Add(processor.Create(OpCodes.Call, methodRef));
 
             return instructions;
+        }
+
+        /// <summary>
+        /// Creates instructions to log using Unity logging.
+        /// </summary>
+        public List<Instruction> LogUnityDebugMessage(MethodDefinition md, string message, LoggingType loggingType)
+        {
+            List<Instruction> instructions = new List<Instruction>();
+            if (!CanUseLogging(loggingType))
+                return instructions;
+
+            ILProcessor processor = md.Body.GetILProcessor();
+
+            MethodReference methodRef;
+            if (loggingType == LoggingType.Common)
+                methodRef = Debug_LogCommon_MethodRef;
+            else if (loggingType == LoggingType.Warning)
+                methodRef = Debug_LogWarning_MethodRef;
+            else
+                methodRef = Debug_LogError_MethodRef;
+
+            instructions.Add(processor.Create(OpCodes.Ldstr, message));
+            instructions.Add(processor.Create(OpCodes.Call, methodRef));
+            return instructions;
+        }
+
+        /// <summary>
+        /// Returns if logging can be done using a LoggingType.
+        /// </summary>
+        public bool CanUseLogging(LoggingType lt)
+        {
+            if (lt == LoggingType.Off)
+            {
+                base.LogError($"Log attempt called with LoggingType.Off.");
+                return false;
+            }
+
+            return true;
         }
         #endregion
 
@@ -748,7 +886,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="parameterTypeRef"></param>
         /// <returns></returns>
-        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeDefinition parameterTypeDef, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
+        public ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeDefinition parameterTypeDef, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
         {
             TypeReference typeRef = methodDef.Module.ImportReference(parameterTypeDef);
             return CreateParameter(methodDef, typeRef, name, attributes, index);
@@ -759,7 +897,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="parameterTypeRef"></param>
         /// <returns></returns>
-        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeReference parameterTypeRef, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
+        public ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeReference parameterTypeRef, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
         {
             int currentCount = methodDef.Parameters.Count;
             if (string.IsNullOrEmpty(name))
@@ -777,7 +915,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="parameterTypeRef"></param>
         /// <returns></returns>
-        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, Type parameterType, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
+        public ParameterDefinition CreateParameter(MethodDefinition methodDef, Type parameterType, string name = "", ParameterAttributes attributes = ParameterAttributes.None, int index = -1)
         {
             return CreateParameter(methodDef, GetTypeReference(parameterType), name, attributes, index);
         }
@@ -787,7 +925,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="variableTypeRef"></param>
         /// <returns></returns>
-        internal VariableDefinition CreateVariable(MethodDefinition methodDef, TypeReference variableTypeRef)
+        public VariableDefinition CreateVariable(MethodDefinition methodDef, TypeReference variableTypeRef)
         {
             VariableDefinition variableDef = new VariableDefinition(variableTypeRef);
             methodDef.Body.Variables.Add(variableDef);
@@ -799,7 +937,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="variableTypeRef"></param>
         /// <returns></returns>
-        internal VariableDefinition CreateVariable(MethodDefinition methodDef, Type variableType)
+        public VariableDefinition CreateVariable(MethodDefinition methodDef, Type variableType)
         {
             return CreateVariable(methodDef, GetTypeReference(variableType));
         }
@@ -812,7 +950,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="variableDef"></param>
         /// <param name="typeDef"></param>
-        internal void SetVariableDefinitionFromObject(ILProcessor processor, VariableDefinition variableDef, TypeDefinition typeDef)
+        public void SetVariableDefinitionFromObject(ILProcessor processor, VariableDefinition variableDef, TypeDefinition typeDef)
         {
             TypeReference type = variableDef.VariableType;
             if (type.IsValueType)
@@ -849,7 +987,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="variableDef"></param>
         /// <param name="value"></param>
-        internal void SetVariableDefinitionFromInt(ILProcessor processor, VariableDefinition variableDef, int value)
+        public void SetVariableDefinitionFromInt(ILProcessor processor, VariableDefinition variableDef, int value)
         {
             processor.Emit(OpCodes.Ldc_I4, value);
             processor.Emit(OpCodes.Stloc, variableDef);
@@ -860,7 +998,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="variableDef"></param>
         /// <param name="value"></param>
-        internal void SetVariableDefinitionFromParameter(ILProcessor processor, VariableDefinition variableDef, ParameterDefinition value)
+        public void SetVariableDefinitionFromParameter(ILProcessor processor, VariableDefinition variableDef, ParameterDefinition value)
         {
             processor.Emit(OpCodes.Ldarg, value);
             processor.Emit(OpCodes.Stloc, variableDef);
@@ -873,7 +1011,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="instruction"></param>
         /// <param name="calledMethod"></param>
         /// <returns></returns>
-        internal bool IsCallToMethod(Instruction instruction, out MethodDefinition calledMethod)
+        public bool IsCallToMethod(Instruction instruction, out MethodDefinition calledMethod)
         {
             if (instruction.OpCode == OpCodes.Call && instruction.Operand is MethodDefinition method)
             {
@@ -894,7 +1032,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="typeRef"></param>
         /// <param name="create">True to create if missing.</param>
         /// <returns></returns>
-        internal bool HasSerializerAndDeserializer(TypeReference typeRef, bool create)
+        public bool HasSerializerAndDeserializer(TypeReference typeRef, bool create)
         {
             //Make sure it's imported into current module.
             typeRef = base.ImportReference(typeRef);
@@ -930,5 +1068,208 @@ namespace FishNet.CodeGenerating.Helping
             return instructions;
         }
 
+        #region GeneratedComparers
+
+
+        /// <summary>
+        /// Creates an equality comparer for dataTr.
+        /// </summary>
+        public MethodDefinition CreateEqualityComparer(TypeReference dataTr)
+        {
+            GeneralHelper gh = base.GetClass<GeneralHelper>();
+            MethodDefinition comparerMd = gh.GetOrCreateMethod(GeneratedComparer_ClassTypeDef, out bool created, GenericWriterHelper.GENERATED_METHOD_ATTRIBUTES,
+                $"Comparer___{dataTr.FullName}", base.Module.TypeSystem.Boolean);
+            //Already done. This can happen if the same replicate data is used in multiple places.
+            if (created)
+            {
+                CreateComparerMethod();
+                CreateComparerDelegate();
+            }
+
+            return comparerMd;
+
+            void CreateComparerMethod()
+            {
+
+                //GeneratedComparer_ClassTypeDef.Methods.Add(comparerMd);
+
+                //Add parameters.
+                ParameterDefinition v0Pd = gh.CreateParameter(comparerMd, dataTr, "value0");
+                ParameterDefinition v1Pd = gh.CreateParameter(comparerMd, dataTr, "value1");
+                ILProcessor processor = comparerMd.Body.GetILProcessor();
+                comparerMd.Body.InitLocals = true;
+
+                Instruction exitMethodInst = processor.Create(OpCodes.Ldc_I4_0);
+
+                //Fields.
+                foreach (FieldDefinition fieldDef in dataTr.FindAllSerializableFields(base.Session
+                    , null, WriterHelper.EXCLUDED_ASSEMBLY_PREFIXES))
+                {
+                    base.ImportReference(fieldDef);
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
+                    processor.Emit(OpCodes.Ldfld, fieldDef);
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
+                    processor.Emit(OpCodes.Ldfld, fieldDef);
+                    FinishTypeReferenceCompare(fieldDef.FieldType);
+                    //processor.Emit(OpCodes.Bne_Un, exitMethodInst);
+                }
+
+                //Properties.
+                foreach (PropertyDefinition propertyDef in dataTr.FindAllSerializableProperties(base.Session
+                    , null, WriterHelper.EXCLUDED_ASSEMBLY_PREFIXES))
+                {
+                    MethodReference getMr = base.Module.ImportReference(propertyDef.GetMethod);
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
+                    processor.Emit(OpCodes.Call, getMr);
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
+                    processor.Emit(OpCodes.Call, getMr);
+                    FinishTypeReferenceCompare(propertyDef.PropertyType);
+                }
+
+                //Return true;
+                processor.Emit(OpCodes.Ldc_I4_1);
+                processor.Emit(OpCodes.Ret);
+                processor.Append(exitMethodInst);
+                processor.Emit(OpCodes.Ret);
+
+                void FinishTypeReferenceCompare(TypeReference tr)
+                {
+                    /* If a class or struct see if it already has a comparer
+                     * using IEquatable. If so then call the comparer method.
+                     * Otherwise make a new comparer and call it. */
+                    if (tr.IsClassOrStruct(base.Session))
+                    {
+                        //Make equatable for type.
+                        GenericInstanceType git = IEquatable_TypeRef.MakeGenericInstanceType(tr);
+                        bool createNestedComparer = !tr.CachedResolve(base.Session).ImplementsInterface(git.FullName);
+
+                        //Create new.
+                        if (createNestedComparer)
+                        {
+                            MethodDefinition cMd = CreateEqualityComparer(tr);
+                            processor.Emit(OpCodes.Call, cMd);
+                            processor.Emit(OpCodes.Brfalse, exitMethodInst);
+                        }
+                        //Call existing.
+                        else
+                        {
+                            MethodDefinition cMd = tr.CachedResolve(base.Session).GetMethod("op_Equality");
+                            if (cMd == null)
+                            {
+                                base.LogError($"Type {tr.FullName} implements IEquatable but the comparer method could not be found.");
+                                return;
+                            }
+                            else
+                            {
+                                MethodReference mr = base.ImportReference(cMd);
+                                processor.Emit(OpCodes.Call, mr);
+                                processor.Emit(OpCodes.Brfalse, exitMethodInst);
+                            }
+                        }
+                    }
+                    //Value types do not need to check custom comparers.
+                    else
+                    {
+                        processor.Emit(OpCodes.Bne_Un, exitMethodInst);
+                    }
+                }
+            }
+
+            //Creates a delegate to compare two of replicateTr.
+            void CreateComparerDelegate()
+            {
+                //Initialize delegate for made comparer.
+                List<Instruction> insts = new List<Instruction>();
+                ILProcessor processor = GeneratedComparer_OnLoadMethodDef.Body.GetILProcessor();
+                //Create a Func<Reader, T> delegate 
+                insts.Add(processor.Create(OpCodes.Ldnull));
+                insts.Add(processor.Create(OpCodes.Ldftn, comparerMd));
+
+                GenericInstanceType git;
+                git = gh.FunctionT3TypeRef.MakeGenericInstanceType(dataTr, dataTr, gh.GetTypeReference(typeof(bool)));
+                MethodReference functionConstructorInstanceMethodRef = gh.FunctionT3ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, git);
+                insts.Add(processor.Create(OpCodes.Newobj, functionConstructorInstanceMethodRef));
+
+                //Call delegate to ReplicateComparer.Compare(T, T);
+                git = GeneratedComparer_TypeRef.MakeGenericInstanceType(dataTr);
+                MethodReference comparerMr = GeneratedComparer_Compare_Set_MethodRef.MakeHostInstanceGeneric(base.Session, git);
+                insts.Add(processor.Create(OpCodes.Call, comparerMr));
+                processor.InsertFirst(insts);
+            }
+
+        }
+
+
+        /// <summary>
+        /// Creates an IsDefault comparer for dataTr.
+        /// </summary>
+        public void CreateIsDefaultComparer(TypeReference dataTr, MethodDefinition compareMethodDef)
+        {
+            GeneralHelper gh = base.GetClass<GeneralHelper>();
+
+            MethodDefinition isDefaultMd = gh.GetOrCreateMethod(GeneratedComparer_ClassTypeDef, out bool created, GenericWriterHelper.GENERATED_METHOD_ATTRIBUTES,
+                $"IsDefault___{dataTr.FullName}", base.Module.TypeSystem.Boolean);
+            //Already done. This can happen if the same replicate data is used in multiple places.
+            if (!created)
+                return;
+
+            MethodReference compareMr = base.ImportReference(compareMethodDef);
+            CreateIsDefaultMethod();
+            CreateIsDefaultDelegate();
+
+            void CreateIsDefaultMethod()
+            {
+                //Add parameters.
+                ParameterDefinition v0Pd = gh.CreateParameter(isDefaultMd, dataTr, "value0");
+                ILProcessor processor = isDefaultMd.Body.GetILProcessor();
+                isDefaultMd.Body.InitLocals = true;
+
+
+                processor.Emit(OpCodes.Ldarg, v0Pd);
+                //If a struct.
+                if (dataTr.IsValueType)
+                {
+                    //Init a default local.
+                    VariableDefinition defaultVd = gh.CreateVariable(isDefaultMd, dataTr);
+                    processor.Emit(OpCodes.Ldloca, defaultVd);
+                    processor.Emit(OpCodes.Initobj, dataTr);
+                    processor.Emit(OpCodes.Ldloc, defaultVd);
+                }
+                //If a class.
+                else
+                {
+                    processor.Emit(OpCodes.Ldnull);
+                }
+
+                processor.Emit(OpCodes.Call, compareMr);
+                processor.Emit(OpCodes.Ret);
+
+
+            }
+
+            //Creates a delegate to compare two of replicateTr.
+            void CreateIsDefaultDelegate()
+            {
+                //Initialize delegate for made comparer.
+                List<Instruction> insts = new List<Instruction>();
+                ILProcessor processor = GeneratedComparer_OnLoadMethodDef.Body.GetILProcessor();
+                //Create a Func<Reader, T> delegate 
+                insts.Add(processor.Create(OpCodes.Ldnull));
+                insts.Add(processor.Create(OpCodes.Ldftn, isDefaultMd));
+
+                GenericInstanceType git;
+                git = gh.FunctionT2TypeRef.MakeGenericInstanceType(dataTr, gh.GetTypeReference(typeof(bool)));
+                MethodReference funcCtorMethodRef = gh.FunctionT2ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, git);
+                insts.Add(processor.Create(OpCodes.Newobj, funcCtorMethodRef));
+
+                //Call delegate to ReplicateComparer.IsDefault(T).
+                git = GeneratedComparer_TypeRef.MakeGenericInstanceType(dataTr);
+                MethodReference isDefaultMr = GeneratedComparer_IsDefault_Set_MethodRef.MakeHostInstanceGeneric(base.Session, git);
+                insts.Add(processor.Create(OpCodes.Call, isDefaultMr));
+                processor.InsertFirst(insts);
+            }
+
+        }
+        #endregion
     }
 }

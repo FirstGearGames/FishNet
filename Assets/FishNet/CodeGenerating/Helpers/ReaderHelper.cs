@@ -18,8 +18,8 @@ namespace FishNet.CodeGenerating.Helping
         internal TypeReference Reader_TypeRef;
         internal TypeReference NetworkConnection_TypeRef;
         internal MethodReference PooledReader_ReadNetworkBehaviour_MethodRef;
-        private readonly Dictionary<TypeReference, MethodReference> _instancedReaderMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
-        private readonly Dictionary<TypeReference, MethodReference> _staticReaderMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
+        private readonly Dictionary<string, MethodReference> _instancedReaderMethods = new Dictionary<string, MethodReference>();// (new TypeReferenceComparer());
+        private readonly Dictionary<string, MethodReference> _staticReaderMethods = new Dictionary<string, MethodReference>();// (new TypeReferenceComparer());
         private HashSet<TypeReference> _autoPackedMethods = new HashSet<TypeReference>(new TypeReferenceComparer());
         private MethodReference Reader_ReadPackedWhole_MethodRef;
         internal MethodReference Reader_ReadDictionary_MethodRef;
@@ -75,9 +75,9 @@ namespace FishNet.CodeGenerating.Helping
 
                 else if (base.GetClass<GeneralHelper>().CodegenExclude(methodInfo))
                     continue;
-                //Generic methods are not supported.
-                else if (methodInfo.IsGenericMethod)
-                    continue;
+                ////Generic methods are not supported.
+                //else if (methodInfo.IsGenericMethod)
+                //    continue;
                 //Not long enough to be a write method.
                 else if (methodInfo.Name.Length < READ_PREFIX.Length)
                     continue;
@@ -97,10 +97,11 @@ namespace FishNet.CodeGenerating.Helping
                         continue;
                 }
 
+                MethodReference methodRef = base.ImportReference(methodInfo);
                 /* TypeReference for the return type
                  * of the read method. */
-                TypeReference typeRef = base.ImportReference(methodInfo.ReturnType);
-                MethodReference methodRef = base.ImportReference(methodInfo);
+                TypeReference typeRef = base.ImportReference(methodRef.ReturnType);
+
 
                 /* If here all checks pass. */
                 AddReaderMethod(typeRef, methodRef, true, true);
@@ -114,9 +115,9 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (base.GetClass<GeneralHelper>().CodegenExclude(methodInfo))
                     continue;
-                //Generic methods are not supported.
-                if (methodInfo.IsGenericMethod)
-                    continue;
+                ////Generic methods are not supported.
+                //if (methodInfo.IsGenericMethod)
+                //    continue;
                 //Not static.
                 if (!methodInfo.IsStatic)
                     continue;
@@ -139,10 +140,10 @@ namespace FishNet.CodeGenerating.Helping
                         continue;
                 }
 
+                MethodReference methodRef = base.ImportReference(methodInfo);
                 /* TypeReference for the return type
                  * of the read method. */
-                TypeReference typeRef = base.ImportReference(methodInfo.ReturnType);
-                MethodReference methodRef = base.ImportReference(methodInfo);
+                TypeReference typeRef = base.ImportReference(methodRef.ReturnType);                
 
                 /* If here all checks pass. */
                 AddReaderMethod(typeRef, methodRef, false, true);
@@ -158,10 +159,14 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         internal bool CreateGenericDelegates()
         {
-            /* Only write statics. This will include extensions and generated. */
-            foreach (KeyValuePair<TypeReference, MethodReference> item in _staticReaderMethods)
-                    base.GetClass<GenericReaderHelper>().CreateReadDelegate(item.Value);
-
+            foreach (KeyValuePair<string, MethodReference> item in _staticReaderMethods)
+                base.GetClass<GenericReaderHelper>().CreateReadDelegate(item.Value, true);
+            //Only write instanced ones to fishnet assembly so they arent done redundantly for each asm.
+            if (FishNetILPP.IsFishNetAssembly(base.Session))
+            {
+                foreach (KeyValuePair<string, MethodReference> item in _instancedReaderMethods)
+                    base.GetClass<GenericReaderHelper>().CreateReadDelegate(item.Value, false);
+            }
             return true;
         }
 
@@ -269,7 +274,8 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal MethodReference GetInstancedReadMethodReference(TypeReference typeRef)
         {
-            _instancedReaderMethods.TryGetValue(typeRef, out MethodReference methodRef);
+            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            _instancedReaderMethods.TryGetValue(fullName, out MethodReference methodRef);
             return methodRef;
         }
         /// <summary>
@@ -279,7 +285,8 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal MethodReference GetStaticReadMethodReference(TypeReference typeRef)
         {
-            _staticReaderMethods.TryGetValue(typeRef, out MethodReference methodRef);
+            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            _staticReaderMethods.TryGetValue(fullName, out MethodReference methodRef);
             return methodRef;
         }
         /// <summary>
@@ -318,8 +325,26 @@ namespace FishNet.CodeGenerating.Helping
             MethodReference readMethodRef = GetFavoredReadMethodReference(typeRef, favorInstanced);
             if (readMethodRef == null)
                 readMethodRef = base.GetClass<ReaderGenerator>().CreateReader(typeRef);
+
+            //If still null then return could not be generated.
             if (readMethodRef == null)
+            {
                 base.LogError($"Could not create deserializer for {typeRef.FullName}.");
+            }
+            //Otherwise, check if generic and create writes for generic pararameters.
+            else if (typeRef.IsGenericInstance)
+            {
+                GenericInstanceType git = (GenericInstanceType)typeRef;
+                foreach (TypeReference item in git.GenericArguments)
+                {
+                    MethodReference result = GetOrCreateFavoredReadMethodReference(item, favorInstanced);
+                    if (result == null)
+                    {
+                        base.LogError($"Could not create deserializer for {item.FullName}.");
+                        return null;
+                    }
+                }
+            }
 
             return readMethodRef;
         }
@@ -333,13 +358,14 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="useAdd"></param>
         internal void AddReaderMethod(TypeReference typeRef, MethodReference methodRef, bool instanced, bool useAdd)
         {
-            Dictionary<TypeReference, MethodReference> dict = (instanced) ?
+            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            Dictionary<string, MethodReference> dict = (instanced) ?
                 _instancedReaderMethods : _staticReaderMethods;
 
             if (useAdd)
-                dict.Add(typeRef, methodRef);
+                dict.Add(fullName, methodRef);
             else
-                dict[typeRef] = methodRef;
+                dict[fullName] = methodRef;
         }
 
         /// <summary>
@@ -347,10 +373,11 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         internal void RemoveReaderMethod(TypeReference typeRef, bool instanced)
         {
-            Dictionary<TypeReference, MethodReference> dict = (instanced) ?
+            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            Dictionary<string, MethodReference> dict = (instanced) ?
                 _instancedReaderMethods : _staticReaderMethods;
 
-            dict.Remove(typeRef);
+            dict.Remove(fullName);
         }
 
         /// <summary>
@@ -366,8 +393,8 @@ namespace FishNet.CodeGenerating.Helping
         {
             ILProcessor processor = methodDef.Body.GetILProcessor();
             List<Instruction> insts = new List<Instruction>();
-            MethodReference readerMethodRef = GetFavoredReadMethodReference(readTypeRef, true);
-            if (readerMethodRef != null)
+            MethodReference readMr = GetFavoredReadMethodReference(readTypeRef, true);
+            if (readMr != null)
             {
                 //Make a local variable. 
                 createdVariableDef = base.GetClass<GeneralHelper>().CreateVariable(methodDef, readTypeRef);
@@ -379,7 +406,20 @@ namespace FishNet.CodeGenerating.Helping
                     AutoPackType packType = base.GetClass<GeneralHelper>().GetDefaultAutoPackType(readTypeRef);
                     insts.Add(processor.Create(OpCodes.Ldc_I4, (int)packType));
                 }
-                insts.Add(processor.Create(OpCodes.Call, readerMethodRef));
+
+
+                TypeReference valueTr = readTypeRef;
+                /* If generic then find write class for
+                 * data type. Currently we only support one generic
+                 * for this. */
+                if (valueTr.IsGenericInstance)
+                {
+                    GenericInstanceType git = (GenericInstanceType)valueTr;
+                    TypeReference genericTr = git.GenericArguments[0];
+                    readMr = readMr.GetMethodReference(base.Session, genericTr);
+                }
+
+                insts.Add(processor.Create(OpCodes.Call, readMr));
                 //Store into local variable.
                 insts.Add(processor.Create(OpCodes.Stloc, createdVariableDef));
                 return insts;
@@ -407,6 +447,16 @@ namespace FishNet.CodeGenerating.Helping
                  * class Ldloc can be used. */
                 OpCode loadOpCode = (objectVd.VariableType.IsValueType) ?
                     OpCodes.Ldloca : OpCodes.Ldloc;
+
+                /* If generic then find write class for
+                 * data type. Currently we only support one generic
+                 * for this. */
+                if (valueFr.FieldType.IsGenericInstance)
+                {
+                    GenericInstanceType git = (GenericInstanceType)valueFr.FieldType;
+                    TypeReference genericTr = git.GenericArguments[0];
+                    readMr = readMr.GetMethodReference(base.Session, genericTr);
+                }
 
                 processor.Emit(loadOpCode, objectVd);
                 //reader.
@@ -445,6 +495,16 @@ namespace FishNet.CodeGenerating.Helping
                  * class Ldloc can be used. */
                 OpCode loadOpCode = (objectVariableDef.VariableType.IsValueType) ?
                     OpCodes.Ldloca : OpCodes.Ldloc;
+
+                /* If generic then find write class for
+                 * data type. Currently we only support one generic
+                 * for this. */ 
+                if (readTr.IsGenericInstance)
+                {
+                    GenericInstanceType git = (GenericInstanceType)readTr;
+                    TypeReference genericTr = git.GenericArguments[0];
+                    readMr = readMr.GetMethodReference(base.Session, genericTr);
+                }
 
                 processor.Emit(loadOpCode, objectVariableDef);
                 //reader.

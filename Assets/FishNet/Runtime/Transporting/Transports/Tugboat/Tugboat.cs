@@ -308,10 +308,8 @@ namespace FishNet.Transporting.Tugboat
         /// <param name="value"></param>
         public override void SetMaximumClients(int value)
         {
-            if (_server.GetConnectionState() != LocalConnectionState.Stopped)
-                base.NetworkManager.LogWarning($"Cannot set maximum clients when server is running.");
-            else
-                _maximumClients = value;
+            _maximumClients = value;
+            _server.SetMaximumClients(value);
         }
         /// <summary>
         /// Sets which address the client will connect to.

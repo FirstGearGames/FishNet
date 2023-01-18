@@ -1,11 +1,12 @@
 using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing;
-using FishNet.Managing.Logging;
+using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Constant;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -14,6 +15,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
 {
+
     /// <summary>
     /// Used for write references to generic types.
     /// </summary>
@@ -56,6 +58,29 @@ namespace FishNet.Serializing
         private byte[] _buffer = new byte[64];
         #endregion
 
+        #region Const.
+        /// <summary>
+        /// Replicate data is default of T.
+        /// </summary>
+        internal const byte REPLICATE_DEFAULT_BYTE = 0;
+        /// <summary>
+        /// Replicate data is the same as the previous.
+        /// </summary>
+        internal const byte REPLICATE_DUPLICATE_BYTE = 1;
+        /// <summary>
+        /// Replicate data is different from the previous.
+        /// </summary>
+        internal const byte REPLICATE_UNIQUE_BYTE = 2;
+        /// <summary>
+        /// Replicate data is repeating for every entry.
+        /// </summary>
+        internal const byte REPLICATE_REPEATING_BYTE = 3;
+        /// <summary>
+        /// All datas in the replicate are default.
+        /// </summary>
+        internal const byte REPLICATE_ALL_DEFAULT_BYTE = 4;
+        #endregion
+
         /// <summary>
         /// Resets the writer as though it was unused. Does not reset buffers.
         /// </summary>
@@ -69,6 +94,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes a dictionary.
         /// </summary>
+        [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteDictionary<TKey, TValue>(Dictionary<TKey, TValue> dict)
         {
@@ -737,20 +763,76 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteNetworkObject(NetworkObject nob)
         {
-            bool isSpawned = (nob != null && nob.IsSpawned);
-            WriteBoolean(isSpawned);
+            WriteNetworkObject(nob, false);
+        }
 
-            if (isSpawned)
-            {
+        /// <summary>
+        /// Writes a NetworkObject.ObjectId.
+        /// </summary>
+        /// <param name="nob"></param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteNetworkObjectId(NetworkObject nob)
+        {
+            if (nob == null)
+                WriteInt16(-1);
+            else
                 WriteInt16((short)nob.ObjectId);
+        }
+
+        /// <summary>
+        /// Writes a NetworkObject while optionally including the initialization order.
+        /// </summary>
+        /// <param name="nob"></param>
+        /// <param name="forSpawn"></param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void WriteNetworkObject(NetworkObject nob, bool forSpawn)
+        {
+            if (nob == null)
+            {
+                WriteInt16(-1);
             }
             else
             {
-                if (nob == null)
-                    WriteInt16(-1);
+                bool spawned = nob.IsSpawned;
+                if (spawned)
+                    WriteInt16((short)nob.ObjectId);
                 else
                     WriteInt16(nob.PrefabId);
+
+                //Has to be written after objectId since that's expected first in reader.
+                if (forSpawn)
+                {
+                    WriteUInt16(nob.SpawnableCollectionId);
+                    WriteSByte(nob.GetInitializeOrder());
+                }
+
+                WriteBoolean(spawned);
             }
+        }
+
+        /// <summary>
+        /// Writes a NetworkObject for a despawn message.
+        /// </summary>
+        /// <param name="nob"></param>
+        /// <param name="dt"></param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void WriteNetworkObjectForDespawn(NetworkObject nob, DespawnType dt)
+        {
+            WriteInt16((short)nob.ObjectId);
+            WriteByte((byte)dt);
+        }
+
+        /// <summary>
+        /// Writes a NetworkObject for a spawn packet.
+        /// </summary>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void WriteNetworkObjectForSpawn(NetworkObject nob)
+        {
+            WriteNetworkObject(nob, true);
         }
 
         /// <summary>
@@ -770,6 +852,35 @@ namespace FishNet.Serializing
                 WriteNetworkObject(nb.NetworkObject);
                 WriteByte(nb.ComponentIndex);
             }
+        }
+
+        /// <summary>
+        /// Writes a NetworkBehaviourId.
+        /// </summary>
+        /// <param name="nb"></param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteNetworkBehaviourId(NetworkBehaviour nb)
+        {
+            if (nb == null)
+            {
+                WriteNetworkObjectId(null);
+            }
+            else
+            {
+                WriteNetworkObjectId(nb.NetworkObject);
+                WriteByte(nb.ComponentIndex);
+            }
+        }
+
+        /// <summary>
+        /// Writes a DateTime.
+        /// </summary>
+        /// <param name="dt"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteDateTime(DateTime dt)
+        {
+            WriteInt64(dt.ToBinary());
         }
 
         /// <summary>
@@ -804,6 +915,27 @@ namespace FishNet.Serializing
             WriteInt16(id);
         }
 
+        /// <summary>
+        /// Writes a ListCache.
+        /// </summary>
+        /// <param name="lc">ListCache to write.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteListCache<T>(ListCache<T> lc)
+        {
+            WriteList<T>(lc.Collection);
+        }
+        /// <summary>
+        /// Writes a list.
+        /// </summary>
+        /// <param name="value">Collection to write.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteList<T>(List<T> value)
+        {
+            if (value == null)
+                WriteList<T>(null, 0, 0);
+            else
+                WriteList<T>(value, 0, value.Count);
+        }
         #region Packed writers.
         /// <summary>
         /// ZigZag encode an integer. Move the sign bit to the right.
@@ -949,18 +1081,104 @@ namespace FishNet.Serializing
             else
                 WriteList<T>(value, offset, value.Count - offset);
         }
+
         /// <summary>
-        /// Writes a list.
+        /// Writes a replication to the server.
         /// </summary>
-        /// <param name="value">Collection to write.</param>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteList<T>(List<T> value)
+        internal void WriteReplicate<T>(List<T> values, int offset)
         {
-            if (value == null)
-                WriteList<T>(null, 0, 0);
+            /* COUNT
+             * 
+             * Each Entry:
+             * 0 if the same as previous.
+             * 1 if default. */
+            int collectionCount = values.Count;
+            //Replicate list will never be null, no need to write null check.
+            //Number of entries being written.
+            byte count = (byte)(collectionCount - offset);
+            WriteByte(count);
+
+            //Get comparer.
+            Func<T, T, bool> compareDel = GeneratedComparer<T>.Compare;
+            Func<T, bool> isDefaultDel = GeneratedComparer<T>.IsDefault;
+            if (compareDel == null || isDefaultDel == null)
+            {
+                LogError($"ReplicateComparers not found for type {typeof(T).FullName}");
+                return;
+            }
+
+            T lastData = default;
+            /* It's possible to save more bytes by writing that they are all the same.
+             * Run a check, and if they are all the same then only write
+             * the first data with the same indicator code. */
+            byte fullPackType = 0;
+            bool repeating = true;
+            bool allDefault = true;
+            for (int i = offset; i < collectionCount; i++)
+            {
+                T v = values[i];
+                if (!isDefaultDel(v))
+                    allDefault = false;
+
+                //Only check if i is larger than offset, giving us something in the past to check.
+                if (i > offset)
+                {
+                    //Not repeating.
+                    bool match = compareDel.Invoke(v, values[i - 1]);
+                    if (!match)
+                    {
+                        repeating = false;
+                        break;
+                    }
+                }
+
+            }
+
+            if (allDefault)
+                fullPackType = REPLICATE_ALL_DEFAULT_BYTE;
+            else if (repeating)
+                fullPackType = REPLICATE_REPEATING_BYTE;
+            WriteByte(fullPackType);
+
+            //If repeating only write the first entry.
+            if (repeating)
+            {
+                //Only write if not default.
+                if (!allDefault)
+                    Write<T>(values[offset]);
+            }
+            //Otherwise check each entry for differences.
             else
-                WriteList<T>(value, 0, value.Count);
+            {
+                for (int i = offset; i < collectionCount; i++)
+                {
+                    T v = values[i];
+                    bool isDefault = isDefaultDel.Invoke(v);
+                    //Default data, easy exit on writes.
+                    if (isDefault)
+                    {
+                        WriteByte(REPLICATE_DEFAULT_BYTE);
+                    }
+                    //Data is not default.
+                    else
+                    {
+                        //Same as last data.
+                        bool match = compareDel.Invoke(v, lastData);
+                        if (match)
+                        {
+                            WriteByte(REPLICATE_DUPLICATE_BYTE);
+                        }
+                        else
+                        {
+                            WriteByte(REPLICATE_UNIQUE_BYTE);
+                            Write<T>(v);
+                            lastData = v;
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -1026,6 +1244,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="value"></param>
+        [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write<T>(T value)
         {
@@ -1033,34 +1252,32 @@ namespace FishNet.Serializing
             {
                 Action<Writer, T, AutoPackType> del = GenericWriter<T>.WriteAutoPack;
                 if (del == null)
-                {
-                    if (NetworkManager == null)
-                        NetworkManager.StaticLogError(GetLogMessage());
-                    else
-                        NetworkManager.LogError(GetLogMessage());
-                }
+                    LogError(GetLogMessage());
                 else
-                {
                     del.Invoke(this, value, packType);
-                }
             }
             else
             {
                 Action<Writer, T> del = GenericWriter<T>.Write;
                 if (del == null)
-                {
-                    if (NetworkManager == null)
-                        NetworkManager.StaticLogError(GetLogMessage());
-                    else
-                        NetworkManager.LogError(GetLogMessage());
-                }
+                    LogError(GetLogMessage());
                 else
-                {
                     del.Invoke(this, value);
-                }
             }
 
             string GetLogMessage() => $"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.";
+        }
+
+        /// <summary>
+        /// Logs an error.
+        /// </summary>
+        /// <param name="msg"></param>
+        private void LogError(string msg)
+        {
+            if (NetworkManager == null)
+                NetworkManager.StaticLogError(msg);
+            else
+                NetworkManager.LogError(msg);
         }
 
         /// <summary>

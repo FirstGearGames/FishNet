@@ -23,7 +23,7 @@ namespace FishNet.Authenticating
         /// </summary>
         protected NetworkManager NetworkManager { get; private set; }
         #endregion
-
+         
         /// <summary>
         /// Called when authenticator has concluded a result for a connection. Boolean is true if authentication passed, false if failed.
         /// Server listens for this event automatically.

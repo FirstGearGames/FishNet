@@ -12,6 +12,10 @@ namespace FishNet.Managing.Scened
     public class SceneLoadData
     {
         /// <summary>
+        /// When specified this scene will be set as the active scene after loading occurs.
+        /// </summary>
+        public SceneLookupData PreferredActiveScene = null;
+        /// <summary>
         /// SceneLookupData for each scene to load.
         /// </summary>
         public SceneLookupData[] SceneLookupDatas = new SceneLookupData[0];
