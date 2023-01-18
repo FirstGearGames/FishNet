@@ -2,70 +2,168 @@
 using FishNet.Object;
 using FishNet.Observing;
 using FishNet.Utility.Extension;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Profiling;
 using UnityEngine;
+using MMO;
 
 namespace FishNet.Component.Observing
-{
-    public struct GridCell
+{    
+    public class GridCell : IEquatable<GridCell>
     {
-        public readonly int X;
-        public readonly int Z;
+        //Public Properties
+        //*****************
+        public int X { get; private set; }
+        public int Z { get; private set; }
 
+        //Constructors
+        //************
+        public GridCell()
+        {
+            X = 0;
+            Z = 0;
+        }
         public GridCell(int x, int z)
         {
             X = x;
             Z = z;
         }
+        public GridCell(GridCell cell)
+        {
+            this.X = cell.X;
+            this.Z = cell.Z;
+        }
+
+        //Public Methods
+        //**************
+        public void Set(int x, int z)
+        {
+            X = x;
+            Z = z; 
+        }
+        public void CopyFrom(GridCell cell)
+        {
+            Set(cell.X, cell.Z);
+        }
+        public void CopyTo(GridCell cell)
+        {
+            cell.Set(X, Z);
+        }
+        public GridCell Clone()
+        {
+            return new GridCell(X, Z);
+        }
+
+        //Class Overrides
+        //***************
+        public override string ToString()
+        {
+            return $"({X}, {Z})";
+        }
+        public override bool Equals(object obj)
+        {
+            if(obj is GridCell)
+                return Equals((GridCell)obj);
+            return false;
+        }
+        public bool Equals(GridCell other)
+        {
+            return other.X == X && other.Z == Z;
+        }
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(X, Z);
+        }
+        public static bool operator== (GridCell cell1, GridCell cell2)
+        {
+            return cell1.Equals(cell2);
+        }
+        public static bool operator!= (GridCell cell1, GridCell cell2)
+        {
+            return !(cell1.Equals(cell2));
+        }        
     }
     public class HashGrid
     {
         //Size of grid cells
-        private int _gridCellSize = 5;
+        private static int _gridCellSize = 0;
         
         //This is the hash grid that contains a cell loaction that points to a list of network objects
-        public readonly Dictionary<GridCell, List<NetworkObject>> Grid = new Dictionary<GridCell, List<NetworkObject>>();
+        public Dictionary<GridCell, List<int>> Grid = new Dictionary<GridCell, List<int>>(256);
         
         //Public Getters & Setters
         //************************
         //Sets the size of the grid cells. The size cannot be less then 1
         public int SetCellSize { set => _gridCellSize = Mathf.Max(value, 1); }
         public int GetCellSize => _gridCellSize;
+
+        //Cache data
+        private List<int>[] _cacheList = new List<int>[10];       
+        private GridCell[] _cacheCell = new GridCell[10];
+        //Constructors
+        private void BaseConstructor()
+        {
+            for (int i = 0; i < _cacheCell.Length; i++)
+                _cacheCell[i] = new GridCell();
+            for (int i = 0; i < _cacheList.Length; i++)
+                _cacheList[i] = new List<int>(32);
+        }
+        public HashGrid()
+        {
+            BaseConstructor();
+        }
+        public HashGrid(int cellSize)
+        {
+            BaseConstructor();
+            _gridCellSize = cellSize;
+        }        
+
         //Public Methods
-        public GridCell UpdateGridWithPosition(NetworkObject nob, Vector3 pos, GridCell currectCell)
+        public bool UpdateGridWithPosition(NetworkObject nob, Vector3 pos, GridCell currectCell, out GridCell outCell)
         {
             //Calculate the cell for the nobs current position
-            GridCell newCell = new GridCell((int)Mathf.Round(pos.x / _gridCellSize), (int)Mathf.Round(pos.z / _gridCellSize));
-            
+            _cacheCell[0].Set((int)Mathf.Round(pos.x / _gridCellSize), (int)Mathf.Round(pos.z / _gridCellSize));
+            outCell = _cacheCell[0];
             //If the grid cell doesn't exist, add it.
-            if(!Grid.ContainsKey(newCell)) Grid.Add(newCell, new List<NetworkObject>());
+            if (!Grid.ContainsKey(outCell)) Grid.Add(new GridCell(outCell), new List<int>(64));
+            
+            //If the nob is in the list the exit early, since it is in the same cell            
+            if (Grid[outCell].Contains(nob.OwnerId))
+            {
+                return false;
+            }
 
-            //If the nob is in the list the exit early, since it is in the same cell
-            if (Grid[newCell].Contains(nob)) return newCell;
-            //Otherwise add it to the new cell
-            else Grid[newCell].Add(nob);
-
+            //Otherwise 
             //Remove from the old cell
-            if(Grid.TryGetValue(currectCell, out List<NetworkObject> list))
-                list.Remove(nob);
+            if (Grid.TryGetValue(currectCell, out var list))
+            {
+                list.Remove(nob.OwnerId);
+            }
 
-            return newCell;
+            //Add it to the new cell
+            Grid[outCell].Add(nob.OwnerId);
+            return true;
         }
+        
         //Returns an array of all nearby Nobs to a given grid cell by searchDistance
-        public NetworkObject[] GetNearbyNobs(GridCell cell, int searchDistance)
+        public bool GetNearbyNobs(GridCell cell, int searchDistance, out List<int> list)
         {
-            List<NetworkObject> nobs = new List< NetworkObject >();
+            _cacheList[1].Clear();
             //This will search through all grid cells that exist
             //from [x-searchDistance, z-searchDistance] to [x+searchDistance, z+searchDistance]
             for (int x = cell.X - searchDistance; x <= cell.X + searchDistance; x++)
             {
                 for (int z = cell.Z - searchDistance; z <= cell.Z + searchDistance; z++)
                 {
-                    if (Grid.TryGetValue(new GridCell(x, z), out var list)) nobs.AddRange(list);
+                    _cacheCell[1].Set(x, z);
+                    if (!Grid.TryGetValue(_cacheCell[1], out var cellList)) continue;
+                    _cacheList[1].AddRange(cellList);
                 }
             }
-            return nobs.ToArray();
+            list = _cacheList[1];
+            return true;
         }
     }
 
@@ -75,47 +173,22 @@ namespace FishNet.Component.Observing
     [CreateAssetMenu(menuName = "FishNet/Observers/Hash Grid Condition", fileName = "New Hash Grid Condition")]
     public class HashGridCondition : ObserverCondition
     {
-        /// <summary>
-        /// Singleton instance of the HashGrid
-        /// </summary>
-        public static HashGrid StaticHashGrid { get; private set; }
-
+        static readonly ProfilerMarker s_ConditionMet = new ProfilerMarker("0 - Condition Met");
         //Private Fields
         //**************
         [Tooltip("How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. A value of 0f will cause the object the update quickly as possible while any other value will be used as a delay.")]
         [SerializeField, Range(0f, 60f)]
         private float _updateFrequency;
-        /// <summary>
-        /// This defines the size of your grid cell.<para/>
-        /// This effects the search distance.
-        /// </summary>
         [Tooltip("This defines the size of your grid cell.")]
         [SerializeField, Min(1)]
-        private int _cellSize = 5;
-        /// <summary>
-        /// The number of cells a client must be within this object to see it.<para/>
-        /// A search distance of one looks like:<para/>
-        /// [ 1, -1] [ 1, 0] [ 1, 1]<para/>
-        /// [ 0, -1] [ 0, 0] [ 0, 1]<para/>
-        /// [-1,-1] [-1,0] [-1, 1]<para/>
-        /// </summary>
+        private int _cellSize = 12;
+        [Tooltip("The number of cells a client must be within this object to see it.")]
         [SerializeField]
-        private int _cellSearchDistance = 25;
-        /// <summary>
-        /// Additional number of cells a client must be until this object is hidden. For example, if cellSearchDistance is 10 and hideDistancePadding is 2 the client must be 12 grid cells away before this object is hidden again. This can be useful for keeping objects from regularly appearing and disappearing.
-        /// </summary>
-        [Tooltip("Additional number of cells a client must be until this object is hidden. For example, if cellSearchDistance is 10 and hideDistancePadding is 2 the client must be 12 grid cells away before this object is hidden again. This can be useful for keeping objects from regularly appearing and disappearing.")]
-        [Range(0f, 1f)]
-        [SerializeField]
-        private int _hideDistancePadding = 2;
+        private int _cellSearchDistance = 10;
         /// <summary>
         /// Tracks when connections may be updated for this object.
         /// </summary>
         private Dictionary<NetworkConnection, float> _timedUpdates = new Dictionary<NetworkConnection, float>();
-        /// <summary>
-        /// Keeps track of the Network Objects current cell.
-        /// </summary>
-        private GridCell _currentCell = new GridCell();
 
         //Public Getters & Setters
         //************************
@@ -134,64 +207,72 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// Additional number of cells a client must be until this object is hidden. For example, if cellSearchDistance is 10 and hideDistancePadding is 2 the client must be 12 grid cells away before this object is hidden again. This can be useful for keeping objects from regularly appearing and disappearing.
         /// </summary>
-        public int GetHideDistancePadding => _hideDistancePadding;
+        public int GetCellSearchDistance => _cellSearchDistance;
+        /// <summary>
+        /// Get the size of the grid cell.
+        /// </summary>
+        public int GetCellSize => _cellSize;
 
-        private void Awake()
+        public override void InitializeOnce(NetworkObject networkObject)
         {
-            //Setup the singleton instance of the Hash Grid, only if not setup.
-            if (StaticHashGrid != null) return;
-            StaticHashGrid = new HashGrid();
-            StaticHashGrid.SetCellSize = _cellSize;
+            base.InitializeOnce(networkObject);
+            //Verify if the nob has a HashGridComponent if not add it
+            var hashGridComponent = networkObject.gameObject.GetComponent<HashGridComponent>();
+            if(hashGridComponent == null)
+                hashGridComponent = networkObject.gameObject.AddComponent<HashGridComponent>();
+            //Initialize the HashGridComponent
+            hashGridComponent.InitHashGridComponent(this);
         }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool ConditionMet(NetworkConnection connection, bool currentlyAdded, out bool notProcessed)
         {
+            s_ConditionMet.Begin();
             if (_updateFrequency > 0f)
             {
-                float nextAllowedUpdate;
-                float currentTime = Time.time;
-                if (!_timedUpdates.TryGetValueIL2CPP(connection, out nextAllowedUpdate))
+                if (!_timedUpdates.TryGetValueIL2CPP(connection, out float nextAllowedUpdate))
                 {
-                    _timedUpdates[connection] = (currentTime + _updateFrequency);
+                    _timedUpdates[connection] = (Time.time + _updateFrequency);
                 }
                 else
                 {
                     //Not enough time to process again.
-                    if (currentTime < nextAllowedUpdate)
+                    if (Time.time < nextAllowedUpdate)
                     {
                         notProcessed = true;
                         //The return does not really matter since notProcessed is returned.
+                        s_ConditionMet.End();
                         return false;
                     }
                     //Can process again.
                     else
                     {
-                        _timedUpdates[connection] = (currentTime + _updateFrequency);
+                        _timedUpdates[connection] = (Time.time + _updateFrequency);
                     }
                 }
             }
             notProcessed = false;
-            //Update the Hash Grid with the current position of the network object, returns the update cell.
-            _currentCell = StaticHashGrid.UpdateGridWithPosition(NetworkObject, NetworkObject.transform.position, _currentCell);
 
-            //If visible add padding to search distance. Otherwise use regular search distance.
-            int serachDistance = currentlyAdded ? _cellSearchDistance + _hideDistancePadding : _cellSearchDistance;
+            //Null check, return false if the Dicionary isn't ready
+            if (HashGridComponent.ConnToNearbyPairs == null)
+            {
+                s_ConditionMet.End();
+                return false;
+            }
 
-            //Returns a list of network objects in all of the cells, within the search distance.
-            var nobs = StaticHashGrid.GetNearbyNobs(_currentCell, serachDistance);
-
-            //If a network object is in the grid return true.
-            foreach (NetworkObject nob in nobs)
-                foreach(var obj in connection.Objects)
-                    if(nob == obj) return true;
-
-            //Network object is not in the grid.
+            //Check the dictionary for the clientId and see if this Nob is in it
+            if (HashGridComponent.ConnToNearbyPairs.TryGetValue(connection.ClientId, out var list))
+            {
+                if (list.Contains(NetworkObject.OwnerId))
+                {
+                    s_ConditionMet.End();
+                    return true;
+                }
+            }
+            s_ConditionMet.End();
             return false;
         }
-        public void ConditionConstructor(int searchDistance, int hidePadding, int cellSize, float updateFrequency)
+        public void ConditionConstructor(int searchDistance, int cellSize, float updateFrequency)
         {
-            _hideDistancePadding = hidePadding;
             _cellSearchDistance = searchDistance;
             _cellSize = cellSize;
             _updateFrequency = updateFrequency;
@@ -203,7 +284,7 @@ namespace FishNet.Component.Observing
         public override ObserverCondition Clone()
         {
             HashGridCondition copy = ScriptableObject.CreateInstance<HashGridCondition>();
-            copy.ConditionConstructor(_cellSearchDistance, _hideDistancePadding, _cellSize, _updateFrequency);
+            copy.ConditionConstructor(_cellSearchDistance, _cellSize, _updateFrequency);
             return copy;
         }
     }
