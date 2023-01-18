@@ -759,7 +759,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _spawnablePrefabs
       value: 
-      objectReference: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617,
+      objectReference: {fileID: 11400000, guid: 59fd8e7016be8a840bb2af3e8605d8cf,
         type: 2}
     - target: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}
@@ -952,7 +952,8 @@ MonoBehaviour:
   _scenePathHash: 2281302723
   <SceneId>k__BackingField: 9798120589401593003
   <AssetPathHash>k__BackingField: 0
-  _sceneNetworkObjects: []
+  _sceneNetworkObjects:
+  - {fileID: 1560902880}
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   _networkBehaviours:
@@ -962,6 +963,7 @@ MonoBehaviour:
   _isNetworked: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _predictedSpawningType: 0
   _defaultDespawnType: 0
 --- !u!135 &1560902881
 SphereCollider:
