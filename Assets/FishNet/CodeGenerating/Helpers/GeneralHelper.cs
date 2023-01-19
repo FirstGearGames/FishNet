@@ -483,7 +483,7 @@ namespace FishNet.CodeGenerating.Helping
             insts.Add(processor.Create(OpCodes.Ldfld, dataFd));
             insts.Add(processor.Create(OpCodes.Ldc_I4_0));
             insts.Add(processor.Create(OpCodes.Ldloc, countVd));
-            insts.Add(processor.Create(OpCodes.Callvirt, lstDataRemoveRangeMr));
+            insts.Add(processor.Create(lstDataRemoveRangeMr.GetCallOpCode(base.Session), lstDataRemoveRangeMr));
 
             return insts;
         }

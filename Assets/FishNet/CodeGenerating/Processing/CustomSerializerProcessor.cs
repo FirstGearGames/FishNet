@@ -25,7 +25,7 @@ namespace FishNet.CodeGenerating.Processing
         private int _count = 0;
         internal bool CreateSerializerDelegates(TypeDefinition typeDef, bool replace)
         {
-            bool modified = false;            
+            bool modified = false;
             /* Find all declared methods and register delegates to them.
              * After they are all registered create any custom writers
              * needed to complete the declared methods. It's important to
@@ -46,7 +46,7 @@ namespace FishNet.CodeGenerating.Processing
                     modified = true;
                 }
                 else if (extensionType == ExtensionType.Read)
-                { 
+                {
                     base.GetClass<ReaderProcessor>().AddReaderMethod(methodRef.ReturnType, methodRef, false, !replace);
                     modified = true;
                 }
@@ -76,7 +76,7 @@ namespace FishNet.CodeGenerating.Processing
                     continue;
                 if (base.GetClass<GeneralHelper>().CodegenExclude(methodDef))
                     continue;
-                 
+
                 declaredMethods.Add((methodDef, extensionType));
                 modified = true;
             }
@@ -211,7 +211,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     createdMethodRef = (extensionType == ExtensionType.Write) ?
                         base.GetClass<WriterProcessor>().CreateWriter(parameterType) :
-                        base.GetClass<ReaderGenerator>().CreateReader(parameterType);
+                        base.GetClass<ReaderProcessor>().CreateReader(parameterType);
                 }
 
                 //If method was created.
@@ -261,8 +261,7 @@ namespace FishNet.CodeGenerating.Processing
 #endif
 
 
-            string prefix = (write) ?
-                WriterProcessor.WRITE_PREFIX : ReaderProcessor.READ_PREFIX;
+            string prefix = (write) ? WriterProcessor.WRITE_PREFIX : ReaderProcessor.READ_PREFIX;
 
             //Does not contain prefix.
             if (methodDef.Name.Length < prefix.Length || methodDef.Name.Substring(0, prefix.Length) != prefix)

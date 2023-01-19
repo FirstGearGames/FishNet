@@ -28,7 +28,6 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 9117857247562382215}
   m_RootOrder: 0
@@ -52,12 +51,10 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -82,7 +79,6 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &9117857247562382221
 GameObject:
   m_ObjectHideFlags: 0
@@ -115,7 +111,6 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8274935638305073705}
   m_Father: {fileID: 0}
@@ -147,24 +142,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  NetworkObserver: {fileID: 0}
+  <PrefabId>k__BackingField: -1
+  <SpawnableCollectionId>k__BackingField: 0
+  _scenePathHash: 0
+  <SceneId>k__BackingField: 0
+  <AssetPathHash>k__BackingField: 14762131302109388384
+  _sceneNetworkObjects: []
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
-  _networkBehaviours:
-  - {fileID: 9144896207351220584}
-  - {fileID: 4742920392281400910}
-  - {fileID: -947403508163804576}
+  _networkBehaviours: []
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
   _isGlobal: 0
+  _initializeOrder: 0
+  _predictedSpawningType: 0
   _defaultDespawnType: 0
-  NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 36
-  _scenePathHash: 0
-  <SceneId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 14762131302109388384
-  _sceneNetworkObjects:
-  - {fileID: 9117857247562382210}
 --- !u!114 &9144896207351220584
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -177,9 +171,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bb7bd88fd11b5d4aa7fca3d42172ab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 9117857247562382210}
-  _networkObjectCache: {fileID: 9117857247562382210}
+  _networkObjectCache: {fileID: 0}
   _moveRate: 5
 --- !u!143 &9144896207351220583
 CharacterController:
@@ -211,21 +205,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 1
-  _addedNetworkObject: {fileID: 9117857247562382210}
-  _networkObjectCache: {fileID: 9117857247562382210}
-  _graphicalObject: {fileID: 8274935638305073705}
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 0}
+  _networkObjectCache: {fileID: 0}
+  _graphicalObject: {fileID: 0}
   _enableTeleport: 0
   _teleportThreshold: 1
   _ownerInterpolation: 1
   _predictionType: 0
   _rigidbody: {fileID: 0}
   _rigidbody2d: {fileID: 0}
+  _spectatorSmoothPosition: 1
+  _spectatorSmoothRotation: 1
   _spectatorSmoothingDuration: 0.025
   _spectatorInterpolation: 1
   _overflowMultiplier: 0.1
-  _networkTransform: {fileID: -947403508163804576}
   _maintainedVelocity: 0
+  _resendType: 0
+  _resendInterval: 30
+  _networkTransform: {fileID: 0}
 --- !u!114 &-947403508163804576
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -238,9 +236,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 2
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 9117857247562382210}
-  _networkObjectCache: {fileID: 9117857247562382210}
+  _networkObjectCache: {fileID: 0}
   _synchronizeParent: 0
   _packing:
     Position: 1
@@ -250,8 +248,8 @@ MonoBehaviour:
   _extrapolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  _clientAuthoritative: 0
-  _sendToOwner: 0
+  _clientAuthoritative: 1
+  _sendToOwner: 1
   _interval: 1
   _synchronizePosition: 1
   _positionSnapping:

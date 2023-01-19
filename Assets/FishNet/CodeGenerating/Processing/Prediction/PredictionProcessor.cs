@@ -725,13 +725,13 @@ namespace FishNet.CodeGenerating.Processing
             //Clear on server replicates.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateDatas);
-            processor.Emit(OpCodes.Callvirt, queueClearMr);
+            processor.Emit(queueClearMr.GetCallOpCode(base.Session), queueClearMr);
             processor.Emit(OpCodes.Br_S, resetTicksInst);
             processor.Append(afterAsServerInst);
             //Clear on client replicates.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ClientReplicateDatas);
-            processor.Emit(OpCodes.Callvirt, lstClearMr);
+            processor.Emit(lstClearMr.GetCallOpCode(base.Session), lstClearMr);
 
             processor.Append(resetTicksInst);
             processor.Emit(OpCodes.Ret);

@@ -479,11 +479,11 @@ namespace FishNet.CodeGenerating.Processing
                     NETWORKINITIALIZE_LATE_INTERNAL_NAME;
 
                 TypeDefinition td = amd.AwakeMethodDef.DeclaringType;
-                MethodReference initializeMr = td.GetMethodReference(base.Session, methodName);
+                MethodReference networkInitMr = td.GetMethodReference(base.Session, methodName);
 
                 ILProcessor processor = amd.AwakeMethodDef.Body.GetILProcessor();
                 processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(OpCodes.Callvirt, initializeMr);
+                processor.Emit(networkInitMr.GetCallOpCode(base.Session), networkInitMr);
             }
         }
 
@@ -534,9 +534,9 @@ namespace FishNet.CodeGenerating.Processing
 
             void CallMethod(string name)
             {
-                MethodReference mr = networkInitializeIfDisabledMd.DeclaringType.GetMethodReference(base.Session, name);
+                MethodReference initIfDisabledMr = networkInitializeIfDisabledMd.DeclaringType.GetMethodReference(base.Session, name);
                 processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(OpCodes.Callvirt, mr);
+                processor.Emit(initIfDisabledMr.GetCallOpCode(base.Session), initIfDisabledMr);
             }
         }
 

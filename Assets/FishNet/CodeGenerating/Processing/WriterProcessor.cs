@@ -62,6 +62,10 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         internal const string WRITE_PREFIX = "Write";
         /// <summary>
+        /// Prefix all built-in and user created write methods should begin with.
+        /// </summary>
+        internal const string GENERATED_WRITE_PREFIX = "Write___";
+        /// <summary>
         /// Types to exclude from being scanned for auto serialization.
         /// </summary>
         public static readonly System.Type[] EXCLUDED_AUTO_SERIALIZER_TYPES = new System.Type[]
@@ -196,20 +200,20 @@ namespace FishNet.CodeGenerating.Helping
             //List<MethodReference> staticReaders = new List<MethodReference>();
             foreach (KeyValuePair<string, MethodReference> item in InstancedWriterMethods)
             {
-                MethodReference itemMr = item.Value;
-                if (itemMr.HasGenericParameters)
+                MethodReference instancedWriteMr = item.Value;
+                if (instancedWriteMr.HasGenericParameters)
                     continue;
                 
-                TypeReference valueTr = itemMr.Parameters[0].ParameterType;
+                TypeReference valueTr = instancedWriteMr.Parameters[0].ParameterType;
 
-                MethodDefinition md = new MethodDefinition($"InstancedExtension___{itemMr.Name}",
+                MethodDefinition md = new MethodDefinition($"InstancedExtension___{instancedWriteMr.Name}",
                     WriterProcessor.GENERATED_METHOD_ATTRIBUTES,
                     base.Module.TypeSystem.Void);
 
                 //Add extension parameter.
                 ParameterDefinition writerPd = gh.CreateParameter(md, typeof(Writer), "writer");
                 //Add parameters needed by instanced writer.
-                List<ParameterDefinition> otherPds = md.CreateParameters(base.Session, itemMr);
+                List<ParameterDefinition> otherPds = md.CreateParameters(base.Session, instancedWriteMr);
                 gh.MakeExtensionMethod(md);
                 //
                 gwh.GeneratedWriterClassTypeDef.Methods.Add(md);
@@ -221,7 +225,7 @@ namespace FishNet.CodeGenerating.Helping
                 foreach (ParameterDefinition pd in otherPds)
                     processor.Emit(OpCodes.Ldarg, pd);
                 //Call instanced.
-                processor.Emit(OpCodes.Callvirt, itemMr);
+                processor.Emit(instancedWriteMr.GetCallOpCode(base.Session), instancedWriteMr);
                 processor.Emit(OpCodes.Ret);
                 AddWriterMethod(valueTr, md, false, true);
             }
@@ -510,7 +514,7 @@ namespace FishNet.CodeGenerating.Helping
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             insts.Add(processor.Create(OpCodes.Ldloc, writerDefinition));
-            insts.Add(processor.Create(OpCodes.Callvirt, wi.PooledWriter_Dispose_MethodRef));
+            insts.Add(processor.Create(wi.PooledWriter_Dispose_MethodRef.GetCallOpCode(base.Session), wi.PooledWriter_Dispose_MethodRef));
 
             return insts;
         }
@@ -554,7 +558,7 @@ namespace FishNet.CodeGenerating.Helping
             //Writer.WritePackedWhole(value).
             processor.Emit(OpCodes.Ldloc, intVariableDef);
             processor.Emit(OpCodes.Conv_U8);
-            processor.Emit(OpCodes.Callvirt, wi.Writer_WritePackedWhole_MethodRef);
+            processor.Emit(wi.Writer_WritePackedWhole_MethodRef.GetCallOpCode(base.Session), wi.Writer_WritePackedWhole_MethodRef);
         }
         /// <summary>
         /// Creates a call to WritePackWhole with value.
@@ -570,7 +574,7 @@ namespace FishNet.CodeGenerating.Helping
             //Writer.WritePackedWhole(value).
             processor.Emit(OpCodes.Ldloc, value);
             processor.Emit(OpCodes.Conv_U8);
-            processor.Emit(OpCodes.Callvirt, wi.Writer_WritePackedWhole_MethodRef);
+            processor.Emit(wi.Writer_WritePackedWhole_MethodRef.GetCallOpCode(base.Session), wi.Writer_WritePackedWhole_MethodRef);
         }
         #endregion
 
@@ -586,7 +590,7 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Ldarg, writerParameterDef);
             int intValue = (value) ? 1 : 0;
             processor.Emit(OpCodes.Ldc_I4, intValue);
-            processor.Emit(OpCodes.Callvirt, writeBoolMethodRef);
+            processor.Emit(writeBoolMethodRef.GetCallOpCode(base.Session), writeBoolMethodRef);
         }
 
         /// <summary>
@@ -700,12 +704,22 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="propertyDef"></param>
         internal void CreateWrite(MethodDefinition writerMd, ParameterDefinition valuePd, MethodReference getMr, MethodReference writeMr)
         {
-            TypeReference returnTr = getMr.ReturnType;
+            TypeReference returnTr = base.ImportReference(getMr.ReturnType);
 
             if (writeMr != null)
             {
                 ILProcessor processor = writerMd.Body.GetILProcessor();
                 ParameterDefinition writerPd = writerMd.Parameters[0];
+
+                /* If generic then find write class for
+                * data type. Currently we only support one generic
+                * for this. */
+                if (returnTr.IsGenericInstance)
+                {
+                    GenericInstanceType git = (GenericInstanceType)returnTr;
+                    TypeReference genericTr = git.GenericArguments[0];
+                    writeMr = writeMr.GetMethodReference(base.Session, genericTr);
+                }
 
                 processor.Emit(OpCodes.Ldarg, writerPd);
                 OpCode ldArgOC0 = (valuePd.ParameterType.IsValueType) ? OpCodes.Ldarga : OpCodes.Ldarg;
@@ -934,7 +948,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="objectTr"></param>
         /// <param name="processor"></param>
         /// <returns>false if fail</returns>
-        private bool WriteFieldsAndProperties(MethodDefinition writerMd, ParameterDefinition valuePd, TypeReference objectTr)
+        private bool WriteFieldsAndProperties(MethodDefinition generatedWriteMd, ParameterDefinition valuePd, TypeReference objectTr)
         {
             WriterProcessor wh = base.GetClass<WriterProcessor>();
 
@@ -956,7 +970,7 @@ namespace FishNet.CodeGenerating.Helping
                     tr = fieldDef.FieldType;
                 }
                 if (GetWriteMethod(fieldDef.FieldType, out MethodReference writeMr))
-                    wh.CreateWrite(writerMd, valuePd, fieldDef, writeMr);
+                    wh.CreateWrite(generatedWriteMd, valuePd, fieldDef, writeMr);
             }
 
             //Properties.
@@ -966,7 +980,7 @@ namespace FishNet.CodeGenerating.Helping
                 if (GetWriteMethod(propertyDef.PropertyType, out MethodReference writerMr))
                 {
                     MethodReference getMr = base.Module.ImportReference(propertyDef.GetMethod);
-                    wh.CreateWrite(writerMd, valuePd, getMr, writerMr);
+                    wh.CreateWrite(generatedWriteMd, valuePd, getMr, writerMr);
                 }
             }
 
@@ -1113,13 +1127,13 @@ namespace FishNet.CodeGenerating.Helping
             AddToStaticWriters(objectTr, createdWriterMd);
 
             ILProcessor processor = createdWriterMd.Body.GetILProcessor();
-            GenericInstanceMethod genericInstanceMethod = base.GetClass<WriterImports>().Writer_WriteDictionary_MethodRef.MakeGenericMethod(new TypeReference[] { keyTr, valueTr });
+            GenericInstanceMethod writeDictGim = base.GetClass<WriterImports>().Writer_WriteDictionary_MethodRef.MakeGenericMethod(new TypeReference[] { keyTr, valueTr });
 
             ParameterDefinition writerPd = createdWriterMd.Parameters[0];
             ParameterDefinition valuePd = createdWriterMd.Parameters[1];
             processor.Emit(OpCodes.Ldarg, writerPd);
             processor.Emit(OpCodes.Ldarg, valuePd);
-            processor.Emit(OpCodes.Callvirt, genericInstanceMethod);
+            processor.Emit(writeDictGim.GetCallOpCode(base.Session), writeDictGim);
             processor.Emit(OpCodes.Ret);
 
             return base.ImportReference(createdWriterMd);
@@ -1179,7 +1193,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         public MethodDefinition CreateStaticWriterStubMethodDefinition(TypeReference objectTypeRef, string nameExtension = WriterProcessor.GENERATED_WRITER_NAMESPACE)
         {
-            string methodName = $"{WRITE_PREFIX}{objectTypeRef.FullName}{nameExtension}";
+            string methodName = $"{GENERATED_WRITE_PREFIX}{objectTypeRef.FullName}{nameExtension}";
             // create new writer for this type
             TypeDefinition writerTypeDef = base.GetClass<GeneralHelper>().GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_WRITERS_CLASS_NAME, null);
 

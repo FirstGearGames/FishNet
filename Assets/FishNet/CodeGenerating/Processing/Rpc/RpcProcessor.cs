@@ -127,7 +127,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 //If at least one attribute was found and all rpc methods were made.   
                 if (createdRpcs.Count > 0 && success)
                     RedirectOriginalToWriter(createdRpcs);
-
             }
 
             if (modified)
@@ -564,7 +563,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 ParameterDefinition ncPd = createdMd.Parameters[createdMd.Parameters.Count - 1];
                 Instruction afterConnectionRet = processor.Create(OpCodes.Nop);
                 processor.Emit(OpCodes.Ldarg, ncPd);
-                processor.Emit(OpCodes.Callvirt, base.GetClass<ObjectHelper>().NetworkConnection_GetIsLocalClient_MethodRef);
+                MethodReference isLocalClientMr = base.GetClass<ObjectHelper>().NetworkConnection_GetIsLocalClient_MethodRef;
+                processor.Emit(isLocalClientMr.GetCallOpCode(base.Session), isLocalClientMr);
                 processor.Emit(OpCodes.Brfalse_S, afterConnectionRet);
                 processor.Emit(OpCodes.Ret);
                 processor.Append(afterConnectionRet);

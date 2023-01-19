@@ -65,11 +65,15 @@ namespace FishNet.CodeGenerating
                     new ReaderImports(), new ReaderProcessor()
                     ,new WriterImports(), new WriterProcessor()
                     , new PhysicsHelper(), new TimeManagerHelper(), new AttributeHelper(), new GeneralHelper()
-                    , new ObjectHelper(), new NetworkBehaviourHelper(), new ReaderGenerator()
+                    , new ObjectHelper(), new NetworkBehaviourHelper()
                     , new CreatedSyncVarGenerator(), new TransportHelper()
                     , new NetworkConnectionHelper(), new PredictedObjectHelper(), new GeneratorHelper()
-                    , new CustomSerializerProcessor(), new NetworkBehaviourProcessor(), new QolAttributeProcessor()
-                    , new RpcProcessor(), new NetworkBehaviourSyncProcessor(), new PredictionProcessor()
+                    , new CustomSerializerProcessor()
+                    , new NetworkBehaviourProcessor()
+                    , new QolAttributeProcessor()
+                    , new RpcProcessor()
+                    , new NetworkBehaviourSyncProcessor()
+                    , new PredictionProcessor()
                 };
 
             //Add all to dictionary first, then import.

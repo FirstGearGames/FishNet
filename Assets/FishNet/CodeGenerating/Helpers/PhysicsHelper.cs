@@ -1,4 +1,5 @@
-﻿using FishNet.CodeGenerating.Helping.Extension;
+﻿using FishNet.CodeGenerating.Extension;
+using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Connection;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
@@ -104,7 +105,7 @@ namespace FishNet.CodeGenerating.Helping
 
             //gameObject.scene.GetPhysics...
             insts.Add(processor.Create(OpCodes.Ldloc, gameObjectVd));
-            insts.Add(processor.Create(OpCodes.Callvirt, GetScene_MethodRef));
+            insts.Add(processor.Create(GetScene_MethodRef.GetCallOpCode(base.Session), GetScene_MethodRef));
             if (threeDimensional)
                 insts.Add(processor.Create(OpCodes.Call, GetPhysicsScene3D_MethodRef));
             else

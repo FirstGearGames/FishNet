@@ -11,6 +11,24 @@ namespace FishNet.CodeGenerating.Extension
     internal static class MethodDefinitionExtensions
     {
         /// <summary>
+        /// Returns the proper OpCode to use for call methods.
+        /// </summary>
+        public static MonoFN.Cecil.Cil.OpCode GetCallOpCode(this MethodDefinition md)
+        {
+            if (md.Attributes.HasFlag(MethodAttributes.Virtual))
+                return MonoFN.Cecil.Cil.OpCodes.Callvirt;
+            else
+                return MonoFN.Cecil.Cil.OpCodes.Call;
+        }
+        /// <summary>
+        /// Returns the proper OpCode to use for call methods.
+        /// </summary>
+        public static MonoFN.Cecil.Cil.OpCode GetCallOpCode(this MethodReference mr, CodegenSession session)
+        {
+            return mr.CachedResolve(session).GetCallOpCode();
+        }
+
+        /// <summary>
         /// Adds otherMd parameters to thisMR and returns added parameters.
         /// </summary>
         public static List<ParameterDefinition> CreateParameters(this MethodReference thisMr, CodegenSession session, MethodDefinition otherMd)
