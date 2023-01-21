@@ -70,8 +70,8 @@ namespace FishNet.Managing.Server
         /// </summary>
         internal void ReturnRpcLinks(Dictionary<uint, RpcLinkType> links)
         {
-            foreach (ushort linkId in links.Keys)
-                _availableRpcLinkIndexes.Enqueue(linkId);
+            foreach (ushort hash in links.Keys)
+                _availableRpcLinkIndexes.Enqueue(links[hash].LinkIndex);
         }
     }
 
