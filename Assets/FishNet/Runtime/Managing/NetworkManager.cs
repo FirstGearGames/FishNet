@@ -20,7 +20,6 @@ using FishNet.Utility.Extension;
 using FishNet.Managing.Statistic;
 using FishNet.Utility.Performance;
 using FishNet.Component.ColliderRollback;
-using FishNet.Managing.Predicting;
 #if UNITY_EDITOR
 using FishNet.Editing.PrefabCollectionGenerator;
 #endif
@@ -121,10 +120,6 @@ namespace FishNet.Managing
         /// True if client nor server are active.
         /// </summary>
         public bool IsOffline => (!IsServer && !IsClient);
-        /// <summary>
-        /// PredictionManager for this NetworkManager.
-        /// </summary>
-        internal PredictionManager PredictionManager { get; private set; }
         /// <summary>
         /// ServerManager for this NetworkManager.
         /// </summary>
@@ -268,8 +263,6 @@ namespace FishNet.Managing
                 LogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
 
             SpawnablePrefabs.InitializePrefabRange(0);
-            SpawnablePrefabs.SetCollectionId(0);
-
             SetDontDestroyOnLoad();
             SetRunInBackground();
             DebugManager = GetOrCreateComponent<DebugManager>();
@@ -281,7 +274,6 @@ namespace FishNet.Managing
             SceneManager = GetOrCreateComponent<SceneManager>();
             ObserverManager = GetOrCreateComponent<ObserverManager>();
             RollbackManager = GetOrCreateComponent<RollbackManager>();
-            PredictionManager = GetOrCreateComponent<PredictionManager>();
             StatisticsManager = GetOrCreateComponent<StatisticsManager>();
             if (_objectPool == null)
                 _objectPool = GetOrCreateComponent<DefaultObjectPool>();
@@ -307,16 +299,15 @@ namespace FishNet.Managing
         /// </summary>
         private void InitializeComponents()
         {
-            TimeManager.InitializeOnce_Internal(this);
+            TimeManager.InitializeOnceInternal(this);
             TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
-            SceneManager.InitializeOnce_Internal(this);
-            TransportManager.InitializeOnce_Internal(this);
-            ServerManager.InitializeOnce_Internal(this);
-            ClientManager.InitializeOnce_Internal(this);
-            ObserverManager.InitializeOnce_Internal(this);
-            RollbackManager.InitializeOnce_Internal(this);
-            PredictionManager.InitializeOnce_Internal(this);
-            StatisticsManager.InitializeOnce_Internal(this);
+            SceneManager.InitializeOnceInternal(this);
+            TransportManager.InitializeOnceInternal(this);
+            ServerManager.InitializeOnceInternal(this);
+            ClientManager.InitializeOnceInternal(this);
+            ObserverManager.InitializeOnceInternal(this);
+            RollbackManager.InitializeOnceInternal(this);
+            StatisticsManager.InitializeOnceInternal(this);
             _objectPool.InitializeOnce(this);
         }
 

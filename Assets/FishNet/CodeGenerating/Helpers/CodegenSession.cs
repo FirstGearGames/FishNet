@@ -60,37 +60,31 @@ namespace FishNet.CodeGenerating
             Module = module;
             Diagnostics = new List<DiagnosticMessage>();
 
-            _bases = new List<CodegenBase>()
+            //FishNet.Runtime does not need to do any of this.
+            if (!FishNetILPP.IsFishNetAssembly(module))
+            {
+                _bases = new List<CodegenBase>()
                 {
-                    new ReaderImports(), new ReaderProcessor()
-                    ,new WriterImports(), new WriterProcessor()
-                    , new PhysicsHelper(), new TimeManagerHelper(), new AttributeHelper(), new GeneralHelper()
-                    , new ObjectHelper(), new NetworkBehaviourHelper()
-                    , new CreatedSyncVarGenerator(), new TransportHelper()
-                    , new NetworkConnectionHelper(), new PredictedObjectHelper(), new GeneratorHelper()
-                    , new CustomSerializerProcessor()
-                    , new NetworkBehaviourProcessor()
-                    , new QolAttributeProcessor()
-                    , new RpcProcessor()
-                    , new NetworkBehaviourSyncProcessor()
-                    , new PredictionProcessor()
+                    new TimeManagerHelper(), new AttributeHelper(), new GeneralHelper(), new GenericReaderHelper()
+                    , new GenericWriterHelper(), new ObjectHelper(), new NetworkBehaviourHelper(), new ReaderGenerator()
+                    , new ReaderHelper(), new CreatedSyncVarGenerator(), new TransportHelper(), new WriterGenerator()
+                    , new WriterHelper(), new NetworkConnectionHelper(), new PredictedObjectHelper(), new GeneratorHelper()    
+                    , new CustomSerializerProcessor(), new NetworkBehaviourProcessor(), new QolAttributeProcessor()
+                    , new RpcProcessor(), new NetworkBehaviourSyncProcessor(), new NetworkBehaviourPredictionProcessor()
                 };
 
-            //Add all to dictionary first, then import.
-            foreach (CodegenBase item in _bases)
-            {
-                string tName = item.GetType().Name;
-                _basesCache.Add(tName, item);
-            }
+                //Initialize and cache all bases.
+                foreach (CodegenBase item in _bases)
+                {
+                    item.Initialize(this);
+                    if (!item.ImportReferences())
+                        return false;
 
-            //Initialize.
-            foreach (CodegenBase item in _bases)
-            {
-                item.Initialize(this);
-                if (!item.ImportReferences())
-                    return false;
+                    string tName = item.GetType().Name;
+                    _basesCache.Add(tName, item);
+                }
             }
-
+ 
             return true;
         }
 

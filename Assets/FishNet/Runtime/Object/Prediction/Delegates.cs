@@ -1,7 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Serializing;
-using FishNet.Transporting;
 using FishNet.Utility.Constant;
 using System.Runtime.CompilerServices;
 
@@ -9,12 +8,8 @@ using System.Runtime.CompilerServices;
 namespace FishNet.Object.Prediction.Delegating
 {
     [APIExclude]
-    public delegate void ReplicateRpcDelegate(PooledReader reader, NetworkConnection sender, Channel channel);
+    public delegate void ReplicateRpcDelegate(PooledReader reader, NetworkConnection sender);
     [APIExclude]
-    public delegate void ReconcileRpcDelegate(PooledReader reader, Channel channel);
+    public delegate void ReconcileRpcDelegate(PooledReader reader);
 
-    [APIExclude]
-    public delegate void ReplicateUserLogicDelegate<T>(T data, bool asServer, Channel channel, bool replaying);
-    [APIExclude]
-    public delegate void ReconcileUserLogicDelegate<T>(T data, bool asServer, Channel channel);
 }

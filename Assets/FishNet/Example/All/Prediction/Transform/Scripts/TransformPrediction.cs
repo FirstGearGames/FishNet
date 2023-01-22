@@ -1,8 +1,6 @@
-﻿using FishNet.Object;
+﻿using FishNet;
+using FishNet.Object;
 using FishNet.Object.Prediction;
-using FishNet.Transporting;
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Example.Prediction.Transforms
@@ -16,36 +14,16 @@ namespace FishNet.Example.Prediction.Transforms
         /// The structure type may be named anything. Classes can also be used but will generate garbage, so structures
         /// are recommended.
         /// </summary>
-        public struct TestStruct 
+        public struct MoveData
         {
-            public int Two;
-        }
-        public class TestClass 
-        {
-            public int One;
-        }
-        public struct MoveData : IReplicateData
-        {
-            public Vector2 Movement;
-            //public TestStruct _testStruct;
-            //public TestClass _testClass;
             public float Horizontal;
             public float Vertical;
-            private uint _tick;
 
             public MoveData(float horizontal, float vertical)
             {
-                Movement = new Vector2(horizontal, vertical);
                 Horizontal = horizontal;
                 Vertical = vertical;
-                _tick = 0;
-                //_testStruct = default;
-                //_testClass = null;
             }
-
-            public void Dispose() { }
-            public uint GetTick() => _tick;
-            public void SetTick(uint value) => _tick = value;
         }
 
         /// <summary>
@@ -57,22 +35,15 @@ namespace FishNet.Example.Prediction.Transforms
         /// an asset it's important to know what systems in that asset affect movement and need
         /// to be reset as well.
         /// </summary>
-        public struct ReconcileData : IReconcileData
+        public struct ReconcileData
         {
             public Vector3 Position;
             public Quaternion Rotation;
-            private uint _tick;
-
             public ReconcileData(Vector3 position, Quaternion rotation)
             {
                 Position = position;
                 Rotation = rotation;
-                _tick = 0;
             }
-
-            public void Dispose() { }
-            public uint GetTick() => _tick;
-            public void SetTick(uint value) => _tick = value;
         }
 
         #region Serialized.
@@ -164,7 +135,11 @@ namespace FishNet.Example.Prediction.Transforms
                 return;
 
             //Make movedata with input.
-            md = new MoveData(horizontal, vertical);
+            md = new MoveData()
+            {
+                Horizontal = horizontal,
+                Vertical = vertical
+            };
         }
 
         /// <summary>
@@ -176,7 +151,7 @@ namespace FishNet.Example.Prediction.Transforms
         /// do so when replaying is false.
         /// </summary>
         [Replicate]
-        private void Move(MoveData md, bool asServer, Channel channel = Channel.Unreliable, bool replaying = false)
+        private void Move(MoveData md, bool asServer, bool replaying = false)
         {
             /* You can check if being run as server to
              * add security checks such as normalizing
@@ -209,7 +184,7 @@ namespace FishNet.Example.Prediction.Transforms
         /// you supply then replay their inputs.
         /// </summary>
         [Reconcile]
-        private void Reconciliation(ReconcileData rd, bool asServer, Channel channel = Channel.Unreliable)
+        private void Reconciliation(ReconcileData rd, bool asServer)
         {
             transform.position = rd.Position;
             transform.rotation = rd.Rotation;

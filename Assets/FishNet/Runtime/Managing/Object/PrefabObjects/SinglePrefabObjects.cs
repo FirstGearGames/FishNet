@@ -1,4 +1,5 @@
 using FishNet.Documenting;
+using FishNet.Managing.Logging;
 using FishNet.Object;
 using System.Collections.Generic;
 using System.Linq;
@@ -104,7 +105,7 @@ namespace FishNet.Managing.Object
         public override void InitializePrefabRange(int startIndex)
         {
             for (int i = startIndex; i < _prefabs.Count; i++)
-                ManagedObjects.InitializePrefab(_prefabs[i], (short)i, CollectionId);
+                ManagedObjects.InitializePrefab(_prefabs[i], i);
         }
 
 

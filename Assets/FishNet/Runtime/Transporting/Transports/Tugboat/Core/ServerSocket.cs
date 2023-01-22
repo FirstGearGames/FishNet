@@ -494,14 +494,5 @@ namespace FishNet.Transporting.Tugboat.Server
         {
             return _maximumClients;
         }
-
-        /// <summary>
-        /// Sets the MaximumClients value.
-        /// </summary>
-        /// <param name="value"></param>
-        internal void SetMaximumClients(int value)
-        {
-            _maximumClients = value;
-        }
     }
 }

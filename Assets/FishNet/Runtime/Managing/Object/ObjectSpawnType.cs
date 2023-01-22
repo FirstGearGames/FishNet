@@ -1,31 +1,12 @@
-﻿using FishNet.Documenting;
-
-namespace FishNet.Managing.Object
+﻿namespace FishNet.Managing.Object
 {
     internal enum SpawnType : byte
     {
         Unset = 0,
-        Nested = 1,
-        Scene = 2,
-        Instantiated = 4,
-        InstantiatedGlobal = 8,
+        Scene = 1,
+        Instantiated = 2,
+        InstantiatedGlobal = 3,
     }
-
-    [APIExclude]
-    internal static partial class SpawnTypeEnum
-    {
-        /// <summary>
-        /// Returns if whole contains part.
-        /// </summary>
-        /// <param name="whole"></param>
-        /// <param name="part"></param>
-        /// <returns></returns>
-        public static bool Contains(SpawnType whole, SpawnType part)
-        {
-            return (whole & part) == part;
-        }
-    }
-
 
 
 }

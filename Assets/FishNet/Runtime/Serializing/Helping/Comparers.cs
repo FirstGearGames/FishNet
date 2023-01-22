@@ -1,22 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Serializing.Helping
 {
-
-    public class GeneratedComparer<T>
-    {
-        /// <summary>
-        /// Compare if T is default.
-        /// </summary>
-        public static Func<T, bool> IsDefault { internal get; set; }
-        /// <summary>
-        /// Compare if T is the same as T2.
-        /// </summary>
-        public static Func<T, T, bool> Compare { internal get; set; }
-    }
-
 
     public class Comparers
     {
@@ -29,7 +15,7 @@ namespace FishNet.Serializing.Helping
         /// <returns></returns>
         public static bool EqualityCompare<T>(T a, T b)
         {
-            return EqualityComparer<T>.Default.Equals(a, b);
+            return (EqualityComparer<T>.Default.Equals(a, b));
         }
 
         public static bool IsDefault<T>(T t)
@@ -37,10 +23,6 @@ namespace FishNet.Serializing.Helping
             return t.Equals(default(T));
         }
 
-        public static bool IsEqualityCompareDefault<T>(T a)
-        {
-            return EqualityComparer<T>.Default.Equals(a, default(T));
-        }
     }
 
 

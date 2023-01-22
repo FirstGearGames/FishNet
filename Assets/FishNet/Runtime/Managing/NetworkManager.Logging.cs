@@ -28,11 +28,11 @@ namespace FishNet.Managing
         private void InitializeLogging()
         {
             if (_logging == null)
-                _logging = ScriptableObject.CreateInstance<LevelLoggingConfiguration>();
+                _logging = ScriptableObject.CreateInstance<LoggingConfiguration>();
             else
                 _logging = _logging.Clone();
 
-            _logging.InitializeOnce();
+            _logging.InitializeOnceInternal();
         }
 
 
@@ -65,7 +65,6 @@ namespace FishNet.Managing
         [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StaticLog(string value) => InstanceFinder.NetworkManager?.Log(value);
-
         /// <summary>
         /// Performs a common log, should logging settings permit it.
         /// </summary>

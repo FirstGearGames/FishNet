@@ -135,7 +135,7 @@ namespace FishNet.CodeGenerating.Processing
                  * user data passed into prediction methods. Because of this
                  * other RPCs should use the modified version and reader/writers
                  * made for prediction. */
-                modified |= base.GetClass<PredictionProcessor>().Process(td, ref rpcCount);
+                modified |= base.GetClass<NetworkBehaviourPredictionProcessor>().Process(td, ref rpcCount);
                 //25ms 
 
                 /* RPCs. */
@@ -479,11 +479,11 @@ namespace FishNet.CodeGenerating.Processing
                     NETWORKINITIALIZE_LATE_INTERNAL_NAME;
 
                 TypeDefinition td = amd.AwakeMethodDef.DeclaringType;
-                MethodReference networkInitMr = td.GetMethodReference(base.Session, methodName);
+                MethodReference initializeMr = td.GetMethodReference(base.Session, methodName);
 
                 ILProcessor processor = amd.AwakeMethodDef.Body.GetILProcessor();
                 processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(networkInitMr.GetCallOpCode(base.Session), networkInitMr);
+                processor.Emit(OpCodes.Callvirt, initializeMr);
             }
         }
 
@@ -534,9 +534,9 @@ namespace FishNet.CodeGenerating.Processing
 
             void CallMethod(string name)
             {
-                MethodReference initIfDisabledMr = networkInitializeIfDisabledMd.DeclaringType.GetMethodReference(base.Session, name);
+                MethodReference mr = networkInitializeIfDisabledMd.DeclaringType.GetMethodReference(base.Session, name);
                 processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(initIfDisabledMr.GetCallOpCode(base.Session), initIfDisabledMr);
+                processor.Emit(OpCodes.Callvirt, mr);
             }
         }
 

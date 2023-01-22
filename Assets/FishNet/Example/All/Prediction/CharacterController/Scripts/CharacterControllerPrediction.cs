@@ -1,7 +1,6 @@
 ﻿using FishNet;
 using FishNet.Object;
 using FishNet.Object.Prediction;
-using FishNet.Transporting;
 using UnityEngine;
 
 /*
@@ -16,17 +15,12 @@ namespace FishNet.Example.Prediction.CharacterControllers
     public class CharacterControllerPrediction : NetworkBehaviour
     {
         #region Types.
-        public struct MoveData : IReplicateData
+        public struct MoveData
         {
             public float Horizontal;
             public float Vertical;
-
-            private uint _tick;
-            public void Dispose() { }
-            public uint GetTick() => _tick;
-            public void SetTick(uint value) => _tick = value;
         }
-        public struct ReconcileData : IReconcileData
+        public struct ReconcileData
         {
             public Vector3 Position;
             public Quaternion Rotation;
@@ -34,13 +28,7 @@ namespace FishNet.Example.Prediction.CharacterControllers
             {
                 Position = position;
                 Rotation = rotation;
-                _tick = 0;
             }
-
-            private uint _tick;
-            public void Dispose() { }
-            public uint GetTick() => _tick;
-            public void SetTick(uint value) => _tick = value;
         }
         #endregion
 
@@ -107,14 +95,14 @@ namespace FishNet.Example.Prediction.CharacterControllers
         }
 
         [Replicate]
-        private void Move(MoveData md, bool asServer, Channel channel = Channel.Unreliable, bool replaying = false)
+        private void Move(MoveData md, bool asServer, bool replaying = false)
         {
             Vector3 move = new Vector3(md.Horizontal, 0f, md.Vertical).normalized + new Vector3(0f, Physics.gravity.y, 0f);
             _characterController.Move(move * _moveRate * (float)base.TimeManager.TickDelta);
         }
 
         [Reconcile]
-        private void Reconciliation(ReconcileData rd, bool asServer, Channel channel = Channel.Unreliable)
+        private void Reconciliation(ReconcileData rd, bool asServer)
         {
             transform.position = rd.Position;
             transform.rotation = rd.Rotation;

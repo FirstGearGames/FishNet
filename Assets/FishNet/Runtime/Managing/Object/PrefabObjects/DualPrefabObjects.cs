@@ -1,4 +1,5 @@
 using FishNet.Documenting;
+using FishNet.Managing.Logging;
 using FishNet.Object;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -110,8 +111,8 @@ namespace FishNet.Managing.Object
         {
             for (int i = startIndex; i < _prefabs.Count; i++)
             {
-                ManagedObjects.InitializePrefab(_prefabs[i].Server, (short)i, CollectionId);
-                ManagedObjects.InitializePrefab(_prefabs[i].Client, (short)i, CollectionId);
+                ManagedObjects.InitializePrefab(_prefabs[i].Server, i);
+                ManagedObjects.InitializePrefab(_prefabs[i].Client, i);
             }
         }
 

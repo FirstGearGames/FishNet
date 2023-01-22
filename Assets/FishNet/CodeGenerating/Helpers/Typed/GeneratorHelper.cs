@@ -1,7 +1,6 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
-using FishNet.Utility.Performance;
 using MonoFN.Cecil;
 using System.Collections.Generic;
 
@@ -22,7 +21,7 @@ namespace FishNet.CodeGenerating.Helping
             /* Check if already has a serializer. */
             if (writer)
             {
-                if (base.GetClass<WriterProcessor>().GetWriteMethodReference(objectTr) != null)
+                if (base.GetClass<WriterHelper>().GetFavoredWriteMethodReference(objectTr, true) != null)
                 {
                     base.LogError($"Writer already exist for {objectTr.FullName}.");
                     return SerializerType.Invalid;
@@ -30,7 +29,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                if (base.GetClass<ReaderProcessor>().GetReadMethodReference(objectTr) != null)
+                if (base.GetClass<ReaderHelper>().GetFavoredReadMethodReference(objectTr, true) != null)
                 {
                     base.LogError($"Reader already exist for {objectTr.FullName}.");
                     return SerializerType.Invalid;
@@ -87,10 +86,6 @@ namespace FishNet.CodeGenerating.Helping
             {
                 return SerializerType.List;
             }
-            else if (objectTd.Is(typeof(ListCache<>)))
-            {
-                return SerializerType.ListCache;
-            }
             else if (objectTd.InheritsFrom<NetworkBehaviour>(base.Session))
             {
                 return SerializerType.NetworkBehaviour;
@@ -104,7 +99,7 @@ namespace FishNet.CodeGenerating.Helping
                     return SerializerType.Nullable;
             }
             //Invalid type. This must be called after trying to generate everything but class.
-            else if (!CanGenerateSerializer(objectTd))
+            else if (!IsValidSerializeType(objectTd))
             {
                 return SerializerType.Invalid;
             }
@@ -123,9 +118,9 @@ namespace FishNet.CodeGenerating.Helping
 
 
         /// <summary>
-        /// Returns if objectTd can have a serializer generated for it.
+        /// Returns if objectTypeRef is an invalid type, which cannot be serialized.
         /// </summary>
-        private bool CanGenerateSerializer(TypeDefinition objectTd)
+        private bool IsValidSerializeType(TypeDefinition objectTd) //todo rename. applies only to types which do not have a user made or included serializer.
         {
             string errorText = $"{objectTd.Name} is not a supported type. Use a supported type or provide a custom serializer";
 

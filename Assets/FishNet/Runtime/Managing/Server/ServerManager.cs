@@ -59,6 +59,12 @@ namespace FishNet.Managing.Server
 
         #region Serialized.
         /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Authenticator for this ServerManager. May be null if not using authentication.")]
+        [SerializeField]
+        private Authenticator _authenticator;
+        /// <summary>
         /// Authenticator for this ServerManager. May be null if not using authentication.
         /// </summary>
         [Obsolete("Use GetAuthenticator and SetAuthenticator.")]
@@ -81,9 +87,6 @@ namespace FishNet.Managing.Server
             _authenticator = value;
             InitializeAuthenticator();
         }
-        [Tooltip("Authenticator for this ServerManager. May be null if not using authentication.")]
-        [SerializeField]
-        private Authenticator _authenticator;
         /// <summary>
         /// How to pack object spawns.
         /// </summary>
@@ -102,46 +105,42 @@ namespace FishNet.Managing.Server
         [SerializeField]
         private bool _changeFrameRate = true;
         /// <summary>
-        /// Maximum frame rate the server may run at. When as host this value runs at whichever is higher between client and server.
+        ///  
         /// </summary>
-        internal ushort FrameRate => (_changeFrameRate) ? _frameRate : (ushort)0;
         [Tooltip("Maximum frame rate the server may run at. When as host this value runs at whichever is higher between client and server.")]
         [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
         /// <summary>
-        /// True to share the Ids of clients and the objects they own with other clients. No sensitive information is shared.
+        /// Maximum frame rate the server may run at. When as host this value runs at whichever is higher between client and server.
         /// </summary>
-        internal bool ShareIds => _shareIds;
+        internal ushort FrameRate => (_changeFrameRate) ? _frameRate : (ushort)0;
+        /// <summary>
+        /// 
+        /// </summary>
         [Tooltip("True to share the Ids of clients and the objects they own with other clients. No sensitive information is shared.")]
         [SerializeField]
         private bool _shareIds = true;
         /// <summary>
-        /// Gets StartOnHeadless value.
+        /// True to share the Ids of clients and the objects they own with other clients. No sensitive information is shared.
         /// </summary>
-        public bool GetStartOnHeadless() => _startOnHeadless;
+        internal bool ShareIds => _shareIds;
         /// <summary>
-        /// Sets StartOnHeadless value.
+        /// True to automatically start the server connection when running as headless.
         /// </summary>
-        /// <param name="value">New value to use.</param>
-        public void SetStartOnHeadless(bool value) => _startOnHeadless = value;
         [Tooltip("True to automatically start the server connection when running as headless.")]
         [SerializeField]
         private bool _startOnHeadless = true;
         /// <summary>
-        /// True to kick clients which send data larger than the MTU.
+        /// 
         /// </summary>
-        internal bool LimitClientMTU => _limitClientMTU;
         [Tooltip("True to kick clients which send data larger than the MTU.")]
         [SerializeField]
         private bool _limitClientMTU = true;
         /// <summary>
-        /// True to allow clients to use predicted spawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.
+        /// True to kick clients which send data larger than the MTU.
         /// </summary>
-        internal bool GetAllowPredictedSpawning() => _allowPredictedSpawning;
-        [Tooltip("True to allow clients to use predicted spawning and despawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.")]
-        [SerializeField]
-        private bool _allowPredictedSpawning = true;
+        internal bool LimitClientMTU => _limitClientMTU;
         #endregion
 
         #region Private.
@@ -166,7 +165,7 @@ namespace FishNet.Managing.Server
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void InitializeOnce_Internal(NetworkManager manager)
+        internal void InitializeOnceInternal(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ServerObjects(manager);
@@ -204,7 +203,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         internal void StartForHeadless()
         {
-            if (GetStartOnHeadless())
+            if (_startOnHeadless)
             {
                 //Wrapping logic in check instead of everything so _startOnHeadless doesnt warn as unused in editor.
 #if UNITY_SERVER
@@ -404,6 +403,7 @@ namespace FishNet.Managing.Server
                     NetworkManager.Log($"Remote connection started for Id {id}.");
                     NetworkConnection conn = new NetworkConnection(NetworkManager, id, true);
                     Clients.Add(args.ConnectionId, conn);
+
                     OnRemoteConnectionState?.Invoke(conn, args);
                     //Connection is no longer valid. This can occur if the user changes the state using the OnRemoteConnectionState event.
                     if (!conn.IsValid)
@@ -663,7 +663,8 @@ namespace FishNet.Managing.Server
                 if (connected)
                 {
                     //Send already connected clients to the connection that just joined.
-                    ListCache<int> lc = ListCaches.GetIntCache();
+                    ListCache<int> lc = ListCaches.IntCache;
+                    lc.Reset();
                     foreach (int key in Clients.Keys)
                         lc.AddValue(key);
 
@@ -672,7 +673,6 @@ namespace FishNet.Managing.Server
                         ListCache = lc
                     };
                     conn.Broadcast(allMsg);
-                    ListCaches.StoreCache(lc);
                 }
             }
             //If not sharing Ids then only send ConnectionChange to conn.

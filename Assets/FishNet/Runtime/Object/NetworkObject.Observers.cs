@@ -1,4 +1,5 @@
 ﻿using FishNet.Connection;
+using FishNet.Managing.Logging;
 using FishNet.Observing;
 using System;
 using System.Collections.Generic;
@@ -52,7 +53,7 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UpdateRenderers(bool updateVisibility = true)
         {
-            UpdateRenderers_Internal(updateVisibility);
+            UpdateRenderersInternal(updateVisibility);
         }
 
         /// <summary>
@@ -71,7 +72,7 @@ namespace FishNet.Object
 
             if (!_renderersPopulated)
             {
-                UpdateRenderers_Internal(false);
+                UpdateRenderersInternal(false);
                 _renderersPopulated = true;
             }
 
@@ -82,19 +83,9 @@ namespace FishNet.Object
         /// Clears and updates renderers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdateRenderers_Internal(bool updateVisibility)
+        private void UpdateRenderersInternal(bool updateVisibility)
         {
             _renderers = GetComponentsInChildren<Renderer>(true);
-            List<Renderer> enabledRenderers = new List<Renderer>();
-            foreach (Renderer r in _renderers)
-            {
-                if (r.enabled)
-                    enabledRenderers.Add(r);
-            }
-            //If there are any disabled renderers then change _renderers to cached values.
-            if (enabledRenderers.Count != _renderers.Length)
-                _renderers = enabledRenderers.ToArray();
-
             if (updateVisibility)
                 UpdateRenderVisibility(_lastClientHostVisibility);
         }

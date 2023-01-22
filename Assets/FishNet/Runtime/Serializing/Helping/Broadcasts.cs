@@ -1,8 +1,5 @@
-﻿using FishNet.Managing.Scened;
-using FishNet.Managing.Server;
-using FishNet.Object.Helping;
+﻿using FishNet.Object.Helping;
 using FishNet.Transporting;
-using UnityEngine;
 
 namespace FishNet.Serializing.Helping
 {
@@ -28,7 +25,6 @@ namespace FishNet.Serializing.Helping
             writer.WriteLength(dataWriter.Length);
             //Write data.
             writer.WriteArraySegment(dataWriter.GetArraySegment());
-
             dataWriter.Dispose();
 
             return writer;

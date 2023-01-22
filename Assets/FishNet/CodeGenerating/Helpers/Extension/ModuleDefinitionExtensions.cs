@@ -14,12 +14,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        public static TypeDefinition GetClass(this ModuleDefinition moduleDef, string className, string namespaceName = "")
+        public static TypeDefinition GetClass(this ModuleDefinition moduleDef, string className)
         {
-            if (namespaceName.Length == 0)
-                namespaceName = FishNetILPP.RUNTIME_ASSEMBLY_NAME;
-            
-            return moduleDef.GetType(namespaceName, className);
+            return moduleDef.GetType(FishNetILPP.RUNTIME_ASSEMBLY_NAME, className);
         }
 
         public static MethodReference ImportReference(this ModuleDefinition moduleDef, Expression<Action> expression)

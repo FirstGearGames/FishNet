@@ -205,13 +205,9 @@ namespace FishNet.Component.Prediction
 
         #region Private.
         /// <summary>
-        /// True if client subscribed to events.
+        /// True if subscribed to events.
         /// </summary>
-        private bool _clientSubscribed;
-        /// <summary>
-        /// True if this PredictedObject has been registered with the PredictionManager.
-        /// </summary>
-        private bool _registered;
+        private bool _subscribed;
         /// <summary>
         /// GraphicalObject position difference from this object when this is instantiated.
         /// </summary>
@@ -220,6 +216,17 @@ namespace FishNet.Component.Prediction
         /// GraphicalObject rotation difference from this object when this is instantiated.
         /// </summary>
         private Quaternion _graphicalInstantiatedOffsetRotation;
+        /// <summary>
+        /// PredictedObjects that are spawned for each NetworkManager.
+        /// Ideally PredictedObjects will be under the RollbackManager but that requires cross-linking assemblies which isn't possible.
+        /// Until codegen can be made to run on the Runtime folder without breaking user code updates this will have to do.
+        /// </summary>
+        [System.NonSerialized]
+        private static Dictionary<NetworkManager, List<PredictedObject>> _predictedObjects = new Dictionary<NetworkManager, List<PredictedObject>>();
+        /// <summary>
+        /// Current state of this PredictedObject within PredictedObjects collection.
+        /// </summary>
+        private CollectionState _collectionState = CollectionState.Unset;
         /// <summary>
         /// Smoothing component for this object when not owner.
         /// </summary>
@@ -236,13 +243,50 @@ namespace FishNet.Component.Prediction
             SetInstantiatedOffsetValues();
         }
 
+        private void OnEnable()
+        {
+            /* Only subscribe if client. Client may not be set
+             * yet but that's okay because the OnStartClient
+             * callback will catch the subscription. This is here
+             * should the user disable then re-enable the object after
+             * it's initialized. */
+            if (base.IsClient)
+                ChangeSubscriptions(true);
+
+            if (_predictionType != PredictionType.Other)
+                InstantiatedRigidbodyCountInternal++;
+        }
+        private void OnDisable()
+        {
+            //Only unsubscribe if client.
+            if (base.IsClient)
+                ChangeSubscriptions(false);
+
+            if (_predictionType != PredictionType.Other)
+                InstantiatedRigidbodyCountInternal--;
+        }
+
         public override void OnStartNetwork()
         {
             base.OnStartNetwork();
 
-            UpdateRigidbodiesCount(true);
             ConfigureRigidbodies();
             ConfigureNetworkTransform();
+
+            if (base.IsServer)
+            {
+                _collectionState = CollectionState.Added;
+                List<PredictedObject> collection;
+                //Add new list to dictionary collection if needed.
+                if (!_predictedObjects.TryGetValue(base.NetworkManager, out collection))
+                {
+                    collection = new List<PredictedObject>();
+                    _predictedObjects.Add(base.NetworkManager, collection);
+                }
+
+                collection.Add(this);
+            }
+
             base.TimeManager.OnPostTick += TimeManager_OnPostTick;
         }
 
@@ -256,7 +300,6 @@ namespace FishNet.Component.Prediction
         {
             base.OnStartClient();
             ChangeSubscriptions(true);
-            Rigidbodies_OnStartClient();
         }
 
         public override void OnOwnershipClient(NetworkConnection prevOwner)
@@ -284,39 +327,27 @@ namespace FishNet.Component.Prediction
         public override void OnStopNetwork()
         {
             base.OnStopNetwork();
+            if (base.IsServer)
+            {
+                if (_collectionState == CollectionState.Added)
+                {
+                    if (_predictedObjects.TryGetValue(base.NetworkManager, out List<PredictedObject> collection))
+                    {
+                        _collectionState = CollectionState.Removed;
+                        collection.Remove(this);
+                        if (collection.Count == 0)
+                            _predictedObjects.Remove(base.NetworkManager);
+                    }
+                }
+            }
 
-            UpdateRigidbodiesCount(false);
             if (base.TimeManager != null)
                 base.TimeManager.OnPostTick -= TimeManager_OnPostTick;
         }
 
-        /// <summary>
-        /// Updates Rigidbodies count on the PredictionManager.
-        /// </summary>
-        /// <param name="add"></param>
-        private void UpdateRigidbodiesCount(bool add)
+        private void OnDestroy()
         {
-            if (_registered == add)
-                return;
-            if (_predictionType == PredictionType.Other)
-                return;
-
-            NetworkManager nm = base.NetworkManager;
-            if (nm == null)
-                return;
-
-            _registered = add;
-
-            if (add)
-            {
-                nm.PredictionManager.AddRigidbodyCount(this);
-                nm.PredictionManager.OnPreServerReconcile += PredictionManager_OnPreServerReconcile;
-            }
-            else
-            {
-                nm.PredictionManager.RemoveRigidbodyCount(this);
-                nm.PredictionManager.OnPreServerReconcile -= PredictionManager_OnPreServerReconcile;
-            }
+            RemoveFromPredictedObjects();
         }
 
         /// <summary>
@@ -325,6 +356,53 @@ namespace FishNet.Component.Prediction
         private void SetInstantiatedOffsetValues()
         {
             transform.SetTransformOffsets(_graphicalObject, ref _graphicalInstantiatedOffsetPosition, ref _graphicalInstantiatedOffsetRotation);
+        }
+
+        /// <summary>
+        /// Removes this script from _predictedObjects.
+        /// </summary>
+        private void RemoveFromPredictedObjects()
+        {
+            //Already removed.
+            if (_collectionState != CollectionState.Added)
+                return;
+
+            NetworkManager nm = base.NetworkManager;
+            //If found then remove normally.
+            if (nm != null)
+            {
+                if (_predictedObjects.TryGetValue(base.NetworkManager, out List<PredictedObject> collection))
+                {
+                    _collectionState = CollectionState.Removed;
+                    collection.Remove(this);
+                    if (collection.Count == 0)
+                        _predictedObjects.Remove(base.NetworkManager);
+                }
+            }
+            //NetworkManager isn't found, must check all entries. This would only happen if object didnt clean up from network properly.
+            else
+            {
+                List<NetworkManager> removedEntries = new List<NetworkManager>();
+                foreach (KeyValuePair<NetworkManager, List<PredictedObject>> item in _predictedObjects)
+                {
+                    NetworkManager key = item.Key;
+                    if (key == null)
+                    {
+                        removedEntries.Add(key);
+                    }
+                    else
+                    {
+                        List<PredictedObject> collection = item.Value;
+                        collection.Remove(this);
+                        if (collection.Count == 0)
+                            removedEntries.Add(key);
+                    }
+                }
+
+                //Remove entries as needed.
+                for (int i = 0; i < removedEntries.Count; i++)
+                    _predictedObjects.Remove(removedEntries[i]);
+            }
         }
 
         private void TimeManager_OnUpdate()
@@ -355,72 +433,62 @@ namespace FishNet.Component.Prediction
         {
             if (base.TimeManager == null)
                 return;
-            if (subscribe == _clientSubscribed)
+            if (subscribe == _subscribed)
                 return;
 
             if (subscribe)
             {
                 base.TimeManager.OnUpdate += TimeManager_OnUpdate;
                 base.TimeManager.OnPreTick += TimeManager_OnPreTick;
-                base.PredictionManager.OnPreReplicateReplay += PredictionManager_OnPreReplicateReplay;
-                base.PredictionManager.OnPostReplicateReplay += PredictionManager_OnPostReplicateReplay;
-                base.PredictionManager.OnPreReconcile += PredictionManager_OnPreReconcile;
-                base.PredictionManager.OnPostReconcile += PredictionManager_OnPostReconcile;
+                base.TimeManager.OnPreReplicateReplay += TimeManager_OnPreReplicateReplay;
+                base.TimeManager.OnPostReplicateReplay += TimeManager_OnPostReplicateReplay;
+                base.TimeManager.OnPreReconcile += TimeManager_OnPreReconcile;
+                base.TimeManager.OnPostReconcile += TimeManager_OnPostReconcile;
             }
             else
             {
                 base.TimeManager.OnUpdate -= TimeManager_OnUpdate;
                 base.TimeManager.OnPreTick -= TimeManager_OnPreTick;
-                base.PredictionManager.OnPreReplicateReplay -= PredictionManager_OnPreReplicateReplay;
-                base.PredictionManager.OnPostReplicateReplay -= PredictionManager_OnPostReplicateReplay;
-                base.PredictionManager.OnPreReconcile -= PredictionManager_OnPreReconcile;
-                base.PredictionManager.OnPostReconcile -= PredictionManager_OnPostReconcile;
-
-                //Also some resets
-                _lastStateLocalTick = 0;
-                _rigidbodyStates.Clear();
-                _rigidbody2dStates.Clear();
+                base.TimeManager.OnPreReplicateReplay -= TimeManager_OnPreReplicateReplay;
+                base.TimeManager.OnPostReplicateReplay -= TimeManager_OnPostReplicateReplay;
+                base.TimeManager.OnPreReconcile -= TimeManager_OnPreReconcile;
+                base.TimeManager.OnPostReconcile -= TimeManager_OnPostReconcile;
             }
 
-            _clientSubscribed = subscribe;
-        }
-
-        private void PredictionManager_OnPreServerReconcile(NetworkBehaviour obj)
-        {
-            SendRigidbodyState(obj);
+            _subscribed = subscribe;
         }
 
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
         /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
         /// </summary>
-        protected virtual void PredictionManager_OnPreReplicateReplay(uint tick, PhysicsScene ps, PhysicsScene2D ps2d)
+        protected virtual void TimeManager_OnPreReplicateReplay(PhysicsScene ps, PhysicsScene2D ps2d)
         {
-            Rigidbodies_PredictionManager_OnPreReplicateReplay(tick, ps, ps2d);
+            Rigidbodies_TimeManager_OnPreReplicateReplay(ps, ps2d);
         }
 
         /// <summary>
         /// Called after physics is simulated when replaying a replicate method.
         /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
         /// </summary>
-        private void PredictionManager_OnPostReplicateReplay(uint tick, PhysicsScene ps, PhysicsScene2D ps2d)
+        private void TimeManager_OnPostReplicateReplay(PhysicsScene arg1, PhysicsScene2D arg2)
         {
             _spectatorSmoother?.OnPostReplay();
-            Rigidbodies_PredictionManager_OnPostReplicateReplay(tick, ps, ps2d);
         }
 
         /// <summary>
         /// Called before performing a reconcile on NetworkBehaviour.
         /// </summary>
-        private void PredictionManager_OnPreReconcile(NetworkBehaviour nb)
+        private void TimeManager_OnPreReconcile(NetworkBehaviour nb)
         {
             Rigidbodies_TimeManager_OnPreReconcile(nb);
         }
 
+
         /// <summary>
         /// Called after performing a reconcile on NetworkBehaviour.
         /// </summary>
-        private void PredictionManager_OnPostReconcile(NetworkBehaviour nb)
+        private void TimeManager_OnPostReconcile(NetworkBehaviour nb)
         {
             Rigidbodies_TimeManager_OnPostReconcile(nb);
         }
@@ -466,12 +534,12 @@ namespace FishNet.Component.Prediction
             if (_predictionType == PredictionType.Rigidbody)
             {
                 _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
-                _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody, true, _graphicalObject);
+                _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody, true);
             }
             else
             {
                 _rigidbody2d.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-                _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody2D, true, _graphicalObject);
+                _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody2D, true);
             }
         }
 

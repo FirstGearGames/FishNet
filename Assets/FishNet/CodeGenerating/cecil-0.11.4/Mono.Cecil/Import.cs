@@ -326,9 +326,19 @@ namespace MonoFN.Cecil
                 HashAlgorithm = (AssemblyHashAlgorithm)name.HashAlgorithm,
             };
 
-            module.AssemblyReferences.Add(reference);
+            //Only add if not self.
+            if (CanAddAssemblyNameReference(module, reference))
+                module.AssemblyReferences.Add(reference);
+
             return reference;
         }
+
+        private bool CanAddAssemblyNameReference(ModuleDefinition module, AssemblyNameReference nameRef)
+        {
+            return true;
+            //return (module.assembly.FullName != nameRef.FullName);
+        }
+
 
         bool TryGetAssemblyNameReference(SR.AssemblyName name, out AssemblyNameReference assembly_reference)
         {
@@ -590,7 +600,7 @@ namespace MonoFN.Cecil
             return true;
             //return (module.assembly.FullName != nameRef.FullName);
         }
-
+ 
         static void ImportGenericParameters(IGenericParameterProvider imported, IGenericParameterProvider original)
         {
             var parameters = original.GenericParameters;

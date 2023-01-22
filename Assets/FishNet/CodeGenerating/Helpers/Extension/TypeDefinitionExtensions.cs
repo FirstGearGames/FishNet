@@ -432,25 +432,6 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return false;
         }
 
-        /// <summary>
-        /// Returns if the TypeDefinition implements TInterface.
-        /// </summary>
-        /// <typeparam name="TInterface"></typeparam>
-        /// <param name="typeDef"></param>
-        /// <returns></returns>
-        public static bool ImplementsInterface(this TypeDefinition typeDef, string interfaceName)
-        {
-            for (int i = 0; i < typeDef.Interfaces.Count; i++)
-            {
-                if (typeDef.Interfaces[i].InterfaceType.FullName == interfaceName)
-                    return true;
-            }
-
-            return false;
-        }
-
-
-
 
         /// <summary>
         /// Returns if the TypeDefinition implements TInterface.
@@ -458,45 +439,13 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <typeparam name="TInterface"></typeparam>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        public static bool ImplementsInterfaceRecursive<T>(this TypeDefinition typeDef, CodegenSession session)
+        public static bool ImplementsInterfaceRecursive<TInterface>(this TypeDefinition typeDef, CodegenSession session)
         {
             TypeDefinition climbTypeDef = typeDef;
 
             while (climbTypeDef != null)
             {
-                if (climbTypeDef.Interfaces.Any(i => i.InterfaceType.Is<T>()))
-                    return true;
-
-                try
-                {
-                    if (climbTypeDef.BaseType != null)
-                        climbTypeDef = climbTypeDef.BaseType.CachedResolve(session);
-                    else
-                        climbTypeDef = null;
-                }
-                //Could not resolve assembly; can happen for assemblies being checked outside FishNet/csharp.
-                catch (AssemblyResolutionException)
-                {
-                    break;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Returns if the TypeDefinition implements TInterface.
-        /// </summary>
-        /// <typeparam name="TInterface"></typeparam>
-        /// <param name="typeDef"></param>
-        /// <returns></returns>
-        public static bool ImplementsInterfaceRecursive(this TypeDefinition typeDef, CodegenSession session, string interfaceName)
-        {
-            TypeDefinition climbTypeDef = typeDef;
-
-            while (climbTypeDef != null)
-            {
-                if (climbTypeDef.Interfaces.Any(i => i.InterfaceType.FullName == interfaceName))
+                if (climbTypeDef.Interfaces.Any(i => i.InterfaceType.Is<TInterface>()))
                     return true;
 
                 try

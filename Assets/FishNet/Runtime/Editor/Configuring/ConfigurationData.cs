@@ -1,6 +1,5 @@
 ﻿
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 
@@ -10,39 +9,13 @@ using UnityEditor;
 
 namespace FishNet.Configuring
 {
-
+     
     public enum StrippingTypes : int
-    {
+    { 
         Redirect = 0,
         Empty_Experimental = 1,
+        //MoveAndEmpty = 2
     }
-    public enum SearchScopeType : int
-    {
-        EntireProject = 0,
-        SpecificFolders = 1,
-    }
-
-    public class PrefabGeneratorConfigurations
-    {
-        public bool Enabled = true;
-        public bool LogToConsole = true;
-        public bool FullRebuild = false;
-        public bool SaveChanges = true;
-        public string DefaultPrefabObjectsPath = @"Assets\DefaultPrefabObjects.asset";
-        public int SearchScope = (int)SearchScopeType.EntireProject;
-        public List<string> ExcludedFolders = new List<string>();
-        public List<string> IncludedFolders = new List<string>();
-    }
-
-    public class CodeStrippingConfigurations
-    {
-        public bool IsBuilding = false;
-        public bool IsDevelopment = false;
-        public bool IsHeadless = false;
-        public bool StripReleaseBuilds = false;
-        public int StrippingType = (int)StrippingTypes.Redirect;
-    }
-
 
     public class ConfigurationData
     {
@@ -50,25 +23,30 @@ namespace FishNet.Configuring
         [System.NonSerialized]
         public bool Loaded;
 
-        public PrefabGeneratorConfigurations PrefabGenerator = new PrefabGeneratorConfigurations();
-        public CodeStrippingConfigurations CodeStripping = new CodeStrippingConfigurations();
+        public bool IsBuilding;
+        public bool IsDevelopment;
+        public bool IsHeadless;
+
+        public bool StripReleaseBuilds = false;
+        public int StrippingType;
     }
 
     public static class ConfigurationDataExtension
     {
+
         /// <summary>
         /// Returns if a differs from b.
         /// </summary>
         public static bool HasChanged(this ConfigurationData a, ConfigurationData b)
         {
-            return (a.CodeStripping.StripReleaseBuilds != b.CodeStripping.StripReleaseBuilds);
+            return (a.StripReleaseBuilds != b.StripReleaseBuilds);
         }
         /// <summary>
         /// Copies all values from source to target.
         /// </summary>
         public static void CopyTo(this ConfigurationData source, ConfigurationData target)
         {
-            target.CodeStripping.StripReleaseBuilds = source.CodeStripping.StripReleaseBuilds;
+            target.StripReleaseBuilds = source.StripReleaseBuilds;
         }
 
 

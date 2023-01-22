@@ -62,13 +62,9 @@ namespace FishNet.Component.Utility
         /// </summary>
         private GUIStyle _style = new GUIStyle();
         /// <summary>
-        /// Text to show for client in/out data.
+        /// Text to display OnGui.
         /// </summary>
-        private string _clientText;
-        /// <summary>
-        /// Text to show for server in/out data.
-        /// </summary>
-        private string _serverText;
+        private string _displayedText;
         /// <summary>
         /// First found NetworkTrafficStatistics.
         /// </summary>
@@ -78,10 +74,7 @@ namespace FishNet.Component.Utility
         private void Start()
         {
             _networkTrafficStatistics = InstanceFinder.NetworkManager.StatisticsManager.NetworkTraffic;
-            //Subscribe to both traffic updates.
             _networkTrafficStatistics.OnClientNetworkTraffic += NetworkTraffic_OnClientNetworkTraffic;
-            _networkTrafficStatistics.OnServerNetworkTraffic += NetworkTraffic_OnServerNetworkTraffic;
-
             if (!_networkTrafficStatistics.UpdateClient && !_networkTrafficStatistics.UpdateServer)
                 Debug.LogWarning($"StatisticsManager.NetworkTraffic is not updating for client nor server. To see results ensure your NetworkManager has a StatisticsManager component added with the NetworkTraffic values configured.");
         }
@@ -89,10 +82,7 @@ namespace FishNet.Component.Utility
         private void OnDestroy()
         {
             if (_networkTrafficStatistics != null)
-            {
                 _networkTrafficStatistics.OnClientNetworkTraffic -= NetworkTraffic_OnClientNetworkTraffic;
-                _networkTrafficStatistics.OnServerNetworkTraffic -= NetworkTraffic_OnClientNetworkTraffic;
-            }
         }
 
 
@@ -104,28 +94,12 @@ namespace FishNet.Component.Utility
             string nl = System.Environment.NewLine;
             string result = string.Empty;
             if (_showIncoming)
-                result += $"Client In: {NetworkTraficStatistics.FormatBytesToLargest(obj.FromServerBytes)}/s{nl}";
+                result += $"In: {NetworkTraficStatistics.FormatBytesToLargest(obj.FromServerBytes)}/s{nl}";
             if (_showOutgoing)
-                result += $"Client Out: {NetworkTraficStatistics.FormatBytesToLargest(obj.ToServerBytes)}/s{nl}";
+                result += $"Out: {NetworkTraficStatistics.FormatBytesToLargest(obj.ToServerBytes)}/s{nl}";
 
-            _clientText = result;
+            _displayedText = result;
         }
-
-        /// <summary>
-        /// Called when client network traffic is updated.
-        /// </summary>
-        private void NetworkTraffic_OnServerNetworkTraffic(NetworkTrafficArgs obj)
-        {
-            string nl = System.Environment.NewLine;
-            string result = string.Empty;
-            if (_showIncoming)
-                result += $"Server In: {NetworkTraficStatistics.FormatBytesToLargest(obj.ToServerBytes)}/s{nl}";
-            if (_showOutgoing)
-                result += $"Server Out: {NetworkTraficStatistics.FormatBytesToLargest(obj.FromServerBytes)}/s{nl}";
-
-            _serverText = result;
-        }
-
 
 
         private void OnGUI()
@@ -143,15 +117,6 @@ namespace FishNet.Component.Utility
                 height += 15f;
             if (_showOutgoing)
                 height += 15f;
-
-            bool isClient = InstanceFinder.IsClient;
-            bool isServer = InstanceFinder.IsServer;
-            if (!isClient)
-                _clientText = string.Empty;
-            if (!isServer)
-                _serverText = string.Empty;
-            if (isServer && isClient)
-                height *= 2f;
 
             float edge = 10f;
 
@@ -179,7 +144,7 @@ namespace FishNet.Component.Utility
                 vertical = Screen.height - height - edge;
             }
 
-            GUI.Label(new Rect(horizontal, vertical, width, height), (_clientText + _serverText), _style);
+            GUI.Label(new Rect(horizontal, vertical, width, height), _displayedText, _style);
         }
     }
 
