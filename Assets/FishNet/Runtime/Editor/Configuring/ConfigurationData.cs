@@ -28,7 +28,7 @@ namespace FishNet.Configuring
         public bool LogToConsole = true;
         public bool FullRebuild = false;
         public bool SaveChanges = true;
-        public string DefaultPrefabObjectsPath = @"Assets\DefaultPrefabObjects.asset";
+        public string DefaultPrefabObjectsPath = Path.Combine("Assets", "DefaultPrefabObjects.asset");
         public int SearchScope = (int)SearchScopeType.EntireProject;
         public List<string> ExcludedFolders = new List<string>();
         public List<string> IncludedFolders = new List<string>();

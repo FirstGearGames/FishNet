@@ -146,11 +146,15 @@ namespace FishNet.Object
             }
 
             if (result != null)
+            {
                 _addedNetworkObject = result;
+            }
             //Not found, add a new nob.
             else
+            {
                 _addedNetworkObject = transform.root.gameObject.AddComponent<NetworkObject>();
-
+                Debug.Log($"Script {GetType().Name} on object {gameObject.name} added a NetworkObject component to {transform.root.name}.");
+            }
 
             AlertToDuplicateNetworkObjects(_addedNetworkObject.transform);
             return _addedNetworkObject;

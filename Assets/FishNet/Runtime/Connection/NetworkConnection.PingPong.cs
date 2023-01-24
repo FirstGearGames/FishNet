@@ -92,7 +92,7 @@ namespace FishNet.Connection
             //Ping isnt too fast.
             else
             {
-                _excessivePingCount = Mathf.Max(0f, _excessivePingCount - 0.5f);
+                _excessivePingCount = UnityEngine.Mathf.Max(0f, _excessivePingCount - 0.5f);
                 return true;
             }
 #endif

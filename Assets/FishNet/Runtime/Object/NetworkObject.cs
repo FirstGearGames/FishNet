@@ -17,6 +17,9 @@ namespace FishNet.Object
     public sealed partial class NetworkObject : MonoBehaviour
     {
         #region Public.
+        /// <summary>
+        /// True if was nested during scene setup or within a prefab.
+        /// </summary>
         [field: SerializeField, HideInInspector]
         public bool IsNested { get; private set; }
         /// <summary>

@@ -828,7 +828,7 @@ namespace FishNet.Component.Transforming
 
             if (ChangedContains(changed, ChangedDelta.Extended))
             {
-                AutoPackType localPacking = packing.Position;
+                AutoPackType localPacking = packing.Scale;
                 flagsA |= UpdateFlagA.Extended;
                 int startIndexB = writer.Position;
                 writer.Reserve(1);
