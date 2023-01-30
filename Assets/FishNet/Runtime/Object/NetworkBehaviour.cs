@@ -51,7 +51,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="networkObject"></param>
         /// <param name="componentIndex"></param>
-        internal void InitializeOnceInternal()
+        internal void InitializeOnce_Internal()
         {
             InitializeOnceSyncTypes();
             InitializeOnceRpcLinks();

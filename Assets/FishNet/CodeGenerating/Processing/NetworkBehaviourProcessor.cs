@@ -135,7 +135,7 @@ namespace FishNet.CodeGenerating.Processing
                  * user data passed into prediction methods. Because of this
                  * other RPCs should use the modified version and reader/writers
                  * made for prediction. */
-                modified |= base.GetClass<NetworkBehaviourPredictionProcessor>().Process(td, ref rpcCount);
+                modified |= base.GetClass<PredictionProcessor>().Process(td, ref rpcCount);
                 //25ms 
 
                 /* RPCs. */

@@ -17,6 +17,7 @@ namespace FishNet.Managing.Server.Editing
         private SerializedProperty _shareIds;
         private SerializedProperty _startOnHeadless;
         private SerializedProperty _limitClientMTU;
+        private SerializedProperty _allowPredictedSpawning;
 
         protected virtual void OnEnable()
         {
@@ -27,6 +28,7 @@ namespace FishNet.Managing.Server.Editing
             _shareIds = serializedObject.FindProperty("_shareIds");
             _startOnHeadless = serializedObject.FindProperty("_startOnHeadless");
             _limitClientMTU = serializedObject.FindProperty("_limitClientMTU");
+            _allowPredictedSpawning = serializedObject.FindProperty("_allowPredictedSpawning");
         }
 
         public override void OnInspectorGUI()
@@ -50,6 +52,7 @@ namespace FishNet.Managing.Server.Editing
             EditorGUILayout.PropertyField(_shareIds);
             EditorGUILayout.PropertyField(_startOnHeadless);
             EditorGUILayout.PropertyField(_limitClientMTU);
+            EditorGUILayout.PropertyField(_allowPredictedSpawning);
 
             EditorGUILayout.Space();
 

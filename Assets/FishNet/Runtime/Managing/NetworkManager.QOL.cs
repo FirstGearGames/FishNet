@@ -21,6 +21,14 @@ namespace FishNet.Managing
         /// Collection to use for spawnable objects.
         /// </summary>
         public PrefabObjects SpawnablePrefabs { get => _spawnablePrefabs; set => _spawnablePrefabs = value; }
+        /// <summary>
+        /// 
+        /// </summary>
+        private Dictionary<ushort, PrefabObjects> _runtimeSpawnablePrefabs = new Dictionary<ushort, PrefabObjects>();
+        /// <summary>
+        /// Collection to use for spawnable objects added at runtime, such as addressables.
+        /// </summary>
+        public IReadOnlyDictionary<ushort, PrefabObjects> RuntimeSpawnablePrefabs => _runtimeSpawnablePrefabs;
         #endregion
 
         #region Private.
@@ -33,6 +41,47 @@ namespace FishNet.Managing
         /// </summary>
         private Dictionary<string, UnityComponent> _registeredComponents = new Dictionary<string, UnityComponent>();
         #endregion
+
+        /// <summary>
+        /// Gets the PrefabObjects to use for spawnableCollectionId.
+        /// </summary>
+        /// <typeparam name="T">Type of PrefabObjects to return. This is also used to create an instance of type when createIfMissing is true.</typeparam>
+        /// <param name="spawnableCollectionId">Id to use. 0 will return the configured SpawnablePrefabs.</param>
+        /// <param name="createIfMissing">True to create and assign a PrefabObjects if missing for the collectionId.</param>
+        /// <returns></returns>
+        public PrefabObjects GetPrefabObjects<T>(ushort spawnableCollectionId, bool createIfMissing) where T : PrefabObjects
+        {
+            if (spawnableCollectionId == 0)
+            {
+                LogError($"SpawnableCollectionId cannot be 0.");
+                return null;
+            }
+
+            PrefabObjects po;
+            if (!_runtimeSpawnablePrefabs.TryGetValue(spawnableCollectionId, out po))
+            {
+                //Do not create missing, return null for not found.
+                if (!createIfMissing)
+                    return null;
+
+                po = ScriptableObject.CreateInstance<T>();
+                po.SetCollectionId(spawnableCollectionId);
+                _runtimeSpawnablePrefabs[spawnableCollectionId] = po;
+            }
+
+            return po;
+        }
+
+        /// <summary>
+        /// Removes the PrefabObjects collection from memory.
+        /// This should only be called after you properly disposed of it's contents properly.
+        /// </summary>
+        /// <param name="spawnableCollectionId">CollectionId to remove.</param>
+        /// <returns>True if collection was found and removed.</returns>
+        public bool RemoveSpawnableCollection(ushort spawnableCollectionId)
+        {
+            return _runtimeSpawnablePrefabs.Remove(spawnableCollectionId);
+        }
 
         /// <summary>
         /// Gets the index a prefab uses. Can be used in conjuction with GetPrefab.

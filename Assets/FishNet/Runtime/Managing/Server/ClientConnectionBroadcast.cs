@@ -1,7 +1,5 @@
-﻿
-using FishNet.Broadcast;
+﻿using FishNet.Broadcast;
 using FishNet.Utility.Performance;
-using System.Collections.Generic;
 
 namespace FishNet.Managing.Server
 {
@@ -13,9 +11,7 @@ namespace FishNet.Managing.Server
 
     public struct ConnectedClientsBroadcast : IBroadcast
     {
-        [System.NonSerialized]
-        public ListCache<int> ListCache;
-        public List<int> Ids;
+        public ListCache<int> ListCache; 
     }
 
 

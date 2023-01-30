@@ -9,6 +9,8 @@ using UnityEngine;
 
 using UnitySettingsProviderAttribute = UnityEditor.SettingsProviderAttribute;
 using UnitySettingsProvider = UnityEditor.SettingsProvider;
+using FishNet.Configuring;
+using System.Linq;
 
 namespace FishNet.Editing.PrefabCollectionGenerator
 {
@@ -16,7 +18,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
     {
         private static readonly Regex SlashRegex = new Regex(@"[\\//]");
 
-        private static Settings _settings;
+        private static PrefabGeneratorConfigurations _settings;
 
         private static GUIContent _folderIcon;
         private static GUIContent _deleteIcon;
@@ -48,7 +50,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         private static void OnGUI(string searchContext)
         {
             if (_settings == null)
-                _settings = Settings.Load();
+                _settings = Configuration.Configurations.PrefabGenerator;
             if (_folderIcon == null)
                 _folderIcon = EditorGUIUtility.IconContent("d_FolderOpened Icon");
             if (_deleteIcon == null)
@@ -72,15 +74,15 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
             EditorGUILayout.BeginHorizontal();
 
-            string oldAssetPath = _settings.AssetPath;
-            string newAssetPath = EditorGUILayout.DelayedTextField(ObjectNames.NicifyVariableName(nameof(_settings.AssetPath)), oldAssetPath);
+            string oldAssetPath = _settings.DefaultPrefabObjectsPath;
+            string newAssetPath = EditorGUILayout.DelayedTextField(ObjectNames.NicifyVariableName(nameof(_settings.DefaultPrefabObjectsPath)), oldAssetPath);
 
             if (GUILayout.Button(_folderIcon, iconWidthConstraint, iconHeightConstraint))
             {
                 if (TrySaveFilePathInsideAssetsFolder(null, Application.dataPath, "DefaultPrefabObjects", "asset", out string result))
                     newAssetPath = result;
                 else
-                    EditorWindow.focusedWindow.ShowNotification(new GUIContent($"{ObjectNames.NicifyVariableName(nameof(_settings.AssetPath))} must be inside the Assets folder."));
+                    EditorWindow.focusedWindow.ShowNotification(new GUIContent($"{ObjectNames.NicifyVariableName(nameof(_settings.DefaultPrefabObjectsPath))} must be inside the Assets folder."));
             }
 
             if (!newAssetPath.Equals(oldAssetPath, StringComparison.OrdinalIgnoreCase))
@@ -97,37 +99,43 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
                         if (File.Exists(oldAssetPath))
                             AssetDatabase.MoveAsset(oldAssetPath, newAssetPath);
-                        _settings.AssetPath = newAssetPath;
+                        _settings.DefaultPrefabObjectsPath = newAssetPath;
 
                         Generator.IgnorePostProcess = false;
                     }
                 }
                 else
                 {
-                    EditorWindow.focusedWindow.ShowNotification(new GUIContent($"{ObjectNames.NicifyVariableName(nameof(_settings.AssetPath))} must be inside the Assets folder."));
+                    EditorWindow.focusedWindow.ShowNotification(new GUIContent($"{ObjectNames.NicifyVariableName(nameof(_settings.DefaultPrefabObjectsPath))} must be inside the Assets folder."));
                 }
             }
 
             EditorGUILayout.EndHorizontal();
 
-            _settings.SearchScope = (Settings.SearchScopeType)EditorGUILayout.EnumPopup(ObjectNames.NicifyVariableName(nameof(_settings.SearchScope)), _settings.SearchScope);
-            if (_settings.SearchScope == Settings.SearchScopeType.EntireProject)
+            int currentSearchScope = _settings.SearchScope;
+            SearchScopeType searchScopeType = (SearchScopeType)EditorGUILayout.EnumPopup(ValueToSearchScope(_settings.SearchScope));
+            _settings.SearchScope = (int)searchScopeType;
+            SearchScopeType ValueToSearchScope(int value) => (SearchScopeType)value;
+            if (_settings.SearchScope == (int)SearchScopeType.EntireProject)
             {
                 EditorGUILayout.HelpBox("Searching the entire project for prefabs can become very slow. Consider switching the search scope to specific folders instead.", MessageType.Warning);
 
                 if (GUILayout.Button("Switch"))
-                    _settings.SearchScope = Settings.SearchScopeType.SpecificFolders;
+                    _settings.SearchScope = (int)SearchScopeType.SpecificFolders;
             }
+            //If search scope changed then update prefabs.
+            if (currentSearchScope != _settings.SearchScope && (SearchScopeType)_settings.SearchScope == SearchScopeType.EntireProject)
+                Generator.GenerateFull();
 
             List<string> folders = null;
             string foldersName = null;
 
-            if (_settings.SearchScope == Settings.SearchScopeType.EntireProject)
+            if (_settings.SearchScope == (int)SearchScopeType.EntireProject)
             {
                 folders = _settings.ExcludedFolders;
                 foldersName = ObjectNames.NicifyVariableName(nameof(_settings.ExcludedFolders));
             }
-            else if (_settings.SearchScope == Settings.SearchScopeType.SpecificFolders)
+            else if (_settings.SearchScope == (int)SearchScopeType.SpecificFolders)
             {
                 folders = _settings.IncludedFolders;
                 foldersName = ObjectNames.NicifyVariableName(nameof(_settings.IncludedFolders));
@@ -168,7 +176,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
                 EditorGUI.indentLevel--;
 
-                if (_settings.SearchScope == Settings.SearchScopeType.SpecificFolders) EditorGUILayout.HelpBox("You can include subfolders by appending an asterisk (*) to a path.", MessageType.None);
+                if (_settings.SearchScope == (int)SearchScopeType.SpecificFolders) EditorGUILayout.HelpBox("You can include subfolders by appending an asterisk (*) to a path.", MessageType.None);
 
                 if (GUILayout.Button("Browse"))
                 {
@@ -184,7 +192,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             }
 
             if (EditorGUI.EndChangeCheck())
-                _settings.Save();
+                Configuration.Configurations.Write(true);
             if (GUILayout.Button("Generate"))
                 Generator.GenerateFull();
 

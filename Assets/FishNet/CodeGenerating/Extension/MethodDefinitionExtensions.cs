@@ -12,7 +12,7 @@ namespace FishNet.CodeGenerating.Extension
     {
 
         /// <summary>
-        /// Returns a method in the next base class.
+        /// Returns a method reference while considering if declaring type is generic.
         /// </summary>
         public static MethodReference GetMethodReference(this MethodDefinition md, CodegenSession session)
         {
@@ -36,12 +36,32 @@ namespace FishNet.CodeGenerating.Extension
                 }
                 return result;
             }
-            //Not generic.
             else
             {
                 return methodRef;
             }
         }
+
+
+        /// <summary>
+        /// Returns a method reference for a generic method.
+        /// </summary>
+        public static MethodReference GetMethodReference(this MethodDefinition md, CodegenSession session, TypeReference typeReference)
+        {
+            MethodReference methodRef = session.ImportReference(md);
+            return methodRef.GetMethodReference(session, typeReference);
+        }
+
+
+        /// <summary>
+        /// Returns a method reference for a generic method.
+        /// </summary>
+        public static MethodReference GetMethodReference(this MethodDefinition md, CodegenSession session, TypeReference[] typeReferences)
+        {
+            MethodReference methodRef = session.ImportReference(md);
+            return methodRef.GetMethodReference(session, typeReferences);
+        }
+
 
     }
 

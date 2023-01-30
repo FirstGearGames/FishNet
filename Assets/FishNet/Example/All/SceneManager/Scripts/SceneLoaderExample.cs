@@ -124,6 +124,7 @@ namespace FishNet.Example.Scened
 
             //Make scene data.
             SceneLoadData sld = new SceneLoadData(_scenes);
+            sld.PreferredActiveScene = sld.SceneLookupDatas[0];
             sld.ReplaceScenes = _replaceOption;
             sld.Options = loadOptions;
             sld.MovedNetworkObjects = movedObjects.ToArray();

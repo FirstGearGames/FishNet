@@ -105,7 +105,7 @@ namespace FishNet.Managing.Statistic
         private static readonly string[] _sizeSuffixes = { "bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
         #endregion
 
-        internal void InitializeOnceInternal(NetworkManager manager)
+        internal void InitializeOnce_Internal(NetworkManager manager)
         {
             _networkManager = manager;
             manager.TimeManager.OnPreTick += TimeManager_OnPreTick;

@@ -109,13 +109,13 @@ namespace FishNet.Managing.Server
                         {
                             everyoneWriter.Reset();
                             ownerWriter.Reset();
-                            WriteSpawn(nob, conn, ref everyoneWriter, ref ownerWriter);
+                            base.SpawnWriter.WriteSpawn(nob, conn, everyoneWriter, ownerWriter);
                             CacheObserverChange(nob, ref cacheIndex);
                         }
                         else if (osc == ObserverStateChange.Removed)
                         {
                             everyoneWriter.Reset();
-                            WriteDespawn(nob, nob.GetDefaultDespawnType(), ref everyoneWriter);
+                            WriteDespawn(nob, nob.GetDefaultDespawnType(), everyoneWriter);
 
                         }
                         else
@@ -372,13 +372,13 @@ namespace FishNet.Managing.Server
                     {
                         everyoneWriter.Reset();
                         ownerWriter.Reset();
-                        WriteSpawn(n, connection, ref everyoneWriter, ref ownerWriter);
+                        base.SpawnWriter.WriteSpawn(n, connection, everyoneWriter, ownerWriter);
                         CacheObserverChange(n, ref observerCacheIndex);
                     }
                     else if (osc == ObserverStateChange.Removed)
                     {
                         everyoneWriter.Reset();
-                        WriteDespawn(n, n.GetDefaultDespawnType(), ref everyoneWriter);
+                        WriteDespawn(n, n.GetDefaultDespawnType(), everyoneWriter);
                     }
                     else
                     {
@@ -428,9 +428,9 @@ namespace FishNet.Managing.Server
                 //If observer state changed then write changes.
                 ObserverStateChange osc = nob.RebuildObservers(conn, false);
                 if (osc == ObserverStateChange.Added)
-                    WriteSpawn(nob, conn, ref everyoneWriter, ref ownerWriter);
+                    base.SpawnWriter.WriteSpawn(nob, conn, everyoneWriter, ownerWriter);
                 else if (osc == ObserverStateChange.Removed)
-                    WriteDespawn(nob, nob.GetDefaultDespawnType(), ref everyoneWriter);
+                    WriteDespawn(nob, nob.GetDefaultDespawnType(), everyoneWriter);
                 else
                     continue;
 

@@ -14,8 +14,6 @@ using FishNet.Editing;
 using System.IO;
 using System.Collections;
 using Mirror;
-using MirrorExperimentalNetworkTransformBase = Mirror.Experimental.NetworkTransformBase;
-using MirrorExperimentalNetworkTransformChild = Mirror.Experimental.NetworkTransformChild;
 using MirrorNetworkTransformBase = Mirror.NetworkTransformBase;
 using MirrorNetworkTransformChild = Mirror.NetworkTransformChild;
 using MirrorNetworkAnimator = Mirror.NetworkAnimator;
@@ -250,16 +248,6 @@ namespace FishNet.Upgrading.Mirror.Editing
                 else
                     target = go.transform;
                 Replace(nt1, target);
-                return true;
-            }
-            if (go.TryGetComponent(out MirrorExperimentalNetworkTransformBase nt2))
-            {
-                Transform target;
-                if (nt2 is MirrorExperimentalNetworkTransformChild mc1)
-                    target = mc1.target;
-                else
-                    target = go.transform;
-                Replace(nt2, target);
                 return true;
             }
 #if FGG_ASSETS

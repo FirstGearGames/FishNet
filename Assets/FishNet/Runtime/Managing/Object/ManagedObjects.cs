@@ -1,4 +1,5 @@
 ﻿using FishNet.Component.Observing;
+using FishNet.Connection;
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing;
@@ -23,19 +24,34 @@ namespace FishNet.Managing.Object
 
         #region Protected.
         /// <summary>
+        /// Used to write spawn messages.
+        /// </summary>
+        internal SpawnWriter SpawnWriter = new SpawnWriter();
+        /// <summary>
+        /// Used to write despawn messages.
+        /// </summary>
+        internal DespawnWriter DespawnWriter = new DespawnWriter();
+        /// <summary>
         /// Returns the next ObjectId to use.
         /// </summary>
         protected internal virtual int GetNextNetworkObjectId() { return -1; }
         /// <summary>
         /// NetworkManager handling this.
         /// </summary>
-        protected NetworkManager NetworkManager = null;
+        protected NetworkManager NetworkManager { get; private set; }
         /// <summary>
         /// Objects in currently loaded scenes. These objects can be active or inactive.
         /// Key is the objectId while value is the object. Key is not the same as NetworkObject.ObjectId.
         /// </summary>
         protected Dictionary<ulong, NetworkObject> SceneObjects = new Dictionary<ulong, NetworkObject>();
         #endregion
+
+        protected void Initialize(NetworkManager manager)
+        {
+            NetworkManager = manager;
+            SpawnWriter.Initialize(manager);
+            DespawnWriter.Initialize(manager);
+        }
 
         /// <summary>
         /// Subscribes to SceneManager.SceneLoaded event.
@@ -90,6 +106,16 @@ namespace FishNet.Managing.Object
             //Do the same with SceneObjects.
             if (unexpectedlyDestroyed && (sceneId != 0))
                 RemoveFromSceneObjects(sceneId);
+        }
+
+        /// <summary>
+        /// Writes a despawn.
+        /// </summary>
+        /// <param name="nob"></param>
+        protected void WriteDespawn(NetworkObject nob, DespawnType despawnType, Writer everyoneWriter)
+        {
+            everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
+            everyoneWriter.WriteNetworkObjectForDespawn(nob, despawnType);
         }
 
         /// <summary>
@@ -222,7 +248,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         /// <param name="asServer"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void UpdateNetworkBehaviours(NetworkObject nob, bool asServer)
+        protected void UpdateNetworkBehavioursForSceneObject(NetworkObject nob, bool asServer)
         {
             //Would have already been done on server side.
             if (!asServer && NetworkManager.IsServer)
@@ -236,7 +262,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         /// <param name="prefab">Prefab to initialize.</param>
         /// <param name="index">Index within spawnable prefabs.</param>
-        public static void InitializePrefab(NetworkObject prefab, int index)
+        public static void InitializePrefab(NetworkObject prefab, short index, ushort? collectionId = null)
         {
             if (prefab == null)
                 return;
@@ -244,7 +270,11 @@ namespace FishNet.Managing.Object
              * A value of -1 would indicate it's a scene
              * object. */
             if (index != -1)
+            {
                 prefab.PrefabId = (short)index;
+                if (collectionId != null)
+                    prefab.SpawnableCollectionId = collectionId.Value;
+            }
 
             byte componentIndex = 0;
             prefab.UpdateNetworkBehaviours(null, ref componentIndex);

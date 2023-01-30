@@ -47,7 +47,7 @@ namespace FishNet.CodeGenerating.ILCore
             return referencesFishNet;
         }
         public override ILPostProcessor GetInstance() => this;
-
+         
         public override ILPostProcessResult Process(ICompiledAssembly compiledAssembly)
         {
             AssemblyDefinition assemblyDef = ILCoreHelper.GetAssemblyDefinition(compiledAssembly);
@@ -67,6 +67,26 @@ namespace FishNet.CodeGenerating.ILCore
             if (IsFishNetAssembly(compiledAssembly))
             {
                 modified |= ModifyMakePublicMethods(session);
+
+                /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
+                 * then don't bother processing the rest. */
+                if (session.GetClass<NetworkBehaviourProcessor>().NonNetworkBehaviourHasInvalidAttributes(session.Module.Types))
+                    return new ILPostProcessResult(null, session.Diagnostics);
+
+                modified |= CreateDeclaredSerializerDelegates(session);
+                modified |= CreateDeclaredSerializers(session);
+                modified |= CreateIBroadcast(session);
+                modified |= CreateQOLAttributes(session);
+                modified |= CreateNetworkBehaviours(session);
+                modified |= CreateGenericReadWriteDelegates(session);
+
+                //modified |= ModifyMakePublicMethods(session);
+                //modified |= CreateIBroadcast(session);
+                //modified |= CreateGenericReadWriteDelegates(session);
+
+                AssemblyNameReference anr = session.Module.AssemblyReferences.FirstOrDefault<AssemblyNameReference>(x => x.FullName == session.Module.Assembly.FullName);
+                if (anr != null)
+                    session.Module.AssemblyReferences.Remove(anr);
             }
             else
             {
@@ -75,21 +95,12 @@ namespace FishNet.CodeGenerating.ILCore
                 if (session.GetClass<NetworkBehaviourProcessor>().NonNetworkBehaviourHasInvalidAttributes(session.Module.Types))
                     return new ILPostProcessResult(null, session.Diagnostics);
 
-                //before 226ms, after 17ms                   
                 modified |= CreateDeclaredSerializerDelegates(session);
-                //before 5ms, after 5ms
                 modified |= CreateDeclaredSerializers(session);
-                //before 30ms, after 26ms
                 modified |= CreateIBroadcast(session);
-                //before 140ms, after 10ms
                 modified |= CreateQOLAttributes(session);
-                //before 75ms, after 6ms
                 modified |= CreateNetworkBehaviours(session);
-                //before 260ms, after 215ms 
                 modified |= CreateGenericReadWriteDelegates(session);
-                //before 52ms, after 27ms
-                //Total at once
-                //before 761, after 236ms
             }
 
             /* If there are warnings about SyncVars being in different assemblies.
@@ -209,9 +220,6 @@ namespace FishNet.CodeGenerating.ILCore
             bool modified = false;
 
             string networkBehaviourFullName = session.GetClass<NetworkBehaviourHelper>().FullName;
-            bool fnRuntime = (session.Module.Name == "FishNet.Runtime.dll");
-            if (fnRuntime)
-                session.LogWarning(session.Module.Name);
             HashSet<TypeDefinition> typeDefs = new HashSet<TypeDefinition>();
             foreach (TypeDefinition td in session.Module.Types)
             {

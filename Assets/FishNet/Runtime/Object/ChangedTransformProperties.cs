@@ -10,13 +10,13 @@ namespace FishNet.Object
     internal enum ChangedTransformProperties : byte
     {
         Unset = 0,
-        LocalPosition = 2,
-        LocalRotation = 4,
-        LocalScale = 8
+        LocalPosition = 1,
+        LocalRotation = 2,
+        LocalScale = 4,
     }
 
     [APIExclude]
-    internal static partial class Enums
+    internal static partial class ChangedTransformPropertiesEnum
     {
         /// <summary>
         /// Returns if whole contains part.
@@ -24,7 +24,7 @@ namespace FishNet.Object
         /// <param name="whole"></param>
         /// <param name="part"></param>
         /// <returns></returns>
-        public static bool TransformPropertiesContains(ChangedTransformProperties whole, ChangedTransformProperties part)
+        public static bool Contains(ChangedTransformProperties whole, ChangedTransformProperties part)
         {
             return (whole & part) == part;
         }
