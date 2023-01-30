@@ -11,15 +11,14 @@ namespace FishNet.Component.Observing
     {
         static readonly ProfilerMarker s_UpdateGrid = new ProfilerMarker("0 - UpdateGrid()");
         public static HashGrid StaticHashGrid;
-        public static Dictionary<int, List<int>> ConnToNearbyPairs = new Dictionary<int, List<int>>();
+        public static Dictionary<int, HashSet<int>> ConnToNearbyPairs = new Dictionary<int, HashSet<int>>();
 
         [SerializeField] private int _cellSearchDistance;
         [SerializeField] private float _updateFrequency;
         private NetworkObject _networkObject;
-        private int _ownerId;
+        private int _objectId;
         private Coroutine _updateGrid;
         private GridCell _currentCell = new GridCell();
-
         public override void OnStopServer()
         {
             base.OnStopServer();
@@ -31,7 +30,7 @@ namespace FishNet.Component.Observing
             //Network Object is null when component is added during runtime
             //This will grab the network object component
             _networkObject = GetComponent<NetworkObject>();
-            _ownerId = _networkObject.OwnerId;
+            _objectId = _networkObject.ObjectId;
             //Setup update frequency and search settings then start the UpdateGrid method
             _cellSearchDistance = condition.GetCellSearchDistance;
             _updateFrequency = condition.GetUpdateFrequency;
@@ -58,19 +57,19 @@ namespace FishNet.Component.Observing
                 StaticHashGrid.GetNearbyNobs(_currentCell, _cellSearchDistance, out List<int> nearbyNobs);
                 
                 //If Dictonary doesn't contain our connection id then add it with the nearby nobs
-                if (!ConnToNearbyPairs.ContainsKey(_ownerId))
-                    ConnToNearbyPairs.Add(_ownerId, new List<int>(nearbyNobs));
+                if (!ConnToNearbyPairs.ContainsKey(_objectId))
+                    ConnToNearbyPairs.Add(_objectId, new HashSet<int>(nearbyNobs));
                 else
                 {                    
                     foreach (var nob in nearbyNobs)
-                        if(!ConnToNearbyPairs[_ownerId].Contains(nob))
-                            ConnToNearbyPairs[_ownerId].Add(nob);
+                        if(!ConnToNearbyPairs[_objectId].Contains(nob))
+                            ConnToNearbyPairs[_objectId].Add(nob);
                     //Create an int array on the stack for no GC
                     //Set Size to list size + 1, The first int in the array will indicate how many nobs will be removed for next loop
-                    Span<int> remove = stackalloc int[ConnToNearbyPairs[_ownerId].Count + 1];
+                    Span<int> remove = stackalloc int[ConnToNearbyPairs[_objectId].Count + 1];
                     remove[0] = 1;
                     //Add which nobs need to be removed from list to stack array
-                    foreach (var nob in ConnToNearbyPairs[_ownerId])
+                    foreach (var nob in ConnToNearbyPairs[_objectId])
                         if (!nearbyNobs.Contains(nob))
                         {
                             remove[remove[0]] = nob;
@@ -78,7 +77,7 @@ namespace FishNet.Component.Observing
                         }
                     //Remove nobs from list
                     for(int i = 1; i < remove[0]; i++)
-                        ConnToNearbyPairs[_ownerId].Remove(remove[i]);
+                        ConnToNearbyPairs[_objectId].Remove(remove[i]);
                 }
                 nearbyNobs.Clear();
                 s_UpdateGrid.End();

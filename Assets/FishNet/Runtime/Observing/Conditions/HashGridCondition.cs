@@ -130,7 +130,7 @@ namespace FishNet.Component.Observing
             if (!Grid.ContainsKey(outCell)) Grid.Add(new GridCell(outCell), new List<int>(64));
             
             //If the nob is in the list the exit early, since it is in the same cell            
-            if (Grid[outCell].Contains(nob.OwnerId))
+            if (Grid[outCell].Contains(nob.ObjectId))
             {
                 return false;
             }
@@ -139,11 +139,11 @@ namespace FishNet.Component.Observing
             //Remove from the old cell
             if (Grid.TryGetValue(currectCell, out var list))
             {
-                list.Remove(nob.OwnerId);
+                list.Remove(nob.ObjectId);
             }
 
             //Add it to the new cell
-            Grid[outCell].Add(nob.OwnerId);
+            Grid[outCell].Add(nob.ObjectId);
             return true;
         }
         
@@ -259,15 +259,16 @@ namespace FishNet.Component.Observing
                 return false;
             }
 
-            //Check the dictionary for the clientId and see if this Nob is in it
-            if (HashGridComponent.ConnToNearbyPairs.TryGetValue(connection.ClientId, out var list))
+            //Check the dictionary for the Nobs Object Id and See if the connection has a nob in its list
+            if (HashGridComponent.ConnToNearbyPairs.TryGetValue(NetworkObject.ObjectId, out var list))
             {
-                if (list.Contains(NetworkObject.OwnerId))
-                {
-                    s_ConditionMet.End();
-                    return true;
-                }
-            }
+                foreach (var obj in connection.Objects)
+                    if (list.Contains(obj.ObjectId))
+                    {
+                        s_ConditionMet.End();
+                        return true;
+                    }
+            }            
             s_ConditionMet.End();
             return false;
         }
