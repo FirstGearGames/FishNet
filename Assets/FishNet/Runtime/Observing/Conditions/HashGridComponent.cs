@@ -19,6 +19,7 @@ namespace FishNet.Component.Observing
         private int _objectId;
         private Coroutine _updateGrid;
         private GridCell _currentCell = new GridCell();
+        private WaitForSeconds _cacheWaitFor;
         public override void OnStopServer()
         {
             base.OnStopServer();
@@ -34,6 +35,7 @@ namespace FishNet.Component.Observing
             //Setup update frequency and search settings then start the UpdateGrid method
             _cellSearchDistance = condition.GetCellSearchDistance;
             _updateFrequency = condition.GetUpdateFrequency;
+            _cacheWaitFor =  new WaitForSeconds(_updateFrequency);
             _updateGrid = StartCoroutine(UpdateGrid());
             //If the HashGrid is created then initialize it
             if (StaticHashGrid != null) return;
@@ -47,7 +49,7 @@ namespace FishNet.Component.Observing
 
             while (true)
             {
-                yield return new WaitForSeconds(_updateFrequency);
+                yield return _cacheWaitFor;
                 s_UpdateGrid.Begin();
                 //Update the hashgrid with current position. Then update which cell you are in based on position.
                 if (StaticHashGrid.UpdateGridWithPosition(_networkObject, transform.position, _currentCell, out var cacheCell))
