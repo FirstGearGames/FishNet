@@ -27,7 +27,7 @@ namespace FishNet.Component.Prediction
     public struct Rigidbody2DState
     {
         public uint LocalTick;
-        public Vector3 Position;
+        public Vector2 Position;
         public Quaternion Rotation;
         public bool Simulated;
         public Vector2 Velocity;
@@ -84,13 +84,13 @@ public static class RigidbodyStateSerializers
     public static void WriteRigidbody2DState(this Writer writer, Rigidbody2DState value)
     {
         writer.WriteUInt32(value.LocalTick, AutoPackType.Unpacked);
-        writer.WriteVector3(value.Position);
+        writer.WriteVector2(value.Position);
         writer.WriteQuaternion(value.Rotation);
         writer.WriteBoolean(value.Simulated);
 
         if (value.Simulated)
         {
-            writer.WriteVector3(value.Velocity);
+            writer.WriteVector2(value.Velocity);
             writer.WriteSingle(value.AngularVelocity);
         }
     }
@@ -100,14 +100,14 @@ public static class RigidbodyStateSerializers
         Rigidbody2DState state = new Rigidbody2DState()
         {
             LocalTick = reader.ReadUInt32(AutoPackType.Unpacked),
-            Position = reader.ReadVector3(),
+            Position = reader.ReadVector2(),
             Rotation = reader.ReadQuaternion(),
             Simulated = reader.ReadBoolean(),
         };
 
         if (state.Simulated)
         {
-            state.Velocity = reader.ReadVector3();
+            state.Velocity = reader.ReadVector2();
             state.AngularVelocity = reader.ReadSingle();
         }
 
