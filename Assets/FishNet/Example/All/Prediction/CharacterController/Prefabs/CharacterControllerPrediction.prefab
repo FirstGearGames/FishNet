@@ -143,7 +143,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: -1
+  <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
@@ -151,13 +151,13 @@ MonoBehaviour:
   _sceneNetworkObjects: []
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
+  <PredictedSpawn>k__BackingField: {fileID: 0}
   _networkBehaviours: []
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
   _isGlobal: 0
   _initializeOrder: 0
-  _predictedSpawningType: 0
   _defaultDespawnType: 0
 --- !u!114 &9144896207351220584
 MonoBehaviour:
@@ -217,8 +217,7 @@ MonoBehaviour:
   _rigidbody2d: {fileID: 0}
   _spectatorSmoothPosition: 1
   _spectatorSmoothRotation: 1
-  _spectatorSmoothingDuration: 0.025
-  _spectatorInterpolation: 1
+  _spectatorInterpolation: 4
   _overflowMultiplier: 0.1
   _maintainedVelocity: 0
   _resendType: 0

@@ -53,8 +53,15 @@ namespace FishNet.Managing
         {
             if (spawnableCollectionId == 0)
             {
-                LogError($"SpawnableCollectionId cannot be 0.");
-                return null;
+                if (createIfMissing)
+                {
+                    LogError($"SpawnableCollectionId cannot be 0 when create missing is true.");
+                    return null;
+                }
+                else
+                {
+                    return SpawnablePrefabs;
+                }
             }
 
             PrefabObjects po;

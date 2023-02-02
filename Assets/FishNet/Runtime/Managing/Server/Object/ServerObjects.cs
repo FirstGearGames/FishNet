@@ -1,4 +1,5 @@
 ﻿using FishNet.Connection;
+using FishNet.Managing.Logging;
 using FishNet.Managing.Object;
 using FishNet.Object;
 using FishNet.Serializing;
@@ -31,6 +32,11 @@ namespace FishNet.Managing.Server
         /// Cached ObjectIds which may be used when exceeding available ObjectIds.
         /// </summary>
         private Queue<int> _objectIdCache = new Queue<int>();
+        /// <summary>
+        /// Returns the ObjectId cache.
+        /// </summary>
+        /// <returns></returns>
+        internal Queue<int> GetObjectIdCache() => _objectIdCache;
         /// <summary>
         /// NetworkBehaviours which have dirty SyncVars.
         /// </summary>
@@ -206,7 +212,8 @@ namespace FishNet.Managing.Server
              * for clients to track spawned object
              * count. */
             List<int> shuffledCache = new List<int>();
-            for (int i = 0; i < short.MaxValue; i++)
+            //Ignore ushort.maxvalue as that indicates null.
+            for (int i = 0; i < (ushort.MaxValue - 1); i++)
                 shuffledCache.Add(i);
             /* Only shuffle when NOT in editor and not
              * development build.
@@ -223,23 +230,31 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Caches a NetworkObject ObjectId.
         /// </summary>
-        /// <param name="nob"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CacheObjectId(NetworkObject nob)
         {
-            if (nob.ObjectId >= 0)
-                _objectIdCache.Enqueue(nob.ObjectId);
+            if (nob.ObjectId != NetworkObject.UNSET_OBJECTID_VALUE)
+                CacheObjectId(nob.ObjectId);
+        }
+        /// <summary>
+        /// Adds an ObjectId to objectId cache.
+        /// </summary>
+        /// <param name="id"></param>
+        internal void CacheObjectId(int id)
+        {
+            _objectIdCache.Enqueue(id);
         }
 
         /// <summary>
         /// Gets the next ObjectId to use for NetworkObjects.
         /// </summary>
         /// <returns></returns>
-        protected internal override int GetNextNetworkObjectId()
+        protected internal override int GetNextNetworkObjectId(bool errorCheck = true)
         {
-            //Either something went wrong or user actually managed to spawn ~32K networked objects.
+            //Either something went wrong or user actually managed to spawn ~64K networked objects.
             if (_objectIdCache.Count == 0)
             {
-                base.NetworkManager.LogError($"No more available ObjectIds. How the heck did you manage to have {short.MaxValue} objects spawned at once?");
+                base.NetworkManager.LogError($"No more available ObjectIds. How the heck did you manage to have {ushort.MaxValue} objects spawned at once?");
                 return -1;
             }
             else
@@ -356,12 +371,14 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Performs setup on a NetworkObject without synchronizing the actions to clients.
         /// </summary>
-        private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null)
+        /// <param name="objectId">Override ObjectId to use.</param>
+        private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null, int? objectId = null)
         {
             if (nob.IsNetworked)
             {
-                int objectId = GetNextNetworkObjectId();
-                nob.Preinitialize_Internal(NetworkManager, objectId, ownerConnection, true);
+                if (objectId == null)
+                    objectId = GetNextNetworkObjectId();
+                nob.Preinitialize_Internal(NetworkManager, objectId.Value, ownerConnection, true);
                 base.AddToSpawned(nob, true);
                 nob.gameObject.SetActive(true);
                 nob.Initialize(true, true);
@@ -376,15 +393,33 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection = null)
         {
-            if (!NetworkManager.ServerManager.Started)
-            {
-                base.NetworkManager.LogWarning("Cannot spawn object because the server is not active.");
-                return;
-            }
+            //Default as false, will change if needed.
+            bool predictedSpawn = false;
+
             if (networkObject == null)
             {
                 base.NetworkManager.LogError($"Specified networkObject is null.");
                 return;
+            }
+            if (!NetworkManager.ServerManager.Started)
+            {
+                //Neither server nor client are started.
+                if (!NetworkManager.ClientManager.Started)
+                {
+                    base.NetworkManager.LogWarning("Cannot spawn object because server nor client are active.");
+                    return;
+                }
+                //Server has predicted spawning disabled.
+                if (!NetworkManager.PredictionManager.GetAllowPredictedSpawning())
+                {
+                    base.NetworkManager.LogWarning("Cannot spawn object because server is not active and predicted spawning is not enabled.");
+                    return;
+                }
+                //Various predicted spawn checks.
+                if (!base.CanPredictedSpawn(networkObject, NetworkManager.ClientManager.Connection, ownerConnection, false))
+                    return;
+
+                predictedSpawn = true;
             }
             if (!networkObject.gameObject.scene.IsValid())
             {
@@ -406,14 +441,16 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            SpawnWithoutChecks(networkObject, ownerConnection);
+            if (predictedSpawn)
+                base.NetworkManager.ClientManager.Objects.PredictedSpawn(networkObject, ownerConnection);
+            else
+                SpawnWithoutChecks(networkObject, ownerConnection);
         }
-
 
         /// <summary>
         /// Spawns networkObject without any checks.
         /// </summary>
-        private void SpawnWithoutChecks(NetworkObject networkObject, NetworkConnection ownerConnection = null)
+        private void SpawnWithoutChecks(NetworkObject networkObject, NetworkConnection ownerConnection = null, int? objectId = null)
         {
             /* Setup locally without sending to clients.
             * When observers are built for the network object
@@ -421,7 +458,7 @@ namespace FishNet.Managing.Server
             * be sent. */
             networkObject.SetIsNetworked(true);
             _spawnCache.AddValue(networkObject);
-            SetupWithoutSynchronization(networkObject, ownerConnection);
+            SetupWithoutSynchronization(networkObject, ownerConnection, objectId);
 
             foreach (NetworkObject item in networkObject.ChildNetworkObjects)
             {
@@ -456,6 +493,116 @@ namespace FishNet.Managing.Server
             }
 
             ListCaches.StoreCache(spawnCacheCopy);
+        }
+
+        /// <summary>
+        /// Reads a predicted spawn.
+        /// </summary>
+        internal void ReadPredictedSpawn(Reader reader, NetworkConnection conn)
+        {
+            sbyte initializeOrder;
+            ushort collectionId;
+            int prefabId;
+            int objectId = reader.ReadNetworkObjectForSpawn(out initializeOrder, out collectionId, out _);
+            //If objectId is not within predicted ids for conn.
+            if (!conn.PredictedObjectIds.Contains(objectId))
+            {
+                reader.Clear();
+                conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {conn.ClientId} used predicted spawning with a non-reserved objectId of {objectId}.");
+                return;
+            }
+
+            NetworkConnection owner = reader.ReadNetworkConnection();
+            SpawnType st = (SpawnType)reader.ReadByte();
+            //Not used at the moment.
+            byte componentIndex = reader.ReadByte();
+
+            //Read transform values which differ from serialized values.
+            Vector3? localPosition;
+            Quaternion? localRotation;
+            Vector3? localScale;
+            base.ReadTransformProperties(reader, out localPosition, out localRotation, out localScale);
+
+            NetworkObject nob;
+            bool isGlobal = false;
+            if (SpawnTypeEnum.Contains(st, SpawnType.Scene))
+            {
+                ulong sceneId = reader.ReadUInt64(AutoPackType.Unpacked);
+                nob = base.GetSceneNetworkObject(sceneId);
+                if (!base.CanPredictedSpawn(nob, conn, owner, true))
+                    return;
+            }
+            else
+            {
+                //Not used right now.
+                SpawnParentType spt = (SpawnParentType)reader.ReadByte();
+                prefabId = reader.ReadNetworkObjectId();
+                //Invalid prefabId.
+                if (prefabId == NetworkObject.UNSET_PREFABID_VALUE)
+                {
+                    reader.Clear();
+                    conn.Kick(KickReason.UnusualActivity, LoggingType.Common, $"Spawned object has an invalid prefabId of {prefabId}. Make sure all objects which are being spawned over the network are within SpawnableObjects on the NetworkManager. Connection {conn.ClientId} will be kicked immediately.");
+                    return;
+                }
+
+                PrefabObjects prefabObjects = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
+                //PrefabObjects not found.
+                if (prefabObjects == null)
+                {
+                    reader.Clear();
+                    conn.Kick(KickReason.UnusualActivity, LoggingType.Common, $"PrefabObjects collection is not found for CollectionId {collectionId}. Be sure to add your addressables NetworkObject prefabs to the collection on server and client before attempting to spawn them over the network. Connection {conn.ClientId} will be kicked immediately.");
+                    return;
+                }
+                //Check if prefab allows predicted spawning.
+                NetworkObject nPrefab = prefabObjects.GetObject(true, prefabId);
+                if (!base.CanPredictedSpawn(nPrefab, conn, owner, true))
+                    return;
+
+                nob = NetworkManager.GetPooledInstantiated(prefabId, false);
+                isGlobal = SpawnTypeEnum.Contains(st, SpawnType.InstantiatedGlobal);
+            }
+
+            //Initialize for prediction.
+            nob.InitializePredictedObject_Server(conn);
+
+            Transform t = nob.transform;
+            //Parenting predicted spawns is not supported yet.
+            t.SetParent(null, true);
+            base.GetTransformProperties(localPosition, localRotation, localScale, t, out Vector3 pos, out Quaternion rot, out Vector3 scale);
+            t.SetLocalPositionRotationAndScale(pos, rot, scale);
+            //Only need to set IsGlobal also if not host.
+
+            nob.SetIsGlobal(isGlobal);
+            SpawnWithoutChecks(nob, owner, objectId);
+
+            //Send the spawner a new reservedId.
+            WriteResponse(true);
+            //Writes a predicted spawn result to a client.
+            void WriteResponse(bool success)
+            {
+                PooledWriter writer = WriterPool.GetWriter();
+                writer.WritePacketId(PacketId.PredictedSpawnResult);
+                writer.WriteNetworkObjectId(nob.ObjectId);
+                writer.WriteBoolean(success);
+
+                if (success)
+                {
+                    Queue<int> objectIdCache = NetworkManager.ServerManager.Objects.GetObjectIdCache();
+                    //Write next objectId to use.
+                    int invalidId = NetworkObject.UNSET_OBJECTID_VALUE;
+                    int nextId = (objectIdCache.Count > 0) ? objectIdCache.Dequeue() : invalidId;
+                    writer.WriteNetworkObjectId(nextId);
+                    //If nextId is valid then also add it to spawners local cache.
+                    if (nextId != invalidId)
+                        conn.PredictedObjectIds.Enqueue(nextId);
+                    ////Update RPC links.
+                    //foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                    //    nb.WriteRpcLinks(writer);
+                }
+
+                conn.SendToClient((byte)Channel.Reliable, writer.GetArraySegment());
+            }
+
         }
         #endregion
 
@@ -497,12 +644,56 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Despawns an object over the network.
         /// </summary>
-        internal override void Despawn(NetworkObject nob, DespawnType despawnType, bool asServer)
+        internal override void Despawn(NetworkObject networkObject, DespawnType despawnType, bool asServer)
         {
-            if (nob.CanSpawnOrDespawn(true))
+            //Default as false, will change if needed.
+            bool predictedDespawn = false;
+
+            if (networkObject == null)
             {
-                FinalizeDespawn(nob, despawnType);
-                base.Despawn(nob, despawnType, true);
+                base.NetworkManager.LogWarning($"NetworkObject cannot be despawned because it is null.");
+                return;
+            }
+            if (networkObject.IsDeinitializing)
+            {
+                base.NetworkManager.LogWarning($"Object {networkObject.name} cannot be despawned because it is already deinitializing.");
+                return;
+            }
+
+            if (!NetworkManager.ServerManager.Started)
+            {
+                //Neither server nor client are started.
+                if (!NetworkManager.ClientManager.Started)
+                {
+                    base.NetworkManager.LogWarning("Cannot despawn object because server nor client are active.");
+                    return;
+                }
+                //Server has predicted spawning disabled.
+                if (!NetworkManager.PredictionManager.GetAllowPredictedSpawning())
+                {
+                    base.NetworkManager.LogWarning("Cannot despawn object because server is not active and predicted spawning is not enabled.");
+                    return;
+                }
+                //Various predicted despawn checks.
+                if (!base.CanPredictedDespawn(networkObject, NetworkManager.ClientManager.Connection, false))
+                    return;
+
+                predictedDespawn = true;
+            }
+            if (!networkObject.gameObject.scene.IsValid())
+            {
+                base.NetworkManager.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
+                return;
+            }
+
+            if (predictedDespawn)
+            {
+                base.NetworkManager.ClientManager.Objects.PredictedDepawn(networkObject);
+            }
+            else
+            {
+                FinalizeDespawn(networkObject, despawnType);
+                base.Despawn(networkObject, despawnType, asServer);
             }
         }
 
@@ -522,7 +713,7 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         private void FinalizeDespawn(NetworkObject nob, DespawnType despawnType)
         {
-            if (nob != null && nob.ObjectId != -1)
+            if (nob != null && nob.ObjectId != NetworkObject.UNSET_OBJECTID_VALUE)
             {
                 nob.WriteDirtySyncTypes();
                 WriteDespawnAndSend(nob, despawnType);
@@ -559,9 +750,31 @@ namespace FishNet.Managing.Server
             everyoneWriter.Dispose();
             ListCaches.StoreCache(cache);
         }
+        /// <summary>
+        /// Reads a predicted despawn.
+        /// </summary>
+        internal void ReadPredictedDespawn(Reader reader, NetworkConnection conn)
+        {
+            NetworkObject nob = reader.ReadNetworkObject();
 
+            //Maybe server destroyed the object so don't kick if null.
+            if (nob == null)
+            {
+                reader.Clear();
+                return;
+            }
+            //Does not allow predicted despawning.
+            if (!nob.AllowPredictedDespawning)
+            {
+                reader.Clear();
+                conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {conn.ClientId} used predicted despawning for object {nob.name} when it does not support predicted despawning.");
+            }
+
+            //Despawn object.
+            nob.Despawn();
+        }
+        #endregion
     }
-    #endregion
-    
+
 
 }

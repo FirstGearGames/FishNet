@@ -68,7 +68,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Returns RPCLinks to availableRpcLinkIndexes.
         /// </summary>
-        internal void ReturnRpcLinks(Dictionary<uint, RpcLinkType> links)
+        internal void StoreRpcLinks(Dictionary<uint, RpcLinkType> links)
         {
             foreach (RpcLinkType rlt in links.Values)
                 _availableRpcLinkIndexes.Enqueue(rlt.LinkIndex);

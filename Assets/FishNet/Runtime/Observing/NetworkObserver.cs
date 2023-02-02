@@ -111,6 +111,11 @@ namespace FishNet.Observing
         /// True if already pre-initialized.
         /// </summary>
         private bool _preintiialized;
+        /// <summary>
+        /// True if ParentNetworkObject was visible last iteration.
+        /// This value will also be true if there is no ParentNetworkObject.
+        /// </summary>
+        private bool _lastParentVisible;
         #endregion
 
         private void OnEnable()
@@ -121,7 +126,11 @@ namespace FishNet.Observing
         private void OnDisable()
         {
             if (_networkObject != null && _networkObject.IsDeinitializing)
+            {
+                _lastParentVisible = false;
+                _nonTimedMet.Clear();
                 UnregisterTimedConditions();
+            }
         }
         private void OnDestroy()
         {
@@ -231,20 +240,33 @@ namespace FishNet.Observing
                 * have visibility. */
                 if (notOwner)
                 {
-                    //True if connection starts with meeting non-timed conditions.
-                    bool startNonTimedMet = _nonTimedMet.Contains(connection);
+                    bool parentVisible = true;
+                    if (_networkObject.ParentNetworkObject != null)
+                    {
+                        parentVisible = _networkObject.ParentNetworkObject.Observers.Contains(connection);
+                        /* If parent is visible but was not previously
+                         * then unset timedOnly to make sure all conditions
+                         * are checked again. This ensures that the _nonTimedMet
+                         * collection is updated. */
+                        if (parentVisible && !_lastParentVisible)
+                            timedOnly = false;
+                        _lastParentVisible = parentVisible;
+                    }
 
-                    /* If a timed update and nonTimed
-                     * have not been met then there's
-                     * no reason to check timed. */
-                    if (timedOnly && !startNonTimedMet)
+                    //If parent is not visible no further checks are required.
+                    if (!parentVisible)
                     {
                         allConditionsMet = false;
                     }
+                    //Parent is visible, perform checks.
                     else
                     {
-                        //Return as failed if there is a parent nob which doesn't have visibility.
-                        if (_networkObject.ParentNetworkObject != null && !_networkObject.ParentNetworkObject.Observers.Contains(connection))
+                        //True if connection starts with meeting non-timed conditions.
+                        bool startNonTimedMet = _nonTimedMet.Contains(connection);
+                        /* If a timed update an1d nonTimed
+                         * have not been met then there's
+                         * no reason to check timed. */
+                        if (timedOnly && !startNonTimedMet)
                         {
                             allConditionsMet = false;
                         }

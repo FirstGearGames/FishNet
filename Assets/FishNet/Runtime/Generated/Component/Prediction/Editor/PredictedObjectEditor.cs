@@ -91,7 +91,7 @@ namespace FishNet.Component.Prediction
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_spectatorSmoothPosition, new GUIContent("Smooth Position"));
                 EditorGUILayout.PropertyField(_spectatorSmoothRotation, new GUIContent("Smooth Rotation"));
-                EditorGUILayout.PropertyField(_spectatorSmoothingDuration, new GUIContent("Smoothing Duration"));
+                //EditorGUILayout.PropertyField(_spectatorSmoothingDuration, new GUIContent("Smoothing Duration"));
                 EditorGUILayout.PropertyField(_spectatorInterpolation, new GUIContent("Interpolation"));
                 EditorGUILayout.PropertyField(_overflowMultiplier);
                 EditorGUI.indentLevel--;

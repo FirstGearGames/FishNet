@@ -1,3 +1,4 @@
+using FishNet.Managing.Object;
 using FishNet.Object;
 using FishNet.Utility.Extension;
 using System.Collections.Generic;
@@ -21,13 +22,17 @@ namespace FishNet.Utility.Performance
 
         #region Private.
         /// <summary>
-        /// Pooled network objects.
+        /// Cache for pooled NetworkObjects.
         /// </summary>
-        private Dictionary<int, Stack<NetworkObject>> _cached = new Dictionary<int, Stack<NetworkObject>>();
+        private List<Dictionary<int, Stack<NetworkObject>>> _cache = new List<Dictionary<int, Stack<NetworkObject>>>();
+        /// <summary>
+        /// Current count of the cache collection.
+        /// </summary>
+        private int _cacheCount = 0;
         #endregion
 
         /// <summary>
-        /// Returns an object that has been stored. A new object will be created if no stored objects are available.
+        /// Returns an object that has been stored with a collectionId of 0. A new object will be created if no stored objects are available.
         /// </summary>
         /// <param name="prefabId">PrefabId of the object to return.</param>
         /// <param name="asServer">True if being called on the server side.</param>
@@ -35,21 +40,34 @@ namespace FishNet.Utility.Performance
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override NetworkObject RetrieveObject(int prefabId, bool asServer)
         {
+            return RetrieveObject(prefabId, 0, asServer);     
+        }
+
+        /// <summary>
+        /// Returns an object that has been stored. A new object will be created if no stored objects are available.
+        /// </summary>
+        /// <param name="prefabId">PrefabId of the object to return.</param>
+        /// <param name="collectionId">CollectionId of the prefab.</param>
+        /// <param name="asServer">True if being called on the server side.</param>
+        /// <returns></returns>
+        public override NetworkObject RetrieveObject(int prefabId, ushort collectionId, bool asServer)
+        {
+            PrefabObjects po = base.NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
             //Quick exit/normal retrieval when not using pooling.
             if (!_enabled)
             {
-                NetworkObject prefab = base.NetworkManager.SpawnablePrefabs.GetObject(asServer, prefabId);
+                NetworkObject prefab = po.GetObject(asServer, prefabId);
                 return Instantiate(prefab);
             }
 
-            Stack<NetworkObject> cache = GetOrCreateCache(prefabId);
+            Stack<NetworkObject> cache = GetOrCreateCache(collectionId, prefabId);
             NetworkObject nob;
             //Iterate until nob is populated just in case cache entries have been destroyed.
             do
             {
                 if (cache.Count == 0)
                 {
-                    NetworkObject prefab = base.NetworkManager.SpawnablePrefabs.GetObject(asServer, prefabId);
+                    NetworkObject prefab = po.GetObject(asServer, prefabId);
                     /* A null nob should never be returned from spawnables. This means something
                      * else broke, likely unrelated to the object pool. */
                     nob = Instantiate(prefab);
@@ -66,7 +84,6 @@ namespace FishNet.Utility.Performance
             nob.gameObject.SetActive(true);
             return nob;
         }
-
         /// <summary>
         /// Stores an object into the pool.
         /// </summary>
@@ -75,7 +92,7 @@ namespace FishNet.Utility.Performance
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override void StoreObject(NetworkObject instantiated, int prefabId, bool asServer)
+        public override void StoreObject(NetworkObject instantiated, bool asServer)
         {
             //Pooling is not enabled.
             if (!_enabled)
@@ -86,7 +103,7 @@ namespace FishNet.Utility.Performance
 
             instantiated.gameObject.SetActive(false);
             instantiated.ResetForObjectPool();
-            Stack<NetworkObject> cache = GetOrCreateCache(prefabId);
+            Stack<NetworkObject> cache = GetOrCreateCache(instantiated.SpawnableCollectionId, instantiated.PrefabId);
             cache.Push(instantiated);
         }
 
@@ -95,14 +112,26 @@ namespace FishNet.Utility.Performance
         /// </summary>
         /// <param name="prefabId"></param>
         /// <returns></returns>
-        private Stack<NetworkObject> GetOrCreateCache(int prefabId)
+        private Stack<NetworkObject> GetOrCreateCache(int collectionId, int prefabId)
         {
+            if (collectionId >= _cacheCount)
+            {
+                //Add more to the cache.
+                while (_cache.Count <= collectionId)
+                {
+                    Dictionary<int, Stack<NetworkObject>> dict = new Dictionary<int, Stack<NetworkObject>>();
+                    _cache.Add(dict);
+                }
+                _cacheCount = collectionId;
+            }
+
+            Dictionary<int, Stack<NetworkObject>> dictionary = _cache[collectionId];
             Stack<NetworkObject> cache;
             //No cache for prefabId yet, make one.
-            if (!_cached.TryGetValueIL2CPP(prefabId, out cache))
+            if (!dictionary.TryGetValueIL2CPP(prefabId, out cache))
             {
                 cache = new Stack<NetworkObject>();
-                _cached[prefabId] = cache;
+                dictionary[prefabId] = cache;
             }
             return cache;
         }

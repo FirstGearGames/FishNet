@@ -92,8 +92,6 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
         {
-            if (!CanSpawnOrDespawn(true))
-                return;
             if (go == null)
             {
                 NetworkManager.LogWarning($"GameObject cannot be spawned because it is null.");
@@ -112,56 +110,8 @@ namespace FishNet.Managing.Server
         /// <param name="ownerConnection">Connection to give ownership to.</param>
         public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
         {
-            if (!CanSpawnOrDespawn(true))
-                return;
-            if (nob == null)
-            {
-                NetworkManager.LogWarning($"NetworkObject cannot be spawned because it is null.");
-                return;
-            }
-
             Objects.Spawn(nob, ownerConnection);
         }
-
-
-        /// <summary>
-        /// Spawns an object over the network. Can only be called on the server.
-        /// </summary>
-        /// <param name="nob">MetworkObject instance to spawn.</param>
-        /// <param name="ownerConnection">Connection to give ownership to.</param>
-        /// <param name="synchronizeParent">True to synchronize the parent object in the spawn message. The parent must have a NetworkObject or NetworkBehaviour component for this to work.</param>
-        [Obsolete("SynchronizeParent is now automatic, and no longer optional. Use Spawn(NetworkObject, NetworkConnection) instead.")] //Remove 2023/01/01.
-        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection, bool synchronizeParent)
-        {
-            if (!CanSpawnOrDespawn(true))
-                return;
-            if (nob == null)
-            {
-                NetworkManager.LogWarning($"NetworkObject cannot be spawned because it is null.");
-                return;
-            }
-
-            Objects.Spawn(nob, ownerConnection);
-        }
-
-
-        /// <summary>
-        /// Returns if Spawn can be called.
-        /// </summary>
-        /// <param name="warn">True to warn if not able to execute spawn or despawn.</param>
-        /// <returns></returns>
-        private bool CanSpawnOrDespawn(bool warn)
-        {
-            if (!Started)
-            {
-                if (warn)
-                    NetworkManager.LogWarning($"The server must be active to spawn or despawn networked objects.");
-                return false;
-            }
-
-            return true;
-        }
-
 
         /// <summary>
         /// Despawns an object over the network. Can only be called on the server.
@@ -171,9 +121,6 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Despawn(GameObject go, DespawnType? despawnType = null)
         {
-            if (!CanSpawnOrDespawn(true))
-                return;
-
             if (go == null)
             {
                 NetworkManager.LogWarning($"GameObject cannot be despawned because it is null.");
@@ -188,17 +135,9 @@ namespace FishNet.Managing.Server
         /// Despawns an object over the network. Can only be called on the server.
         /// </summary>
         /// <param name="networkObject">NetworkObject instance to despawn.</param>
-        /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
+        /// <param name="despawnType">Despawn override type.</param>
         public void Despawn(NetworkObject networkObject, DespawnType? despawnType = null)
         {
-            if (!CanSpawnOrDespawn(true))
-                return;
-            if (networkObject == null)
-            {
-                NetworkManager.LogWarning($"NetworkObject cannot be despawned because it is null.");
-                return;
-            }
-
             DespawnType resolvedDespawnType = (despawnType == null)
                 ? networkObject.GetDefaultDespawnType()
                 : despawnType.Value;

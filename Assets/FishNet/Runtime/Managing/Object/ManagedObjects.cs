@@ -13,7 +13,7 @@ using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Object
 {
-    public abstract class ManagedObjects
+    public abstract partial class ManagedObjects
     {
         #region Public.
         /// <summary>
@@ -24,17 +24,9 @@ namespace FishNet.Managing.Object
 
         #region Protected.
         /// <summary>
-        /// Used to write spawn messages.
-        /// </summary>
-        internal SpawnWriter SpawnWriter = new SpawnWriter();
-        /// <summary>
-        /// Used to write despawn messages.
-        /// </summary>
-        internal DespawnWriter DespawnWriter = new DespawnWriter();
-        /// <summary>
         /// Returns the next ObjectId to use.
         /// </summary>
-        protected internal virtual int GetNextNetworkObjectId() { return -1; }
+        protected internal virtual int GetNextNetworkObjectId(bool errorCheck = true) => NetworkObject.UNSET_OBJECTID_VALUE;
         /// <summary>
         /// NetworkManager handling this.
         /// </summary>
@@ -49,8 +41,6 @@ namespace FishNet.Managing.Object
         protected void Initialize(NetworkManager manager)
         {
             NetworkManager = manager;
-            SpawnWriter.Initialize(manager);
-            DespawnWriter.Initialize(manager);
         }
 
         /// <summary>
@@ -106,16 +96,6 @@ namespace FishNet.Managing.Object
             //Do the same with SceneObjects.
             if (unexpectedlyDestroyed && (sceneId != 0))
                 RemoveFromSceneObjects(sceneId);
-        }
-
-        /// <summary>
-        /// Writes a despawn.
-        /// </summary>
-        /// <param name="nob"></param>
-        protected void WriteDespawn(NetworkObject nob, DespawnType despawnType, Writer everyoneWriter)
-        {
-            everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
-            everyoneWriter.WriteNetworkObjectForDespawn(nob, despawnType);
         }
 
         /// <summary>
@@ -186,7 +166,7 @@ namespace FishNet.Managing.Object
                 if (despawnType == DespawnType.Destroy)
                     MonoBehaviour.Destroy(nob.gameObject);
                 else
-                    NetworkManager.StorePooledInstantiated(nob, nob.PrefabId, asServer);
+                    NetworkManager.StorePooledInstantiated(nob, asServer);
             }
             /* If to potentially disable instead of destroy.
              * This is such as something is despawning server side
@@ -262,7 +242,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         /// <param name="prefab">Prefab to initialize.</param>
         /// <param name="index">Index within spawnable prefabs.</param>
-        public static void InitializePrefab(NetworkObject prefab, short index, ushort? collectionId = null)
+        public static void InitializePrefab(NetworkObject prefab, int index, ushort? collectionId = null)
         {
             if (prefab == null)
                 return;
@@ -271,7 +251,8 @@ namespace FishNet.Managing.Object
              * object. */
             if (index != -1)
             {
-                prefab.PrefabId = (short)index;
+                //Use +1 because 0 indicates unset.
+                prefab.PrefabId = (ushort)index;
                 if (collectionId != null)
                     prefab.SpawnableCollectionId = collectionId.Value;
             }
@@ -319,7 +300,7 @@ namespace FishNet.Managing.Object
                     if (despawnType == DespawnType.Destroy)
                         MonoBehaviour.Destroy(nob.gameObject);
                     else
-                        NetworkManager.StorePooledInstantiated(nob, nob.PrefabId, asServer);
+                        NetworkManager.StorePooledInstantiated(nob, asServer);
                 }
             }
         }
@@ -413,7 +394,7 @@ namespace FishNet.Managing.Object
                 if (NetworkManager.CanLog(LoggingType.Warning))
                     Debug.LogWarning(msg);
 #endif
-                reader.Skip(reader.Remaining);
+                reader.Clear();
             }
             /* If length is known then is unreliable packet. It's possible
              * this packetId arrived before or after the object was spawned/destroyed.
@@ -427,7 +408,7 @@ namespace FishNet.Managing.Object
              * the packet, user shouldn't be sending this much data over unreliable. */
             else if (dataLength == (int)MissingObjectPacketLength.PurgeRemaiming)
             {
-                reader.Skip(reader.Remaining);
+                reader.Clear();
             }
         }
 

@@ -30,6 +30,13 @@ namespace FishNet.Object
         /// Gets the last tick this NetworkBehaviour reconciled with.
         /// </summary>
         public uint GetLastReconcileTick() => _lastReconcileTick;
+
+        internal void SetLastReconcileTick(uint value, bool updateGlobals = true)
+        {
+            _lastReconcileTick = value;
+            if (updateGlobals)
+                PredictionManager.LastReconcileTick = value;
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -42,12 +49,14 @@ namespace FishNet.Object
         /// Sets the last tick this NetworkBehaviour replicated with.
         /// For internal use only.
         /// </summary>
-        private void SetLastReplicateTick(uint value)
+        private void SetLastReplicateTick(uint value, bool updateGlobals = true)
         {
-            Owner.LocalReplicateTick = TimeManager.LocalTick;
             _lastReplicateTick = value;
-            //Also set on the timemanager.
-            PredictionManager.LastReplicateTick = value;
+            if (updateGlobals)
+            {
+                Owner.LocalReplicateTick = TimeManager.LocalTick;
+                PredictionManager.LastReplicateTick = value;
+            }
         }
         /// <summary>
         /// True if this object is reconciling.
@@ -194,11 +203,11 @@ namespace FishNet.Object
         /// </summary>
         private void ResetLastPredictionTicks()
         {
-            _lastReconcileTick = 0;
             _lastSentReplicateTick = 0;
             _lastReceivedReplicateTick = 0;
             _lastReceivedReconcileTick = 0;
-            SetLastReplicateTick(0);
+            SetLastReconcileTick(0, false);
+            SetLastReplicateTick(0, false);
         }
         /// <summary>
         /// Clears cached replicates.
@@ -619,7 +628,7 @@ namespace FishNet.Object
             //Server always uses last replicate tick as reconcile tick.
             uint tick = _lastReplicateTick;
             data.SetTick(tick);
-            _lastReconcileTick = tick;
+            SetLastReconcileTick(tick);
 
             PredictionManager.InvokeServerReconcile(this, true);
             SendReconcileRpc(methodHash, data, channel);
@@ -644,7 +653,7 @@ namespace FishNet.Object
             PhysicsScene2D ps2d = scene.GetPhysicsScene2D();
 
             //This must be set before reconcile is invoked.
-            _lastReconcileTick = tick;
+            SetLastReconcileTick(tick);
             //Invoke that reconcile is starting.
             PredictionManager.InvokeOnReconcile_Internal(this, true);
             //Call reconcile user logic.

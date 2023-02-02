@@ -19,7 +19,7 @@ namespace FishNet.Object
         /// Networked PrefabId assigned to this Prefab.
         /// </summary>
         [field: SerializeField, HideInInspector]
-        public short PrefabId { get; internal set; } = -1;
+        public ushort PrefabId { get; internal set; } = 0;
         /// <summary>
         /// Spawn collection to use assigned to this Prefab.
         /// </summary>

@@ -112,14 +112,14 @@ namespace FishNet.Object
             if (_rpcLinks.Count == 0)
                 return;
 
-            ServerManager?.ReturnRpcLinks(_rpcLinks);
+            ServerManager?.StoreRpcLinks(_rpcLinks);
             _rpcLinks.Clear();
         }
 
         /// <summary>
         /// Writes rpcLinks to writer.
         /// </summary>
-        internal void WriteRpcLinks(PooledWriter writer)
+        internal void WriteRpcLinks(Writer writer)
         {
             PooledWriter rpcLinkWriter = WriterPool.GetWriter();
             foreach (KeyValuePair<uint, RpcLinkType> item in _rpcLinks)

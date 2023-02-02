@@ -1,21 +1,21 @@
-﻿using FishNet.Documenting;
+﻿//using FishNet.Documenting;
+
+//Remove on 2023/06/01
+//namespace FishNet.Object.Synchronizing.SecretMenu
+//{
+//    /// <summary>
+//    /// Internal SyncVar extensions.
+//    /// </summary>
+//    [APIExclude]
+//    public static class SyncVarExtensions
+//    {
+//        /// <summary>
+//        /// Dirties SyncVars.
+//        /// </summary>
+//        /// <param name="obj"></param>
+//        [APIExclude]
+//        public static void Dirty(this object obj) { }
+//    }
 
 
-namespace FishNet.Object.Synchronizing.SecretMenu
-{
-    /// <summary>
-    /// Internal SyncVar extensions.
-    /// </summary>
-    [APIExclude]
-    public static class SyncVarExtensions
-    {
-        /// <summary>
-        /// Dirties SyncVars.
-        /// </summary>
-        /// <param name="obj"></param>
-        [APIExclude]
-        public static void Dirty(this object obj) { }
-    }
-
-
-}
+//}

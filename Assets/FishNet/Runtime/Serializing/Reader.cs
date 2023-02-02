@@ -1,7 +1,6 @@
 using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing;
-using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Serializing.Helping;
@@ -13,7 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 using UnityEngine;
 
 
@@ -207,6 +205,16 @@ namespace FishNet.Serializing
                 return;
 
             Position += value;
+        }
+        /// <summary>
+        /// Clears remaining bytes to be read.
+        /// </summary>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Clear()
+        {
+            if (Remaining > 0)
+                Skip(Remaining);
         }
 
         /// <summary>
@@ -462,7 +470,7 @@ namespace FishNet.Serializing
         {
             int size = ReadInt32();
             //Null string.
-            if (size == -1)
+            if (size == Writer.UNSET_COLLECTION_SIZE_VALUE)
                 return null;
             else if (size == 0)
                 return string.Empty;
@@ -481,14 +489,14 @@ namespace FishNet.Serializing
         public byte[] ReadBytesAndSizeAllocated()
         {
             int size = ReadInt32();
-            if (size == -1)
+            if (size == Writer.UNSET_COLLECTION_SIZE_VALUE)
                 return null;
             else
                 return ReadBytesAllocated(size);
         }
 
         /// <summary>
-        /// Reads bytes and size and copies results into target. Returns -1 if null was written.
+        /// Reads bytes and size and copies results into target. Returns UNSET if null was written.
         /// </summary>
         /// <returns>Bytes read.</returns>
         [CodegenExclude]
@@ -510,10 +518,10 @@ namespace FishNet.Serializing
         public ArraySegment<byte> ReadArraySegmentAndSize()
         {
             int size = ReadInt32();
-            /* -1 would be written for null. But since
+            /* UNSET would be written for null. But since
              * ArraySegments cannot be null return default if
-             * length is 0 or less. */
-            if (size <= 0)
+             * length is unset or 0. */
+            if (size == Writer.UNSET_COLLECTION_SIZE_VALUE || size == 0)
                 return default;
 
             return ReadArraySegment(size);
@@ -776,14 +784,14 @@ namespace FishNet.Serializing
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             LastNetworkBehaviour = null;
 #endif
-            objectOrPrefabId = ReadInt16();
+            objectOrPrefabId = ReadNetworkObjectId();
             bool isSpawned;
-            /* -1 indicates that the object
+            /* UNSET indicates that the object
              * is null or no PrefabId is set.
              * PrefabIds are set in Awake within
              * the NetworkManager so that should
              * never happen so long as nob isn't null. */
-            if (objectOrPrefabId == -1)
+            if (objectOrPrefabId == NetworkObject.UNSET_OBJECTID_VALUE)
                 return null;
             else
                 isSpawned = ReadBoolean();
@@ -833,7 +841,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int ReadNetworkObjectId()
         {
-            return ReadInt16();
+            return ReadUInt16();
         }
 
         /// <summary>
@@ -842,25 +850,25 @@ namespace FishNet.Serializing
         /// <returns></returns>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal int ReadNetworkObjectForSpawn(out sbyte initializeOrder, out ushort collectionid)
+        internal int ReadNetworkObjectForSpawn(out sbyte initializeOrder, out ushort collectionid, out bool spawned)
         {
-            int id = ReadInt16();
+            int objectId = ReadNetworkObjectId();
 
-            bool isNull = (id == -1);
+            bool isNull = (objectId == NetworkObject.UNSET_OBJECTID_VALUE);
             if (isNull)
             {
                 initializeOrder = 0;
                 collectionid = 0;
+                spawned = false;
             }
             else
             {
                 collectionid = ReadUInt16();
                 initializeOrder = ReadSByte();
-                //Clear spawned.
-                ReadBoolean();
+                spawned = ReadBoolean();
             }
 
-            return id;
+            return objectId;
         }
 
 
@@ -872,9 +880,9 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal int ReadNetworkObjectForDepawn(out DespawnType dt)
         {
-            int id = ReadInt16();
+            int objectId = ReadNetworkObjectId();
             dt = (DespawnType)ReadByte();
-            return id;
+            return objectId;
         }
 
 
@@ -887,7 +895,7 @@ namespace FishNet.Serializing
         internal byte ReadNetworkBehaviourId(out int objectId)
         {
             objectId = ReadNetworkObjectId();
-            if (objectId != -1)
+            if (objectId != NetworkObject.UNSET_OBJECTID_VALUE)
                 return ReadByte();
             else
                 return 0;
@@ -978,8 +986,8 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkConnection ReadNetworkConnection()
         {
-            int value = ReadInt16();
-            if (value == -1)
+            int value = ReadNetworkConnectionId();
+            if (value == NetworkConnection.UNSET_CLIENTID_VALUE)
             {
                 return FishNet.Managing.NetworkManager.EmptyConnection;
             }
@@ -1044,7 +1052,7 @@ namespace FishNet.Serializing
             /* Possible attacks. Impossible size, or size indicates
             * more elements in collection or more bytes needed
             * than what bytes are available. */
-            if (size < -1)
+            if (size != Writer.UNSET_COLLECTION_SIZE_VALUE && size < 0)
             {
                 NetworkManager.LogError($"Size of {size} is invalid.");
                 return false;
@@ -1244,17 +1252,17 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="collection"></param>
         /// <param name="allowNullification">True to allow the referenced collection to be nullified when receiving a null collection read.</param>
-        /// <returns>Number of values read into the collection. -1 is returned if the collection were read as null.</returns>
+        /// <returns>Number of values read into the collection. UNSET is returned if the collection were read as null.</returns>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int ReadList<T>(ref List<T> collection, bool allowNullification = false)
         {
             int count = ReadInt32();
-            if (count == -1)
+            if (count == Writer.UNSET_COLLECTION_SIZE_VALUE)
             {
                 if (allowNullification)
                     collection = null;
-                return -1;
+                return Writer.UNSET_COLLECTION_SIZE_VALUE;
             }
             else
             {
@@ -1294,7 +1302,7 @@ namespace FishNet.Serializing
         public int ReadArray<T>(ref T[] collection)
         {
             int count = ReadInt32();
-            if (count == -1)
+            if (count == Writer.UNSET_COLLECTION_SIZE_VALUE)
             {
                 return 0;
             }

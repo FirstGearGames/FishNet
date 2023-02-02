@@ -364,10 +364,10 @@ namespace FishNet.Object
         /// <summary>
         /// Writers syncVars for a spawn message.
         /// </summary>
-        /// <param name="writer"></param>
-        ///<param name="forOwner">True to also include syncVars which are for owner only.</param>
-        internal void WriteSyncTypesForSpawn(PooledWriter writer, bool forOwner)
+        internal void WriteSyncTypesForSpawn(PooledWriter writer, SyncTypeWriteType writeType)
         {
+            //Write for owner if writing all or owner, but not observers.
+            bool ownerWrite = (writeType != SyncTypeWriteType.Observers);
             WriteSyncType(_syncVars);
             WriteSyncType(_syncObjects);
 
@@ -381,7 +381,7 @@ namespace FishNet.Object
                     foreach (SyncBase sb in collection.Values)
                     {
                         //If not for owner and syncvar is owner only.
-                        if (!forOwner && sb.Settings.ReadPermission == ReadPermission.OwnerOnly)
+                        if (!ownerWrite && sb.Settings.ReadPermission == ReadPermission.OwnerOnly)
                         {
                             //If there is an owner then skip.
                             if (_networkObjectCache.Owner.IsValid)

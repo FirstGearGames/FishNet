@@ -4,7 +4,7 @@ using UnityEngine;
 namespace FishNet.Utility.Extension
 {
     [APIExclude]
-    public static class QuaterionFN
+    public static class QuaternionFN
     {
 
         /// <summary>

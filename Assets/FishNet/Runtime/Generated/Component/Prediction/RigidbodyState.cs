@@ -90,7 +90,7 @@ public static class RigidbodyStateSerializers
 
         if (value.Simulated)
         {
-            writer.WriteVector3(value.Velocity);
+            writer.WriteVector2(value.Velocity);
             writer.WriteSingle(value.AngularVelocity);
         }
     }
@@ -107,7 +107,7 @@ public static class RigidbodyStateSerializers
 
         if (state.Simulated)
         {
-            state.Velocity = reader.ReadVector3();
+            state.Velocity = reader.ReadVector2();
             state.AngularVelocity = reader.ReadSingle();
         }
 

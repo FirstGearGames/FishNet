@@ -4,6 +4,7 @@ using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Transporting.Multipass;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -96,6 +97,10 @@ namespace FishNet.Managing.Transporting
         /// Clients which are pending disconnects.
         /// </summary>
         private List<DisconnectingClient> _disconnectingClients = new List<DisconnectingClient>();
+        /// <summary>
+        /// Lowest MTU of all transports for channels.
+        /// </summary>
+        private int[] _lowestMtu;
         #endregion
 
         #region Consts.
@@ -141,6 +146,11 @@ namespace FishNet.Managing.Transporting
                 Transport = gameObject.AddComponent<FishNet.Transporting.Tugboat.Tugboat>();
 
             Transport.Initialize(_networkManager, 0);
+            //Cache lowest Mtus.
+            _lowestMtu = new int[CHANNEL_COUNT];
+            for (byte i = 0; i < CHANNEL_COUNT; i++)
+                _lowestMtu[i] = GetLowestMTU(i);
+
             InitializeToServerBundles();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _latencySimulator.Initialize(manager, Transport);
@@ -167,10 +177,118 @@ namespace FishNet.Managing.Transporting
              * also setup for unreliable. */
             for (byte i = 0; i < CHANNEL_COUNT; i++)
             {
-                int mtu = Transport.GetMTU(i);
+                int mtu = GetLowestMTU(i);
                 _toServerBundles.Add(new PacketBundle(_networkManager, mtu));
             }
         }
+
+
+        #region GetMTU.
+        /* Returned MTUs are always -1 to allow an extra byte
+         * to specify channel where certain transports do
+         * not allow or provide channel information. */
+        /// <summary>
+        /// Returns the lowest MTU for a channel. When using multipass this will evaluate all transports within Multipass.
+        /// </summary>
+        /// <param name="channel"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetLowestMTU(byte channel)
+        {
+            //Use cached if available.
+            if (_lowestMtu[channel] > 0)
+                return _lowestMtu[channel];
+
+            if (Transport is Multipass mp)
+            {
+                int? lowestMtu = null;
+                foreach (Transport t in mp.Transports)
+                {
+                    int thisMtu = t.GetMTU(channel);
+                    if (lowestMtu == null || thisMtu < lowestMtu.Value)
+                        lowestMtu = thisMtu;
+                }
+
+                //If lowest was not changed return unset.
+                if (lowestMtu == null)
+                {
+                    return -1;
+                }
+                else
+                {
+                    int mtu = lowestMtu.Value;
+                    if (mtu >= 0)
+                        mtu -= 1;
+                    return mtu;
+                }
+            }
+            else
+            {
+                return GetMTU(channel);
+            }
+        }
+        /// <summary>
+        /// Gets MTU on the current transport for channel.
+        /// </summary>
+        /// <param name="channel">Channel to get MTU of.</param>
+        /// <returns></returns>
+        public int GetMTU(byte channel)
+        {
+            int mtu = Transport.GetMTU(channel);
+            if (mtu >= 0)
+                mtu -= 1;
+            return mtu;
+        }
+        /// <summary>
+        /// Gets MTU on the transportIndex for channel. This requires use of Multipass.
+        /// </summary>
+        /// <param name="transportIndex">Index of the transport to get the MTU on.</param>
+        /// <param name="channel">Channel to get MTU of.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetMTU(int transportIndex, byte channel)
+        {
+            if (Transport is Multipass mp)
+            {
+                int mtu = mp.GetMTU(channel, transportIndex);
+                if (mtu >= 0)
+                    mtu -= 1;
+                return mtu;
+            }
+            //Using first/only transport.
+            else if (transportIndex == 0)
+            {
+                return GetMTU(channel);
+            }
+            //Unhandled.
+            else
+            {
+                _networkManager.LogWarning($"MTU cannot be returned with transportIndex because {typeof(Multipass).Name} is not in use.");
+                return -1;
+            }
+        }
+        /// <summary>
+        /// Gets MTU on the transport type for channel. This requires use of Multipass.
+        /// </summary>
+        /// <typeparam name="T">Tyep of transport to use.</typeparam>
+        /// <param name="channel">Channel to get MTU of.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetMTU<T>(byte channel) where T : Transport
+        {
+            Transport transport = GetTransport<T>();
+            if (transport != null)
+            {
+                int mtu = transport.GetMTU(channel);
+                if (mtu >= 0)
+                    mtu -= 1;
+                return mtu;
+            }
+
+            //Fall through.
+            return -1;
+        }
+        #endregion
 
         /// <summary>
         /// Sends data to a client.
@@ -289,7 +407,7 @@ namespace FishNet.Managing.Transporting
         /// <returns></returns>
         private bool SplitRequired(byte channelId, int segmentSize, out int requiredMessages, out int maxMessageSize)
         {
-            maxMessageSize = Transport.GetMTU(channelId) - (TransportManager.TICK_BYTES + SPLIT_INDICATOR_SIZE);
+            maxMessageSize = GetLowestMTU(channelId) - (TransportManager.TICK_BYTES + SPLIT_INDICATOR_SIZE);
             requiredMessages = Mathf.CeilToInt((float)segmentSize / maxMessageSize);
 
             return (requiredMessages > 1);

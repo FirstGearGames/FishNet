@@ -13,8 +13,10 @@ namespace FishNet.Managing.Predicting.Editing
         private SerializedProperty _dropExcessiveReplicates;
         private SerializedProperty _maximumServerReplicates;
         private SerializedProperty _maximumConsumeCount;
-
         private SerializedProperty _redundancyCount;
+        private SerializedProperty _allowPredictedSpawning;
+        private SerializedProperty _reservedObjectIds;
+
 
         protected virtual void OnEnable()
         {
@@ -22,6 +24,8 @@ namespace FishNet.Managing.Predicting.Editing
             _maximumServerReplicates = serializedObject.FindProperty("_maximumServerReplicates");
             _maximumConsumeCount = serializedObject.FindProperty("_maximumConsumeCount");
             _redundancyCount = serializedObject.FindProperty("_redundancyCount");
+            _allowPredictedSpawning = serializedObject.FindProperty(nameof(_allowPredictedSpawning));
+            _reservedObjectIds = serializedObject.FindProperty(nameof(_reservedObjectIds));
         }
 
         public override void OnInspectorGUI()
@@ -51,6 +55,14 @@ namespace FishNet.Managing.Predicting.Editing
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_redundancyCount);
             EditorGUI.indentLevel--;
+
+            EditorGUILayout.PropertyField(_allowPredictedSpawning);
+            if (_allowPredictedSpawning.boolValue == true)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_reservedObjectIds);
+                EditorGUI.indentLevel--;
+            }
 
             EditorGUILayout.Space();
 

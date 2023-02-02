@@ -1,3 +1,4 @@
+using FishNet.Connection;
 using FishNet.Managing.Logging;
 using LiteNetLib;
 using LiteNetLib.Layers;
@@ -394,7 +395,7 @@ namespace FishNet.Transporting.Tugboat.Server
                     }
 
                     //Send to all clients.
-                    if (connectionId == -1)
+                    if (connectionId == NetworkConnection.UNSET_CLIENTID_VALUE)
                     {
                         _server.SendToAll(segment.Array, segment.Offset, segment.Count, dm);
                     }

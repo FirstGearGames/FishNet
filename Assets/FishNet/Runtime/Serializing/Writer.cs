@@ -1,7 +1,6 @@
 using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing;
-using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
@@ -79,6 +78,10 @@ namespace FishNet.Serializing
         /// All datas in the replicate are default.
         /// </summary>
         internal const byte REPLICATE_ALL_DEFAULT_BYTE = 4;
+        /// <summary>
+        /// Value used when a collection is unset, as in null.
+        /// </summary>
+        public const int UNSET_COLLECTION_SIZE_VALUE = -1;
         #endregion
 
         /// <summary>
@@ -245,7 +248,7 @@ namespace FishNet.Serializing
         {
             if (value == null)
             {
-                WriteInt32(-1);
+                WriteInt32(Writer.UNSET_COLLECTION_SIZE_VALUE);
             }
             else
             {
@@ -451,7 +454,7 @@ namespace FishNet.Serializing
         {
             if (value == null)
             {
-                WriteInt32(-1);
+                WriteInt32(Writer.UNSET_COLLECTION_SIZE_VALUE);
                 return;
             }
             else if (value.Length == 0)
@@ -775,9 +778,9 @@ namespace FishNet.Serializing
         public void WriteNetworkObjectId(NetworkObject nob)
         {
             if (nob == null)
-                WriteInt16(-1);
+                WriteUInt16(NetworkObject.UNSET_OBJECTID_VALUE);
             else
-                WriteInt16((short)nob.ObjectId);
+                WriteNetworkObjectId(nob.ObjectId);
         }
 
         /// <summary>
@@ -791,15 +794,15 @@ namespace FishNet.Serializing
         {
             if (nob == null)
             {
-                WriteInt16(-1);
+                WriteUInt16(NetworkObject.UNSET_OBJECTID_VALUE);
             }
             else
             {
                 bool spawned = nob.IsSpawned;
                 if (spawned)
-                    WriteInt16((short)nob.ObjectId);
+                    WriteNetworkObjectId(nob.ObjectId);
                 else
-                    WriteInt16(nob.PrefabId);
+                    WriteNetworkObjectId(nob.PrefabId);
 
                 //Has to be written after objectId since that's expected first in reader.
                 if (forSpawn)
@@ -821,8 +824,18 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void WriteNetworkObjectForDespawn(NetworkObject nob, DespawnType dt)
         {
-            WriteInt16((short)nob.ObjectId);
+            WriteNetworkObjectId(nob.ObjectId);
             WriteByte((byte)dt);
+        }
+
+
+        /// <summary>
+        /// Writes an objectId.
+        /// </summary>
+        [CodegenExclude]
+        public void WriteNetworkObjectId(int objectId)
+        {
+            WriteUInt16((ushort)objectId);
         }
 
         /// <summary>
@@ -900,7 +913,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteNetworkConnection(NetworkConnection connection)
         {
-            int value = (connection == null) ? -1 : connection.ClientId;
+            int value = (connection == null) ? NetworkConnection.UNSET_CLIENTID_VALUE : connection.ClientId;
             WriteInt16((short)value);
         }
 
@@ -1054,7 +1067,7 @@ namespace FishNet.Serializing
         {
             if (value == null)
             {
-                WriteInt32(-1);
+                WriteInt32(Writer.UNSET_COLLECTION_SIZE_VALUE);
             }
             else
             {
@@ -1193,7 +1206,7 @@ namespace FishNet.Serializing
         {
             if (value == null)
             {
-                WriteInt32(-1);
+                WriteInt32(Writer.UNSET_COLLECTION_SIZE_VALUE);
             }
             else
             {

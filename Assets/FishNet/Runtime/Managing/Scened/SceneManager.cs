@@ -41,7 +41,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public event Action<bool> OnActiveSceneSet;
         /// <summary>
-        /// Called when a client loads initial scenes after connecting. Boolean will be true if asServer.
+        /// Called when a client loads initial scenes after connecting. Boolean will be true if asServer. This will invoke even if the SceneManager is not used when the client completes fully connecting to the server.
         /// </summary>
         public event Action<NetworkConnection, bool> OnClientLoadedStartScenes;
         /// <summary>

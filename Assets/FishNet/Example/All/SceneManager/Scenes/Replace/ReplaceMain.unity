@@ -1152,6 +1152,7 @@ GameObject:
   - component: {fileID: 7443408887680269500}
   - component: {fileID: 7443408887680269501}
   - component: {fileID: 7443408887680269502}
+  - component: {fileID: 7443408887680269503}
   m_Layer: 0
   m_Name: 'NetworkManager '
   m_TagString: Untagged
@@ -1172,7 +1173,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: ec64eb18c93ab344892891f33edbf82a, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617, type: 2}
   _refreshDefaultPrefabs: 1
   _runInBackground: 1
   _dontDestroyOnLoad: 1
@@ -1191,6 +1192,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _updateOrder: 0
+  _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
   _tickRate: 30
@@ -1232,6 +1234,20 @@ MonoBehaviour:
   _lightProbeUpdating: 0
   _moveClientHostObjects: 1
   _setActiveScene: 1
+--- !u!114 &7443408887680269503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408887680269498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d331f979d46e8e4a9fc90070c596d44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _updateHostVisibility: 1
+  _defaultConditions: []
 --- !u!224 &9208822351047973834
 RectTransform:
   m_ObjectHideFlags: 0

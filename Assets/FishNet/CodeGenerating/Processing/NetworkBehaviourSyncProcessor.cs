@@ -938,7 +938,21 @@ namespace FishNet.CodeGenerating.Processing
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
                 insts.Add(processor.Create(OpCodes.Ldfld, createdFd));
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
-                insts.Add(processor.Create(OpCodes.Ldftn, createdSyncVar.HookMr.CachedResolve(base.Session)));
+
+                //Load the callback function.
+                MethodDefinition hookMd = createdSyncVar.HookMr.CachedResolve(base.Session);
+                OpCode ldOpCode;
+                if (hookMd.IsVirtual)
+                {
+                    insts.Add(processor.Create(OpCodes.Dup));
+                    ldOpCode = OpCodes.Ldvirtftn;
+                }
+                else
+                {
+                    ldOpCode = OpCodes.Ldftn;
+                }
+                insts.Add(processor.Create(ldOpCode, hookMd));
+
                 insts.Add(processor.Create(OpCodes.Newobj, gitActionCtorMr));
                 insts.Add(processor.Create(syncVarAddMr.GetCallOpCode(base.Session), syncVarAddMr));
             }

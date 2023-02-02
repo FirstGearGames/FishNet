@@ -122,7 +122,31 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// Maximum number of past inputs which may send and resend redundancy.
         /// </summary>
+#if UNITY_WEBGL
+//WebGL uses reliable so no reason to use redundancy.
+        internal byte GetRedundancyCount() => 1;
+#else
         internal byte GetRedundancyCount() => _redundancyCount;
+#endif
+        /// <summary>
+        /// True to allow clients to use predicted spawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.
+        /// </summary>
+        internal bool GetAllowPredictedSpawning() => _allowPredictedSpawning;
+        [Tooltip("True to allow clients to use predicted spawning and despawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.")]
+        [SerializeField]
+        private bool _allowPredictedSpawning = false;
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.")]
+        [Range(1, 100)]
+        [SerializeField]
+        private byte _reservedObjectIds = 15;
+        /// <summary>
+        /// Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.
+        /// </summary>
+        /// <returns></returns>
+        internal byte GetReservedObjectIds() => _reservedObjectIds;
         #endregion
 
         #region Private.
@@ -144,9 +168,9 @@ namespace FishNet.Managing.Predicting
         /// Scenes which are currently replaying prediction.
         /// </summary>
         private HashSet<UnityScene> _replayingScenes = new HashSet<UnityScene>(new SceneHandleEqualityComparer());
-        #endregion
+#endregion
 
-        #region Const.
+#region Const.
         /// <summary>
         /// Minimum number of past inputs which can be sent.
         /// </summary>
@@ -163,7 +187,7 @@ namespace FishNet.Managing.Predicting
         /// Maxmimum amount of replicate queue size.
         /// </summary>
         private const ushort MAXIMUM_REPLICATE_QUEUE_SIZE = 500;
-        #endregion
+#endregion
 
         private void OnEnable()
         {

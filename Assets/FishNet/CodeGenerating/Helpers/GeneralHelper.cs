@@ -327,21 +327,32 @@ namespace FishNet.CodeGenerating.Helping
         }
 
         /// <summary>
-        /// This is a stupid hack to remove generic brackets for string matching. Need to make this not stupid. //todo
+        /// Removes characters which would create invalid comparisons when trying to compare generics.
         /// </summary>
-        /// <param name="str"></param>
         public string RemoveGenericBrackets(string str)
         {
+            /* Fix example...
+             * List`1<T> converts to...
+             *  List`1.
+             * System.Nullable`1<System.Int> converts to...
+             *  System.Nullable`1System.Int */
+            if (str.Contains(typeof(System.Nullable).FullName))
+                return str;
+
+            //Find bracket areas to remove.
             int startIndex = str.IndexOf("<");
             int endIndex = str.IndexOf(">");
-            if (startIndex > 0 && endIndex > startIndex)
+            //If found.
+            if (startIndex >= 0 && endIndex >= 0)
             {
-                string a = str.Substring(0, startIndex);
-                string b = str.Substring(endIndex + 1);
-                str = a + b;
+                string result = str.Substring(0, startIndex);
+                result += str.Substring(endIndex + 1);
+                return result;
             }
-
-            return str;
+            else
+            {
+                return str;
+            }
         }
 
         /// <summary>

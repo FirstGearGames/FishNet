@@ -9,114 +9,101 @@ namespace FishNet.Component.Ownership
     /// </summary>
     public class PredictedSpawn : NetworkBehaviour
     {
-        #region Types.
-        /// <summary>
-        /// What to do if the server does not respond to this predicted spawning.
-        /// </summary>
-        private enum NoResponseHandlingType
-        {
-            /// <summary>
-            /// Destroy this object.
-            /// </summary>
-            Destroy = 0,
-            /// <summary>
-            /// Keep this object.
-            /// </summary>
-            Keep = 1,
-        }
-        #endregion
+        //#region Types.
+        ///// <summary>
+        ///// What to do if the server does not respond to this predicted spawning.
+        ///// </summary>
+        //private enum NoResponseHandlingType
+        //{
+        //    /// <summary>
+        //    /// Destroy this object.
+        //    /// </summary>
+        //    Destroy = 0,
+        //    /// <summary>
+        //    /// Keep this object.
+        //    /// </summary>
+        //    Keep = 1,
+        //}
+        //#endregion
 
         #region Serialized.
         /// <summary>
-        /// Type of predicted spawning to allow.
+        /// True to allow clients to predicted spawn this object.
         /// </summary>
-        [Tooltip("Type of predicted spawning to allow.")]
-        [SerializeField] private PredictedSpawningType _spawningType = (PredictedSpawningType.Spawn | PredictedSpawningType.Despawn);
+        public bool GetAllowSpawning() => _allowSpawning;
         /// <summary>
-        /// How to manage this object on client when the server does not respond to the predicted spawning.
+        /// Sets to allow predicted spawning. This must be set on client and server.
         /// </summary>
-        [Tooltip("How to manage this object on client when the server does not respond to the predicted spawning.")]
+        /// <param name="value">New value.</param>
+        public void SetAllowSpawning(bool value) => _allowSpawning = value;
+        [Tooltip("True to allow clients to predicted spawn this object.")]
         [SerializeField]
-        private NoResponseHandlingType _noResponseHandling = NoResponseHandlingType.Destroy;
-        [Tooltip("Amount of time to wait for a response before NoResponseHandling is used.")]
+        private bool _allowSpawning = true;
+        /// <summary>
+        /// True to allow clients to predicted despawn this object.
+        /// </summary>
+        public bool GetAllowDespawning() => _allowDespawning;
+        /// <summary>
+        /// Sets to allow predicted despawning. This must be set on client and server.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetAllowDespawning(bool value) => _allowDespawning = value;
+        [Tooltip("True to allow clients to predicted despawn this object.")]
         [SerializeField]
-        private float _responseWait = 1f;
-        #endregion        
+        private bool _allowDespawning = true;
+        ///// <summary>
+        ///// How to manage this object on client when the server does not respond to the predicted spawning.
+        ///// </summary>
+        //[Tooltip("How to manage this object on client when the server does not respond to the predicted spawning.")]
+        //[SerializeField]
+        //private NoResponseHandlingType _noResponseHandling = NoResponseHandlingType.Destroy;
+        ///// <summary>
+        ///// Amount of time to wait for a response before NoResponseHandling is used.
+        ///// </summary>
+        //[Tooltip("Amount of time to wait for a response before NoResponseHandling is used.")]
+        //[SerializeField]
+        //private float _responseWait = 1f;
+        #endregion
 
-        public override void OnStartClient()
+        /// <summary>
+        /// Called on the client when trying to predicted spawn this object.
+        /// </summary>
+        /// <param name="owner">Owner specified to spawn with.</param>
+        /// <returns>True if able to spawn.</returns>
+        public virtual bool OnTrySpawnClient(NetworkConnection owner = null)
         {
-            base.OnStartClient();
-            base.TimeManager.OnPostTick += TimeManager_OnPostTick;
+            return GetAllowSpawning();
         }
-
-        public override void OnStopClient()
+        /// <summary>
+        /// Called on the server when a client tries to predicted spawn this object.
+        /// </summary>
+        /// <param name="spawner">Connection trying to predicted spawn this object.</param>
+        /// <param name="owner">Owner specified to spawn with.</param>
+        /// <returns>True if able to spawn.</returns>
+        public virtual bool OnTrySpawnServer(NetworkConnection spawner, NetworkConnection owner = null)
         {
-            base.OnStopClient();
-            base.TimeManager.OnPostTick -= TimeManager_OnPostTick;
+            return GetAllowSpawning();
         }
 
         /// <summary>
-        /// Called after OnTick but before data sends.
+        /// Called on the client when trying to predicted spawn this object.
         /// </summary>
-        private void TimeManager_OnPostTick()
+        /// <returns>True if able to despawn.</returns>
+        public virtual bool OnTryDespawnClient()
         {
-            
+            return GetAllowDespawning();
         }
-
         /// <summary>
-        /// Takes ownership of this object to the local client and allows immediate control.
+        /// Called on the server when a client tries to predicted despawn this object.
         /// </summary>
-        [Client]
-        public virtual void Spawn(NetworkConnection owner = null)
+        /// <param name="despawner">Connection trying to predicted despawn this object.</param>
+        /// <returns>True if able to despawn.</returns>
+        public virtual bool OnTryDepawnServer(NetworkConnection despawner)
         {
-            if (_spawningType == PredictedSpawningType.Disabled)
-                return;
-
-            //If not server go through the server.
-            if (!base.IsServer)
-            {
-                //base.NetworkObject.SetLocalOwnership(c);
-                //ServerTakeOwnership();
-            }
-            //Otherwise take directly without rpcs.
-            else
-            {
-                //OnTakeOwnership(c);
-            }
+            return GetAllowDespawning();
         }
 
 
-        ///// <summary>
-        ///// Takes ownership of this object.
-        ///// </summary>
-        //[ServerRpc(RequireOwnership = false)]
-        //private void ServerTakeOwnership(NetworkConnection caller = null)
-        //{
-        //    OnTakeOwnership(caller);
-        //}
-
-        ///// <summary>
-        ///// Called on the server when a client tries to take ownership of this object.
-        ///// </summary>
-        ///// <param name="caller">Connection trying to take ownership.</param>
-        //[Server]
-        //protected virtual void OnTakeOwnership(NetworkConnection caller)
-        //{
-        //    //Client somehow disconnected between here and there.
-        //    if (!caller.IsActive)
-        //        return;
-        //    //Feature is not enabled.
-        //    if (!_allowTakeOwnership)
-        //        return;
-        //    //Already owner.
-        //    if (caller == base.Owner)
-        //        return;
-
-        //    base.GiveOwnership(caller);
-        //    /* No need to send a response back because an ownershipchange will handle changes.
-        //     * Although if you were to override with this your own behavior
-        //     * you could send responses for approved/denied. */
-        //}
 
     }
 

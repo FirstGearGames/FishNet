@@ -21,6 +21,7 @@ using FishNet.Managing.Statistic;
 using FishNet.Utility.Performance;
 using FishNet.Component.ColliderRollback;
 using FishNet.Managing.Predicting;
+using System.Runtime.CompilerServices;
 #if UNITY_EDITOR
 using FishNet.Editing.PrefabCollectionGenerator;
 #endif
@@ -152,7 +153,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Authenticator for this NetworkManager. May be null if no Authenticator is used.
         /// </summary>
-        [Obsolete("Use ServerManager.GetAuthenticator or ServerManager.SetAuthenticator instead.")]
+        [Obsolete("Use ServerManager.GetAuthenticator or ServerManager.SetAuthenticator instead.")] //Remove on 2023/06/01
         public Authenticator Authenticator => ServerManager.Authenticator;
         /// <summary>
         /// DebugManager for this NetworkManager.
@@ -476,14 +477,31 @@ namespace FishNet.Managing
         /// <summary>
         /// Returns an instantiated copy of prefab.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject GetPooledInstantiated(NetworkObject prefab, bool asServer)
         {
-            return _objectPool.RetrieveObject(prefab.PrefabId, asServer);
+            return GetPooledInstantiated(prefab, 0, asServer);
         }
         /// <summary>
         /// Returns an instantiated copy of prefab.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NetworkObject GetPooledInstantiated(NetworkObject prefab, ushort collectionId, bool asServer)
+        {
+            return GetPooledInstantiated(prefab.PrefabId, collectionId, asServer);
+        }
+        /// <summary>
+        /// Returns an instantiated copy of prefab.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject GetPooledInstantiated(GameObject prefab, bool asServer)
+        {
+            return GetPooledInstantiated(prefab, 0, asServer);
+        }
+        /// <summary>
+        /// Returns an instantiated copy of prefab.
+        /// </summary>
+        public NetworkObject GetPooledInstantiated(GameObject prefab, ushort collectionId, bool asServer)
         {
             NetworkObject nob = prefab.GetComponent<NetworkObject>();
             if (nob == null)
@@ -493,22 +511,43 @@ namespace FishNet.Managing
             }
             else
             {
-                return _objectPool.RetrieveObject(nob.PrefabId, asServer);
+                return GetPooledInstantiated(nob.PrefabId, collectionId, asServer);
             }
         }
         /// <summary>
         /// Returns an instantiated object that has prefabId.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject GetPooledInstantiated(int prefabId, bool asServer)
         {
-            return _objectPool.RetrieveObject(prefabId, asServer);
+            return GetPooledInstantiated(prefabId, 0, asServer);
+        }
+        /// <summary>
+        /// Returns an instantiated object that has prefabId.
+        /// </summary>
+        public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, bool asServer)
+        {
+            return _objectPool.RetrieveObject(prefabId, collectionId, asServer);
         }
         /// <summary>
         /// Stores an instantiated object.
         /// </summary>
+        /// <param name="instantiated">Object which was instantiated.</param>
+        /// <param name="prefabId"></param>
+        /// <param name="asServer">True to store for the server.</param>
+        [Obsolete("Use StorePooledInstantiated(NetworkObject, bool)")] //Remove on 2023/06/01.
         public void StorePooledInstantiated(NetworkObject instantiated, int prefabId, bool asServer)
         {
-            _objectPool.StoreObject(instantiated, prefabId, asServer);
+            StorePooledInstantiated(instantiated, asServer);
+        }
+        /// <summary>
+        /// Stores an instantied object.
+        /// </summary>
+        /// <param name="instantiated">Object which was instantiated.</param>
+        /// <param name="asServer">True to store for the server.</param>
+        public void StorePooledInstantiated(NetworkObject instantiated, bool asServer)
+        {
+            _objectPool.StoreObject(instantiated, asServer);
         }
         #endregion
 

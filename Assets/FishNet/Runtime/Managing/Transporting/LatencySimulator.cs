@@ -252,7 +252,7 @@ namespace FishNet.Managing.Transporting
             {
                 if (c == Channel.Reliable)
                 {
-                    latency += latency; //add extra for resend.
+                    latency += (latency * 0.3f); //add extra for resend.
                 }
                 //If not reliable then return the segment array to pool.
                 else

@@ -110,8 +110,8 @@ namespace FishNet.Managing.Object
         {
             for (int i = startIndex; i < _prefabs.Count; i++)
             {
-                ManagedObjects.InitializePrefab(_prefabs[i].Server, (short)i, CollectionId);
-                ManagedObjects.InitializePrefab(_prefabs[i].Client, (short)i, CollectionId);
+                ManagedObjects.InitializePrefab(_prefabs[i].Server, i, CollectionId);
+                ManagedObjects.InitializePrefab(_prefabs[i].Client, i, CollectionId);
             }
         }
 

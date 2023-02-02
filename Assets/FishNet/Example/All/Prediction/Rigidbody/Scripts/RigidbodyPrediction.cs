@@ -78,6 +78,9 @@ namespace FishNet.Example.Prediction.Rigidbodies
         private bool _jump;
         #endregion
 
+        public NetworkObject BulletPrefab;
+        private bool _spawnBullet;
+        private NetworkObject _lastSpawnedBullet;
 
         private void Awake()
         {
@@ -105,6 +108,12 @@ namespace FishNet.Example.Prediction.Rigidbodies
                     _nextJumpTime = Time.time + 1f;
                     _jump = true;
                 }
+                else if (Input.GetKeyDown(KeyCode.LeftShift))
+                    _spawnBullet = true;
+                else if (Input.GetKeyDown(KeyCode.LeftAlt))
+                {
+                    _lastSpawnedBullet?.Despawn();
+                }
             }
         }
 
@@ -115,6 +124,20 @@ namespace FishNet.Example.Prediction.Rigidbodies
                 Reconciliation(default, false);
                 CheckInput(out MoveData md);
                 Move(md, false);
+
+                if (_spawnBullet)
+                {
+                    _spawnBullet = false;
+                    NetworkObject nob = Instantiate(BulletPrefab, transform.position + (transform.forward * 0.5f), transform.rotation);
+                    _lastSpawnedBullet = nob;
+                    base.Spawn(nob);
+                    //If not server add speed for client side.
+                    if (!base.IsServer)
+                    {
+                        BulletTest bt = nob.GetComponent<BulletTest>();
+                        bt.SendSpeed();
+                    }
+                }
             }
             if (base.IsServer)
             {

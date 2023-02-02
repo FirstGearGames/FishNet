@@ -1,5 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Object;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Utility.Extension
@@ -21,8 +22,6 @@ namespace FishNet.Utility.Extension
         {
             InstanceFinder.ServerManager.Spawn(go, owner);
         }
-
-
     }
 
 }
