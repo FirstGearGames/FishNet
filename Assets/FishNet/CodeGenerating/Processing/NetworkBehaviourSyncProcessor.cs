@@ -43,6 +43,8 @@ namespace FishNet.CodeGenerating.Processing
         private const string SETREGISTERED_METHOD_NAME = "SetRegistered";
         private const string INITIALIZEINSTANCE_METHOD_NAME = "InitializeInstance";
         private const string GETSERIALIZEDTYPE_METHOD_NAME = "GetSerializedType";
+        private const string SENDRATE_NAME = "SendRate";
+        private const string READPERMISSIONS_NAME = "ReadPermissions";
         #endregion
 
         public override bool ImportReferences()
@@ -709,9 +711,9 @@ namespace FishNet.CodeGenerating.Processing
             //If attribute isn't null then override values.
             if (attribute != null)
             {
-                sendRate = attribute.GetField("SendRate", 0.1f);
+                sendRate = attribute.GetField(SENDRATE_NAME, -1f);
                 writePermissions = WritePermission.ServerOnly;
-                readPermissions = attribute.GetField("ReadPermissions", ReadPermission.Observers);
+                readPermissions = attribute.GetField(READPERMISSIONS_NAME, ReadPermission.Observers);
                 channel = Channel.Reliable; //attribute.GetField("Channel", Channel.Reliable);
             }
 
@@ -772,9 +774,9 @@ namespace FishNet.CodeGenerating.Processing
             //If attribute isn't null then override values.
             if (attribute != null)
             {
-                sendRate = attribute.GetField("SendRate", 0.1f);
+                sendRate = attribute.GetField(SENDRATE_NAME, -1f);
                 writePermissions = WritePermission.ServerOnly;
-                readPermissions = attribute.GetField("ReadPermissions", ReadPermission.Observers);
+                readPermissions = attribute.GetField(READPERMISSIONS_NAME, ReadPermission.Observers);
                 channel = Channel.Reliable; //attribute.GetField("Channel", Channel.Reliable);
             }
 
@@ -838,9 +840,9 @@ namespace FishNet.CodeGenerating.Processing
             //If attribute isn't null then override values.
             if (attribute != null)
             {
-                sendRate = attribute.GetField("SendRate", 0.1f);
+                sendRate = attribute.GetField(SENDRATE_NAME, -1f);
                 writePermissions = WritePermission.ServerOnly;
-                readPermissions = attribute.GetField("ReadPermissions", ReadPermission.Observers);
+                readPermissions = attribute.GetField(READPERMISSIONS_NAME, ReadPermission.Observers);
                 channel = Channel.Reliable; //attribute.GetField("Channel", Channel.Reliable);
             }
 
@@ -895,9 +897,9 @@ namespace FishNet.CodeGenerating.Processing
             GeneralHelper gh = base.GetClass<GeneralHelper>();
 
             //Get all possible attributes.
-            float sendRate = attribute.GetField("SendRate", 0.1f);
+            float sendRate = attribute.GetField(SENDRATE_NAME, -1f);
             WritePermission writePermissions = WritePermission.ServerOnly;
-            ReadPermission readPermissions = attribute.GetField("ReadPermissions", ReadPermission.Observers);
+            ReadPermission readPermissions = attribute.GetField(READPERMISSIONS_NAME, ReadPermission.Observers);
             Channel channel = attribute.GetField("Channel", Channel.Reliable);
 
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);

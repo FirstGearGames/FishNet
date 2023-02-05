@@ -1337,12 +1337,13 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Read<T>()
         {
-            if (IsAutoPackType<T>(out AutoPackType packType))
+            System.Type type = typeof(T);
+            if (IsAutoPackType(type, out AutoPackType packType))
             {
                 Func<Reader, AutoPackType, T> autopackDel = GenericReader<T>.ReadAutoPack;
                 if (autopackDel == null)
                 {
-                    NetworkManager.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    LogError(GetLogMessage());
                     return default;
                 }
                 else
@@ -1355,7 +1356,7 @@ namespace FishNet.Serializing
                 Func<Reader, T> del = GenericReader<T>.Read;
                 if (del == null)
                 {
-                    NetworkManager.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    LogError(GetLogMessage());
                     return default;
                 }
                 else
@@ -1364,6 +1365,19 @@ namespace FishNet.Serializing
                 }
             }
 
+            string GetLogMessage() => $"Read method not found for {type.Name}. Use a supported type or create a custom serializer.";
+        }
+
+        /// <summary>
+        /// Logs an error.
+        /// </summary>
+        /// <param name="msg"></param>
+        private void LogError(string msg)
+        {
+            if (NetworkManager == null)
+                NetworkManager.StaticLogError(msg);
+            else
+                NetworkManager.LogError(msg);
         }
 
         /// <summary>
@@ -1373,6 +1387,13 @@ namespace FishNet.Serializing
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsAutoPackType<T>(out AutoPackType packType) => Writer.IsAutoPackType<T>(out packType);
+        /// <summary>
+        /// Returns if T takes AutoPackType argument.
+        /// </summary>
+        /// <param name="packType">Outputs the default pack type for T.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsAutoPackType(Type type, out AutoPackType packType) => Writer.IsAutoPackType(type, out packType);
         #endregion
     }
 }

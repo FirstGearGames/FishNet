@@ -72,6 +72,9 @@ namespace FishNet.Object.Synchronizing
         /// <param name="sendElapsedOnStop">True to include remaining time when automatically sending StopStopwatch.</param>
         public void StartStopwatch(bool sendElapsedOnStop = true)
         {
+            if (!base.CanNetworkSetValues(true))
+                return;
+
             if (Elapsed > 0f)
                 StopStopwatch(sendElapsedOnStop);
 
@@ -88,6 +91,8 @@ namespace FishNet.Object.Synchronizing
             if (Elapsed < 0f)
                 return;
             if (Paused)
+                return;
+            if (!base.CanNetworkSetValues(true))
                 return;
 
             Paused = true;
@@ -116,6 +121,8 @@ namespace FishNet.Object.Synchronizing
                 return;
             if (!Paused)
                 return;
+            if (!base.CanNetworkSetValues(true))
+                return;
 
             Paused = false;
             AddOperation(SyncStopwatchOperation.Unpause, -1f);
@@ -127,6 +134,8 @@ namespace FishNet.Object.Synchronizing
         public void StopStopwatch(bool sendElapsed = false)
         {
             if (Elapsed < 0f)
+                return;
+            if (!base.CanNetworkSetValues(true))
                 return;
 
             float prev = (sendElapsed) ? -1f : Elapsed;
@@ -140,24 +149,21 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private void AddOperation(SyncStopwatchOperation operation, float prev)
         {
-            //Syncbase has not initialized.
             if (!base.IsRegistered)
                 return;
-            //Networkmanager null or no write permissions.
-            if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
+
+            bool asServerInvoke = (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServer);
+
+            if (asServerInvoke)
             {
-                NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
-                return;
+                if (base.Dirty())
+                {
+                    ChangeData change = new ChangeData(operation, prev);
+                    _changed.Add(change);
+                }
             }
 
-            if (base.Dirty())
-            {
-                ChangeData change = new ChangeData(operation, prev);
-                _changed.Add(change);
-            }
-            //Data can currently only be set from server, so this is always asServer.
-            bool asServer = true;
-            OnChange?.Invoke(operation, prev, asServer);
+            OnChange?.Invoke(operation, prev, asServerInvoke);
         }
 
         /// <summary>

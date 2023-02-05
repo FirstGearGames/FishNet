@@ -1,4 +1,5 @@
-﻿using FishNet.Managing;
+﻿using FishNet.Connection;
+using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Scened;
 using FishNet.Transporting;
@@ -16,6 +17,9 @@ public class DefaultScene : MonoBehaviour
 {
 
     #region Serialized.
+    [Tooltip("True to load the online scene as global, false to load it as connection.")]
+    [SerializeField]
+    private bool _useGlobalScenes = true;
     /// <summary>
     /// True to replace all scenes with the offline scene immediately.
     /// </summary>
@@ -23,7 +27,7 @@ public class DefaultScene : MonoBehaviour
     [SerializeField]
     private bool _startInOffline;
     /// <summary>
-    /// Scene to load when disconnected. Server and client will load this scene.
+    /// 
     /// </summary>
     [Tooltip("Scene to load when disconnected. Server and client will load this scene.")]
     [SerializeField, Scene]
@@ -34,7 +38,12 @@ public class DefaultScene : MonoBehaviour
     /// <param name="sceneName">Scene name to use as the offline scene.</param>
     public void SetOfflineScene(string sceneName) => _offlineScene = sceneName;
     /// <summary>
-    /// Scene to load when connected. Server and client will load this scene.
+    /// Scene to load when disconnected. Server and client will load this scene.
+    /// </summary>
+    /// <returns></returns>
+    public string GetOfflineScene() => _offlineScene;
+    /// <summary>
+    /// 
     /// </summary>
     [Tooltip("Scene to load when connected. Server and client will load this scene.")]
     [SerializeField, Scene]
@@ -44,6 +53,11 @@ public class DefaultScene : MonoBehaviour
     /// </summary>
     /// <param name="sceneName">Scene name to use as the online scene.</param>
     public void SetOnlineScene(string sceneName) => _onlineScene = sceneName;
+    /// <summary>
+    /// Scene to load when connected. Server and client will load this scene.
+    /// </summary>
+    /// <returns></returns>
+    public string GetOnlineScene() => _onlineScene;
     /// <summary>
     /// Which scenes to replace when loading into OnlineScene.
     /// </summary>
@@ -72,6 +86,7 @@ public class DefaultScene : MonoBehaviour
             _networkManager.ClientManager.OnClientConnectionState -= ClientManager_OnClientConnectionState;
             _networkManager.ServerManager.OnServerConnectionState -= ServerManager_OnServerConnectionState;
             _networkManager.SceneManager.OnLoadEnd -= SceneManager_OnLoadEnd;
+            _networkManager.ServerManager.OnAuthenticationResult -= ServerManager_OnAuthenticationResult;
         }
     }
 
@@ -100,6 +115,7 @@ public class DefaultScene : MonoBehaviour
         _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
         _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
         _networkManager.SceneManager.OnLoadEnd += SceneManager_OnLoadEnd;
+        _networkManager.ServerManager.OnAuthenticationResult += ServerManager_OnAuthenticationResult;
         if (_startInOffline)
             LoadOfflineScene();
     }
@@ -145,7 +161,10 @@ public class DefaultScene : MonoBehaviour
             //If here can load scene.
             SceneLoadData sld = new SceneLoadData(GetSceneName(_onlineScene));
             sld.ReplaceScenes = _replaceScenes;
-            _networkManager.SceneManager.LoadGlobalScenes(sld);
+            if (_useGlobalScenes)
+                _networkManager.SceneManager.LoadGlobalScenes(sld);
+            else
+                _networkManager.SceneManager.LoadConnectionScenes(sld);
         }
         //When server stops load offline scene.
         else if (obj.ConnectionState == LocalConnectionState.Stopped)
@@ -166,6 +185,23 @@ public class DefaultScene : MonoBehaviour
                 LoadOfflineScene();
         }
     }
+
+    /// <summary>
+    /// Called when a client completes authentication.
+    /// </summary>
+    private void ServerManager_OnAuthenticationResult(NetworkConnection arg1, bool authenticated)
+    {
+        /* This is only for loading connection scenes.
+         * If using global there is no need to continue. */
+        if (_useGlobalScenes)
+            return;
+        if (!authenticated)
+            return;
+
+        SceneLoadData sld = new SceneLoadData(GetSceneName(_onlineScene));
+        _networkManager.SceneManager.LoadConnectionScenes(arg1, sld);
+    }
+
 
     /// <summary>
     /// Loads offlineScene as single.

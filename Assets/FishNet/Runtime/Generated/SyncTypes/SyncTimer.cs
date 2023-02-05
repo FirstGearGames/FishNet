@@ -84,6 +84,9 @@ namespace FishNet.Object.Synchronizing
         /// <param name="sendRemainingOnStop">True to include remaining time when automatically sending StopTimer.</param>
         public void StartTimer(float remaining, bool sendRemainingOnStop = true)
         {
+            if (!base.CanNetworkSetValues(true))
+                return;
+
             if (Remaining > 0f)
                 StopTimer(sendRemainingOnStop);
 
@@ -103,6 +106,8 @@ namespace FishNet.Object.Synchronizing
                 return;
             if (Paused)
                 return;
+            if (!base.CanNetworkSetValues(true))
+                return;
 
             SyncTimerOperation op = (sendRemaining) ? SyncTimerOperation.PauseUpdated : SyncTimerOperation.Pause;
             AddOperation(op, -1f, -1f);
@@ -117,6 +122,8 @@ namespace FishNet.Object.Synchronizing
                 return;
             if (!Paused)
                 return;
+            if (!base.CanNetworkSetValues(true))
+                return;
 
             AddOperation(SyncTimerOperation.Unpause, -1f, -1f);
         }
@@ -127,6 +134,8 @@ namespace FishNet.Object.Synchronizing
         public void StopTimer(bool sendRemaining = false)
         {
             if (Remaining <= 0f)
+                return;
+            if (!base.CanNetworkSetValues(true))
                 return;
 
             bool asServer = true;
@@ -141,24 +150,21 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private void AddOperation(SyncTimerOperation operation, float prev, float next)
         {
-            //Syncbase has not initialized.
             if (!base.IsRegistered)
                 return;
-            //Networkmanager null or no write permissions.
-            if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
+
+            bool asServerInvoke = (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServer);
+
+            if (asServerInvoke)
             {
-                NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
-                return;
+                if (base.Dirty())
+                {
+                    ChangeData change = new ChangeData(operation, prev, next);
+                    _changed.Add(change);
+                }
             }
 
-            if (base.Dirty())
-            {
-                ChangeData change = new ChangeData(operation, prev, next);
-                _changed.Add(change);
-            }
-            //Data can currently only be set from server, so this is always asServer.
-            bool asServer = true;
-            OnChange?.Invoke(operation, prev, next, asServer);
+            OnChange?.Invoke(operation, prev, next, asServerInvoke);
         }
 
         /// <summary>

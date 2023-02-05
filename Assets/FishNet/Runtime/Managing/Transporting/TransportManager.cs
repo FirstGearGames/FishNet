@@ -318,31 +318,21 @@ namespace FishNet.Managing.Transporting
         /// <param name="segment"></param>
         /// <param name="observers"></param>
         /// <param name="splitLargeIntoReliable">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
-        internal void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, bool splitLargeIntoReliable = true)
+        internal void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, HashSet<NetworkConnection> excludedConnections = null, bool splitLargeIntoReliable = true)
         {
-            foreach (NetworkConnection conn in observers)
-                SendToClient(channelId, segment, conn, splitLargeIntoReliable);
-        }
-
-        /// <summary>
-        /// Sends data to all clients if networkObject has no observers, otherwise sends to observers.
-        /// </summary>
-        /// <param name="channelId">Channel to send on.</param>
-        /// <param name="segment">Data to send.</param>
-        /// <param name="nob">NetworkObject being used to send data.</param>
-        /// <param name="splitLargeMessages">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
-        internal void SendToClients(byte channelId, ArraySegment<byte> segment, NetworkObject networkObject, bool excludeOwner = false, bool splitLargeMessages = true)
-        {
-            if (!excludeOwner)
+            if (excludedConnections == null || excludedConnections.Count == 0)
             {
-                SendToClients(channelId, segment, networkObject.Observers, splitLargeMessages);
+                foreach (NetworkConnection conn in observers)
+                    SendToClient(channelId, segment, conn, splitLargeIntoReliable);
             }
             else
             {
-                foreach (NetworkConnection conn in networkObject.Observers)
+
+                foreach (NetworkConnection conn in observers)
                 {
-                    if (conn != networkObject.Owner)
-                        SendToClient(channelId, segment, conn, splitLargeMessages);
+                    if (excludedConnections.Contains(conn))
+                        continue;
+                    SendToClient(channelId, segment, conn, splitLargeIntoReliable);
                 }
             }
         }

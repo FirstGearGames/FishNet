@@ -3,7 +3,7 @@ namespace FishNet.Object.Synchronizing
     /// <summary>
     /// Which clients may receive synchronization updates.
     /// </summary>
-    public enum ReadPermission
+    public enum ReadPermission : byte
     {
         /// <summary>
         /// All observers will receive updates.

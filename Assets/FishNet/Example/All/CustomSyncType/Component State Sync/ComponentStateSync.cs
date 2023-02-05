@@ -86,7 +86,7 @@ namespace FishNet.Example.ComponentStateSync
             if (!base.IsRegistered)
                 return;
 
-            if (base.NetworkManager != null && base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
+            if (base.NetworkManager != null && !base.NetworkBehaviour.IsServer)
             {
                 NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;

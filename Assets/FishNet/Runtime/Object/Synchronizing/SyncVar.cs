@@ -115,50 +115,51 @@ namespace FishNet.Object.Synchronizing
              * completing awake, and the user would set the value after. */
             if (!base.IsRegistered)
                 return;
-            /* Don't include warning about setting values when not server.
-             * SyncVars have an option to exclude owner when synchronizing
-             * because the client may need to change values locally only. */
 
-            bool isServer = base.NetworkBehaviour.IsServer;
-            bool isClient = base.NetworkBehaviour.IsClient;
             /* If not client or server then set skipChecks
              * as true. When neither is true it's likely user is changing
              * value before object is initialized. This is allowed
              * but checks cannot be processed because they would otherwise
              * stop setting the value. */
-            bool skipChecks = (!isClient && !isServer);
+            bool isNetworkInitialized = base.IsNetworkInitialized;
 
             //Object is deinitializing.
-            if (!skipChecks && CodegenHelper.NetworkObject_Deinitializing(this.NetworkBehaviour))
+            if (isNetworkInitialized && CodegenHelper.NetworkObject_Deinitializing(this.NetworkBehaviour))
                 return;
 
-            //If setting as server.
+            //If being set by user code.
             if (calledByUser)
             {
-                /* If skipping checks there's no need to dirty.
+                if (!base.CanNetworkSetValues(true))
+                    return;
+
+                /* We will only be this far if the network is not active yet,
+                 * server is active, or client has setting permissions. 
+                 * We only need to set asServerInvoke to false if the network
+                 * is initialized and the server is not active. */
+                bool asServerInvoke = (!isNetworkInitialized || base.NetworkBehaviour.IsServer);
+
+                /* If the network has not been network initialized then
                  * Value is expected to be set on server and client since
-                 * it's being set before the object is initialized. Should
-                 * this not be the case then the user made a mistake. */
-                //If skipping checks also update 
-                if (skipChecks)
+                 * it's being set before the object is initialized. */
+                if (!isNetworkInitialized)
                 {
                     T prev = _value;
                     UpdateValues(nextValue);
+                    //Still call invoke because change will be cached for when the network initializes.
                     InvokeOnChange(prev, _value, calledByUser);
                 }
                 else
                 {
-                    /* //writepermission if using owner write permissions
-                     * make sure caller is owner. */
                     if (Comparers.EqualityCompare<T>(this._value, nextValue))
                         return;
 
                     T prev = _value;
                     _value = nextValue;
-                    InvokeOnChange(prev, _value, calledByUser);
+                    InvokeOnChange(prev, _value, asServerInvoke);
                 }
 
-                TryDirty();
+                TryDirty(asServerInvoke);
             }
             //Not called by user.
             else
@@ -177,7 +178,6 @@ namespace FishNet.Object.Synchronizing
                     _previousClientValue = nextValue;
 
                 InvokeOnChange(prev, nextValue, calledByUser);
-                TryDirty();
             }
 
 
@@ -186,17 +186,14 @@ namespace FishNet.Object.Synchronizing
              * anytime the data changes because there is no way
              * to know if the user set the value on both server
              * and client or just one side. */
-            void TryDirty()
+            void TryDirty(bool asServer)
             {
-                //Cannot dirty when skipping checks.
-                if (skipChecks)
+                //Cannot dirty when network is not initialized.
+                if (!isNetworkInitialized)
                     return;
 
-                if (calledByUser)
+                if (asServer)
                     base.Dirty();
-                //writepermission Once client write permissions are added this needs to be updated.
-                //else if (!asServer && base.Settings.WritePermission == WritePermission.ServerOnly)
-                //    base.Dirty();
             }
         }
 

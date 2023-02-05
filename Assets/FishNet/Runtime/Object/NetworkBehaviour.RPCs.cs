@@ -42,6 +42,10 @@ namespace FishNet.Object
         /// RPCs buffered for new clients.
         /// </summary>
         private Dictionary<uint, (PooledWriter, Channel)> _bufferedRpcs = new Dictionary<uint, (PooledWriter, Channel)>();
+        /// <summary>
+        /// Connections to exclude from RPCs, such as ExcludeOwner or ExcludeServer.
+        /// </summary>
+        private HashSet<NetworkConnection> _networkConnectionCache = new HashSet<NetworkConnection>();
         #endregion
 
         /// <summary>
@@ -201,7 +205,7 @@ namespace FishNet.Object
             _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
             writer.DisposeLength();
         }
-
+        
         /// <summary>
         /// Sends a RPC to observers.
         /// </summary>
@@ -211,7 +215,7 @@ namespace FishNet.Object
         [APIExclude]
         [CodegenMakePublic] //Make internal.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendObserversRpc_Internal(uint hash, PooledWriter methodWriter, Channel channel, bool buffered)
+        public void SendObserversRpc_Internal(uint hash, PooledWriter methodWriter, Channel channel, bool buffered, bool excludeServer, bool excludeOwner)
         {
             if (!IsSpawnedWithWarning())
                 return;
@@ -226,7 +230,9 @@ namespace FishNet.Object
             else
                 writer = CreateRpc(hash, methodWriter, PacketId.ObserversRpc, channel);
 
-            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers);
+            SetNetworkConnectionCache(excludeServer, excludeOwner);
+            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache, true);
+
             /* If buffered then dispose of any already buffered
              * writers and replace with new one. Writers should
              * automatically dispose when references are lost
@@ -249,7 +255,7 @@ namespace FishNet.Object
         /// </summary>
         [CodegenMakePublic] //Make internal.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SendTargetRpc_Internal(uint hash, PooledWriter methodWriter, Channel channel, NetworkConnection target, bool validateTarget = true)
+        public void SendTargetRpc_Internal(uint hash, PooledWriter methodWriter, Channel channel, NetworkConnection target, bool excludeServer, bool validateTarget = true)
         {
             if (!IsSpawnedWithWarning())
                 return;
@@ -272,6 +278,10 @@ namespace FishNet.Object
                 }
             }
 
+            //Excluding server.
+            if (excludeServer && target.IsLocalClient)
+                return;
+
             PooledWriter writer;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -285,6 +295,18 @@ namespace FishNet.Object
 
             _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target);
             writer.DisposeLength();
+        }
+
+        /// <summary>
+        /// Adds excluded connections to ExcludedRpcConnections.
+        /// </summary>
+        private void SetNetworkConnectionCache(bool addClientHost, bool addOwner)
+        {
+            _networkConnectionCache.Clear();
+            if (addClientHost && IsClient)
+                _networkConnectionCache.Add(LocalConnection);
+            if (addOwner && Owner.IsValid)
+                _networkConnectionCache.Add(Owner);                
         }
 
 

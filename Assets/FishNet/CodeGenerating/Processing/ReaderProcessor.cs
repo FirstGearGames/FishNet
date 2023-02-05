@@ -111,7 +111,7 @@ namespace FishNet.CodeGenerating.Helping
                     if (IsSpecialReadMethod(methodInfo))
                         continue;
                     bool autoPackMethod;
-                    if (IsIgnoredWriteMethod(methodInfo, out autoPackMethod))
+                    if (IsIgnoredReadMethod(methodInfo, out autoPackMethod))
                         continue;
 
                     MethodReference methodRef = base.ImportReference(methodInfo);
@@ -150,7 +150,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Returns if a read method should be ignored.
         /// </summary>
-        public bool IsIgnoredWriteMethod(SR.MethodInfo methodInfo, out bool autoPackMethod)
+        public bool IsIgnoredReadMethod(SR.MethodInfo methodInfo, out bool autoPackMethod)
         {
             autoPackMethod = false;
 
@@ -331,7 +331,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             ILProcessor processor = methodDef.Body.GetILProcessor();
             List<Instruction> insts = new List<Instruction>();
-            MethodReference readMr = GetReadMethodReference(readTypeRef);
+            MethodReference readMr = GetOrCreateReadMethodReference(readTypeRef);
             if (readMr != null)
             {
                 //Make a local variable. 
@@ -631,7 +631,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal MethodReference GetOrCreateReadMethodReference(TypeReference typeRef)
         {
+#pragma warning disable CS0219
             bool favorInstanced = false;
+#pragma warning restore CS0219
             //Try to get existing writer, if not present make one.
             MethodReference readMethodRef = GetReadMethodReference(typeRef);
             if (readMethodRef == null)

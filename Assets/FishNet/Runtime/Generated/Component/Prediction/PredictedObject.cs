@@ -94,6 +94,18 @@ namespace FishNet.Component.Prediction
         [Obsolete("Use SetInterpolation. This method no longer functions.")] //Remove on 2023/06/01
         public void SetSmoothTicks(bool value) { }
         /// <summary>
+        /// True to smooth position on owner objects.
+        /// </summary>
+        [Tooltip("True to smooth position on owner objects.")]
+        [SerializeField]
+        private bool _ownerSmoothPosition = true;
+        /// <summary>
+        /// True to smooth rotation on owner objects.
+        /// </summary>
+        [Tooltip("True to smooth rotation on owner objects.")]
+        [SerializeField]
+        private bool _ownerSmoothRotation = true;
+        /// <summary>
         /// How far in the past to keep the graphical object when owner. Using a value of 0 will disable interpolation.
         /// </summary>
         [Tooltip("How far in the past to keep the graphical object when owner. Using a value of 0 will disable interpolation.")]
@@ -447,7 +459,7 @@ namespace FishNet.Component.Prediction
             {
                 _ownerSmoother = new PredictedObjectOwnerSmoother();
                 float teleportThreshold = (_enableTeleport) ? _teleportThreshold : -1f;
-                _ownerSmoother.Initialize(this, _graphicalInstantiatedOffsetPosition, _graphicalInstantiatedOffsetRotation, _graphicalObject, _spectatorSmoothPosition, _spectatorSmoothRotation, _ownerInterpolation, teleportThreshold);
+                _ownerSmoother.Initialize(this, _graphicalInstantiatedOffsetPosition, _graphicalInstantiatedOffsetRotation, _graphicalObject, _ownerSmoothPosition, _ownerSmoothRotation, _ownerInterpolation, teleportThreshold);
             }
             else
             {

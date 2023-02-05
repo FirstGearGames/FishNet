@@ -1,4 +1,5 @@
-﻿using FishNet.Documenting;
+﻿using FishNet.Connection;
+using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Object.Synchronizing;
@@ -313,13 +314,24 @@ namespace FishNet.Object
                                 headerWriter.WriteArraySegment(dataWriter.GetArraySegment());
                                 dataWriter.Dispose();
 
-                                //If sending to observers.
-                                bool excludeOwnerPermission = (_syncTypeWriters[i].ReadPermission == ReadPermission.ExcludeOwner);
-                                if (excludeOwnerPermission || _syncTypeWriters[i].ReadPermission == ReadPermission.Observers)
-                                    _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, headerWriter.GetArraySegment(), _networkObjectCache, excludeOwnerPermission);
-                                //Sending only to owner.
-                                else
+
+                                //If only sending to owner.
+                                if (_syncTypeWriters[i].ReadPermission == ReadPermission.OwnerOnly)
+                                {
                                     _networkObjectCache.NetworkManager.TransportManager.SendToClient(channel, headerWriter.GetArraySegment(), _networkObjectCache.Owner);
+                                }
+                                //Sending to observers.
+                                else
+                                {
+                                    bool excludeOwner = (_syncTypeWriters[i].ReadPermission == ReadPermission.ExcludeOwner);
+                                    SetNetworkConnectionCache(false, excludeOwner);
+                                    NetworkConnection excludedConnection = (excludeOwner) ? _networkObjectCache.Owner : null;
+                                    _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, headerWriter.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache);
+
+                                }
+
+
+
                             }
                         }
                     }

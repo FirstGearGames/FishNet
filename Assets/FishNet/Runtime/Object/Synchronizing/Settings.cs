@@ -15,7 +15,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// How often this variable may synchronize.
         /// </summary>
-        public float SendTickRate = 0f;
+        public float SendRate = 0f;
         /// <summary>
         /// Channel to send values on.
         /// </summary>
@@ -29,23 +29,23 @@ namespace FishNet.Object.Synchronizing.Internal
 
         }
 
-        public Settings(WritePermission writePermission, ReadPermission readPermission, float sendTickrate, Channel channel)
+        public Settings(WritePermission writePermission, ReadPermission readPermission, float sendRate, Channel channel)
         {
             WritePermission = writePermission;
             ReadPermission = readPermission;
-            SendTickRate = sendTickrate;
+            SendRate = sendRate;
             Channel = channel;
         }
 
         public Settings(float sendTickrate)
         {
-            SendTickRate = sendTickrate;
+            SendRate = sendTickrate;
         }
 
-        public Settings(ReadPermission readPermission, float sendTickrate, Channel channel)
+        public Settings(ReadPermission readPermission, float sendRate, Channel channel)
         {
             ReadPermission = readPermission;
-            SendTickRate = sendTickrate;
+            SendRate = sendRate;
             Channel = channel;
         }
 

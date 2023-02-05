@@ -275,7 +275,6 @@ namespace FishNet.CodeGenerating.Helping
                 base.GetClass<WriterProcessor>().CreateStaticMethodWriteDelegate(item.Value);
         }
 
-        private int _instancedCount = 0;
         /// <summary>
         /// Creates a Write delegate for writeMethodRef and places it within the generated reader/writer constructor.
         /// </summary>
@@ -424,7 +423,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal MethodReference GetOrCreateWriteMethodReference(TypeReference typeRef)
         {
+#pragma warning disable CS0219
             bool favorInstanced = false;
+#pragma warning restore CS0219
             //Try to get existing writer, if not present make one.
             MethodReference writeMethodRef = GetWriteMethodReference(typeRef);
             if (writeMethodRef == null)
@@ -753,7 +754,6 @@ namespace FishNet.CodeGenerating.Helping
             MethodReference methodRefResult = null;
             TypeDefinition objectTd;
             SerializerType serializerType = base.GetClass<GeneratorHelper>().GetSerializerType(objectTr, true, out objectTd);
-
             if (serializerType != SerializerType.Invalid)
             {
                 //Array.

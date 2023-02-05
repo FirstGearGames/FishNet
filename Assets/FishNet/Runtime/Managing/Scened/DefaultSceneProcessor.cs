@@ -13,15 +13,15 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Currently active loading AsyncOperations.
         /// </summary>
-        private List<AsyncOperation> _loadingAsyncOperations = new List<AsyncOperation>();
+        protected List<AsyncOperation> LoadingAsyncOperations = new List<AsyncOperation>();
         /// <summary>
         /// A collection of scenes used both for loading and unloading.
         /// </summary>
-        private List<UnityScene> _scenes = new List<UnityScene>();
+        protected List<UnityScene> Scenes = new List<UnityScene>();
         /// <summary>
         /// Current AsyncOperation being processed.
         /// </summary>
-        private AsyncOperation _currentAsyncOperation;
+        protected AsyncOperation CurrentAsyncOperation;
         #endregion
 
         /// <summary>
@@ -44,8 +44,8 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private void ResetValues()
         {
-            _currentAsyncOperation = null;
-            _loadingAsyncOperations.Clear();
+            CurrentAsyncOperation = null;
+            LoadingAsyncOperations.Clear();
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace FishNet.Managing.Scened
         public override void UnloadStart(UnloadQueueData queueData)
         {
             base.UnloadStart(queueData);
-            _scenes.Clear();
+            Scenes.Clear();
         }
 
         /// <summary>
@@ -65,10 +65,10 @@ namespace FishNet.Managing.Scened
         public override void BeginLoadAsync(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters)
         {
             AsyncOperation ao = UnitySceneManager.LoadSceneAsync(sceneName, parameters);
-            _loadingAsyncOperations.Add(ao);
+            LoadingAsyncOperations.Add(ao);
             
-            _currentAsyncOperation = ao;
-            _currentAsyncOperation.allowSceneActivation = false;
+            CurrentAsyncOperation = ao;
+            CurrentAsyncOperation.allowSceneActivation = false;
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace FishNet.Managing.Scened
         /// <param name="sceneName">Scene name to unload.</param>
         public override void BeginUnloadAsync(UnityScene scene)
         {
-            _currentAsyncOperation = UnitySceneManager.UnloadSceneAsync(scene);
+            CurrentAsyncOperation = UnitySceneManager.UnloadSceneAsync(scene);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace FishNet.Managing.Scened
         /// <returns></returns>
         public override float GetPercentComplete()
         {
-            return (_currentAsyncOperation == null) ? 1f : _currentAsyncOperation.progress;
+            return (CurrentAsyncOperation == null) ? 1f : CurrentAsyncOperation.progress;
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace FishNet.Managing.Scened
         public override void AddLoadedScene(UnityScene scene)
         {
             base.AddLoadedScene(scene);
-            _scenes.Add(scene);
+            Scenes.Add(scene);
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public override List<UnityScene> GetLoadedScenes()
         {
-            return _scenes;
+            return Scenes;
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public override void ActivateLoadedScenes()
         {
-            foreach (AsyncOperation ao in _loadingAsyncOperations)
+            foreach (AsyncOperation ao in LoadingAsyncOperations)
                 ao.allowSceneActivation = true;
         }
 
@@ -135,7 +135,7 @@ namespace FishNet.Managing.Scened
             do
             {
                 notDone = false;
-                foreach (AsyncOperation ao in _loadingAsyncOperations)
+                foreach (AsyncOperation ao in LoadingAsyncOperations)
                 {
 
                     if (!ao.isDone)

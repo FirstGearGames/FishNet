@@ -206,12 +206,12 @@ namespace FishNet.Component.Prediction
         /// True to smooth position. When false the graphicalObjects property will not be updated.
         /// </summary>
         /// <returns></returns>
-        private bool SmoothPosition() => (_smoothPosition || _networkBehaviour.IsOwner);
+        private bool SmoothPosition() => (_smoothPosition && _networkBehaviour.IsOwner);
         /// <summary>
         /// True to smooth rotation. When false the graphicalObjects property will not be updated.
         /// </summary>
         /// <returns></returns>
-        private bool SmoothRotation() => (_smoothRotation || _networkBehaviour.IsOwner);
+        private bool SmoothRotation() => (_smoothRotation && _networkBehaviour.IsOwner);
 
         /// <summary>
         /// Sets Position and Rotation move rates to reach Target datas.

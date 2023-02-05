@@ -398,6 +398,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="predictionFields"></param>
         private void InitializeCollections(TypeDefinition typeDef, MethodDefinition replicateMd, CreatedPredictionFields predictionFields)
         {
+            GeneralHelper gh = base.GetClass<GeneralHelper>();
             TypeReference replicateDataTr = replicateMd.Parameters[0].ParameterType;
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
@@ -410,9 +411,9 @@ namespace FishNet.CodeGenerating.Processing
                 MethodDefinition ctorMd = base.GetClass<GeneralHelper>().List_TypeRef.CachedResolve(base.Session).GetConstructor();
                 GenericInstanceType collectionGit;
                 if (isList)
-                    GetGenericLists(replicateDataTr, out collectionGit);
+                    gh.GetGenericLists(replicateDataTr, out collectionGit);
                 else
-                    GetGenericQueues(replicateDataTr, out collectionGit);
+                    gh.GetGenericQueues(replicateDataTr, out collectionGit);
                 MethodReference ctorMr = ctorMd.MakeHostInstanceGeneric(base.Session, collectionGit);
 
                 List<Instruction> insts = new List<Instruction>();
@@ -468,11 +469,10 @@ namespace FishNet.CodeGenerating.Processing
         /// <returns></returns>
         private void CreateFields(TypeDefinition typeDef, MethodDefinition replicateMd, MethodDefinition reconcileMd, out CreatedPredictionFields predictionFields)
         {
+            GeneralHelper gh = base.GetClass<GeneralHelper>();
             TypeReference replicateDataTr = replicateMd.Parameters[0].ParameterType;
             TypeReference replicateDataArrTr = replicateDataTr.MakeArrayType();
             TypeReference reconcileDataTr = reconcileMd.Parameters[0].ParameterType;
-            TypeReference uintTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(uint));
-            TypeReference boolTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(bool));
 
             GenericInstanceType replicateULDelegateGit;
             GenericInstanceType reconcileULDelegateGit;
@@ -480,8 +480,8 @@ namespace FishNet.CodeGenerating.Processing
             GenericInstanceType queueDataGit;
             GetGenericULDelegate(replicateDataTr, typeof(ReplicateUserLogicDelegate<>), out replicateULDelegateGit);
             GetGenericULDelegate(reconcileDataTr, typeof(ReconcileUserLogicDelegate<>), out reconcileULDelegateGit);
-            GetGenericLists(replicateDataTr, out lstDataGit);
-            GetGenericQueues(replicateDataTr, out queueDataGit);
+            gh.GetGenericLists(replicateDataTr, out lstDataGit);
+            gh.GetGenericQueues(replicateDataTr, out queueDataGit);
 
             /* Data buffer. */
             FieldDefinition replicateULDelegateFd = new FieldDefinition($"_replicateULDelegate___{replicateMd.Name}", FieldAttributes.Private, replicateULDelegateGit);
@@ -689,6 +689,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name=""></param>
         private void CreateClearReplicateCacheMethod(TypeDefinition typeDef, TypeReference dataTr, CreatedPredictionFields predictionFields)
         {
+            GeneralHelper gh = base.GetClass<GeneralHelper>();
             string clearDatasName = base.GetClass<NetworkBehaviourHelper>().ClearReplicateCache_Method_Name;
             MethodDefinition md = typeDef.GetMethod(clearDatasName);
             //Already exist when it shouldn't.
@@ -700,7 +701,7 @@ namespace FishNet.CodeGenerating.Processing
             else
             {
                 md = new MethodDefinition(clearDatasName, (MethodAttributes.Public | MethodAttributes.Virtual), base.Module.TypeSystem.Void);
-                base.GetClass<GeneralHelper>().CreateParameter(md, typeof(bool), "asServer");
+                gh.CreateParameter(md, typeof(bool), "asServer");
                 typeDef.Methods.Add(md);
                 base.ImportReference(md);
             }
@@ -708,12 +709,12 @@ namespace FishNet.CodeGenerating.Processing
             ILProcessor processor = md.Body.GetILProcessor();
 
             GenericInstanceType dataListGit;
-            GetGenericLists(dataTr, out dataListGit);
+            gh.GetGenericLists(dataTr, out dataListGit);
             GenericInstanceType dataQueueGit;
-            GetGenericQueues(dataTr, out dataQueueGit);
+            gh.GetGenericQueues(dataTr, out dataQueueGit);
             //Get clear method.
-            MethodReference lstClearMr = base.GetClass<GeneralHelper>().List_Clear_MethodRef.MakeHostInstanceGeneric(base.Session, dataListGit);
-            MethodReference queueClearMr = base.GetClass<GeneralHelper>().Queue_Clear_MethodRef.MakeHostInstanceGeneric(base.Session, dataQueueGit);
+            MethodReference lstClearMr = gh.List_Clear_MethodRef.MakeHostInstanceGeneric(base.Session, dataListGit);
+            MethodReference queueClearMr = gh.Queue_Clear_MethodRef.MakeHostInstanceGeneric(base.Session, dataQueueGit);
 
             ParameterDefinition asServerPd = md.Parameters[0];
 
@@ -744,25 +745,6 @@ namespace FishNet.CodeGenerating.Processing
         {
             TypeReference delDataTr = base.ImportReference(delegateType);
             git = delDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
-        }
-
-        /// <summary>
-        /// Outputs generic lists for dataTr and uint.
-        /// </summary>
-        private void GetGenericLists(TypeReference dataTr, out GenericInstanceType lstData)
-        {
-            TypeReference listDataTr = base.ImportReference(typeof(List<>));
-            lstData = listDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
-        }
-
-
-        /// <summary>
-        /// Outputs generic lists for dataTr and uint.
-        /// </summary>
-        private void GetGenericQueues(TypeReference dataTr, out GenericInstanceType queueData)
-        {
-            TypeReference queueDataTr = base.ImportReference(typeof(Queue<>));
-            queueData = queueDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
         }
 
         /// <summary>

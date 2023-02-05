@@ -25,7 +25,7 @@ namespace FishNet.Transporting
         #region Initialization and unity.
         /// <summary>
         /// Initializes the transport. Use this instead of Awake.
-        /// <paramref name="transportIndex"/>Index this transport belongs to when using multiple transports at once.</param>
+        /// <param name="transportIndex">Index this transport belongs to when using multiple transports at once.</param>
         /// </summary>
         public virtual void Initialize(NetworkManager networkManager, int transportIndex)
         {
@@ -135,6 +135,7 @@ namespace FishNet.Transporting
         /// Returns if the transport is only run locally, offline.
         /// While true several security checks are disabled.
         /// </summary>
+        /// <param name="connectionid"></param>
         public virtual bool IsLocalTransport(int connectionid) => false;
         /// <summary>
         /// Gets how long in seconds until either the server or client socket must go without data before being timed out.

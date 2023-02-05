@@ -67,7 +67,7 @@ namespace FishNet.CodeGenerating
                     , new PhysicsHelper(), new TimeManagerHelper(), new AttributeHelper(), new GeneralHelper()
                     , new ObjectHelper(), new NetworkBehaviourHelper()
                     , new CreatedSyncVarGenerator(), new TransportHelper()
-                    , new NetworkConnectionHelper(), new PredictedObjectHelper(), new GeneratorHelper()
+                    , new NetworkConnectionImports(), new PredictedObjectHelper(), new GeneratorHelper()
                     , new CustomSerializerProcessor()
                     , new NetworkBehaviourProcessor()
                     , new QolAttributeProcessor()

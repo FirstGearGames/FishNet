@@ -22,7 +22,6 @@ namespace FishNet.CodeGenerating.Processing
 
         #endregion
 
-        private int _count = 0;
         internal bool CreateSerializerDelegates(TypeDefinition typeDef, bool replace)
         {
             bool modified = false;

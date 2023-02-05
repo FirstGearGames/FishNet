@@ -1261,7 +1261,8 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write<T>(T value)
         {
-            if (IsAutoPackType<T>(out AutoPackType packType))
+            System.Type type = typeof(T);
+            if (IsAutoPackType(type, out AutoPackType packType))
             {
                 Action<Writer, T, AutoPackType> del = GenericWriter<T>.WriteAutoPack;
                 if (del == null)
@@ -1278,7 +1279,7 @@ namespace FishNet.Serializing
                     del.Invoke(this, value);
             }
 
-            string GetLogMessage() => $"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.";
+            string GetLogMessage() => $"Write method not found for {type.Name}. Use a supported type or create a custom serializer.";
         }
 
         /// <summary>
@@ -1301,8 +1302,11 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsAutoPackType<T>(out AutoPackType packType)
         {
-            //performance bench this against using a hash lookup.
             System.Type type = typeof(T);
+            return IsAutoPackType(type, out packType);
+        }
+        internal static bool IsAutoPackType(Type type, out AutoPackType packType)
+        {
             if (WriterExtensions.DefaultPackedTypes.Contains(type))
             {
                 packType = AutoPackType.Packed;

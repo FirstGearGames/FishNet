@@ -16,6 +16,10 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         public bool IsRegistered { get; private set; }
         /// <summary>
+        /// True if the object for which this SyncType is for has been initialized for the network.
+        /// </summary>
+        public bool IsNetworkInitialized => (IsRegistered && (NetworkBehaviour.IsServer || NetworkBehaviour.IsClient));
+        /// <summary>
         /// True if a SyncObject, false if a SyncVar.
         /// </summary>
         public bool IsSyncObject { get; private set; }
@@ -26,7 +30,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// How often updates may send.
         /// </summary>
-        public float SendTickRate => Settings.SendTickRate;
+        public float SendRate => Settings.SendRate;
         /// <summary>
         /// True if this SyncVar needs to send data.
         /// </summary>
@@ -77,7 +81,7 @@ namespace FishNet.Object.Synchronizing.Internal
             {
                 WritePermission = writePermissions,
                 ReadPermission = readPermissions,
-                SendTickRate = tickRate,
+                SendRate = tickRate,
                 Channel = channel
             };
 
@@ -107,7 +111,10 @@ namespace FishNet.Object.Synchronizing.Internal
         public void PreInitialize(NetworkManager networkManager)
         {
             NetworkManager = networkManager;
-            _timeToTicks = NetworkManager.TimeManager.TimeToTicks(Settings.SendTickRate, TickRounding.RoundUp);
+            if (Settings.SendRate < 0f)
+                Settings.SendRate = networkManager.ServerManager.GetSynctypeRate();
+
+            _timeToTicks = NetworkManager.TimeManager.TimeToTicks(Settings.SendRate, TickRounding.RoundUp);
         }
 
         /// <summary>
@@ -115,6 +122,43 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
         public virtual void OnStartCallback(bool asServer) { }
+
+        protected bool CanNetworkSetValues(bool warn = true)
+        {
+            /* If not registered then values can be set
+             * since at this point the object is still being initialized
+             * in awake so we want those values to be applied. */
+            if (!IsRegistered)
+                return true;
+            /* If the network is not initialized yet then let
+             * values be set. Values set here will not synchronize
+             * to the network. We are assuming the user is setting
+             * these values on client and server appropriately
+             * since they are being applied prior to this object
+             * being networked. */
+            if (!IsNetworkInitialized)
+                return true;
+            //If server is active then values can be set no matter what.
+            if (NetworkBehaviour.IsServer)
+                return true;
+
+            /* If here then server is not active and additional
+             * checks must be performed. */
+            bool result = (Settings.ReadPermission == ReadPermission.ExcludeOwner && NetworkBehaviour.IsOwner);
+            if (!result && warn)
+                LogServerNotActiveWarning();
+
+            return result;
+        }
+
+        /// <summary>
+        /// Logs that the operation could not be completed because the server is not active.
+        /// </summary>
+        protected void LogServerNotActiveWarning()
+        {
+            if (NetworkManager != null)
+                NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
+        }
 
         /// <summary>
         /// Dirties this Sync and the NetworkBehaviour.

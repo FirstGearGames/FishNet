@@ -503,8 +503,8 @@ namespace FishNet.Managing
         /// </summary>
         public NetworkObject GetPooledInstantiated(GameObject prefab, ushort collectionId, bool asServer)
         {
-            NetworkObject nob = prefab.GetComponent<NetworkObject>();
-            if (nob == null)
+            NetworkObject nob;
+            if (!prefab.TryGetComponent<NetworkObject>(out nob))
             {
                 LogError($"NetworkObject was not found on {prefab}. An instantiated NetworkObject cannot be returned.");
                 return null;

@@ -84,6 +84,22 @@ namespace FishNet.Managing.Scened
         /// Connections within each scene.
         /// </summary>
         public Dictionary<Scene, HashSet<NetworkConnection>> SceneConnections { get; private set; } = new Dictionary<Scene, HashSet<NetworkConnection>>();
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Script to handle addressables loading and unloading. This field may be blank if addressables are not being used.")]
+        [SerializeField]
+        private SceneProcessorBase _sceneProcessor;
+        /// <summary>
+        /// Script to handle addressables loading and unloading. This field may be blank if addressables are not being used.
+        /// </summary>
+        /// <returns></returns>
+        public SceneProcessorBase GetSceneProcessor() => _sceneProcessor;
+        /// <summary>
+        /// Sets the SceneProcessor to use.
+        /// </summary>
+        /// <param name="value"></param>
+        public void SetSceneProcessor(SceneProcessorBase value) => _sceneProcessor = value;
         #endregion
 
         #region Internal.
@@ -94,12 +110,6 @@ namespace FishNet.Managing.Scened
         #endregion
 
         #region Serialized.
-        /// <summary>
-        /// Script to handle addressables loading and unloading. This field may be blank if addressables are not being used.
-        /// </summary>
-        [Tooltip("Script to handle addressables loading and unloading. This field may be blank if addressables are not being used.")]
-        [SerializeField]
-        private SceneProcessorBase _sceneProcessor;
         /// <summary>
         /// How to update light probes after loading or unloading scenes.
         /// </summary>

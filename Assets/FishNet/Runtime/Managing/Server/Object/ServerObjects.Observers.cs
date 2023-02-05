@@ -463,7 +463,7 @@ namespace FishNet.Managing.Server
         /// Rebuilds observers for all connections for a NetworkObject.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void RebuildObservers(NetworkObject nob)
+        public void RebuildObservers(NetworkObject nob)
         {
             ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();
             foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)

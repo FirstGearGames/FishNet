@@ -1,4 +1,4 @@
-﻿
+﻿using FishNet.Utility.Extension;
 using FishNet.CodeGenerating.Extension;
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
@@ -57,7 +57,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         private const string READER_PREFIX = "RpcReader___";
         private const string REQUIREOWNERSHIP_NAME = "RequireOwnership";
         private const string RUNLOCALLY_NAME = "RunLocally";
-        private const string INCLUDEOWNER_NAME = "IncludeOwner";
+        private const string EXCLUDEOWNER_NAME = "ExcludeOwner";
+        private const string EXCLUDESERVER_NAME = "ExcludeServer";
         private const string BUFFERLAST_NAME = "BufferLast";
         private const string DATALENGTH_NAME = "DataLength";
         private const string VALIDATETARGET_NAME = "ValidateTarget";
@@ -629,19 +630,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             * the clientHost deinitializing the object as well. */
             base.GetClass<NetworkBehaviourHelper>().CreateIsClientCheck(createdMd, LoggingType.Off, false, false);
 
-            /* ObserversRpc IncludeOwnerCheck. */
-            if (rpcType == RpcType.Observers)
-            {
-                //If to not include owner then don't call logic if owner.
-                bool includeOwner = rpcAttribute.GetField(INCLUDEOWNER_NAME, true);
-                if (!includeOwner)
-                {
-                    //Create return if owner.
-                    Instruction retInst = base.GetClass<NetworkBehaviourHelper>().CreateLocalClientIsOwnerCheck(createdMd, LoggingType.Off, true, true, true);
-                    processor.InsertBefore(retInst, allReadInsts);
-                }
-            }
-
             //Block from running twice as host.
             if (runLocally)
                 processor.Add(CreateIsHostBlock(createdMd));
@@ -1026,7 +1014,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             insts.AddRange(CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef));
             //Also add if buffered.
             bool bufferLast = rpcAttribute.GetField(BUFFERLAST_NAME, false);
-            int buffered = (bufferLast) ? 1 : 0;
+            bool excludeOwner = rpcAttribute.GetField(EXCLUDEOWNER_NAME, false);
+            bool excludeServer = rpcAttribute.GetField(EXCLUDESERVER_NAME, false);
 
             //Warn user if any values are byref.
             bool usedByref = false;
@@ -1041,7 +1030,9 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             if (usedByref)
                 base.LogWarning($"Method {methodDef.FullName} takes an argument by reference. While this is supported, using BufferLast in addition to by reference arguements will buffer the value as it was serialized, not as it is when sending buffered.");
 
-            insts.Add(processor.Create(OpCodes.Ldc_I4, buffered));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, bufferLast.ToInt()));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, excludeServer.ToInt()));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, excludeOwner.ToInt())); 
             //Call NetworkBehaviour.
             insts.Add(processor.Create(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().SendObserversRpc_MethodRef));
 
@@ -1057,13 +1048,15 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             CustomAttribute rpcAttribute = attributeDatas.GetAttribute(base.Session, RpcType.Target);
             bool validateTarget = rpcAttribute.GetField(VALIDATETARGET_NAME, true);
-            int validate = (validateTarget) ? 1 : 0;
+            bool excludeServer = rpcAttribute.GetField(EXCLUDESERVER_NAME, false);
 
             insts.AddRange(CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef));
             //Reference to NetworkConnection that RPC is going to.
             insts.Add(processor.Create(OpCodes.Ldarg, targetConnectionParameterDef));
+            //Exclude server from rpc.
+            insts.Add(processor.Create(OpCodes.Ldc_I4, excludeServer.ToInt()));
             //Validate target receiving the rpc.
-            insts.Add(processor.Create(OpCodes.Ldc_I4, validate));
+            insts.Add(processor.Create(OpCodes.Ldc_I4, validateTarget.ToInt()));            
             //Call NetworkBehaviour.
             insts.Add(processor.Create(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().SendTargetRpc_MethodRef));
 

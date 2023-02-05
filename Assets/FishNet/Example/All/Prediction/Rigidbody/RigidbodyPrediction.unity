@@ -213,6 +213,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _authenticator: {fileID: 0}
+  _syncTypeRate: 0.1
   SpawnPacking:
     Position: 0
     Rotation: 2
@@ -222,8 +223,6 @@ MonoBehaviour:
   _shareIds: 1
   _startOnHeadless: 1
   _limitClientMTU: 1
-  _allowPredictedSpawning: 1
-  _reservedObjectIds: 15
 --- !u!1 &212039606
 GameObject:
   m_ObjectHideFlags: 0
@@ -277,13 +276,13 @@ MonoBehaviour:
   - {fileID: 212039608}
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
+  <PredictedSpawn>k__BackingField: {fileID: 0}
   _networkBehaviours: []
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
   _isGlobal: 0
   _initializeOrder: 0
-  _predictedSpawningType: 0
   _defaultDespawnType: 0
 --- !u!1 &555580081
 GameObject:
@@ -844,7 +843,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _spawnablePrefabs
       value: 
-      objectReference: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617,
+      objectReference: {fileID: 11400000, guid: 59fd8e7016be8a840bb2af3e8605d8cf,
         type: 2}
     - target: {fileID: 7443408887813606050, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}
@@ -1104,13 +1103,14 @@ MonoBehaviour:
   _graphicalObject: {fileID: 1256183192}
   _enableTeleport: 0
   _teleportThreshold: 1
+  _ownerSmoothPosition: 1
+  _ownerSmoothRotation: 1
   _ownerInterpolation: 1
   _predictionType: 1
   _rigidbody: {fileID: 1560902878}
   _rigidbody2d: {fileID: 0}
   _spectatorSmoothPosition: 1
   _spectatorSmoothRotation: 1
-  _spectatorSmoothingDuration: 0.025
   _spectatorInterpolation: 3
   _overflowMultiplier: 0.1
   _maintainedVelocity: 0
@@ -1139,6 +1139,7 @@ MonoBehaviour:
   - {fileID: 212039608}
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
+  <PredictedSpawn>k__BackingField: {fileID: 0}
   _networkBehaviours:
   - {fileID: 1560902879}
   <ParentNetworkObject>k__BackingField: {fileID: 0}
@@ -1146,7 +1147,6 @@ MonoBehaviour:
   _isNetworked: 1
   _isGlobal: 0
   _initializeOrder: 0
-  _predictedSpawningType: 0
   _defaultDespawnType: 0
 --- !u!135 &1560902881
 SphereCollider:

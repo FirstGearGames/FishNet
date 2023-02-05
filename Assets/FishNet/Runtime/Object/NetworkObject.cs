@@ -74,6 +74,7 @@ namespace FishNet.Object
         /// </summary>
         [field: SerializeField, HideInInspector]
         public NetworkObject ParentNetworkObject { get; private set; }
+        /// <summary>
         /// NetworkObjects nested beneath this one. Recursive NetworkObjects may exist within each entry of this field.
         /// </summary> 
         [field: SerializeField, HideInInspector]

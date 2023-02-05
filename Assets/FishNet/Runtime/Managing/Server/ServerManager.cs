@@ -86,6 +86,16 @@ namespace FishNet.Managing.Server
         [SerializeField]
         private Authenticator _authenticator;
         /// <summary>
+        /// Default send rate for SyncTypes. A value of 0f will send changed values every tick.
+        /// SyncTypeRate cannot yet be changed at runtime because this would require recalculating rates on SyncBase, which is not yet implemented.
+        /// </summary>
+        /// <returns></returns>
+        internal float GetSynctypeRate() => _syncTypeRate;
+        [Tooltip("Default send rate for SyncTypes. A value of 0f will send changed values every tick.")]
+        [Range(0f, 60f)]
+        [SerializeField]
+        private float _syncTypeRate = 0.1f;
+        /// <summary>
         /// How to pack object spawns.
         /// </summary>
         [Tooltip("How to pack object spawns.")]
