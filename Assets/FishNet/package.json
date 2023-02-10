@@ -1,0 +1,25 @@
+{
+  "name": "com.fishnet",
+  "displayName": "FishNet - Unity Networking Evolved",
+  "description": "FishNet - Unity Networking Evolved",
+  "version": "3.3.2",
+  "unity": "2022.2",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WolffunGame/FishNet.git"
+  },
+  "author": {
+    "name": "WolffunGame",
+    "email": "hoang@wolffungame.com",
+    "url": "https://github.com/WolffunGame"
+  },
+  "dependencies": {},
+  "keywords": [
+    "networking",
+    "fishnet"
+  ],
+  "release": {
+    "branches": ["main"]
+  }
+}

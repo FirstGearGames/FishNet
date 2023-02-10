@@ -1,0 +1,27 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - preview
+      - main
+      - v*.x
+    tags-ignore:
+      - "**"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v3
+        with:
+          # You can specify specifying version range for the extra plugins if you prefer.
+          extra_plugins: |
+            @semantic-release/changelog@6.0.0
+            @semantic-release/git
+                                    
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
