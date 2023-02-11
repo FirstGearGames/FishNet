@@ -13,10 +13,11 @@ namespace FishNet.CodeGenerating.Helping
         public TypeReference Reader_TypeRef;
         public TypeReference NetworkConnection_TypeRef;
         public MethodReference PooledReader_ReadNetworkBehaviour_MethodRef;
-
         public MethodReference Reader_ReadPackedWhole_MethodRef;
         public MethodReference Reader_ReadDictionary_MethodRef;
-        public MethodReference Reader_ReadToCollection_MethodRef;
+        public MethodReference Reader_ReadList_MethodRef;
+        public MethodReference Reader_ReadListCache_MethodRef;
+        public MethodReference Reader_ReadArray_MethodRef;
         public TypeReference GenericReaderTypeRef;
         public TypeReference ReaderTypeRef;
         public MethodReference ReadSetMethodRef;
@@ -49,18 +50,21 @@ namespace FishNet.CodeGenerating.Helping
             Type pooledReaderType = typeof(PooledReader);
             foreach (MethodInfo methodInfo in pooledReaderType.GetMethods())
             {
+                int parameterCount = methodInfo.GetParameters().Length;
                 /* Special methods. */
-                if (rp.IsSpecialReadMethod(methodInfo))
-                {
-                    if (methodInfo.Name == nameof(PooledReader.ReadPackedWhole))
-                        Reader_ReadPackedWhole_MethodRef = base.ImportReference(methodInfo);
-                    else if (methodInfo.Name == nameof(PooledReader.ReadArray))
-                        Reader_ReadToCollection_MethodRef = base.ImportReference(methodInfo);
-                    else if (methodInfo.Name == nameof(PooledReader.ReadDictionary))
-                        Reader_ReadDictionary_MethodRef = base.ImportReference(methodInfo);
-                }
+                if (methodInfo.Name == nameof(PooledReader.ReadPackedWhole))
+                    Reader_ReadPackedWhole_MethodRef = base.ImportReference(methodInfo);
+                //Relay readers.
+                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadDictionary))
+                    Reader_ReadDictionary_MethodRef = base.ImportReference(methodInfo);
+                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadListAllocated))
+                    Reader_ReadList_MethodRef = base.ImportReference(methodInfo);
+                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadListCacheAllocated))
+                    Reader_ReadListCache_MethodRef = base.ImportReference(methodInfo);
+                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadArrayAllocated))
+                    Reader_ReadArray_MethodRef = base.ImportReference(methodInfo);
             }
-
+             
             return true;
         }
     }

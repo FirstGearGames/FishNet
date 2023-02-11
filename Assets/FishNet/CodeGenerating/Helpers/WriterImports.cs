@@ -17,6 +17,9 @@ namespace FishNet.CodeGenerating.Helping
         public TypeReference Writer_TypeRef;
         public MethodReference PooledWriter_Dispose_MethodRef;
         public MethodReference Writer_WriteDictionary_MethodRef;
+        public MethodReference Writer_WriteList_MethodRef;
+        public MethodReference Writer_WriteListCache_MethodRef;
+        public MethodReference Writer_WriteArray_MethodRef;
         public TypeReference AutoPackTypeRef;
 
         public TypeReference GenericWriterTypeRef;
@@ -72,15 +75,21 @@ namespace FishNet.CodeGenerating.Helping
             Type pooledWriterType = typeof(PooledWriter);
             foreach (MethodInfo methodInfo in pooledWriterType.GetMethods())
             {
-                if (gwh.IsSpecialWriteMethod(methodInfo))
-                {
-                    if (methodInfo.Name == nameof(PooledWriter.Dispose))
-                        PooledWriter_Dispose_MethodRef = base.ImportReference(methodInfo);
-                    else if (methodInfo.Name == nameof(PooledWriter.WritePackedWhole))
-                        Writer_WritePackedWhole_MethodRef = base.ImportReference(methodInfo);
-                    else if (methodInfo.Name == nameof(PooledWriter.WriteDictionary))
-                        Writer_WriteDictionary_MethodRef = base.ImportReference(methodInfo);
-                }
+                int parameterCount = methodInfo.GetParameters().Length;
+
+                if (methodInfo.Name == nameof(PooledWriter.Dispose))
+                    PooledWriter_Dispose_MethodRef = base.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(PooledWriter.WritePackedWhole))
+                    Writer_WritePackedWhole_MethodRef = base.ImportReference(methodInfo);
+                //Relay writers.
+                else if (parameterCount == 1 && methodInfo.Name == nameof(PooledWriter.WriteDictionary))
+                    Writer_WriteDictionary_MethodRef = base.ImportReference(methodInfo);
+                else if (parameterCount == 1 && methodInfo.Name == nameof(PooledWriter.WriteList))
+                    Writer_WriteList_MethodRef = base.ImportReference(methodInfo);
+                else if (parameterCount == 1 && methodInfo.Name == nameof(PooledWriter.WriteListCache))
+                    Writer_WriteListCache_MethodRef = base.ImportReference(methodInfo);
+                else if (parameterCount == 1 && methodInfo.Name == nameof(PooledWriter.WriteArray))
+                    Writer_WriteArray_MethodRef = base.ImportReference(methodInfo);
             }
 
             return true;

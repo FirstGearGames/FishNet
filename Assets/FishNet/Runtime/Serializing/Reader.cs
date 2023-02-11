@@ -138,10 +138,22 @@ namespace FishNet.Serializing
 
 
         /// <summary>
-        /// Writes a dictionary.
+        /// Reads a dictionary.
         /// </summary>
+        [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Obsolete("Use ReadDictionaryAllocated.")]
         public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>()
+        {
+            return ReadDictionaryAllocated<TKey, TValue>();
+        }
+
+        /// <summary>
+        /// Reads a dictionary.
+        /// </summary>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Dictionary<TKey, TValue> ReadDictionaryAllocated<TKey, TValue>()
         {
             bool isNull = ReadBoolean();
             if (isNull)
@@ -159,6 +171,7 @@ namespace FishNet.Serializing
 
             return result;
         }
+
 
         /// <summary>
         /// Reads length. This method is used to make debugging easier.
@@ -1218,6 +1231,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a ListCache with allocations.
         /// </summary>
+        [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ListCache<T> ReadListCacheAllocated<T>()
         {
@@ -1239,6 +1253,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a list with allocations.
         /// </summary>
+        [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<T> ReadListAllocated<T>()
         {
@@ -1365,7 +1380,7 @@ namespace FishNet.Serializing
                 }
             }
 
-            string GetLogMessage() => $"Read method not found for {type.Name}. Use a supported type or create a custom serializer.";
+            string GetLogMessage() => $"Read method not found for {type.FullName}. Use a supported type or create a custom serializer.";
         }
 
         /// <summary>

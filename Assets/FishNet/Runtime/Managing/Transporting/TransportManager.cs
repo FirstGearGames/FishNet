@@ -1,7 +1,5 @@
 ﻿using FishNet.Connection;
-using FishNet.Managing.Logging;
 using FishNet.Managing.Timing;
-using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
@@ -59,6 +57,12 @@ namespace FishNet.Managing.Transporting
         #endregion
 
         #region Serialized.
+        /// <summary>
+        /// Layer used to modify data before it is sent or received.
+        /// </summary>
+        [Tooltip("Layer used to modify data before it is sent or received.")]
+        [SerializeField]
+        private IntermediateLayer _intermediateLayer;
         /// <summary>
         /// 
         /// </summary>
@@ -152,6 +156,8 @@ namespace FishNet.Managing.Transporting
                 _lowestMtu[i] = GetLowestMTU(i);
 
             InitializeToServerBundles();
+            if (_intermediateLayer != null)
+                _intermediateLayer.InitializeOnce(this);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _latencySimulator.Initialize(manager, Transport);
 #endif
@@ -181,7 +187,6 @@ namespace FishNet.Managing.Transporting
                 _toServerBundles.Add(new PacketBundle(_networkManager, mtu));
             }
         }
-
 
         #region GetMTU.
         /* Returned MTUs are always -1 to allow an extra byte
@@ -291,6 +296,23 @@ namespace FishNet.Managing.Transporting
         #endregion
 
         /// <summary>
+        /// Passes received to the intermediate layer.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ArraySegment<byte> ProcessIntermediateIncoming(ArraySegment<byte> src, bool fromServer)
+        {
+            return (_intermediateLayer == null) ? src : _intermediateLayer.HandleIncoming(src, fromServer);
+        }
+        /// <summary>
+        /// Passes sent to the intermediate layer.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ArraySegment<byte> ProcessIntermediateOutgoing(ArraySegment<byte> src, bool toServer)
+        {
+            return (_intermediateLayer == null) ? src : _intermediateLayer.HandleOutoing(src, toServer);
+        }
+
+        /// <summary>
         /// Sends data to a client.
         /// </summary>
         /// <param name="channelId">Channel to send on.</param>
@@ -300,13 +322,17 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClient(byte channelId, ArraySegment<byte> segment, NetworkConnection connection, bool splitLargeMessages = true)
         {
+            segment = ProcessIntermediateOutgoing(segment, false);
+            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
+            SendToClient_Internal(channelId, segment, connection, requiredSplitMessages, maxSplitMessageSize);
+        }
+        private void SendToClient_Internal(byte channelId, ArraySegment<byte> segment, NetworkConnection connection, int requiredSplitMessages, int maxSplitMessageSize)
+        {
             if (connection == null)
                 return;
 
-            //Split is needed.
-            if (splitLargeMessages && SplitRequired(channelId, segment.Count, out int requiredMessages, out int maxMessageSize))
-                SendSplitData(connection, ref segment, requiredMessages, maxMessageSize);
-            //Split not needed.
+            if (requiredSplitMessages > 1)
+                SendSplitData(connection, ref segment, requiredSplitMessages, maxSplitMessageSize);
             else
                 connection.SendToClient(channelId, segment);
         }
@@ -317,78 +343,97 @@ namespace FishNet.Managing.Transporting
         /// <param name="channelId"></param>
         /// <param name="segment"></param>
         /// <param name="observers"></param>
-        /// <param name="splitLargeIntoReliable">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
-        internal void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, HashSet<NetworkConnection> excludedConnections = null, bool splitLargeIntoReliable = true)
+        /// <param name="splitLargeMessages">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
+        internal void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, HashSet<NetworkConnection> excludedConnections = null, bool splitLargeMessages = true)
+        {
+            segment = ProcessIntermediateOutgoing(segment, false);
+            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
+            SendToClients_Internal(channelId, segment, observers, excludedConnections, requiredSplitMessages, maxSplitMessageSize);
+        }
+        private void SendToClients_Internal(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, HashSet<NetworkConnection> excludedConnections, int requiredSplitMessages, int maxSplitMessageSize)
         {
             if (excludedConnections == null || excludedConnections.Count == 0)
             {
                 foreach (NetworkConnection conn in observers)
-                    SendToClient(channelId, segment, conn, splitLargeIntoReliable);
+                    SendToClient_Internal(channelId, segment, conn, requiredSplitMessages, maxSplitMessageSize);
             }
             else
             {
-
                 foreach (NetworkConnection conn in observers)
                 {
                     if (excludedConnections.Contains(conn))
                         continue;
-                    SendToClient(channelId, segment, conn, splitLargeIntoReliable);
+                    SendToClient_Internal(channelId, segment, conn, requiredSplitMessages, maxSplitMessageSize);
                 }
             }
         }
+
+
 
         /// <summary>
         /// Sends data to all clients.
         /// </summary>
         /// <param name="channelId">Channel to send on.</param>
         /// <param name="segment">Data to send.</param>
-        /// <param name="splitLargeIntoReliable">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
+        /// <param name="splitLargeMessages">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClients(byte channelId, ArraySegment<byte> segment, bool splitLargeMessages = true)
         {
-            /* To ensure proper order everything must be tossed into each
-             * NetworkConnection rather than batch send. This is because there
-             * is no way to know if batch send must iterate before or
-             * after connection sends. By sending to each connection order
-             * is maintained. */
-            foreach (NetworkConnection conn in _networkManager.ServerManager.Clients.Values)
-                SendToClient(channelId, segment, conn, splitLargeMessages);
+            segment = ProcessIntermediateOutgoing(segment, false);
+            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
+            SendToClients_Internal(channelId, segment, requiredSplitMessages, maxSplitMessageSize);
         }
-
+        private void SendToClients_Internal(byte channelId, ArraySegment<byte> segment, int requiredSplitMessages, int maxSplitMessageSize)
+        {
+            /* Rather than buffer the message once and send to every client
+             * it must be queued into every client. This ensures clients
+             * receive the message in order of other packets being
+             * delivered to them. */
+            foreach (NetworkConnection conn in _networkManager.ServerManager.Clients.Values)
+                SendToClient_Internal(channelId, segment, conn, requiredSplitMessages, maxSplitMessageSize);
+        }
 
         /// <summary>
         /// Sends data to the server.
         /// </summary>
         /// <param name="channelId">Channel to send on.</param>
         /// <param name="segment">Data to send.</param>
+        /// <param name="splitLargeMessages">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SendToServer(byte channelId, ArraySegment<byte> segment, bool splitMessages = true)
+        internal void SendToServer(byte channelId, ArraySegment<byte> segment, bool splitLargeMessages = true)
+        {
+            segment = ProcessIntermediateOutgoing(segment, true);
+            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
+            SendToServer_Internal(channelId, segment, requiredSplitMessages, maxSplitMessageSize);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void SendToServer_Internal(byte channelId, ArraySegment<byte> segment, int requiredSplitMessages, int maxSplitMessageSize)
         {
             if (channelId >= _toServerBundles.Count)
                 channelId = (byte)Channel.Reliable;
 
-            //Split is needed.
-            if (splitMessages && SplitRequired(channelId, segment.Count, out int requiredMessages, out int maxMessageSize))
-            {
-                //Client is not allowed to send data sizes beyond MTU.
-                //if (_networkManager.ServerManager.LimitClientMTU) //todo uncomment and finish
-                //{
-                //    if (_networkManager.CanLog(LoggingType.Error))
-                //        Debug.LogError($"Local client attempted to send a packet size of {segment.Count} which would exceed the MTU, and settings do not allow this. To allow clients to send packets beyond MTU add a ServerManager component to your NetworkManager uncheck LimitClientMTU.");
-
-                //    _networkManager.ClientManager.StopConnection();
-                //    return;
-                //}
-                //If here split can be sent.
-                SendSplitData(null, ref segment, requiredMessages, maxMessageSize);
-            }
-            //Split not needed.
+            if (requiredSplitMessages > 1)
+                SendSplitData(null, ref segment, requiredSplitMessages, maxSplitMessageSize);
             else
-            {
                 _toServerBundles[channelId].Write(segment);
-            }
         }
 
         #region Splitting.     
+        /// <summary>
+        /// Checks if a message can be split and outputs split information if so.
+        /// </summary>
+        private void SetSplitValues(byte channelId, ArraySegment<byte> segment, bool split, out int requiredSplitMessages, out int maxSplitMessageSize)
+        {
+            if (!split)
+            {
+                requiredSplitMessages = 0;
+                maxSplitMessageSize = 0;
+            }
+            else
+            {
+                SplitRequired(channelId, segment.Count, out requiredSplitMessages, out maxSplitMessageSize);
+            }
+        }
         /// <summary>
         /// True if data must be split.
         /// </summary>
@@ -459,7 +504,6 @@ namespace FishNet.Managing.Transporting
         #endregion
 
 
-
         /// <summary>
         /// Processes data received by the socket.
         /// </summary>
@@ -480,8 +524,9 @@ namespace FishNet.Managing.Transporting
             OnIterateOutgoingStart?.Invoke();
             int channelCount = CHANNEL_COUNT;
             ulong sentBytes = 0;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             bool latencySimulatorEnabled = LatencySimulator.CanSimulate;
-
+#endif
             /* If sending to the client. */
             if (!toServer)
             {

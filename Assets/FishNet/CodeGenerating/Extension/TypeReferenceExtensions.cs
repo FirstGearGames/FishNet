@@ -12,6 +12,19 @@ namespace FishNet.CodeGenerating.Extension
     {
 
         /// <summary>
+        /// Returns the fullname of a TypeReference without <>.
+        /// </summary>
+        /// <param name="tr"></param>
+        /// <returns></returns>
+        public static string GetFullnameWithoutBrackets(this TypeReference tr)
+        {
+            string str = tr.FullName;
+            str = str.Replace("<", "");
+            str = str.Replace(">", "");
+            return str;
+        }
+
+        /// <summary>
         /// Returns a method in the next base class.
         /// </summary>
         public static MethodReference GetMethodInBase(this TypeReference tr, CodegenSession session, string methodName)

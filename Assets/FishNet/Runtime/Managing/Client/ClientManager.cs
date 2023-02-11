@@ -169,17 +169,17 @@ namespace FishNet.Managing.Client
             if (NetworkManager == null || NetworkManager.TransportManager == null || NetworkManager.TransportManager.Transport == null)
                 return;
 
-            if (!subscribe)
-            {
-                NetworkManager.TransportManager.OnIterateIncomingEnd -= TransportManager_OnIterateIncomingEnd;
-                NetworkManager.TransportManager.Transport.OnClientReceivedData -= Transport_OnClientReceivedData;
-                NetworkManager.TransportManager.Transport.OnClientConnectionState -= Transport_OnClientConnectionState;
-            }
-            else
+            if (subscribe)
             {
                 NetworkManager.TransportManager.OnIterateIncomingEnd += TransportManager_OnIterateIncomingEnd;
                 NetworkManager.TransportManager.Transport.OnClientReceivedData += Transport_OnClientReceivedData;
                 NetworkManager.TransportManager.Transport.OnClientConnectionState += Transport_OnClientConnectionState;
+            }
+            else
+            {
+                NetworkManager.TransportManager.OnIterateIncomingEnd -= TransportManager_OnIterateIncomingEnd;
+                NetworkManager.TransportManager.Transport.OnClientReceivedData -= Transport_OnClientReceivedData;
+                NetworkManager.TransportManager.Transport.OnClientConnectionState -= Transport_OnClientConnectionState;
             }
         }
 
@@ -249,6 +249,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         private void Transport_OnClientReceivedData(ClientReceivedDataArgs args)
         {
+            args.Data = NetworkManager.TransportManager.ProcessIntermediateIncoming(args.Data, true);
             ParseReceived(args);
         }
 

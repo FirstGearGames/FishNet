@@ -187,7 +187,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="useAdd"></param>
         internal void AddReaderMethod(TypeReference typeRef, MethodReference methodRef, bool instanced, bool useAdd)
         {
-            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            string fullName = typeRef.GetFullnameWithoutBrackets();
             Dictionary<string, MethodReference> dict = (instanced) ?
                 InstancedReaderMethods : StaticReaderMethods;
 
@@ -317,7 +317,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         internal void RemoveReaderMethod(TypeReference typeRef, bool instanced)
         {
-            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            string fullName = typeRef.GetFullnameWithoutBrackets();
             Dictionary<string, MethodReference> dict = (instanced) ?
                 InstancedReaderMethods : StaticReaderMethods;
 
@@ -583,7 +583,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal MethodReference GetInstancedReadMethodReference(TypeReference typeRef)
         {
-            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            string fullName = typeRef.GetFullnameWithoutBrackets();
             InstancedReaderMethods.TryGetValue(fullName, out MethodReference methodRef);
             return methodRef;
         }
@@ -594,7 +594,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal MethodReference GetStaticReadMethodReference(TypeReference typeRef)
         {
-            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            string fullName = typeRef.GetFullnameWithoutBrackets();
             StaticReaderMethods.TryGetValue(fullName, out MethodReference methodRef);
             return methodRef;
         }
@@ -679,15 +679,14 @@ namespace FishNet.CodeGenerating.Helping
             {
                 //Array.
                 if (serializerType == SerializerType.Array)
-                    resultMr = CreateArrayReaderMethodReference(objectTr);
+                    resultMr = CreateArrayReaderMethodReference(objectTr); 
                 //Enum.
                 else if (serializerType == SerializerType.Enum)
                     resultMr = CreateEnumReaderMethodDefinition(objectTr);
-                else if (serializerType == SerializerType.Dictionary)
-                    resultMr = CreateDictionaryReaderMethodReference(objectTr);
-                //List, ListCache.
-                else if (serializerType == SerializerType.List || serializerType == SerializerType.ListCache)
-                    resultMr = CreateGenericTypeReader(objectTr, serializerType);
+                else if (serializerType == SerializerType.Dictionary
+                    || serializerType == SerializerType.List
+                    || serializerType == SerializerType.ListCache)
+                    resultMr = CreateGenericCollectionReaderMethodReference(objectTr, serializerType);
                 //NetworkBehaviour.
                 else if (serializerType == SerializerType.NetworkBehaviour)
                     resultMr = GetNetworkBehaviourReaderMethodReference(objectTr);
@@ -775,78 +774,29 @@ namespace FishNet.CodeGenerating.Helping
         }
 
         /// <summary>
-        /// Create a reader for an array or list.
+        /// Creates a writer for an array.
         /// </summary>
         private MethodReference CreateArrayReaderMethodReference(TypeReference objectTr)
         {
-            MethodDefinition createdReaderMd = CreateStaticReaderStubMethodDefinition(objectTr);
-            AddToStaticReaders(objectTr, createdReaderMd);
+            ReaderImports ri = base.GetClass<ReaderImports>();
+            TypeReference valueTr = objectTr.GetElementType();
 
-            /* Try to get instanced first for collection element type, if it doesn't exist then try to
-             * get/or make a one. */
-            TypeReference elementTypeRef = objectTr.GetElementType();
-            MethodReference readMethodRef = base.GetClass<ReaderProcessor>().GetOrCreateReadMethodReference(elementTypeRef);
-            if (readMethodRef == null)
+            //Write not found.
+            if (GetOrCreateReadMethodReference(valueTr) == null)
                 return null;
 
-            ILProcessor processor = createdReaderMd.Body.GetILProcessor();
+            MethodDefinition createdMd = CreateStaticReaderStubMethodDefinition(objectTr);
+            AddToStaticReaders(objectTr, createdMd);
 
-            ParameterDefinition readerParameterDef = createdReaderMd.Parameters[0];
-            VariableDefinition sizeVariableDef = base.GetClass<GeneralHelper>().CreateVariable(createdReaderMd, typeof(int));
-            //Load packed whole value into sizeVariableDef, exit if null indicator.
-            base.GetClass<ReaderProcessor>().CreateRetOnNull(processor, readerParameterDef, sizeVariableDef, false);
+            //Find instanced writer to use.
+            MethodReference instancedWriteMr = ri.Reader_ReadArray_MethodRef;
+            //Make generic.
+            GenericInstanceMethod writeGim = instancedWriteMr.MakeGenericMethod(new TypeReference[] { valueTr });
+            CallInstancedReader(createdMd, writeGim);
 
-            //Make local variable of array type.
-            VariableDefinition collectionVariableDef = base.GetClass<GeneralHelper>().CreateVariable(createdReaderMd, objectTr);
-            //Create new array/list of size.
-            processor.Emit(OpCodes.Ldloc, sizeVariableDef);
-            processor.Emit(OpCodes.Newarr, elementTypeRef);
-            //Store new object of arr/list into collection variable.
-            processor.Emit(OpCodes.Stloc, collectionVariableDef);
-
-            VariableDefinition loopIndex = base.GetClass<GeneralHelper>().CreateVariable(createdReaderMd, typeof(int));
-            Instruction loopComparer = processor.Create(OpCodes.Ldloc, loopIndex);
-
-            //int i = 0
-            processor.Emit(OpCodes.Ldc_I4_0);
-            processor.Emit(OpCodes.Stloc, loopIndex);
-            processor.Emit(OpCodes.Br_S, loopComparer);
-
-            //Loop content.
-            //Collection[index]
-            Instruction contentStart = processor.Create(OpCodes.Ldloc, collectionVariableDef);
-            processor.Append(contentStart);
-            /* Only arrays load the index since we are setting to that index.
-             * List call lst.Add */
-            processor.Emit(OpCodes.Ldloc, loopIndex);
-            //Collection[index] = reader.
-            processor.Emit(OpCodes.Ldarg, readerParameterDef);
-            //Pass in AutoPackType default.
-            if (base.GetClass<ReaderProcessor>().IsAutoPackedType(elementTypeRef))
-            {
-                AutoPackType packType = base.GetClass<GeneralHelper>().GetDefaultAutoPackType(elementTypeRef);
-                processor.Emit(OpCodes.Ldc_I4, (int)packType);
-            }
-            //Collection[index] = reader.ReadType().
-            processor.Emit(OpCodes.Call, readMethodRef);
-            //Set value to collection.
-            processor.Emit(OpCodes.Stelem_Any, elementTypeRef);
-
-            //i++
-            processor.Emit(OpCodes.Ldloc, loopIndex);
-            processor.Emit(OpCodes.Ldc_I4_1);
-            processor.Emit(OpCodes.Add);
-            processor.Emit(OpCodes.Stloc, loopIndex);
-            //if i < length jmp to content start.
-            processor.Append(loopComparer); //if i < size
-            processor.Emit(OpCodes.Ldloc, sizeVariableDef);
-            processor.Emit(OpCodes.Blt_S, contentStart);
-
-            processor.Emit(OpCodes.Ldloc, collectionVariableDef);
-            processor.Emit(OpCodes.Ret);
-
-            return base.ImportReference(createdReaderMd);
+            return base.ImportReference(createdMd);
         }
+
 
         /// <summary>
         /// Creates a reader for a dictionary.
@@ -870,62 +820,125 @@ namespace FishNet.CodeGenerating.Helping
             MethodDefinition createdReaderMd = CreateStaticReaderStubMethodDefinition(objectTr);
             AddToStaticReaders(objectTr, createdReaderMd);
 
-            ILProcessor processor = createdReaderMd.Body.GetILProcessor();
             GenericInstanceMethod readDictGim = base.GetClass<ReaderImports>().Reader_ReadDictionary_MethodRef.MakeGenericMethod(new TypeReference[] { keyTr, valueTr });
-
-            ParameterDefinition readerPd = createdReaderMd.Parameters[0];
-            processor.Emit(OpCodes.Ldarg, readerPd);
-            processor.Emit(readDictGim.GetCallOpCode(base.Session), readDictGim);
-            processor.Emit(OpCodes.Ret);
+            CallInstancedReader(createdReaderMd, readDictGim);
 
             return base.ImportReference(createdReaderMd);
         }
 
 
         /// <summary>
-        /// Create a reader for a list.
+        /// Creates a writer for a variety of generic collections.
         /// </summary>
-        private MethodReference CreateGenericTypeReader(TypeReference objectTr, SerializerType st)
+        private MethodReference CreateGenericCollectionReaderMethodReference(TypeReference objectTr, SerializerType st)
         {
-            ReaderProcessor rp = base.GetClass<ReaderProcessor>();
+            ReaderImports ri = base.GetClass<ReaderImports>();
+            //Make value field generic.
+            GenericInstanceType genericInstance = (GenericInstanceType)objectTr;
+            base.ImportReference(genericInstance);
+            TypeReference valueTr = genericInstance.GenericArguments[0];
 
-            if (st != SerializerType.List && st != SerializerType.ListCache)
+            List<TypeReference> genericArguments = new List<TypeReference>();
+            //Make sure all arguments have writers.
+            foreach (TypeReference gaTr in genericInstance.GenericArguments)
             {
-                base.LogError($"Reader SerializerType {st} is not implemented");
+                //Writer not found.
+                if (GetOrCreateReadMethodReference(gaTr) == null)
+                {
+                    base.LogError($"Reader could not be found or created for type {gaTr.FullName}.");
+                    return null;
+                } 
+                genericArguments.Add(gaTr);
+            }
+            MethodReference valueWriteMr = GetOrCreateReadMethodReference(valueTr);
+            if (valueWriteMr == null)
+                return null;
+
+            MethodDefinition createdMd = CreateStaticReaderStubMethodDefinition(objectTr);
+            AddToStaticReaders(objectTr, createdMd);
+
+            //Find instanced writer to use.
+            MethodReference instancedReadMr;
+            if (st == SerializerType.Dictionary)
+                instancedReadMr = ri.Reader_ReadDictionary_MethodRef;
+            else if (st == SerializerType.List)
+                instancedReadMr = ri.Reader_ReadList_MethodRef;
+            else if (st == SerializerType.ListCache)
+                instancedReadMr = ri.Reader_ReadListCache_MethodRef;
+            else
+                instancedReadMr = null;
+
+            //Not found.
+            if (instancedReadMr == null)
+            {
+                base.LogError($"Instanced reader not found for SerializerType {st} on object {objectTr.Name}.");
                 return null;
             }
 
-            GenericInstanceType genericInstance = (GenericInstanceType)objectTr;
-            base.ImportReference(genericInstance);
-            TypeReference elementTr = genericInstance.GenericArguments[0];
+            //Make generic.
+            GenericInstanceMethod writeGim = instancedReadMr.MakeGenericMethod(genericArguments.ToArray());
+            CallInstancedReader(createdMd, writeGim);
 
-            /* Try to get instanced first for collection element type, if it doesn't exist then try to
-             * get/or make a one. */
-            MethodReference elementReadMr = rp.GetOrCreateReadMethodReference(elementTr);
-            if (elementReadMr == null)
-                return null;
-
-            TypeReference readerMethodTr = null;
-            if (st == SerializerType.List)
-                readerMethodTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(List<>));
-            else if (st == SerializerType.ListCache)
-                readerMethodTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(ListCache<>));
-
-            MethodReference readerMd = rp.GetReadMethodReference(readerMethodTr);
-            MethodDefinition typedReaderMd = CreateStaticReaderStubMethodDefinition(objectTr);
-
-            AddToStaticReaders(objectTr, typedReaderMd);
-
-            ParameterDefinition readerPd = typedReaderMd.Parameters[0];
-
-            //Find add method for list.
-            MethodReference readerGim = readerMd.GetMethodReference(base.Session, elementTr);
-            ILProcessor processor = readerMd.CachedResolve(base.Session).Body.GetILProcessor();
-            processor.Emit(OpCodes.Ldarg, readerPd);
-            processor.Emit(OpCodes.Call, readerGim);
-
-            return elementReadMr;
+            return base.ImportReference(createdMd);
         }
+
+
+        /// <summary>
+        /// Calls an instanced writer from a static writer.
+        /// </summary>
+        private void CallInstancedReader(MethodDefinition staticReaderMd, MethodReference instancedReaderMr)
+        {
+            ParameterDefinition readerPd = staticReaderMd.Parameters[0];
+            ILProcessor processor = staticReaderMd.Body.GetILProcessor();
+            processor.Emit(OpCodes.Ldarg, readerPd);
+            processor.Emit(instancedReaderMr.GetCallOpCode(base.Session), instancedReaderMr);
+            processor.Emit(OpCodes.Ret);
+        }
+
+        ///// <summary>
+        ///// Create a reader for a list.
+        ///// </summary>
+        //private MethodReference CreateGenericTypeReader(TypeReference objectTr, SerializerType st)
+        //{
+        //    ReaderProcessor rp = base.GetClass<ReaderProcessor>();
+
+        //    if (st != SerializerType.List && st != SerializerType.ListCache)
+        //    {
+        //        base.LogError($"Reader SerializerType {st} is not implemented");
+        //        return null;
+        //    }
+
+        //    GenericInstanceType genericInstance = (GenericInstanceType)objectTr;
+        //    base.ImportReference(genericInstance);
+        //    TypeReference elementTr = genericInstance.GenericArguments[0];
+
+        //    /* Try to get instanced first for collection element type, if it doesn't exist then try to
+        //     * get/or make a one. */
+        //    MethodReference elementReadMr = rp.GetOrCreateReadMethodReference(elementTr);
+        //    if (elementReadMr == null)
+        //        return null;
+
+        //    TypeReference readerMethodTr = null;
+        //    if (st == SerializerType.List)
+        //        readerMethodTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(List<>));
+        //    else if (st == SerializerType.ListCache)
+        //        readerMethodTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(ListCache<>));
+
+        //    MethodReference readerMd = rp.GetReadMethodReference(readerMethodTr);
+        //    MethodDefinition typedReaderMd = CreateStaticReaderStubMethodDefinition(objectTr);
+
+        //    AddToStaticReaders(objectTr, typedReaderMd);
+
+        //    ParameterDefinition readerPd = typedReaderMd.Parameters[0];
+
+        //    //Find add method for list.
+        //    MethodReference readerGim = readerMd.GetMethodReference(base.Session, elementTr);
+        //    ILProcessor processor = readerMd.CachedResolve(base.Session).Body.GetILProcessor();
+        //    processor.Emit(OpCodes.Ldarg, readerPd);
+        //    processor.Emit(OpCodes.Call, readerGim);
+
+        //    return elementReadMr;
+        //}
 
 
         /// <summary>
