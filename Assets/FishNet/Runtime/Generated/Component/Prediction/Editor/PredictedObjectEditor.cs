@@ -10,6 +10,7 @@ namespace FishNet.Component.Prediction
     [CanEditMultipleObjects]
     public class PredictedObjectEditor : Editor
     {
+        private SerializedProperty _implementsPredictionMethods;
         private SerializedProperty _graphicalObject;
         private SerializedProperty _ownerSmoothPosition;
         private SerializedProperty _ownerSmoothRotation;
@@ -32,6 +33,7 @@ namespace FishNet.Component.Prediction
 
         protected virtual void OnEnable()
         {
+            _implementsPredictionMethods = serializedObject.FindProperty(nameof(_implementsPredictionMethods));
             _graphicalObject = serializedObject.FindProperty(nameof(_graphicalObject));
             _ownerSmoothPosition = serializedObject.FindProperty(nameof(_ownerSmoothPosition));
             _ownerSmoothRotation = serializedObject.FindProperty(nameof(_ownerSmoothRotation));
@@ -62,6 +64,7 @@ namespace FishNet.Component.Prediction
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((PredictedObject)target), typeof(PredictedObject), false);
             GUI.enabled = true;
 
+            EditorGUILayout.PropertyField(_implementsPredictionMethods);
             EditorGUILayout.PropertyField(_graphicalObject);
             EditorGUILayout.PropertyField(_enableTeleport);
             if (_enableTeleport.boolValue)

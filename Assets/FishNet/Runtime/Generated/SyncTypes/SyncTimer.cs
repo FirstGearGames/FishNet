@@ -1,6 +1,8 @@
-﻿using FishNet.Object.Synchronizing.Internal;
+﻿using FishNet.Documenting;
+using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace FishNet.Object.Synchronizing
 {
@@ -237,11 +239,12 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
-        /// Reads and sets the current values.
+        /// Reads and sets the current values for server or client.
         /// </summary>
-        public override void Read(PooledReader reader)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [APIExclude]
+        public override void Read(PooledReader reader, bool asServer)
         {
-            bool asServer = false;
             int changes = reader.ReadInt32();
 
             for (int i = 0; i < changes; i++)

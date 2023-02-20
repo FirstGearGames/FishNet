@@ -894,7 +894,7 @@ PrefabInstance:
     - target: {fileID: 4393252310584637056, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}
       propertyPath: _autoStartType
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7443408887813606049, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}
@@ -1212,6 +1212,7 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 1560902880}
   _networkObjectCache: {fileID: 1560902880}
+  _implementsPredictionMethods: 1
   _graphicalObject: {fileID: 1256183192}
   _enableTeleport: 0
   _teleportThreshold: 1

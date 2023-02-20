@@ -19,7 +19,6 @@ namespace FishNet.Component.Transforming.Editing
         private SerializedProperty _teleportThreshold;
         private SerializedProperty _clientAuthoritative;
         private SerializedProperty _sendToOwner;
-        private SerializedProperty _interval;
         private SerializedProperty _synchronizePosition;
         private SerializedProperty _positionSnapping;
         private SerializedProperty _synchronizeRotation;
@@ -38,7 +37,6 @@ namespace FishNet.Component.Transforming.Editing
             _teleportThreshold = serializedObject.FindProperty("_teleportThreshold");
             _clientAuthoritative = serializedObject.FindProperty("_clientAuthoritative");
             _sendToOwner = serializedObject.FindProperty("_sendToOwner");
-            _interval = serializedObject.FindProperty("_interval");
             _synchronizePosition = serializedObject.FindProperty("_synchronizePosition");
             _positionSnapping = serializedObject.FindProperty("_positionSnapping");
             _synchronizeRotation = serializedObject.FindProperty("_synchronizeRotation");
@@ -99,8 +97,6 @@ namespace FishNet.Component.Transforming.Editing
             //Synchronizing.
             EditorGUILayout.LabelField("Synchronizing.", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            //Interval.
-            EditorGUILayout.PropertyField(_interval, new GUIContent("Interval", "How often in ticks to synchronize. A value of 1 will synchronize every tick, a value of 10 will synchronize every 10 ticks."));
             //Position.
             EditorGUILayout.PropertyField(_synchronizePosition);
             if (_synchronizePosition.boolValue)

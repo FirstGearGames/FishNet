@@ -64,6 +64,11 @@ namespace FishNet.Serializing
         #endregion
 
         #region Internal.
+        /// <summary>
+        /// NetworkConnection that this data came from.
+        /// Value may not always be set.
+        /// </summary>
+        public NetworkConnection NetworkConnection { get; private set; }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         /// <summary>
         /// Last NetworkObject parsed.
@@ -83,15 +88,16 @@ namespace FishNet.Serializing
         private byte[] _buffer;
         #endregion
 
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Reader(byte[] bytes, NetworkManager networkManager)
+        public Reader(byte[] bytes, NetworkManager networkManager, NetworkConnection networkConnection = null)
         {
-            Initialize(bytes, networkManager);
+            Initialize(bytes, networkManager, networkConnection);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Reader(ArraySegment<byte> segment, NetworkManager networkManager)
+        public Reader(ArraySegment<byte> segment, NetworkManager networkManager, NetworkConnection networkConnection = null)
         {
-            Initialize(segment, networkManager);
+            Initialize(segment, networkManager, networkConnection);
         }
 
         /// <summary>
@@ -108,7 +114,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="bytes"></param>
         /// <param name="networkManager"></param>
-        internal void Initialize(ArraySegment<byte> bytes, NetworkManager networkManager)
+        internal void Initialize(ArraySegment<byte> bytes, NetworkManager networkManager, NetworkConnection networkConnection = null)
         {
             if (bytes.Array == null)
             {
@@ -124,6 +130,7 @@ namespace FishNet.Serializing
             Offset = bytes.Offset;
             Length = bytes.Count;
             NetworkManager = networkManager;
+            NetworkConnection = networkConnection;
         }
         /// <summary>
         /// Initializes this reader with data.
@@ -131,9 +138,9 @@ namespace FishNet.Serializing
         /// <param name="bytes"></param>
         /// <param name="networkManager"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Initialize(byte[] bytes, NetworkManager networkManager)
+        internal void Initialize(byte[] bytes, NetworkManager networkManager, NetworkConnection networkConnection = null)
         {
-            Initialize(new ArraySegment<byte>(bytes), networkManager);
+            Initialize(new ArraySegment<byte>(bytes), networkManager, networkConnection);
         }
 
 

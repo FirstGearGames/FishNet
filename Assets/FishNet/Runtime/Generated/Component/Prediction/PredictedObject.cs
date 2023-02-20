@@ -47,6 +47,12 @@ namespace FishNet.Component.Prediction
 
         #region Serialized.
         /// <summary>
+        /// True if this object implements replicate and reconcile methods.
+        /// </summary>
+        [Tooltip("True if this object implements replicate and reconcile methods.")]
+        [SerializeField]
+        private bool _implementsPredictionMethods = true;
+        /// <summary>
         /// Transform which holds the graphical features of this object. This transform will be smoothed when desynchronizations occur.
         /// </summary>
         [Tooltip("Transform which holds the graphical features of this object. This transform will be smoothed when desynchronizations occur.")]
@@ -258,8 +264,6 @@ namespace FishNet.Component.Prediction
              * accurate results. */
             if (base.IsHost)
                 InitializeSmoother(true);
-            if (base.IsClient)
-                ChangeSubscriptions(true);
 
             UpdateRigidbodiesCount(true);
             ConfigureRigidbodies();
@@ -276,6 +280,7 @@ namespace FishNet.Component.Prediction
         public override void OnStartClient()
         {
             base.OnStartClient();
+            ChangeSubscriptions(true);
             Rigidbodies_OnStartClient();
         }
 
@@ -287,7 +292,9 @@ namespace FishNet.Component.Prediction
              * is not predictive and is preferred
              * for more real time graphical results. */
             if (base.IsOwner && !base.IsServer)
-                InitializeSmoother(true);
+                /* If has prediction methods implement for owner,
+                 * otherwise implement for spectator. */
+                InitializeSmoother(_implementsPredictionMethods);
             //Not owner nor server, initialize spectator smoother if using rigidbodies.
             else if (_predictionType != PredictionType.Other)
                 InitializeSmoother(false);

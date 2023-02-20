@@ -222,6 +222,10 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private uint _pingTicks;
         /// <summary>
+        /// Next tick when a network LOD update may send from the client.
+        /// </summary>
+        private uint _nextLodTick;
+        /// <summary>
         /// MovingAverage instance used to calculate mean ping.
         /// </summary>
         private MovingAverage _pingAverage = new MovingAverage(5);
@@ -536,6 +540,19 @@ namespace FishNet.Managing.Timing
         }
 
         /// <summary>
+        /// Sends a LOD update to the server.
+        /// </summary>
+        private void TrySendNetworkLOD()
+        {
+            //Protect against excessive sends. Ect, consider looking at TrySendPing.
+            if (LocalTick < _nextLodTick)
+                return;
+
+            _nextLodTick += TickRate;
+            _networkManager.ClientManager.SendNetworkLODUpdate();
+        }
+
+        /// <summary>
         /// Sends a ping to the server.
         /// </summary>
         private void TrySendPing(uint? tickOverride = null)
@@ -653,7 +670,10 @@ namespace FishNet.Managing.Timing
                     /* If isClient this is the
                      * last tick during this loop. */
                     if (isClient && (_elapsedTickTime < timePerSimulation))
+                    {
+                        TrySendNetworkLOD();
                         TrySendPing(LocalTick + 1);
+                    }
 
                     if (_networkManager.IsServer)
                         SendTimingAdjustment();
@@ -670,6 +690,8 @@ namespace FishNet.Managing.Timing
 
                     Tick++;
                     LocalTick++;
+
+                    _networkManager.ObserverManager.CalculateLevelOfDetail(LocalTick);
                 }
 
             } while (_elapsedTickTime >= timePerSimulation);

@@ -164,7 +164,6 @@ namespace FishNet.Object.Synchronizing
             //Not called by user.
             else
             {
-
                 /* Previously clients were not allowed to set values
                  * but this has been changed because clients may want
                  * to update values locally while occasionally

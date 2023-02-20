@@ -153,7 +153,7 @@ namespace FishNet.Object
         /// Reads a SyncVar.
         /// </summary>
         /// <param name="reader"></param>
-        internal void OnSyncType(PooledReader reader, int length, bool isSyncObject)
+        internal void OnSyncType(PooledReader reader, int length, bool isSyncObject, bool asServer = false)
         {
             int readerStart = reader.Position;
             while (reader.Position - readerStart < length)
@@ -162,14 +162,14 @@ namespace FishNet.Object
                 if (isSyncObject)
                 {
                     if (_syncObjects.TryGetValueIL2CPP(index, out SyncBase sb))
-                        sb.Read(reader);
+                        sb.Read(reader, asServer);
                     else
                         NetworkManager.LogWarning($"SyncObject not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
                 }
                 else
                 {
                     if (_syncVars.ContainsKey(index))
-                        ReadSyncVar(reader, index);
+                        ReadSyncVar(reader, index, asServer);
                     else
                         NetworkManager.LogWarning($"SyncVar not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
                 }
@@ -181,8 +181,9 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="index"></param>
+        /// <param name="asServer">True if reading into SyncVars for the server, false for client. This would be true for predicted spawning if the predicted spawner sent syncvars.</param>
         [APIExclude]
-        internal virtual bool ReadSyncVar(PooledReader reader, uint index) { return false; }
+        internal virtual bool ReadSyncVar(PooledReader reader, uint index, bool asServer) { return false; }
 
         /// <summary>
         /// Writers dirty SyncTypes if their write tick has been met.

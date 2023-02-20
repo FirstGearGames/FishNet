@@ -688,8 +688,9 @@ namespace FishNet.Object
         /// <summary>
         /// Initializes a predicted object for client.
         /// </summary>
-        internal void InitializePredictedObject_Server(NetworkConnection predictedSpawner)
+        internal void InitializePredictedObject_Server(NetworkManager manager, NetworkConnection predictedSpawner)
         {
+            NetworkManager = manager;
             PredictedSpawner = predictedSpawner;
         }
 

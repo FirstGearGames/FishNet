@@ -251,9 +251,9 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private float _teleportThreshold;
         /// <summary>
-        /// NetworkBehaviour which is using this object.
+        /// PredictedObject which is using this object.
         /// </summary>
-        private NetworkBehaviour _networkBehaviour;
+        private PredictedObject _predictedObject;
         /// <summary>
         /// Cache of GoalDatas to prevent allocations.
         /// </summary>
@@ -265,11 +265,11 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Initializes this for use.
         /// </summary>
-        internal void Initialize(NetworkBehaviour nb, RigidbodyType rbType, Rigidbody rb, Rigidbody2D rb2d, Transform graphicalObject
+        internal void Initialize(PredictedObject po, RigidbodyType rbType, Rigidbody rb, Rigidbody2D rb2d, Transform graphicalObject
             , bool smoothPosition, bool smoothRotation, float smoothingDuration, byte interpolation, float overflowMultiplier,
             float teleportThreshold)
         {
-            _networkBehaviour = nb;
+            _predictedObject = po;
             _rigidbodyType = rbType;
 
             _rigidbody = rb;
@@ -304,7 +304,7 @@ namespace FishNet.Component.Prediction
             {
                 if (!_preTickReceived)
                 {
-                    uint tick = _networkBehaviour.TimeManager.LocalTick - 1;
+                    uint tick = _predictedObject.TimeManager.LocalTick - 1;
                     CreateGoalData(tick, false);
                 }
                 _preTickReceived = true;
@@ -367,7 +367,7 @@ namespace FishNet.Component.Prediction
                 }
 
                 _graphicalObject.SetPositionAndRotation(_graphicalStartPosition, _graphicalStartRotation);
-                CreateGoalData(_networkBehaviour.TimeManager.LocalTick, true);
+                CreateGoalData(_predictedObject.TimeManager.LocalTick, true);
             }
         }
 
@@ -405,7 +405,7 @@ namespace FishNet.Component.Prediction
         {
             if (_interpolation == 0)
                 return false;
-            if (_networkBehaviour.IsOwner || _networkBehaviour.IsServer)
+            if (_predictedObject.IsPredictingOwner() || _predictedObject.IsServer)
                 return false;
 
             return true;
@@ -629,7 +629,7 @@ namespace FishNet.Component.Prediction
                 lastTick = (nextGoalData.LocalTick - 1);
 
             uint tickDifference = (nextGoalData.LocalTick - lastTick);
-            float timePassed = (float)_networkBehaviour.TimeManager.TicksToTime(tickDifference);
+            float timePassed = (float)_predictedObject.TimeManager.TicksToTime(tickDifference);
             RateData nextRd = nextGoalData.Rates;
 
             //Distance between properties.

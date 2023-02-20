@@ -2,6 +2,7 @@
 using FishNet.Managing.Timing;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -141,7 +142,9 @@ namespace FishNet.Object.Synchronizing.Internal
             //If server is active then values can be set no matter what.
             if (NetworkBehaviour.IsServer)
                 return true;
-
+            //Predicted spawning is enabled.
+            if (NetworkManager != null && NetworkManager.PredictionManager.GetAllowPredictedSpawning() && NetworkBehaviour.NetworkObject.AllowPredictedSpawning)
+                return true;
             /* If here then server is not active and additional
              * checks must be performed. */
             bool result = (Settings.ReadPermission == ReadPermission.ExcludeOwner && NetworkBehaviour.IsOwner);
@@ -237,10 +240,17 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <param name="writer"></param>
         public virtual void WriteFull(PooledWriter writer) { }
         /// <summary>
-        /// Sets current value.
+        /// Sets current value as client.
         /// </summary>
         /// <param name="reader"></param>
+        [Obsolete("Use Read(PooledReader, bool).")]
         public virtual void Read(PooledReader reader) { }
+        /// <summary>
+        /// Sets current value as server or client.
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="asServer"></param>
+        public virtual void Read(PooledReader reader, bool asServer) { }
         /// <summary>
         /// Resets to initialized values.
         /// </summary>

@@ -498,7 +498,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Reads a predicted spawn.
         /// </summary>
-        internal void ReadPredictedSpawn(Reader reader, NetworkConnection conn)
+        internal void ReadPredictedSpawn(PooledReader reader, NetworkConnection conn)
         {
             sbyte initializeOrder;
             ushort collectionId;
@@ -562,17 +562,29 @@ namespace FishNet.Managing.Server
                 isGlobal = SpawnTypeEnum.Contains(st, SpawnType.InstantiatedGlobal);
             }
 
-            //Initialize for prediction.
-            nob.InitializePredictedObject_Server(conn);
-
             Transform t = nob.transform;
             //Parenting predicted spawns is not supported yet.
             t.SetParent(null, true);
             base.GetTransformProperties(localPosition, localRotation, localScale, t, out Vector3 pos, out Quaternion rot, out Vector3 scale);
-            t.SetLocalPositionRotationAndScale(pos, rot, scale);
-            //Only need to set IsGlobal also if not host.
-
+            t.SetLocalPositionRotationAndScale(pos, rot, scale);            
             nob.SetIsGlobal(isGlobal);
+
+            //Initialize for prediction.
+            nob.InitializePredictedObject_Server(base.NetworkManager, conn);
+
+            ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
+            PooledReader syncTypeReader = ReaderPool.GetReader(syncValues, base.NetworkManager);
+            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+            {
+                //SyncVars.
+                int length = syncTypeReader.ReadInt32();
+                nb.OnSyncType(syncTypeReader, length, false, true);
+                //SyncObjects
+                length = syncTypeReader.ReadInt32();
+                nb.OnSyncType(syncTypeReader, length, true, true);
+            }
+            syncTypeReader.Dispose();
+
             SpawnWithoutChecks(nob, owner, objectId);
 
             //Send the spawner a new reservedId.

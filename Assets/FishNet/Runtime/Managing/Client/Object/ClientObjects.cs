@@ -170,13 +170,16 @@ namespace FishNet.Managing.Client
             }
 
             writer.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
-            /* Used to write latest data which must be sent to
-             * clients, such as SyncTypes and RpcLinks. */
+
             PooledWriter tempWriter = WriterPool.GetWriter();
-            ////Write syncTypes.
-            //foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-            //    nb.WriteSyncTypesForSpawn(tempWriter, SyncTypeWriteType.All);
-            //writer.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
+            WriteSyncTypes(writer, tempWriter, SyncTypeWriteType.All);
+            void WriteSyncTypes(Writer finalWriter, PooledWriter tWriter, SyncTypeWriteType writeType)
+            {
+                tWriter.Reset();
+                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                    nb.WriteSyncTypesForSpawn(tWriter, writeType);
+                finalWriter.WriteBytesAndSize(tWriter.GetBuffer(), 0, tWriter.Length);
+            }
 
             //Dispose of writers created in this method.
             headerWriter.Dispose();

@@ -11,6 +11,12 @@ namespace FishNet.Component.Prediction
     public partial class PredictedObject : NetworkBehaviour
     {
         #region All.
+        #region Internal.
+        /// <summary>
+        /// True if owner and implements prediction methods.
+        /// </summary>
+        internal bool IsPredictingOwner() => (base.IsOwner && _implementsPredictionMethods);
+        #endregion
         #region Private.
         /// <summary>
         /// Pauser for rigidbodies when they cannot be rolled back.
@@ -40,6 +46,10 @@ namespace FishNet.Component.Prediction
         /// Tick on the last received state.
         /// </summary>
         private uint _lastStateLocalTick;
+        /// <summary>
+        /// True if a connection is owner and prediction methods are implemented.
+        /// </summary>
+        private bool _isPredictingOwner(NetworkConnection c) => (c == base.Owner && _implementsPredictionMethods);
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -156,9 +166,10 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void Rigidbodies_TimeManager_OnPreReconcile(NetworkBehaviour nb)
         {
-            /* Exit if owner because the owner should
-             * only be using CSP to rollback. */
-            if (base.IsOwner)
+            /* Exit if owner and implements prediction methods
+             * because csp would be handled by prediction methods
+             * rather than predicted object. */
+            if (IsPredictingOwner())
                 return;
             if (nb.gameObject == gameObject)
                 return;
@@ -269,9 +280,10 @@ namespace FishNet.Component.Prediction
             if (!IsRigidbodyPrediction)
                 return;
             NetworkConnection nbOwner = nb.Owner;
-            //No need to send to self.
-            if (nbOwner == base.Owner)
+            //No need to send to self unless doesnt implement prediction methods.
+            if (_isPredictingOwner(nbOwner))
                 return;
+            //If clientHost.
             if (nbOwner.IsLocalClient)
                 return;
             /* Not an observer. SendTargetRpc normally
@@ -590,7 +602,8 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void SendRigidbodyState(uint reconcileTick, NetworkConnection conn, bool applyImmediately)
         {
-            if (conn == base.Owner)
+            //No need to send to owner if they implement prediction methods.
+            if (_isPredictingOwner(conn))
                 return;
 
             reconcileTick = (conn == base.NetworkObject.PredictedSpawner) ? conn.LastPacketTick : reconcileTick;
@@ -615,34 +628,22 @@ namespace FishNet.Component.Prediction
                  * the case do not apply initial velocities, but so allow
                  * regular updates/corrections. */
                 if (base.NetworkObject.PredictedSpawner.IsLocalClient)
-                {
-                    //if (gameObject.name.Contains("Sp"))
-                    //    Debug.Log("Exiting because spawner " + base.TimeManager.LocalTick);
                     return;
-                }
             }
             else
             {
                 if (!CanProcessReceivedState(localTick))
-                {
-                    //if (gameObject.name.Contains("Sp"))
-                    //    Debug.Log("Cannot process state");
                     return;
-                }
             }
 
             if (applyImmediately)
             {
-                //if (gameObject.name.Contains("Sp"))
-                //    Debug.Log("Resetting to state immediately.");
                 _rigidbodyStates.Clear();
                 ResetRigidbodyToData(state);
             }
             else
             {
                 int index = GetCachedStateIndex(localTick, false);
-                //if (gameObject.name.Contains("Sp"))
-                //    Debug.Log("Trying to inject at index " + index + ". Tick " + state.LocalTick);
                 if (index != -1)
                     _rigidbodyStates[index] = state;
                 else

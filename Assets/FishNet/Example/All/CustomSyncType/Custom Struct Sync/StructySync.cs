@@ -1,8 +1,10 @@
-﻿using FishNet.Managing.Logging;
+﻿using FishNet.Documenting;
+using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Example.CustomSyncObject
@@ -187,13 +189,12 @@ namespace FishNet.Example.CustomSyncObject
         }
 
         /// <summary>
-        /// Sets current values.
+        /// Reads and sets the current values for server or client.
         /// </summary>
-        /// <param name="reader"></param>
-        public override void Read(PooledReader reader)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [APIExclude]
+        public override void Read(PooledReader reader, bool asServer)
         {
-            //Read is always on client side.
-            bool asServer = false;
             /* When !asServer don't make changes if server is running.
             * This is because changes would have already been made on
             * the server side and doing so again would result in duplicates

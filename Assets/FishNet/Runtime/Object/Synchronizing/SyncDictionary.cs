@@ -286,16 +286,12 @@ namespace FishNet.Object.Synchronizing
 
 
         /// <summary>
-        /// Sets current values.
-        /// Internal use.
-        /// May be used for custom SyncObjects.
+        /// Reads and sets the current values for server or client.
         /// </summary>
-        /// <param name="reader"></param>
         [APIExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override void Read(PooledReader reader)
+        public override void Read(PooledReader reader, bool asServer)
         {
-            bool asServer = false;
             /* When !asServer don't make changes if server is running.
             * This is because changes would have already been made on
             * the server side and doing so again would result in duplicates

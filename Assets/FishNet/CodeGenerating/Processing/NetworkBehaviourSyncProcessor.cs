@@ -1318,6 +1318,7 @@ namespace FishNet.CodeGenerating.Processing
 
                 base.GetClass<GeneralHelper>().CreateParameter(readSyncMethodDef, typeof(PooledReader));
                 base.GetClass<GeneralHelper>().CreateParameter(readSyncMethodDef, typeof(uint));
+                base.GetClass<GeneralHelper>().CreateParameter(readSyncMethodDef, typeof(bool));
                 readSyncMethodDef.Body.InitLocals = true;
 
                 processor = readSyncMethodDef.Body.GetILProcessor();
@@ -1333,8 +1334,9 @@ namespace FishNet.CodeGenerating.Processing
                 processor = readSyncMethodDef.Body.GetILProcessor();
             }
 
-            ParameterDefinition pooledReaderParameterDef = readSyncMethodDef.Parameters[0];
-            ParameterDefinition indexParameterDef = readSyncMethodDef.Parameters[1];
+            ParameterDefinition pooledReaderPd = readSyncMethodDef.Parameters[0];
+            ParameterDefinition indexPd = readSyncMethodDef.Parameters[1];
+            ParameterDefinition asServerPd = readSyncMethodDef.Parameters[2];
             VariableDefinition nextValueVariableDef;
             List<Instruction> readInsts;
 
@@ -1355,7 +1357,7 @@ namespace FishNet.CodeGenerating.Processing
                 readSyncMethodDef.Body.Instructions[readSyncMethodDef.Body.Instructions.Count - 2];
 
             //Check index first. if (index != syncIndex) return
-            Instruction nextLastReadInstruction = processor.Create(OpCodes.Ldarg, indexParameterDef);
+            Instruction nextLastReadInstruction = processor.Create(OpCodes.Ldarg, indexPd);
             processor.InsertBefore(jmpGoalInst, nextLastReadInstruction);
 
             uint hash = (uint)syncIndex;
@@ -1363,7 +1365,7 @@ namespace FishNet.CodeGenerating.Processing
             //processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4, syncIndex));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Bne_Un, jmpGoalInst));
             //PooledReader.ReadXXXX()
-            readInsts = base.GetClass<ReaderProcessor>().CreateRead(readSyncMethodDef, pooledReaderParameterDef,
+            readInsts = base.GetClass<ReaderProcessor>().CreateRead(readSyncMethodDef, pooledReaderPd,
                  originalFieldDef.FieldType, out nextValueVariableDef);
             if (readInsts == null)
                 return null;
@@ -1371,10 +1373,11 @@ namespace FishNet.CodeGenerating.Processing
             foreach (Instruction i in readInsts)
                 processor.InsertBefore(jmpGoalInst, i);
 
-            //Call accessor with new value and false for asServer
+            //Call accessor with new value and passing in asServer.
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldarg_0)); //this.
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldloc, nextValueVariableDef));
-            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_0));
+            //processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_0));
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldarg, asServerPd));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Call, accessorSetMethodRef));
             //Return true when able to process.
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_1));

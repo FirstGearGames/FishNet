@@ -456,7 +456,8 @@ namespace FishNet.Managing.Server
                 writer.WritePacketId(PacketId.Authenticated);
                 writer.WriteNetworkConnection(conn);
                 /* If predicted spawning is enabled then also send
-                 * reserved objectIds. */;
+                 * reserved objectIds. */
+                ;
                 PredictionManager pm = NetworkManager.PredictionManager;
                 if (pm.GetAllowPredictedSpawning())
                 {
@@ -605,6 +606,10 @@ namespace FishNet.Managing.Server
                             return;
                         }
                         Objects.ReadPredictedDespawn(reader, conn);
+                    }
+                    else if (packetId == PacketId.NetworkLODUpdate)
+                    {
+                        ParseNetworkLODUpdate(reader, conn);
                     }
                     else if (packetId == PacketId.Broadcast)
                     {

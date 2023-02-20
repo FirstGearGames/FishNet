@@ -130,13 +130,18 @@ namespace FishNet.Example.Prediction.Rigidbodies
                     _spawnBullet = false;
                     NetworkObject nob = Instantiate(BulletPrefab, transform.position + (transform.forward * 1f), transform.rotation);
                     _lastSpawnedBullet = nob;
-                    base.Spawn(nob);
                     //If not server add speed for client side.
                     if (!base.IsServer)
                     {
                         BulletTest bt = nob.GetComponent<BulletTest>();
+                        bt.SyncVarScale = Vector3.one * 0.1f;
+                        bt.SyncListNumbers.Add(1);
+                        bt.SyncListNumbers.Add(2);
+
                         bt.SendSpeed();
                     }
+                    base.Spawn(nob);
+
                 }
             }
             if (base.IsServer)
