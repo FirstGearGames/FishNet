@@ -1271,6 +1271,7 @@ namespace FishNet.CodeGenerating.Processing
                     {
                         MethodReference baseReadMr = copyTd.GetMethodReferenceInBase(base.Session, readSyncVarName);//  readMd.GetMethodReferenceInBase (base.Session, base.ImportReference(readMd);
                         ILProcessor processor = callerMd.Body.GetILProcessor();
+                        ParameterDefinition asServerPd = callerMd.Parameters[2];
                         /* Calls base.ReadSyncVar and if result is true
                          * then exit methods. This is because a true return means the base
                          * was able to process the syncvar. */
@@ -1279,6 +1280,7 @@ namespace FishNet.CodeGenerating.Processing
                         baseCallInsts.Add(processor.Create(OpCodes.Ldarg_0)); //This.
                         baseCallInsts.Add(processor.Create(OpCodes.Ldarg_1)); //PooledReader.
                         baseCallInsts.Add(processor.Create(OpCodes.Ldarg_2)); //Index.
+                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg, asServerPd)); //AsServer.
                         baseCallInsts.Add(processor.Create(OpCodes.Call, baseReadMr));
                         baseCallInsts.Add(processor.Create(OpCodes.Brfalse_S, skipBaseReturn));
                         baseCallInsts.Add(processor.Create(OpCodes.Ldc_I4_1));

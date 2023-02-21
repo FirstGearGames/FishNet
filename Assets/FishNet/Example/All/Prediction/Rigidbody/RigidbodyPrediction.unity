@@ -955,7 +955,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _spawnablePrefabs
       value: 
-      objectReference: {fileID: 11400000, guid: 59fd8e7016be8a840bb2af3e8605d8cf,
+      objectReference: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617,
         type: 2}
     - target: {fileID: 7443408887813606050, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}
