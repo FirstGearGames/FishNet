@@ -5,11 +5,8 @@ DefaultPrefabObjects.asset.meta
 
 Documentation
 /Library/
-/Packages/
-/ProjectSettings/
 /Temp/
 /Builds/
-/UserSettings/
 /Obj/
 /Logs/
 *.csproj
