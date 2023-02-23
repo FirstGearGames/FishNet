@@ -133,11 +133,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _updateOrder: 0
+  _timingType: 0
+  _allowTickDropping: 0
+  _maximumFrameTicks: 2
   _tickRate: 15
   _pingInterval: 1
   _timingInterval: 2
   _physicsMode: 1
-  _maximumBufferedInputs: 15
 --- !u!1 &555580081
 GameObject:
   m_ObjectHideFlags: 0
@@ -986,7 +989,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d3606bfdac5a4743890fc1a5ecd8f24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _autoStartType: 0
+  _autoStartType: 1
   _stoppedColor: {r: 0.25490198, g: 0.25490198, b: 0.25490198, a: 1}
   _changingColor: {r: 0.78431374, g: 0.6862745, b: 0, a: 1}
   _startedColor: {r: 0, g: 0.5882353, b: 0.64705884, a: 1}
@@ -1176,10 +1179,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: ec64eb18c93ab344892891f33edbf82a, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617, type: 2}
   _refreshDefaultPrefabs: 0
   _runInBackground: 1
   _dontDestroyOnLoad: 1
+  _objectPool: {fileID: 0}
   _persistence: 0
 --- !u!114 &7443408886491487336
 MonoBehaviour:
@@ -1193,7 +1197,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9b6b565cd9533c4ebc18003f0fc18a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _color: {r: 1, g: 1, b: 1, a: 1}
   _placement: 1
+  _hideTickRate: 1
 --- !u!114 &7443408886491487337
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1223,7 +1229,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _unreliableMTU: 1023
-  _attackResponseType: 1
   _ipv4BindAddress: 
   _ipv6BindAddress: 
   _port: 7771
@@ -1243,6 +1248,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Transport: {fileID: 7443408886491487338}
+  _intermediateLayer: {fileID: 0}
+  _latencySimulator:
+    _enabled: 0
+    _simulateHost: 1
+    _latency: 0
+    _outOfOrder: 0
+    _packetLoss: 0
 --- !u!224 &9139860295689780510
 RectTransform:
   m_ObjectHideFlags: 0
