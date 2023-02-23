@@ -932,6 +932,7 @@ namespace FishNet.Serializing
         /// Writes a ListCache.
         /// </summary>
         /// <param name="lc">ListCache to write.</param>
+        [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteListCache<T>(ListCache<T> lc)
         {
@@ -941,6 +942,7 @@ namespace FishNet.Serializing
         /// Writes a list.
         /// </summary>
         /// <param name="value">Collection to write.</param>
+        [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteList<T>(List<T> value)
         {
@@ -1279,7 +1281,7 @@ namespace FishNet.Serializing
                     del.Invoke(this, value);
             }
 
-            string GetLogMessage() => $"Write method not found for {type.Name}. Use a supported type or create a custom serializer.";
+            string GetLogMessage() => $"Write method not found for {type.FullName}. Use a supported type or create a custom serializer.";
         }
 
         /// <summary>

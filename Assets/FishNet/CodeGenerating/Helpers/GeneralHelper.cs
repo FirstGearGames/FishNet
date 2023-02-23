@@ -329,8 +329,8 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Removes characters which would create invalid comparisons when trying to compare generics.
         /// </summary>
-        public string RemoveGenericBrackets(string str)
-        {
+        public string RemoveGen11ericBrackets(string str)
+        { 
             /* Fix example...
              * List`1<T> converts to...
              *  List`1.

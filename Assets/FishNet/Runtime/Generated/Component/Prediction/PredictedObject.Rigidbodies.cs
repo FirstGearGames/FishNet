@@ -96,7 +96,7 @@ namespace FishNet.Component.Prediction
             if (_graphicalAnimators.Length > 0)
             {
                 for (int i = 0; i < _graphicalAnimators.Length; i++)
-                    _graphicalAnimators[i].keepAnimatorControllerStateOnDisable = true;
+                    _graphicalAnimators[i].keepAnimatorStateOnDisable = true;
 
                 /* True if at least one animator is on the graphical root. 
                 * Unity gets components in order so it's safe to assume

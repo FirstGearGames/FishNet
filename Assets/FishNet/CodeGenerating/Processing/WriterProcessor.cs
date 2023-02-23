@@ -10,6 +10,8 @@ using MonoFN.Cecil.Rocks;
 using System;
 using System.Collections.Generic;
 using SR = System.Reflection;
+using UnityDebug = UnityEngine.Debug;
+
 namespace FishNet.CodeGenerating.Helping
 {
 
@@ -146,6 +148,8 @@ namespace FishNet.CodeGenerating.Helping
                 return true;
             else if (methodInfo.Name == nameof(PooledWriter.WriteDictionary))
                 return true;
+            else if (methodInfo.Name == nameof(PooledWriter.WriteList))
+                return true;
 
             return false;
         }
@@ -203,7 +207,7 @@ namespace FishNet.CodeGenerating.Helping
                 MethodReference instancedWriteMr = item.Value;
                 if (instancedWriteMr.HasGenericParameters)
                     continue;
-                
+
                 TypeReference valueTr = instancedWriteMr.Parameters[0].ParameterType;
 
                 MethodDefinition md = new MethodDefinition($"InstancedExtension___{instancedWriteMr.Name}",
@@ -239,7 +243,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             Dictionary<string, MethodReference> dict = (instanced) ?
             InstancedWriterMethods : StaticWriterMethods;
-            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            string fullName = typeRef.GetFullnameWithoutBrackets();
             if (useAdd)
                 dict.Add(fullName, methodRef);
             else
@@ -374,7 +378,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal MethodReference GetInstancedWriteMethodReference(TypeReference typeRef)
         {
-            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            string fullName = typeRef.GetFullnameWithoutBrackets();
             InstancedWriterMethods.TryGetValue(fullName, out MethodReference methodRef);
             return methodRef;
         }
@@ -385,7 +389,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal MethodReference GetStaticWriteMethodReference(TypeReference typeRef)
         {
-            string fullName = base.GetClass<GeneralHelper>().RemoveGenericBrackets(typeRef.FullName);
+            string fullName = typeRef.GetFullnameWithoutBrackets();
             StaticWriterMethods.TryGetValue(fullName, out MethodReference methodRef);
             return methodRef;
         }
@@ -758,16 +762,15 @@ namespace FishNet.CodeGenerating.Helping
             {
                 //Array.
                 if (serializerType == SerializerType.Array)
-                    methodRefResult = CreateArrayWriterMethodDefinition(objectTr);
+                    methodRefResult = CreateArrayWriterMethodReference(objectTr);
                 //Enum.
                 else if (serializerType == SerializerType.Enum)
                     methodRefResult = CreateEnumWriterMethodDefinition(objectTr);
-                //Dictionary.
-                else if (serializerType == SerializerType.Dictionary)
-                    methodRefResult = CreateDictionaryWriterMethodReference(objectTr);
-                //List, ListCache.
-                else if (serializerType == SerializerType.List || serializerType == SerializerType.ListCache)
-                    methodRefResult = CreateGenericTypeWriter(objectTr, serializerType);
+                //Dictionary, List, ListCache
+                else if (serializerType == SerializerType.Dictionary
+                    || serializerType == SerializerType.List
+                    || serializerType == SerializerType.ListCache)
+                    methodRefResult = CreateGenericCollectionWriterMethodReference(objectTr, serializerType);
                 //NetworkBehaviour.
                 else if (serializerType == SerializerType.NetworkBehaviour)
                     methodRefResult = CreateNetworkBehaviourWriterMethodReference(objectTd);
@@ -909,7 +912,6 @@ namespace FishNet.CodeGenerating.Helping
         }
 
 
-
         /// <summary>
         /// Creates a writer for a class or struct of objectTypeRef.
         /// </summary>
@@ -1032,159 +1034,100 @@ namespace FishNet.CodeGenerating.Helping
             return base.ImportReference(createdWriterMd);
         }
 
+        /// <summary>
+        /// Calls an instanced writer from a static writer.
+        /// </summary>
+        private void CallInstancedWriter(MethodDefinition staticWriterMd, MethodReference instancedWriterMr)
+        {
+            ParameterDefinition writerPd = staticWriterMd.Parameters[0];
+            ParameterDefinition valuePd = staticWriterMd.Parameters[1];
+            ILProcessor processor = staticWriterMd.Body.GetILProcessor();
+            processor.Emit(OpCodes.Ldarg, writerPd);
+            processor.Emit(OpCodes.Ldarg, valuePd);
+            processor.Emit(instancedWriterMr.GetCallOpCode(base.Session), instancedWriterMr);
+            processor.Emit(OpCodes.Ret);
+        }
 
         /// <summary>
         /// Creates a writer for an array.
         /// </summary>
-        private MethodReference CreateArrayWriterMethodDefinition(TypeReference objectTr)
+        private MethodReference CreateArrayWriterMethodReference(TypeReference objectTr)
         {
-            WriterProcessor wh = base.GetClass<WriterProcessor>();
+            WriterImports wi = base.GetClass<WriterImports>();
+            TypeReference valueTr = objectTr.GetElementType();
 
-            /* Try to get instanced first for collection element type, if it doesn't exist then try to
-             * get/or make a one. */
-            TypeReference elementTypeRef = objectTr.GetElementType();
-            MethodReference writeMethodRef = wh.GetOrCreateWriteMethodReference(elementTypeRef);
-            if (writeMethodRef == null)
+            //Write not found.
+            if (GetOrCreateWriteMethodReference(valueTr) == null)
                 return null;
 
-            MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
-            AddToStaticWriters(objectTr, createdWriterMd);
+            MethodDefinition createdMd = CreateStaticWriterStubMethodDefinition(objectTr);
+            AddToStaticWriters(objectTr, createdMd);
 
-            ILProcessor processor = createdWriterMd.Body.GetILProcessor();
+            //Find instanced writer to use.
+            MethodReference instancedWriteMr = wi.Writer_WriteArray_MethodRef;
+            //Make generic.
+            GenericInstanceMethod writeGim = instancedWriteMr.MakeGenericMethod(new TypeReference[] { valueTr });
+            CallInstancedWriter(createdMd, writeGim);
 
-            //Null instructions.
-            wh.CreateRetOnNull(processor, createdWriterMd.Parameters[0], createdWriterMd.Parameters[1], false);
-
-            //Write length. It only makes it this far if not null.
-            //int length = arr[].Length.
-            VariableDefinition sizeVariableDef = base.GetClass<GeneralHelper>().CreateVariable(createdWriterMd, typeof(int));
-            CreateCollectionLength(processor, createdWriterMd.Parameters[1], sizeVariableDef);
-            //writer.WritePackedWhole(length).
-            wh.CreateWritePackedWhole(processor, createdWriterMd.Parameters[0], sizeVariableDef);
-
-            VariableDefinition loopIndex = base.GetClass<GeneralHelper>().CreateVariable(createdWriterMd, typeof(int));
-            Instruction loopComparer = processor.Create(OpCodes.Ldloc, loopIndex);
-
-            //int i = 0
-            processor.Emit(OpCodes.Ldc_I4_0);
-            processor.Emit(OpCodes.Stloc, loopIndex);
-            processor.Emit(OpCodes.Br_S, loopComparer);
-
-            //Loop content.
-            Instruction contentStart = processor.Create(OpCodes.Ldarg_0);
-            processor.Append(contentStart);
-            processor.Emit(OpCodes.Ldarg_1);
-            processor.Emit(OpCodes.Ldloc, loopIndex);
-
-            if (elementTypeRef.IsValueType)
-                processor.Emit(OpCodes.Ldelem_Any, elementTypeRef);
-            else
-                processor.Emit(OpCodes.Ldelem_Ref);
-            //If auto pack type then write default auto pack.
-            if (wh.IsAutoPackedType(elementTypeRef))
-            {
-                AutoPackType packType = base.GetClass<GeneralHelper>().GetDefaultAutoPackType(elementTypeRef);
-                processor.Emit(OpCodes.Ldc_I4, (int)packType);
-            }
-            //writer.Write
-            processor.Emit(OpCodes.Call, writeMethodRef);
-
-            //i++
-            processor.Emit(OpCodes.Ldloc, loopIndex);
-            processor.Emit(OpCodes.Ldc_I4_1);
-            processor.Emit(OpCodes.Add);
-            processor.Emit(OpCodes.Stloc, loopIndex);
-            //if i < length jmp to content start.
-            processor.Append(loopComparer);  //if i < obj(size).
-            processor.Emit(OpCodes.Ldloc, sizeVariableDef);
-            processor.Emit(OpCodes.Blt_S, contentStart);
-
-            processor.Emit(OpCodes.Ret);
-            return base.ImportReference(createdWriterMd);
-        }
-
-
-        /// <summary>
-        /// Creates a writer for a dictionary collection.
-        /// </summary>
-        private MethodReference CreateDictionaryWriterMethodReference(TypeReference objectTr)
-        {
-            WriterProcessor wh = base.GetClass<WriterProcessor>();
-
-            GenericInstanceType genericInstance = (GenericInstanceType)objectTr;
-            base.ImportReference(genericInstance);
-            TypeReference keyTr = genericInstance.GenericArguments[0];
-            TypeReference valueTr = genericInstance.GenericArguments[1];
-
-            /* Try to get instanced first for collection element type, if it doesn't exist then try to
-             * get/or make a one. */
-            MethodReference keyWriteMr = wh.GetOrCreateWriteMethodReference(keyTr);
-            MethodReference valueWriteMr = wh.GetOrCreateWriteMethodReference(valueTr);
-            if (keyWriteMr == null || valueWriteMr == null)
-                return null;
-
-            MethodDefinition createdWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
-            AddToStaticWriters(objectTr, createdWriterMd);
-
-            ILProcessor processor = createdWriterMd.Body.GetILProcessor();
-            GenericInstanceMethod writeDictGim = base.GetClass<WriterImports>().Writer_WriteDictionary_MethodRef.MakeGenericMethod(new TypeReference[] { keyTr, valueTr });
-
-            ParameterDefinition writerPd = createdWriterMd.Parameters[0];
-            ParameterDefinition valuePd = createdWriterMd.Parameters[1];
-            processor.Emit(OpCodes.Ldarg, writerPd);
-            processor.Emit(OpCodes.Ldarg, valuePd);
-            processor.Emit(writeDictGim.GetCallOpCode(base.Session), writeDictGim);
-            processor.Emit(OpCodes.Ret);
-
-            return base.ImportReference(createdWriterMd);
+            return base.ImportReference(createdMd);
         }
 
         /// <summary>
-        /// Creates a writer for a listcache.
+        /// Creates a writer for a variety of generic collections.
         /// </summary>
-        private MethodReference CreateGenericTypeWriter(TypeReference objectTr, SerializerType st)
+        private MethodReference CreateGenericCollectionWriterMethodReference(TypeReference objectTr, SerializerType st)
         {
-            WriterProcessor wh = base.GetClass<WriterProcessor>();
-
-            if (st != SerializerType.List && st != SerializerType.ListCache)
-            {
-                base.LogError($"Writer SerializerType {st} is not implemented");
-                return null;
-            }
-
+            WriterImports wi = base.GetClass<WriterImports>();
+            //Make value field generic.
             GenericInstanceType genericInstance = (GenericInstanceType)objectTr;
             base.ImportReference(genericInstance);
-            TypeReference elementTr = genericInstance.GenericArguments[0];
+            TypeReference valueTr = genericInstance.GenericArguments[0];
+            
+            List<TypeReference> genericArguments = new List<TypeReference>();
+            //Make sure all arguments have writers.
+            foreach (TypeReference gaTr in genericInstance.GenericArguments)
+            {
+                MethodReference mr = GetOrCreateWriteMethodReference(gaTr);
+                //Writer not found.
+                if (mr == null)
+                {
+                    base.LogError($"Writer could not be found or created for type {gaTr.FullName}.");
+                    return null;
+                }
 
-            /* Try to get instanced first for collection element type, if it doesn't exist then try to
-             * get/or make a one. */
-            MethodReference elementWriteMr = wh.GetOrCreateWriteMethodReference(elementTr);
-            if (elementWriteMr == null)
+                genericArguments.Add(gaTr);
+            }
+            MethodReference valueWriteMr = GetOrCreateWriteMethodReference(valueTr);
+            if (valueWriteMr == null)
                 return null;
 
-            TypeReference genericMethodTr = null;
-            if (st == SerializerType.List)
-                genericMethodTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(List<>));
+            MethodDefinition createdMd = CreateStaticWriterStubMethodDefinition(objectTr);
+            AddToStaticWriters(objectTr, createdMd);
+
+            //Find instanced writer to use.
+            MethodReference instancedWriteMr;
+            if (st == SerializerType.Dictionary)
+                instancedWriteMr = wi.Writer_WriteDictionary_MethodRef;
+            else if (st == SerializerType.List)
+                instancedWriteMr = wi.Writer_WriteList_MethodRef;
             else if (st == SerializerType.ListCache)
-                genericMethodTr = base.GetClass<GeneralHelper>().GetTypeReference(typeof(ListCache<>));
+                instancedWriteMr = wi.Writer_WriteListCache_MethodRef;
+            else
+                instancedWriteMr = null;
 
-            MethodReference writerMd = wh.GetWriteMethodReference(genericMethodTr);
-            MethodDefinition typedWriterMd = CreateStaticWriterStubMethodDefinition(objectTr);
+            //Not found.
+            if (instancedWriteMr == null)
+            {
+                base.LogError($"Instanced writer not found for SerializerType {st} on object {objectTr.Name}.");
+                return null;
+            }
 
-            AddToStaticWriters(objectTr, typedWriterMd);
+            //Make generic.
+            GenericInstanceMethod writeGim = instancedWriteMr.MakeGenericMethod(genericArguments.ToArray());
+            CallInstancedWriter(createdMd, writeGim);
 
-            ParameterDefinition writerPd = typedWriterMd.Parameters[0];
-            ParameterDefinition valuePd = typedWriterMd.Parameters[1];
-
-            MethodReference writerGim = typedWriterMd.GetMethodReference(base.Session, elementTr);
-            ILProcessor processor = writerMd.CachedResolve(base.Session).Body.GetILProcessor();
-            processor.Emit(OpCodes.Ldarg, writerPd);
-            processor.Emit(OpCodes.Ldarg, valuePd);
-            processor.Emit(OpCodes.Call, writerGim);
-
-            return elementWriteMr;
+            return base.ImportReference(createdMd);
         }
-
 
         /// <summary>
         /// Creates a method definition stub for objectTypeRef.
@@ -1204,6 +1147,7 @@ namespace FishNet.CodeGenerating.Helping
 
             base.GetClass<GeneralHelper>().CreateParameter(writerMethodDef, base.GetClass<WriterImports>().Writer_TypeRef, "writer");
             base.GetClass<GeneralHelper>().CreateParameter(writerMethodDef, objectTypeRef, "value");
+            base.GetClass<GeneralHelper>().MakeExtensionMethod(writerMethodDef);
             writerMethodDef.Body.InitLocals = true;
 
             return writerMethodDef;

@@ -6,6 +6,10 @@ namespace FishNet.CodeGenerating
 {
     internal abstract class CodegenBase
     {
+        //Lazy debug checks.
+        public bool IsIsolatedAsm => (Module.Name.Contains("IsolatedAsm"));
+        public bool IsRuntimeAsm => (Module.Name.Contains("FishNet.Runtime"));
+
         public CodegenSession Session { get; private set; }
         public ModuleDefinition Module { get; private set; }
 

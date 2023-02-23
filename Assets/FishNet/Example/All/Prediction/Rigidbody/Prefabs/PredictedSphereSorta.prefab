@@ -46,7 +46,7 @@ SphereCollider:
   m_GameObject: {fileID: 3624261834906416581}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
@@ -68,6 +68,8 @@ MonoBehaviour:
   _graphicalObject: {fileID: 3624261835462115340}
   _enableTeleport: 0
   _teleportThreshold: 200
+  _ownerSmoothPosition: 1
+  _ownerSmoothRotation: 1
   _ownerInterpolation: 1
   _predictionType: 1
   _rigidbody: {fileID: 3624261834906416602}
@@ -102,6 +104,7 @@ MonoBehaviour:
   - {fileID: 3624261834906416601}
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
+  <PredictedSpawn>k__BackingField: {fileID: 0}
   _networkBehaviours:
   - {fileID: 3624261834906416600}
   - {fileID: -6246116784124330627}
