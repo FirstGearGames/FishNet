@@ -160,7 +160,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 0
+  <PrefabId>k__BackingField: 19
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
@@ -209,9 +209,12 @@ MonoBehaviour:
   _componentIndexCache: 1
   _addedNetworkObject: {fileID: 0}
   _networkObjectCache: {fileID: 201277550}
+  _implementsPredictionMethods: 1
   _graphicalObject: {fileID: 303449599178274091}
   _enableTeleport: 0
   _teleportThreshold: 1
+  _ownerSmoothPosition: 1
+  _ownerSmoothRotation: 1
   _ownerInterpolation: 1
   _predictionType: 1
   _rigidbody: {fileID: 201277549}
@@ -219,7 +222,7 @@ MonoBehaviour:
   _spectatorSmoothPosition: 1
   _spectatorSmoothRotation: 1
   _spectatorInterpolation: 4
-  _overflowMultiplier: 0.1
+  _overflowMultiplier: 0.05
   _maintainedVelocity: 0
   _resendType: 0
   _resendInterval: 30

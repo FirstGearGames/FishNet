@@ -143,7 +143,7 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 20
+  _tickRate: 50
   _pingInterval: 1
   _timingInterval: 3
   _physicsMode: 1
@@ -198,7 +198,7 @@ MonoBehaviour:
   _latencySimulator:
     _enabled: 1
     _simulateHost: 1
-    _latency: 30
+    _latency: 5
     _outOfOrder: 0
     _packetLoss: 0
 --- !u!114 &192429408
@@ -955,7 +955,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _spawnablePrefabs
       value: 
-      objectReference: {fileID: 11400000, guid: 59fd8e7016be8a840bb2af3e8605d8cf,
+      objectReference: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617,
         type: 2}
     - target: {fileID: 7443408887813606050, guid: 0b650fca685f2eb41a86538aa883e4c1,
         type: 3}

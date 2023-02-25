@@ -314,7 +314,6 @@ namespace FishNet.Component.Transforming
         /// </summary>
         [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
         [SerializeField]
-        [SyncVar]
         private bool _sendToOwner = true;
         /// <summary>
         /// Gets SendToOwner.
@@ -325,7 +324,12 @@ namespace FishNet.Component.Transforming
         /// </summary>
         /// <param name="value">New value.</param>
         [Server]
-        public void SetSendToOwner(bool value) => _sendToOwner = value;
+        public void SetSendToOwner(bool value)
+        {
+            _sendToOwner = value;
+            if (base.IsServer)
+                ObserversSetSendToOwner(value);
+        }
         /// <summary>
         /// How often in ticks to synchronize. This is default to 1 but will change depending on LOD to ensure proper smoothing calculations
         /// </summary>
@@ -645,6 +649,16 @@ namespace FishNet.Component.Transforming
                 base.NetworkManager.TimeManager.OnPostTick += TimeManager_OnPostTick;
             else
                 base.NetworkManager.TimeManager.OnPostTick -= TimeManager_OnPostTick;
+        }
+
+        /// <summary>
+        /// Sets SendToOwner value.
+        /// </summary>
+        /// <param name="value"></param>
+        [ObserversRpc(BufferLast = true, ExcludeServer = true)]
+        private void ObserversSetSendToOwner(bool value)
+        {
+            _sendToOwner = value;
         }
 
         /// <summary>

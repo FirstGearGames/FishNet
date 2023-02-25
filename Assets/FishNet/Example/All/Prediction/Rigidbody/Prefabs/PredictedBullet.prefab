@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: -6246116784124330627}
   - component: {fileID: 7850526870340082268}
   m_Layer: 0
-  m_Name: PredictedSphereSorta
+  m_Name: PredictedBullet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -78,7 +78,7 @@ MonoBehaviour:
   _spectatorSmoothPosition: 1
   _spectatorSmoothRotation: 1
   _spectatorInterpolation: 4
-  _overflowMultiplier: 0.1
+  _overflowMultiplier: 0.05
   _maintainedVelocity: 0
   _resendType: 0
   _resendInterval: 30
@@ -96,11 +96,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 34
+  <PrefabId>k__BackingField: 3
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 2281302723
   <SceneId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 12142845903367415924
+  <AssetPathHash>k__BackingField: 12629563467294206692
   _sceneNetworkObjects:
   - {fileID: 3624261834906416601}
   <IsNested>k__BackingField: 0
@@ -147,7 +147,7 @@ MonoBehaviour:
   _componentIndexCache: 1
   _addedNetworkObject: {fileID: 3624261834906416601}
   _networkObjectCache: {fileID: 3624261834906416601}
-  Force: 20
+  _startingForce: {x: 0, y: 0, z: 0}
 --- !u!114 &7850526870340082268
 MonoBehaviour:
   m_ObjectHideFlags: 0
