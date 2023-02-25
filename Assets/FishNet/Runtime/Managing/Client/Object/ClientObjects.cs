@@ -542,12 +542,13 @@ namespace FishNet.Managing.Client
                 return null;
             }
 
+            ushort collectionId = cnob.CollectionId;
             //PrefabObjects to get the prefab from.
-            PrefabObjects prefabObjects = networkManager.GetPrefabObjects<PrefabObjects>(cnob.CollectionId, false);
+            PrefabObjects prefabObjects = networkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
             //Not found for collectionId > 0. This means the user likely did not setup the collection on client.
-            if (prefabObjects == null && cnob.CollectionId > 0)
+            if (prefabObjects == null && collectionId > 0)
             {
-                networkManager.LogError($"PrefabObjects collection is not found for CollectionId {cnob.CollectionId}. Be sure to add your addressables NetworkObject prefabs to the collection on server and client before attempting to spawn them over the network.");
+                networkManager.LogError($"PrefabObjects collection is not found for CollectionId {collectionId}. Be sure to add your addressables NetworkObject prefabs to the collection on server and client before attempting to spawn them over the network.");
                 return null;
             }
 
@@ -592,7 +593,7 @@ namespace FishNet.Managing.Client
                     }
                 }
 
-                result = networkManager.GetPooledInstantiated(prefabId, false);
+                result = networkManager.GetPooledInstantiated(prefabId, collectionId, false);
                 Transform t = result.transform;
                 t.SetParent(parentTransform, true);
                 //Only need to set IsGlobal also if not host.
