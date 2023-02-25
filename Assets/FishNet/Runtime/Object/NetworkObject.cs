@@ -316,9 +316,9 @@ namespace FishNet.Object
             {
                 //Was destroyed without going through the proper methods.
                 if (NetworkManager.IsServer)
-                    NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this);
+                    NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, true);
                 if (NetworkManager.IsClient)
-                    NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this);
+                    NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, false);
             }
 
             /* When destroyed unexpectedly it's
@@ -549,6 +549,7 @@ namespace FishNet.Object
             }
             else
             {
+                ClientManager.Connection.LevelOfDetails.Remove(this);
                 //Client only.
                 if (!NetworkManager.IsServer)
                     IsDeinitializing = true;

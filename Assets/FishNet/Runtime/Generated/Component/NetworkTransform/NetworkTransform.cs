@@ -323,7 +323,6 @@ namespace FishNet.Component.Transforming
         /// Sets SendToOwner. Only the server may call this method.
         /// </summary>
         /// <param name="value">New value.</param>
-        [Server]
         public void SetSendToOwner(bool value)
         {
             _sendToOwner = value;
@@ -427,7 +426,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Values changed over time that server has sent to clients since last reliable has been sent.
         /// </summary>
-        private ChangedDelta _serverChangedSinceReliable = ChangedDelta.Unset;
+        private List<ChangedDelta> _serverChangedSinceReliable = new List<ChangedDelta>();
         /// <summary>
         /// Values changed over time that client has sent to server since last reliable has been sent.
         /// </summary>
@@ -514,11 +513,12 @@ namespace FishNet.Component.Transforming
             _receivedClientData.HasData = new List<bool>();
 
             //Initialize for LODs.
-            for (int i = 0; i < base.ObserverManager.LevelOfDetailDistances.Count; i++)
+            for (int i = 0; i < base.ObserverManager.GetLevelOfDetailDistances().Count; i++)
             {
                 _changedWriters.Add(WriterPool.GetWriter());
                 _lastSentTransformDatas.Add(new TransformData());
                 _receivedClientData.HasData.Add(false);
+                _serverChangedSinceReliable.Add(ChangedDelta.Unset);
             }
 
             SetDefaultGoalData();
@@ -556,7 +556,7 @@ namespace FishNet.Component.Transforming
             //Initialize for LOD if client only.
             if (base.IsClientOnly)
             {
-                for (int i = 0; i < base.ObserverManager.LevelOfDetailDistances.Count; i++)
+                for (int i = 0; i < base.ObserverManager.GetLevelOfDetailDistances().Count; i++)
                 {
                     _changedWriters.Add(WriterPool.GetWriter());
                     _lastSentTransformDatas.Add(new TransformData());
@@ -604,6 +604,12 @@ namespace FishNet.Component.Transforming
             base.OnStopServer();
             //Always unsubscribe; if the server stopped so did client.
             ChangeTickSubscription(false);
+            for (int i = 0; i < base.ObserverManager.GetLevelOfDetailDistances().Count; i++)
+            {
+                _lastSentTransformDatas[i].Reset();
+                _serverChangedSinceReliable[i] = ChangedDelta.Unset;
+                _receivedClientData.SetHasData(false, (byte)i);
+            }
         }
 
         public override void OnStopClient()
@@ -1210,18 +1216,18 @@ namespace FishNet.Component.Transforming
                     if (changed == ChangedDelta.Unset)
                     {
                         //No changes since last reliable; transform is up to date.
-                        if (_serverChangedSinceReliable == ChangedDelta.Unset)
+                        if (_serverChangedSinceReliable[i] == ChangedDelta.Unset)
                             continue;
 
                         //Set changed to all changes over time and unset changes over time.
-                        changed = _serverChangedSinceReliable;
-                        _serverChangedSinceReliable = ChangedDelta.Unset;
+                        changed = _serverChangedSinceReliable[lodIndex];
+                        _serverChangedSinceReliable[i] = ChangedDelta.Unset;
                         channel = Channel.Reliable;
                     }
                     //There is change.
                     else
                     {
-                        _serverChangedSinceReliable |= changed;
+                        _serverChangedSinceReliable[i] |= changed;
                     }
 
                     dataChanged = true;
@@ -1854,7 +1860,8 @@ namespace FishNet.Component.Transforming
         internal void ConfigureForCSP()
         {
             _clientAuthoritative = false;
-            _sendToOwner = false;
+            if (base.IsServer)
+                _sendToOwner = false;
         }
 
         /// <summary>

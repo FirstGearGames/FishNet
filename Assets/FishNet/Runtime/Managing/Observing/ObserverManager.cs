@@ -1,10 +1,13 @@
 ﻿using FishNet.Connection; //remove on 2023/01/01 move to correct folder.
 using FishNet.Object;
 using FishNet.Observing;
+using FishNet.Utility.Constant;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Serialization;
 
+[assembly: InternalsVisibleTo(UtilityConstants.DEMOS_ASSEMBLY_NAME)]
 namespace FishNet.Managing.Observing
 {
     /// <summary>
@@ -29,9 +32,14 @@ namespace FishNet.Managing.Observing
         [SerializeField]
         private bool _useNetworkLod;
         /// <summary>
+        /// True to use the NetworkLOD system.
+        /// </summary>
+        /// <returns></returns>
+        internal bool GetUseNetworkLod() => _useNetworkLod;
+        /// <summary>
         /// Distance for each level of detal.
         /// </summary>
-        internal List<float> LevelOfDetailDistances => (_useNetworkLod) ? _levelOfDetailDistances : _singleLevelOfDetailDistances;
+        internal List<float> GetLevelOfDetailDistances() => (_useNetworkLod) ? _levelOfDetailDistances : _singleLevelOfDetailDistances;
         [Tooltip("Distance for each level of detal.")]
         [SerializeField]
         private List<float> _levelOfDetailDistances = new List<float>();
@@ -80,7 +88,6 @@ namespace FishNet.Managing.Observing
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
             _networkManager = manager;
-
             ValidateLevelOfDetails();
         }
 
@@ -223,7 +230,7 @@ namespace FishNet.Managing.Observing
         /// </summary>
         internal void CalculateLevelOfDetail(uint tick)
         {
-            int count = LevelOfDetailDistances.Count;
+            int count = GetLevelOfDetailDistances().Count;
             for (int i = (count - 1); i > 0; i--)
             {
                 uint interval = _levelOfDetailIntervals[i];
@@ -282,15 +289,23 @@ namespace FishNet.Managing.Observing
                     _levelOfDetailDistances.RemoveAt(_levelOfDetailDistances.Count - 1);
             }
 
-            //Build intervals.
             if (Application.isPlaying)
             {
+                //Build intervals and sqr distances.
                 int count = _levelOfDetailDistances.Count;
                 _levelOfDetailIntervals = new uint[count];
                 for (int i = (count - 1); i > 0; i--)
                 {
                     uint power = (uint)Mathf.Pow(2, i);
                     _levelOfDetailIntervals[i] = power;
+
+                }
+                //Sqr
+                for (int i = 0; i < count; i++)
+                {
+                    float dist = _levelOfDetailDistances[i];
+                    dist *= dist;
+                    _levelOfDetailDistances[i] = dist;
                 }
             }
         }

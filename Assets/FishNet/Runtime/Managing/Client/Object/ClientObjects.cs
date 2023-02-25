@@ -86,6 +86,7 @@ namespace FishNet.Managing.Client
                  * was called but it won't hurt anything clearing an empty collection. */
                 base.Spawned.Clear();
                 base.SceneObjects.Clear();
+                base.LocalClientSpawned.Clear();
             }
         }
 
@@ -251,10 +252,10 @@ namespace FishNet.Managing.Client
         /// Called when a NetworkObject runs Deactivate.
         /// </summary>
         /// <param name="nob"></param>
-        internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob)
+        internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob, bool asServer)
         {
             nob.RemoveClientRpcLinkIndexes();
-            base.NetworkObjectUnexpectedlyDestroyed(nob);
+            base.NetworkObjectUnexpectedlyDestroyed(nob, asServer);
         }
 
         /// <summary>

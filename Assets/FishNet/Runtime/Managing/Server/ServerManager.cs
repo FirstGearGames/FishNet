@@ -186,6 +186,9 @@ namespace FishNet.Managing.Server
                 _authenticator = GetComponent<Authenticator>();
             if (_authenticator != null)
                 InitializeAuthenticator();
+
+            _cachedLevelOfDetailInterval = NetworkManager.ClientManager.LevelOfDetailInterval;
+            _cachedUseLod = NetworkManager.ObserverManager.GetUseNetworkLod();
         }
 
         /// <summary>
@@ -577,10 +580,20 @@ namespace FishNet.Managing.Server
                      * does not allow to be called while not authenticated. */
                     if (!conn.Authenticated && packetId != PacketId.Broadcast)
                     {
-                        conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} send a Broadcast without being authenticated. Connection will be kicked immediately.");
+                        conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a Broadcast without being authenticated. Connection will be kicked immediately.");
                         return;
                     }
 
+                    //Only check if not developer build because users pay pause editor.
+#if !DEVELOPMENT_BUILD && !UNITY_EDITOR
+                    /* If hasn't sent LOD recently enough. LODs are sent every half a second, so
+                     * by multiplaying interval by 60 this gives the client a 30 second window. */
+                    if (_cachedUseLod && conn.IsLateForLevelOfDetail(_cachedLevelOfDetailInterval * 60))
+                    {
+                        conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} has gone too long without sending a level of detail update. Connection will be kicked immediately.");
+                        return;
+                    }
+#endif
                     if (packetId == PacketId.Replicate)
                     {
                         Objects.ParseReplicateRpc(reader, conn, args.Channel);
