@@ -20,6 +20,14 @@ namespace FishNet.Managing.Object
         /// NetworkObjects which are currently active.
         /// </summary>
         public Dictionary<int, NetworkObject> Spawned = new Dictionary<int, NetworkObject>();
+        
+        public delegate void AddedToSpawnedEvent(NetworkObject nob);
+        
+        /// <summary>
+        /// Invoked when a NetworkObject is spawned.
+        /// </summary>
+        public event AddedToSpawnedEvent AddedToSpawned;
+        
         /// <summary>
         /// NetworkObjects which are currently active on the local client.
         /// //TODO Move this to ClientObjects.
@@ -325,6 +333,8 @@ namespace FishNet.Managing.Object
                 if (NetworkManager.IsServer)
                     nob.SetRenderersVisible(true);
             }
+
+            AddedToSpawned?.Invoke(nob);
         }
 
         /// <summary>
