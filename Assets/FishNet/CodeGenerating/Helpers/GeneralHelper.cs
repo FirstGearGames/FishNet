@@ -60,10 +60,10 @@ namespace FishNet.CodeGenerating.Helping
         public MethodDefinition GeneratedComparer_OnLoadMethodDef;
         public TypeReference IEquatable_TypeRef;
         //Actions.
-        public TypeReference ActionT2TypeRef;
-        public TypeReference ActionT3TypeRef;
-        public MethodReference ActionT2ConstructorMethodRef;
-        public MethodReference ActionT3ConstructorMethodRef;
+        public TypeReference ActionT2_TypeRef;
+        public TypeReference ActionT3_TypeRef;
+        public MethodReference ActionT2Constructor_MethodRef;
+        public MethodReference ActionT3Constructor_MethodRef;
 
         private Dictionary<Type, TypeReference> _importedTypeReferences = new Dictionary<Type, TypeReference>();
         private Dictionary<FieldDefinition, FieldReference> _importedFieldReferences = new Dictionary<FieldDefinition, FieldReference>();
@@ -86,10 +86,10 @@ namespace FishNet.CodeGenerating.Helping
             NonSerialized_Attribute_FullName = typeof(NonSerializedAttribute).FullName;
             Single_FullName = typeof(float).FullName;
 
-            ActionT2TypeRef = base.ImportReference(typeof(Action<,>));
-            ActionT3TypeRef = base.ImportReference(typeof(Action<,,>));
-            ActionT2ConstructorMethodRef = base.ImportReference(typeof(Action<,>).GetConstructors()[0]);
-            ActionT3ConstructorMethodRef = base.ImportReference(typeof(Action<,,>).GetConstructors()[0]);
+            ActionT2_TypeRef = base.ImportReference(typeof(Action<,>));
+            ActionT3_TypeRef = base.ImportReference(typeof(Action<,,>));
+            ActionT2Constructor_MethodRef = base.ImportReference(typeof(Action<,>).GetConstructors()[0]);
+            ActionT3Constructor_MethodRef = base.ImportReference(typeof(Action<,,>).GetConstructors()[0]);
 
             CodegenExcludeAttribute_FullName = typeof(CodegenExcludeAttribute).FullName;
             CodegenIncludeAttribute_FullName = typeof(CodegenIncludeAttribute).FullName;

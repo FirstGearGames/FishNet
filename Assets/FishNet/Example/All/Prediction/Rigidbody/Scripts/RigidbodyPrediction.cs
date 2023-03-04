@@ -129,6 +129,11 @@ namespace FishNet.Example.Prediction.Rigidbodies
         {
             if (base.IsOwner)
             {
+                if (Input.GetKeyDown(KeyCode.RightAlt))
+                {
+                    _rigidbody.velocity = Vector3.zero;
+                    _rigidbody.angularVelocity = Vector3.zero;
+                }
                 if (Input.GetKeyDown(KeyCode.Space) && Time.time > _nextJumpTime)
                 {
                     _nextJumpTime = Time.time + 1f;

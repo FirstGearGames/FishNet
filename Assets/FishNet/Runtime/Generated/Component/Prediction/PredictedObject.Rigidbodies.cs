@@ -3,6 +3,7 @@ using FishNet.Managing;
 using FishNet.Object;
 using FishNet.Transporting;
 using FishNet.Utility;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -50,6 +51,42 @@ namespace FishNet.Component.Prediction
         /// True if a connection is owner and prediction methods are implemented.
         /// </summary>
         private bool _isPredictingOwner(NetworkConnection c) => (c == base.Owner && _implementsPredictionMethods);
+        /// <summary>
+        /// Current interpolation value.
+        /// </summary>
+        private byte _currentSpectatorInterpolation;
+        /// <summary>
+        /// Target interpolation when collision is exited.
+        /// </summary>
+        private byte _targetSpectatorInterpolation;
+        /// <summary>
+        /// Target interpolation when collision is entered.
+        /// </summary>
+        private byte _targetCollisionSpectatorInterpolation;
+        /// <summary>
+        /// How often in ticks to move towards targets when not collisionEntered is true.
+        /// </summary>
+        private uint _collisionChangeDivisor;
+        /// <summary>
+        /// How often in ticks to move towards targets when not collisionEntered is false.
+        /// </summary>
+        private uint _changeDivisor;
+        /// <summary>
+        /// Current number of ticks to ignore when replaying.
+        /// </summary>
+        private uint _currentIgnoredTicks;
+        /// <summary>
+        /// Target number of ticks to ignore when replaying.
+        /// </summary>
+        private uint _targetIgnoredTicks;
+        /// <summary>
+        /// Last local tick that collision has stayed with local client objects.
+        /// </summary>
+        private uint _collisionStayedTick;
+        /// <summary>
+        /// Local client objects this object is currently colliding with.
+        /// </summary>
+        private HashSet<GameObject> _localClientCollidedObjects = new HashSet<GameObject>();
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -117,7 +154,6 @@ namespace FishNet.Component.Prediction
                     Transform graphicalHolder = new GameObject().transform;
                     graphicalHolder.name = "GraphicalObjectHolder";
                     graphicalHolder.SetParent(transform);
-                    //ref _graphicalInstantiatedOffsetPosition, ref _graphicalInstantiatedOffsetRotation);
                     graphicalHolder.localPosition = _graphicalInstantiatedOffsetPosition;
                     graphicalHolder.localRotation = _graphicalInstantiatedOffsetRotation;
                     graphicalHolder.localScale = _graphicalObject.localScale;
@@ -141,24 +177,43 @@ namespace FishNet.Component.Prediction
                 return;
 
             bool is2D = (_predictionType == PredictionType.Rigidbody2D);
-            uint localTick = base.TimeManager.LocalTick;
+            TrySetCollisionExited(is2D);
 
             /* Can check either one. They may not be initialized yet if host. */
             if (_rigidbodyStates.Initialized)
             {
                 if (!is2D)
-                    _rigidbodyStates.Add(new RigidbodyState(_rigidbody, localTick));
+                    _rigidbodyStates.Add(new RigidbodyState(_rigidbody, _localTick));
                 else
-                    _rigidbody2dStates.Add(new Rigidbody2DState(_rigidbody2d, localTick));
+                    _rigidbody2dStates.Add(new Rigidbody2DState(_rigidbody2d, _localTick));
             }
 
             if (CanPredict())
             {
+                UpdateSpectatorSmoothing();
                 if (!is2D)
                     PredictVelocity(gameObject.scene.GetPhysicsScene());
                 else
                     PredictVelocity(gameObject.scene.GetPhysicsScene2D());
             }
+        }
+
+        /// <summary>
+        /// Unsets collision values if collision was known to be entered but there are no longer any contact points.
+        /// </summary>
+        private void TrySetCollisionExited(bool is2d)
+        {
+            /* If this object is no longer
+             * colliding with local client objects
+             * then unset collision.
+             * This is done here instead of using
+             * OnCollisionExit because often collisionexit
+             * will be missed due to ignored ticks. 
+             * While not ignoring ticks is always an option
+             * its not ideal because ignoring ticks helps
+             * prevent over predicting. */
+            if (_collisionStayedTick != 0 && (base.TimeManager.LocalTick != _collisionStayedTick))
+                CollisionExited();
         }
 
         /// <summary>
@@ -223,6 +278,9 @@ namespace FishNet.Component.Prediction
             if (!CanPredict())
                 return;
 
+            if (_localTick - tick < _currentIgnoredTicks)
+                _rigidbodyPauser.Pause();
+
             if (_predictionType == PredictionType.Rigidbody)
                 PredictVelocity(ps);
             else if (_predictionType == PredictionType.Rigidbody2D)
@@ -252,6 +310,170 @@ namespace FishNet.Component.Prediction
                 if (index != -1)
                     _rigidbody2dStates[index] = new Rigidbody2DState(_rigidbody2d, tick);
             }
+        }
+
+        /// <summary>
+        /// Called when ping updates for the local client.
+        /// </summary>
+        private void Rigidbodies_OnRoundTripTimeUpdated(long ping)
+        {
+            SetTargetSmoothing(ping, false);
+        }
+        /// <summary>
+        /// Sets target smoothing values.
+        /// </summary>
+        /// <param name="setImmediately">True to set current values to targets immediately.</param>
+        private void SetTargetSmoothing(long ping, bool setImmediately)
+        {
+            if (_spectatorSmoother == null)
+                return;
+
+            const long maxPing = 300;
+            //Percentage that ping is between 0f and maxPing.
+            float rttPercent = Mathf.InverseLerp(0, maxPing, ping);
+
+            //Min and max interpolation to use when not colliding.
+            byte minTargetInterpolation;
+            byte maxTargetInterpolation;
+            //Min and max interpolation to use when colliding.
+            const byte minCollisionInterpolation = 1;
+            byte maxCollisionInterpolation;
+            //Multiplier determining ignored ticks value.
+            float maxIgnoredTicksMultiplier;
+            //Multiplier to apply towards accelerating graphics to lower interpolation.
+            float collisionMoveMultiplier;
+            //Set values for variables above based on settings.
+            SetFlatValues();
+
+            //Target interpolation.
+            _targetSpectatorInterpolation = (byte)Mathf.CeilToInt(
+                Mathf.Lerp(0f, (float)maxTargetInterpolation, rttPercent)
+                );
+            if (_targetSpectatorInterpolation < minTargetInterpolation)
+                _targetSpectatorInterpolation = minTargetInterpolation;
+            //Collision interpolation.
+            _targetCollisionSpectatorInterpolation = (byte)Mathf.FloorToInt(Mathf.Lerp(minCollisionInterpolation, maxCollisionInterpolation, rttPercent));
+
+            float pingToMs = (float)(base.TimeManager.RoundTripTime / 1000f);
+            float ignoredTicKMultiplier = Mathf.Lerp(0f, maxIgnoredTicksMultiplier, rttPercent);
+            _targetIgnoredTicks = (uint)Mathf.CeilToInt(base.TimeManager.TimeToTicks((pingToMs * ignoredTicKMultiplier)));
+
+            _spectatorSmoother.SetExcessBufferMultiplier(collisionMoveMultiplier);
+
+            //If to apply values to targets immediately.
+            if (setImmediately)
+            {
+                _currentIgnoredTicks = _targetIgnoredTicks;
+                _currentSpectatorInterpolation = (CollidingWithLocalClient()) ? _targetCollisionSpectatorInterpolation : _targetSpectatorInterpolation;
+                _spectatorSmoother.SetIgnoredTicks(_currentIgnoredTicks);
+                _spectatorSmoother.SetInterpolation(_currentSpectatorInterpolation);
+            }
+
+            //Sets ranges to use based on smoothing type.
+            void SetFlatValues()
+            {
+                //Changing divisor is always a flat rate of x times a second.
+                _changeDivisor = (uint)Mathf.CeilToInt((float)base.TimeManager.TickRate * 0.33f);
+
+                if (_spectatorSmoothingType == SpectatorSmoothingType.Accuracy)
+                {
+                    minTargetInterpolation = 2; //2
+                    maxTargetInterpolation = 14; //13
+                    maxCollisionInterpolation = 2; //3
+                    maxIgnoredTicksMultiplier = 0.2f; //0.4
+                    collisionMoveMultiplier = 6.5f; //7
+                    _collisionChangeDivisor = 1; //1
+                }
+                else if (_spectatorSmoothingType == SpectatorSmoothingType.Mixed)
+                {
+                    minTargetInterpolation = 3;
+                    maxTargetInterpolation = 16;
+                    maxCollisionInterpolation = 4;
+                    maxIgnoredTicksMultiplier = 0.4f;
+                    collisionMoveMultiplier = 3.5f;
+                    _collisionChangeDivisor = 2;
+                }
+                else
+                {
+                    minTargetInterpolation = 3;
+                    maxTargetInterpolation = 18;
+                    maxCollisionInterpolation = 5;
+                    maxIgnoredTicksMultiplier = 0.5f;
+                    collisionMoveMultiplier = 1.5f;
+                    _collisionChangeDivisor = 3;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns if this object is colliding with any local client objects.
+        /// </summary>
+        /// <returns></returns>
+        private bool CollidingWithLocalClient()
+        {
+            /* If it's been more than 1 tick since collision stayed
+             * then do not consider as collided. */
+            return (base.TimeManager.LocalTick - _collisionStayedTick) < 1;
+        }
+
+        /// <summary>
+        /// Updates spectator smoothing values to move towards their targets.
+        /// </summary>
+        private void UpdateSpectatorSmoothing()
+        {
+            byte targetInterpolation;
+            uint divisor;
+            if (CollidingWithLocalClient())
+            {
+                targetInterpolation = _targetCollisionSpectatorInterpolation;
+                byte interpolationGoal = _targetCollisionSpectatorInterpolation;
+                _currentSpectatorInterpolation = interpolationGoal;
+                divisor = _collisionChangeDivisor;
+
+                if (base.TimeManager.LocalTick % divisor == 0)
+                    MoveTowardsIgnoredTicks();
+            }
+            else
+            {
+                targetInterpolation = _targetSpectatorInterpolation;
+                byte interpolationGoal = _targetSpectatorInterpolation;
+                //Move values over 10 times a second.
+                divisor = _changeDivisor;
+
+                if (base.TimeManager.LocalTick % divisor == 0)
+                {
+                    //Ignored ticks.
+                    MoveTowardsIgnoredTicks();
+                    //Interpolation/
+                    if (_currentSpectatorInterpolation < interpolationGoal)
+                        _currentSpectatorInterpolation++;
+                    else if (_currentSpectatorInterpolation > interpolationGoal)
+                        _currentSpectatorInterpolation--;
+                }
+            }
+
+            void MoveTowardsIgnoredTicks()
+            {
+                if (_currentIgnoredTicks < _targetIgnoredTicks)
+                    _currentIgnoredTicks++;
+                else if (_currentIgnoredTicks > _targetIgnoredTicks)
+                    _currentIgnoredTicks--;
+            }
+
+            _spectatorSmoother.SetInterpolation(_currentSpectatorInterpolation);
+            _spectatorSmoother.SetIgnoredTicks(_currentIgnoredTicks);
+        }
+
+        /// <summary>
+        /// Called when a collision occurs and the smoothing type must perform operations.
+        /// </summary>
+        private bool CollisionEnteredLocalClientObject(GameObject go)
+        {
+            if (go.TryGetComponent<NetworkObject>(out NetworkObject nob))
+                return nob.Owner.IsLocalClient;
+
+            //Fall through.
+            return false;
         }
 
         /// <summary>
@@ -552,6 +774,29 @@ namespace FishNet.Component.Prediction
         private PhysicsScene _physicsScene;
         #endregion
 
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (_predictionType != PredictionType.Rigidbody)
+                return;
+
+            GameObject go = collision.gameObject;
+            if (CollisionEnteredLocalClientObject(go))
+                CollisionEntered(go);
+        }
+
+
+        private void OnCollisionStay(Collision collision)
+        {
+            if (_predictionType != PredictionType.Rigidbody)
+                return;
+
+            if (_localClientCollidedObjects.Contains(collision.gameObject))
+                _collisionStayedTick = base.TimeManager.LocalTick;
+        }
+
+        /// <summary>
+        /// Resets the rigidbody to a state.
+        /// </summary>
         private void ResetRigidbodyToData(RigidbodyState state)
         {
             //Update transform and rigidbody.
@@ -680,6 +925,42 @@ namespace FishNet.Component.Prediction
         private PhysicsScene2D _physicsScene2D;
         #endregion
 
+        private void OnCollisionEnter2D(Collision2D collision)
+        {
+            if (_predictionType != PredictionType.Rigidbody2D)
+                return;
+
+            GameObject go = collision.gameObject;
+            if (CollisionEnteredLocalClientObject(go))
+                CollisionEntered(go);
+        }
+
+        private void OnCollisionStay2D(Collision2D collision)
+        {
+            if (_predictionType != PredictionType.Rigidbody2D)
+                return;
+
+            if (_localClientCollidedObjects.Contains(collision.gameObject))
+                _collisionStayedTick = base.TimeManager.LocalTick;
+        }
+
+        /// <summary>
+        /// Called when collision has entered a local clients object.
+        /// </summary>
+        private void CollisionEntered(GameObject go)
+        {
+            _collisionStayedTick = base.TimeManager.LocalTick;
+            _localClientCollidedObjects.Add(go);
+        }
+
+        /// <summary>
+        /// Called when collision has exited a local clients object.
+        /// </summary>
+        private void CollisionExited()
+        {
+            _localClientCollidedObjects.Clear();
+            _collisionStayedTick = 0;
+        }
 
         /// <summary>
         /// Resets the Rigidbody2D to last received data.

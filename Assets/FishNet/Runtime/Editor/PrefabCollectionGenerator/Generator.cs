@@ -418,7 +418,9 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
             //Load the prefab collection 
             string defaultPrefabsPath = settings.DefaultPrefabObjectsPath;
+            defaultPrefabsPath = defaultPrefabsPath.Replace(@"\", "/");
             string fullDefaultPrefabsPath = (defaultPrefabsPath.Length > 0) ? Path.GetFullPath(defaultPrefabsPath) : string.Empty;
+            
             //If cached prefabs is not the same path as assetPath.
             if (_cachedDefaultPrefabs != null)
             {
@@ -426,25 +428,29 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 string fullCachedPath = (unityAssetPath.Length > 0) ? Path.GetFullPath(unityAssetPath) : string.Empty;
                 if (fullCachedPath != fullDefaultPrefabsPath)
                     _cachedDefaultPrefabs = null;
-            }
+            } 
 
             //If cached is null try to get it.
             if (_cachedDefaultPrefabs == null)
             {
-                _cachedDefaultPrefabs = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(defaultPrefabsPath);
-                if (_cachedDefaultPrefabs == null)
+                //Only try to load it if file exist.
+                if (File.Exists(fullDefaultPrefabsPath))
                 {
-                    //If already retried then throw an error.
-                    if (_retryRefreshDefaultPrefabs)
+                    _cachedDefaultPrefabs = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(defaultPrefabsPath);
+                    if (_cachedDefaultPrefabs == null)
                     {
-                        UnityDebug.LogError("DefaultPrefabObjects file exists but it could not be loaded by Unity. Use the Fish-Networking menu to Refresh Default Prefabs.");
+                        //If already retried then throw an error.
+                        if (_retryRefreshDefaultPrefabs)
+                        {
+                            UnityDebug.LogError("DefaultPrefabObjects file exists but it could not be loaded by Unity. Use the Fish-Networking menu to Refresh Default Prefabs.");
+                        }
+                        else
+                        {
+                            UnityDebug.Log("DefaultPrefabObjects file exists but it could not be loaded by Unity. Trying to reload the file next frame.");
+                            _retryRefreshDefaultPrefabs = true;
+                        }
+                        return null;
                     }
-                    else
-                    {
-                        UnityDebug.Log("DefaultPrefabObjects file exists but it could not be loaded by Unity. Trying to reload the file next frame.");
-                        _retryRefreshDefaultPrefabs = true;
-                    }
-                    return null;
                 }
             }
 
@@ -455,7 +461,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 string directory = Path.GetDirectoryName(fullPath);
 
                 if (!Directory.Exists(directory))
-                {
+                { 
                     Directory.CreateDirectory(directory);
                     AssetDatabase.Refresh();
                 }

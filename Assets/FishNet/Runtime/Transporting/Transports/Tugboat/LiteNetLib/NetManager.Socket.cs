@@ -1,8 +1,4 @@
-#if UNITY_IOS && !UNITY_EDITOR
-using UnityEngine;
-#endif
 using System.Runtime.InteropServices;
-
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -12,45 +8,25 @@ using LiteNetLib.Utils;
 
 namespace LiteNetLib
 {
-#if UNITY_IOS && !UNITY_EDITOR
-    public class UnitySocketFix : MonoBehaviour
-    {
-        internal IPAddress BindAddrIPv4;
-        internal IPAddress BindAddrIPv6;
-        internal int Port;
-        internal bool Paused;
-        internal NetManager Socket;
-        internal bool ManualMode;
-
-        private void Update()
-        {
-            if (Socket == null)
-                Destroy(gameObject);
-        }
-
-        private void OnApplicationPause(bool pause)
-        {
-            if (Socket == null)
-                return;
-            if (pause)
-            {
-                Paused = true;
-                Socket.CloseSocket(true);
-            }
-            else if (Paused)
-            {
-                if (!Socket.Start(BindAddrIPv4, BindAddrIPv6, Port, ManualMode))
-                {
-                    NetDebug.WriteError("[S] Cannot restore connection \"{0}\",\"{1}\" port {2}", BindAddrIPv4, BindAddrIPv6, Port);
-                    Socket.CloseSocket(false);
-                }
-            }
-        }
-    }
-#endif
 
     public partial class NetManager
     {
+        public bool SocketActive(bool ipv4)
+        {
+            if (ipv4)
+            {
+                if (_udpSocketv4 != null)
+                    return _udpSocketv4.Connected;
+                return false;
+            }
+            else
+            {
+                if (_udpSocketv6 != null)
+                    return _udpSocketv6.Connected;
+                return false;
+            }
+        }
+
         private const int ReceivePollingTime = 500000; //0.5 second
 
         private Socket _udpSocketv4;
@@ -59,6 +35,7 @@ namespace LiteNetLib
         private Thread _threadv6;
         private IPEndPoint _bufferEndPointv4;
         private IPEndPoint _bufferEndPointv6;
+        private PausedSocketFix _pausedSocketFix;
 
 #if !LITENETLIB_UNSAFE
         [ThreadStatic] private static byte[] _sendToBuffer;
@@ -70,9 +47,6 @@ namespace LiteNetLib
         private const int SioUdpConnreset = -1744830452; //SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12
         private static readonly IPAddress MulticastAddressV6 = IPAddress.Parse("ff02::1");
         public static readonly bool IPv6Support;
-#if UNITY_IOS && !UNITY_EDITOR
-        private UnitySocketFix _unitySocketFix;
-#endif
 
         /// <summary>
         /// Maximum packets count that will be processed in Manual PollEvents
@@ -106,16 +80,11 @@ namespace LiteNetLib
             IPv6Support = Socket.OSSupportsIPv6 && int.Parse(version.Remove(version.IndexOf('f')).Split('.')[2]) >= 6;
 #else
             IPv6Support = Socket.OSSupportsIPv6;
-#endif
+#endif            
         }
 
         private bool IsActive()
         {
-#if UNITY_IOS && !UNITY_EDITOR
-            var unitySocketFix = _unitySocketFix; //save for multithread
-            if (unitySocketFix != null && unitySocketFix.Paused)
-                return false;
-#endif
             return IsRunning;
         }
 
@@ -173,7 +142,7 @@ namespace LiteNetLib
                     packet.Size = socket.ReceiveFrom(packet.RawData, 0, NetConstants.MaxPacketSize, SocketFlags.None,
                         ref bufferEndPoint);
                     //NetDebug.Write(NetLogLevel.Trace, $"[R]Received data from {bufferEndPoint}, result: {packet.Size}");
-                    OnMessageReceived(packet, (IPEndPoint) bufferEndPoint);
+                    OnMessageReceived(packet, (IPEndPoint)bufferEndPoint);
                     packetsReceived++;
                     if (packetsReceived == MaxPacketsReceivePerUpdate)
                         break;
@@ -190,7 +159,7 @@ namespace LiteNetLib
             catch (Exception e)
             {
                 //protects socket receive thread
-                NetDebug.WriteError("[NM] SocketReceiveThread error: " + e );
+                NetDebug.WriteError("[NM] SocketReceiveThread error: " + e);
             }
         }
 
@@ -269,12 +238,12 @@ namespace LiteNetLib
                 catch (Exception e)
                 {
                     //protects socket receive thread
-                    NetDebug.WriteError("[NM] SocketReceiveThread error: " + e );
+                    NetDebug.WriteError("[NM] SocketReceiveThread error: " + e);
                 }
             }
         }
 
-         /// <summary>
+        /// <summary>
         /// Start logic thread and listening on selected port
         /// </summary>
         /// <param name="addressIPv4">bind to specific ipv4 address</param>
@@ -302,25 +271,11 @@ namespace LiteNetLib
             if (!BindSocket(_udpSocketv4, new IPEndPoint(dualMode ? addressIPv6 : addressIPv4, port)))
                 return false;
 
-            LocalPort = ((IPEndPoint) _udpSocketv4.LocalEndPoint).Port;
+            LocalPort = ((IPEndPoint)_udpSocketv4.LocalEndPoint).Port;
 
-#if UNITY_IOS && !UNITY_EDITOR
-            if (_unitySocketFix == null)
-            {
-                var unityFixObj = new GameObject("LiteNetLib_UnitySocketFix");
-                GameObject.DontDestroyOnLoad(unityFixObj);
-                _unitySocketFix = unityFixObj.AddComponent<UnitySocketFix>();
-                _unitySocketFix.Socket = this;
-                _unitySocketFix.BindAddrIPv4 = addressIPv4;
-                _unitySocketFix.BindAddrIPv6 = addressIPv6;
-                _unitySocketFix.Port = LocalPort;
-                _unitySocketFix.ManualMode = _manualMode;
-            }
-            else
-            {
-                _unitySocketFix.Paused = false;
-            }
-#endif
+            if (_pausedSocketFix == null)
+                _pausedSocketFix = new PausedSocketFix(this, addressIPv4, addressIPv6, port, manualMode);
+
             if (dualMode)
                 _udpSocketv6 = _udpSocketv4;
 
@@ -387,7 +342,7 @@ namespace LiteNetLib
             {
                 try
                 {
-                    socket.IOControl(SioUdpConnreset, new byte[] {0}, null);
+                    socket.IOControl(SioUdpConnreset, new byte[] { 0 }, null);
                 }
                 catch
                 {
@@ -417,7 +372,7 @@ namespace LiteNetLib
                 if (IPv6Mode == IPv6Mode.DualMode)
                 {
                     try { socket.DualMode = true; }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         NetDebug.WriteError($"[B]Bind exception (dualmode setting): {e}");
                     }
@@ -543,20 +498,20 @@ namespace LiteNetLib
                         bool ipv4 = remoteEndPoint.AddressFamily == AddressFamily.InterNetwork;
                         short addressFamily = NativeSocket.GetNativeAddressFamily(remoteEndPoint);
 
-                        socketAddress[0] = (byte) (addressFamily);
-                        socketAddress[1] = (byte) (addressFamily >> 8);
-                        socketAddress[2] = (byte) (remoteEndPoint.Port >> 8);
-                        socketAddress[3] = (byte) (remoteEndPoint.Port);
+                        socketAddress[0] = (byte)(addressFamily);
+                        socketAddress[1] = (byte)(addressFamily >> 8);
+                        socketAddress[2] = (byte)(remoteEndPoint.Port >> 8);
+                        socketAddress[3] = (byte)(remoteEndPoint.Port);
 
                         if (ipv4)
                         {
 #pragma warning disable 618
                             long addr = remoteEndPoint.Address.Address;
 #pragma warning restore 618
-                            socketAddress[4] = (byte) (addr);
-                            socketAddress[5] = (byte) (addr >> 8);
-                            socketAddress[6] = (byte) (addr >> 16);
-                            socketAddress[7] = (byte) (addr >> 24);
+                            socketAddress[4] = (byte)(addr);
+                            socketAddress[5] = (byte)(addr >> 8);
+                            socketAddress[6] = (byte)(addr >> 16);
+                            socketAddress[7] = (byte)(addr >> 24);
                         }
                         else
                         {
@@ -724,13 +679,8 @@ namespace LiteNetLib
         internal void CloseSocket(bool suspend)
         {
             if (!suspend)
-            {
                 IsRunning = false;
-#if UNITY_IOS && !UNITY_EDITOR
-                _unitySocketFix.Socket = null;
-                _unitySocketFix = null;
-#endif
-            }
+
             //cleanup dual mode
             if (_udpSocketv4 == _udpSocketv6)
                 _udpSocketv6 = null;

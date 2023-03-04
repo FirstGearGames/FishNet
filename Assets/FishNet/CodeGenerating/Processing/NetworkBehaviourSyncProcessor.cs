@@ -931,10 +931,10 @@ namespace FishNet.CodeGenerating.Processing
                 MethodReference syncVarAddMr = addMd.MakeHostInstanceGeneric(base.Session, svGit);
 
                 //Action<dataType, dataType, bool> constructor.
-                GenericInstanceType actionGit = gh.ActionT3TypeRef.MakeGenericInstanceType(
+                GenericInstanceType actionGit = gh.ActionT3_TypeRef.MakeGenericInstanceType(
                     originalFd.FieldType, originalFd.FieldType,
                     base.GetClass<GeneralHelper>().GetTypeReference(typeof(bool)));
-                MethodReference gitActionCtorMr = gh.ActionT3ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, actionGit);
+                MethodReference gitActionCtorMr = gh.ActionT3Constructor_MethodRef.MakeHostInstanceGeneric(base.Session, actionGit);
 
                 //      syncVar___field.OnChanged += UserHookMethod;
                 insts.Add(processor.Create(OpCodes.Ldarg_0));

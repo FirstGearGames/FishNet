@@ -190,22 +190,19 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private bool _smoothRotation;
         /// <summary>
-        /// Time to smooth initial velocities when an object was previously stopped.
-        /// </summary>
-        private float _smoothingDuration = 0.05f;
-        /// <summary>
         /// How far in the past to keep the graphical object.
         /// </summary>
-        private byte _interpolation = 2;
+        private byte _interpolation = 4;
         /// <summary>
         /// Sets the interpolation value to use when the owner of this object.
         /// </summary>
         /// <param name="value"></param>
         public void SetInterpolation(byte value) => _interpolation = value;
         /// <summary>
-        /// Multiplier to apply to movement speed when buffer is over interpolation.
+        /// Sets the number of ticks to ignroe at the end of a replay.
         /// </summary>
-        private float _overflowMultiplier = 0.1f;
+        /// <param name="value"></param>
+        public void SetIgnoredTicks(uint value) => _ignoredTicks = value;
         /// <summary>
         /// GoalDatas to move towards.
         /// </summary>
@@ -243,10 +240,6 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private Quaternion _graphicalStartRotation;
         /// <summary>
-        /// Time remaining on the initial smoothing for the graphical object.
-        /// </summary>
-        private float _speedUpTimeRemaining = -1f;
-        /// <summary>
         /// How far a distance change must exceed to teleport the graphical object. -1f indicates teleport is not enabled.
         /// </summary>
         private float _teleportThreshold;
@@ -258,16 +251,41 @@ namespace FishNet.Component.Prediction
         /// Cache of GoalDatas to prevent allocations.
         /// </summary>
         private static Stack<GoalData> _goalDataCache = new Stack<GoalData>();
+        /// <summary>
+        /// Number of ticks to ignore when replaying.
+        /// </summary>
+        private uint _ignoredTicks;
+        /// <summary>
+        /// Cached localtick for performance.
+        /// </summary>
+        private uint _localTick;
+        /// <summary>
+        /// Start position of the graphical object in world space.
+        /// </summary>
+        private Vector3 _startWorldPosition;
+        /// <summary>
+        /// Multiplier to apply towards overflow multiplier when too many entries are in the buffer.
+        /// </summary>
+        private float _excessBufferMultiplier;
+        /// <summary>
+        /// Sets excessBufferMultiplier value.
+        /// </summary>
+        /// <param name="value"></param>
+        public void SetExcessBufferMultiplier(float value) => _excessBufferMultiplier = value;
         #endregion
 
-        private Vector3 _startPosition;
+        #region Const.
+        /// <summary>
+        /// Multiplier to apply to movement speed when buffer is over or under interpolation.
+        /// </summary>
+        private const float OVERFLOW_MULTIPLIER = 0.1f;
+        #endregion
 
         /// <summary>
         /// Initializes this for use.
         /// </summary>
         internal void Initialize(PredictedObject po, RigidbodyType rbType, Rigidbody rb, Rigidbody2D rb2d, Transform graphicalObject
-            , bool smoothPosition, bool smoothRotation, float smoothingDuration, byte interpolation, float overflowMultiplier,
-            float teleportThreshold)
+            , bool smoothPosition, bool smoothRotation, float teleportThreshold)
         {
             _predictedObject = po;
             _rigidbodyType = rbType;
@@ -275,12 +293,9 @@ namespace FishNet.Component.Prediction
             _rigidbody = rb;
             _rigidbody2d = rb2d;
             _graphicalObject = graphicalObject;
-            _startPosition = _graphicalObject.position;
+            _startWorldPosition = _graphicalObject.position;
             _smoothPosition = smoothPosition;
             _smoothRotation = smoothRotation;
-            _smoothingDuration = smoothingDuration;
-            _interpolation = interpolation;
-            _overflowMultiplier = overflowMultiplier;
             _teleportThreshold = teleportThreshold;
         }
 
@@ -291,6 +306,11 @@ namespace FishNet.Component.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ManualUpdate()
         {
+            if (Input.GetKeyDown(KeyCode.RightAlt))
+            {
+                _goalDatas.Clear();
+                _currentGoalData.IsActive = false;
+            }
             if (CanSmooth())
                 MoveToTarget();
         }
@@ -302,6 +322,7 @@ namespace FishNet.Component.Prediction
         {
             if (CanSmooth())
             {
+                _localTick = _predictedObject.TimeManager.LocalTick;
                 if (!_preTickReceived)
                 {
                     uint tick = _predictedObject.TimeManager.LocalTick - 1;
@@ -362,7 +383,7 @@ namespace FishNet.Component.Prediction
                      *  the first time. Might need to reduce tick by 1
                      *  when setting goalData for this; not sure yet.
                      */
-                    _graphicalObject.SetPositionAndRotation(_startPosition, Quaternion.identity);
+                    _graphicalObject.SetPositionAndRotation(_startWorldPosition, Quaternion.identity);
                     return;
                 }
 
@@ -377,6 +398,8 @@ namespace FishNet.Component.Prediction
             {
                 if (CanSmooth())
                 {
+                    if (_localTick - tick < _ignoredTicks)
+                        return;
 
                     CreateGoalData(tick, false);
                 }
@@ -471,7 +494,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Sets CurrentGoalData to the next in queue.
         /// </summary>
-        private void SetCurrentGoalData()
+        private void SetCurrentGoalData(bool afterMove)
         {
             if (_goalDatas.Count == 0)
             {
@@ -479,6 +502,9 @@ namespace FishNet.Component.Prediction
             }
             else
             {
+                if (!afterMove && _goalDatas.Count < _interpolation)
+                    return;
+
                 //Update current to next.
                 _currentGoalData.Update(_goalDatas[0]);
                 //Store old and remove it.
@@ -499,7 +525,7 @@ namespace FishNet.Component.Prediction
              * it will remain inactive. */
             if (!_currentGoalData.IsActive)
             {
-                SetCurrentGoalData();
+                SetCurrentGoalData(false);
                 //If still inactive then it could not be updated.
                 if (!_currentGoalData.IsActive)
                     return;
@@ -522,16 +548,9 @@ namespace FishNet.Component.Prediction
             float multiplier = 1f;
             int countOverInterpolation = (queueCount - _interpolation);
             if (countOverInterpolation > 0)
-                multiplier += (countOverInterpolation * _overflowMultiplier);
-
-            //If speed up time remains then adjust multiplier using speed up.
-            if (_speedUpTimeRemaining > 0f)
-            {
-                float speedupCompletePercent = Mathf.InverseLerp(_smoothingDuration, 0f, _speedUpTimeRemaining);
-                multiplier *= speedupCompletePercent;
-                float nextValue = (_speedUpTimeRemaining - delta);
-                _speedUpTimeRemaining = (nextValue <= 0f) ? -1f : nextValue;
-            }
+                multiplier += (OVERFLOW_MULTIPLIER * _excessBufferMultiplier);
+            else if (countOverInterpolation < 0 && queueCount > 1)
+                multiplier -= OVERFLOW_MULTIPLIER;
 
             //Rate to update. Changes per property.
             float rate;
@@ -571,7 +590,7 @@ namespace FishNet.Component.Prediction
             {
                 float leftOver = Mathf.Abs(rd.TimeRemaining);
                 //Set to next goal data if available.
-                SetCurrentGoalData();
+                SetCurrentGoalData(true);
 
                 //New data was set.
                 if (_currentGoalData.IsActive)
@@ -786,17 +805,6 @@ namespace FishNet.Component.Prediction
                     return;
                 }
             }
-
-            /* If buffer is lower than interpolation
-             * amount then set the speed up buffer time
-             * the percentage of desired buffer multiplied
-             * by smoothing duration. */
-            float bufferFillPercent = ((float)_goalDatas.Count / (float)_interpolation);
-            float speedUpRemaining = Mathf.Lerp(_smoothingDuration, 0f, bufferFillPercent);
-            /* Only change time remaining if new value is larger.
-             * This is to prevent speeduptime from being set to lower
-             * than current values, which would cut the speedup short. */
-            _speedUpTimeRemaining = Mathf.Max(_speedUpTimeRemaining, speedUpRemaining);
 
             //Begin building next goal data.
             GoalData nextGoalData = RetrieveGoalData();

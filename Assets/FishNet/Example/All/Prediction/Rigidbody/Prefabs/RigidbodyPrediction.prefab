@@ -160,7 +160,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 19
+  <PrefabId>k__BackingField: 18
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
@@ -221,8 +221,7 @@ MonoBehaviour:
   _rigidbody2d: {fileID: 0}
   _spectatorSmoothPosition: 1
   _spectatorSmoothRotation: 1
-  _spectatorInterpolation: 4
-  _overflowMultiplier: 0.05
+  _spectatorSmoothingType: 1
   _maintainedVelocity: 0
   _resendType: 0
   _resendInterval: 30

@@ -324,14 +324,14 @@ namespace FishNet.CodeGenerating.Helping
             //Generate for auto pack type.
             if (isAutoPacked)
             {
-                actionGenericInstance = gh.ActionT3TypeRef.MakeGenericInstanceType(wi.WriterTypeRef, dataTypeRef, base.GetClass<WriterImports>().AutoPackTypeRef);
-                actionConstructorInstanceMethodRef = gh.ActionT3ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, actionGenericInstance);
+                actionGenericInstance = gh.ActionT3_TypeRef.MakeGenericInstanceType(wi.WriterTypeRef, dataTypeRef, base.GetClass<WriterImports>().AutoPackTypeRef);
+                actionConstructorInstanceMethodRef = gh.ActionT3Constructor_MethodRef.MakeHostInstanceGeneric(base.Session, actionGenericInstance);
             }
             //Generate for normal type.
             else
             {
-                actionGenericInstance = gh.ActionT2TypeRef.MakeGenericInstanceType(wi.WriterTypeRef, dataTypeRef);
-                actionConstructorInstanceMethodRef = gh.ActionT2ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, actionGenericInstance);
+                actionGenericInstance = gh.ActionT2_TypeRef.MakeGenericInstanceType(wi.WriterTypeRef, dataTypeRef);
+                actionConstructorInstanceMethodRef = gh.ActionT2Constructor_MethodRef.MakeHostInstanceGeneric(base.Session, actionGenericInstance);
             }
 
             processor.Emit(OpCodes.Newobj, actionConstructorInstanceMethodRef);

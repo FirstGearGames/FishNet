@@ -47,6 +47,10 @@ namespace FishNet.Managing.Timing
 
         #region Public.
         /// <summary>
+        /// Called when the local clients ping is updated.
+        /// </summary>
+        public event Action<long> OnRoundTripTimeUpdated;
+        /// <summary>
         /// Called right before a tick occurs, as well before data is read.
         /// </summary>
         public event Action OnPreTick;
@@ -536,6 +540,8 @@ namespace FishNet.Managing.Timing
             double averageInTime = (_pingAverage.Average * TickDelta * 1000);
             RoundTripTime = (long)Math.Round(averageInTime);
             _receivedPong = true;
+
+            OnRoundTripTimeUpdated?.Invoke(RoundTripTime);
         }
 
         /// <summary>

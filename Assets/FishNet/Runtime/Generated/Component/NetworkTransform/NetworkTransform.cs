@@ -1368,14 +1368,13 @@ namespace FishNet.Component.Transforming
             * if it exist always send regardless
             * of the previously sent transform
             * data. */
-            NetworkBehaviour parentBehaviour = _parentBehaviour;
-            return GetChanged(ref transformData.Position, ref transformData.Rotation, ref transformData.Scale, parentBehaviour);
+            return GetChanged(ref transformData.Position, ref transformData.Rotation, ref transformData.Scale, transformData.ParentBehaviour);
         }
         /// <summary>
         /// Gets transform values that have changed against specified proprties.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ChangedDelta GetChanged(ref Vector3 lastPosition, ref Quaternion lastRotation, ref Vector3 lastScale, NetworkBehaviour parentBehaviour)
+        private ChangedDelta GetChanged(ref Vector3 lastPosition, ref Quaternion lastRotation, ref Vector3 lastScale, NetworkBehaviour lastParentBehaviour)
         {
             ChangedDelta changed = ChangedDelta.Unset;
             Transform t = transform;
@@ -1403,7 +1402,9 @@ namespace FishNet.Component.Transforming
             if (scale.z != lastScale.z)
                 changed |= ChangedDelta.ScaleZ;
 
-            if (parentBehaviour != null)
+            //Only include parent if there is additional data to send.
+            bool sendParent = (_parentBehaviour == null && lastParentBehaviour != null) || (changed != ChangedDelta.Unset && _parentBehaviour != null);
+            if (sendParent)
                 changed |= ChangedDelta.Nested;
 
             //If added scale or nested then also add extended.
