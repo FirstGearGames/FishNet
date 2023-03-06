@@ -306,11 +306,6 @@ namespace FishNet.Component.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ManualUpdate()
         {
-            if (Input.GetKeyDown(KeyCode.RightAlt))
-            {
-                _goalDatas.Clear();
-                _currentGoalData.IsActive = false;
-            }
             if (CanSmooth())
                 MoveToTarget();
         }
