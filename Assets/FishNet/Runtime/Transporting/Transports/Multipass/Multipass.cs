@@ -292,7 +292,6 @@ namespace FishNet.Transporting.Multipass
             return _transports[index].GetConnectionState(connectionId);
         }
 
-
         /// <summary>
         /// Handles a ConnectionStateArgs for the local client.
         /// </summary>
@@ -353,6 +352,11 @@ namespace FishNet.Transporting.Multipass
                 _availableIds.Enqueue(multipassId);
                 transportToMultipass.Remove(transportId);
                 _multipassToTransport.Remove(multipassId);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                //Remove packets held for connection from latency simulator.
+                base.NetworkManager.TransportManager.LatencySimulator.RemovePendingForConnection(multipassId);
+#endif
             }
 
             connectionStateArgs.ConnectionId = multipassId;

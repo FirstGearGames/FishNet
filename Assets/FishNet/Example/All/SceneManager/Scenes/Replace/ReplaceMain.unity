@@ -485,7 +485,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _moveObject: 0
   _moveAllObjects: 1
-  _replaceOption: 0
+  _replaceOption: 1
   _scenes:
   - ReplaceGlobal
   _connectionOnly: 0
@@ -1121,7 +1121,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _playerPrefab: {fileID: 611616139817875448, guid: bf5f023b4017a5e41a9815ec5745df3d,
     type: 3}
-  _addToDefaultScene: 1
+  _addToDefaultScene: 0
   Spawns: []
 --- !u!4 &7443408887680269496
 Transform:
@@ -1246,6 +1246,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d331f979d46e8e4a9fc90070c596d44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _useNetworkLod: 0
+  _levelOfDetailDistances: []
   _updateHostVisibility: 1
   _defaultConditions: []
 --- !u!224 &9208822351047973834

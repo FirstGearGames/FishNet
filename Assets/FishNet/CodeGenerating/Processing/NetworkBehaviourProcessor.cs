@@ -139,7 +139,7 @@ namespace FishNet.CodeGenerating.Processing
                 //25ms 
 
                 /* RPCs. */
-                modified |= base.GetClass<RpcProcessor>().Process(td, ref rpcCount);
+                modified |= base.GetClass<RpcProcessor>().ProcessLocal(td, ref rpcCount);
                 //30ms
                 /* //perf rpcCounts can be optimized by having different counts
                  * for target, observers, server, replicate, and reoncile rpcs. Since

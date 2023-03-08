@@ -2,6 +2,7 @@
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Serializing;
+using FishNet.Serializing.Helping;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
@@ -99,6 +100,56 @@ namespace FishNet.CodeGenerating.Processing
             for (int i = 0; i < methodDef.Body.Instructions.Count; i++)
                 CheckToModifyInstructions(extensionType, methodDef, ref i);
         }
+
+        /// <summary>
+        /// Creates delegates for custom comparers.
+        /// </summary>
+        internal bool CreateComparerDelegates(TypeDefinition typeDef)
+        { 
+            bool modified = false;
+            GeneralHelper gh = base.GetClass<GeneralHelper>();
+            /* Find all declared methods and register delegates to them.
+             * After they are all registered create any custom writers
+             * needed to complete the declared methods. It's important to
+             * make generated writers after so that a generated method
+             * isn't made for a type when the user has already made a declared one. */
+            foreach (MethodDefinition methodDef in typeDef.Methods)
+            {
+                if (gh.CodegenExclude(methodDef))
+                    continue;
+                if (!methodDef.HasCustomAttribute<CustomComparerAttribute>())
+                    continue;
+                //Validate return type.
+                if (methodDef.ReturnType.FullName != gh.GetTypeReference(typeof(bool)).FullName) 
+                {
+                    base.LogError($"Comparer method {methodDef.Name} in type {typeDef.FullName} must return bool.");
+                    continue; 
+                }
+                /* Make sure parameters are correct. */
+                //Invalid count.
+                if (methodDef.Parameters.Count != 2)
+                {
+                    base.LogError($"Comparer method {methodDef.Name} in type {typeDef.FullName} must have exactly two parameters, each of the same type which is being compared.");
+                    continue;
+                }
+                TypeReference p0Tr = methodDef.Parameters[0].ParameterType;
+                TypeReference p1Tr = methodDef.Parameters[0].ParameterType;
+                //Not the same types.
+                if (p0Tr != p1Tr)
+                {
+                    base.LogError($"Both parameters must be the same type in comparer method {methodDef.Name} in type {typeDef.FullName}.");
+                    continue;
+                }
+                
+                base.ImportReference(methodDef);
+                base.ImportReference(p0Tr);
+                gh.RegisterComparerDelegate(methodDef, p0Tr);
+                gh.CreateComparerDelegate(methodDef, p0Tr);
+            }
+
+            return modified;
+        }
+
 
         /// <summary>
         /// Checks if instructions need to be modified and does so.

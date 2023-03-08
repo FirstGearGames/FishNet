@@ -7,6 +7,17 @@ namespace FishNet.CodeGenerating.Extension
 
     internal static class TypeDefinitionExtensions
     {
+
+
+        /// <summary>
+        /// Returns if a TypeDefinition is nullable.
+        /// </summary>
+        public static bool IsNullable(this TypeDefinition td)
+        {
+            return (td.Name == typeof(System.Nullable<>).Name);
+        }
+
+
         public static MethodReference GetMethodReferenceInBase(this TypeDefinition td, CodegenSession session, string methodName)
         {
             MethodDefinition baseMd = td.GetMethodDefinitionInBase(session, methodName);

@@ -1,4 +1,5 @@
-﻿using FishNet.CodeGenerating.Helping.Extension;
+﻿using FishNet.CodeGenerating.Extension;
+using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Utility.Performance;
@@ -95,7 +96,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 return SerializerType.NetworkBehaviour;
             }
-            else if (objectTr.Name == typeof(System.Nullable<>).Name)
+            else if (objectTr.IsNullable(base.Session))
             {
                 GenericInstanceType git = objectTr as GenericInstanceType;
                 if (git == null || git.GenericArguments.Count != 1)

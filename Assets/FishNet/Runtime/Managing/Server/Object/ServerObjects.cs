@@ -444,7 +444,7 @@ namespace FishNet.Managing.Server
                 base.NetworkManager.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
                 return;
             }
-            if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes(true))
+            if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes(!predictedSpawn))
             {
                 base.NetworkManager.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
             }
@@ -776,7 +776,7 @@ namespace FishNet.Managing.Server
 
             if (predictedDespawn)
             {
-                base.NetworkManager.ClientManager.Objects.PredictedDepawn(networkObject);
+                base.NetworkManager.ClientManager.Objects.PredictedDespawn(networkObject);
             }
             else
             {

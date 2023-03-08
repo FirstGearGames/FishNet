@@ -699,6 +699,8 @@ namespace FishNet.Managing.Scened
             //True if replacing scenes with specified ones.
             ReplaceOption replaceScenes = sceneLoadData.ReplaceScenes;
 
+            //May be unset if on server, this is fine.
+            NetworkConnection localConnection = _networkManager.ClientManager.Connection;
             /* Immediately set new global scenes. If on client this is whatever
              * server passes in. This should be set even if scope type
              * is not global because clients might get a connection scene first.
@@ -800,28 +802,37 @@ namespace FishNet.Managing.Scened
 
             //Connection scenes handles prior to ConnectionScenes being modified.
             List<int> connectionScenesHandlesCached = new List<int>();
-            /* Resetting SceneConnections. */
-            /* If server and replacing scenes.
-             * It's important to run this AFTER moving MovedNetworkObjects
-             * so that they are no longer in the scenes they are leaving. Otherwise
-             * the scene condition would pick them up as still in the leaving scene. */
-            if (asServer && (replaceScenes != ReplaceOption.None))
+            //If replacing scenes.
+            if (replaceScenes != ReplaceOption.None)
             {
-
-                Scene[] sceneConnectionsKeys = SceneConnections.Keys.ToArray();
-                for (int i = 0; i < sceneConnectionsKeys.Length; i++)
-                    connectionScenesHandlesCached.Add(sceneConnectionsKeys[i].handle);
-
-                //If global then remove all connections from all scenes.
-                if (data.ScopeType == SceneScopeType.Global)
+                /* Resetting SceneConnections. */
+                /* If server and replacing scenes.
+                 * It's important to run this AFTER moving MovedNetworkObjects
+                 * so that they are no longer in the scenes they are leaving. Otherwise
+                 * the scene condition would pick them up as still in the leaving scene. */
+                if (asServer)
                 {
-                    foreach (Scene s in sceneConnectionsKeys)
-                        RemoveAllConnectionsFromScene(s);
+                    Scene[] sceneConnectionsKeys = SceneConnections.Keys.ToArray();
+                    for (int i = 0; i < sceneConnectionsKeys.Length; i++)
+                        connectionScenesHandlesCached.Add(sceneConnectionsKeys[i].handle);
+
+                    //If global then remove all connections from all scenes.
+                    if (data.ScopeType == SceneScopeType.Global)
+                    {
+                        foreach (Scene s in sceneConnectionsKeys)
+                            RemoveAllConnectionsFromScene(s);
+                    }
+                    //Connections.
+                    else if (data.ScopeType == SceneScopeType.Connections)
+                    {
+                        RemoveConnectionsFromNonGlobalScenes(data.Connections);
+                    }
                 }
-                //Connections.
-                else if (data.ScopeType == SceneScopeType.Connections)
+                //As client set scenes id cache to local connection scenes.
+                else
                 {
-                    RemoveConnectionsFromNonGlobalScenes(data.Connections);
+                    foreach (Scene s in _networkManager.ClientManager.Connection.Scenes)
+                        connectionScenesHandlesCached.Add(s.handle);
                 }
             }
 
@@ -834,7 +845,7 @@ namespace FishNet.Managing.Scened
             //Do not run if running as client, and server is active. This would have already run as server.
             if ((replaceScenes != ReplaceOption.None) && !asHost)
             {
-                //Unload all other scenes.
+                //See what scenes can be unloaded based on replace options.
                 for (int i = 0; i < UnitySceneManager.sceneCount; i++)
                 {
                     Scene s = UnitySceneManager.GetSceneAt(i);
@@ -861,7 +872,7 @@ namespace FishNet.Managing.Scened
 
                     bool inScenesCache = connectionScenesHandlesCached.Contains(s.handle);
                     HashSet<NetworkConnection> conns;
-                    bool inScenesCurrent = SceneConnections.TryGetValueIL2CPP(s, out conns);
+                    bool inScenesCurrent = SceneConnections.ContainsKey(s);
                     //If was in scenes previously but isnt now then no connections reside in the scene.
                     if (inScenesCache && !inScenesCurrent)
                     {
@@ -1157,6 +1168,16 @@ namespace FishNet.Managing.Scened
                     SceneLookupDatas = sceneLoadData.SceneLookupDatas
                 };
                 _clientManager.Broadcast(msg);
+
+                //Remove from old scenes.
+                foreach (Scene item in unloadableScenes)
+                {
+                    if (item.IsValid())
+                        localConnection.RemoveFromScene(item);
+                }
+                //Add local client to scenes.
+                foreach (Scene item in loadedScenes)
+                    localConnection.AddToScene(item);
             }
 
             InvokeOnSceneLoadEnd(data, requestedLoadSceneNames, loadedScenes, unloadedNames);
@@ -1391,6 +1412,16 @@ namespace FishNet.Managing.Scened
                                 data.Connections[i].Broadcast(msg, true);
                         }
                     }
+                }
+            }
+            else if (!asServer)
+            {
+                NetworkConnection localConnection = _networkManager.ClientManager.Connection;
+                //Remove from old scenes.
+                foreach (Scene item in unloadableScenes)
+                {
+                    if (item.IsValid())
+                        localConnection.RemoveFromScene(item);
                 }
             }
 

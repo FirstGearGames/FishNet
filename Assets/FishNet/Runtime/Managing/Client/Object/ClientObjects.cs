@@ -191,7 +191,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Sends a predicted despawn to the server.
         /// </summary>
-        internal void PredictedDepawn(NetworkObject networkObject)
+        internal void PredictedDespawn(NetworkObject networkObject)
         {
             PooledWriter writer = WriterPool.GetWriter();
             WriteDepawn(networkObject, writer);

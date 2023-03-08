@@ -1,15 +1,8 @@
-﻿/* If nested then the nested NB should be sent every tick.
- * This is because if that tick happens to drop then the
- * sent data is now wrong given the parent information is wrong.
- * Once EC is added in we won't have to send every time since
- * it will eventually correct itself. */
-
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Object;
-using FishNet.Object.Synchronizing;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
@@ -1251,8 +1244,9 @@ namespace FishNet.Component.Transforming
                         //Not high enough index to send to conn.
                         if (lod > lodIndex)
                             continue;
-
-                        TargetUpdateTransform(nc, _changedWriters[lodIndex].GetArraySegment(), channel);
+                        //No need for server to send to local client (clientHost).
+                        if (!nc.IsLocalClient)
+                            TargetUpdateTransform(nc, _changedWriters[lodIndex].GetArraySegment(), channel);
                     }
                 }
             }

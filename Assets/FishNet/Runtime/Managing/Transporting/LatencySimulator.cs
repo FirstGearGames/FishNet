@@ -1,4 +1,5 @@
-﻿using FishNet.Transporting;
+﻿using FishNet.Connection;
+using FishNet.Transporting;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
@@ -198,6 +199,29 @@ namespace FishNet.Managing.Transporting
             _toClientUnreliable.Clear();
         }
 
+        /// <summary>
+        /// Removes pending or held packets for a connection.
+        /// </summary>
+        /// <param name="conn">Connection to remove pending packets for.</param>
+        public void RemovePendingForConnection(int connectionId)
+        {
+            RemoveFromCollection(_toServerUnreliable);
+            RemoveFromCollection(_toServerUnreliable);
+            RemoveFromCollection(_toClientReliable);
+            RemoveFromCollection(_toClientUnreliable);
+
+            void RemoveFromCollection(List<Message> c)
+            {
+                for (int i = 0; i < c.Count; i++)
+                {
+                    if (c[i].ConnectionId == connectionId)
+                    {
+                        c.RemoveAt(i);
+                        i--;
+                    }
+                }
+            }
+        }
 
         #region Simulation
         /// <summary>

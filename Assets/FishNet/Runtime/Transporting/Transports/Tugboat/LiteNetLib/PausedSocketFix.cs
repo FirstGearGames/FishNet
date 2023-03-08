@@ -6,7 +6,6 @@ namespace LiteNetLib
 
     public class PausedSocketFix
     {
-#if UNITY_32 || UNITY_64 || UNITY_EDITOR
         public bool ApplicationFocused { get; private set; }
 
         private NetManager _netManager;
@@ -68,7 +67,7 @@ namespace LiteNetLib
             }
         }
 
-#endif
+
     }
 
 }

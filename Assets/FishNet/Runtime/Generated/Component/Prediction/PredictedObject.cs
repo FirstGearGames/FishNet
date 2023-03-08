@@ -531,7 +531,6 @@ namespace FishNet.Component.Prediction
             }
         }
 
-        private Vector3 _startPos;
         /// <summary>
         /// Configures RigidbodyPauser with settings.
         /// </summary>

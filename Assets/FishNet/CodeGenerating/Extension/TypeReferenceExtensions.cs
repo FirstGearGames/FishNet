@@ -12,6 +12,15 @@ namespace FishNet.CodeGenerating.Extension
     {
 
         /// <summary>
+        /// Returns if a TypeReference is nullable.
+        /// </summary>
+        public static bool IsNullable(this TypeReference tr, CodegenSession session)
+        {
+            TypeDefinition td = tr.CachedResolve(session);
+            return td.IsNullable();
+        }
+
+        /// <summary>
         /// Returns the fullname of a TypeReference without <>.
         /// </summary>
         /// <param name="tr"></param>

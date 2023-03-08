@@ -29,12 +29,9 @@ namespace FishNet.Example.CustomSyncObject
             //Every so often increase the age property on structy using StructySync, my custom sync type.
             if (base.IsServer && Time.frameCount % 200 == 0)
             {
-                /* Custom code inside StructySync to return
-                 * current value. You can expose this, or don't, however
-                 * you like. */
-                Structy s = _structy.GetValue(true);
-                //Increase age.
-                _structy.SetAge((ushort)(s.Age + 1));
+                //Increase the age and set that values have changed.
+                _structy.Value.Age += 1;
+                _structy.ValuesChanged();
             }
         }
 

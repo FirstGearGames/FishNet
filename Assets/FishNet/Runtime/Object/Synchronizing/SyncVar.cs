@@ -151,7 +151,7 @@ namespace FishNet.Object.Synchronizing
                 }
                 else
                 {
-                    if (Comparers.EqualityCompare<T>(this._value, nextValue))
+                    if (Comparers.EqualityCompare<T>(_value, nextValue))
                         return;
 
                     T prev = _value;
@@ -169,6 +169,9 @@ namespace FishNet.Object.Synchronizing
                  * to update values locally while occasionally
                  * letting the syncvar adjust their side. */
                 T prev = _previousClientValue;
+                if (Comparers.EqualityCompare<T>(prev, nextValue))
+                    return;
+
                 /* If also server do not update value.
                  * Server side has say of the current value. */
                 if (!base.NetworkManager.IsServer)

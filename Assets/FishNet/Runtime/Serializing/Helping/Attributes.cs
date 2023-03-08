@@ -6,6 +6,10 @@ using System.Runtime.CompilerServices;
 namespace FishNet.Serializing.Helping
 {
     /// <summary>
+    /// Method is a comparer for a value type.
+    /// </summary>
+    public class CustomComparerAttribute : Attribute { }
+    /// <summary>
     /// Method or type will be made public by codegen.
     /// </summary>
     internal class CodegenMakePublicAttribute : Attribute { }

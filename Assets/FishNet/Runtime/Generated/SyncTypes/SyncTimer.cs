@@ -111,6 +111,7 @@ namespace FishNet.Object.Synchronizing
             if (!base.CanNetworkSetValues(true))
                 return;
 
+            Paused = true;
             SyncTimerOperation op = (sendRemaining) ? SyncTimerOperation.PauseUpdated : SyncTimerOperation.Pause;
             AddOperation(op, -1f, -1f);
         }
@@ -127,6 +128,7 @@ namespace FishNet.Object.Synchronizing
             if (!base.CanNetworkSetValues(true))
                 return;
 
+            Paused = false;
             AddOperation(SyncTimerOperation.Unpause, -1f, -1f);
         }
 
@@ -373,6 +375,8 @@ namespace FishNet.Object.Synchronizing
             if (Paused)
                 return;
 
+            if (delta < 0)
+                delta *= -1f;
             float prev = Remaining;
             Remaining -= delta;
             //Still time left.
