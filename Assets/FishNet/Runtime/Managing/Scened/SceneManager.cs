@@ -502,9 +502,10 @@ namespace FishNet.Managing.Scened
         /// Invokes that a scene unload has ended. Only called after a valid scene has unloaded.
         /// </summary>
         /// <param name="sqd"></param>
-        private void InvokeOnSceneUnloadEnd(UnloadQueueData sqd, List<Scene> unloadedScenes)
+        private void InvokeOnSceneUnloadEnd(UnloadQueueData sqd, List<Scene> unloadedScenes, List<UnloadedScene> newUnloadedScenes)
         {
-            OnUnloadEnd?.Invoke(new SceneUnloadEndEventArgs(sqd, unloadedScenes));
+            SceneUnloadEndEventArgs args = new SceneUnloadEndEventArgs(sqd, unloadedScenes, newUnloadedScenes);
+            OnUnloadEnd?.Invoke(args);
         }
         /// <summary>
         /// Invokes when completion percentage changes while unloading or unloading a scene. Value is between 0f and 1f, while 1f is 100% done.
@@ -1336,6 +1337,10 @@ namespace FishNet.Managing.Scened
             /* This will contain all scenes which can be unloaded.
              * The collection will be modified through various checks. */
             List<Scene> unloadableScenes = scenes.ToList();
+            /* Unloaded scenes manually created to overcome
+             * the empty names in Scene structs after Unity unloads
+             * a scene. */
+            List<UnloadedScene> unloadedScenes = new List<UnloadedScene>();
             /* If asServer and KeepUnused then clear all unloadables.
              * The clients will still unload the scenes. */
             if ((asServer || asClientHost) && sceneUnloadData.Options.Mode == UnloadOptions.ServerUnloadMode.KeepUnused)
@@ -1359,6 +1364,7 @@ namespace FishNet.Managing.Scened
                 //Begin unloading.
                 foreach (Scene s in unloadableScenes)
                 {
+                    unloadedScenes.Add(new UnloadedScene(s));
                     MoveClientHostObjects(s, asServer);
                     /* Remove from manualUnloadedScenes.
                      * Scene may not be in this collection
@@ -1425,7 +1431,7 @@ namespace FishNet.Managing.Scened
                 }
             }
 
-            InvokeOnSceneUnloadEnd(data, unloadableScenes);
+            InvokeOnSceneUnloadEnd(data, unloadableScenes, unloadedScenes);
         }
 
 

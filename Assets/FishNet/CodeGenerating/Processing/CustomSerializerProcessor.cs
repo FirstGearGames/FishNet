@@ -105,7 +105,7 @@ namespace FishNet.CodeGenerating.Processing
         /// Creates delegates for custom comparers.
         /// </summary>
         internal bool CreateComparerDelegates(TypeDefinition typeDef)
-        { 
+        {
             bool modified = false;
             GeneralHelper gh = base.GetClass<GeneralHelper>();
             /* Find all declared methods and register delegates to them.
@@ -120,10 +120,10 @@ namespace FishNet.CodeGenerating.Processing
                 if (!methodDef.HasCustomAttribute<CustomComparerAttribute>())
                     continue;
                 //Validate return type.
-                if (methodDef.ReturnType.FullName != gh.GetTypeReference(typeof(bool)).FullName) 
+                if (methodDef.ReturnType.FullName != gh.GetTypeReference(typeof(bool)).FullName)
                 {
                     base.LogError($"Comparer method {methodDef.Name} in type {typeDef.FullName} must return bool.");
-                    continue; 
+                    continue;
                 }
                 /* Make sure parameters are correct. */
                 //Invalid count.
@@ -140,7 +140,7 @@ namespace FishNet.CodeGenerating.Processing
                     base.LogError($"Both parameters must be the same type in comparer method {methodDef.Name} in type {typeDef.FullName}.");
                     continue;
                 }
-                
+
                 base.ImportReference(methodDef);
                 base.ImportReference(p0Tr);
                 gh.RegisterComparerDelegate(methodDef, p0Tr);
@@ -220,12 +220,8 @@ namespace FishNet.CodeGenerating.Processing
 
 
         /// <summary>
-        /// Creates a reader or writer for parameterType.
+        /// Creates a reader or writer for parameterType if needed. Otherwise calls existing reader.
         /// </summary>
-        /// <param name="extensionType"></param>
-        /// <param name="methodDef"></param>
-        /// <param name="instructionIndex"></param>
-        /// <param name="parameterType"></param>
         private void CreateReaderOrWriter(ExtensionType extensionType, MethodDefinition methodDef, ref int instructionIndex, TypeReference parameterType)
         {
             if (!parameterType.IsGenericParameter && parameterType.CanBeResolved(base.Session))
@@ -252,9 +248,10 @@ namespace FishNet.CodeGenerating.Processing
                 //If a created method already exist nothing further is required.
                 if (createdMethodRef != null)
                 {
+                    TryInsertAutoPack(ref instructionIndex);
                     //Replace call to generic with already made serializer.
                     Instruction newInstruction = processor.Create(OpCodes.Call, createdMethodRef);
-                    methodDef.Body.Instructions[instructionIndex] = newInstruction;
+                    methodDef.Body.Instructions[instructionIndex] = newInstruction;                    
                     return;
                 }
                 else
@@ -267,22 +264,39 @@ namespace FishNet.CodeGenerating.Processing
                 //If method was created.
                 if (createdMethodRef != null)
                 {
-                    /* If an autopack type then we have to inject the
-                     * autopack above the new instruction. */
-                    if (base.GetClass<WriterProcessor>().IsAutoPackedType(parameterType))
-                    {
-                        AutoPackType packType = base.GetClass<GeneralHelper>().GetDefaultAutoPackType(parameterType);
-                        Instruction autoPack = processor.Create(OpCodes.Ldc_I4, (int)packType);
-                        methodDef.Body.Instructions.Insert(instructionIndex, autoPack);
-                        instructionIndex++;
-                    }
+                    TryInsertAutoPack(ref instructionIndex);
+                    //Set new instruction.
                     Instruction newInstruction = processor.Create(OpCodes.Call, createdMethodRef);
                     methodDef.Body.Instructions[instructionIndex] = newInstruction;
                 }
             }
+
+            void TryInsertAutoPack(ref int insertIndex)
+            {
+                if (IsAutoPackMethod(parameterType, extensionType))
+                {
+                    ILProcessor processor = methodDef.Body.GetILProcessor();
+                    AutoPackType packType = base.GetClass<GeneralHelper>().GetDefaultAutoPackType(parameterType);
+                    Instruction autoPack = processor.Create(OpCodes.Ldc_I4, (int)packType);
+                    methodDef.Body.Instructions.Insert(insertIndex, autoPack);
+                    insertIndex++;
+                }
+            }
         }
 
+        /// <summary>
+        /// Returns if a typeRef serializer requires or uses autopacktype.
+        /// </summary>
+        private bool IsAutoPackMethod(TypeReference typeRef, ExtensionType extensionType)
+        {
+            if (extensionType == ExtensionType.Write)
+                return base.GetClass<WriterProcessor>().IsAutoPackedType(typeRef);
+            else if (extensionType == ExtensionType.Read)
+                return base.GetClass<ReaderProcessor>().IsAutoPackedType(typeRef);
+            else
+                return false;
 
+        }
         /// <summary>
         /// Returns the RPC attribute on a method, if one exist. Otherwise returns null.
         /// </summary>

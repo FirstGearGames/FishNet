@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Scened
@@ -31,37 +32,41 @@ namespace FishNet.Managing.Scened
         public readonly UnloadQueueData QueueData;
         /// <summary>
         /// Handles of scenes which were successfully unloaded.
-        /// This collection may be populated with empty scenes depending on engine version.
         /// </summary>
-        public int[] UnloadedSceneHandles
-        {
-            get
-            {
-                if (_unloadedSceneHandlesCache == null)
-                {
-                    _unloadedSceneHandlesCache = new int[UnloadedScenes.Count];
-                    for (int i = 0; i < _unloadedSceneHandlesCache.Length; i++)
-                        _unloadedSceneHandlesCache[i] = UnloadedScenes[i].handle;
-                }
+        [Obsolete("Use UnloadedScenesV2")]
+        public int[] UnloadedSceneHandles;
+        /// <summary>
+        /// Names of scenes which were successfully unloaded.
+        /// </summary>
+        [Obsolete("Use UnloadedScenesV2")]
+        public string[] UnloadedSceneNames;
 
-                return _unloadedSceneHandlesCache;
-            }
-        }
         /// <summary>
         /// Scenes which were successfully unloaded.
         /// This collection may be populated with empty scenes depending on engine version.
         /// </summary>
         public List<Scene> UnloadedScenes;
         /// <summary>
-        /// Cache result of UnloadedSceneHandles.
+        /// Unloaded scenes with names and handles cached.
+        /// This will be renamed as UnloadedScenes in Fish-Networking version 4.
         /// </summary>
-        private int[] _unloadedSceneHandlesCache;
+        public List<UnloadedScene> UnloadedScenesV2;
 
-        internal SceneUnloadEndEventArgs(UnloadQueueData sqd, List<Scene> unloadedScenes)
+        internal SceneUnloadEndEventArgs(UnloadQueueData sqd, List<Scene> unloadedScenes, List<UnloadedScene> newUnloadedScenes)
         {
             QueueData = sqd;
             UnloadedScenes = unloadedScenes;
-            _unloadedSceneHandlesCache = null;
+            UnloadedScenesV2 = newUnloadedScenes;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            UnloadedSceneNames = new string[newUnloadedScenes.Count];
+            UnloadedSceneHandles = new int[newUnloadedScenes.Count];            
+            for (int i = 0; i < newUnloadedScenes.Count; i++)
+            {
+                UnloadedSceneNames[i] = newUnloadedScenes[i].Name;
+                UnloadedSceneHandles[i] = newUnloadedScenes[i].Handle;
+            }
+#pragma warning restore CS0618
         }
     }
 

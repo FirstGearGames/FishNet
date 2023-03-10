@@ -584,24 +584,31 @@ namespace FishNet.Managing.Server
             //Parenting predicted spawns is not supported yet.
             t.SetParent(null, true);
             base.GetTransformProperties(localPosition, localRotation, localScale, t, out Vector3 pos, out Quaternion rot, out Vector3 scale);
-            t.SetLocalPositionRotationAndScale(pos, rot, scale);            
+            t.SetLocalPositionRotationAndScale(pos, rot, scale);
             nob.SetIsGlobal(isGlobal);
 
             //Initialize for prediction.
             nob.InitializePredictedObject_Server(base.NetworkManager, conn);
 
-            ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
-            PooledReader syncTypeReader = ReaderPool.GetReader(syncValues, base.NetworkManager);
-            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+            /* Only read sync types if allowed for the object.
+             * If the client did happen to send synctypes while not allowed
+             * this will create a parse error on the server,
+             * resulting in the client being kicked. */
+            if (nob.AllowPredictedSyncTypes)
             {
-                //SyncVars.
-                int length = syncTypeReader.ReadInt32();
-                nb.OnSyncType(syncTypeReader, length, false, true);
-                //SyncObjects
-                length = syncTypeReader.ReadInt32();
-                nb.OnSyncType(syncTypeReader, length, true, true);
+                ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
+                PooledReader syncTypeReader = ReaderPool.GetReader(syncValues, base.NetworkManager);
+                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                {
+                    //SyncVars.
+                    int length = syncTypeReader.ReadInt32();
+                    nb.OnSyncType(syncTypeReader, length, false, true);
+                    //SyncObjects
+                    length = syncTypeReader.ReadInt32();
+                    nb.OnSyncType(syncTypeReader, length, true, true);
+                }
+                syncTypeReader.Dispose();
             }
-            syncTypeReader.Dispose();
 
             SpawnWithoutChecks(nob, owner, objectId);
 
@@ -697,7 +704,7 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         internal void AddToPending(NetworkObject nob)
         {
-            _pendingDestroy[nob.ObjectId] = nob;            
+            _pendingDestroy[nob.ObjectId] = nob;
         }
         /// <summary>
         /// Tries to removes objectId from PendingDestroy and returns if successful.

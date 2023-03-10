@@ -92,18 +92,6 @@ namespace FishNet.Managing.Object
                 RemoveFromSceneObjects(nob);
         }
 
-        ///// <summary>
-        ///// Removes a NetworkedObject from spawned.
-        ///// </summary>
-        ///// <param name="nob"></param>
-        //private void RemoveFromSpawned(int objectId, bool unexpectedlyDestroyed, ulong sceneId)
-        //{
-        //    Spawned.Remove(objectId);
-        //    //Do the same with SceneObjects.
-        //    if (unexpectedlyDestroyed && (sceneId != 0))
-        //        RemoveFromSceneObjects(sceneId);
-        //}
-
         /// <summary>
         /// Despawns a NetworkObject.
         /// </summary>
@@ -284,7 +272,7 @@ namespace FishNet.Managing.Object
         /// <param name="nob"></param>
         internal virtual void DespawnWithoutSynchronization(NetworkObject nob, bool asServer, DespawnType despawnType, bool removeFromSpawned)
         {
-            //Null can occur when running as host and server already despawns such as wehen stopping.
+            //Null can occur when running as host and server already despawns such as when stopping.
             if (nob == null)
                 return;
 
@@ -292,7 +280,7 @@ namespace FishNet.Managing.Object
             /* Only run if asServer, or not 
             * asServer and server isn't running. This
             * prevents objects from affecting the server
-            * as host* when being modified client side. */
+            * as host when being modified client side. */
             if (asServer || (!asServer && !NetworkManager.IsServer))
             {
                 if (removeFromSpawned)

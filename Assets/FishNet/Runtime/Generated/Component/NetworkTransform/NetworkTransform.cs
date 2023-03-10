@@ -1413,7 +1413,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Snaps transform properties using snapping settings.
         /// </summary>
-        private void SnapProperties(TransformData transformData)
+        private void SnapProperties(TransformData transformData, bool force = false)
         {
             //Already snapped.
             if (transformData.Snapped)
@@ -1426,9 +1426,9 @@ namespace FishNet.Component.Transforming
             if (_synchronizePosition)
             {
                 Vector3 position;
-                position.x = (_positionSnapping.X) ? transformData.Position.x : t.localPosition.x;
-                position.y = (_positionSnapping.Y) ? transformData.Position.y : t.localPosition.y;
-                position.z = (_positionSnapping.Z) ? transformData.Position.z : t.localPosition.z;
+                position.x = (force || _positionSnapping.X) ? transformData.Position.x : t.localPosition.x;
+                position.y = (force || _positionSnapping.Y) ? transformData.Position.y : t.localPosition.y;
+                position.z = (force || _positionSnapping.Z) ? transformData.Position.z : t.localPosition.z;
                 t.localPosition = position;
             }
 
@@ -1437,9 +1437,9 @@ namespace FishNet.Component.Transforming
             {
                 Vector3 eulers;
                 Vector3 goalEulers = transformData.Rotation.eulerAngles;
-                eulers.x = (_rotationSnapping.X) ? goalEulers.x : t.localEulerAngles.x;
-                eulers.y = (_rotationSnapping.Y) ? goalEulers.y : t.localEulerAngles.y;
-                eulers.z = (_rotationSnapping.Z) ? goalEulers.z : t.localEulerAngles.z;
+                eulers.x = (force || _rotationSnapping.X) ? goalEulers.x : t.localEulerAngles.x;
+                eulers.y = (force || _rotationSnapping.Y) ? goalEulers.y : t.localEulerAngles.y;
+                eulers.z = (force || _rotationSnapping.Z) ? goalEulers.z : t.localEulerAngles.z;
                 t.localEulerAngles = eulers;
             }
 
@@ -1447,9 +1447,9 @@ namespace FishNet.Component.Transforming
             if (_synchronizeScale)
             {
                 Vector3 scale;
-                scale.x = (_scaleSnapping.X) ? transformData.Scale.x : t.localScale.x;
-                scale.y = (_scaleSnapping.Y) ? transformData.Scale.y : t.localScale.y;
-                scale.z = (_scaleSnapping.Z) ? transformData.Scale.z : t.localScale.z;
+                scale.x = (force || _scaleSnapping.X) ? transformData.Scale.x : t.localScale.x;
+                scale.y = (force || _scaleSnapping.Y) ? transformData.Scale.y : t.localScale.y;
+                scale.z = (force || _scaleSnapping.Z) ? transformData.Scale.z : t.localScale.z;
                 t.localScale = scale;
             }
         }
@@ -1805,7 +1805,7 @@ namespace FishNet.Component.Transforming
                 //Snap to the next data to fix any smoothing timings.
                 SetCurrentGoalData(_goalDataQueue.Dequeue());
                 SetInstantRates(_currentGoalData.Rates);
-                SnapProperties(_currentGoalData.Transforms);
+                SnapProperties(_currentGoalData.Transforms, true);
             }
         }
 

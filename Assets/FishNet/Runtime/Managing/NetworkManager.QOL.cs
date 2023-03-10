@@ -166,6 +166,15 @@ namespace FishNet.Managing
             //Do not remove pending to prevent garbage collection later on list recreation.
         }
         /// <summary>
+        /// Returns if an instance exists for type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public bool HasInstance<T>() where T : UnityComponent
+        {
+            return (GetInstance<T>(false) != null);
+        }
+        /// <summary>
         /// Returns class of type if found within CodegenBase classes.
         /// </summary>
         /// <typeparam name="T"></typeparam>

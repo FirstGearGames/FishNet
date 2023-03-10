@@ -9,23 +9,6 @@ namespace FishNet.Component.Ownership
     /// </summary>
     public class PredictedSpawn : NetworkBehaviour
     {
-        //#region Types.
-        ///// <summary>
-        ///// What to do if the server does not respond to this predicted spawning.
-        ///// </summary>
-        //private enum NoResponseHandlingType
-        //{
-        //    /// <summary>
-        //    /// Destroy this object.
-        //    /// </summary>
-        //    Destroy = 0,
-        //    /// <summary>
-        //    /// Keep this object.
-        //    /// </summary>
-        //    Keep = 1,
-        //}
-        //#endregion
-
         #region Serialized.
         /// <summary>
         /// True to allow clients to predicted spawn this object.
@@ -51,18 +34,21 @@ namespace FishNet.Component.Ownership
         [Tooltip("True to allow clients to predicted despawn this object.")]
         [SerializeField]
         private bool _allowDespawning = true;
-        ///// <summary>
-        ///// How to manage this object on client when the server does not respond to the predicted spawning.
-        ///// </summary>
-        //[Tooltip("How to manage this object on client when the server does not respond to the predicted spawning.")]
-        //[SerializeField]
-        //private NoResponseHandlingType _noResponseHandling = NoResponseHandlingType.Destroy;
-        ///// <summary>
-        ///// Amount of time to wait for a response before NoResponseHandling is used.
-        ///// </summary>
-        //[Tooltip("Amount of time to wait for a response before NoResponseHandling is used.")]
-        //[SerializeField]
-        //private float _responseWait = 1f;
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("True to allow clients to predicted set syncTypes prior to spawning the item. Set values will be applied on the server and sent to other clients.")]
+        [SerializeField]
+        private bool _allowSyncTypes = true;
+        /// <summary>
+        /// True to allow clients to predicted set syncTypes prior to spawning the item. Set values will be applied on the server and sent to other clients.
+        /// </summary>
+        public bool GetAllowSyncTypes() => _allowSyncTypes;
+        /// <summary>
+        /// Sets to allow syncTypes. This must be set on client and server.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetAllowSyncTypes(bool value) => _allowSyncTypes = value;
         #endregion
 
         /// <summary>

@@ -172,19 +172,23 @@ namespace FishNet.Managing.Client
 
             writer.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
 
-            PooledWriter tempWriter = WriterPool.GetWriter();
-            WriteSyncTypes(writer, tempWriter, SyncTypeWriteType.All);
-            void WriteSyncTypes(Writer finalWriter, PooledWriter tWriter, SyncTypeWriteType writeType)
+            //If allowed to write synctypes.
+            if (nob.AllowPredictedSyncTypes)
             {
-                tWriter.Reset();
-                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                    nb.WriteSyncTypesForSpawn(tWriter, writeType);
-                finalWriter.WriteBytesAndSize(tWriter.GetBuffer(), 0, tWriter.Length);
+                PooledWriter tempWriter = WriterPool.GetWriter();
+                WriteSyncTypes(writer, tempWriter, SyncTypeWriteType.All);
+                void WriteSyncTypes(Writer finalWriter, PooledWriter tWriter, SyncTypeWriteType writeType)
+                {
+                    tWriter.Reset();
+                    foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                        nb.WriteSyncTypesForSpawn(tWriter, writeType);
+                    finalWriter.WriteBytesAndSize(tWriter.GetBuffer(), 0, tWriter.Length);
+                }
+                tempWriter.Dispose();
             }
 
             //Dispose of writers created in this method.
             headerWriter.Dispose();
-            tempWriter.Dispose();
         }
 
 
