@@ -4,7 +4,6 @@ using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Object;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Component.Prediction
@@ -542,7 +541,7 @@ namespace FishNet.Component.Prediction
             _rigidbodyPauser = new RigidbodyPauser();
             if (_predictionType == PredictionType.Rigidbody)
             {
-                _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
+                _rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;// .Continuous;
                 _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody, true, _graphicalObject);
             }
             else

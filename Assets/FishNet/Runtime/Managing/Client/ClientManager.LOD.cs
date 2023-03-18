@@ -71,7 +71,7 @@ namespace FishNet.Managing.Client
              * Each send is going to be approximately 3 bytes
              * but sometimes can be 4. Calculate based off the maximum
              * possible bytes. */
-            int mtu = NetworkManager.TransportManager.GetMTU((byte)Channel.Reliable);
+            //int mtu = NetworkManager.TransportManager.GetMTU((byte)Channel.Reliable);
             const int estimatedMaximumIterations = ( 400 / 4);
             /* Aim to process all objects over at most 10 seconds.
              * To reduce the number of packets sent objects are
@@ -110,8 +110,15 @@ namespace FishNet.Managing.Client
                 for (int i = 0; i < iterations; i++)
                 {
                     NetworkObject nob = localClientSpawned[nobIndex];
+                    //Somehow went null. Can occur perhaps if client destroys objects between ticks maybe.
+                    if (nob == null)
+                    {
+                        localClientSpawned.RemoveAt(nobIndex);
+                        i--;
+                        continue;
+                    }
                     //Only check objects not owned by the local client.
-                    if (!nob.IsOwner)
+                    if (!nob.IsOwner && !nob.IsDeinitializing)
                     {
                         Vector3 nobPosition = nob.transform.position;
                         float closestDistance = float.MaxValue;

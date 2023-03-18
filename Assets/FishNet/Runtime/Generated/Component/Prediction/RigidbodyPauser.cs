@@ -32,14 +32,19 @@ namespace FishNet.Component.Prediction
             /// Scene of this rigidbody when being set kinematic.
             /// </summary>
             public Scene SimulatedScene;
+            /// <summary>
+            /// True if the rigidbody was kinematic prior to being paused.
+            /// </summary>
+            public bool IsKinematic;
 
             public RigidbodyData(Rigidbody rb)
             {
                 Rigidbody = rb;
-                Rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
+                Rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;//.Continuous;
                 Velocity = Vector3.zero;
                 AngularVelocity = Vector3.zero;
                 SimulatedScene = rb.gameObject.scene;
+                IsKinematic = rb.isKinematic;
             }
 
             public void Update(Rigidbody rb)
@@ -47,6 +52,7 @@ namespace FishNet.Component.Prediction
                 Velocity = rb.velocity;
                 AngularVelocity = rb.angularVelocity;
                 SimulatedScene = rb.gameObject.scene;
+                IsKinematic = rb.isKinematic;
             }
         }
         /// <summary>
@@ -236,6 +242,7 @@ namespace FishNet.Component.Prediction
 
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;
+                    rb.isKinematic = rbData.IsKinematic;
                     SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, rbData.SimulatedScene);
                     return true;
                 }

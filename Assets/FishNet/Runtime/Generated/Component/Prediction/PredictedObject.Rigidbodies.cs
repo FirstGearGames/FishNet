@@ -66,11 +66,11 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// How often in ticks to move towards targets when not collisionEntered is true.
         /// </summary>
-        private uint _collisionChangeDivisor;
+        private uint _collisionChangeDivisor = 2;
         /// <summary>
         /// How often in ticks to move towards targets when not collisionEntered is false.
         /// </summary>
-        private uint _changeDivisor;
+        private uint _changeDivisor = 5;
         /// <summary>
         /// Current number of ticks to ignore when replaying.
         /// </summary>
@@ -182,6 +182,9 @@ namespace FishNet.Component.Prediction
             /* Can check either one. They may not be initialized yet if host. */
             if (_rigidbodyStates.Initialized)
             {
+                if (_localTick == 0)
+                    _localTick = base.TimeManager.LocalTick;
+
                 if (!is2D)
                     _rigidbodyStates.Add(new RigidbodyState(_rigidbody, _localTick));
                 else
@@ -302,7 +305,10 @@ namespace FishNet.Component.Prediction
             {
                 int index = GetCachedStateIndex(tick, false);
                 if (index != -1)
-                    _rigidbodyStates[index] = new RigidbodyState(_rigidbody, tick);
+                {
+                    bool prevKinematic = _rigidbodyStates[index].IsKinematic;
+                    _rigidbodyStates[index] = new RigidbodyState(_rigidbody, prevKinematic, tick);
+                }
             }
             if (_predictionType == PredictionType.Rigidbody2D)
             {
@@ -574,6 +580,21 @@ namespace FishNet.Component.Prediction
                 count = _rigidbodyStates.Count;
                 if (count == 0)
                     return -1;
+
+                //for (int i = 0; i < count; i++)
+                //{
+                //    if (_rigidbodyStates[i].LocalTick == tick)
+                //    {
+                //        return i;
+                //    }
+                //    else if (_rigidbodyStates[i].LocalTick == (tick + 1))
+                //    {
+                //        if (i > 0)
+                //            return (i - 1);
+                //    }
+                //}
+                //return -1;
+
                 firstTick = _rigidbodyStates[0].LocalTick;
             }
             //2d.
@@ -730,7 +751,6 @@ namespace FishNet.Component.Prediction
             return false;
         }
 
-
         /// <summary>
         /// Returns if prediction can be used on this rigidbody.
         /// </summary>
@@ -739,7 +759,7 @@ namespace FishNet.Component.Prediction
         {
             if (!IsRigidbodyPrediction)
                 return false;
-            if (base.IsServer || base.IsOwner)
+            if (base.IsServer || IsPredictingOwner())
                 return false;
 
             return true;
@@ -793,6 +813,8 @@ namespace FishNet.Component.Prediction
             if (_localClientCollidedObjects.Contains(collision.gameObject))
                 _collisionStayedTick = base.TimeManager.LocalTick;
         }
+        private bool _gotBack;
+        private bool _gotb2;
 
         /// <summary>
         /// Resets the rigidbody to a state.
@@ -803,7 +825,7 @@ namespace FishNet.Component.Prediction
             _rigidbody.transform.position = state.Position;
             _rigidbody.transform.rotation = state.Rotation;
             bool isKinematic = state.IsKinematic;
-            _rigidbody.isKinematic = isKinematic;
+            _rigidbody.isKinematic = state.IsKinematic;
             if (!isKinematic)
             {
                 _rigidbody.velocity = state.Velocity;
@@ -850,7 +872,6 @@ namespace FishNet.Component.Prediction
             //No need to send to owner if they implement prediction methods.
             if (_isPredictingOwner(conn))
                 return;
-
             reconcileTick = (conn == base.NetworkObject.PredictedSpawner) ? conn.LastPacketTick : reconcileTick;
             RigidbodyState state = new RigidbodyState(_rigidbody, reconcileTick);
             TargetSendRigidbodyState(conn, state, applyImmediately);

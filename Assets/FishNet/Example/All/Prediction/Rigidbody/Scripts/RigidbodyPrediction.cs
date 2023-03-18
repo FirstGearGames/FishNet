@@ -143,10 +143,10 @@ namespace FishNet.Example.Prediction.Rigidbodies
                 {
                     _spawnBullet = true;
                 }
-                else if (Input.GetKeyDown(KeyCode.LeftAlt))
-                {
-                    _despawnBullet = true;
-                }
+                //else if (Input.GetKeyDown(KeyCode.LeftAlt))
+                //{
+                //    _despawnBullet = true;
+                //}
             }
         }
 
