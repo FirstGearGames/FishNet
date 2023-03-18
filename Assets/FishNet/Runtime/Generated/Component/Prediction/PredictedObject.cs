@@ -4,7 +4,6 @@ using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Object;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Component.Prediction

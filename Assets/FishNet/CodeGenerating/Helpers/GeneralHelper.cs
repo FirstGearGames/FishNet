@@ -1105,6 +1105,11 @@ namespace FishNet.CodeGenerating.Helping
                     base.LogError($"Equality comparers cannot be automatically generated for generic types. Create a custom comparer for {dataTr.FullName}.");
                     return null;
                 }
+                if (dataTr.IsArray)
+                {
+                    base.LogError($"Equality comparers cannot be automatically generated for collections. Create a custom comparer for {dataTr.FullName}.");
+                    return null;
+                }
 
                 RegisterComparerDelegate(comparerMd, dataTr);
                 CreateComparerMethod();
@@ -1404,3 +1409,4 @@ namespace FishNet.CodeGenerating.Helping
         #endregion
     }
 }
+

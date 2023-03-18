@@ -39,7 +39,7 @@ namespace FishNet.Demo.NetworkLod
             _start = transform.position;
             RandomizeGoal();
 
-            if (_renderer != null && base.Owner.IsLocalClient)
+            if (_renderer != null && base.Owner.IsActive)
                 _renderer.material.color = Color.green;
         }
 

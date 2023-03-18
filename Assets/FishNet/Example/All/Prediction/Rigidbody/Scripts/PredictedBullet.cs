@@ -18,11 +18,10 @@ public class PredictedBullet : NetworkBehaviour
          * before the object is spawned it's gauranteed clients will
          * get the value in the spawn packet; same practice is used here. */
         if (!base.IsSpawned)
-            SetVeocity(value);
+            SetVelocity(value);
 
         _startingForce = value;
     }
-
 
     //Simple delay destroy so object does not exist forever.
     public override void OnStartServer()
@@ -37,13 +36,13 @@ public class PredictedBullet : NetworkBehaviour
     /// </summary>
     private void _startingForce_OnChange(Vector3 prev, Vector3 next, bool asServer)
     {
-        SetVeocity(next);
+        SetVelocity(next);
     }
 
     /// <summary>
     /// Sets velocity of the rigidbody.
     /// </summary>
-    public void SetVeocity(Vector3 value)
+    public void SetVelocity(Vector3 value)
     {
         Rigidbody rb = GetComponent<Rigidbody>();
         rb.velocity = value;
@@ -57,4 +56,5 @@ public class PredictedBullet : NetworkBehaviour
         yield return new WaitForSeconds(time);
         base.Despawn();
     }
+
 }

@@ -77,8 +77,7 @@ MonoBehaviour:
   _rigidbody2d: {fileID: 0}
   _spectatorSmoothPosition: 1
   _spectatorSmoothRotation: 1
-  _spectatorInterpolation: 4
-  _overflowMultiplier: 0.05
+  _spectatorSmoothingType: 2
   _maintainedVelocity: 0
   _resendType: 0
   _resendInterval: 30
@@ -96,7 +95,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 3
+  <PrefabId>k__BackingField: 5
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 2281302723
   <SceneId>k__BackingField: 0
@@ -131,7 +130,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &-6246116784124330627
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -165,6 +164,7 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 3624261834906416601}
   _allowSpawning: 1
   _allowDespawning: 1
+  _allowSyncTypes: 1
 --- !u!1 &3624261835462115341
 GameObject:
   m_ObjectHideFlags: 0

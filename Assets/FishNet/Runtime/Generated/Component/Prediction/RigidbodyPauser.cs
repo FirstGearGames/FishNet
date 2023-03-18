@@ -32,6 +32,10 @@ namespace FishNet.Component.Prediction
             /// Scene of this rigidbody when being set kinematic.
             /// </summary>
             public Scene SimulatedScene;
+            /// <summary>
+            /// True if the rigidbody was kinematic prior to being paused.
+            /// </summary>
+            public bool IsKinematic;
 
             public RigidbodyData(Rigidbody rb)
             {
@@ -40,6 +44,7 @@ namespace FishNet.Component.Prediction
                 Velocity = Vector3.zero;
                 AngularVelocity = Vector3.zero;
                 SimulatedScene = rb.gameObject.scene;
+                IsKinematic = rb.isKinematic;
             }
 
             public void Update(Rigidbody rb)
@@ -47,6 +52,7 @@ namespace FishNet.Component.Prediction
                 Velocity = rb.velocity;
                 AngularVelocity = rb.angularVelocity;
                 SimulatedScene = rb.gameObject.scene;
+                IsKinematic = rb.isKinematic;
             }
         }
         /// <summary>
@@ -70,6 +76,10 @@ namespace FishNet.Component.Prediction
             /// Scene of this rigidbody when being set kinematic.
             /// </summary>
             public Scene SimulatedScene;
+            /// <summary>
+            /// True if the rigidbody was simulated prior to being paused.
+            /// </summary>
+            public bool Simulated;
 
             public Rigidbody2DData(Rigidbody2D rb)
             {
@@ -78,6 +88,7 @@ namespace FishNet.Component.Prediction
                 Velocity = Vector2.zero;
                 AngularVelocity = 0f;
                 SimulatedScene = rb.gameObject.scene;
+                Simulated = rb.simulated;
             }
 
             public void Update(Rigidbody2D rb)
@@ -85,6 +96,7 @@ namespace FishNet.Component.Prediction
                 Velocity = rb.velocity;
                 AngularVelocity = rb.angularVelocity;
                 SimulatedScene = rb.gameObject.scene;
+                Simulated = rb.simulated;
             }
         }
         #endregion
@@ -236,6 +248,7 @@ namespace FishNet.Component.Prediction
 
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;
+                    rb.isKinematic = rbData.IsKinematic;
                     SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, rbData.SimulatedScene);
                     return true;
                 }
@@ -262,6 +275,8 @@ namespace FishNet.Component.Prediction
 
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;
+                    rb.simulated = rbData.Simulated;
+                    rb.isKinematic = !rbData.Simulated;
                     SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, rbData.SimulatedScene);
                     return true;
                 }
