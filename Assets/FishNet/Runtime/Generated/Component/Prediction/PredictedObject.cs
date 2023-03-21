@@ -329,6 +329,11 @@ namespace FishNet.Component.Prediction
                 /* If has prediction methods implement for owner,
                  * otherwise implement for spectator. */
                 InitializeSmoother(_implementsPredictionMethods);
+                /* Also set spectator smoothing if does not implement
+                 * prediction methods as the spectator smoother is used
+                 * for these scenarios. */
+                if (!_implementsPredictionMethods)
+                    SetTargetSmoothing(base.TimeManager.RoundTripTime, true);
             }
             //Not owner nor server, initialize spectator smoother if using rigidbodies.
             else if (_predictionType != PredictionType.Other)
