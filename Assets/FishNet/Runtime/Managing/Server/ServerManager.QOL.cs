@@ -2,6 +2,7 @@
 using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Object;
+using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
 using System;
@@ -177,6 +178,20 @@ namespace FishNet.Managing.Server
             NetworkManager.TransportManager.Transport.StopConnection(clientId, true);
             if (!string.IsNullOrEmpty(log))
                 NetworkManager.Log(loggingType, log);
+        }
+
+        /// <summary>
+        /// Kicks a connection immediately while invoking OnClientKick.
+        /// </summary>
+        /// <param name="conn">Client to kick.</param>
+        /// <param name="reader">Reader to clear before kicking.</param>
+        /// <param name="kickReason">Reason client is being kicked.</param>
+        /// <param name="loggingType">How to print logging as.</param>
+        /// <param name="log">Optional message to be debug logged.</param>
+        public void Kick(NetworkConnection conn, Reader reader, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
+        {
+            reader.Clear();
+            Kick(conn, kickReason, loggingType, log);
         }
     }
 

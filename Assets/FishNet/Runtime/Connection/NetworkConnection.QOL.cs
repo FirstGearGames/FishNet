@@ -1,6 +1,7 @@
 ﻿using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
+using FishNet.Serializing;
 using System;
 
 namespace FishNet.Connection
@@ -47,6 +48,20 @@ namespace FishNet.Connection
         {
             NetworkManager.ServerManager.Kick(this, kickReason, loggingType, log);
         }
+
+
+        /// <summary>
+        /// Kicks a connection immediately while invoking OnClientKick.
+        /// </summary>
+        /// <param name="reader">Reader to clear before kicking.</param>
+        /// <param name="kickReason">Reason client is being kicked.</param>
+        /// <param name="loggingType">How to print logging as.</param>
+        /// <param name="log">Optional message to be debug logged.</param>
+        public void Kick(Reader reader, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
+        {
+            NetworkManager.ServerManager.Kick(this, reader, kickReason, loggingType, log);
+        }
+
 
     }
 

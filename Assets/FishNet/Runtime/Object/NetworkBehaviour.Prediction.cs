@@ -401,6 +401,16 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Clears a Queue.
+        /// This is used as a patch for Unity 2022 Burst compiler bugs.
+        /// Using Queue.Clear via codegen throws for an unknown reason.
+        /// </summary>
+        public void ClearQueue_Server_Internal<T>(Queue<T> q)
+        {
+            q.Clear();
+        }
+
+        /// <summary>
         /// Gets the next replicate in queue.
         /// </summary>
         [CodegenMakePublic] //internal

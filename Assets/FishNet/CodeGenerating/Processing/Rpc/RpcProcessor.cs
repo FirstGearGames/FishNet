@@ -70,7 +70,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             return base.ImportReferences();
         }
 
-        internal bool Process(TypeDefinition typeDef, ref uint rpcCount)
+        internal bool ProcessLocal(TypeDefinition typeDef, ref uint rpcCount)
         {
             bool modified = false;
 

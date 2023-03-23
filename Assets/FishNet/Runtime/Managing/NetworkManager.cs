@@ -312,8 +312,8 @@ namespace FishNet.Managing
             TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
             SceneManager.InitializeOnce_Internal(this);
             TransportManager.InitializeOnce_Internal(this);
-            ServerManager.InitializeOnce_Internal(this);
             ClientManager.InitializeOnce_Internal(this);
+            ServerManager.InitializeOnce_Internal(this);
             ObserverManager.InitializeOnce_Internal(this);
             RollbackManager.InitializeOnce_Internal(this);
             PredictionManager.InitializeOnce_Internal(this);

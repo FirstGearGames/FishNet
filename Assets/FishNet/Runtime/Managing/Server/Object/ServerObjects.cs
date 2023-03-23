@@ -1,6 +1,7 @@
 ﻿using FishNet.Connection;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Object;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -25,6 +26,17 @@ namespace FishNet.Managing.Server
         /// Called right before client objects are destroyed when a client disconnects.
         /// </summary>
         public event Action<NetworkConnection> OnPreDestroyClientObjects;
+        #endregion
+
+        #region Internal.
+        /// <summary>
+        /// Collection of NetworkObjects recently despawned.
+        /// Key: objectId.
+        /// Value: despawn tick.
+        /// This is used primarily to track if client is sending messages for recently despawned objects.
+        /// Objects are automatically removed after RECENTLY_DESPAWNED_DURATION seconds.
+        /// </summary>
+        internal Dictionary<int, uint> RecentlyDespawnedIds = new Dictionary<int, uint>();
         #endregion
 
         #region Private.
@@ -62,6 +74,10 @@ namespace FishNet.Managing.Server
         /// True if one or more scenes are currently loading through the SceneManager.
         /// </summary>
         private bool _scenesLoading;
+        /// <summary>
+        /// Number of ticks which must pass to clear a recently despawned.
+        /// </summary>
+        private uint _cleanRecentlyDespawnedMaxTicks => base.NetworkManager.TimeManager.TimeToTicks(30d, TickRounding.RoundUp);
         #endregion
 
         internal ServerObjects(NetworkManager networkManager)
@@ -83,6 +99,8 @@ namespace FishNet.Managing.Server
                 _loadedScenes.Clear();
                 return;
             }
+
+            CleanRecentlyDespawned();
 
             if (!_scenesLoading)
                 IterateLoadedScenes(false);
@@ -426,7 +444,7 @@ namespace FishNet.Managing.Server
                 base.NetworkManager.LogError($"{networkObject.name} is a prefab. You must instantiate the prefab first, then use Spawn on the instantiated copy.");
                 return;
             }
-            if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes(true))
+            if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes(!predictedSpawn))
             {
                 base.NetworkManager.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
             }
@@ -498,7 +516,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Reads a predicted spawn.
         /// </summary>
-        internal void ReadPredictedSpawn(Reader reader, NetworkConnection conn)
+        internal void ReadPredictedSpawn(PooledReader reader, NetworkConnection conn)
         {
             sbyte initializeOrder;
             ushort collectionId;
@@ -562,17 +580,36 @@ namespace FishNet.Managing.Server
                 isGlobal = SpawnTypeEnum.Contains(st, SpawnType.InstantiatedGlobal);
             }
 
-            //Initialize for prediction.
-            nob.InitializePredictedObject_Server(conn);
-
             Transform t = nob.transform;
             //Parenting predicted spawns is not supported yet.
             t.SetParent(null, true);
             base.GetTransformProperties(localPosition, localRotation, localScale, t, out Vector3 pos, out Quaternion rot, out Vector3 scale);
             t.SetLocalPositionRotationAndScale(pos, rot, scale);
-            //Only need to set IsGlobal also if not host.
-
             nob.SetIsGlobal(isGlobal);
+
+            //Initialize for prediction.
+            nob.InitializePredictedObject_Server(base.NetworkManager, conn);
+
+            /* Only read sync types if allowed for the object.
+             * If the client did happen to send synctypes while not allowed
+             * this will create a parse error on the server,
+             * resulting in the client being kicked. */
+            if (nob.AllowPredictedSyncTypes)
+            {
+                ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
+                PooledReader syncTypeReader = ReaderPool.GetReader(syncValues, base.NetworkManager);
+                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                {
+                    //SyncVars.
+                    int length = syncTypeReader.ReadInt32();
+                    nb.OnSyncType(syncTypeReader, length, false, true);
+                    //SyncObjects
+                    length = syncTypeReader.ReadInt32();
+                    nb.OnSyncType(syncTypeReader, length, true, true);
+                }
+                syncTypeReader.Dispose();
+            }
+
             SpawnWithoutChecks(nob, owner, objectId);
 
             //Send the spawner a new reservedId.
@@ -607,6 +644,64 @@ namespace FishNet.Managing.Server
         #endregion
 
         #region Despawning.
+        /// <summary>
+        /// Cleans recently despawned objects.
+        /// </summary>
+        private void CleanRecentlyDespawned()
+        {
+            //Only iterate if frame ticked to save perf.
+            if (!base.NetworkManager.TimeManager.FrameTicked)
+                return;
+
+            ListCache<int> intCache = ListCaches.GetIntCache();
+
+            uint requiredTicks = _cleanRecentlyDespawnedMaxTicks;
+            uint currentTick = base.NetworkManager.TimeManager.LocalTick;
+            //Iterate 20, or 5% of the collection, whichever is higher.
+            int iterations = Mathf.Max(20, (int)(RecentlyDespawnedIds.Count * 0.05f));
+            /* Given this is a dictionary there is no gaurantee which order objects are
+             * added. Because of this it's possible some objects may take much longer to
+             * be removed. This is okay so long as a consistent chunk of objects are removed
+             * at a time; eventually all objects will be iterated. */
+            int count = 0;
+            foreach (KeyValuePair<int, uint> kvp in RecentlyDespawnedIds)
+            {
+                long result = (currentTick - kvp.Value);
+                //If enough ticks have passed to remove.
+                if (result > requiredTicks)
+                    intCache.AddValue(kvp.Key);
+
+                count++;
+                if (count == iterations)
+                    break;
+            }
+
+            //Remove cached entries.
+            List<int> collection = intCache.Collection;
+            int cCount = collection.Count;
+            for (int i = 0; i < cCount; i++)
+                RecentlyDespawnedIds.Remove(collection[i]);
+
+            ListCaches.StoreCache(intCache);
+        }
+        /// <summary>
+        /// Returns if an objectId was recently despawned.
+        /// </summary>
+        /// <param name="objectId">ObjectId to check.</param>
+        /// <param name="ticks">Passed ticks to be within to be considered recently despawned.</param>
+        /// <returns>True if an objectId was despawned with specified number of ticks.</returns>
+        public bool RecentlyDespawned(int objectId, uint ticks)
+        {
+            uint despawnTick;
+            if (!RecentlyDespawnedIds.TryGetValue(objectId, out despawnTick))
+                return false;
+
+            return ((NetworkManager.TimeManager.LocalTick - despawnTick) <= ticks);
+        }
+        /// <summary>
+        /// Adds to objects pending destroy due to clientHost environment.
+        /// </summary>
+        /// <param name="nob"></param>
         internal void AddToPending(NetworkObject nob)
         {
             _pendingDestroy[nob.ObjectId] = nob;
@@ -688,11 +783,12 @@ namespace FishNet.Managing.Server
 
             if (predictedDespawn)
             {
-                base.NetworkManager.ClientManager.Objects.PredictedDepawn(networkObject);
+                base.NetworkManager.ClientManager.Objects.PredictedDespawn(networkObject);
             }
             else
             {
                 FinalizeDespawn(networkObject, despawnType);
+                RecentlyDespawnedIds[networkObject.ObjectId] = base.NetworkManager.TimeManager.LocalTick;
                 base.Despawn(networkObject, despawnType, asServer);
             }
         }
@@ -701,10 +797,10 @@ namespace FishNet.Managing.Server
         /// Called when a NetworkObject is destroyed without being deactivated first.
         /// </summary>
         /// <param name="nob"></param>
-        internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob)
+        internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob, bool asServer)
         {
             FinalizeDespawn(nob, DespawnType.Destroy);
-            base.NetworkObjectUnexpectedlyDestroyed(nob);
+            base.NetworkObjectUnexpectedlyDestroyed(nob, asServer);
         }
 
         /// <summary>

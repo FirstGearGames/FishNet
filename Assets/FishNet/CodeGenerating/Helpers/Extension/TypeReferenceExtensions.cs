@@ -24,7 +24,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         internal static bool IsClassOrStruct(this TypeReference typeRef, CodegenSession session)
         {
             TypeDefinition typeDef = typeRef.CachedResolve(session);
-            return (!typeDef.IsPrimitive && (typeDef.IsClass || typeDef.IsValueType));
+            return (!typeDef.IsPrimitive && !typeDef.IsEnum && (typeDef.IsClass || typeDef.IsValueType));
         }
 
         /// <summary>

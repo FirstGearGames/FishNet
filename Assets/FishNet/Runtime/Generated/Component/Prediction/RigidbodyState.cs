@@ -13,6 +13,17 @@ namespace FishNet.Component.Prediction
         public Vector3 Velocity;
         public Vector3 AngularVelocity;
 
+        public RigidbodyState(Rigidbody rb, bool isKinematic, uint tick) : this(rb, tick)
+        {            
+            Position = rb.transform.position;
+            Rotation = rb.transform.rotation;
+            IsKinematic = isKinematic;
+            Velocity = rb.velocity;
+            AngularVelocity = rb.angularVelocity;
+            LocalTick = tick;
+
+        }
+
         public RigidbodyState(Rigidbody rb, uint tick)
         {
             Position = rb.transform.position;
@@ -33,11 +44,21 @@ namespace FishNet.Component.Prediction
         public Vector2 Velocity;
         public float AngularVelocity;
 
-        public Rigidbody2DState(Rigidbody2D rb, uint tick)
+        public Rigidbody2DState(Rigidbody2D rb, bool simulated, uint tick)
         {
+            Simulated = simulated;
             Position = rb.transform.position;
             Rotation = rb.transform.rotation;
+            Velocity = rb.velocity;
+            AngularVelocity = rb.angularVelocity;
+            LocalTick = tick;
+        }
+
+        public Rigidbody2DState(Rigidbody2D rb, uint tick)
+        {
             Simulated = rb.simulated;
+            Position = rb.transform.position;
+            Rotation = rb.transform.rotation;            
             Velocity = rb.velocity;
             AngularVelocity = rb.angularVelocity;
             LocalTick = tick;

@@ -76,6 +76,7 @@ namespace FishNet.CodeGenerating.ILCore
             modified |= session.GetClass<ReaderProcessor>().Process();
             modified |= CreateDeclaredSerializerDelegates(session);
             modified |= CreateDeclaredSerializers(session);
+            modified |= CreateDeclaredComparerDelegates(session);
             modified |= CreateIBroadcast(session);
             modified |= CreateQOLAttributes(session);
             modified |= CreateNetworkBehaviours(session);
@@ -175,8 +176,6 @@ namespace FishNet.CodeGenerating.ILCore
         /// <summary>
         /// Creates serializers for custom types within user declared serializers.
         /// </summary>
-        /// <param name="moduleDef"></param>
-        /// <param name="diagnostics"></param>
         private bool CreateDeclaredSerializers(CodegenSession session)
         {
             bool modified = false;
@@ -194,6 +193,25 @@ namespace FishNet.CodeGenerating.ILCore
 
             return modified;
         }
+
+        /// <summary>
+        /// Creates delegates for user declared comparers.
+        /// </summary>
+        internal bool CreateDeclaredComparerDelegates(CodegenSession session)
+        {
+            bool modified = false;
+            List<TypeDefinition> allTypeDefs = session.Module.Types.ToList();
+            foreach (TypeDefinition td in allTypeDefs)
+            {
+                if (session.GetClass<GeneralHelper>().IgnoreTypeDefinition(td))
+                    continue;
+
+                modified |= session.GetClass<CustomSerializerProcessor>().CreateComparerDelegates(td);
+            }
+
+            return modified;
+        }
+
 
         /// <summary>
         /// Creaters serializers and calls for IBroadcast.

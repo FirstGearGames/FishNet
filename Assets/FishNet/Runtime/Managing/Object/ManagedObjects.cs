@@ -20,6 +20,11 @@ namespace FishNet.Managing.Object
         /// NetworkObjects which are currently active.
         /// </summary>
         public Dictionary<int, NetworkObject> Spawned = new Dictionary<int, NetworkObject>();
+        /// <summary>
+        /// NetworkObjects which are currently active on the local client.
+        /// //TODO Move this to ClientObjects.
+        /// </summary>
+        internal List<NetworkObject> LocalClientSpawned = new List<NetworkObject>();
         #endregion
 
         #region Protected.
@@ -66,36 +71,25 @@ namespace FishNet.Managing.Object
         /// Called when a NetworkObject runs Deactivate.
         /// </summary>
         /// <param name="nob"></param>
-        internal virtual void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob)
+        internal virtual void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob, bool asServer)
         {
             if (nob == null)
                 return;
 
-            RemoveFromSpawned(nob, true);
+            RemoveFromSpawned(nob, true, asServer);
         }
 
         /// <summary>
         /// Removes a NetworkedObject from spawned.
         /// </summary>
-        /// <param name="nob"></param>
-        private void RemoveFromSpawned(NetworkObject nob, bool unexpectedlyDestroyed)
+        private void RemoveFromSpawned(NetworkObject nob, bool unexpectedlyDestroyed, bool asServer)
         {
             Spawned.Remove(nob.ObjectId);
+            if (!asServer)
+                LocalClientSpawned.Remove(nob);
             //Do the same with SceneObjects.
             if (unexpectedlyDestroyed && nob.IsSceneObject)
                 RemoveFromSceneObjects(nob);
-        }
-
-        /// <summary>
-        /// Removes a NetworkedObject from spawned.
-        /// </summary>
-        /// <param name="nob"></param>
-        private void RemoveFromSpawned(int objectId, bool unexpectedlyDestroyed, ulong sceneId)
-        {
-            Spawned.Remove(objectId);
-            //Do the same with SceneObjects.
-            if (unexpectedlyDestroyed && (sceneId != 0))
-                RemoveFromSceneObjects(sceneId);
         }
 
         /// <summary>
@@ -158,7 +152,7 @@ namespace FishNet.Managing.Object
             //Remove from match condition only if server.
             if (asServer)
                 MatchCondition.RemoveFromMatchWithoutRebuild(nob, NetworkManager);
-            RemoveFromSpawned(nob, false);
+            RemoveFromSpawned(nob, false, asServer);
 
             //If to destroy.
             if (destroy)
@@ -278,7 +272,7 @@ namespace FishNet.Managing.Object
         /// <param name="nob"></param>
         internal virtual void DespawnWithoutSynchronization(NetworkObject nob, bool asServer, DespawnType despawnType, bool removeFromSpawned)
         {
-            //Null can occur when running as host and server already despawns such as wehen stopping.
+            //Null can occur when running as host and server already despawns such as when stopping.
             if (nob == null)
                 return;
 
@@ -286,11 +280,11 @@ namespace FishNet.Managing.Object
             /* Only run if asServer, or not 
             * asServer and server isn't running. This
             * prevents objects from affecting the server
-            * as host* when being modified client side. */
+            * as host when being modified client side. */
             if (asServer || (!asServer && !NetworkManager.IsServer))
             {
                 if (removeFromSpawned)
-                    RemoveFromSpawned(nob, false);
+                    RemoveFromSpawned(nob, false, asServer);
                 if (nob.IsSceneObject)
                 {
                     nob.gameObject.SetActive(false);
@@ -312,10 +306,13 @@ namespace FishNet.Managing.Object
         internal void AddToSpawned(NetworkObject nob, bool asServer)
         {
             Spawned[nob.ObjectId] = nob;
-
-            //If being added as client and is also server.
-            if (!asServer && NetworkManager.IsServer)
-                nob.SetRenderersVisible(true);
+            if (!asServer)
+            {
+                LocalClientSpawned.Add(nob);
+                //If being added as client and is also server.
+                if (NetworkManager.IsServer)
+                    nob.SetRenderersVisible(true);
+            }
         }
 
         /// <summary>

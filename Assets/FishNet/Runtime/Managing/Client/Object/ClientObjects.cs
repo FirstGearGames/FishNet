@@ -86,6 +86,7 @@ namespace FishNet.Managing.Client
                  * was called but it won't hurt anything clearing an empty collection. */
                 base.Spawned.Clear();
                 base.SceneObjects.Clear();
+                base.LocalClientSpawned.Clear();
             }
         }
 
@@ -170,24 +171,31 @@ namespace FishNet.Managing.Client
             }
 
             writer.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
-            /* Used to write latest data which must be sent to
-             * clients, such as SyncTypes and RpcLinks. */
-            PooledWriter tempWriter = WriterPool.GetWriter();
-            ////Write syncTypes.
-            //foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-            //    nb.WriteSyncTypesForSpawn(tempWriter, SyncTypeWriteType.All);
-            //writer.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
+
+            //If allowed to write synctypes.
+            if (nob.AllowPredictedSyncTypes)
+            {
+                PooledWriter tempWriter = WriterPool.GetWriter();
+                WriteSyncTypes(writer, tempWriter, SyncTypeWriteType.All);
+                void WriteSyncTypes(Writer finalWriter, PooledWriter tWriter, SyncTypeWriteType writeType)
+                {
+                    tWriter.Reset();
+                    foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                        nb.WriteSyncTypesForSpawn(tWriter, writeType);
+                    finalWriter.WriteBytesAndSize(tWriter.GetBuffer(), 0, tWriter.Length);
+                }
+                tempWriter.Dispose();
+            }
 
             //Dispose of writers created in this method.
             headerWriter.Dispose();
-            tempWriter.Dispose();
         }
 
 
         /// <summary>
         /// Sends a predicted despawn to the server.
         /// </summary>
-        internal void PredictedDepawn(NetworkObject networkObject)
+        internal void PredictedDespawn(NetworkObject networkObject)
         {
             PooledWriter writer = WriterPool.GetWriter();
             WriteDepawn(networkObject, writer);
@@ -248,10 +256,10 @@ namespace FishNet.Managing.Client
         /// Called when a NetworkObject runs Deactivate.
         /// </summary>
         /// <param name="nob"></param>
-        internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob)
+        internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob, bool asServer)
         {
             nob.RemoveClientRpcLinkIndexes();
-            base.NetworkObjectUnexpectedlyDestroyed(nob);
+            base.NetworkObjectUnexpectedlyDestroyed(nob, asServer);
         }
 
         /// <summary>
@@ -539,12 +547,13 @@ namespace FishNet.Managing.Client
                 return null;
             }
 
+            ushort collectionId = cnob.CollectionId;
             //PrefabObjects to get the prefab from.
-            PrefabObjects prefabObjects = networkManager.GetPrefabObjects<PrefabObjects>(cnob.CollectionId, false);
+            PrefabObjects prefabObjects = networkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
             //Not found for collectionId > 0. This means the user likely did not setup the collection on client.
-            if (prefabObjects == null && cnob.CollectionId > 0)
+            if (prefabObjects == null && collectionId > 0)
             {
-                networkManager.LogError($"PrefabObjects collection is not found for CollectionId {cnob.CollectionId}. Be sure to add your addressables NetworkObject prefabs to the collection on server and client before attempting to spawn them over the network.");
+                networkManager.LogError($"PrefabObjects collection is not found for CollectionId {collectionId}. Be sure to add your addressables NetworkObject prefabs to the collection on server and client before attempting to spawn them over the network.");
                 return null;
             }
 
@@ -589,7 +598,7 @@ namespace FishNet.Managing.Client
                     }
                 }
 
-                result = networkManager.GetPooledInstantiated(prefabId, false);
+                result = networkManager.GetPooledInstantiated(prefabId, collectionId, false);
                 Transform t = result.transform;
                 t.SetParent(parentTransform, true);
                 //Only need to set IsGlobal also if not host.

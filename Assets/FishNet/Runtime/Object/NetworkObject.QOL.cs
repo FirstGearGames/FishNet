@@ -25,6 +25,10 @@ namespace FishNet.Object
         /// </summary>
         internal bool AllowPredictedDespawning => (PredictedSpawn == null) ? false : PredictedSpawn.GetAllowDespawning();
         /// <summary>
+        /// True to allow clients to predicted set syncTypes prior to spawning the item. Set values will be applied on the server and sent to other clients.
+        /// </summary>
+        internal bool AllowPredictedSyncTypes => (PredictedSpawn == null) ? false : PredictedSpawn.GetAllowSyncTypes();
+        /// <summary>
         /// True if this object has been initialized on the client side.
         /// This is set true right before client callbacks.
         /// </summary>
@@ -277,6 +281,12 @@ namespace FishNet.Object
         /// <typeparam name="T">Component type.</typeparam>
         /// <param name="handler">Action to invoke.</param>
         public void UnregisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager.UnregisterInvokeOnInstance<T>(handler);
+        /// <summary>
+        /// Returns if an instance exists for type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public bool HasInstance<T>() where T : UnityEngine.Component => NetworkManager.HasInstance<T>();
         /// <summary>
         /// Returns class of type if found within CodegenBase classes.
         /// </summary>

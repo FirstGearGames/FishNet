@@ -1,6 +1,8 @@
-﻿using FishNet.Object.Synchronizing.Internal;
+﻿using FishNet.Documenting;
+using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace FishNet.Object.Synchronizing
 {
@@ -109,6 +111,7 @@ namespace FishNet.Object.Synchronizing
             if (!base.CanNetworkSetValues(true))
                 return;
 
+            Paused = true;
             SyncTimerOperation op = (sendRemaining) ? SyncTimerOperation.PauseUpdated : SyncTimerOperation.Pause;
             AddOperation(op, -1f, -1f);
         }
@@ -125,6 +128,7 @@ namespace FishNet.Object.Synchronizing
             if (!base.CanNetworkSetValues(true))
                 return;
 
+            Paused = false;
             AddOperation(SyncTimerOperation.Unpause, -1f, -1f);
         }
 
@@ -237,11 +241,12 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
-        /// Reads and sets the current values.
+        /// Reads and sets the current values for server or client.
         /// </summary>
-        public override void Read(PooledReader reader)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [APIExclude]
+        public override void Read(PooledReader reader, bool asServer)
         {
-            bool asServer = false;
             int changes = reader.ReadInt32();
 
             for (int i = 0; i < changes; i++)
@@ -370,6 +375,8 @@ namespace FishNet.Object.Synchronizing
             if (Paused)
                 return;
 
+            if (delta < 0)
+                delta *= -1f;
             float prev = Remaining;
             Remaining -= delta;
             //Still time left.

@@ -418,7 +418,9 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
             //Load the prefab collection 
             string defaultPrefabsPath = settings.DefaultPrefabObjectsPath;
+            defaultPrefabsPath = defaultPrefabsPath.Replace(@"\", "/");
             string fullDefaultPrefabsPath = (defaultPrefabsPath.Length > 0) ? Path.GetFullPath(defaultPrefabsPath) : string.Empty;
+            
             //If cached prefabs is not the same path as assetPath.
             if (_cachedDefaultPrefabs != null)
             {

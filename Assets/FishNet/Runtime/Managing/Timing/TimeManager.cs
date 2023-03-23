@@ -47,6 +47,10 @@ namespace FishNet.Managing.Timing
 
         #region Public.
         /// <summary>
+        /// Called when the local clients ping is updated.
+        /// </summary>
+        public event Action<long> OnRoundTripTimeUpdated;
+        /// <summary>
         /// Called right before a tick occurs, as well before data is read.
         /// </summary>
         public event Action OnPreTick;
@@ -387,10 +391,13 @@ namespace FishNet.Managing.Timing
             {
                 _pingStopwatch.Stop();
                 ClientUptime = 0f;
-                LocalTick = 0;
-                //Also reset Tick if not running as host.
+
+                //Only reset ticks if also not server.
                 if (!_networkManager.IsServer)
+                {
+                    LocalTick = 0;
                     Tick = 0;
+                }
             }
             //Started.
             else
@@ -533,6 +540,8 @@ namespace FishNet.Managing.Timing
             double averageInTime = (_pingAverage.Average * TickDelta * 1000);
             RoundTripTime = (long)Math.Round(averageInTime);
             _receivedPong = true;
+
+            OnRoundTripTimeUpdated?.Invoke(RoundTripTime);
         }
 
         /// <summary>
@@ -653,7 +662,10 @@ namespace FishNet.Managing.Timing
                     /* If isClient this is the
                      * last tick during this loop. */
                     if (isClient && (_elapsedTickTime < timePerSimulation))
+                    {
+                        _networkManager.ClientManager.SendLodUpdate(false);
                         TrySendPing(LocalTick + 1);
+                    }
 
                     if (_networkManager.IsServer)
                         SendTimingAdjustment();
@@ -670,6 +682,8 @@ namespace FishNet.Managing.Timing
 
                     Tick++;
                     LocalTick++;
+
+                    _networkManager.ObserverManager.CalculateLevelOfDetail(LocalTick);
                 }
 
             } while (_elapsedTickTime >= timePerSimulation);

@@ -2,6 +2,7 @@
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Connection;
+using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Object.Prediction.Delegating;
 using FishNet.Serializing;
@@ -288,7 +289,6 @@ namespace FishNet.CodeGenerating.Processing
             MethodDefinition replicateULMd;
             MethodDefinition reconcileULMd;
             CreatePredictionMethods(typeDef, replicateMd, reconcileMd, predictionFields, rpcCount, out predictionReaders, out replicateULMd, out reconcileULMd);
-
             InitializeCollections(typeDef, replicateMd, predictionFields);
             InitializeULDelegates(typeDef, predictionFields, replicateMd, reconcileMd, replicateULMd, reconcileULMd);
             RegisterRpcs(typeDef, rpcCount, predictionReaders);
@@ -656,7 +656,6 @@ namespace FishNet.CodeGenerating.Processing
 
                 processor.Append(notAsServerInst);
 
-
                 MethodReference reconcileClientGim = nbh.Reconcile_Client_MethodRef.GetMethodReference(
                     base.Session, new TypeReference[] { reconcileDataPd.ParameterType, replicateDataTr });
                 //<T>(ReplicateULDelegate<T> replicateDel, ReconcileULDelegate<T> reconcileDel, List<T> collection, 
@@ -692,6 +691,7 @@ namespace FishNet.CodeGenerating.Processing
             GeneralHelper gh = base.GetClass<GeneralHelper>();
             string clearDatasName = base.GetClass<NetworkBehaviourHelper>().ClearReplicateCache_Method_Name;
             MethodDefinition md = typeDef.GetMethod(clearDatasName);
+
             //Already exist when it shouldn't.
             if (md != null)
             {
@@ -710,12 +710,8 @@ namespace FishNet.CodeGenerating.Processing
 
             GenericInstanceType dataListGit;
             gh.GetGenericLists(dataTr, out dataListGit);
-            GenericInstanceType dataQueueGit;
-            gh.GetGenericQueues(dataTr, out dataQueueGit);
             //Get clear method.
             MethodReference lstClearMr = gh.List_Clear_MethodRef.MakeHostInstanceGeneric(base.Session, dataListGit);
-            MethodReference queueClearMr = gh.Queue_Clear_MethodRef.MakeHostInstanceGeneric(base.Session, dataQueueGit);
-
             ParameterDefinition asServerPd = md.Parameters[0];
 
             Instruction afterAsServerInst = processor.Create(OpCodes.Nop);
@@ -723,10 +719,15 @@ namespace FishNet.CodeGenerating.Processing
 
             processor.Emit(OpCodes.Ldarg, asServerPd);
             processor.Emit(OpCodes.Brfalse_S, afterAsServerInst);
+            
             //Clear on server replicates.
+            MethodReference clrQueueMr = base.ImportReference(typeof(NetworkBehaviour).GetMethod(nameof(NetworkBehaviour.ClearQueue_Server_Internal)));
+            GenericInstanceMethod clrQueueGim = clrQueueMr.MakeGenericMethod(new TypeReference[] { dataTr });
+
+            processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateDatas);
-            processor.Emit(queueClearMr.GetCallOpCode(base.Session), queueClearMr);
+            processor.Emit(clrQueueMr.GetCallOpCode(base.Session), clrQueueGim);
             processor.Emit(OpCodes.Br_S, resetTicksInst);
             processor.Append(afterAsServerInst);
             //Clear on client replicates.

@@ -1,13 +1,15 @@
 ﻿using FishNet.Connection; //remove on 2023/01/01 move to correct folder.
 using FishNet.Object;
 using FishNet.Observing;
+using FishNet.Utility.Constant;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Serialization;
 
+[assembly: InternalsVisibleTo(UtilityConstants.DEMOS_ASSEMBLY_NAME)]
 namespace FishNet.Managing.Observing
 {
-
     /// <summary>
     /// Additional options for managing the observer system.
     /// </summary>
@@ -15,7 +17,36 @@ namespace FishNet.Managing.Observing
     [AddComponentMenu("FishNet/Manager/ObserverManager")]
     public sealed class ObserverManager : MonoBehaviour
     {
+        #region Internal.
+        /// <summary>
+        /// Current index to use for level of detail based on tick.
+        /// </summary>
+        internal byte LevelOfDetailIndex { get; private set; }
+        #endregion
+
         #region Serialized.
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("True to use the NetworkLOD system.")]
+        [SerializeField]
+        private bool _useNetworkLod;
+        /// <summary>
+        /// True to use the NetworkLOD system.
+        /// </summary>
+        /// <returns></returns>
+        internal bool GetUseNetworkLod() => _useNetworkLod;
+        /// <summary>
+        /// Distance for each level of detal.
+        /// </summary>
+        internal List<float> GetLevelOfDetailDistances() => (_useNetworkLod) ? _levelOfDetailDistances : _singleLevelOfDetailDistances;
+        [Tooltip("Distance for each level of detal.")]
+        [SerializeField]
+        private List<float> _levelOfDetailDistances = new List<float>();
+        /// <summary>
+        /// Returned when network LOD is off. Value contained is one level of detail with max distance.
+        /// </summary>
+        private List<float> _singleLevelOfDetailDistances = new List<float>() { float.MaxValue };
         /// <summary>
         /// 
         /// </summary>
@@ -37,10 +68,17 @@ namespace FishNet.Managing.Observing
         [Tooltip("Default observer conditions for networked objects.")]
         [SerializeField]
         private List<ObserverCondition> _defaultConditions = new List<ObserverCondition>();
+        #endregion
+
+        #region Private.
         /// <summary>
         /// NetworkManager on object.
         /// </summary>
         private NetworkManager _networkManager;
+        /// <summary>
+        /// Intervals for each level of detail.
+        /// </summary>
+        private uint[] _levelOfDetailIntervals;
         #endregion
 
         /// <summary>
@@ -50,6 +88,7 @@ namespace FishNet.Managing.Observing
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
             _networkManager = manager;
+            ValidateLevelOfDetails();
         }
 
         /// <summary>
@@ -172,6 +211,105 @@ namespace FishNet.Managing.Observing
 
             return result;
         }
+
+        /// <summary>
+        /// Gets the tick interval to use for a lod level.
+        /// </summary>
+        /// <param name="lodLevel"></param>
+        /// <returns></returns>
+        public byte GetLevelOfDetailInterval(byte lodLevel)
+        {
+            if (LevelOfDetailIndex == 0)
+                return 1;
+
+            return (byte)System.Math.Pow(2, lodLevel);
+        }
+
+        /// <summary>
+        /// Calculates and sets the current level of detail index for the tick.
+        /// </summary>
+        internal void CalculateLevelOfDetail(uint tick)
+        {
+            int count = GetLevelOfDetailDistances().Count;
+            for (int i = (count - 1); i > 0; i--)
+            {
+                uint interval = _levelOfDetailIntervals[i];
+                if (tick % interval == 0)
+                {
+                    LevelOfDetailIndex = (byte)i;
+                    return;
+                }
+            }
+
+            //If here then index is 0 and interval is every tick.
+            LevelOfDetailIndex = 0;
+        }
+
+        /// <summary>
+        /// Validates that level of detail intervals are proper.
+        /// </summary>
+        private void ValidateLevelOfDetails()
+        {
+            if (!_useNetworkLod)
+                return;
+
+            //No distances specified.
+            if (_levelOfDetailDistances == null || _levelOfDetailDistances.Count == 0)
+            {
+                if (_networkManager != null)
+                {
+                    _networkManager.LogWarning("Level of detail distances contains no entries. NetworkLOD has been disabled.");
+                    _useNetworkLod = false;
+                }
+                return;
+            }
+
+            //Make sure every distance is larger than the last.
+            float lastDistance = float.MinValue;
+            foreach (float dist in _levelOfDetailDistances)
+            {
+                if (dist <= 0f || dist <= lastDistance)
+                {
+                    if (_networkManager != null)
+                    {
+                        _networkManager.LogError($"Level of detail distances must be greater than 0f, and each distance larger than the previous. NetworkLOD has been disabled.");
+                        _useNetworkLod = false;
+                    }
+                    return;
+                }
+                lastDistance = dist;
+            }
+
+            int maxEntries = 8;
+            //Too many distances.
+            if (_levelOfDetailDistances.Count > maxEntries)
+            {
+                _networkManager?.LogWarning("There can be a maximum of 8 level of detail distances. Entries beyond this quantity have been discarded.");
+                while (_levelOfDetailDistances.Count > maxEntries)
+                    _levelOfDetailDistances.RemoveAt(_levelOfDetailDistances.Count - 1);
+            }
+
+            if (Application.isPlaying)
+            {
+                //Build intervals and sqr distances.
+                int count = _levelOfDetailDistances.Count;
+                _levelOfDetailIntervals = new uint[count];
+                for (int i = (count - 1); i > 0; i--)
+                {
+                    uint power = (uint)Mathf.Pow(2, i);
+                    _levelOfDetailIntervals[i] = power;
+
+                }
+                //Sqr
+                for (int i = 0; i < count; i++)
+                {
+                    float dist = _levelOfDetailDistances[i];
+                    dist *= dist;
+                    _levelOfDetailDistances[i] = dist;
+                }
+            }
+        }
+
     }
 
 }

@@ -60,16 +60,17 @@ namespace FishNet.CodeGenerating.Helping
         public MethodDefinition GeneratedComparer_OnLoadMethodDef;
         public TypeReference IEquatable_TypeRef;
         //Actions.
-        public TypeReference ActionT2TypeRef;
-        public TypeReference ActionT3TypeRef;
-        public MethodReference ActionT2ConstructorMethodRef;
-        public MethodReference ActionT3ConstructorMethodRef;
+        public TypeReference ActionT2_TypeRef;
+        public TypeReference ActionT3_TypeRef;
+        public MethodReference ActionT2Constructor_MethodRef;
+        public MethodReference ActionT3Constructor_MethodRef;
 
         private Dictionary<Type, TypeReference> _importedTypeReferences = new Dictionary<Type, TypeReference>();
         private Dictionary<FieldDefinition, FieldReference> _importedFieldReferences = new Dictionary<FieldDefinition, FieldReference>();
         private Dictionary<MethodReference, MethodDefinition> _methodReferenceResolves = new Dictionary<MethodReference, MethodDefinition>();
         private Dictionary<TypeReference, TypeDefinition> _typeReferenceResolves = new Dictionary<TypeReference, TypeDefinition>();
         private Dictionary<FieldReference, FieldDefinition> _fieldReferenceResolves = new Dictionary<FieldReference, FieldDefinition>();
+        private Dictionary<string, MethodDefinition> _comparerDelegates = new Dictionary<string, MethodDefinition>();
         #endregion
 
         #region Const.
@@ -86,10 +87,10 @@ namespace FishNet.CodeGenerating.Helping
             NonSerialized_Attribute_FullName = typeof(NonSerializedAttribute).FullName;
             Single_FullName = typeof(float).FullName;
 
-            ActionT2TypeRef = base.ImportReference(typeof(Action<,>));
-            ActionT3TypeRef = base.ImportReference(typeof(Action<,,>));
-            ActionT2ConstructorMethodRef = base.ImportReference(typeof(Action<,>).GetConstructors()[0]);
-            ActionT3ConstructorMethodRef = base.ImportReference(typeof(Action<,,>).GetConstructors()[0]);
+            ActionT2_TypeRef = base.ImportReference(typeof(Action<,>));
+            ActionT3_TypeRef = base.ImportReference(typeof(Action<,,>));
+            ActionT2Constructor_MethodRef = base.ImportReference(typeof(Action<,>).GetConstructors()[0]);
+            ActionT3Constructor_MethodRef = base.ImportReference(typeof(Action<,,>).GetConstructors()[0]);
 
             CodegenExcludeAttribute_FullName = typeof(CodegenExcludeAttribute).FullName;
             CodegenIncludeAttribute_FullName = typeof(CodegenIncludeAttribute).FullName;
@@ -324,35 +325,6 @@ namespace FishNet.CodeGenerating.Helping
             md.Attributes |= (MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig);
             CustomAttribute ca = new CustomAttribute(Extension_Attribute_Ctor_MethodRef);
             md.CustomAttributes.Add(ca);
-        }
-
-        /// <summary>
-        /// Removes characters which would create invalid comparisons when trying to compare generics.
-        /// </summary>
-        public string RemoveGen11ericBrackets(string str)
-        { 
-            /* Fix example...
-             * List`1<T> converts to...
-             *  List`1.
-             * System.Nullable`1<System.Int> converts to...
-             *  System.Nullable`1System.Int */
-            if (str.Contains(typeof(System.Nullable).FullName))
-                return str;
-
-            //Find bracket areas to remove.
-            int startIndex = str.IndexOf("<");
-            int endIndex = str.IndexOf(">");
-            //If found.
-            if (startIndex >= 0 && endIndex >= 0)
-            {
-                string result = str.Substring(0, startIndex);
-                result += str.Substring(endIndex + 1);
-                return result;
-            }
-            else
-            {
-                return str;
-            }
         }
 
         /// <summary>
@@ -931,7 +903,7 @@ namespace FishNet.CodeGenerating.Helping
             int currentCount = methodDef.Parameters.Count;
             string name = (parameterTypeDef.Name + currentCount);
             ParameterDefinition parameterDef = new ParameterDefinition(name, parameterTypeDef.Attributes, parameterTypeDef.ParameterType);
-                methodDef.Parameters.Add(parameterDef);
+            methodDef.Parameters.Add(parameterDef);
 
             return parameterDef;
         }
@@ -1114,142 +1086,244 @@ namespace FishNet.CodeGenerating.Helping
         }
 
         #region GeneratedComparers
-
-
         /// <summary>
         /// Creates an equality comparer for dataTr.
         /// </summary>
         public MethodDefinition CreateEqualityComparer(TypeReference dataTr)
         {
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
-            MethodDefinition comparerMd = gh.GetOrCreateMethod(GeneratedComparer_ClassTypeDef, out bool created, WriterProcessor.GENERATED_METHOD_ATTRIBUTES,
-                $"Comparer___{dataTr.FullName}", base.Module.TypeSystem.Boolean);
-            //Already done. This can happen if the same replicate data is used in multiple places.
-            if (created)
+            bool created;
+            MethodDefinition comparerMd;
+            if (!_comparerDelegates.TryGetValue(dataTr.FullName, out comparerMd))
             {
+                comparerMd = GetOrCreateMethod(GeneratedComparer_ClassTypeDef, out created, WriterProcessor.GENERATED_METHOD_ATTRIBUTES,
+                    $"Comparer___{dataTr.FullName}", base.Module.TypeSystem.Boolean);
+
+                /* Nullables are not yet supported for automatic
+                * comparers. Let user know they must make their own. */
+                if (dataTr.IsGenericInstance)// dataTr.IsNullable(base.Session))
+                {
+                    base.LogError($"Equality comparers cannot be automatically generated for generic types. Create a custom comparer for {dataTr.FullName}.");
+                    return null;
+                }
+                if (dataTr.IsArray)
+                {
+                    base.LogError($"Equality comparers cannot be automatically generated for collections. Create a custom comparer for {dataTr.FullName}.");
+                    return null;
+                }
+
+                RegisterComparerDelegate(comparerMd, dataTr);
                 CreateComparerMethod();
-                CreateComparerDelegate();
+                CreateComparerDelegate(comparerMd, dataTr);
             }
 
             return comparerMd;
 
             void CreateComparerMethod()
             {
-
-                //GeneratedComparer_ClassTypeDef.Methods.Add(comparerMd);
-
                 //Add parameters.
-                ParameterDefinition v0Pd = gh.CreateParameter(comparerMd, dataTr, "value0");
-                ParameterDefinition v1Pd = gh.CreateParameter(comparerMd, dataTr, "value1");
+                ParameterDefinition v0Pd = CreateParameter(comparerMd, dataTr, "value0");
+                ParameterDefinition v1Pd = CreateParameter(comparerMd, dataTr, "value1");
                 ILProcessor processor = comparerMd.Body.GetILProcessor();
                 comparerMd.Body.InitLocals = true;
 
-                Instruction exitMethodInst = processor.Create(OpCodes.Ldc_I4_0);
-
-                //Fields.
-                foreach (FieldDefinition fieldDef in dataTr.FindAllSerializableFields(base.Session
-                    , null, WriterProcessor.EXCLUDED_ASSEMBLY_PREFIXES))
-                { 
-                    base.ImportReference(fieldDef);
-                    processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
-                    processor.Emit(OpCodes.Ldfld, fieldDef);
-                    processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
-                    processor.Emit(OpCodes.Ldfld, fieldDef);
-                    FinishTypeReferenceCompare(fieldDef.FieldType);
-                    //processor.Emit(OpCodes.Bne_Un, exitMethodInst);
-                }
-
-                //Properties.
-                foreach (PropertyDefinition propertyDef in dataTr.FindAllSerializableProperties(base.Session
-                    , null, WriterProcessor.EXCLUDED_ASSEMBLY_PREFIXES))
+                /* If type is a Unity type do not try to 
+                 * create a comparer other than ref comparer, as Unity will have built in ones. */
+                if (dataTr.CachedResolve(base.Session).Module.Name.Contains("UnityEngine"))
                 {
-                    MethodReference getMr = base.Module.ImportReference(propertyDef.GetMethod);
-                    processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
-                    processor.Emit(OpCodes.Call, getMr);
-                    processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
-                    processor.Emit(OpCodes.Call, getMr);
-                    FinishTypeReferenceCompare(propertyDef.PropertyType);
+                    CreateValueOrReferenceComparer();
                 }
-
-                //Return true;
-                processor.Emit(OpCodes.Ldc_I4_1);
-                processor.Emit(OpCodes.Ret);
-                processor.Append(exitMethodInst);
-                processor.Emit(OpCodes.Ret);
-
-                void FinishTypeReferenceCompare(TypeReference tr)
+                /* Generic types must have a comparer created for the
+                 * generic encapulation as well the argument types. */
+                else if (dataTr.IsGenericInstance)
                 {
-                    /* If a class or struct see if it already has a comparer
-                     * using IEquatable. If so then call the comparer method.
-                     * Otherwise make a new comparer and call it. */
-                    if (tr.IsClassOrStruct(base.Session))
+                    CreateGenericInstanceComparer();
+                    //Create a class or struct comparer for the container.
+                    if (!dataTr.IsClassOrStruct(base.Session))
                     {
-                        //Make equatable for type.
-                        GenericInstanceType git = IEquatable_TypeRef.MakeGenericInstanceType(tr);
-                        bool createNestedComparer = !tr.CachedResolve(base.Session).ImplementsInterface(git.FullName);
-
-                        //Create new.
-                        if (createNestedComparer)
-                        {
-                            MethodDefinition cMd = CreateEqualityComparer(tr);
-                            processor.Emit(OpCodes.Call, cMd);
-                            processor.Emit(OpCodes.Brfalse, exitMethodInst);
-                        }
-                        //Call existing.
-                        else
-                        {
-                            MethodDefinition cMd = tr.CachedResolve(base.Session).GetMethod("op_Equality");
-                            if (cMd == null)
-                            {
-                                base.LogError($"Type {tr.FullName} implements IEquatable but the comparer method could not be found.");
-                                return;
-                            }
-                            else
-                            {
-                                MethodReference mr = base.ImportReference(cMd);
-                                processor.Emit(OpCodes.Call, mr);
-                                processor.Emit(OpCodes.Brfalse, exitMethodInst);
-                            }
-                        }
+                        base.Session.LogError($"Generic data type {dataTr} was expected to be in a container but is not.");
+                        return;
                     }
-                    //Value types do not need to check custom comparers.
                     else
                     {
-                        processor.Emit(OpCodes.Bne_Un, exitMethodInst);
+                        CreateClassOrStructComparer();
                     }
                 }
-            }
+                //Class or struct.
+                else if (dataTr.IsClassOrStruct(base.Session))
+                {
+                    CreateClassOrStructComparer();
+                }
+                //Value type.
+                else if (dataTr.IsValueType)
+                {
+                    CreateValueOrReferenceComparer();
+                }
+                //Unhandled type.
+                else
+                {
+                    base.Session.LogError($"Comparer data type {dataTr.FullName} is unhandled.");
+                    return;
+                }
 
-            //Creates a delegate to compare two of replicateTr.
-            void CreateComparerDelegate()
-            {
-                //Initialize delegate for made comparer.
-                List<Instruction> insts = new List<Instruction>();
-                ILProcessor processor = GeneratedComparer_OnLoadMethodDef.Body.GetILProcessor();
-                //Create a Func<Reader, T> delegate 
-                insts.Add(processor.Create(OpCodes.Ldnull));
-                insts.Add(processor.Create(OpCodes.Ldftn, comparerMd));
+                void CreateGenericInstanceComparer()
+                {
+                    /* Create for arguments first. */
+                    GenericInstanceType git = dataTr as GenericInstanceType;
+                    if (git == null || git.GenericArguments.Count == 0)
+                    {
+                        base.LogError($"Comparer data is generic but generic type returns null, or has no generic arguments.");
+                        return;
+                    }
+                    foreach (TypeReference tr in git.GenericArguments)
+                    {
+                        TypeReference trImported = base.ImportReference(tr);
+                        CreateEqualityComparer(trImported);
+                    }
+                }
 
-                GenericInstanceType git;
-                git = gh.FunctionT3TypeRef.MakeGenericInstanceType(dataTr, dataTr, gh.GetTypeReference(typeof(bool)));
-                MethodReference functionConstructorInstanceMethodRef = gh.FunctionT3ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, git);
-                insts.Add(processor.Create(OpCodes.Newobj, functionConstructorInstanceMethodRef));
 
-                //Call delegate to ReplicateComparer.Compare(T, T);
-                git = GeneratedComparer_TypeRef.MakeGenericInstanceType(dataTr);
-                MethodReference comparerMr = GeneratedComparer_Compare_Set_MethodRef.MakeHostInstanceGeneric(base.Session, git);
-                insts.Add(processor.Create(OpCodes.Call, comparerMr));
-                processor.InsertFirst(insts);
+
+                void CreateClassOrStructComparer()
+                {
+                    //Class or struct.
+                    Instruction exitMethodInst = processor.Create(OpCodes.Ldc_I4_0);
+
+                    //Fields.
+                    foreach (FieldDefinition fieldDef in dataTr.FindAllSerializableFields(base.Session
+                        , null, WriterProcessor.EXCLUDED_ASSEMBLY_PREFIXES))
+                    {
+                        base.ImportReference(fieldDef);
+                        MethodDefinition recursiveMd = CreateEqualityComparer(fieldDef.FieldType);
+                        if (recursiveMd == null)
+                            break;
+                        processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
+                        processor.Emit(OpCodes.Ldfld, fieldDef);
+                        processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
+                        processor.Emit(OpCodes.Ldfld, fieldDef);
+                        FinishTypeReferenceCompare(fieldDef.FieldType);
+                    }
+
+                    //Properties.
+                    foreach (PropertyDefinition propertyDef in dataTr.FindAllSerializableProperties(base.Session
+                        , null, WriterProcessor.EXCLUDED_ASSEMBLY_PREFIXES))
+                    {
+                        MethodReference getMr = base.Module.ImportReference(propertyDef.GetMethod);
+                        MethodDefinition recursiveMd = CreateEqualityComparer(getMr.ReturnType);
+                        if (recursiveMd == null)
+                            break;
+                        processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
+                        processor.Emit(OpCodes.Call, getMr);
+                        processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
+                        processor.Emit(OpCodes.Call, getMr);
+                        FinishTypeReferenceCompare(propertyDef.PropertyType);
+                    }
+
+                    //Return true;
+                    processor.Emit(OpCodes.Ldc_I4_1);
+                    processor.Emit(OpCodes.Ret);
+                    processor.Append(exitMethodInst);
+                    processor.Emit(OpCodes.Ret);
+
+
+                    void FinishTypeReferenceCompare(TypeReference tr)
+                    {
+                        /* If a class or struct see if it already has a comparer
+                         * using IEquatable. If so then call the comparer method.
+                         * Otherwise make a new comparer and call it. */
+                        if (tr.IsClassOrStruct(base.Session))
+                        {
+                            //Make equatable for type.
+                            GenericInstanceType git = IEquatable_TypeRef.MakeGenericInstanceType(tr);
+                            bool createNestedComparer = !tr.CachedResolve(base.Session).ImplementsInterface(git.FullName);
+                            //Create new.
+                            if (createNestedComparer)
+                            {
+                                MethodDefinition cMd = CreateEqualityComparer(tr);
+                                processor.Emit(OpCodes.Call, cMd);
+                                processor.Emit(OpCodes.Brfalse, exitMethodInst);
+                            }
+                            //Call existing.
+                            else
+                            {
+                                MethodDefinition cMd = tr.CachedResolve(base.Session).GetMethod("op_Equality");
+                                if (cMd == null)
+                                {
+                                    base.LogError($"Type {tr.FullName} implements IEquatable but the comparer method could not be found.");
+                                    return;
+                                }
+                                else
+                                {
+                                    MethodReference mr = base.ImportReference(cMd);
+                                    processor.Emit(OpCodes.Call, mr);
+                                    processor.Emit(OpCodes.Brfalse, exitMethodInst);
+                                }
+                            }
+                        }
+                        //Value types do not need to check custom comparers.
+                        else
+                        {
+                            processor.Emit(OpCodes.Bne_Un, exitMethodInst);
+                        }
+
+                    }
+                }
+
+                void CreateValueOrReferenceComparer()
+                {
+                    base.ImportReference(dataTr);
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
+                    processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
+                    processor.Emit(OpCodes.Ceq);
+                    processor.Emit(OpCodes.Ret);
+                }
+
             }
 
         }
+
+        /// <summary>
+        /// Registers a comparer method.
+        /// </summary>
+        /// <param name="methodDef"></param>
+        /// <param name="dataTr"></param>
+        public void RegisterComparerDelegate(MethodDefinition methodDef, TypeReference dataTr)
+        {
+            _comparerDelegates.Add(dataTr.FullName, methodDef);
+        }
+        /// <summary>
+        /// Creates a delegate for GeneratedComparers.
+        /// </summary>
+        public void CreateComparerDelegate(MethodDefinition comparerMd, TypeReference dataTr)
+        {
+            dataTr = base.ImportReference(dataTr);
+            //Initialize delegate for made comparer.
+            List<Instruction> insts = new List<Instruction>();
+            ILProcessor processor = GeneratedComparer_OnLoadMethodDef.Body.GetILProcessor();
+            //Create a Func<Reader, T> delegate 
+            insts.Add(processor.Create(OpCodes.Ldnull));
+            insts.Add(processor.Create(OpCodes.Ldftn, comparerMd));
+
+            GenericInstanceType git;
+            git = FunctionT3TypeRef.MakeGenericInstanceType(dataTr, dataTr, GetTypeReference(typeof(bool)));
+            MethodReference functionConstructorInstanceMethodRef = FunctionT3ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, git);
+            insts.Add(processor.Create(OpCodes.Newobj, functionConstructorInstanceMethodRef));
+
+            //Call delegate to ReplicateComparer.Compare(T, T);
+            git = GeneratedComparer_TypeRef.MakeGenericInstanceType(dataTr);
+            MethodReference comparerMr = GeneratedComparer_Compare_Set_MethodRef.MakeHostInstanceGeneric(base.Session, git);
+            insts.Add(processor.Create(OpCodes.Call, comparerMr));
+            processor.InsertFirst(insts);
+        }
+
+
 
         /// <summary>
         /// Returns an OpCode for loading a parameter.
         /// </summary>
         public OpCode GetLoadParameterOpCode(ParameterDefinition pd)
         {
-            return (pd.ParameterType.IsValueType) ? OpCodes.Ldarga : OpCodes.Ldarg;
+            TypeReference tr = pd.ParameterType;
+            return (tr.IsValueType && tr.IsClassOrStruct(base.Session)) ? OpCodes.Ldarga : OpCodes.Ldarg;
         }
 
         /// <summary>
@@ -1335,3 +1409,4 @@ namespace FishNet.CodeGenerating.Helping
         #endregion
     }
 }
+
