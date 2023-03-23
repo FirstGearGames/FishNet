@@ -644,7 +644,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 base.LogError($"Could not create deserializer for {typeRef.FullName}.");
             }
-            //Otherwise, check if generic and create writes for generic pararameters.
+            //Otherwise, check if generic and create writes for generic parameters.
             else if (typeRef.IsGenericInstance)
             {
                 GenericInstanceType git = (GenericInstanceType)typeRef;
