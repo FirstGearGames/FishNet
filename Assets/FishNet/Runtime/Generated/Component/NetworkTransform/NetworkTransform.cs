@@ -1178,7 +1178,7 @@ namespace FishNet.Component.Transforming
         private void SendToClients(byte lodIndex)
         {
             //True if clientAuthoritative and there is an owner.
-            bool clientAuthoritativeWithOwner = (_clientAuthoritative && base.Owner.IsValid);
+            bool clientAuthoritativeWithOwner = (_clientAuthoritative && base.Owner.IsValid && !base.Owner.IsLocalClient);
             //Channel to send rpc on.
             Channel channel = Channel.Unreliable;
             //If relaying from client.
