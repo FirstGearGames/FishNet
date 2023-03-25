@@ -1,5 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Managing;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Transporting;
 using FishNet.Utility;
@@ -11,6 +12,41 @@ namespace FishNet.Component.Prediction
 {
     public partial class PredictedObject : NetworkBehaviour
     {
+        #region Types.
+        [System.Serializable]
+        public struct SmoothingData
+        {
+            /// <summary>
+            /// Percentage of ping to use as interpolation. Higher values will result in more interpolation.
+            /// </summary>
+            [Tooltip("Percentage of ping to use as interpolation. Higher values will result in more interpolation.")]
+            [Range(0.01f, 5f)]
+            public float InterpolationPercent;
+            /// <summary>
+            /// Percentage of ping to use as interpolation when colliding with an object local client owns.
+            /// This is used to speed up local interpolation when predicted objects collide with a player as well keep graphics closer to the objects root while colliding.
+            /// </summary>
+            [Tooltip("Percentage of ping to use as interpolation when colliding with an object local client owns." +
+                "This is used to speed up local interpolation when predicted objects collide with a player as well keep graphics closer to the objects root while colliding.")]
+            [Range(0.01f, 5f)]
+            public float CollisionInterpolationPercent;
+            /// <summary>
+            /// How much per tick to decrease to collision interpolation when colliding with a local player object.
+            /// Higher values will set interpolation to collision settings faster.
+            /// </summary>
+            [Tooltip("How much per tick to decrease to collision interpolation when colliding with a local player object. Higher values will set interpolation to collision settings faster.")]
+            [Range(1, byte.MaxValue)]
+            public byte InterpolationDecreaseStep;
+            /// <summary>
+            /// How much per tick to increase to normal interpolation when not colliding with a local player object.
+            /// Higher values will set interpolation to normal settings faster.
+            /// </summary>
+            [Tooltip("How much per tick to increase to normal interpolation when not colliding with a local player object. Higher values will set interpolation to normal settings faster.")]
+            [Range(1, byte.MaxValue)]
+            public byte InterpolationIncreaseStep;
+        }
+        #endregion
+
         #region All.
         #region Internal.
         /// <summary>
@@ -54,31 +90,23 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Current interpolation value.
         /// </summary>
-        private byte _currentSpectatorInterpolation;
+        private long _currentSpectatorInterpolation;
         /// <summary>
         /// Target interpolation when collision is exited.
         /// </summary>
-        private byte _targetSpectatorInterpolation;
+        private uint _targetSpectatorInterpolation;
         /// <summary>
         /// Target interpolation when collision is entered.
         /// </summary>
-        private byte _targetCollisionSpectatorInterpolation;
+        private uint _targetCollisionSpectatorInterpolation;
         /// <summary>
-        /// How often in ticks to move towards targets when not collisionEntered is true.
+        /// How much per tick to decrease to collision interpolation when colliding with a local player object.
         /// </summary>
-        private uint _collisionChangeDivisor = 2;
+        private byte _interpolationDecreaseStep;
         /// <summary>
-        /// How often in ticks to move towards targets when not collisionEntered is false.
+        /// How much per tick to increase to normal interpolation when not colliding with a local player object.
         /// </summary>
-        private uint _changeDivisor = 5;
-        /// <summary>
-        /// Current number of ticks to ignore when replaying.
-        /// </summary>
-        private uint _currentIgnoredTicks;
-        /// <summary>
-        /// Target number of ticks to ignore when replaying.
-        /// </summary>
-        private uint _targetIgnoredTicks;
+        private byte _interpolationIncreaseStep;
         /// <summary>
         /// Last local tick that collision has stayed with local client objects.
         /// </summary>
@@ -87,6 +115,37 @@ namespace FishNet.Component.Prediction
         /// Local client objects this object is currently colliding with.
         /// </summary>
         private HashSet<GameObject> _localClientCollidedObjects = new HashSet<GameObject>();
+        /// <summary>
+        /// True if spectator prediction is paused.
+        /// </summary>
+        private bool _spectatorPaused;
+        ///// <summary>
+        ///// Target number of ticks to ignore when replaying.
+        ///// </summary>
+        //private uint _ignoredTicks;
+        #region Smoothing datas.
+        private static SmoothingData _accurateSmoothingData = new SmoothingData()
+        {
+            InterpolationPercent = 0.5f,
+            CollisionInterpolationPercent = 0.05f,
+            InterpolationDecreaseStep = 1,
+            InterpolationIncreaseStep = 2,
+        };
+        private static SmoothingData _mixedSmoothingData = new SmoothingData()
+        {
+            InterpolationPercent = 1f,
+            CollisionInterpolationPercent = 0.1f,
+            InterpolationDecreaseStep = 1,
+            InterpolationIncreaseStep = 3,
+        };
+        private static SmoothingData _gradualSmoothingData = new SmoothingData()
+        {
+            InterpolationPercent = 1.5f,
+            CollisionInterpolationPercent = 0.2f,
+            InterpolationDecreaseStep = 1,
+            InterpolationIncreaseStep = 5,
+        };
+        #endregion
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -281,13 +340,30 @@ namespace FishNet.Component.Prediction
             if (!CanPredict())
                 return;
 
-            if (_localTick - tick < _currentIgnoredTicks)
-                _rigidbodyPauser.Pause();
+            //if (_localTick - tick < _ignoredTicks)
+            //    _rigidbodyPauser.Pause();
 
             if (_predictionType == PredictionType.Rigidbody)
+            {
+                _preReplicateReplayCacheIndex = GetCachedStateIndex(tick, false);
+                if (_preReplicateReplayCacheIndex != -1)
+                {
+                    bool prevKinematic = _rigidbodyStates[_preReplicateReplayCacheIndex].IsKinematic;
+                    _rigidbody.isKinematic = prevKinematic;
+                }
                 PredictVelocity(ps);
+            }
             else if (_predictionType == PredictionType.Rigidbody2D)
+            {
+                _preReplicateReplayCacheIndex = GetCachedStateIndex(tick, true);
+                if (_preReplicateReplayCacheIndex != -1)
+                {
+                    bool prevSimulated = _rigidbody2dStates[_preReplicateReplayCacheIndex].Simulated;
+                    _rigidbody2d.simulated = prevSimulated;
+                    _rigidbody2d.isKinematic = !prevSimulated;
+                }
                 PredictVelocity(ps2d);
+            }
         }
 
         /// <summary>
@@ -303,7 +379,7 @@ namespace FishNet.Component.Prediction
 
             if (_predictionType == PredictionType.Rigidbody)
             {
-                int index = GetCachedStateIndex(tick, false);
+                int index = _preReplicateReplayCacheIndex;
                 if (index != -1)
                 {
                     bool prevKinematic = _rigidbodyStates[index].IsKinematic;
@@ -322,10 +398,34 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
+        /// Pauses corrections as a spectator object.
+        /// </summary>
+        public void SetPauseSpectatorCorrections_Experimental(bool pause)
+        {
+            _spectatorPaused = pause;
+            if (pause)
+            {
+                _rigidbodyStates.Clear();
+                _rigidbody2dStates.Clear();
+            }
+        }
+
+        /// <summary>
         /// Called when ping updates for the local client.
         /// </summary>
         private void Rigidbodies_OnRoundTripTimeUpdated(long ping)
         {
+            /* Only update periodically when ping changes.
+             * This is to prevent excessive interpolation
+             * changes. */
+            ulong difference = (ulong)Mathf.Abs(ping - _lastPing);
+            //Allow update if ping jump is large enough.
+            if (difference < 50)
+            {
+                uint tickInterval = base.TimeManager.TimeToTicks(5f, Managing.Timing.TickRounding.RoundUp);
+                if (base.TimeManager.LocalTick - _lastPingUpdateTick < tickInterval)
+                    return;
+            }
             SetTargetSmoothing(ping, false);
         }
         /// <summary>
@@ -337,80 +437,54 @@ namespace FishNet.Component.Prediction
             if (_spectatorSmoother == null)
                 return;
 
-            const long maxPing = 300;
-            //Percentage that ping is between 0f and maxPing.
-            float rttPercent = Mathf.InverseLerp(0, maxPing, ping);
+            _lastPingUpdateTick = base.TimeManager.LocalTick;
+            _lastPing = ping;
+            SetValues();
+            //Ignored ticks will be less for predicted spawner.
+            //if (base.NetworkObject.PredictedSpawner.IsLocalClient)
+            //    _ignoredTicks /= 2;
 
-            //Min and max interpolation to use when not colliding.
-            byte minTargetInterpolation;
-            byte maxTargetInterpolation;
-            //Min and max interpolation to use when colliding.
-            const byte minCollisionInterpolation = 1;
-            byte maxCollisionInterpolation;
-            //Multiplier determining ignored ticks value.
-            float maxIgnoredTicksMultiplier;
-            //Multiplier to apply towards accelerating graphics to lower interpolation.
-            float collisionMoveMultiplier;
-            //Set values for variables above based on settings.
-            SetFlatValues();
+            //_igtt = _ignoredTicks;
+            //_ignoredTicks = 0;
+            //if (base.Owner.IsValid && (base.Owner != base.NetworkObject.PredictedSpawner))
+            //{
+            //    _ignoredTicks *= 4;
+            //    if (gameObject.name.Contains("Bullet"))
+            //        Debug.Log("Setting to " + _ignoredTicks);
+            //}
+            //if (base.Owner.IsValid && (base.Owner == base.NetworkObject.PredictedSpawner))// base.IsOwner)
+            //    _ignoredTicks = 0;
 
-            //Target interpolation.
-            _targetSpectatorInterpolation = (byte)Mathf.CeilToInt(
-                Mathf.Lerp(0f, (float)maxTargetInterpolation, rttPercent)
-                );
-            if (_targetSpectatorInterpolation < minTargetInterpolation)
-                _targetSpectatorInterpolation = minTargetInterpolation;
-            //Collision interpolation.
-            _targetCollisionSpectatorInterpolation = (byte)Mathf.FloorToInt(Mathf.Lerp(minCollisionInterpolation, maxCollisionInterpolation, rttPercent));
-
-            float pingToMs = (float)(base.TimeManager.RoundTripTime / 1000f);
-            float ignoredTicKMultiplier = Mathf.Lerp(0f, maxIgnoredTicksMultiplier, rttPercent);
-            _targetIgnoredTicks = (uint)Mathf.CeilToInt(base.TimeManager.TimeToTicks((pingToMs * ignoredTicKMultiplier)));
-
-            _spectatorSmoother.SetExcessBufferMultiplier(collisionMoveMultiplier);
+            //_spectatorSmoother.SetIgnoredTicks(_ignoredTicks);
 
             //If to apply values to targets immediately.
             if (setImmediately)
             {
-                _currentIgnoredTicks = _targetIgnoredTicks;
                 _currentSpectatorInterpolation = (CollidingWithLocalClient()) ? _targetCollisionSpectatorInterpolation : _targetSpectatorInterpolation;
-                _spectatorSmoother.SetIgnoredTicks(_currentIgnoredTicks);
-                _spectatorSmoother.SetInterpolation(_currentSpectatorInterpolation);
+                _spectatorSmoother.SetInterpolation((uint)_currentSpectatorInterpolation);
             }
 
             //Sets ranges to use based on smoothing type.
-            void SetFlatValues()
+            void SetValues()
             {
-                //Changing divisor is always a flat rate of x times a second.
-                _changeDivisor = (uint)Mathf.CeilToInt((float)base.TimeManager.TickRate * 0.33f);
-
+                SmoothingData data;
                 if (_spectatorSmoothingType == SpectatorSmoothingType.Accuracy)
-                {
-                    minTargetInterpolation = 2; //2
-                    maxTargetInterpolation = 14; //13
-                    maxCollisionInterpolation = 2; //3
-                    maxIgnoredTicksMultiplier = 0.2f; //0.4
-                    collisionMoveMultiplier = 6.5f; //7
-                    _collisionChangeDivisor = 1; //1
-                }
+                    data = _accurateSmoothingData;
                 else if (_spectatorSmoothingType == SpectatorSmoothingType.Mixed)
-                {
-                    minTargetInterpolation = 3;
-                    maxTargetInterpolation = 16;
-                    maxCollisionInterpolation = 4;
-                    maxIgnoredTicksMultiplier = 0.4f;
-                    collisionMoveMultiplier = 3.5f;
-                    _collisionChangeDivisor = 2;
-                }
+                    data = _mixedSmoothingData;
+                else if (_spectatorSmoothingType == SpectatorSmoothingType.Gradual)
+                    data = _gradualSmoothingData;
                 else
-                {
-                    minTargetInterpolation = 3;
-                    maxTargetInterpolation = 18;
-                    maxCollisionInterpolation = 5;
-                    maxIgnoredTicksMultiplier = 0.5f;
-                    collisionMoveMultiplier = 1.5f;
-                    _collisionChangeDivisor = 3;
-                }
+                    data = _customSmoothingData;
+
+                TimeManager tm = base.TimeManager;
+                double interpolationTime = (ping / 1000d) * data.InterpolationPercent;
+                _targetSpectatorInterpolation = tm.TimeToTicks(interpolationTime, TickRounding.RoundUp);
+                double collisionInterpolationTime = (ping / 1000d) * data.CollisionInterpolationPercent;
+                _targetCollisionSpectatorInterpolation = tm.TimeToTicks(collisionInterpolationTime, TickRounding.RoundUp);
+
+                _interpolationDecreaseStep = data.InterpolationDecreaseStep;
+                _interpolationIncreaseStep = data.InterpolationIncreaseStep;
             }
         }
 
@@ -425,52 +499,20 @@ namespace FishNet.Component.Prediction
             return (base.TimeManager.LocalTick - _collisionStayedTick) < 1;
         }
 
+        private uint _igtt;
         /// <summary>
         /// Updates spectator smoothing values to move towards their targets.
         /// </summary>
         private void UpdateSpectatorSmoothing()
         {
-            byte targetInterpolation;
-            uint divisor;
-            if (CollidingWithLocalClient())
-            {
-                targetInterpolation = _targetCollisionSpectatorInterpolation;
-                byte interpolationGoal = _targetCollisionSpectatorInterpolation;
-                _currentSpectatorInterpolation = interpolationGoal;
-                divisor = _collisionChangeDivisor;
-
-                if (base.TimeManager.LocalTick % divisor == 0)
-                    MoveTowardsIgnoredTicks();
-            }
+            bool colliding = CollidingWithLocalClient();
+            if (colliding)
+                _currentSpectatorInterpolation -= _interpolationDecreaseStep;
             else
-            {
-                targetInterpolation = _targetSpectatorInterpolation;
-                byte interpolationGoal = _targetSpectatorInterpolation;
-                //Move values over 10 times a second.
-                divisor = _changeDivisor;
+                _currentSpectatorInterpolation += _interpolationIncreaseStep;
 
-                if (base.TimeManager.LocalTick % divisor == 0)
-                {
-                    //Ignored ticks.
-                    MoveTowardsIgnoredTicks();
-                    //Interpolation/
-                    if (_currentSpectatorInterpolation < interpolationGoal)
-                        _currentSpectatorInterpolation++;
-                    else if (_currentSpectatorInterpolation > interpolationGoal)
-                        _currentSpectatorInterpolation--;
-                }
-            }
-
-            void MoveTowardsIgnoredTicks()
-            {
-                if (_currentIgnoredTicks < _targetIgnoredTicks)
-                    _currentIgnoredTicks++;
-                else if (_currentIgnoredTicks > _targetIgnoredTicks)
-                    _currentIgnoredTicks--;
-            }
-
-            _spectatorSmoother.SetInterpolation(_currentSpectatorInterpolation);
-            _spectatorSmoother.SetIgnoredTicks(_currentIgnoredTicks);
+            _currentSpectatorInterpolation = (long)Mathf.Clamp(_currentSpectatorInterpolation, _targetCollisionSpectatorInterpolation, _targetSpectatorInterpolation);
+            _spectatorSmoother.SetInterpolation((uint)_currentSpectatorInterpolation);
         }
 
         /// <summary>
@@ -749,6 +791,8 @@ namespace FishNet.Component.Prediction
                 return false;
             if (base.IsServer || IsPredictingOwner())
                 return false;
+            if (_spectatorPaused)
+                return false;
 
             return true;
         }
@@ -801,8 +845,6 @@ namespace FishNet.Component.Prediction
             if (_localClientCollidedObjects.Contains(collision.gameObject))
                 _collisionStayedTick = base.TimeManager.LocalTick;
         }
-        private bool _gotBack;
-        private bool _gotb2;
 
         /// <summary>
         /// Resets the rigidbody to a state.
@@ -932,6 +974,18 @@ namespace FishNet.Component.Prediction
         /// PhysicsScene for this object when OnPreReconcile is called.
         /// </summary>
         private PhysicsScene2D _physicsScene2D;
+        /// <summary>
+        /// Last found cacheIndex during PreReplay.
+        /// </summary>
+        private int _preReplicateReplayCacheIndex;
+        /// <summary>
+        /// Last tick a ping update was received.
+        /// </summary>
+        private uint _lastPingUpdateTick;
+        /// <summary>
+        /// Last ping during a ping update.
+        /// </summary>
+        private long _lastPing;
         #endregion
 
         private void OnCollisionEnter2D(Collision2D collision)

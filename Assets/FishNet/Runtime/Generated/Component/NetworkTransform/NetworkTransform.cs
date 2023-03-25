@@ -1241,6 +1241,10 @@ namespace FishNet.Component.Transforming
                 {
                     foreach (NetworkConnection nc in base.Observers)
                     {
+                        //If to not send to owner.
+                        if (!_sendToOwner && nc == base.Owner)
+                            continue;
+
                         byte lod;
                         if (!nc.LevelOfDetails.TryGetValue(base.NetworkObject, out lod))
                             lod = 0;

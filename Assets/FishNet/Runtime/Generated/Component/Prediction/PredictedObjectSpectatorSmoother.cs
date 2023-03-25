@@ -192,17 +192,12 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// How far in the past to keep the graphical object.
         /// </summary>
-        private byte _interpolation = 4;
+        private uint _interpolation = 4;
         /// <summary>
         /// Sets the interpolation value to use when the owner of this object.
         /// </summary>
         /// <param name="value"></param>
-        public void SetInterpolation(byte value) => _interpolation = value;
-        /// <summary>
-        /// Sets the number of ticks to ignroe at the end of a replay.
-        /// </summary>
-        /// <param name="value"></param>
-        public void SetIgnoredTicks(uint value) => _ignoredTicks = value;
+        public void SetInterpolation(uint value) => _interpolation = value;
         /// <summary>
         /// GoalDatas to move towards.
         /// </summary>
@@ -252,35 +247,31 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private static Stack<GoalData> _goalDataCache = new Stack<GoalData>();
         /// <summary>
-        /// Number of ticks to ignore when replaying.
-        /// </summary>
-        private uint _ignoredTicks;
-        /// <summary>
         /// Cached localtick for performance.
         /// </summary>
         private uint _localTick;
         /// <summary>
+        /// Number of ticks to ignore when replaying.
+        /// </summary>
+        private uint _ignoredTicks;
+        /// <summary>
         /// Start position of the graphical object in world space.
         /// </summary>
         private Vector3 _startWorldPosition;
-        /// <summary>
-        /// Multiplier to apply towards overflow multiplier when too many entries are in the buffer.
-        /// </summary>
-        private float _excessBufferMultiplier;
-        /// <summary>
-        /// Sets excessBufferMultiplier value.
-        /// </summary>
-        /// <param name="value"></param>
-        public void SetExcessBufferMultiplier(float value) => _excessBufferMultiplier = value;
         #endregion
 
         #region Const.
         /// <summary>
-        /// Multiplier to apply to movement speed when buffer is over or under interpolation.
+        /// Multiplier to apply to movement speed when buffer is over interpolation.
         /// </summary>
         private const float OVERFLOW_MULTIPLIER = 0.1f;
+        /// <summary>
+        /// Multiplier to apply to movement speed when buffer is under interpolation.
+        /// </summary>
+        private const float UNDERFLOW_MULTIPLIER = 0.02f;
         #endregion
 
+        public void SetIgnoredTicks(uint value) => _ignoredTicks = value;
         /// <summary>
         /// Initializes this for use.
         /// </summary>
@@ -393,8 +384,8 @@ namespace FishNet.Component.Prediction
             {
                 if (CanSmooth())
                 {
-                    if (_localTick - tick < _ignoredTicks)
-                        return;
+                    //if (_localTick - tick < _ignoredTicks)
+                    //    return;
 
                     CreateGoalData(tick, false);
                 }
@@ -497,8 +488,8 @@ namespace FishNet.Component.Prediction
             }
             else
             {
-                if (!afterMove && _goalDatas.Count < _interpolation)
-                    return;
+                //if (!afterMove && _goalDatas.Count < _interpolation)
+                //    return;
 
                 //Update current to next.
                 _currentGoalData.Update(_goalDatas[0]);
@@ -507,7 +498,6 @@ namespace FishNet.Component.Prediction
                 _goalDatas.RemoveAt(0);
             }
         }
-
 
         /// <summary>
         /// Moves to a GoalData. Automatically determins if to use data from server or client.
@@ -540,12 +530,25 @@ namespace FishNet.Component.Prediction
              * speed up when buffer is too large. This should
              * provide a good balance of accuracy. */
 
-            float multiplier = 1f;
-            int countOverInterpolation = (queueCount - _interpolation);
+            float multiplier;
+            int countOverInterpolation = (queueCount - (int)_interpolation);
             if (countOverInterpolation > 0)
-                multiplier += (OVERFLOW_MULTIPLIER * _excessBufferMultiplier);
-            else if (countOverInterpolation < 0 && queueCount > 1)
-                multiplier -= OVERFLOW_MULTIPLIER;
+            {
+                float overflowMultiplier = (!_predictedObject.IsOwner) ? OVERFLOW_MULTIPLIER : (OVERFLOW_MULTIPLIER * 1f);
+                multiplier = 1f + overflowMultiplier;
+            }
+            else if (countOverInterpolation < 0)
+            {
+                float value = (UNDERFLOW_MULTIPLIER * Mathf.Abs(countOverInterpolation));
+                const float maximum = 0.9f;
+                if (value > maximum)
+                    value = maximum;
+                multiplier = 1f - value;
+            }
+            else
+            {
+                multiplier = 1f;
+            }
 
             //Rate to update. Changes per property.
             float rate;
@@ -688,7 +691,7 @@ namespace FishNet.Component.Prediction
              * This could create a starting jitter but it will ensure
              * the buffer does not fill too much. The buffer next should
              * actually get unreasonably high but rather safe than sorry. */
-            int maximumBufferAllowance = (_interpolation * 8);
+            int maximumBufferAllowance = ((int)_interpolation * 8);
             int removedBufferCount = (_goalDatas.Count - maximumBufferAllowance);
             //If there are some to remove.
             if (removedBufferCount > 0)
