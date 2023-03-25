@@ -78,6 +78,16 @@ MonoBehaviour:
   _spectatorSmoothPosition: 1
   _spectatorSmoothRotation: 1
   _spectatorSmoothingType: 2
+  _customSmoothingData:
+    InterpolationPercent: 1
+    CollisionInterpolationPercent: 0.1
+    InterpolationDecreaseStep: 1
+    InterpolationIncreaseStep: 3
+  _preconfiguredSmoothingDataPreview:
+    InterpolationPercent: 1.5
+    CollisionInterpolationPercent: 0.2
+    InterpolationDecreaseStep: 1
+    InterpolationIncreaseStep: 5
   _maintainedVelocity: 0
   _resendType: 0
   _resendInterval: 30
@@ -95,7 +105,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 5
+  <PrefabId>k__BackingField: 6
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 2281302723
   <SceneId>k__BackingField: 0

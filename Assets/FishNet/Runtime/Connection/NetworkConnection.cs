@@ -1,9 +1,11 @@
-﻿using FishNet.Documenting;
+﻿using FishNet.Component.Observing;
+using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Object;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Connection
@@ -75,17 +77,33 @@ namespace FishNet.Connection
         /// </summary>
         public int ClientId = -1;
         /// <summary>
-        /// 
-        /// </summary>
-        private HashSet<NetworkObject> _objects = new HashSet<NetworkObject>();
-        /// <summary>
         /// Objects owned by this connection. Available to this connection and server.
         /// </summary>
-        public IReadOnlyCollection<NetworkObject> Objects => _objects;
+        public HashSet<NetworkObject> Objects = new HashSet<NetworkObject>();
         /// <summary>
         /// The first object within Objects.
         /// </summary>
         public NetworkObject FirstObject { get; private set; }
+        /// <summary>
+        /// Sets a custom FirstObject. This connection must be owner of the specified object.
+        /// </summary>
+        /// <param name="nob"></param>
+        public void SetFirstObject(NetworkObject nob)
+        {
+            //Invalid object.
+            if (!Objects.Contains(nob))
+            {
+                string errMessage = $"FirstObject for {ClientId} cannot be set to {nob.name} as it's not within Objects for this connection.";
+                if (NetworkManager == null)
+                    NetworkManager.StaticLogError(errMessage);
+                else
+                    NetworkManager.LogError(errMessage);
+
+                return;
+            }
+
+            FirstObject = nob;
+        }
         /// <summary>
         /// Scenes this connection is in. Available to this connection and server.
         /// </summary>
@@ -229,12 +247,21 @@ namespace FishNet.Connection
         {
             NetworkManager = nm;
             ClientId = clientId;
+            Observers_Initialize(nm);
             //Only the server uses the ping and buffer.
             if (asServer)
             {
                 InitializeBuffer();
                 InitializePing();
             }
+        }
+
+        /// <summary>
+        /// Deinitializes this NetworkConnection. This is called prior to resetting.
+        /// </summary>
+        internal void Deinitialize()
+        {
+            MatchCondition.RemoveFromMatchesWithoutRebuild(this, NetworkManager);            
         }
 
         /// <summary>
@@ -260,6 +287,7 @@ namespace FishNet.Connection
             AllowedForcedLodUpdates = 0;
             LastLevelOfDetailUpdate = 0;
             LevelOfDetailInfractions = 0;
+            Observers_Reset();
         }
 
         /// <summary>
@@ -327,10 +355,10 @@ namespace FishNet.Connection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AddObject(NetworkObject nob)
         {
-            _objects.Add(nob);
+            Objects.Add(nob);
             //If adding the first object then set new FirstObject.
-            if (_objects.Count == 1)
-                FirstObject = nob;
+            if (Objects.Count == 1)
+                SetFirstObject();
 
             OnObjectAdded?.Invoke(nob);
         }
@@ -342,7 +370,7 @@ namespace FishNet.Connection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RemoveObject(NetworkObject nob)
         {
-            _objects.Remove(nob);
+            Objects.Remove(nob);
             //If removing the first object then set a new one.
             if (nob == FirstObject)
                 SetFirstObject();
@@ -355,7 +383,7 @@ namespace FishNet.Connection
         /// </summary>
         private void ClearObjects()
         {
-            _objects.Clear();
+            Objects.Clear();
             FirstObject = null;
         }
 
@@ -364,7 +392,7 @@ namespace FishNet.Connection
         /// </summary>
         private void SetFirstObject()
         {
-            if (_objects.Count == 0)
+            if (Objects.Count == 0)
             {
                 FirstObject = null;
             }
@@ -373,6 +401,7 @@ namespace FishNet.Connection
                 foreach (NetworkObject nob in Objects)
                 {
                     FirstObject = nob;
+                    Observers_FirstObjectChanged();
                     break;
                 }
             }

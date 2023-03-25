@@ -190,7 +190,7 @@ namespace FishNet.Managing.Server
             /* A cache is made because the Objects
              * collection would end up modified during
              * iteration from removing ownership and despawning. */
-            ListCache<NetworkObject> cache = ListCaches.GetNetworkObjectCache();
+            ListCache<NetworkObject> cache = ListCaches.RetrieveNetworkObjectCache();
             foreach (NetworkObject nob in connection.Objects)
                 cache.AddValue(nob);
 
@@ -494,7 +494,7 @@ namespace FishNet.Managing.Server
              * the same objects would be rebuilt again. This likely
              * would not affect anything other than perf but who
              * wants that. */
-            ListCache<NetworkObject> spawnCacheCopy = ListCaches.GetNetworkObjectCache();
+            ListCache<NetworkObject> spawnCacheCopy = ListCaches.RetrieveNetworkObjectCache();
             spawnCacheCopy.AddValues(_spawnCache);
             _spawnCache.Reset();
             //Also rebuild observers for the object so it spawns for others.
@@ -653,7 +653,7 @@ namespace FishNet.Managing.Server
             if (!base.NetworkManager.TimeManager.FrameTicked)
                 return;
 
-            ListCache<int> intCache = ListCaches.GetIntCache();
+            ListCache<int> intCache = ListCaches.RetrieveIntCache();
 
             uint requiredTicks = _cleanRecentlyDespawnedMaxTicks;
             uint currentTick = base.NetworkManager.TimeManager.LocalTick;
@@ -829,7 +829,7 @@ namespace FishNet.Managing.Server
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
 
             //Add observers to a list cache.
-            ListCache<NetworkConnection> cache = ListCaches.GetNetworkConnectionCache();
+            ListCache<NetworkConnection> cache = ListCaches.RetrieveNetworkConnectionCache();
             cache.Reset();
             cache.AddValues(nob.Observers);
             int written = cache.Written;

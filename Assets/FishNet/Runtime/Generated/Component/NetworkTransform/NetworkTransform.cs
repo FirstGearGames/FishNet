@@ -1,4 +1,7 @@
-﻿using FishNet.Connection;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
@@ -1175,7 +1178,7 @@ namespace FishNet.Component.Transforming
         private void SendToClients(byte lodIndex)
         {
             //True if clientAuthoritative and there is an owner.
-            bool clientAuthoritativeWithOwner = (_clientAuthoritative && base.Owner.IsValid);
+            bool clientAuthoritativeWithOwner = (_clientAuthoritative && base.Owner.IsValid && !base.Owner.IsLocalClient);
             //Channel to send rpc on.
             Channel channel = Channel.Unreliable;
             //If relaying from client.
@@ -1238,6 +1241,10 @@ namespace FishNet.Component.Transforming
                 {
                     foreach (NetworkConnection nc in base.Observers)
                     {
+                        //If to not send to owner.
+                        if (!_sendToOwner && nc == base.Owner)
+                            continue;
+
                         byte lod;
                         if (!nc.LevelOfDetails.TryGetValue(base.NetworkObject, out lod))
                             lod = 0;
@@ -1245,8 +1252,11 @@ namespace FishNet.Component.Transforming
                         if (lod > lodIndex)
                             continue;
                         //No need for server to send to local client (clientHost).
+                        //Still send if development for stat tracking.
+#if !DEVELOPMENT
                         if (!nc.IsLocalClient)
-                            TargetUpdateTransform(nc, _changedWriters[lodIndex].GetArraySegment(), channel);
+#endif
+                        TargetUpdateTransform(nc, _changedWriters[lodIndex].GetArraySegment(), channel);
                     }
                 }
             }
@@ -1258,6 +1268,14 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void SendToServer(TransformData lastSentTransformData)
         {
+            /* ClientHost does not need to send to the server.
+             * Ideally this would still occur and the data be ignored
+             * for statistics tracking but to keep the code more simple
+             * we won't be doing that. Server out however still is tracked,
+             * which is generally considered more important data. */
+            if (base.IsServer)
+                return;
+
             //Not client auth or not owner.
             if (!_clientAuthoritative || !base.IsOwner)
                 return;
@@ -1620,6 +1638,12 @@ namespace FishNet.Component.Transforming
         [TargetRpc(ValidateTarget = false)]
         private void TargetUpdateTransform(NetworkConnection conn, ArraySegment<byte> data, Channel channel)
         {
+#if DEVELOPMENT
+            //If receiver is client host then do nothing, clientHost need not process.
+            if (base.IsServer && conn.IsLocalClient)
+                return;
+#endif
+
             byte lod;
             /* Get cached LOD for connection receiving this. It will of course
              * always be the local client for conn. */

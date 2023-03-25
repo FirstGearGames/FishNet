@@ -9,6 +9,7 @@ using FishNet.Utility.Performance;
 using System;
 using FishNet.Managing.Object;
 using FishNet.Component.Ownership;
+using FishNet.Component.Observing;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -16,7 +17,7 @@ using UnityEditor;
 namespace FishNet.Object
 {
     [DisallowMultipleComponent]
-    public sealed partial class NetworkObject : MonoBehaviour
+    public partial class NetworkObject : MonoBehaviour
     {
         #region Public.
         /// <summary>
@@ -198,12 +199,13 @@ namespace FishNet.Object
 #endif
         #endregion
 
-        private void Awake()
+        protected virtual void Awake()
         {
+            _isStatic = gameObject.isStatic;
             SetChildDespawnedState();
         }
 
-        private void Start()
+        protected virtual void Start()
         {
             TryStartDeactivation();
         }
@@ -404,7 +406,12 @@ namespace FishNet.Object
              * NetworkBehaviour so it must be preinitialized
              * after NetworkBehaviours are. */
             if (asServer)
+            {
+                _hashGrid = networkManager.GetInstance<HashGrid>(false);
+                if (_hashGrid != null)
+                    HashGridEntry = _hashGrid.GetGridEntry(this);
                 NetworkObserver.PreInitialize(this);
+            }
             _networkObserverInitiliazed = true;
 
             //Add to connection objects if owner exist.
@@ -464,7 +471,7 @@ namespace FishNet.Object
             ParentNetworkObject = parentNob;
 
             //Transforms which can be searched for networkbehaviours.
-            ListCache<Transform> transformCache = ListCaches.GetTransformCache();
+            ListCache<Transform> transformCache = ListCaches.RetrieveTransformCache();
             transformCache.Reset();
             ChildNetworkObjects.Clear();
 
@@ -498,7 +505,7 @@ namespace FishNet.Object
 
             int written;
             //Iterate all cached transforms and get networkbehaviours.
-            ListCache<NetworkBehaviour> nbCache = ListCaches.GetNetworkBehaviourCache();
+            ListCache<NetworkBehaviour> nbCache = ListCaches.RetrieveNetworkBehaviourCache();
             nbCache.Reset();
             written = transformCache.Written;
             List<Transform> ts = transformCache.Collection;

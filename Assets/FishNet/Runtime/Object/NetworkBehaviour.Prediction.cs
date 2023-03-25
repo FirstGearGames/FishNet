@@ -9,6 +9,7 @@ using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Constant;
 using FishNet.Utility.Extension;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -400,15 +401,6 @@ namespace FishNet.Object
             return false;
         }
 
-        /// <summary>
-        /// Clears a Queue.
-        /// This is used as a patch for Unity 2022 Burst compiler bugs.
-        /// Using Queue.Clear via codegen throws for an unknown reason.
-        /// </summary>
-        public void ClearQueue_Server_Internal<T>(Queue<T> q)
-        {
-            q.Clear();
-        }
 
         /// <summary>
         /// Gets the next replicate in queue.

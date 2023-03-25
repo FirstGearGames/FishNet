@@ -7,6 +7,7 @@ using FishNet.Object;
 using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
+using FishNet.Utility.Performance;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
@@ -23,9 +24,6 @@ namespace FishNet.CodeGenerating.Helping
         public string CodegenExcludeAttribute_FullName;
         public string CodegenIncludeAttribute_FullName;
         public MethodReference Extension_Attribute_Ctor_MethodRef;
-        public MethodReference Queue_Enqueue_MethodRef;
-        public MethodReference Queue_get_Count_MethodRef;
-        public MethodReference Queue_Dequeue_MethodRef;
         public MethodReference Queue_Clear_MethodRef;
         public TypeReference List_TypeRef;
         public MethodReference List_Clear_MethodRef;
@@ -97,15 +95,9 @@ namespace FishNet.CodeGenerating.Helping
 
             tmpType = typeof(Queue<>);
             base.ImportReference(tmpType);
-            tmpMi = tmpType.GetMethod("get_Count");
-            Queue_get_Count_MethodRef = base.ImportReference(tmpMi);
             foreach (SR.MethodInfo mi in tmpType.GetMethods())
             {
-                if (mi.Name == nameof(Queue<int>.Enqueue))
-                    Queue_Enqueue_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(Queue<int>.Dequeue))
-                    Queue_Dequeue_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(Queue<int>.Clear))
+                if (mi.Name == nameof(Queue<int>.Clear))
                     Queue_Clear_MethodRef = base.ImportReference(mi);
             }
 
@@ -455,7 +447,7 @@ namespace FishNet.CodeGenerating.Helping
             //Method references for uint/data list:
             //get_count, RemoveRange. */
             GenericInstanceType dataListGit;
-            GetGenericLists(dataTr, out dataListGit);
+            GetGenericList(dataTr, out dataListGit);
             MethodReference lstDataRemoveRangeMr = base.GetClass<GeneralHelper>().List_RemoveRange_MethodRef.MakeHostInstanceGeneric(base.Session, dataListGit);
 
             List<Instruction> insts = new List<Instruction>();
@@ -473,7 +465,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Outputs generic lists for dataTr and uint.
         /// </summary>
-        public void GetGenericLists(TypeReference dataTr, out GenericInstanceType lstData)
+        public void GetGenericList(TypeReference dataTr, out GenericInstanceType lstData)
         {
             TypeReference listDataTr = base.ImportReference(typeof(List<>));
             lstData = listDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
@@ -481,7 +473,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Outputs generic lists for dataTr and uint.
         /// </summary>
-        public void GetGenericQueues(TypeReference dataTr, out GenericInstanceType queueData)
+        public void GetGenericQueue(TypeReference dataTr, out GenericInstanceType queueData)
         {
             TypeReference queueDataTr = base.ImportReference(typeof(Queue<>));
             queueData = queueDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
@@ -1100,14 +1092,14 @@ namespace FishNet.CodeGenerating.Helping
 
                 /* Nullables are not yet supported for automatic
                 * comparers. Let user know they must make their own. */
-                if (dataTr.IsGenericInstance)// dataTr.IsNullable(base.Session))
+                if (dataTr.IsGenericInstance)
                 {
                     base.LogError($"Equality comparers cannot be automatically generated for generic types. Create a custom comparer for {dataTr.FullName}.");
                     return null;
                 }
                 if (dataTr.IsArray)
                 {
-                    base.LogError($"Equality comparers cannot be automatically generated for collections. Create a custom comparer for {dataTr.FullName}.");
+                    base.LogError($"Equality comparers cannot be automatically generated for arrays. Create a custom comparer for {dataTr.FullName}.");
                     return null;
                 }
 
@@ -1409,4 +1401,3 @@ namespace FishNet.CodeGenerating.Helping
         #endregion
     }
 }
-

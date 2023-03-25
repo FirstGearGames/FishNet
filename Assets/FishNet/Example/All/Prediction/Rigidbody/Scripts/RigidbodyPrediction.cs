@@ -104,7 +104,7 @@ namespace FishNet.Example.Prediction.Rigidbodies
             InstanceFinder.TimeManager.OnTick += TimeManager_OnTick;
             InstanceFinder.TimeManager.OnPostTick += TimeManager_OnPostTick;
         }
-
+  
         private void OnDestroy()
         {
             if (InstanceFinder.TimeManager != null)
@@ -235,7 +235,7 @@ namespace FishNet.Example.Prediction.Rigidbodies
                 PredictedBullet bt = nob.GetComponent<PredictedBullet>();
                 bt.SetStartingForce(transform.forward * 20f);
                 //Spawn client side, which will send the predicted spawn to server.
-                base.Spawn(nob);
+                base.Spawn(nob, base.Owner);
             }
         }
 

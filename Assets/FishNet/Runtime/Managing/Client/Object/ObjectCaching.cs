@@ -408,7 +408,7 @@ namespace FishNet.Managing.Client
                 {
                     CachedNetworkObject cnob = collection[i];
                     if (cnob.Action == CachedNetworkObject.ActionType.Spawn && cnob.NetworkObject != null)
-                        cnob.NetworkObject.InvokeSyncTypeCallbacks(false);
+                        cnob.NetworkObject.InvokeOnStartSyncTypeCallbacks(false);
                 }
             }
             finally

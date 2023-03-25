@@ -54,11 +54,15 @@ namespace FishNet.Observing
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        /// <param name="networkObject"></param>
+        /// <param name="networkObject">NetworkObject this condition is initializing for.</param>
         public virtual void InitializeOnce(NetworkObject networkObject)
         {
             NetworkObject = networkObject;
         }
+        /// <summary>
+        /// Deinitializes this script.
+        /// </summary>
+        public virtual void Deinitialize() { }
         /// <summary>
         /// Returns if the object which this condition resides should be visible to connection.
         /// </summary>

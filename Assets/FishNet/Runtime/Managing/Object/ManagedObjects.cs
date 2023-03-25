@@ -43,9 +43,17 @@ namespace FishNet.Managing.Object
         protected Dictionary<ulong, NetworkObject> SceneObjects = new Dictionary<ulong, NetworkObject>();
         #endregion
 
-        protected void Initialize(NetworkManager manager)
+        #region Private.
+        /// <summary>
+        /// Cached HashGrid. Will be null if not used.
+        /// </summary>
+        private HashGrid _hashGrid;
+        #endregion
+
+        protected virtual void Initialize(NetworkManager manager)
         {
             NetworkManager = manager;
+            _hashGrid = manager.GetInstance<HashGrid>(false);
         }
 
         /// <summary>

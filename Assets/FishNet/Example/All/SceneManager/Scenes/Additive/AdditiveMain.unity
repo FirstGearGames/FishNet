@@ -322,7 +322,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _moveObject: 0
   _moveAllObjects: 0
-  _replaceScenes: 0
+  _replaceOption: 2
   _scenes:
   - AdditiveConnection
   _connectionOnly: 1
@@ -489,7 +489,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _moveObject: 0
   _moveAllObjects: 0
-  _replaceScenes: 0
+  _replaceOption: 2
   _scenes:
   - AdditiveGlobal
   _connectionOnly: 0
@@ -1152,7 +1152,7 @@ GameObject:
   - component: {fileID: 7443408887680269502}
   - component: {fileID: 7443408887680269503}
   m_Layer: 0
-  m_Name: 'NetworkManager '
+  m_Name: NetworkManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1171,10 +1171,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: ec64eb18c93ab344892891f33edbf82a, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617, type: 2}
   _refreshDefaultPrefabs: 1
   _runInBackground: 1
   _dontDestroyOnLoad: 1
+  _objectPool: {fileID: 0}
   _persistence: 0
 --- !u!114 &7443408887680269500
 MonoBehaviour:
@@ -1188,11 +1189,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _updateOrder: 0
+  _timingType: 0
+  _allowTickDropping: 0
+  _maximumFrameTicks: 2
   _tickRate: 30
   _pingInterval: 1
   _timingInterval: 2
   _physicsMode: 0
-  _maximumBufferedInputs: 15
 --- !u!114 &7443408887680269501
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1206,7 +1210,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _unreliableMTU: 1023
-  _attackResponseType: 1
   _ipv4BindAddress: 
   _ipv6BindAddress: 
   _port: 7770
@@ -1226,6 +1229,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _authenticator: {fileID: 0}
+  _syncTypeRate: 0.1
   SpawnPacking:
     Position: 0
     Rotation: 2

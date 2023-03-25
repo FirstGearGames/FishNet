@@ -370,7 +370,7 @@ namespace FishNet.Managing.Server
             //If no servers are started then reset match conditions.
             if (!Started)
             {
-                MatchCondition.ClearMatchesWithoutRebuilding();
+                MatchCondition.StoreCollections(NetworkManager);
                 //Despawn without synchronizing network objects.
                 Objects.DespawnWithoutSynchronization(true);
             }
@@ -433,7 +433,7 @@ namespace FishNet.Managing.Server
                         conn.SetDisconnecting(true);
                         OnRemoteConnectionState?.Invoke(conn, args);
                         Clients.Remove(id);
-                        MatchCondition.RemoveFromMatchWithoutRebuild(conn, NetworkManager);
+                        conn.Deinitialize();
                         Objects.ClientDisconnected(conn);
                         BroadcastClientConnectionChange(false, conn);
                         //Return predictedObjectIds.
@@ -722,7 +722,7 @@ namespace FishNet.Managing.Server
                 if (connected)
                 {
                     //Send already connected clients to the connection that just joined.
-                    ListCache<int> lc = ListCaches.GetIntCache();
+                    ListCache<int> lc = ListCaches.RetrieveIntCache();
                     foreach (int key in Clients.Keys)
                         lc.AddValue(key);
 

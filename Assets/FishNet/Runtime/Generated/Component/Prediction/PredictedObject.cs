@@ -28,7 +28,11 @@ namespace FishNet.Component.Prediction
             /// <summary>
             /// Prefer smooth movement and corrections. Fast moving objects may collide before the graphical representation catches up.
             /// </summary>
-            Smoothness = 2,
+            Gradual = 2,
+            /// <summary>
+            /// Configure values to your preference.
+            /// </summary>
+            Custom = 3,
         }
         /// <summary>
         /// State of this object in a collision.
@@ -197,6 +201,17 @@ namespace FishNet.Component.Prediction
         [SerializeField]
         private SpectatorSmoothingType _spectatorSmoothingType = SpectatorSmoothingType.Mixed;
         /// <summary>
+        /// Custom settings for smoothing data.
+        /// </summary>
+        [Tooltip("Custom settings for smoothing data.")]
+        [SerializeField]
+        private SmoothingData _customSmoothingData = _mixedSmoothingData;
+        /// <summary>
+        /// Preview of selected preconfigured smoothing data. This is only used for the inspector.
+        /// </summary>
+        [SerializeField]
+        private SmoothingData _preconfiguredSmoothingDataPreview = _mixedSmoothingData;
+        /// <summary>
         /// Sets SpectactorSmoothingType value.
         /// </summary>
         /// <param name="value">Value to use.</param>
@@ -329,6 +344,11 @@ namespace FishNet.Component.Prediction
                 /* If has prediction methods implement for owner,
                  * otherwise implement for spectator. */
                 InitializeSmoother(_implementsPredictionMethods);
+                /* Also set spectator smoothing if does not implement
+                 * prediction methods as the spectator smoother is used
+                 * for these scenarios. */
+                if (!_implementsPredictionMethods)
+                    SetTargetSmoothing(base.TimeManager.RoundTripTime, true);
             }
             //Not owner nor server, initialize spectator smoother if using rigidbodies.
             else if (_predictionType != PredictionType.Other)
@@ -567,6 +587,15 @@ namespace FishNet.Component.Prediction
             if (Application.isPlaying)
             {
                 InitializeSmoother(true);
+            }
+            else
+            {
+                if (_spectatorSmoothingType == SpectatorSmoothingType.Accuracy)
+                    _preconfiguredSmoothingDataPreview = _accurateSmoothingData;
+                else if (_spectatorSmoothingType == SpectatorSmoothingType.Mixed)
+                    _preconfiguredSmoothingDataPreview = _mixedSmoothingData;
+                else if (_spectatorSmoothingType == SpectatorSmoothingType.Gradual)
+                    _preconfiguredSmoothingDataPreview = _gradualSmoothingData;
             }
         }
 #endif

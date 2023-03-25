@@ -160,7 +160,7 @@ namespace FishNet.Utility.Performance
 
             Dictionary<int, Stack<NetworkObject>> dict = _cache[collectionId];
             //Convert to a list from the stack so we do not modify the stack directly.
-            ListCache<NetworkObject> nobCache = ListCaches.GetNetworkObjectCache();
+            ListCache<NetworkObject> nobCache = ListCaches.RetrieveNetworkObjectCache();
             foreach (Stack<NetworkObject> item in dict.Values)
             {
                 while (item.Count > 0)

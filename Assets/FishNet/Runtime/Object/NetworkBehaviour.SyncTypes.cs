@@ -1,6 +1,5 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
-using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
@@ -225,7 +224,7 @@ namespace FishNet.Object
                     continue;
 
                 dirtyFound = true;
-                if (ignoreInterval || sb.WriteTimeMet(tick))
+                if (ignoreInterval || sb.SyncTimeMet(tick))
                 {
                     //If writers still need to be reset.
                     if (!writersReset)
