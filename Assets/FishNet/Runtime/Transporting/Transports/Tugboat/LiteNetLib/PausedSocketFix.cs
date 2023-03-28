@@ -14,8 +14,8 @@ namespace LiteNetLib
         private int _port;
         private bool _manualMode;
 
-   
-        public PausedSocketFix() 
+
+        public PausedSocketFix()
         {
             UnityEngine.Application.focusChanged += Application_focusChanged;
         }
@@ -54,6 +54,8 @@ namespace LiteNetLib
                 return;
             //Was intentionally disconnected at some point.
             if (!_netManager.IsRunning)
+                return;
+            if (!_netManager.IsClient)
                 return;
             //Socket is still running.
             if (_netManager.SocketActive(false) || _netManager.SocketActive(true))

@@ -218,7 +218,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void SetGraphicalMoveRates()
         {
-            float delta = ((float)_networkBehaviour.TimeManager.TickDelta * _interpolation);
+            float delta = ((float)_networkBehaviour.TimeManager.TickDelta / _interpolation);
 
             float distance;
             distance = Vector3.Distance(_graphicalObject.position, GetGraphicalGoalPosition());

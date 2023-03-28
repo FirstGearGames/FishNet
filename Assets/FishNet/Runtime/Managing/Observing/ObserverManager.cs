@@ -81,6 +81,15 @@ namespace FishNet.Managing.Observing
         private uint[] _levelOfDetailIntervals;
         #endregion
 
+        private void Awake()
+        {
+            if (_useNetworkLod && _levelOfDetailDistances.Count > 1)
+            {
+                Debug.LogWarning("Network Level of Detail has been disabled while bugs are resolved in relation to this feature. You do not need to make any changes to your project. This warning will be removed once all issues are resolved.");
+                _useNetworkLod = false;
+            }
+        }
+
         /// <summary>
         /// Initializes this script for use.
         /// </summary>

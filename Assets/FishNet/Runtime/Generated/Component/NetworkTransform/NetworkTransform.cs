@@ -21,6 +21,14 @@ namespace FishNet.Component.Transforming
     public sealed class NetworkTransform : NetworkBehaviour
     {
         #region Types.
+        [System.Serializable]
+        public enum ComponentConfigurationType
+        {
+            Disabled = 0,
+            CharacterController = 1,
+            Rigidbody = 2,
+            Rigidbody2D = 3,
+        }
         private struct ReceivedData
         {
             public List<bool> HasData;
@@ -253,6 +261,12 @@ namespace FishNet.Component.Transforming
         #endregion
 
         #region Serialized.
+        /// <summary>
+        /// Attached movement component to automatically configure.
+        /// </summary>
+        [Tooltip("Attached movement component to automatically configure.")]
+        [SerializeField]
+        private ComponentConfigurationType _componentConfiguration = ComponentConfigurationType.Disabled;
         /// <summary>
         /// True to synchronize when this transform changes parent.
         /// </summary>
@@ -506,6 +520,7 @@ namespace FishNet.Component.Transforming
         {
             base.OnStartServer();
 
+            ConfigureComponents();
             _receivedClientData.HasData = new List<bool>();
 
             //Initialize for LODs.
@@ -548,6 +563,7 @@ namespace FishNet.Component.Transforming
         public override void OnStartClient()
         {
             base.OnStartClient();
+            ConfigureComponents();
 
             //Initialize for LOD if client only.
             if (base.IsClientOnly)
@@ -621,6 +637,65 @@ namespace FishNet.Component.Transforming
             MoveToTarget();
         }
 
+        /// <summary>
+        /// Configures components automatically.
+        /// </summary>
+        private void ConfigureComponents()
+        {
+            //Disabled.
+            if (_componentConfiguration == ComponentConfigurationType.Disabled)
+            {
+                return;
+            }
+            //RB.
+            else if (_componentConfiguration == ComponentConfigurationType.Rigidbody)
+            {
+
+                if (TryGetComponent<Rigidbody>(out Rigidbody c))
+                {
+                    bool isKinematic = (!base.IsOwner || base.IsServerOnly);
+                    c.isKinematic = isKinematic;
+                    c.interpolation = RigidbodyInterpolation.None;
+                }
+            }
+            //RB2D
+            else if (_componentConfiguration == ComponentConfigurationType.Rigidbody2D)
+            {
+                //Only client authoritative needs to be configured.
+                if (!_clientAuthoritative)
+                    return;
+                if (TryGetComponent<Rigidbody2D>(out Rigidbody2D c))
+                {
+                    bool isKinematic = (!base.IsOwner || base.IsServerOnly);
+                    c.isKinematic = isKinematic;
+                    c.simulated = !isKinematic;
+                    c.interpolation = RigidbodyInterpolation2D.None;
+                }
+            }
+            //CC
+            else if (_componentConfiguration == ComponentConfigurationType.CharacterController)
+            {
+                if (TryGetComponent<CharacterController>(out CharacterController c))
+                {
+                    //Client auth.
+                    if (_clientAuthoritative)
+                    {
+                        c.enabled = base.IsOwner;
+                    }
+                    //Server auth.
+                    else
+                    {
+                        //Not CSP.
+                        if (_sendToOwner)
+                            c.enabled = base.IsServer;
+                        //Most likely CSP.
+                        else
+                            c.enabled = false;
+
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Called when a tick occurs.
@@ -1881,6 +1956,12 @@ namespace FishNet.Component.Transforming
             _clientAuthoritative = false;
             if (base.IsServer)
                 _sendToOwner = false;
+
+            /* If other or CC then needs to be configured.
+             * When CC it will be configured properly, if there
+             * is no CC then no action will be taken. */
+            _componentConfiguration = ComponentConfigurationType.CharacterController;
+            ConfigureComponents();
         }
 
         /// <summary>

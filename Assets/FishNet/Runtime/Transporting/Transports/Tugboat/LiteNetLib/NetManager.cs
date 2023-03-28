@@ -1520,6 +1520,7 @@ namespace LiteNetLib
             return Connect(target, NetDataWriter.FromString(key));
         }
 
+        public bool IsClient { get; private set; }
         /// <summary>
         /// Connect to remote host
         /// </summary>
@@ -1560,6 +1561,7 @@ namespace LiteNetLib
             peer = new NetPeer(this, target, GetNextPeerId(), connectionNumber, connectionData);
             AddPeer(peer);
             _peersLock.ExitUpgradeableReadLock();
+            IsClient = true;
 
             return peer;
         }
@@ -1582,6 +1584,7 @@ namespace LiteNetLib
                 return;
             NetDebug.Write("[NM] Stop");
 
+            IsClient = false;
             //Send last disconnect
             for(var netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
                 netPeer.Shutdown(null, 0, 0, !sendDisconnectMessages);
