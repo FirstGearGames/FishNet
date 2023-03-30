@@ -690,7 +690,7 @@ namespace FishNet.Component.Transforming
                             c.enabled = base.IsServer;
                         //Most likely CSP.
                         else
-                            c.enabled = false;
+                            c.enabled = (base.IsServer || base.IsOwner);
 
                     }
                 }
