@@ -133,11 +133,13 @@ namespace FishNet.CodeGenerating.Processing
                         return;
                     }
                     //If (!base.IsOwner);
+#if !UNITY_EDITOR
                     if (requireOwnership)
                         base.GetClass<NetworkBehaviourHelper>().CreateLocalClientIsOwnerCheck(methodDef, logging, true, false, true);
                     //Otherwise normal IsClient check.
                     else
                         base.GetClass<NetworkBehaviourHelper>().CreateIsClientCheck(methodDef, logging, useStatic, true);
+#endif
                 }
             }
             else if (qolType == QolAttributeType.Server)
@@ -145,7 +147,9 @@ namespace FishNet.CodeGenerating.Processing
                 if (!StripMethod(methodDef))
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
+#if !UNITY_EDITOR
                     base.GetClass<NetworkBehaviourHelper>().CreateIsServerCheck(methodDef, logging, useStatic, true);
+#endif
                 }
             }
 
