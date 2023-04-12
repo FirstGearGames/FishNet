@@ -140,7 +140,7 @@ namespace FishNet.Observing
 
         internal void Deinitialize()
         {
-            if (_networkObject != null && _networkObject.IsDeinitializing)
+            if (_networkObject != null && _networkObject.IsDeinitializing && _networkObject.ServerManager)
             {
                 _networkObject.ServerManager.OnRemoteConnectionState -= ServerManager_OnRemoteConnectionState;
                 UnregisterTimedConditions();

@@ -261,7 +261,10 @@ namespace FishNet.Managing.Object
         internal virtual void DespawnWithoutSynchronization(bool asServer)
         {
             foreach (NetworkObject nob in Spawned.Values)
-                DespawnWithoutSynchronization(nob, asServer, nob.GetDefaultDespawnType(), false);
+            {
+                var defaultDespawnType = nob ? nob.GetDefaultDespawnType() : default;
+                DespawnWithoutSynchronization(nob, asServer, defaultDespawnType, false);
+            }
 
             Spawned.Clear();
         }
