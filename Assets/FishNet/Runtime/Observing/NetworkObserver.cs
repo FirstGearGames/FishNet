@@ -140,7 +140,7 @@ namespace FishNet.Observing
 
         internal void Deinitialize()
         {
-            if (_networkObject != null && _networkObject.IsDeinitializing)
+            if (_networkObject != null && _networkObject.IsDeinitializing && _networkObject.ServerManager != null)
             {
                 _networkObject.ServerManager.OnRemoteConnectionState -= ServerManager_OnRemoteConnectionState;
                 UnregisterTimedConditions();
@@ -225,7 +225,7 @@ namespace FishNet.Observing
         /// <returns>True if added to Observers.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ObserverStateChange RebuildObservers(NetworkConnection connection, bool timedOnly)
-        {
+        {            
             bool currentlyAdded = (_networkObject.Observers.Contains(connection));
             //True if all conditions are met.
             bool allConditionsMet = true;
@@ -263,6 +263,8 @@ namespace FishNet.Observing
                     {
                         //True if connection starts with meeting non-timed conditions.
                         bool startNonTimedMet = _nonTimedMet.Contains(connection);
+                        //if (_networkObject.ObjectId == 3)
+                        //    Debug.Log(startNonTimedMet);
                         /* If a timed update an1d nonTimed
                          * have not been met then there's
                          * no reason to check timed. */

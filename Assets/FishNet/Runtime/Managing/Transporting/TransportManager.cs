@@ -34,6 +34,10 @@ namespace FishNet.Managing.Transporting
 
         #region Public.
         /// <summary>
+        /// Returns if an IntermediateLayer is in use.
+        /// </summary>
+        public bool HasIntermediateLayer => (_intermediateLayer != null);
+        /// <summary>
         /// Called before IterateOutgoing has started.
         /// </summary>
         internal event Action OnIterateOutgoingStart;
@@ -105,6 +109,10 @@ namespace FishNet.Managing.Transporting
         /// Lowest MTU of all transports for channels.
         /// </summary>
         private int[] _lowestMtu;
+        /// <summary>
+        /// Used to cache NetworkConnections.
+        /// </summary>
+        private HashSet<NetworkConnection> _networkConnectionHashSet = new HashSet<NetworkConnection>();
         #endregion
 
         #region Consts.
@@ -301,7 +309,7 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ArraySegment<byte> ProcessIntermediateIncoming(ArraySegment<byte> src, bool fromServer)
         {
-            return (_intermediateLayer == null) ? src : _intermediateLayer.HandleIncoming(src, fromServer);
+            return _intermediateLayer.HandleIncoming(src, fromServer);
         }
         /// <summary>
         /// Passes sent to the intermediate layer.
@@ -309,7 +317,7 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ArraySegment<byte> ProcessIntermediateOutgoing(ArraySegment<byte> src, bool toServer)
         {
-            return (_intermediateLayer == null) ? src : _intermediateLayer.HandleOutoing(src, toServer);
+            return _intermediateLayer.HandleOutoing(src, toServer);
         }
 
         /// <summary>
@@ -322,7 +330,8 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClient(byte channelId, ArraySegment<byte> segment, NetworkConnection connection, bool splitLargeMessages = true)
         {
-            segment = ProcessIntermediateOutgoing(segment, false);
+            if (HasIntermediateLayer)
+                segment = ProcessIntermediateOutgoing(segment, false);
             SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
             SendToClient_Internal(channelId, segment, connection, requiredSplitMessages, maxSplitMessageSize);
         }
@@ -340,13 +349,21 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Sends data to observers.
         /// </summary>
-        /// <param name="channelId"></param>
-        /// <param name="segment"></param>
-        /// <param name="observers"></param>
-        /// <param name="splitLargeMessages">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, NetworkConnection excludedConnection = null, bool splitLargeMessages = true)
+        {
+            _networkConnectionHashSet.Clear();
+            _networkConnectionHashSet.Add(excludedConnection);
+            SendToClients(channelId, segment, observers, _networkConnectionHashSet, splitLargeMessages);
+        }
+        /// <summary>
+        /// Sends data to observers.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, HashSet<NetworkConnection> excludedConnections = null, bool splitLargeMessages = true)
         {
-            segment = ProcessIntermediateOutgoing(segment, false);
+            if (HasIntermediateLayer)
+                segment = ProcessIntermediateOutgoing(segment, false);
             SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
             SendToClients_Internal(channelId, segment, observers, excludedConnections, requiredSplitMessages, maxSplitMessageSize);
         }
@@ -379,7 +396,8 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClients(byte channelId, ArraySegment<byte> segment, bool splitLargeMessages = true)
         {
-            segment = ProcessIntermediateOutgoing(segment, false);
+            if (HasIntermediateLayer)
+                segment = ProcessIntermediateOutgoing(segment, false);
             SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
             SendToClients_Internal(channelId, segment, requiredSplitMessages, maxSplitMessageSize);
         }
@@ -402,7 +420,8 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToServer(byte channelId, ArraySegment<byte> segment, bool splitLargeMessages = true)
         {
-            segment = ProcessIntermediateOutgoing(segment, true);
+            if (HasIntermediateLayer)
+                segment = ProcessIntermediateOutgoing(segment, true);
             SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
             SendToServer_Internal(channelId, segment, requiredSplitMessages, maxSplitMessageSize);
         }

@@ -47,19 +47,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 2
+  <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 8082309187455287958
-  _sceneNetworkObjects:
-  - {fileID: 4512293259955182956}
+  _sceneNetworkObjects: []
   <IsNested>k__BackingField: 0
+  _usesPrediction: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours:
-  - {fileID: 6667641716399555817}
-  - {fileID: -5271135124957689192}
+  _networkBehaviours: []
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
@@ -78,10 +76,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9880e85651efd71469092ce519317f7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 4512293259955182956}
-  _networkObjectCache: {fileID: 4512293259955182956}
-  _renderer: {fileID: 8565678507340770901}
+  _networkObjectCache: {fileID: 0}
+  _renderer: {fileID: 0}
 --- !u!114 &-5271135124957689192
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94,9 +92,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 1
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 4512293259955182956}
-  _networkObjectCache: {fileID: 4512293259955182956}
+  _networkObjectCache: {fileID: 0}
+  _componentConfiguration: 0
   _synchronizeParent: 0
   _packing:
     Position: 1

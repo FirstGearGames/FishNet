@@ -7,6 +7,7 @@ using FishNet.Object;
 using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
+using FishNet.Utility.Performance;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
@@ -16,23 +17,21 @@ using UnityEngine;
 using SR = System.Reflection;
 
 namespace FishNet.CodeGenerating.Helping
-{
+{ 
     internal class GeneralHelper : CodegenBase
     {
         #region Reflection references.
         public string CodegenExcludeAttribute_FullName;
         public string CodegenIncludeAttribute_FullName;
         public MethodReference Extension_Attribute_Ctor_MethodRef;
-        public MethodReference Queue_Enqueue_MethodRef;
-        public MethodReference Queue_get_Count_MethodRef;
-        public MethodReference Queue_Dequeue_MethodRef;
-        public MethodReference Queue_Clear_MethodRef;
+        public MethodReference BasicQueue_Clear_MethodRef;
         public TypeReference List_TypeRef;
         public MethodReference List_Clear_MethodRef;
         public MethodReference List_get_Item_MethodRef;
         public MethodReference List_get_Count_MethodRef;
         public MethodReference List_Add_MethodRef;
         public MethodReference List_RemoveRange_MethodRef;
+        public GenericInstanceType ArraySegment_Byte_Git;
         public MethodReference InstanceFinder_NetworkManager_MethodRef;
         public MethodReference NetworkBehaviour_CanLog_MethodRef;
         public MethodReference NetworkBehaviour_NetworkManager_MethodRef;
@@ -81,7 +80,6 @@ namespace FishNet.CodeGenerating.Helping
         {
             Type tmpType;
             TypeReference tmpTr;
-            SR.MethodInfo tmpMi;
             SR.PropertyInfo tmpPi;
 
             NonSerialized_Attribute_FullName = typeof(NonSerializedAttribute).FullName;
@@ -95,18 +93,12 @@ namespace FishNet.CodeGenerating.Helping
             CodegenExcludeAttribute_FullName = typeof(CodegenExcludeAttribute).FullName;
             CodegenIncludeAttribute_FullName = typeof(CodegenIncludeAttribute).FullName;
 
-            tmpType = typeof(Queue<>);
+            tmpType = typeof(BasicQueue<>);
             base.ImportReference(tmpType);
-            tmpMi = tmpType.GetMethod("get_Count");
-            Queue_get_Count_MethodRef = base.ImportReference(tmpMi);
             foreach (SR.MethodInfo mi in tmpType.GetMethods())
             {
-                if (mi.Name == nameof(Queue<int>.Enqueue))
-                    Queue_Enqueue_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(Queue<int>.Dequeue))
-                    Queue_Dequeue_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(Queue<int>.Clear))
-                    Queue_Clear_MethodRef = base.ImportReference(mi);
+                if (mi.Name == nameof(BasicQueue<int>.Clear))
+                    BasicQueue_Clear_MethodRef = base.ImportReference(mi);
             }
 
             /* MISC */
@@ -149,6 +141,10 @@ namespace FishNet.CodeGenerating.Helping
                 else if (methodInfo.Name == nameof(NetworkManager.LogError))
                     NetworkManager_LogError_MethodRef = base.ImportReference(methodInfo);
             }
+
+            //ArraySegment<byte>
+            TypeReference arraySegmentTr = base.ImportReference(typeof(ArraySegment<>));
+            ArraySegment_Byte_Git = arraySegmentTr.MakeGenericInstanceType(new TypeReference[] { GetTypeReference(typeof(byte)) });
 
             //Lists.
             tmpType = typeof(List<>);
@@ -455,7 +451,7 @@ namespace FishNet.CodeGenerating.Helping
             //Method references for uint/data list:
             //get_count, RemoveRange. */
             GenericInstanceType dataListGit;
-            GetGenericLists(dataTr, out dataListGit);
+            GetGenericList(dataTr, out dataListGit);
             MethodReference lstDataRemoveRangeMr = base.GetClass<GeneralHelper>().List_RemoveRange_MethodRef.MakeHostInstanceGeneric(base.Session, dataListGit);
 
             List<Instruction> insts = new List<Instruction>();
@@ -473,7 +469,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Outputs generic lists for dataTr and uint.
         /// </summary>
-        public void GetGenericLists(TypeReference dataTr, out GenericInstanceType lstData)
+        public void GetGenericList(TypeReference dataTr, out GenericInstanceType lstData)
         {
             TypeReference listDataTr = base.ImportReference(typeof(List<>));
             lstData = listDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
@@ -481,9 +477,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Outputs generic lists for dataTr and uint.
         /// </summary>
-        public void GetGenericQueues(TypeReference dataTr, out GenericInstanceType queueData)
+        public void GetGenericBasicQueue(TypeReference dataTr, out GenericInstanceType queueData)
         {
-            TypeReference queueDataTr = base.ImportReference(typeof(Queue<>));
+            TypeReference queueDataTr = base.ImportReference(typeof(BasicQueue<>));
             queueData = queueDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
         }
 
@@ -513,6 +509,22 @@ namespace FishNet.CodeGenerating.Helping
 
             return md;
         }
+
+        /// <summary>
+        /// Copies one method to another while transferring diagnostic paths.
+        /// </summary>
+        public MethodDefinition CopyMethodSignature(MethodDefinition originalMd, string toMethodName, out bool alreadyCreated)
+        {
+            TypeDefinition typeDef = originalMd.DeclaringType;
+
+            MethodDefinition md = typeDef.GetOrCreateMethodDefinition(base.Session, toMethodName, originalMd, true, out bool created);
+            alreadyCreated = !created;
+            if (alreadyCreated)
+                return md;
+
+            return md;
+        }
+
 
         /// <summary>
         /// Creates the RuntimeInitializeOnLoadMethod attribute for a method.
@@ -1100,14 +1112,14 @@ namespace FishNet.CodeGenerating.Helping
 
                 /* Nullables are not yet supported for automatic
                 * comparers. Let user know they must make their own. */
-                if (dataTr.IsGenericInstance)// dataTr.IsNullable(base.Session))
+                if (dataTr.IsGenericInstance)
                 {
                     base.LogError($"Equality comparers cannot be automatically generated for generic types. Create a custom comparer for {dataTr.FullName}.");
                     return null;
                 }
                 if (dataTr.IsArray)
                 {
-                    base.LogError($"Equality comparers cannot be automatically generated for collections. Create a custom comparer for {dataTr.FullName}.");
+                    base.LogError($"Equality comparers cannot be automatically generated for arrays. Create a custom comparer for {dataTr.FullName}.");
                     return null;
                 }
 
@@ -1192,14 +1204,14 @@ namespace FishNet.CodeGenerating.Helping
                     foreach (FieldDefinition fieldDef in dataTr.FindAllSerializableFields(base.Session
                         , null, WriterProcessor.EXCLUDED_ASSEMBLY_PREFIXES))
                     {
-                        base.ImportReference(fieldDef);
+                        FieldReference fr = base.ImportReference(fieldDef);
                         MethodDefinition recursiveMd = CreateEqualityComparer(fieldDef.FieldType);
                         if (recursiveMd == null)
                             break;
                         processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
-                        processor.Emit(OpCodes.Ldfld, fieldDef);
+                        processor.Emit(OpCodes.Ldfld, fr);
                         processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
-                        processor.Emit(OpCodes.Ldfld, fieldDef);
+                        processor.Emit(OpCodes.Ldfld, fr);
                         FinishTypeReferenceCompare(fieldDef.FieldType);
                     }
 
@@ -1409,4 +1421,3 @@ namespace FishNet.CodeGenerating.Helping
         #endregion
     }
 }
-

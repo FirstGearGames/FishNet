@@ -1,4 +1,5 @@
-﻿using FishNet.Connection;
+﻿using FishNet.Component.Observing;
+using FishNet.Connection;
 using FishNet.Observing;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-    public sealed partial class NetworkObject : MonoBehaviour
+    public partial class NetworkObject : MonoBehaviour
     {
         #region Public.
         /// <summary>
@@ -23,6 +24,13 @@ namespace FishNet.Object
         /// Clients which can see and get messages from this NetworkObject.
         /// </summary>
         public HashSet<NetworkConnection> Observers = new HashSet<NetworkConnection>();
+        #endregion
+
+        #region Internal.
+        /// <summary>
+        /// Current HashGrid entry this belongs to.
+        /// </summary>
+        internal GridEntry HashGridEntry;
         #endregion
 
         #region Private.
@@ -43,7 +51,48 @@ namespace FishNet.Object
         /// Last visibility value for clientHost on this object.
         /// </summary>
         private bool _lastClientHostVisibility;
+        /// <summary>
+        /// HashGrid for this object.
+        /// </summary>
+        private HashGrid _hashGrid;
+        /// <summary>
+        /// Next time this object may update it's position for HashGrid.
+        /// </summary>
+        private float _nextHashGridUpdateTime;
+        /// <summary>
+        /// True if this gameObject is static.
+        /// </summary>
+        private bool _isStatic;
+        /// <summary>
+        /// Current grid position.
+        /// </summary>
+        private Vector2Int _hashGridPosition = HashGrid.UnsetGridPosition;
         #endregion
+
+        /// <summary>
+        /// Updates Objects positions in the HashGrid for this Networkmanager.
+        /// </summary>
+        internal void UpdateForNetworkObject(bool force)
+        {
+            if (_hashGrid == null)
+                return;
+            if (_isStatic)
+                return;
+
+            float unscaledTime = Time.unscaledTime;
+            //Not enough time has passed to update.
+            if (!force && unscaledTime < _nextHashGridUpdateTime)
+                return;
+
+            const float updateInterval = 1f;
+            _nextHashGridUpdateTime = unscaledTime + updateInterval;
+            Vector2Int newPosition = _hashGrid.GetHashGridPosition(this);
+            if (newPosition != _hashGridPosition)
+            {
+                _hashGridPosition = newPosition;
+                HashGridEntry = _hashGrid.GetGridEntry(newPosition);
+            }            
+        }
 
         /// <summary>
         /// Updates cached renderers used to managing clientHost visibility.
@@ -182,6 +231,9 @@ namespace FishNet.Object
                  * it's most likely being despawned. */
                 return ObserverStateChange.Unchanged;
             }
+
+            //Update hashgrid if needed.
+            UpdateForNetworkObject(!timedOnly);
 
             int startCount = Observers.Count;
             ObserverStateChange osc = NetworkObserver.RebuildObservers(connection, timedOnly);

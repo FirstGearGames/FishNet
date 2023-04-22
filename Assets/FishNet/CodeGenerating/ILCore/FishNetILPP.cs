@@ -78,7 +78,9 @@ namespace FishNet.CodeGenerating.ILCore
             modified |= CreateDeclaredSerializers(session);
             modified |= CreateDeclaredComparerDelegates(session);
             modified |= CreateIBroadcast(session);
+#if !DISABLE_QOL_ATTRIBUTES
             modified |= CreateQOLAttributes(session);
+#endif
             modified |= CreateNetworkBehaviours(session);
             modified |= CreateGenericReadWriteDelegates(session);
 

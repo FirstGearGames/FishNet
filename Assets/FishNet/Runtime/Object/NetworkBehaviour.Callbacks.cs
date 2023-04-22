@@ -36,16 +36,28 @@ namespace FishNet.Object
         #endregion
 
         /// <summary>
-        /// Invokes cached callbacks on SyncTypes which were held until OnStartXXXXX was called.
+        /// Invokes OnStartXXXX for synctypes, letting them know the NetworkBehaviour start cycle has been completed.
         /// </summary>
-        /// <param name="asServer"></param>
-        internal void InvokeSyncTypeCallbacks(bool asServer)
+        internal void InvokeSyncTypeOnStartCallbacks(bool asServer)
         {
             foreach (SyncBase item in _syncVars.Values)
                 item.OnStartCallback(asServer);
             foreach (SyncBase item in _syncObjects.Values)
                 item.OnStartCallback(asServer);
         }
+
+        /// <summary>
+        /// Invokes OnStopXXXX for synctypes, letting them know the NetworkBehaviour stop cycle is about to start.
+        /// </summary>
+        internal void InvokeSyncTypeOnStopCallbacks(bool asServer)
+        {
+            foreach (SyncBase item in _syncVars.Values)
+                item.OnStopCallback(asServer);
+            foreach (SyncBase item in _syncObjects.Values)
+                item.OnStopCallback(asServer);
+        }
+
+
         /// <summary>
         /// Invokes the OnStart/StopNetwork.
         /// </summary>
@@ -125,7 +137,11 @@ namespace FishNet.Object
         public virtual void OnOwnershipServer(NetworkConnection prevOwner)
         {
             //When switching ownership always clear replicate cache on server.
+#if !PREDICTION_V2
             ClearReplicateCache_Internal(true);
+#else
+            ClearReplicateCache();
+#endif
         }
         /// <summary>
         /// Called on the server after a spawn message for this object has been sent to clients.
@@ -175,7 +191,13 @@ namespace FishNet.Object
         {
             //If losing or gaining ownership then clear replicate cache.
             if (IsOwner || prevOwner == LocalConnection)
+            {
+#if !PREDICTION_V2
                 ClearReplicateCache_Internal(false);
+#else
+                ClearReplicateCache();
+#endif
+            } 
         }
 
     }

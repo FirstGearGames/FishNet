@@ -7,11 +7,9 @@ using FishNet.Transporting;
 using FishNet.Utility;
 using FishNet.Utility.Extension;
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
-using UnityScene = UnityEngine.SceneManagement.Scene;
 
 namespace FishNet.Managing.Timing
 {
@@ -264,6 +262,10 @@ namespace FishNet.Managing.Timing
         #endregion
 
         #region Const.
+        /// <summary>
+        /// Value for a tick that is invalid.
+        /// </summary>
+        public const uint UNSET_TICK = 0;
         /// <summary>
         /// Maximum percentage timing may vary from SimulationInterval for clients.
         /// </summary>
@@ -579,7 +581,7 @@ namespace FishNet.Managing.Timing
             using (PooledWriter writer = WriterPool.GetWriter())
             {
                 writer.WritePacketId(PacketId.PingPong);
-                writer.WriteUInt32(tick, AutoPackType.Unpacked);
+                writer.WriteTickUnpacked(tick);
                 _networkManager.TransportManager.SendToServer((byte)Channel.Unreliable, writer.GetArraySegment());
             }
         }
@@ -595,7 +597,7 @@ namespace FishNet.Managing.Timing
             using (PooledWriter writer = WriterPool.GetWriter())
             {
                 writer.WritePacketId(PacketId.PingPong);
-                writer.WriteUInt32(clientTick, AutoPackType.Unpacked);
+                writer.WriteTickUnpacked(clientTick);
                 conn.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
             }
         }
@@ -612,6 +614,7 @@ namespace FishNet.Managing.Timing
             double tickDelta = TickDelta;
             double timePerSimulation = (isServer) ? tickDelta : _adjustedTickDelta;
             double time = Time.unscaledDeltaTime;
+
             _elapsedTickTime += time;
             FrameTicked = (_elapsedTickTime >= timePerSimulation);
 
@@ -647,6 +650,10 @@ namespace FishNet.Managing.Timing
 
                 if (frameTicked)
                 {
+#if PREDICTION_V2
+                    //Tell predicted objecs to reconcile before OnTick.
+                    _networkManager.PredictionManager.ReconcileToStates();
+#endif
                     OnTick?.Invoke();
 
                     if (PhysicsMode == PhysicsMode.TimeManager)
@@ -659,6 +666,11 @@ namespace FishNet.Managing.Timing
                     }
 
                     OnPostTick?.Invoke();
+#if PREDICTION_V2
+                    //After post tick send states.
+                    _networkManager.PredictionManager.SendStates();
+#endif
+
                     /* If isClient this is the
                      * last tick during this loop. */
                     if (isClient && (_elapsedTickTime < timePerSimulation))
@@ -683,9 +695,15 @@ namespace FishNet.Managing.Timing
                     Tick++;
                     LocalTick++;
 
+#if PREDICTION_V2
+                    if (isClient)
+                    {
+                        _networkManager.PredictionManager.StateClientTick = 0;
+                        _networkManager.PredictionManager.StateServerTick = 0;
+                    }
+#endif
                     _networkManager.ObserverManager.CalculateLevelOfDetail(LocalTick);
                 }
-
             } while (_elapsedTickTime >= timePerSimulation);
         }
 

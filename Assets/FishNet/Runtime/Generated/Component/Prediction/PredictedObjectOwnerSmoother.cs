@@ -7,6 +7,8 @@ namespace FishNet.Component.Prediction
 {
     internal class PredictedObjectOwnerSmoother
     {
+#if !PREDICTION_V2
+
         #region Serialized.
         /// <summary>
         /// Transform which holds the graphical features of this object. This transform will be smoothed when desynchronizations occur.
@@ -188,7 +190,7 @@ namespace FishNet.Component.Prediction
             {
                 _positionMoveRate = -2f;
                 _rotationMoveRate = -2f;
-            }
+            } 
         }
 
         /// <summary>
@@ -218,7 +220,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void SetGraphicalMoveRates()
         {
-            float delta = ((float)_networkBehaviour.TimeManager.TickDelta / _interpolation);
+            float delta = ((float)_networkBehaviour.TimeManager.TickDelta * _interpolation);
 
             float distance;
             distance = Vector3.Distance(_graphicalObject.position, GetGraphicalGoalPosition());
@@ -292,7 +294,7 @@ namespace FishNet.Component.Prediction
                 _graphicalObject.rotation = GetGraphicalGoalRotation();
         }
 
-
+#endif
     }
 
 

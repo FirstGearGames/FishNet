@@ -12,6 +12,7 @@ namespace FishNet.Object
     /// </summary>
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
+        #region Public.
         /// <summary>
         /// True if this NetworkBehaviour is initialized for the network.
         /// </summary>
@@ -45,16 +46,33 @@ namespace FishNet.Object
         /// NetworkObject this behaviour is for.
         /// </summary>
         public NetworkObject NetworkObject => _networkObjectCache;
+        #endregion
+
+        #region Private.
+        /// <summary>
+        /// True if already initialized at some point.
+        /// </summary>
+        private bool _initializedOnce;
+        #endregion
 
         /// <summary>
-        /// Initializes this script. This will only run once even as host.
+        /// Preinitializes this script for the network.
         /// </summary>
-        /// <param name="networkObject"></param>
-        /// <param name="componentIndex"></param>
-        internal void InitializeOnce_Internal()
+        internal void Preinitialize_Internal(NetworkObject nob, bool asServer)
         {
-            InitializeOnceSyncTypes();
-            InitializeOnceRpcLinks();
+            if (asServer)
+            {
+                InitializeOnceSyncTypes();
+                InitializeRpcLinks();
+            }
+            else
+            {
+#if PREDICTION_V2
+                if (!_initializedOnce && UsesPrediction && !nob.NetworkManager.IsServer)
+                    nob.RegisterPredictionBehaviourOnce(this);
+#endif
+            }
+            _initializedOnce = true;
         }
 
 
@@ -82,7 +100,7 @@ namespace FishNet.Object
         /// </summary>
         [CodegenMakePublic]
         [APIExclude]
-        internal virtual void NetworkInitializeIfDisabled() { }
+        protected internal virtual void NetworkInitializeIfDisabled() { }
 
         #region Editor.
         protected virtual void Reset()
@@ -99,7 +117,7 @@ namespace FishNet.Object
         {
 #if UNITY_EDITOR
             if (Application.isPlaying)
-                return; 
+                return;
 
             TryAddNetworkObject();
 #endif
@@ -165,10 +183,10 @@ namespace FishNet.Object
                 NetworkObject[] nobs = t.GetComponents<NetworkObject>();
                 //This shouldn't be possible but does occur sometimes; maybe a unity bug?
                 if (nobs.Length > 1)
-                { 
+                {
                     //Update added to first entryt.
                     _addedNetworkObject = nobs[0];
- 
+
                     string useMenu = " You may also use the Fish-Networking menu to automatically remove duplicate NetworkObjects.";
                     string sceneName = t.gameObject.scene.name;
                     if (string.IsNullOrEmpty(sceneName))
@@ -177,7 +195,7 @@ namespace FishNet.Object
                         Debug.LogError($"Object {t.name} in scene {sceneName} has multiple NetworkObject components. Please remove the extra component(s) to prevent errors.{useMenu}");
                 }
 
-            } 
+            }
 #else
             return null;
 #endif

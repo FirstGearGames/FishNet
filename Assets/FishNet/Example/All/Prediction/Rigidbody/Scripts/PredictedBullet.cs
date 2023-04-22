@@ -1,4 +1,5 @@
 ﻿using FishNet.Component.Prediction;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using System.Collections;
@@ -10,7 +11,7 @@ public class PredictedBullet : NetworkBehaviour
     [SyncVar(OnChange = nameof(_startingForce_OnChange))]
     private Vector3 _startingForce;
     //Tick to set rb to kinematic.
-    private uint _stopTick = uint.MaxValue;
+    private uint _stopTick = TimeManager.UNSET_TICK;
 
     public void SetStartingForce(Vector3 value)
     {
@@ -55,8 +56,9 @@ public class PredictedBullet : NetworkBehaviour
             long stopTick = (base.TimeManager.Tick + timeToTicks - passed - 1);
             if (stopTick > 0)
                 _stopTick = (uint)stopTick;
+            //Time already passed, set to stop next tick.
             else
-                _stopTick = 0;
+                _stopTick = 1;
         }
 
         base.TimeManager.OnTick += TimeManager_OnTick;
@@ -69,7 +71,7 @@ public class PredictedBullet : NetworkBehaviour
     }
     private void TimeManager_OnTick()
     {
-        if (base.TimeManager.LocalTick >= _stopTick)
+        if (_stopTick > 0 && base.TimeManager.LocalTick >= _stopTick)
         {
             Rigidbody rb = GetComponent<Rigidbody>();
             rb.isKinematic = true;

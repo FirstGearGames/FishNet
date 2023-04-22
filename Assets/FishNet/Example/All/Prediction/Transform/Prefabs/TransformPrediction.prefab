@@ -62,9 +62,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13cad243fdfd7294e8a6a393735726eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 27039729695437543}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 27039729695437543}
   _moveRate: 5
 --- !u!114 &27039729695437543
 MonoBehaviour:
@@ -86,9 +86,13 @@ MonoBehaviour:
   <AssetPathHash>k__BackingField: 139770397801111289
   _sceneNetworkObjects: []
   <IsNested>k__BackingField: 0
+  _usesPrediction: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
+  _networkBehaviours:
+  - {fileID: 27039729695437542}
+  - {fileID: 8399567158492483659}
+  - {fileID: -4118712540632748398}
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
@@ -107,11 +111,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 0}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 27039729695437543}
   _implementsPredictionMethods: 1
-  _graphicalObject: {fileID: 0}
+  _graphicalObject: {fileID: 7846666075604890595}
   _enableTeleport: 0
   _teleportThreshold: 1
   _ownerSmoothPosition: 1
@@ -122,12 +126,21 @@ MonoBehaviour:
   _rigidbody2d: {fileID: 0}
   _spectatorSmoothPosition: 1
   _spectatorSmoothRotation: 1
-  _spectatorInterpolation: 4
-  _overflowMultiplier: 0.1
+  _spectatorSmoothingType: 1
+  _customSmoothingData:
+    InterpolationPercent: 1
+    CollisionInterpolationPercent: 0.1
+    InterpolationDecreaseStep: 1
+    InterpolationIncreaseStep: 3
+  _preconfiguredSmoothingDataPreview:
+    InterpolationPercent: 1
+    CollisionInterpolationPercent: 0.1
+    InterpolationDecreaseStep: 1
+    InterpolationIncreaseStep: 3
   _maintainedVelocity: 0
   _resendType: 0
   _resendInterval: 30
-  _networkTransform: {fileID: 0}
+  _networkTransform: {fileID: -4118712540632748398}
 --- !u!114 &-4118712540632748398
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -140,9 +153,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 2
   _addedNetworkObject: {fileID: 27039729695437543}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 27039729695437543}
+  _componentConfiguration: 0
   _synchronizeParent: 0
   _packing:
     Position: 1

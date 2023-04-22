@@ -36,7 +36,20 @@ namespace FishNet.Serializing
     /// </summary>
     public class Reader
     {
+        #region Types.
+        public enum DataSource
+        {
+            Unset = 0,
+            Server = 1,
+            Client = 2,
+        }
+        #endregion
+
         #region Public.
+        /// <summary>
+        /// Which part of the network the data came from.
+        /// </summary>
+        public DataSource Source = DataSource.Unset;
         /// <summary>
         /// Capacity of the buffer.
         /// </summary>
@@ -90,14 +103,14 @@ namespace FishNet.Serializing
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Reader(byte[] bytes, NetworkManager networkManager, NetworkConnection networkConnection = null)
+        public Reader(byte[] bytes, NetworkManager networkManager, NetworkConnection networkConnection = null, DataSource source = DataSource.Unset)
         {
-            Initialize(bytes, networkManager, networkConnection);
+            Initialize(bytes, networkManager, networkConnection, source);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Reader(ArraySegment<byte> segment, NetworkManager networkManager, NetworkConnection networkConnection = null)
+        public Reader(ArraySegment<byte> segment, NetworkManager networkManager, NetworkConnection networkConnection = null, DataSource source = DataSource.Unset)
         {
-            Initialize(segment, networkManager, networkConnection);
+            Initialize(segment, networkManager, networkConnection, source);
         }
 
         /// <summary>
@@ -110,39 +123,70 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Outputs reader to string.
+        /// </summary>
+        /// <returns></returns>
+        public string RemainingToString()
+        {
+            string buffer = (Remaining > 0) ? BitConverter.ToString(_buffer, Position, Remaining) : "null";
+            return $"Remaining: {Remaining}, Length: {Length}, Buffer: {buffer}.";
+        }
+
+        /// <summary>
+        /// Returns remaining data as an ArraySegment.
+        /// </summary>
+        /// <returns></returns>
+        public ArraySegment<byte> GetRemainingData()
+        {
+            if (Remaining == 0)
+                return default;
+            else
+                return new ArraySegment<byte>(_buffer, Position, Remaining);
+        }
+
+        /// <summary>
         /// Initializes this reader with data.
         /// </summary>
-        /// <param name="bytes"></param>
-        /// <param name="networkManager"></param>
-        internal void Initialize(ArraySegment<byte> bytes, NetworkManager networkManager, NetworkConnection networkConnection = null)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void Initialize(ArraySegment<byte> segment, NetworkManager networkManager, DataSource source = DataSource.Unset)
         {
-            if (bytes.Array == null)
-            {
-                if (_buffer == null)
-                    _buffer = new byte[0];
-            }
-            else
-            {
-                _buffer = bytes.Array;
-            }
+            Initialize(segment, networkManager, null, source);
+        }
 
-            Position = bytes.Offset;
-            Offset = bytes.Offset;
-            Length = bytes.Count;
+        /// <summary>
+        /// Initializes this reader with data.
+        /// </summary>
+        internal void Initialize(ArraySegment<byte> segment, NetworkManager networkManager, NetworkConnection networkConnection = null, DataSource source = DataSource.Unset)
+        {
+            _buffer = segment.Array;
+            if (_buffer == null)
+                _buffer = new byte[0];
+
+            Position = segment.Offset;
+            Offset = segment.Offset;
+            Length = segment.Count;
+
             NetworkManager = networkManager;
             NetworkConnection = networkConnection;
+            Source = source;
+        }
+
+        /// <summary>
+        /// Initializes this reader with data.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void Initialize(byte[] bytes, NetworkManager networkManager, DataSource source = DataSource.Unset)
+        {
+            Initialize(new ArraySegment<byte>(bytes), networkManager, null, source);
         }
         /// <summary>
         /// Initializes this reader with data.
         /// </summary>
-        /// <param name="bytes"></param>
-        /// <param name="networkManager"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Initialize(byte[] bytes, NetworkManager networkManager, NetworkConnection networkConnection = null)
+        internal void Initialize(byte[] bytes, NetworkManager networkManager, NetworkConnection networkConnection = null, DataSource source = DataSource.Unset)
         {
-            Initialize(new ArraySegment<byte>(bytes), networkManager, networkConnection);
+            Initialize(new ArraySegment<byte>(bytes), networkManager, networkConnection, source);
         }
-
 
         /// <summary>
         /// Reads a dictionary.
@@ -212,6 +256,15 @@ namespace FishNet.Serializing
             PacketId result = ReadPacketId();
             Position = currentPosition;
             return result;
+        }
+
+        /// <summary>
+        /// Returns the next byte to be read.
+        /// </summary>
+        /// <returns></returns>
+        internal byte PeekByte()
+        {
+            return _buffer[Position];
         }
 
         /// <summary>
@@ -541,7 +594,7 @@ namespace FishNet.Serializing
             /* UNSET would be written for null. But since
              * ArraySegments cannot be null return default if
              * length is unset or 0. */
-            if (size == Writer.UNSET_COLLECTION_SIZE_VALUE || size == 0)
+            if (size == Writer.UNSET_COLLECTION_SIZE_VALUE)
                 return default;
 
             return ReadArraySegment(size);
@@ -758,6 +811,15 @@ namespace FishNet.Serializing
             return new System.Guid(buffer);
         }
 
+        /// <summary>
+        /// Reads a tick without packing.
+        /// </summary>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint ReadTickUnpacked()
+        {
+            return ReadUInt32(AutoPackType.Unpacked);
+        }
 
         /// <summary>
         /// Reads a GameObject.
@@ -1087,6 +1149,16 @@ namespace FishNet.Serializing
             return true;
         }
 
+        /// <summary>
+        /// Writes a state update packet.
+        /// </summary>
+        /// <param name="tick"></param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ReadStateUpdatePacket(out uint clientTick)
+        {
+            clientTick = ReadTickUnpacked();
+        }
 
         #region Packed readers.        
         /// <summary>

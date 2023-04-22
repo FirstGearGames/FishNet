@@ -519,7 +519,6 @@ namespace FishNet.Managing.Client
                         (RpcType)reader.ReadByte());
                     //Add to links.
                     SetRpcLink(linkIndex, link);
-
                     rpcLinkIndexes.Add(linkIndex);
                 }
             }

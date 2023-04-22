@@ -482,6 +482,14 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private static Stack<GoalData> _goalDataCache = new Stack<GoalData>();
         /// <summary>
+        /// Cache of TransformDatas to prevent allocations.
+        /// </summary>
+        private static Stack<TransformData> _transformDataCache = new Stack<TransformData>();
+        /// <summary>
+        /// Cache of List<bool> to prevent allocations.
+        /// </summary>
+        private static Stack<List<bool>> _listBoolCache = new Stack<List<bool>>();
+        /// <summary>
         /// True if the transform has changed since it started.
         /// </summary>
         private bool _changedSinceStart;
@@ -519,19 +527,8 @@ namespace FishNet.Component.Transforming
         public override void OnStartServer()
         {
             base.OnStartServer();
-
             ConfigureComponents();
-            _receivedClientData.HasData = new List<bool>();
-
-            //Initialize for LODs.
-            for (int i = 0; i < base.ObserverManager.GetLevelOfDetailDistances().Count; i++)
-            {
-                _changedWriters.Add(WriterPool.GetWriter());
-                _lastSentTransformDatas.Add(new TransformData());
-                _receivedClientData.HasData.Add(false);
-                _serverChangedSinceReliable.Add(ChangedDelta.Unset);
-            }
-
+            AddCollections(true);
             SetDefaultGoalData();
             /* Server must always subscribe.
              * Server needs to relay client auth in
@@ -564,17 +561,7 @@ namespace FishNet.Component.Transforming
         {
             base.OnStartClient();
             ConfigureComponents();
-
-            //Initialize for LOD if client only.
-            if (base.IsClientOnly)
-            {
-                for (int i = 0; i < base.ObserverManager.GetLevelOfDetailDistances().Count; i++)
-                {
-                    _changedWriters.Add(WriterPool.GetWriter());
-                    _lastSentTransformDatas.Add(new TransformData());
-                }
-            }
-
+            AddCollections(false);
             SetDefaultGoalData();
         }
 
@@ -616,12 +603,7 @@ namespace FishNet.Component.Transforming
             base.OnStopServer();
             //Always unsubscribe; if the server stopped so did client.
             ChangeTickSubscription(false);
-            for (int i = 0; i < base.ObserverManager.GetLevelOfDetailDistances().Count; i++)
-            {
-                _lastSentTransformDatas[i].Reset();
-                _serverChangedSinceReliable[i] = ChangedDelta.Unset;
-                _receivedClientData.SetHasData(false, (byte)i);
-            }
+            CacheCollections(true);
         }
 
         public override void OnStopClient()
@@ -630,11 +612,83 @@ namespace FishNet.Component.Transforming
             //If not also server unsubscribe from ticks.
             if (!base.IsServer)
                 ChangeTickSubscription(false);
+
+            CacheCollections(false);
         }
+
 
         private void Update()
         {
             MoveToTarget();
+        }
+
+        /// <summary>
+        /// Adds collections required.
+        /// </summary>
+        private void AddCollections(bool asServer)
+        {
+            //Do not add for client if also server, as server would have already added.
+            if (!asServer && base.IsServer)
+                return;
+
+            if (_changedWriters.Count > 0)
+            {
+                base.NetworkManager.LogWarning($"ChangedWriters collection contains values. This should not be possible.");
+                _changedWriters.Clear();
+            }
+            if (_lastSentTransformDatas.Count > 0)
+            {
+                base.NetworkManager.LogWarning($"LastSentTransformDatas collection contains values. This should not be possible.");
+                _lastSentTransformDatas.Clear();
+            }
+
+            if (asServer)
+            {
+                _receivedClientData.HasData = RetrieveListBool();
+                if (_serverChangedSinceReliable.Count > 0)
+                {
+                    base.NetworkManager.LogWarning($"ServerChangedSinceReliable collection contains values. This should not be possible.");
+                    _serverChangedSinceReliable.Clear();
+                }
+            }
+
+            //Initialize for LODs.
+            for (int i = 0; i < base.ObserverManager.GetLevelOfDetailDistances().Count; i++)
+            {
+                _changedWriters.Add(WriterPool.GetWriter());
+                _lastSentTransformDatas.Add(RetrieveTransformData());
+                if (asServer)
+                {
+                    _receivedClientData.HasData.Add(false);
+                    _serverChangedSinceReliable.Add(ChangedDelta.Unset);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Caches collections which have allocating types.
+        /// </summary>
+        private void CacheCollections(bool asServer)
+        {
+            //Do not remove for client if also server, as server would have already added.
+            if (!asServer && base.IsServer)
+                return;
+
+            //Reset writers.
+            foreach (PooledWriter writer in _changedWriters)
+                WriterPool.Recycle(writer);
+            _changedWriters.Clear();
+            //Reset LastSentTransformDatas.
+            foreach (TransformData td in _lastSentTransformDatas)
+                StoreTransformData(td);
+            _lastSentTransformDatas.Clear();
+
+            if (asServer)
+            {
+                StoreListBool(_receivedClientData.HasData);
+                _receivedClientData.HasData = null;
+                _serverChangedSinceReliable.Clear();
+            }
         }
 
         /// <summary>
@@ -691,7 +745,6 @@ namespace FishNet.Component.Transforming
                         //Most likely CSP.
                         else
                             c.enabled = (base.IsServer || base.IsOwner);
-
                     }
                 }
             }
@@ -849,8 +902,7 @@ namespace FishNet.Component.Transforming
             /* Do not use compression when nested. Depending
              * on the scale of the parent compression may
              * not be accurate enough. */
-            TransformPackingData packing = (ChangedContains(changed, ChangedDelta.Nested)) ?
-                _unpacked : _packing;
+            TransformPackingData packing = ChangedContains(changed, ChangedDelta.Nested) ? _unpacked : _packing;
 
             int startIndexA = writer.Position;
             writer.Reserve(1);
@@ -1224,7 +1276,7 @@ namespace FishNet.Component.Transforming
                 if (queueCount > 0)
                 {
                     _currentGoalData.Reset();
-                    _goalDataCache.Push(_currentGoalData);
+                    StoreGoalData(_currentGoalData);
                     SetCurrentGoalData(_goalDataQueue.Dequeue());
                     if (leftOver > 0f)
                         MoveToTarget(leftOver);
@@ -1314,24 +1366,29 @@ namespace FishNet.Component.Transforming
                 //Send out changes.
                 if (dataChanged)
                 {
-                    foreach (NetworkConnection nc in base.Observers)
+                    ArraySegment<byte> dataSegment = _changedWriters[lodIndex].GetArraySegment();
+                    //todo - resolve networklod sending 0 count data properly. Count should never be 0.
+                    if (dataSegment.Count > 0)
                     {
-                        //If to not send to owner.
-                        if (!_sendToOwner && nc == base.Owner)
-                            continue;
+                        foreach (NetworkConnection nc in base.Observers)
+                        {
+                            //If to not send to owner.
+                            if (!_sendToOwner && nc == base.Owner)
+                                continue;
 
-                        byte lod;
-                        if (!nc.LevelOfDetails.TryGetValue(base.NetworkObject, out lod))
-                            lod = 0;
-                        //Not high enough index to send to conn.
-                        if (lod > lodIndex)
-                            continue;
-                        //No need for server to send to local client (clientHost).
-                        //Still send if development for stat tracking.
+                            byte lod;
+                            if (!nc.LevelOfDetails.TryGetValue(base.NetworkObject, out lod))
+                                lod = 0;
+                            //Not high enough index to send to conn.
+                            if (lod > lodIndex)
+                                continue;
+                            //No need for server to send to local client (clientHost).
+                            //Still send if development for stat tracking.
 #if !DEVELOPMENT
                         if (!nc.IsLocalClient)
 #endif
-                        TargetUpdateTransform(nc, _changedWriters[lodIndex].GetArraySegment(), channel);
+                            TargetUpdateTransform(nc, dataSegment, channel);
+                        }
                     }
                 }
             }
@@ -1718,6 +1775,11 @@ namespace FishNet.Component.Transforming
             if (base.IsServer && conn.IsLocalClient)
                 return;
 #endif
+            /* Zero data was sent, this should not be possible.
+             * This is a patch to a NetworkLOD bug until it can
+             * be resolved properly. */
+            if (data.Count == 0)
+                return;
 
             byte lod;
             /* Get cached LOD for connection receiving this. It will of course
@@ -1817,7 +1879,7 @@ namespace FishNet.Component.Transforming
             RateData prevRd = _lastCalculatedRateData;
             ChangedFull changedFull = new ChangedFull();
 
-            GoalData nextGd = GetCachedGoalData();
+            GoalData nextGd = RetrieveGoalData();
             TransformData nextTd = nextGd.Transforms;
             UpdateTransformData(data, prevTd, nextTd, ref changedFull);
             OnDataReceived?.Invoke(prevTd, nextTd);
@@ -1899,7 +1961,7 @@ namespace FishNet.Component.Transforming
                 while (_goalDataQueue.Count > _interpolation)
                 {
                     GoalData tmpGd = _goalDataQueue.Dequeue();
-                    _goalDataCache.Push(tmpGd);
+                    StoreGoalData(tmpGd);
                 }
                 //Snap to the next data to fix any smoothing timings.
                 SetCurrentGoalData(_goalDataQueue.Dequeue());
@@ -1937,16 +1999,57 @@ namespace FishNet.Component.Transforming
             nextTransformData.Tick = base.TimeManager.LastPacketTick;
         }
 
+        #region Caches.
         /// <summary>
         /// Returns a GoalData from the cache.
         /// </summary>
         /// <returns></returns>
-        private GoalData GetCachedGoalData()
+        private GoalData RetrieveGoalData()
         {
             GoalData result = (_goalDataCache.Count > 0) ? _goalDataCache.Pop() : new GoalData();
-            result.Reset();
             return result;
         }
+        /// <summary>
+        /// Stores a GoalData to the cache.
+        /// </summary>
+        private void StoreGoalData(GoalData gd)
+        {
+            gd.Reset();
+            _goalDataCache.Push(gd);
+        }
+        /// <summary>
+        /// Returns a TransformData from the cache.
+        /// </summary>
+        private TransformData RetrieveTransformData()
+        {
+            TransformData result = (_transformDataCache.Count > 0) ? _transformDataCache.Pop() : new TransformData();
+            return result;
+        }
+        /// <summary>
+        /// Stores a TransformData to the cache.
+        /// </summary>
+        private void StoreTransformData(TransformData td)
+        {
+            td.Reset();
+            _transformDataCache.Push(td);
+        }
+        /// <summary>
+        /// Returns a List<bool> from the cache.
+        /// </summary>
+        private List<bool> RetrieveListBool()
+        {
+            List<bool> result = (_listBoolCache.Count > 0) ? _listBoolCache.Pop() : new List<bool>();
+            return result;
+        }
+        /// <summary>
+        /// Stores a TransformData to the cache.
+        /// </summary>
+        private void StoreListBool(List<bool> lst)
+        {
+            lst.Clear();
+            _listBoolCache.Push(lst);
+        }
+        #endregion
 
         /// <summary>
         /// Configures this NetworkTransform for CSP.

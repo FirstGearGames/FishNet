@@ -80,6 +80,10 @@ namespace FishNet.Component.Prediction
             /// True if the rigidbody was simulated prior to being paused.
             /// </summary>
             public bool Simulated;
+            /// <summary>
+            /// True if the rigidbody was kinematic prior to being paused.
+            /// </summary>
+            public bool IsKinematic;
 
             public Rigidbody2DData(Rigidbody2D rb)
             {
@@ -89,6 +93,7 @@ namespace FishNet.Component.Prediction
                 AngularVelocity = 0f;
                 SimulatedScene = rb.gameObject.scene;
                 Simulated = rb.simulated;
+                IsKinematic = rb.isKinematic;
             }
 
             public void Update(Rigidbody2D rb)
@@ -97,6 +102,7 @@ namespace FishNet.Component.Prediction
                 AngularVelocity = rb.angularVelocity;
                 SimulatedScene = rb.gameObject.scene;
                 Simulated = rb.simulated;
+                IsKinematic = rb.isKinematic;
             }
         }
         #endregion
@@ -276,7 +282,7 @@ namespace FishNet.Component.Prediction
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;
                     rb.simulated = rbData.Simulated;
-                    rb.isKinematic = !rbData.Simulated;
+                    rb.isKinematic = rbData.IsKinematic;
                     SceneManager.MoveGameObjectToScene(rb.transform.root.gameObject, rbData.SimulatedScene);
                     return true;
                 }
@@ -314,6 +320,9 @@ namespace FishNet.Component.Prediction
                     }
                 }
 
+#if PREDICTION_V2
+                Debug.Log($"Paused {_rigidbodyDatas.Count} rigidbodies.");
+#endif
                 //Sets isKinematic status and returns if successful.
                 bool PauseRigidbody(int index)
                 {

@@ -10,8 +10,8 @@ namespace FishNet.Serializing
     /// </summary>
     public sealed class PooledReader : Reader, IDisposable
     {
-        internal PooledReader(byte[] bytes, NetworkManager networkManager) : base(bytes, networkManager) { }
-        internal PooledReader(ArraySegment<byte> segment, NetworkManager networkManager) : base(segment, networkManager) { }
+        internal PooledReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(bytes, networkManager, null, source) { }
+        internal PooledReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(segment, networkManager, null, source) { }
         public void Dispose() => ReaderPool.Recycle(this);
     }
 
@@ -32,25 +32,25 @@ namespace FishNet.Serializing
         /// <para>If pool is empty, creates a new Reader</para>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledReader GetReader(byte[] bytes, NetworkManager networkManager)
+        public static PooledReader GetReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
         {
-            return GetReader(new ArraySegment<byte>(bytes), networkManager);
+            return GetReader(new ArraySegment<byte>(bytes), networkManager, source);
         }
 
         /// <summary>
         /// Get the next reader in the pool or creates a new one if none are available.
         /// </summary>
-        public static PooledReader GetReader(ArraySegment<byte> segment, NetworkManager networkManager)
+        public static PooledReader GetReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
         {
             PooledReader result;
             if (_pool.Count > 0)
             {
                 result = _pool.Pop();
-                result.Initialize(segment, networkManager);
+                result.Initialize(segment, networkManager, source);
             }
             else
             {
-                result = new PooledReader(segment, networkManager);
+                result = new PooledReader(segment, networkManager, source);
             }
 
             return result;

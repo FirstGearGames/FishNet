@@ -27,6 +27,7 @@ namespace FishNet.Utility.Performance
         /// <param name="prefabId">PrefabId of the object to return.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
+        [Obsolete("Use RetrieveObject(int, ushort, bool")] //Remove on 2024/01/01.
         public abstract NetworkObject RetrieveObject(int prefabId, bool asServer);
         /// <summary>
         /// Returns an object that has been stored. A new object will be created if no stored objects are available.
@@ -42,6 +43,13 @@ namespace FishNet.Utility.Performance
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
         public abstract void StoreObject(NetworkObject instantiated, bool asServer);
+        /// <summary>
+        /// Instantiates a number of objects and adds them to the pool.
+        /// </summary>
+        /// <param name="prefab">Prefab to cache.</param>
+        /// <param name="count">Quantity to spawn.</param>
+        /// <param name="asServer">True if storing prefabs for the server collection. This is only applicable when using DualPrefabObjects.</param>
+        public virtual void CacheObjects(NetworkObject prefab, int count, bool asServer) { }
     }
 
 }

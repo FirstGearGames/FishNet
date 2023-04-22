@@ -147,6 +147,9 @@ namespace FishNet.CodeGenerating.Extension
                         md.Parameters.Add(pd);
                 }
 
+                foreach (var item in methodTemplate.GenericParameters)
+                    md.GenericParameters.Add(item);
+
                 td.Methods.Add(md);
                 created = true;
             }

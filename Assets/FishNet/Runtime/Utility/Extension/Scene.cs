@@ -34,7 +34,7 @@ namespace FishNet.Utility.Extension
         /// <returns></returns>
         public static void GetSceneNetworkObjects(Scene s, bool firstOnly, out ListCache<NetworkObject> nobCache)
         {
-            nobCache = ListCaches.GetNetworkObjectCache();
+            nobCache = ListCaches.RetrieveNetworkObjectCache();
             //Iterate all root objects for the scene.
             s.GetRootGameObjects(_gameObjectList);
             foreach (GameObject go in _gameObjectList)

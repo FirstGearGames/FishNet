@@ -1,4 +1,5 @@
-﻿using FishNet.Connection; //remove on 2023/01/01 move to correct folder.
+﻿using FishNet.Component.Observing;
+using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Observing;
 using FishNet.Utility.Constant;
@@ -8,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 [assembly: InternalsVisibleTo(UtilityConstants.DEMOS_ASSEMBLY_NAME)]
+[assembly: InternalsVisibleTo(UtilityConstants.TEST_ASSEMBLY_NAME)]
 namespace FishNet.Managing.Observing
 {
     /// <summary>
@@ -83,11 +85,13 @@ namespace FishNet.Managing.Observing
 
         private void Awake()
         {
+#if !NETWORK_LOD
             if (_useNetworkLod && _levelOfDetailDistances.Count > 1)
             {
                 Debug.LogWarning("Network Level of Detail has been disabled while bugs are resolved in relation to this feature. You do not need to make any changes to your project. This warning will be removed once all issues are resolved.");
                 _useNetworkLod = false;
             }
+#endif
         }
 
         /// <summary>

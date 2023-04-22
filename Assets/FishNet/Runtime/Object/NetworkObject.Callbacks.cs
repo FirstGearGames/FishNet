@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-    public sealed partial class NetworkObject : MonoBehaviour
+    public partial class NetworkObject : MonoBehaviour
     {
         /// <summary>
         /// Called after all data is synchronized with this NetworkObject.
@@ -33,8 +33,6 @@ namespace FishNet.Object
                     NetworkBehaviours[i].OnStartServer();
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnOwnershipServer(FishNet.Managing.NetworkManager.EmptyConnection);
-                if (invokeSyncTypeCallbacks)
-                    InvokeSyncTypeCallbacks(true);
             }
             //As client.
             else
@@ -43,20 +41,29 @@ namespace FishNet.Object
                     NetworkBehaviours[i].OnStartClient();
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnOwnershipClient(FishNet.Managing.NetworkManager.EmptyConnection);
-                if (invokeSyncTypeCallbacks)
-                    InvokeSyncTypeCallbacks(false);
             }
+
+            if (invokeSyncTypeCallbacks)
+                InvokeOnStartSyncTypeCallbacks(true);
         }
 
 
         /// <summary>
-        /// Invokes pending SyncType callbacks.
+        /// Invokes OnStartXXXX for synctypes, letting them know the NetworkBehaviour start cycle has been completed.
         /// </summary>
-        /// <param name="asServer"></param>
-        internal void InvokeSyncTypeCallbacks(bool asServer)
+        internal void InvokeOnStartSyncTypeCallbacks(bool asServer)
         {
             for (int i = 0; i < NetworkBehaviours.Length; i++)
-                NetworkBehaviours[i].InvokeSyncTypeCallbacks(asServer);
+                NetworkBehaviours[i].InvokeSyncTypeOnStartCallbacks(asServer);
+        }
+
+        /// <summary>
+        /// Invokes OnStopXXXX for synctypes, letting them know the NetworkBehaviour stop cycle is about to start.
+        /// </summary>
+        internal void InvokeOnStopSyncTypeCallbacks(bool asServer)
+        {
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].InvokeSyncTypeOnStopCallbacks(asServer);
         }
 
         /// <summary>
@@ -89,6 +96,9 @@ namespace FishNet.Object
         /// <param name="asServer"></param>
         internal void InvokeStopCallbacks(bool asServer)
         {
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].InvokeSyncTypeOnStopCallbacks(asServer);
+
             if (asServer)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)

@@ -1,7 +1,5 @@
 using FishNet.Managing;
-using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
-using LiteNetLib;
 using LiteNetLib.Layers;
 using System;
 using System.Runtime.CompilerServices;
@@ -430,7 +428,10 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         private bool StopServer()
         {
-            return _server.StopConnection();
+            if (_server == null)
+                return false;
+            else
+                return _server.StopConnection();
         }
 
         /// <summary>
@@ -460,7 +461,10 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         private bool StopClient()
         {
-            return _client.StopConnection();
+            if (_client == null)
+                return false;
+            else
+                return _client.StopConnection();
         }
         #endregion
         #endregion

@@ -22,7 +22,7 @@ namespace FishNet.Upgrading.Mirror.Editing
         /// <summary>
         /// Replaces all components.
         /// </summary>
-        [MenuItem("Fish-Networking/Upgrading/From Mirror/Replace Components", false,2)]
+        [MenuItem("Fish-Networking/Upgrading/From Mirror/Replace Components", false, 2)]
         private static void ReplaceComponents()
         {
 #if MIRROR

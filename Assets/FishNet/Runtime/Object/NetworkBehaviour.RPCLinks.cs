@@ -21,52 +21,49 @@ namespace FishNet.Object
         /// <summary>
         /// Initializes RpcLinks. This will only call once even as host.
         /// </summary>
-        private void InitializeOnceRpcLinks()
+        private void InitializeRpcLinks()
         {
-            if (NetworkManager.IsServer)
+            /* Link only data from server to clients. While it is
+             * just as easy to link client to server it's usually
+             * not needed because server out data is more valuable
+             * than server in data. */
+            /* Links will be stored in the NetworkBehaviour so that
+             * when the object is destroyed they can be added back
+             * into availableRpcLinks, within the ServerManager. */
+
+            ServerManager serverManager = NetworkManager.ServerManager;
+            //ObserverRpcs.
+            foreach (uint rpcHash in _observersRpcDelegates.Keys)
             {
-                /* Link only data from server to clients. While it is
-                 * just as easy to link client to server it's usually
-                 * not needed because server out data is more valuable
-                 * than server in data. */
-                /* Links will be stored in the NetworkBehaviour so that
-                 * when the object is destroyed they can be added back
-                 * into availableRpcLinks, within the ServerManager. */
+                if (!MakeLink(rpcHash, RpcType.Observers))
+                    return;
+            }
+            //TargetRpcs.
+            foreach (uint rpcHash in _targetRpcDelegates.Keys)
+            {
+                if (!MakeLink(rpcHash, RpcType.Target))
+                    return;
+            }
+            //ReconcileRpcs.
+            foreach (uint rpcHash in _reconcileRpcDelegates.Keys)
+            {
+                if (!MakeLink(rpcHash, RpcType.Reconcile))
+                    return;
+            }
 
-                ServerManager serverManager = NetworkManager.ServerManager;
-                //ObserverRpcs.
-                foreach (uint rpcHash in _observersRpcDelegates.Keys)
+            /* Tries to make a link and returns if
+             * successful. When a link cannot be made the method
+             * should exit as no other links will be possible. */
+            bool MakeLink(uint rpcHash, RpcType rpcType)
+            {
+                if (serverManager.GetRpcLink(out ushort linkIndex))
                 {
-                    if (!MakeLink(rpcHash, RpcType.Observers))
-                        return;
+                    _rpcLinks[rpcHash] = new RpcLinkType(linkIndex, rpcType);
+                    return true;
                 }
-                //TargetRpcs.
-                foreach (uint rpcHash in _targetRpcDelegates.Keys)
+                else
                 {
-                    if (!MakeLink(rpcHash, RpcType.Target))
-                        return;
-                }
-                //ReconcileRpcs.
-                foreach (uint rpcHash in _reconcileRpcDelegates.Keys)
-                {
-                    if (!MakeLink(rpcHash, RpcType.Reconcile))
-                        return;
-                }
-
-                /* Tries to make a link and returns if
-                 * successful. When a link cannot be made the method
-                 * should exit as no other links will be possible. */
-                bool MakeLink(uint rpcHash, RpcType rpcType)
-                {
-                    if (serverManager.GetRpcLink(out ushort linkIndex))
-                    {
-                        _rpcLinks[rpcHash] = new RpcLinkType(linkIndex, rpcType);
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
         }

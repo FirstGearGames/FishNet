@@ -323,8 +323,13 @@ namespace FishNet.Managing.Client
 
                         _clientObjects.AddToSpawned(cnob.NetworkObject, false);
                         SpawningObjects.Add(cnob.ObjectId, cnob.NetworkObject);
-
-                        IterateSpawn(cnob);
+                        /* Fixes https://github.com/FirstGearGames/FishNet/issues/323
+                         * The redundancy may have been caused by a rework. It would seem
+                         * IterateSpawn was always running after the above lines, and not
+                         * from anywhere else. So there's no reason we cannot inline it
+                         * here. */
+                        _clientObjects.ApplyRpcLinks(cnob.NetworkObject, cnob.RpcLinkReader);
+                        //IterateSpawn(cnob);
                         _iteratedSpawns.Add(cnob.NetworkObject);
 
                         /* Enable networkObject here if client only.
@@ -408,7 +413,7 @@ namespace FishNet.Managing.Client
                 {
                     CachedNetworkObject cnob = collection[i];
                     if (cnob.Action == CachedNetworkObject.ActionType.Spawn && cnob.NetworkObject != null)
-                        cnob.NetworkObject.InvokeSyncTypeCallbacks(false);
+                        cnob.NetworkObject.InvokeOnStartSyncTypeCallbacks(false);
                 }
             }
             finally
@@ -418,22 +423,22 @@ namespace FishNet.Managing.Client
             }
         }
 
-        /// <summary>
-        /// Initializes an object on clients and spawns the NetworkObject.
-        /// </summary>
-        /// <param name="cnob"></param>
-        private void IterateSpawn(CachedNetworkObject cnob)
-        {
-            /* All nob spawns have been added to spawned before
-            * they are processed. This ensures they will be found if
-            * anything is referencing them before/after initialization. */
-            /* However, they have to be added again here should an ItereteDespawn
-             * had removed them. This can occur if an object is set to be spawned,
-             * thus added to spawned before iterations, then a despawn runs which
-             * removes it from spawn. */
-            _clientObjects.AddToSpawned(cnob.NetworkObject, false);
-            _clientObjects.ApplyRpcLinks(cnob.NetworkObject, cnob.RpcLinkReader);
-        }
+        ///// <summary>
+        ///// Initializes an object on clients and spawns the NetworkObject.
+        ///// </summary>
+        ///// <param name="cnob"></param>
+        //private void IterateSpawn(CachedNetworkObject cnob)
+        //{
+        //    /* All nob spawns have been added to spawned before
+        //    * they are processed. This ensures they will be found if
+        //    * anything is referencing them before/after initialization. */
+        //    /* However, they have to be added again here should an ItereteDespawn
+        //     * had removed them. This can occur if an object is set to be spawned,
+        //     * thus added to spawned before iterations, then a despawn runs which
+        //     * removes it from spawn. */
+        //    _clientObjects.AddToSpawned(cnob.NetworkObject, false);
+        //    _clientObjects.ApplyRpcLinks(cnob.NetworkObject, cnob.RpcLinkReader);
+        //}
 
         /// <summary>
         /// Deinitializes an object on clients and despawns the NetworkObject.

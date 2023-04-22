@@ -7,7 +7,7 @@ namespace FishNet.Component.Prediction
 {
     public partial class OfflineRigidbody : MonoBehaviour
     {
-
+#if !PREDICTION_V2
         #region Serialized.
         /// <summary>
         /// Type of prediction movement which is being used.
@@ -123,7 +123,7 @@ namespace FishNet.Component.Prediction
         {
             _rigidbodyPauser.Unpause();
         }
-
+#endif
     }
 
 

@@ -1,6 +1,7 @@
 ﻿using FishNet.Component.Observing;
 using FishNet.Connection;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Utility;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -43,9 +44,17 @@ namespace FishNet.Managing.Object
         protected Dictionary<ulong, NetworkObject> SceneObjects = new Dictionary<ulong, NetworkObject>();
         #endregion
 
-        protected void Initialize(NetworkManager manager)
+        #region Private.
+        /// <summary>
+        /// Cached HashGrid. Will be null if not used.
+        /// </summary>
+        private HashGrid _hashGrid;
+        #endregion
+
+        protected virtual void Initialize(NetworkManager manager)
         {
             NetworkManager = manager;
+            _hashGrid = manager.GetInstance<HashGrid>(false);
         }
 
         /// <summary>
@@ -261,7 +270,11 @@ namespace FishNet.Managing.Object
         internal virtual void DespawnWithoutSynchronization(bool asServer)
         {
             foreach (NetworkObject nob in Spawned.Values)
+            {
+                if (nob == null)
+                    continue;
                 DespawnWithoutSynchronization(nob, asServer, nob.GetDefaultDespawnType(), false);
+            }
 
             Spawned.Clear();
         }
@@ -408,6 +421,21 @@ namespace FishNet.Managing.Object
                 reader.Clear();
             }
         }
+
+        /// <summary>
+        /// Parses a ReplicateRpc.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ParseReplicateRpc(PooledReader reader, NetworkConnection conn, Channel channel)
+        {
+            NetworkBehaviour nb = reader.ReadNetworkBehaviour();
+            int dataLength = Packets.GetPacketLength((ushort)PacketId.ServerRpc, reader, channel);
+            if (nb != null)
+                nb.OnReplicateRpc(null, reader, conn, channel);
+            else
+                SkipDataLength((ushort)PacketId.ServerRpc, reader, dataLength);
+        }
+
 
     }
 

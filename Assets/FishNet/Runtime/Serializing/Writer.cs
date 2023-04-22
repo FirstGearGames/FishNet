@@ -85,6 +85,15 @@ namespace FishNet.Serializing
         #endregion
 
         /// <summary>
+        /// Outputs reader to string.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Position: {Position}, Length: {Length}, Buffer: {BitConverter.ToString(_buffer, 0, Length)}.";
+        }
+
+        /// <summary>
         /// Resets the writer as though it was unused. Does not reset buffers.
         /// </summary>
         public void Reset(NetworkManager manager = null)
@@ -723,6 +732,17 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Writes a tick without packing.
+        /// </summary>
+        /// <param name="value"></param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteTickUnpacked(uint value)
+        {
+            WriteUInt32(value, AutoPackType.Unpacked);
+        }
+
+        /// <summary>
         /// Writes a GameObject. GameObject must be spawned over the network already or be a prefab with a NetworkObject attached.
         /// </summary>
         /// <param name="go"></param>
@@ -951,6 +971,18 @@ namespace FishNet.Serializing
             else
                 WriteList<T>(value, 0, value.Count);
         }
+
+        /// <summary>
+        /// Writes a state update packet.
+        /// </summary>
+        /// <param name="tick"></param>
+        [CodegenExclude]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void WriteStateUpdatePacket(uint lastPacketTick)
+        {
+            WriteTickUnpacked(lastPacketTick);
+        }
+
         #region Packed writers.
         /// <summary>
         /// ZigZag encode an integer. Move the sign bit to the right.

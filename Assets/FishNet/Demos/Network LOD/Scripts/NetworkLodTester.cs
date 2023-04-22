@@ -9,6 +9,7 @@ namespace FishNet.Demo.NetworkLod
 
     public class NetworkLodTester : NetworkBehaviour
     {
+        [Header("General")]
         [SerializeField]
         private NetworkObject _prefab;
         [SerializeField]
@@ -17,9 +18,13 @@ namespace FishNet.Demo.NetworkLod
         [SerializeField]
         private byte _lodLevel = 8;
 
-        private const int _count = 500;
-        private const float _xyRange = 15f;
-        private const float _zRange = 100f;
+        [Header("Spawning")]
+        [SerializeField]
+        private int _count = 500;
+        [SerializeField]
+        private float _xyRange = 15f;
+        [SerializeField]
+        private float _zRange = 100f;
 
         private void Awake()
         {

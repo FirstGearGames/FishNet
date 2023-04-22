@@ -64,7 +64,7 @@ namespace FishNet.Component.Spawning
             if (_networkManager != null)
                 _networkManager.SceneManager.OnClientLoadedStartScenes -= SceneManager_OnClientLoadedStartScenes;
         }
-
+ 
 
         /// <summary>
         /// Initializes this script for use.
@@ -94,11 +94,22 @@ namespace FishNet.Component.Spawning
                 return;
             }
 
+#if PREDICTION_V2
+            ////Test code.
+            ////Spawn for everyone but server.
+            //if (_networkManager.ServerManager.Clients.Count == 1)
+            //    return;
+
+            ////Only spawn for server.
+            //if (_networkManager.ServerManager.Clients.Count != 1)
+            //    return;
+#endif
+
             Vector3 position;
             Quaternion rotation;
             SetSpawn(_playerPrefab.transform, out position, out rotation);
 
-            NetworkObject nob = _networkManager.GetPooledInstantiated(_playerPrefab, true);
+            NetworkObject nob = _networkManager.GetPooledInstantiated(_playerPrefab, _playerPrefab.SpawnableCollectionId, true);
             nob.transform.SetPositionAndRotation(position, rotation);
             _networkManager.ServerManager.Spawn(nob, conn);
 

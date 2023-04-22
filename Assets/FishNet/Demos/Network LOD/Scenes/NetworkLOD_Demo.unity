@@ -121,38 +121,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!114 &370472794
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886575219563}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 756c28cd3141c4140ae776188ee26729, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  NetworkTraffic:
-    _updateInteval: 1
-    _updateClient: 0
-    _updateServer: 1
---- !u!114 &370472795
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886575219563}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8bc8f0363ddc75946a958043c5e49a83, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _color: {r: 0, g: 1, b: 0.8124151, a: 1}
-  _placement: 2
-  _showOutgoing: 1
-  _showIncoming: 0
 --- !u!114 &370472796
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -170,8 +138,8 @@ MonoBehaviour:
   _allowTickDropping: 0
   _maximumFrameTicks: 2
   _tickRate: 30
-  _pingInterval: 1
-  _timingInterval: 2
+  _pingInterval: 15
+  _timingInterval: 15
   _physicsMode: 0
 --- !u!1 &442045874
 GameObject:
@@ -255,6 +223,9 @@ MonoBehaviour:
   _prefab: {fileID: 4512293259955182956, guid: 300370bdf7819da41937e0beac65b32c, type: 3}
   _observerManager: {fileID: 1776591436}
   _lodLevel: 8
+  _count: 500
+  _xyRange: 15
+  _zRange: 100
 --- !u!1 &584355000
 GameObject:
   m_ObjectHideFlags: 0
@@ -1052,11 +1023,11 @@ GameObject:
   m_Component:
   - component: {fileID: 7443408886575219561}
   - component: {fileID: 7443408886575219562}
-  - component: {fileID: 1776591436}
   - component: {fileID: 7443408886575219556}
-  - component: {fileID: 370472794}
-  - component: {fileID: 370472795}
   - component: {fileID: 370472796}
+  - component: {fileID: 7443408886575219565}
+  - component: {fileID: 7443408886575219564}
+  - component: {fileID: 1776591436}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1064,6 +1035,38 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &7443408886575219564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408886575219563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756c28cd3141c4140ae776188ee26729, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  NetworkTraffic:
+    _updateInteval: 1
+    _updateClient: 0
+    _updateServer: 1
+--- !u!114 &7443408886575219565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408886575219563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bc8f0363ddc75946a958043c5e49a83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _color: {r: 1, g: 1, b: 1, a: 1}
+  _placement: 2
+  _showOutgoing: 1
+  _showIncoming: 1
 --- !u!224 &9139860295505404435
 RectTransform:
   m_ObjectHideFlags: 0

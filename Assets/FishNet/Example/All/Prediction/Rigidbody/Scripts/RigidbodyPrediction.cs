@@ -15,6 +15,7 @@ namespace FishNet.Example.Prediction.Rigidbodies
 
     public class RigidbodyPrediction : NetworkBehaviour
     {
+#if !PREDICTION_V2
         #region Types.
         public struct MoveData : IReplicateData
         {
@@ -104,7 +105,7 @@ namespace FishNet.Example.Prediction.Rigidbodies
             InstanceFinder.TimeManager.OnTick += TimeManager_OnTick;
             InstanceFinder.TimeManager.OnPostTick += TimeManager_OnPostTick;
         }
-
+  
         private void OnDestroy()
         {
             if (InstanceFinder.TimeManager != null)
@@ -278,8 +279,7 @@ namespace FishNet.Example.Prediction.Rigidbodies
             _rigidbody.angularVelocity = rd.AngularVelocity;
         }
 
-
+#endif
     }
-
 
 }

@@ -62,32 +62,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
-  _addedNetworkObject: {fileID: 3624261834906416601}
-  _networkObjectCache: {fileID: 3624261834906416601}
-  _implementsPredictionMethods: 0
-  _graphicalObject: {fileID: 3624261835462115340}
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 0}
+  _networkObjectCache: {fileID: 0}
+  _implementsPredictionMethods: 1
+  _graphicalObject: {fileID: 0}
   _enableTeleport: 0
-  _teleportThreshold: 200
+  _teleportThreshold: 1
   _ownerSmoothPosition: 1
   _ownerSmoothRotation: 1
   _ownerInterpolation: 1
-  _predictionType: 1
-  _rigidbody: {fileID: 3624261834906416602}
+  _predictionType: 0
+  _rigidbody: {fileID: 0}
   _rigidbody2d: {fileID: 0}
   _spectatorSmoothPosition: 1
   _spectatorSmoothRotation: 1
-  _spectatorSmoothingType: 2
+  _spectatorSmoothingType: 1
   _customSmoothingData:
     InterpolationPercent: 1
     CollisionInterpolationPercent: 0.1
     InterpolationDecreaseStep: 1
     InterpolationIncreaseStep: 3
   _preconfiguredSmoothingDataPreview:
-    InterpolationPercent: 1.5
-    CollisionInterpolationPercent: 0.2
+    InterpolationPercent: 1
+    CollisionInterpolationPercent: 0.1
     InterpolationDecreaseStep: 1
-    InterpolationIncreaseStep: 5
+    InterpolationIncreaseStep: 3
   _maintainedVelocity: 0
   _resendType: 0
   _resendInterval: 30
@@ -105,20 +105,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 5
+  <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  _scenePathHash: 2281302723
+  _scenePathHash: 0
   <SceneId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 12629563467294206692
-  _sceneNetworkObjects:
-  - {fileID: 3624261834906416601}
+  _sceneNetworkObjects: []
   <IsNested>k__BackingField: 0
+  _usesPrediction: 0
   <ComponentIndex>k__BackingField: 0
-  <PredictedSpawn>k__BackingField: {fileID: 7850526870340082268}
-  _networkBehaviours:
-  - {fileID: 3624261834906416600}
-  - {fileID: -6246116784124330627}
-  - {fileID: 7850526870340082268}
+  <PredictedSpawn>k__BackingField: {fileID: 0}
+  _networkBehaviours: []
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
   _isNetworked: 1
@@ -153,9 +150,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc7792d9dc338aa4dbc8a2f0533cf6ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 1
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 3624261834906416601}
-  _networkObjectCache: {fileID: 3624261834906416601}
+  _networkObjectCache: {fileID: 0}
   _startingForce: {x: 0, y: 0, z: 0}
 --- !u!114 &7850526870340082268
 MonoBehaviour:
@@ -169,9 +166,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2b597e1828355a4d994a69cbb11ef85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 2
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 3624261834906416601}
-  _networkObjectCache: {fileID: 3624261834906416601}
+  _networkObjectCache: {fileID: 0}
   _allowSpawning: 1
   _allowDespawning: 1
   _allowSyncTypes: 1

@@ -1,5 +1,6 @@
 ﻿using FishNet.Managing.Logging;
 using FishNet.Serializing.Helping;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -29,7 +30,7 @@ namespace FishNet.Managing.Scened
     /// <summary>
     /// Data container for looking up, loading, or unloading a scene.
     /// </summary>
-    public class SceneLookupData
+    public class SceneLookupData : IEquatable<SceneLookupData>
     {
         /// <summary>
         /// Handle of the scene. If value is 0, then handle is not used.
@@ -167,7 +168,8 @@ namespace FishNet.Managing.Scened
 
         public override string ToString()
         {
-            return base.ToString();
+            return $"Name {Name}, Handle {Handle}";
+            //return base.ToString();
         }
         #endregion
 

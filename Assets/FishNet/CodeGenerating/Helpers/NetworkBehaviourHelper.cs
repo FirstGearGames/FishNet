@@ -21,19 +21,27 @@ namespace FishNet.CodeGenerating.Helping
         //Names.
         internal string FullName;
         //Prediction.
-        public string ClearReplicateCache_Method_Name = nameof(NetworkBehaviour.ClearReplicateCache_Internal);
-        public MethodReference Replicate_Server_MethodRef;
-        public MethodReference Replicate_Client_MethodRef;
+        public string ClearReplicateCache_MethodName = nameof(NetworkBehaviour.ClearReplicateCache_Internal);
+#if PREDICTION_V2
+        public string Reconcile_Client_Start_MethodName = nameof(NetworkBehaviour.Reconcile_Client_Start);
+        public string Replicate_Replay_Start_MethodName = nameof(NetworkBehaviour.Replicate_Replay_Start);
+#endif 
+        public MethodReference Replicate_NonOwner_MethodRef;
+        public MethodReference Replicate_Owner_MethodRef;
         public MethodReference Replicate_Reader_MethodRef;
         public MethodReference Replicate_ExitEarly_A_MethodRef;
         public MethodReference Reconcile_ExitEarly_A_MethodRef;
         public MethodReference Reconcile_Server_MethodRef;
+        public FieldReference UsesPrediction_FieldRef;
+        public MethodReference Replicate_Replay_Start_MethodRef;
         public MethodReference Reconcile_Client_MethodRef;
+        public MethodReference Replicate_Replay_MethodRef;
         public MethodReference Reconcile_Reader_MethodRef;
         public MethodReference RegisterReplicateRpc_MethodRef;
         public MethodReference RegisterReconcileRpc_MethodRef;
         public MethodReference ReplicateRpcDelegateConstructor_MethodRef;
         public MethodReference ReconcileRpcDelegateConstructor_MethodRef;
+        public MethodReference Replicate_Server_SendToSpectators_MethodRef;
         //RPCs.
         public MethodReference SendServerRpc_MethodRef;
         public MethodReference SendObserversRpc_MethodRef;
@@ -89,7 +97,7 @@ namespace FishNet.CodeGenerating.Helping
                     RegisterObserversRpc_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.RegisterTargetRpc_Internal))
                     RegisterTargetRpc_MethodRef = base.ImportReference(mi);
-                //SendPredictions.
+                //Prediction delegates.
                 else if (mi.Name == nameof(NetworkBehaviour.RegisterReplicateRpc_Internal))
                     RegisterReplicateRpc_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.RegisterReconcileRpc_Internal))
@@ -104,20 +112,30 @@ namespace FishNet.CodeGenerating.Helping
                 //Prediction.
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_ExitEarly_A_Internal))
                     Replicate_ExitEarly_A_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Server_Internal))
-                    Replicate_Server_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_NonOwner_Internal))
+                    Replicate_NonOwner_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Reader_Internal))
                     Replicate_Reader_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Reader_Internal))
                     Reconcile_Reader_MethodRef = base.ImportReference(mi);
+#if PREDICTION_V2
+                else if (mi.Name == Replicate_Replay_Start_MethodName)
+                    Replicate_Replay_Start_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Replay))
+                    Replicate_Replay_MethodRef = base.ImportReference(mi);
+#endif
+#if !PREDICTION_V2
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_ExitEarly_A_Internal))
                     Reconcile_ExitEarly_A_MethodRef = base.ImportReference(mi);
+#endif
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Server_Internal))
                     Reconcile_Server_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Client_Internal))
-                    Replicate_Client_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Owner_Internal))
+                    Replicate_Owner_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client_Internal))
                     Reconcile_Client_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Server_SendToSpectators_Internal))
+                    Replicate_Server_SendToSpectators_MethodRef = base.ImportReference(mi);
                 //Misc.
                 else if (mi.Name == nameof(NetworkBehaviour.OwnerMatches))
                     OwnerMatches_MethodRef = base.ImportReference(mi);
@@ -149,6 +167,17 @@ namespace FishNet.CodeGenerating.Helping
                 else if (pi.Name == nameof(NetworkBehaviour.TimeManager))
                     TimeManager_MethodRef = base.ImportReference(pi.GetMethod);
             }
+
+#if PREDICTION_V2
+            foreach (FieldInfo fi in networkBehaviourType.GetFields((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
+            {
+                if (fi.Name == nameof(NetworkBehaviour.UsesPrediction))
+                {
+                    UsesPrediction_FieldRef = base.ImportReference(fi);
+                    break;
+                }
+            }
+#endif
 
             return true;
         }

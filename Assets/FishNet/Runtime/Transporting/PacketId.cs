@@ -28,6 +28,7 @@ namespace FishNet.Transporting
         Disconnect = 17,
         TimingUpdate = 18,
         NetworkLODUpdate = 19,
+        StateUpdate = 20,
     }
 
 }

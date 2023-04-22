@@ -6,6 +6,7 @@ using FishNet.Object;
 using FishNet.Observing;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -19,46 +20,148 @@ namespace FishNet.Component.Observing
     [CreateAssetMenu(menuName = "FishNet/Observers/Match Condition", fileName = "New Match Condition")]
     public class MatchCondition : ObserverCondition
     {
+        #region Types.
+        /// <summary>
+        /// MatchCondition collections used.
+        /// </summary>
+        public class ConditionCollections
+        {
+            public Dictionary<int, HashSet<NetworkConnection>> MatchConnections = new Dictionary<int, HashSet<NetworkConnection>>();
+            public Dictionary<NetworkConnection, HashSet<int>> ConnectionMatches = new Dictionary<NetworkConnection, HashSet<int>>();
+            public Dictionary<int, HashSet<NetworkObject>> MatchObjects = new Dictionary<int, HashSet<NetworkObject>>();
+            public Dictionary<NetworkObject, HashSet<int>> ObjectMatches = new Dictionary<NetworkObject, HashSet<int>>();
+        }
+        #endregion
+
         #region Private.
+        [Obsolete("Use GetMatchConnections(NetworkManager).")]
+        public static Dictionary<int, HashSet<NetworkConnection>> MatchConnections => GetMatchConnections();
+        [Obsolete("Use GetConnectionMatches(NetworkManager).")] //Remove on 2024/01/01.
+        public static Dictionary<NetworkConnection, HashSet<int>> ConnectionMatch => GetConnectionMatches();
+        [Obsolete("Use GetMatchObjects(NetworkManager).")] //Remove on 2024/01/01.
+        public static Dictionary<int, HashSet<NetworkObject>> MatchObject => GetMatchObjects();
+        [Obsolete("Use GetObjectMatches(NetworkManager).")] //Remove on 2024/01/01.
+        public static Dictionary<NetworkObject, HashSet<int>> ObjectMatch => GetObjectMatches();
         /// <summary>
-        /// 
+        /// Collections for each NetworkManager instance.
         /// </summary>
-        private static Dictionary<int, HashSet<NetworkConnection>> _matchConnections = new Dictionary<int, HashSet<NetworkConnection>>();
+        private static Dictionary<NetworkManager, ConditionCollections> _collections = new Dictionary<NetworkManager, ConditionCollections>();
+        #endregion
+
+        #region Collections.
         /// <summary>
-        /// Matches and connections in each match.
+        /// Stores collections for a manager.
         /// </summary>
-        public static IReadOnlyDictionary<int, HashSet<NetworkConnection>> MatchConnections => _matchConnections;
+        /// <param name="manager"></param>
+        internal static void StoreCollections(NetworkManager manager)
+        {
+            ConditionCollections cc;
+            if (!_collections.TryGetValue(manager, out cc))
+                return;
+
+            foreach (HashSet<int> item in cc.ObjectMatches.Values)
+                HashSets.StoreCache(item);
+            foreach (HashSet<NetworkConnection> item in cc.MatchConnections.Values)
+                HashSets.StoreCache(item);
+            foreach (HashSet<NetworkObject> item in cc.MatchObjects.Values)
+                HashSets.StoreCache(item);
+            foreach (HashSet<int> item in cc.ConnectionMatches.Values)
+                HashSets.StoreCache(item);
+
+            _collections.Remove(manager);
+        }
         /// <summary>
-        /// 
+        /// Gets condition collections for a NetowrkManager.
         /// </summary>
-        /// //todo this needs to hold hashset so conns can be in multiple matches.
-        private static Dictionary<NetworkConnection, int> _connectionMatch = new Dictionary<NetworkConnection, int>();
+        private static ConditionCollections GetCollections(NetworkManager manager = null)
+        {
+            if (manager == null)
+                manager = InstanceFinder.NetworkManager;
+
+            ConditionCollections cc;
+            if (!_collections.TryGetValue(manager, out cc))
+            {
+                cc = new ConditionCollections();
+                _collections[manager] = cc;
+            }
+
+            return cc;
+        }
+
         /// <summary>
-        /// Match a connection is in.
+        /// Returns matches and connections in each match.
         /// </summary>
-        public static IReadOnlyDictionary<NetworkConnection, int> ConnectionMatch => _connectionMatch;
+        /// <param name="manager">NetworkManager to use.</param>
+        /// <returns></returns>
+        public static Dictionary<int, HashSet<NetworkConnection>> GetMatchConnections(NetworkManager manager = null)
+        {
+            ConditionCollections cc = GetCollections(manager);
+            return cc.MatchConnections;
+        }
         /// <summary>
-        /// 
+        /// Returns connections and the matches they are in.
         /// </summary>
-        private static Dictionary<int, HashSet<NetworkObject>> _matchObjects = new Dictionary<int, HashSet<NetworkObject>>();
+        /// <param name="manager">NetworkManager to use.</param>
+        /// <returns></returns>
+        public static Dictionary<NetworkConnection, HashSet<int>> GetConnectionMatches(NetworkManager manager = null)
+        {
+            ConditionCollections cc = GetCollections(manager);
+            return cc.ConnectionMatches;
+        }
         /// <summary>
-        /// Matches and connections in each match.
+        /// Returns matches and objects within each match.
         /// </summary>
-        public static IReadOnlyDictionary<int, HashSet<NetworkObject>> MatchObjects => _matchObjects;
+        /// <param name="manager">NetworkManager to use.</param>
+        /// <returns></returns>
+        public static Dictionary<int, HashSet<NetworkObject>> GetMatchObjects(NetworkManager manager = null)
+        {
+            ConditionCollections cc = GetCollections(manager);
+            return cc.MatchObjects;
+        }
         /// <summary>
-        /// 
+        /// Returns objects and the matches they are in.
         /// </summary>
-        /// //todo this needs to hold hashset so conns can be in multiple matches.
-        private static Dictionary<NetworkObject, int> _objectMatch = new Dictionary<NetworkObject, int>();
-        /// <summary>
-        /// Match a connection is in.
-        /// </summary>
-        public static IReadOnlyDictionary<NetworkObject, int> ObjectMatch => _objectMatch;
+        /// <param name="manager">NetworkManager to use.</param>
+        /// <returns></returns>
+        public static Dictionary<NetworkObject, HashSet<int>> GetObjectMatches(NetworkManager manager = null)
+        {
+            ConditionCollections cc = GetCollections(manager);
+            return cc.ObjectMatches;
+        }
         #endregion
 
         public void ConditionConstructor() { }
 
         #region Add to match NetworkConnection.
+        /// <summary>
+        /// Adds a connection to a match.
+        /// </summary>
+        private static bool AddToMatch(int match, NetworkConnection conn, NetworkManager manager, bool replaceMatch, bool rebuild)
+        {
+            Dictionary<int, HashSet<NetworkConnection>> matchConnections = GetMatchConnections(manager);
+
+            if (replaceMatch)
+                RemoveFromMatchesWithoutRebuild(conn, manager);
+
+            /* Get current connections in match. This is where the conn
+             * will be added to. If does not exist then make new
+             * collection. */
+            HashSet<NetworkConnection> matchConnValues;
+            if (!matchConnections.TryGetValueIL2CPP(match, out matchConnValues))
+            {
+                matchConnValues = HashSets.RetrieveNetworkConnectionCache();
+                matchConnections.Add(match, matchConnValues);
+            }
+
+            bool r = matchConnValues.Add(conn);
+            AddToConnectionMatches(conn, match, manager);
+            if (r && rebuild)
+                GetServerObjects(manager).RebuildObservers();
+
+            return r;
+        }
+
+
         /// <summary>
         /// Adds a connection to a match.
         /// </summary>
@@ -68,21 +171,26 @@ namespace FishNet.Component.Observing
         /// <param name="replaceMatch">True to replace other matches with the new match.</param>
         public static void AddToMatch(int match, NetworkConnection conn, NetworkManager manager = null, bool replaceMatch = false)
         {
-            if (replaceMatch)
-                RemoveFromMatchWithoutRebuild(conn, manager);
+            AddToMatch(match, conn, manager, replaceMatch, true);
+        }
 
-            HashSet<NetworkConnection> results;
-            if (!_matchConnections.TryGetValueIL2CPP(match, out results))
+        /// <summary>
+        /// Updates a connection within ConnectionMatches to contain match.
+        /// </summary>
+        private static void AddToConnectionMatches(NetworkConnection conn, int match, NetworkManager manager)
+        {
+            Dictionary<NetworkConnection, HashSet<int>> connectionMatches = GetConnectionMatches(manager);
+
+            HashSet<int> matches;
+            if (!connectionMatches.TryGetValueIL2CPP(conn, out matches))
             {
-                results = new HashSet<NetworkConnection>();
-                _matchConnections.Add(match, results);
+                matches = HashSets.RetrieveIntCache();
+                connectionMatches[conn] = matches;
             }
 
-            bool r = results.Add(conn);
-            _connectionMatch[conn] = match;
-            if (r)
-                FinalizeChange(match, results, manager);
+            matches.Add(match);
         }
+
         /// <summary>
         /// Adds connections to a match.
         /// </summary>
@@ -103,33 +211,49 @@ namespace FishNet.Component.Observing
         /// <param name="replaceMatch">True to replace other matches with the new match.</param>
         public static void AddToMatch(int match, List<NetworkConnection> conns, NetworkManager manager = null, bool replaceMatch = false)
         {
-            if (replaceMatch)
-            {
-                foreach (NetworkConnection nc in conns)
-                    RemoveFromMatchWithoutRebuild(nc, manager);
-            }
+            bool added = false;
+            foreach (NetworkConnection c in conns)
+                added |= AddToMatch(match, c, manager, replaceMatch, false);
 
-            HashSet<NetworkConnection> results;
-            if (!_matchConnections.TryGetValueIL2CPP(match, out results))
-            {
-                results = new HashSet<NetworkConnection>();
-                _matchConnections.Add(match, results);
-            }
-
-            bool r = false;
-            for (int i = 0; i < conns.Count; i++)
-            {
-                NetworkConnection c = conns[i];
-                r |= results.Add(c);
-                _connectionMatch[c] = match;
-            }
-
-            if (r)
-                FinalizeChange(match, results, manager);
+            if (added)
+                GetServerObjects(manager).RebuildObservers();
         }
         #endregion
 
         #region Add to match NetworkObject.
+        /// <summary>
+        /// Adds an object to a match.
+        /// </summary>
+        private static bool AddToMatch(int match, NetworkObject nob, NetworkManager manager, bool replaceMatch, bool rebuild)
+        {
+            Dictionary<int, HashSet<NetworkObject>> matchObjects = GetMatchObjects(manager);
+            Dictionary<NetworkObject, HashSet<int>> objectMatches = GetObjectMatches(manager);
+
+            if (replaceMatch)
+                RemoveFromMatchWithoutRebuild(nob, manager);
+
+            HashSet<NetworkObject> matchObjectsValues;
+            if (!matchObjects.TryGetValueIL2CPP(match, out matchObjectsValues))
+            {
+                matchObjectsValues = HashSets.RetrieveNetworkObjectCache();
+                matchObjects.Add(match, matchObjectsValues);
+            }
+            bool added = matchObjectsValues.Add(nob);
+
+            /* Also add to reverse dictionary. */
+            HashSet<int> objectMatchesValues;
+            if (!objectMatches.TryGetValueIL2CPP(nob, out objectMatchesValues))
+            {
+                objectMatchesValues = HashSets.RetrieveIntCache();
+                objectMatches.Add(nob, objectMatchesValues);
+            }
+            objectMatchesValues.Add(match);
+
+            if (added && rebuild)
+                GetServerObjects(manager).RebuildObservers();
+
+            return added;
+        }
         /// <summary>
         /// Adds an object to a match.
         /// </summary>
@@ -139,21 +263,7 @@ namespace FishNet.Component.Observing
         /// <param name="replaceMatch">True to replace other matches with the new match.</param>
         public static void AddToMatch(int match, NetworkObject nob, NetworkManager manager = null, bool replaceMatch = false)
         {
-            if (replaceMatch)
-                RemoveFromMatchWithoutRebuild(nob, manager);
-
-            HashSet<NetworkObject> results;
-            if (!_matchObjects.TryGetValueIL2CPP(match, out results))
-            {
-                results = new HashSet<NetworkObject>();
-                _matchObjects.Add(match, results);
-            }
-
-            bool r = results.Add(nob);
-            _objectMatch[nob] = match;
-
-            if (r)
-                FinalizeChange(match, results, nob, manager);
+            AddToMatch(match, nob, manager, replaceMatch, true);
         }
         /// <summary>
         /// Adds objects to a match.
@@ -175,58 +285,165 @@ namespace FishNet.Component.Observing
         /// <param name="replaceMatch">True to replace other matches with the new match.</param>
         public static void AddToMatch(int match, List<NetworkObject> nobs, NetworkManager manager = null, bool replaceMatch = false)
         {
+            //Remove from current matches.
             if (replaceMatch)
             {
                 foreach (NetworkObject n in nobs)
                     RemoveFromMatchWithoutRebuild(n, manager);
             }
 
-            HashSet<NetworkObject> results;
-            if (!_matchObjects.TryGetValueIL2CPP(match, out results))
+            bool added = false;
+            //Add to matches.
+            foreach (NetworkObject n in nobs)
+                added |= AddToMatch(match, n, manager, replaceMatch, false);
+
+            if (added)
+                GetServerObjects(manager).RebuildObservers();
+        }
+        #endregion
+
+        #region TryRemoveKey.
+        /// <summary>
+        /// Removes a key if values are empty, and caches values.
+        /// </summary>
+        private static void TryRemoveKey(Dictionary<int, HashSet<NetworkObject>> dict, int key, HashSet<NetworkObject> value)
+        {
+            bool isEmpty = true;
+            if (value != null)
             {
-                results = new HashSet<NetworkObject>();
-                _matchObjects.Add(match, results);
+                isEmpty = (value.Count == 0);
+                if (isEmpty)
+                    HashSets.StoreCache(value);
             }
 
-            bool r = false;
-            for (int i = 0; i < nobs.Count; i++)
+            if (isEmpty)
+                dict.Remove(key);
+        }
+        /// <summary>
+        /// Removes a key if values are empty, and caches values.
+        /// </summary>
+        private static void TryRemoveKey(Dictionary<int, HashSet<NetworkObject>> dict, int key)
+        {
+            HashSet<NetworkObject> value;
+            dict.TryGetValue(key, out value);
+            TryRemoveKey(dict, key, value);
+        }
+
+        /// <summary>
+        /// Removes a key if values are empty, and caches values.
+        /// </summary>
+        private static void TryRemoveKey(Dictionary<NetworkObject, HashSet<int>> dict, NetworkObject key, HashSet<int> value)
+        {
+            bool isEmpty = true;
+            if (value != null)
             {
-                NetworkObject n = nobs[i];
-                r |= results.Add(n);
-                _objectMatch[n] = match;
+                isEmpty = (value.Count == 0);
+                if (isEmpty)
+                    HashSets.StoreCache(value);
             }
 
-            if (r)
-                FinalizeChange(match, results, nobs, manager);
+            if (isEmpty)
+                dict.Remove(key);
+        }
+        /// <summary>
+        /// Removes a key if values are empty, and caches values.
+        /// </summary>
+        private static void TryRemoveKey(Dictionary<NetworkObject, HashSet<int>> dict, NetworkObject key)
+        {
+            HashSet<int> value;
+            dict.TryGetValueIL2CPP(key, out value);
+            TryRemoveKey(dict, key, value);
+        }
+
+        /// <summary>
+        /// Removes a key if values are empty, and caches values.
+        /// </summary>
+        private static void TryRemoveKey(Dictionary<int, HashSet<NetworkConnection>> dict, int key, HashSet<NetworkConnection> value)
+        {
+            bool isEmpty = true;
+            if (value != null)
+            {
+                isEmpty = (value.Count == 0);
+                if (isEmpty)
+                    HashSets.StoreCache(value);
+            }
+
+            if (isEmpty)
+                dict.Remove(key);
+        }
+        /// <summary>
+        /// Removes a key if values are empty, and caches values.
+        /// </summary>
+        private static void TryRemoveKey(Dictionary<int, HashSet<NetworkConnection>> dict, int key)
+        {
+            HashSet<NetworkConnection> value;
+            dict.TryGetValueIL2CPP(key, out value);
+            TryRemoveKey(dict, key, value);
+        }
+
+        /// <summary>
+        /// Removes a key if values are empty, and caches values.
+        /// </summary>
+        private static void TryRemoveKey(Dictionary<NetworkConnection, HashSet<int>> dict, NetworkConnection key, HashSet<int> value)
+        {
+            bool isEmpty = true;
+            if (value != null)
+            {
+                isEmpty = (value.Count == 0);
+                if (isEmpty)
+                    HashSets.StoreCache(value);
+            }
+
+            if (isEmpty)
+                dict.Remove(key);
+        }
+        /// <summary>
+        /// Removes a key and caches collections where needed.
+        /// </summary>
+        private static void TryRemoveKey(Dictionary<NetworkConnection, HashSet<int>> dict, NetworkConnection key)
+        {
+            HashSet<int> value;
+            dict.TryGetValueIL2CPP(key, out value);
+            TryRemoveKey(dict, key, value);
         }
         #endregion
 
         #region Remove from match NetworkConnection.
         /// <summary>
-        /// Removes a connection from any match without rebuilding observers.
+        /// Removes a connection from all matches without rebuilding observers.
         /// </summary>
         /// <param name="conn">Connection to remove from matches.</param>
         /// <param name="manager">NetworkManager connection belongs to. This is not currently used.</param>
-        internal static bool RemoveFromMatchWithoutRebuild(NetworkConnection conn, NetworkManager manager)
+        internal static bool RemoveFromMatchesWithoutRebuild(NetworkConnection conn, NetworkManager manager)
         {
+            Dictionary<NetworkConnection, HashSet<int>> connectionMatches = GetConnectionMatches(manager);
+            Dictionary<int, HashSet<NetworkConnection>> matchConnections = GetMatchConnections(manager);
+
             bool removed = false;
             //If found to be in a match.
-            if (_connectionMatch.TryGetValueIL2CPP(conn, out int match))
+            if (connectionMatches.TryGetValueIL2CPP(conn, out HashSet<int> connectionMatchesValues))
             {
-                //If match is found.
-                if (_matchConnections.TryGetValue(match, out HashSet<NetworkConnection> conns))
+                removed = (connectionMatchesValues.Count > 0);
+                foreach (int m in connectionMatchesValues)
                 {
-                    removed |= conns.Remove(conn);
-                    //If no more in hashset remove match.
-                    if (conns.Count == 0)
-                        _matchConnections.Remove(match);
+                    HashSet<NetworkConnection> matchConnsValues;
+                    //If match is found.
+                    if (matchConnections.TryGetValue(m, out matchConnsValues))
+                    {
+                        matchConnsValues.Remove(conn);
+                        TryRemoveKey(matchConnections, m, matchConnsValues);
+                    }
                 }
+
+                //Clear matches connection is in.
+                connectionMatchesValues.Clear();
+                //Remove from connectionMatches.
+                TryRemoveKey(connectionMatches, conn, connectionMatchesValues);
             }
 
-            //Remove from connectionMatch.
-            _connectionMatch.Remove(conn);
             return removed;
         }
+
         /// <summary>
         /// Removes a connection from all matches.
         /// </summary>
@@ -234,9 +451,37 @@ namespace FishNet.Component.Observing
         /// <param name="manager">NetworkManager to rebuild observers on. If null InstanceFinder.NetworkManager will be used.</param>
         public static void RemoveFromMatch(NetworkConnection conn, NetworkManager manager)
         {
-            bool removed = RemoveFromMatchWithoutRebuild(conn, manager);
+            bool removed = RemoveFromMatchesWithoutRebuild(conn, manager);
             if (removed)
                 GetServerObjects(manager).RebuildObservers();
+        }
+        /// <summary>
+        /// Removes a connection from a match.
+        /// </summary>
+        private static bool RemoveFromMatch(int match, NetworkConnection conn, NetworkManager manager, bool rebuild)
+        {
+            Dictionary<NetworkConnection, HashSet<int>> connectionMatches = GetConnectionMatches(manager);
+            Dictionary<int, HashSet<NetworkConnection>> matchConnections = GetMatchConnections(manager);
+
+            bool removed = false;
+            HashSet<NetworkConnection> matchConnsValues;
+            if (matchConnections.TryGetValueIL2CPP(match, out matchConnsValues))
+            {
+                removed |= matchConnsValues.Remove(conn);
+                HashSet<int> connectionMatchesValues;
+                if (connectionMatches.TryGetValueIL2CPP(conn, out connectionMatchesValues))
+                {
+                    connectionMatchesValues.Remove(match);
+                    TryRemoveKey(connectionMatches, conn, connectionMatchesValues);
+                }
+                if (removed && rebuild)
+                {
+                    TryRemoveKey(matchConnections, match, matchConnsValues);
+                    GetServerObjects(manager).RebuildObservers();
+                }
+            }
+
+            return removed;
         }
         /// <summary>
         /// Removes a connection from a match.
@@ -245,15 +490,9 @@ namespace FishNet.Component.Observing
         /// <param name="conn">Connection to remove from match.</param>
         /// <param name="manager">NetworkManager to rebuild observers on. If null InstanceFinder.NetworkManager will be used.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RemoveFromMatch(int match, NetworkConnection conn, NetworkManager manager)
+        public static bool RemoveFromMatch(int match, NetworkConnection conn, NetworkManager manager = null)
         {
-            if (_matchConnections.TryGetValueIL2CPP(match, out HashSet<NetworkConnection> results))
-            {
-                bool r = results.Remove(conn);
-                _connectionMatch.Remove(conn);
-                if (r)
-                    FinalizeChange(match, results, manager);
-            }
+            return RemoveFromMatch(match, conn, manager, true);
         }
         /// <summary>
         /// Removes connections from a match.
@@ -264,19 +503,7 @@ namespace FishNet.Component.Observing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveFromMatch(int match, NetworkConnection[] conns, NetworkManager manager)
         {
-            if (_matchConnections.TryGetValueIL2CPP(match, out HashSet<NetworkConnection> results))
-            {
-                bool r = false;
-                for (int i = 0; i < conns.Length; i++)
-                {
-                    NetworkConnection c = conns[i];
-                    r |= results.Remove(c);
-                    _connectionMatch.Remove(c);
-                }
-
-                if (r)
-                    FinalizeChange(match, results, manager);
-            }
+            RemoveFromMatch(match, conns.ToList(), manager);
         }
         /// <summary>
         /// Removes connections from a match.
@@ -287,19 +514,12 @@ namespace FishNet.Component.Observing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveFromMatch(int match, List<NetworkConnection> conns, NetworkManager manager)
         {
-            if (_matchConnections.TryGetValueIL2CPP(match, out HashSet<NetworkConnection> results))
-            {
-                bool r = false;
-                for (int i = 0; i < conns.Count; i++)
-                {
-                    NetworkConnection c = conns[i];
-                    r |= results.Remove(c);
-                    _connectionMatch.Remove(c);
-                }
+            bool removed = false;
+            foreach (NetworkConnection c in conns)
+                removed |= RemoveFromMatch(match, c, manager, false);
 
-                if (r)
-                    FinalizeChange(match, results, manager);
-            }
+            if (removed)
+                GetServerObjects(manager).RebuildObservers();
         }
         #endregion
 
@@ -309,24 +529,32 @@ namespace FishNet.Component.Observing
         /// </summary>
         /// <param name="nob">NetworkObject to remove.</param>
         /// <param name="manager">Manager which the network object belongs to. This value is not yet used.</param>
-        internal static bool RemoveFromMatchWithoutRebuild(NetworkObject nob, NetworkManager manager = null)
+        internal static bool RemoveFromMatchWithoutRebuild(NetworkObject nob, NetworkManager manager)
         {
+            Dictionary<NetworkObject, HashSet<int>> objectMatches = GetObjectMatches(manager);
+            Dictionary<int, HashSet<NetworkObject>> matchObjects = GetMatchObjects(manager);
+
+            HashSet<int> objectMatchesValues;
             bool removed = false;
             //If found to be in a match.
-            if (_objectMatch.TryGetValueIL2CPP(nob, out int match))
+            if (objectMatches.TryGetValueIL2CPP(nob, out objectMatchesValues))
             {
-                //If match is found.
-                if (_matchObjects.TryGetValue(match, out HashSet<NetworkObject> nobs))
+                removed = (objectMatchesValues.Count > 0);
+                foreach (int m in objectMatchesValues)
                 {
-                    removed |= nobs.Remove(nob);
-                    //If no more in hashset remove match.
-                    if (nobs.Count == 0)
-                        _matchObjects.Remove(match);
+                    //If match is found.
+                    if (matchObjects.TryGetValue(m, out HashSet<NetworkObject> matchObjectsValues))
+                    {
+                        matchObjectsValues.Remove(nob);
+                        TryRemoveKey(matchObjects, m, matchObjectsValues);
+                    }
                 }
+
+                //Since object is being removed from all matches this can be cleared.
+                objectMatchesValues.Clear();
+                TryRemoveKey(objectMatches, nob, objectMatchesValues);
             }
 
-            //Remove from connectionMatch.
-            _objectMatch.Remove(nob);
             return removed;
         }
         /// <summary>
@@ -334,11 +562,13 @@ namespace FishNet.Component.Observing
         /// </summary>
         /// <param name="nob">NetworkObject to remove.</param>
         /// <param name="manager">NetworkManager to rebuild observers on. If null InstanceFinder.NetworkManager will be used.</param>
-        public static void RemoveFromMatch(NetworkObject nob, NetworkManager manager = null)
+        public static bool RemoveFromMatch(NetworkObject nob, NetworkManager manager = null)
         {
             bool removed = RemoveFromMatchWithoutRebuild(nob, manager);
             if (removed)
                 GetServerObjects(manager).RebuildObservers(nob);
+
+            return removed;
         }
         /// <summary>
         /// Removes a network object from all matches.
@@ -372,12 +602,28 @@ namespace FishNet.Component.Observing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveFromMatch(int match, NetworkObject nob, NetworkManager manager = null)
         {
-            if (_matchObjects.TryGetValueIL2CPP(match, out HashSet<NetworkObject> results))
+            Dictionary<int, HashSet<NetworkObject>> matchObjects = GetMatchObjects(manager);
+            Dictionary<NetworkObject, HashSet<int>> objectMatches = GetObjectMatches(manager);
+
+            HashSet<NetworkObject> matchObjectsValues;
+            if (matchObjects.TryGetValueIL2CPP(match, out matchObjectsValues))
             {
-                bool r = results.Remove(nob);
-                _objectMatch.Remove(nob);
-                if (r)
-                    FinalizeChange(match, results, nob, manager);
+                bool removed = matchObjectsValues.Remove(nob);
+
+                if (removed)
+                {
+                    /* Check if nob is still in matches. If not then remove
+                     * nob from ObjectMatches. */
+                    HashSet<int> objectMatchesValues;
+                    if (objectMatches.TryGetValueIL2CPP(nob, out objectMatchesValues))
+                    {
+                        objectMatchesValues.Remove(match);
+                        TryRemoveKey(objectMatches, nob, objectMatchesValues);
+                    }
+
+                    TryRemoveKey(matchObjects, match, matchObjectsValues);
+                    GetServerObjects(manager).RebuildObservers(nob);
+                }
             }
         }
         /// <summary>
@@ -389,18 +635,24 @@ namespace FishNet.Component.Observing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveFromMatch(int match, NetworkObject[] nobs, NetworkManager manager = null)
         {
-            if (_matchObjects.TryGetValueIL2CPP(match, out HashSet<NetworkObject> results))
+            Dictionary<int, HashSet<NetworkObject>> matchObjects = GetMatchObjects(manager);
+            Dictionary<NetworkObject, HashSet<int>> objectMatches = GetObjectMatches(manager);
+
+            if (matchObjects.TryGetValueIL2CPP(match, out HashSet<NetworkObject> matchObjectsValues))
             {
-                bool r = false;
+                bool removed = false;
                 for (int i = 0; i < nobs.Length; i++)
                 {
                     NetworkObject n = nobs[i];
-                    r |= results.Remove(n);
-                    _objectMatch.Remove(n);
+                    removed |= matchObjectsValues.Remove(n);
+                    objectMatches.Remove(n);
                 }
 
-                if (r)
-                    FinalizeChange(match, results, nobs, manager);
+                if (removed)
+                {
+                    TryRemoveKey(matchObjects, match, matchObjectsValues);
+                    GetServerObjects(manager).RebuildObservers(nobs);
+                }
             }
         }
         /// <summary>
@@ -412,82 +664,25 @@ namespace FishNet.Component.Observing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveFromMatch(int match, List<NetworkObject> nobs, NetworkManager manager = null)
         {
-            if (_matchObjects.TryGetValueIL2CPP(match, out HashSet<NetworkObject> results))
+            Dictionary<int, HashSet<NetworkObject>> matchObjects = GetMatchObjects(manager);
+            Dictionary<NetworkObject, HashSet<int>> objectMatches = GetObjectMatches(manager);
+
+            if (matchObjects.TryGetValueIL2CPP(match, out HashSet<NetworkObject> matchObjectsValues))
             {
-                bool r = false;
+                bool removed = false;
                 for (int i = 0; i < nobs.Count; i++)
                 {
                     NetworkObject n = nobs[i];
-                    r |= results.Remove(n);
-                    _objectMatch.Remove(n);
+                    removed |= matchObjectsValues.Remove(n);
+                    objectMatches.Remove(n);
                 }
 
-                if (r)
-                    FinalizeChange(match, results, nobs, manager);
+                if (removed)
+                {
+                    TryRemoveKey(matchObjects, match, matchObjectsValues);
+                    GetServerObjects(manager).RebuildObservers(nobs);
+                }
             }
-        }
-        #endregion
-
-        #region FinalizeChange NetworkConnection.
-        /// <summary>
-        /// Finalizes changes to observers.
-        /// </summary>
-        private static void FinalizeChange(int match, HashSet<NetworkConnection> remainingConnsInMatch, NetworkManager manager)
-        {
-            if (remainingConnsInMatch.Count == 0)
-                _matchConnections.Remove(match);
-
-            /* Observers on all objects and all conditions have to be rebuilt.
-             * This is because the connection changing matches could
-             * require the connection to be visible for other players in the match,
-             * as well make other connections in the same match visible.
-             * But also make all the objects not associated with connections
-             * of that match visible. In result to tick all of those boxes
-             * all objects need to be rebuilt for all connections. */
-            GetServerObjects(manager).RebuildObservers();
-        }
-        #endregion
-
-        #region FinalizeChange NetworkObject.
-        /// <summary>
-        /// Finalizes changes to observers.
-        /// </summary>
-        private static void FinalizeChange(int match, HashSet<NetworkObject> results, List<NetworkObject> nobs, NetworkManager manager)
-        {
-            ListCache<NetworkObject> cache = ListCaches.GetNetworkObjectCache();
-            cache.AddValues(nobs);
-            FinalizeChange(match, results, cache, manager);
-            ListCaches.StoreCache(cache);
-        }
-        /// <summary>
-        /// Finalizes changes to observers.
-        /// </summary>
-        private static void FinalizeChange(int match, HashSet<NetworkObject> results, NetworkObject[] nobs, NetworkManager manager)
-        {
-            ListCache<NetworkObject> cache = ListCaches.GetNetworkObjectCache();
-            cache.AddValues(nobs);
-            FinalizeChange(match, results, cache, manager);
-            ListCaches.StoreCache(cache);
-        }
-        /// <summary>
-        /// Finalizes changes to observers.
-        /// </summary>
-        private static void FinalizeChange(int match, HashSet<NetworkObject> results, NetworkObject nob, NetworkManager manager)
-        {
-            ListCache<NetworkObject> cache = ListCaches.GetNetworkObjectCache();
-            cache.AddValue(nob);
-            FinalizeChange(match, results, cache, manager);
-            ListCaches.StoreCache(cache);
-        }
-        /// <summary>
-        /// Finalizes changes to observers.
-        /// </summary>
-        private static void FinalizeChange(int match, HashSet<NetworkObject> results, ListCache<NetworkObject> nobs, NetworkManager manager)
-        {
-            if (results.Count == 0)
-                _matchConnections.Remove(match);
-
-            GetServerObjects(manager).RebuildObservers(nobs);
         }
         #endregion
 
@@ -497,7 +692,7 @@ namespace FishNet.Component.Observing
         /// <param name="connection">Connection which the condition is being checked for.</param>
         /// <param name="currentlyAdded">True if the connection currently has visibility of this object.</param>
         /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
-        public override bool ConditionMet(NetworkConnection connection, bool alreadyAdded, out bool notProcessed)
+        public override bool ConditionMet(NetworkConnection connection, bool currentlyAdded, out bool notProcessed)
         {
             //If here then checks are being processed.
             notProcessed = false;
@@ -506,30 +701,72 @@ namespace FishNet.Component.Observing
             * and connection share a match. */
             if (owner.IsValid)
             {
-                //Connection isn't in a match.
-                if (!_connectionMatch.TryGetValueIL2CPP(connection, out int match))
+                Dictionary<NetworkConnection, HashSet<int>> connectionMatches = GetConnectionMatches(base.NetworkObject.NetworkManager);
+                //Output owner matches.
+                HashSet<int> ownerMatches;
+                //bool ownerMatchesFound = connectionMatches.TryGetValueIL2CPP(owner, out ownerMatches);
+                ////Connection isn't in a match.
+                //if (!connectionMatches.TryGetValueIL2CPP(connection, out HashSet<int> connMatches))
+                //{
+                //    //If owner is also not in a match then they can see each other.
+                //    return !ownerMatchesFound;
+                //}
+                /* This objects owner is not in a match so treat it like
+                 * a networkobject without an owner. Objects not in matches
+                 * are visible to everyone. */
+                if (!connectionMatches.TryGetValueIL2CPP(owner, out ownerMatches))
                 {
-                    //Return if this owner is also not in a match.
-                    return !_connectionMatch.TryGetValueIL2CPP(owner, out int _);
+                    return true;
                 }
-                //Match isn't found.
-                if (!_matchConnections.TryGetValueIL2CPP(match, out HashSet<NetworkConnection> conns))
+                /* Owner is in a match. See if connection is in any of
+                 * the same matches. */
+                else
+                {
+                    //If conn is not in any matches then they cannot see this object, as it is.
+                    if (!connectionMatches.TryGetValue(connection, out HashSet<int> connMatches))
+                    {
+                        return false;
+                    }
+                    //See if conn is in any of the same matches.
+                    else
+                    {
+                        foreach (int m in connMatches)
+                        {
+                            if (ownerMatches.Contains(m))
+                                return true;
+                        }
+                    }
+
+                    //Fall through, not found.
                     return false;
-                //If owner is in same match return true.
-                return conns.Contains(owner);
+                }
             }
             /* If no owner see if the object is in a match and if so
              * then compare that. */
             else
             {
-                //Object isn't in a match.
-                if (!_objectMatch.TryGetValueIL2CPP(base.NetworkObject, out int objectMatch))
+                Dictionary<NetworkObject, HashSet<int>> objectMatches = GetObjectMatches(base.NetworkObject.NetworkManager);
+                Dictionary<NetworkConnection, HashSet<int>> connectionMatches = GetConnectionMatches(base.NetworkObject.NetworkManager);
+
+                //Object isn't in a match. Is visible with no owner.
+                HashSet<int> objectMatchesValues;
+                if (!objectMatches.TryGetValueIL2CPP(base.NetworkObject, out objectMatchesValues))
                     return true;
-                /* See if connection is in the same match as the object.
-                 * If connection isn't in a match then it fails. */
-                if (!_connectionMatch.TryGetValueIL2CPP(connection, out int connectionMatch))
+                /* See if connection is in any of same matches as the object.
+                 * If connection isn't in a match then it fails as at this point
+                 * object would be, but not conn. */
+                if (!connectionMatches.TryGetValueIL2CPP(connection, out HashSet<int> connectionMatchesValues))
                     return false;
-                return (connectionMatch == objectMatch);
+
+                //Compare for same matches.
+                foreach (int cM in connectionMatchesValues)
+                {
+                    if (objectMatchesValues.Contains(cM))
+                        return true;
+                }
+
+                //Fall through, not in any of the matches.
+                return false;
             }
         }
 
@@ -543,24 +780,6 @@ namespace FishNet.Component.Observing
         {
             return (manager == null) ? InstanceFinder.ServerManager.Objects : manager.ServerManager.Objects;
         }
-
-
-        /* //todo this needs to be passing in the network manager to clear on,
-         * otherwise only a single instance of NM is supported.
-         * Users are already forced to specify which NM to add
-         * matches for but the functionality separating different NMs in relation
-         * to such isn't done yet. */
-        /// <summary>
-        /// Clears all match information without rebuilding.
-        /// </summary>
-        internal static void ClearMatchesWithoutRebuilding()
-        {
-            _connectionMatch.Clear();
-            _matchConnections.Clear();
-            _objectMatch.Clear();
-            _matchObjects.Clear();
-        }
-
 
         /// <summary>
         /// True if the condition requires regular updates.

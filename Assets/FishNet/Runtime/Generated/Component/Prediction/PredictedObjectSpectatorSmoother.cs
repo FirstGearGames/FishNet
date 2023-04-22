@@ -10,6 +10,7 @@ namespace FishNet.Component.Prediction
 {
     internal class PredictedObjectSpectatorSmoother
     {
+#if !PREDICTION_V2
         #region Types.
         /// <summary>
         /// Data on a goal to move towards.
@@ -877,8 +878,6 @@ namespace FishNet.Component.Prediction
             result.IsActive = true;
             return result;
         }
-
+#endif
     }
-
-
 }

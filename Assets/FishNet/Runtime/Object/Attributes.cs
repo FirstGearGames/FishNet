@@ -136,6 +136,10 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public ReadPermission ReadPermissions = ReadPermission.Observers;
         /// <summary>
+        /// Network roles which may update values.
+        /// </summary>
+        public WritePermission WritePermissions = WritePermission.ServerOnly;
+        /// <summary>
         /// True if to require the readonly attribute.
         /// Setting to false will allow inspector serialization of this object, but you must never manually initialize this object.
         /// </summary>
@@ -157,6 +161,10 @@ namespace FishNet.Object.Synchronizing
         /// Clients which may receive value updates.
         /// </summary>
         public ReadPermission ReadPermissions = ReadPermission.Observers;
+        /// <summary>
+        /// Network roles which may update values.
+        /// </summary>
+        public WritePermission WritePermissions = WritePermission.ServerOnly;
         /// <summary>
         /// Channel to use. Unreliable SyncVars will use eventual consistency.
         /// </summary>

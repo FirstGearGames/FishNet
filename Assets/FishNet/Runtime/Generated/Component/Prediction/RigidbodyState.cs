@@ -14,7 +14,7 @@ namespace FishNet.Component.Prediction
         public Vector3 AngularVelocity;
 
         public RigidbodyState(Rigidbody rb, bool isKinematic, uint tick) : this(rb, tick)
-        {            
+        {
             Position = rb.transform.position;
             Rotation = rb.transform.rotation;
             IsKinematic = isKinematic;
@@ -40,27 +40,30 @@ namespace FishNet.Component.Prediction
         public uint LocalTick;
         public Vector3 Position;
         public Quaternion Rotation;
-        public bool Simulated;
         public Vector2 Velocity;
         public float AngularVelocity;
+        public bool Simulated;
+        public bool IsKinematic;
 
         public Rigidbody2DState(Rigidbody2D rb, bool simulated, uint tick)
         {
-            Simulated = simulated;
             Position = rb.transform.position;
             Rotation = rb.transform.rotation;
             Velocity = rb.velocity;
             AngularVelocity = rb.angularVelocity;
+            Simulated = simulated;
+            IsKinematic = rb.isKinematic;
             LocalTick = tick;
         }
 
         public Rigidbody2DState(Rigidbody2D rb, uint tick)
         {
-            Simulated = rb.simulated;
             Position = rb.transform.position;
-            Rotation = rb.transform.rotation;            
+            Rotation = rb.transform.rotation;
             Velocity = rb.velocity;
             AngularVelocity = rb.angularVelocity;
+            Simulated = rb.simulated;
+            IsKinematic = rb.isKinematic;
             LocalTick = tick;
         }
     }
@@ -71,7 +74,7 @@ public static class RigidbodyStateSerializers
 
     public static void WriteRigidbodyState(this Writer writer, RigidbodyState value)
     {
-        writer.WriteUInt32(value.LocalTick, AutoPackType.Unpacked);
+        writer.WriteTickUnpacked(value.LocalTick);
         writer.WriteVector3(value.Position);
         writer.WriteQuaternion(value.Rotation);
         writer.WriteBoolean(value.IsKinematic);
@@ -86,7 +89,7 @@ public static class RigidbodyStateSerializers
     {
         RigidbodyState state = new RigidbodyState()
         {
-            LocalTick = reader.ReadUInt32(AutoPackType.Unpacked),
+            LocalTick = reader.ReadTickUnpacked(),
             Position = reader.ReadVector3(),
             Rotation = reader.ReadQuaternion(),
             IsKinematic = reader.ReadBoolean()
@@ -104,10 +107,11 @@ public static class RigidbodyStateSerializers
 
     public static void WriteRigidbody2DState(this Writer writer, Rigidbody2DState value)
     {
-        writer.WriteUInt32(value.LocalTick, AutoPackType.Unpacked);
+        writer.WriteTickUnpacked(value.LocalTick);
         writer.WriteVector3(value.Position);
         writer.WriteQuaternion(value.Rotation);
         writer.WriteBoolean(value.Simulated);
+        writer.WriteBoolean(!value.IsKinematic);
 
         if (value.Simulated)
         {
@@ -120,10 +124,11 @@ public static class RigidbodyStateSerializers
     {
         Rigidbody2DState state = new Rigidbody2DState()
         {
-            LocalTick = reader.ReadUInt32(AutoPackType.Unpacked),
+            LocalTick = reader.ReadTickUnpacked(),
             Position = reader.ReadVector3(),
             Rotation = reader.ReadQuaternion(),
             Simulated = reader.ReadBoolean(),
+            IsKinematic = reader.ReadBoolean()
         };
 
         if (state.Simulated)

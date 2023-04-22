@@ -502,12 +502,12 @@ namespace FishNet.Component.Animating
                 return;
             }
             //Disabled/cannot start.
-            if (_startTick == uint.MaxValue)
+            if (_startTick == 0)
                 return;
             //Nothing in queue.
             if (_fromServerBuffer.Count == 0)
             {
-                _startTick = uint.MaxValue;
+                _startTick = 0;
                 return;
             }
             //Not enough time has passed to start queue.
@@ -1427,7 +1427,7 @@ namespace FishNet.Component.Animating
             ReceivedServerData rd = new ReceivedServerData(data);
             _fromServerBuffer.Enqueue(rd);
 
-            if (_startTick == uint.MaxValue)
+            if (_startTick == 0)
                 _startTick = (base.TimeManager.LocalTick + _interpolation);
             //ApplyParametersUpdated(ref data);
         }
