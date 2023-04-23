@@ -60,9 +60,9 @@ namespace FishNet.Object
         /// </summary>
         internal void Preinitialize_Internal(NetworkObject nob, bool asServer)
         {
+            InitializeOnceSyncTypes(asServer);
             if (asServer)
-            {
-                InitializeOnceSyncTypes();
+            {                
                 InitializeRpcLinks();
             }
             else

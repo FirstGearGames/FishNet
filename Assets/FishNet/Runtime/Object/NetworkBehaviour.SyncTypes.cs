@@ -121,32 +121,40 @@ namespace FishNet.Object
         /// <summary>
         /// Initializes SyncTypes. This will only call once even as host.
         /// </summary>
-        private void InitializeOnceSyncTypes()
+        private void InitializeOnceSyncTypes(bool asServer)
         {
-            if (!_initializedOnce)
+            if (asServer)
             {
-                System.Array arr = System.Enum.GetValues(typeof(ReadPermission));
-                _readPermissions = new ReadPermission[arr.Length];
-
-                int count = 0;
-                foreach (ReadPermission rp in arr)
+                if (!_initializedOnce)
                 {
-                    _readPermissions[count] = rp;
-                    count++;
+                    //optimization Cache synctypewriters on despawn and get from cache on spawn.
+                    //Only need to initialize readpermissions once, it's static.
+                    if (_readPermissions == null)
+                    {
+                        System.Array arr = System.Enum.GetValues(typeof(ReadPermission));
+                        _readPermissions = new ReadPermission[arr.Length];
+
+                        int count = 0;
+                        foreach (ReadPermission rp in arr)
+                        {
+                            _readPermissions[count] = rp;
+                            count++;
+                        }
+                    }
+
+                    //Build writers for observers and owner.
+                    _syncTypeWriters = new SyncTypeWriter[_readPermissions.Length];
+                    for (int i = 0; i < _syncTypeWriters.Length; i++)
+                        _syncTypeWriters[i] = new SyncTypeWriter(_readPermissions[i]);
                 }
-
-                //Build writers for observers and owner.
-                _syncTypeWriters = new SyncTypeWriter[_readPermissions.Length];
-                for (int i = 0; i < _syncTypeWriters.Length; i++)
-                    _syncTypeWriters[i] = new SyncTypeWriter(_readPermissions[i]);
+                else
+                {
+                    //Reset writers.
+                    for (int i = 0; i < _syncTypeWriters.Length; i++)
+                        _syncTypeWriters[i].Reset();
+                }
             }
-            else
-            {
-                //Reset writers.
-                for (int i = 0; i < _syncTypeWriters.Length; i++)
-                    _syncTypeWriters[i].Reset();
-            }
-
+            
             /* Initialize synctypes every spawn because there could be
              * callbacks which occur that the user or even we may implement
              * during the initialization. */

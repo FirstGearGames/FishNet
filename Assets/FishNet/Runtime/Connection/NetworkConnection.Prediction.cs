@@ -1,5 +1,6 @@
 ﻿using FishNet.Managing.Predicting;
 using FishNet.Serializing;
+using UnityEngine;
 
 namespace FishNet.Connection
 {
@@ -12,7 +13,7 @@ namespace FishNet.Connection
 #if PREDICTION_V2
         internal PooledWriter PredictionStateWriter = WriterPool.GetWriter(1000);
 
-        internal void WriteState(PooledWriter writer, uint lastReplicateTick)
+        internal void WriteState(PooledWriter writer)
         {
             //Do not send states to clientHost.
             if (IsLocalClient)
@@ -40,7 +41,7 @@ namespace FishNet.Connection
                  * instead of copying into a new writer with length to save CPU perf
                  * at the cost of 4 bytes. */
                 predictionWriter.Reserve(PredictionManager.STATE_HEADER_RESERVE_COUNT);
-                predictionWriter.WriteTickUnpacked(lastReplicateTick);
+                predictionWriter.WriteTickUnpacked(LastReplicateTick);
                 /* No need to send localTick here, it can be read from LastPacketTick that's included with every packet.
                  * Note: the LastPacketTick we're sending here is the last packet received from this connection.
                  * The server and client ALWAYS prefix their packets with their local tick, which is
@@ -49,6 +50,8 @@ namespace FishNet.Connection
 
             predictionWriter.WriteArraySegment(writer.GetArraySegment());
         }
+
+        internal uint LastReplicateTick;
 
         private void Prediction_Reset()
         {

@@ -451,7 +451,7 @@ namespace FishNet.Managing.Predicting
 
             /* Keep a state in buffer. This helps ensure all packets have come through for the state
              * by waiting until another is received. */
-            if (_recievedStates.Count < 1)
+            if (_recievedStates.Count < 2)
                 return;
 
             //Debug.Log($"Inputs collected {_inputs}. {_collectedInputs}");
@@ -465,7 +465,6 @@ namespace FishNet.Managing.Predicting
             StateClientTick = reader.ReadTickUnpacked();
             StateServerTick = state.ServerTick;
 
-            //Debug.LogWarning($"Starting reconcile. ClientTick {StateClientTick}. ServerTick {StateServerTick}. LocalTick {_networkManager.TimeManager.LocalTick}");
             //Have the reader get processed.
             _networkManager.ClientManager.ParseReader(reader, Channel.Reliable);
 

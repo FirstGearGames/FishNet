@@ -134,8 +134,10 @@ namespace FishNet.CodeGenerating.Helping
                     Replicate_Owner_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client_Internal))
                     Reconcile_Client_MethodRef = base.ImportReference(mi);
+#if PREDICTION_V2
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Server_SendToSpectators_Internal))
                     Replicate_Server_SendToSpectators_MethodRef = base.ImportReference(mi);
+#endif
                 //Misc.
                 else if (mi.Name == nameof(NetworkBehaviour.OwnerMatches))
                     OwnerMatches_MethodRef = base.ImportReference(mi);

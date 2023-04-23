@@ -320,9 +320,6 @@ namespace FishNet.Component.Prediction
                     }
                 }
 
-#if PREDICTION_V2
-                Debug.Log($"Paused {_rigidbodyDatas.Count} rigidbodies.");
-#endif
                 //Sets isKinematic status and returns if successful.
                 bool PauseRigidbody(int index)
                 {

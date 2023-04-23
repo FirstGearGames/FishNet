@@ -28,6 +28,6 @@ namespace FishNet.Object
         /// <summary>
         /// Data which was unset or predicted is being replayed.
         /// </summary>
-        ReplayedUnsetData = 3,
+        ReplayedUnsetData = 4,
     }
 }

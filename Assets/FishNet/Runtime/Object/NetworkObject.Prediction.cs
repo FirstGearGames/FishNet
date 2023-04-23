@@ -44,19 +44,28 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPreReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
+
             uint tick = (IsOwner) ? clientReconcileTick : serverReconcileTick;
+            if (!IsOwner)
+                Debug.LogWarning("Reconcilg tick " + tick);
+
+            //If there's no data to replay then 
+            if (LastReplicateTick < tick)
+            {
+                Debug.LogError("Pausing no reconcile");
+                PauseRigidbodies();
+                return;
+            }
+
             for (int i = 0; i < _predictionBehaviours.Count; i++)
                 _predictionBehaviours[i].Reconcile_Client_Start();
 
-            ////If there's no data to replay then 
-            //if (LastReplicateTick < tick)
-            //{
-            //    PauseRigidbodies();
-            //    return;
-            //}
-
-            //for (int i = 0; i < _predictionBehaviours.Count; i++)
-            //    _predictionBehaviours[i].Reconcile_Client_Start();
+            //If there's no data to replay then 
+            if (LastReplicateTick < tick)
+            {
+                PauseRigidbodies();
+                return;
+            }
         }
 
         private void PredictionManager_OnPostReconcile(uint clientTick, uint serverTick)
@@ -69,13 +78,12 @@ namespace FishNet.Object
         private void PredictionManager_OnReplicateReplay(uint clientTick, uint serverTick)
         {
             uint replayTick = (IsOwner) ? clientTick : serverTick;
-            if (LastReplicateTick < replayTick)
-            {
-                //Debug.Log($"Pausing {LastReplicateTick}, {replayTick}, {clientTick}, {IsOwner}");
-                PauseRigidbodies();
-                return;
-            }
-            //Debug.LogWarning("Client replay tick " + clientTick);
+            //if (LastReplicateTick < replayTick)
+            //{
+            //    PauseRigidbodies();
+            //    return;
+            //}
+
             for (int i = 0; i < _predictionBehaviours.Count; i++)
                 _predictionBehaviours[i].Replicate_Replay_Start(replayTick);
         }
@@ -99,6 +107,11 @@ namespace FishNet.Object
                 _pauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody, false, null);
                 _pauserInitialized = true;
             }
+            if (!_pauser.Paused)
+            {
+                if (IsOwner)
+                    Debug.Log($"Paused rigidbodies. Owner {IsOwner}");
+            }
             _pauser.Pause();
         }
 
@@ -108,10 +121,8 @@ namespace FishNet.Object
         /// <summary>
         /// Unpauses rigidbodies allowing them to simulate.
         /// </summary>
-        internal void UnpauseRigidbodies(bool toReplay = false)
+        internal void UnpauseRigidbodies()
         {
-            //if (toReplay)
-            //    Debug.Log("Unapusing");
             _pauser.Unpause();
         }
 

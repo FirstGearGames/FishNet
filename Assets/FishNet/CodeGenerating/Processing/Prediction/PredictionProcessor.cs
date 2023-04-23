@@ -84,9 +84,13 @@ namespace FishNet.CodeGenerating.Processing
             /// </summary>
             public readonly FieldReference ReconcileULDelegate;
             /// <summary>
-            /// Replicate data buffered.
+            /// Replicate data which has not run yet and is in queue to do so.
             /// </summary>
-            public readonly FieldReference ReplicateDatas;
+            public readonly FieldReference ReplicateDatasQueue;
+            /// <summary>
+            /// Replicate data which has already run and is used to reconcile/replay.
+            /// </summary>
+            public readonly FieldReference ReplicateDatasList;
             /// <summary>
             /// Last reconcile data received from the server.
             /// </summary>
@@ -96,13 +100,14 @@ namespace FishNet.CodeGenerating.Processing
             /// </summary>
             public readonly FieldReference ServerReplicateReaderBuffer;
 
-            public CreatedPredictionFields(TypeReference replicateDataTypeRef, FieldReference replicateULDelegate, FieldReference reconcileULDelegate, FieldReference replicateDatas, FieldReference reconcileData,
+            public CreatedPredictionFields(TypeReference replicateDataTypeRef, FieldReference replicateULDelegate, FieldReference reconcileULDelegate, FieldReference replicateDatasQueue, FieldReference replicateDatasList, FieldReference reconcileData,
                 FieldReference serverReplicateReaderBuffer)
             {
                 ReplicateDataTypeRef = replicateDataTypeRef;
                 ReplicateULDelegate = replicateULDelegate;
                 ReconcileULDelegate = reconcileULDelegate;
-                ReplicateDatas = replicateDatas;
+                ReplicateDatasQueue = replicateDatasQueue;
+                ReplicateDatasList = replicateDatasList;
                 ReconcileData = reconcileData;
                 ServerReplicateReaderBuffer = serverReplicateReaderBuffer;
             }
@@ -482,7 +487,7 @@ namespace FishNet.CodeGenerating.Processing
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
 
-            Generate(predictionFields.ReplicateDatas);
+            Generate(predictionFields.ReplicateDatasQueue);
 
             void Generate(FieldReference fr)
             {
@@ -605,17 +610,18 @@ namespace FishNet.CodeGenerating.Processing
             /* Data buffer. */
             FieldDefinition replicateULDelegateFd = new FieldDefinition($"_replicateULDelegate___{replicateMd.Name}", FieldAttributes.Private, replicateULDelegateGit);
             FieldDefinition reconcileULDelegateFd = new FieldDefinition($"_reconcileULDelegate___{reconcileMd.Name}", FieldAttributes.Private, reconcileULDelegateGit);
-            FieldDefinition replicatesFd = new FieldDefinition($"_serverReplicates___{replicateMd.Name}", FieldAttributes.Private, lstDataGit);
+            FieldDefinition replicatesQueueFd = new FieldDefinition($"_replicatesQueue___{replicateMd.Name}", FieldAttributes.Private, queueDataGit);
+            FieldDefinition replicatesListFd = new FieldDefinition($"_replicatesHistory___{replicateMd.Name}", FieldAttributes.Private, lstDataGit);
             FieldDefinition reconcileDataFd = new FieldDefinition($"_reconcileData___{replicateMd.Name}", FieldAttributes.Private, reconcileDataTr);
             FieldDefinition serverReplicatesReadBufferFd = new FieldDefinition($"{replicateMd.Name}___serverReplicateReadBuffer", FieldAttributes.Private, replicateDataArrTr);
 
             typeDef.Fields.Add(replicateULDelegateFd);
             typeDef.Fields.Add(reconcileULDelegateFd);
-            typeDef.Fields.Add(replicatesFd);
+            typeDef.Fields.Add(replicatesQueueFd);
             typeDef.Fields.Add(reconcileDataFd);
             typeDef.Fields.Add(serverReplicatesReadBufferFd);
 
-            predictionFields = new CreatedPredictionFields(replicateDataTr, replicateULDelegateFd, reconcileULDelegateFd, replicatesFd, reconcileDataFd,
+            predictionFields = new CreatedPredictionFields(replicateDataTr, replicateULDelegateFd, reconcileULDelegateFd, replicatesQueueFd,replicatesListFd, reconcileDataFd,
                 serverReplicatesReadBufferFd);
         }
 #endif
@@ -940,7 +946,7 @@ namespace FishNet.CodeGenerating.Processing
 
                 processor.Emit(OpCodes.Ldarg_0);
                 processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatas);
+                processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasQueue);
                 processor.Emit(OpCodes.Ldarg_0);
                 processor.Emit(OpCodes.Ldfld, predictionFields.ReconcileULDelegate);
                 processor.Emit(OpCodes.Ldarg_0);
@@ -977,7 +983,7 @@ namespace FishNet.CodeGenerating.Processing
                 processor.Emit(OpCodes.Ldarg_0);
                 processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateULDelegate);
                 processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatas);
+                processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasQueue);
                 processor.Emit(OpCodes.Ldc_I4, (int)Channel.Unreliable); //Channel does not really matter when replaying. At least not until someone needs it.
                 processor.Emit(OpCodes.Call, replicateReplayGim);
                 processor.Emit(OpCodes.Ret);
@@ -1074,7 +1080,7 @@ namespace FishNet.CodeGenerating.Processing
 
             processor.Emit(OpCodes.Ldarg_0); //Base.
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatas);
+            processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasQueue);
             processor.Emit(nbClearMr.GetCallOpCode(base.Session), nbClearMr);
             processor.Emit(OpCodes.Ret);
         }
@@ -1183,7 +1189,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateULDelegate);
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatas);
+            processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasQueue);
             processor.Emit(OpCodes.Ldarg, channelPd);
             processor.Emit(OpCodes.Call, replicateGim);
         }
@@ -1270,7 +1276,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateReaderBuffer);
             //Replicates.
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatas);
+            processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasQueue);
             //Channel.
             processor.Emit(OpCodes.Ldarg, channelPd);
             processor.Emit(OpCodes.Call, replicateReaderGim);
@@ -1372,7 +1378,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateULDelegate);
             processor.Emit(OpCodes.Ldc_I4, (int)rpcCount);
             processor.Emit(OpCodes.Ldarg_0);//this.
-            processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatas);
+            processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasQueue);
             processor.Emit(OpCodes.Ldarg, dataPd);
             processor.Emit(OpCodes.Ldarg, channelPd);
             processor.Emit(OpCodes.Call, replicateOwnerGim);
