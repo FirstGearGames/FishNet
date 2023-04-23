@@ -594,22 +594,28 @@ namespace FishNet.Managing.Scened
                 }
             }
 
-            //None are excluded.
-            if (excludedScenes.Count == 0)
-                return _globalScenes;
-            //All are excluded, quick exit to save perf.
-            int remaining = (_globalScenes.Length - excludedScenes.Count);
-            if (remaining <= 0)
-                return null;
-            //Some are excluded.
-            List<string> results = new List<string>();
-            foreach (string globalScene in _globalScenes)
+            //Some scenes are excluded.
+            if (excludedScenes != null)
             {
-                if (!excludedScenes.Contains(globalScene))
-                    results.Add(globalScene);
-            }
+                //All are excluded, quick exit to save perf.
+                int remaining = (_globalScenes.Length - excludedScenes.Count);
+                if (remaining <= 0)
+                    return null;
+                //Some are excluded.
+                List<string> results = new List<string>();
+                foreach (string globalScene in _globalScenes)
+                {
+                    if (!excludedScenes.Contains(globalScene))
+                        results.Add(globalScene);
+                }
 
-            return results.ToArray();
+                return results.ToArray();
+            }
+            //No scenes are excluded.
+            else
+            {
+                return _globalScenes;
+            }
         }
 
         //#region IsQueuedScene.
