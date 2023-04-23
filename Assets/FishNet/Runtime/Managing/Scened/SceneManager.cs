@@ -582,14 +582,11 @@ namespace FishNet.Managing.Scened
         /// <returns></returns>
         private string[] GlobalScenesExcludingLoading()
         {
-            HashSet<string> excludedScenes = null;
+            HashSet<string> excludedScenes = new HashSet<string>();
             foreach (string gs in _globalScenes)
             {
                 if (_serverGlobalScenesLoading.Contains(gs))
                 {
-                    if (excludedScenes == null)
-                        excludedScenes = new HashSet<string>();
-
                     excludedScenes.Add(gs);
                 }
             }
