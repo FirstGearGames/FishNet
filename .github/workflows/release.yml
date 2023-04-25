@@ -19,5 +19,5 @@ jobs:
           set -euxo pipefail
           version=$(jq -r .version  Assets/FishNet/package.json)
           bash ./deploy.sh --semver $version
-
-https://github.com/WolffunGame/FishNet.git#3.5.6
+          
+# https://github.com/WolffunGame/FishNet.git#3.5.6
