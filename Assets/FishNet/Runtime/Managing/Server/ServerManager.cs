@@ -737,16 +737,16 @@ namespace FishNet.Managing.Server
                 if (connected)
                 {
                     //Send already connected clients to the connection that just joined.
-                    ListCache<int> lc = ListCaches.RetrieveIntCache();
+                    List<int> cache = CollectionCaches<int>.Retrieve();
                     foreach (int key in Clients.Keys)
-                        lc.AddValue(key);
+                        cache.Add(key);
 
                     ConnectedClientsBroadcast allMsg = new ConnectedClientsBroadcast()
                     {
-                        ListCache = lc
+                        Values = cache
                     };
                     conn.Broadcast(allMsg);
-                    ListCaches.StoreCache(lc);
+                    CollectionCaches<int>.Store(cache);
                 }
             }
             //If not sharing Ids then only send ConnectionChange to conn.

@@ -39,7 +39,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Cached objects buffer. Contains spawns and despawns.
         /// </summary>
-        private ListCache<CachedNetworkObject> _cachedObjects = new ListCache<CachedNetworkObject>();
+        private List<CachedNetworkObject> _cachedObjects = new List<CachedNetworkObject>();
         /// <summary>
         /// NetworkObjects which have been spawned already during the current iteration.
         /// </summary>
@@ -80,8 +80,8 @@ namespace FishNet.Managing.Client
         /// <returns></returns>
         public NetworkObject GetInCached(int objectId, CacheSearchType searchType)
         {
-            int count = _cachedObjects.Written;
-            List<CachedNetworkObject> collection = _cachedObjects.Collection;
+            int count = _cachedObjects.Count;
+            List<CachedNetworkObject> collection = _cachedObjects;
             for (int i = 0; i < count; i++)
             {
                 CachedNetworkObject cnob = collection[i];
@@ -120,7 +120,8 @@ namespace FishNet.Managing.Client
             //If order has not changed then add normally.
             if (!_initializeOrderChanged)
             {
-                cnob = _cachedObjects.AddReference();
+                cnob = DisposableObjectCaches<CachedNetworkObject>.Retrieve();
+                _cachedObjects.Add(cnob);
             }
             //Otherwise see if values need to be sorted.
             else
@@ -139,23 +140,27 @@ namespace FishNet.Managing.Client
                  * as well to preserve user spawn order if they spawned multiple
                  * objects the same which, with the same order. */
 
-                int written = _cachedObjects.Written;
+                int written = _cachedObjects.Count;
                 for (int i = 0; i < written; i++)
                 {
-                    CachedNetworkObject item = _cachedObjects.Collection[i];
+                    CachedNetworkObject item = _cachedObjects[i];
                     /* If item order is larger then that means
                      * initializeOrder has reached the last entry
                      * of its value. Insert just before item index. */
                     if (initializeOrder < item.InitializeOrder)
                     {
-                        cnob = _cachedObjects.InsertReference(i);
+                        cnob = DisposableObjectCaches<CachedNetworkObject>.Retrieve();
+                        _cachedObjects.Insert(i, cnob);
                         break;
                     }
                 }
 
                 //If here and cnob is null then it was not inserted; add to end.
                 if (cnob == null)
-                    cnob = _cachedObjects.AddReference();
+                {
+                    cnob = DisposableObjectCaches<CachedNetworkObject>.Retrieve();
+                    _cachedObjects.Add(cnob);
+                }
             }
 
             cnob.InitializeSpawn(manager, collectionId, objectId, initializeOrder, ownerId, ost, componentIndex, rootObjectId, parentObjectId, parentComponentIndex
@@ -164,7 +169,8 @@ namespace FishNet.Managing.Client
 
         public void AddDespawn(int objectId, DespawnType despawnType)
         {
-            CachedNetworkObject cnob = _cachedObjects.AddReference();
+            CachedNetworkObject cnob = DisposableObjectCaches<CachedNetworkObject>.Retrieve();
+            _cachedObjects.Add(cnob);
             cnob.InitializeDespawn(objectId, despawnType);
         }
 
@@ -173,7 +179,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         public void Iterate()
         {
-            int written = _cachedObjects.Written;
+            int written = _cachedObjects.Count;
             if (written == 0)
                 return;
 
@@ -181,7 +187,7 @@ namespace FishNet.Managing.Client
             {
                 //Indexes which have already been processed.
                 HashSet<int> processedIndexes = new HashSet<int>();
-                List<CachedNetworkObject> collection = _cachedObjects.Collection;
+                List<CachedNetworkObject> collection = _cachedObjects;
                 _conflictingDespawns.Clear();
                 /* The next iteration will set rpclinks,
                  * synctypes, and so on. */
@@ -475,7 +481,9 @@ namespace FishNet.Managing.Client
         public void Reset()
         {
             _initializeOrderChanged = false;
-            _cachedObjects.Reset();
+            foreach (CachedNetworkObject item in _cachedObjects)
+                item.Dispose();
+            _cachedObjects.Clear();
             _iteratedSpawns.Clear();
             SpawningObjects.Clear();
         }
@@ -485,7 +493,7 @@ namespace FishNet.Managing.Client
     /// A cached network object which exist in world but has not been Initialized yet.
     /// </summary>
     [Preserve]
-    internal class CachedNetworkObject
+    internal class CachedNetworkObject : IDisposable
     {
         #region Types.
         public enum ActionType
@@ -596,6 +604,11 @@ namespace FishNet.Managing.Client
         private void ResetValues()
         {
             NetworkObject = null;
+        }
+
+        public void Dispose()
+        {
+            ResetValues();
         }
 
         ~CachedNetworkObject()

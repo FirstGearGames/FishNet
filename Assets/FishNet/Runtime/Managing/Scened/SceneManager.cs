@@ -615,7 +615,7 @@ namespace FishNet.Managing.Scened
             else
             {
                 return _globalScenes;
-            }
+            }            
         }
 
         //#region IsQueuedScene.
@@ -1611,7 +1611,7 @@ namespace FishNet.Managing.Scened
              * wiped from SceneConnections earlier depending on how scenes are
              * loaded or unloaded. Instead we must iterate through spawned objects. */
 
-            ListCache<NetworkObject> movingNobs = ListCaches.RetrieveNetworkObjectCache();
+            List<NetworkObject> movingNobs = CollectionCaches<NetworkObject>.Retrieve();
             /* Rather than a get all networkobjects in scene
              * let's iterate the spawned objects instead. I imagine
              * in most scenarios iterating spawned would be faster.
@@ -1630,18 +1630,16 @@ namespace FishNet.Managing.Scened
 
                 /* If here nob is in the same being
                  * destroyed and clientHost has visiblity. */
-                movingNobs.AddValue(nob);
+                movingNobs.Add(nob);
             }
 
-            int count = movingNobs.Written;
+            int count = movingNobs.Count;
             if (count > 0)
             {
                 Scene moveScene = GetDelayedDestroyScene();
-                List<NetworkObject> collection = movingNobs.Collection;
-
                 for (int i = 0; i < count; i++)
                 {
-                    NetworkObject nob = collection[i];
+                    NetworkObject nob = movingNobs[i];
                     /* Force as not a scene object
                      * so that it becomes destroyed
                      * rather than disabled. */
@@ -1658,7 +1656,7 @@ namespace FishNet.Managing.Scened
                     UnitySceneManager.MoveGameObjectToScene(nob.gameObject, moveScene);
                 }
             }
-            ListCaches.StoreCache(movingNobs);
+            CollectionCaches<NetworkObject>.Store(movingNobs);
         }
 
         /// <summary>

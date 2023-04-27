@@ -84,7 +84,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// ListCache for comparing.
         /// </summary>
-        private ListCache<T> _listCache;
+        private static List<T> _cache = new List<T>();
         /// <summary>
         /// Values upon initialization.
         /// </summary>
@@ -517,25 +517,21 @@ namespace FishNet.Object.Synchronizing
             Intersect(Collection);
             if (base.NetworkManager == null)
                 Intersect(ClientHostCollection);
-
+            
             void Intersect(ISet<T> collection)
-            {
-                if (_listCache == null)
-                    _listCache = new ListCache<T>();
-                else
-                    _listCache.Reset();
+            {                
+                _cache.AddRange(collection);
 
-                _listCache.AddValues(collection);
-
-                int count = _listCache.Written;
+                int count = _cache.Count;
                 for (int i = 0; i < count; i++)
                 {
-                    T entry = _listCache.Collection[i];
+                    T entry = _cache[i];
                     if (!other.Contains(entry))
                         Remove(entry);
                 }
             }
 
+            _cache.Clear();
         }
 
         public bool IsProperSubsetOf(IEnumerable<T> other)

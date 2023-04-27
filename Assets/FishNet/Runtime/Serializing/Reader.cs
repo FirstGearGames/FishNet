@@ -867,6 +867,7 @@ namespace FishNet.Serializing
             LastNetworkBehaviour = null;
 #endif
             objectOrPrefabId = ReadNetworkObjectId();
+
             bool isSpawned;
             /* UNSET indicates that the object
              * is null or no PrefabId is set.
@@ -880,6 +881,8 @@ namespace FishNet.Serializing
 
             bool isServer = NetworkManager.ServerManager.Started;
             bool isClient = NetworkManager.ClientManager.Started;
+
+            Debug.Log($"Reading nob. Id {objectOrPrefabId}. IsSpawned {isSpawned}. IsClient {isClient}. IsServer {isServer}");
 
             NetworkObject result;
             //Is spawned.
@@ -935,19 +938,21 @@ namespace FishNet.Serializing
         internal int ReadNetworkObjectForSpawn(out sbyte initializeOrder, out ushort collectionid, out bool spawned)
         {
             int objectId = ReadNetworkObjectId();
-
             bool isNull = (objectId == NetworkObject.UNSET_OBJECTID_VALUE);
             if (isNull)
             {
                 initializeOrder = 0;
                 collectionid = 0;
                 spawned = false;
+                Debug.Log($"Reading for spawn. IsNull");
             }
             else
             {
                 collectionid = ReadUInt16();
                 initializeOrder = ReadSByte();
                 spawned = ReadBoolean();
+
+                Debug.Log($"Reading for spawn. Id {objectId}. CollectionId {collectionid}. InitializeOrder {initializeOrder}. Spawned {spawned}.");
             }
 
             return objectId;

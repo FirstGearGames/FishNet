@@ -230,12 +230,13 @@ namespace FishNet.Managing.Client
         /// <param name="s"></param>
         private void RegisterAndDespawnSceneObjects(Scene s)
         {
-            ListCache<NetworkObject> nobs;
-            SceneFN.GetSceneNetworkObjects(s, false, out nobs);
+            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.Retrieve();
+            SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
 
-            for (int i = 0; i < nobs.Written; i++)
+            int nobsCount = nobs.Count;
+            for (int i = 0; i < nobsCount; i++)
             {
-                NetworkObject nob = nobs.Collection[i];
+                NetworkObject nob = nobs[i];
                 if (!nob.IsSceneObject)
                     continue;
 
@@ -249,7 +250,7 @@ namespace FishNet.Managing.Client
                 }
             }
 
-            ListCaches.StoreCache(nobs);
+            CollectionCaches<NetworkObject>.Store(nobs);
         }
 
         /// <summary>
@@ -374,6 +375,7 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         internal void CacheSpawn(PooledReader reader)
         {
+            Debug.Log("Caching spawn.");
             sbyte initializeOrder;
             ushort collectionId;
             int objectId = reader.ReadNetworkObjectForSpawn(out initializeOrder, out collectionId, out _);

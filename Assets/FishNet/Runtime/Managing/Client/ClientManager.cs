@@ -6,6 +6,7 @@ using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
+using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -148,7 +149,7 @@ namespace FishNet.Managing.Client
         {
             NetworkManager.ClearClientsCollection(Clients);
 
-            List<int> collection = args.ListCache.Collection;// args.Ids;
+            List<int> collection = args.Values;
             //No connected clients except self.
             if (collection == null)
                 return;
@@ -159,6 +160,8 @@ namespace FishNet.Managing.Client
                 int id = collection[i];
                 Clients[id] = new NetworkConnection(NetworkManager, id, false);
             }
+
+            CollectionCaches<int>.Store(collection);
         }
 
         /// <summary>
@@ -288,6 +291,7 @@ namespace FishNet.Managing.Client
             ReaderPool.Recycle(reader);
 
         }
+
         internal void ParseReader(PooledReader reader, Channel channel, bool print = false)
         {
             bool hasIntermediateLayer = NetworkManager.TransportManager.HasIntermediateLayer;
@@ -335,9 +339,9 @@ namespace FishNet.Managing.Client
             while (reader.Remaining > 0)
             {
                 packetId = reader.ReadPacketId();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 if (print)
                     Debug.Log($"PacketId {packetId}");
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 _parseLogger.AddPacket(packetId);
 #endif
                 bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
@@ -440,14 +444,15 @@ namespace FishNet.Managing.Client
                         return;
                     }
                 }
-                /* Iterate cache when reader is emptied.
-                 * This is incase the last packet received
-                 * was a spawned, which wouldn't trigger
-                 * the above iteration. There's no harm
-                 * in doing this check multiple times as there's
-                 * an exit early check. */
-                Objects.IterateObjectCache();
             }
+
+            /* Iterate cache when reader is emptied.
+            * This is incase the last packet received
+            * was a spawned, which wouldn't trigger
+            * the above iteration. There's no harm
+            * in doing this check multiple times as there's
+            * an exit early check. */
+            Objects.IterateObjectCache();
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             }
             catch (Exception e)

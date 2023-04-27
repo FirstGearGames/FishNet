@@ -1,5 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Transporting;
 using System.Collections.Generic;
@@ -108,55 +109,58 @@ namespace FishNet.Observing
         /// </summary>
         private bool _registeredAsTimed;
         /// <summary>
-        /// True if already pre-initialized.
+        /// True if was initialized previously.
         /// </summary>
-        private bool _preintiialized;
+        private bool _initializedPreviously;
         /// <summary>
         /// True if ParentNetworkObject was visible last iteration.
         /// This value will also be true if there is no ParentNetworkObject.
         /// </summary>
         private bool _lastParentVisible;
+        /// <summary>
+        /// ServerManager for this script.
+        /// </summary>
+        private ServerManager _serverManager;
         #endregion
 
-        private void OnEnable()
+        /// <summary>
+        /// Deinitializes for reuse or clean up.
+        /// </summary>
+        /// <param name="destroyed"></param>
+        internal void Deinitialize(bool destroyed)
         {
-            if (_networkObject != null && _networkObject.IsServer)
-                RegisterTimedConditions();
-        }
-        private void OnDisable()
-        {
-            if (_networkObject != null && _networkObject.IsDeinitializing)
-            {
-                _lastParentVisible = false;
-                _nonTimedMet.Clear();
-                UnregisterTimedConditions();
-            }
-        }
-        private void OnDestroy()
-        {
-            if (_networkObject != null)
-                UnregisterTimedConditions();
-        }
 
-        internal void Deinitialize()
-        {
-            if (_networkObject != null && _networkObject.IsDeinitializing && _networkObject.ServerManager != null)
+            _lastParentVisible = false;
+            _nonTimedMet.Clear();
+            UnregisterTimedConditions();
+
+            if (_serverManager != null)
+                _serverManager.OnRemoteConnectionState -= ServerManager_OnRemoteConnectionState;
+
+            foreach (ObserverCondition item in _observerConditions)
             {
-                _networkObject.ServerManager.OnRemoteConnectionState -= ServerManager_OnRemoteConnectionState;
-                UnregisterTimedConditions();
+                item.Deinitialize(destroyed);
+                //If also destroying then destroy SO reference.
+                if (destroyed)
+                    Destroy(item);
             }
+
+            _serverManager = null;
+            _networkObject = null;
         }
 
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        /// <param name="networkManager"></param>
-        internal void PreInitialize(NetworkObject networkObject)
+        internal void Initialize(NetworkObject networkObject)
         {
-            if (!_preintiialized)
+            _networkObject = networkObject;
+            _serverManager = _networkObject.ServerManager;
+            _serverManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
+
+            if (!_initializedPreviously)
             {
-                _preintiialized = true;
-                _networkObject = networkObject;
+                _initializedPreviously = true;
                 bool ignoringManager = (OverrideType == ConditionOverrideType.IgnoreManager);
 
                 //Check to override SetHostVisibility.
@@ -176,7 +180,7 @@ namespace FishNet.Observing
                          * objects for conditions. */
                         _observerConditions[i] = _observerConditions[i].Clone();
                         ObserverCondition oc = _observerConditions[i];
-                        oc.InitializeOnce(_networkObject);
+                        oc.Initialize(_networkObject);
                         //If timed also register as containing timed conditions.
                         if (oc.Timed())
                             _timedConditions.Add(oc);
@@ -191,9 +195,8 @@ namespace FishNet.Observing
                 //No observers specified, do not need to take further action.
                 if (!observerFound)
                     return;
-
-                _networkObject.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
             }
+
 
             RegisterTimedConditions();
         }
@@ -225,7 +228,7 @@ namespace FishNet.Observing
         /// <returns>True if added to Observers.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ObserverStateChange RebuildObservers(NetworkConnection connection, bool timedOnly)
-        {            
+        {
             bool currentlyAdded = (_networkObject.Observers.Contains(connection));
             //True if all conditions are met.
             bool allConditionsMet = true;
@@ -263,8 +266,6 @@ namespace FishNet.Observing
                     {
                         //True if connection starts with meeting non-timed conditions.
                         bool startNonTimedMet = _nonTimedMet.Contains(connection);
-                        //if (_networkObject.ObjectId == 3)
-                        //    Debug.Log(startNonTimedMet);
                         /* If a timed update an1d nonTimed
                          * have not been met then there's
                          * no reason to check timed. */
@@ -289,7 +290,7 @@ namespace FishNet.Observing
                                  * A condition is automatically met if it's not enabled. */
                                 bool notProcessed = false;
                                 bool conditionMet = (!condition.GetIsEnabled() || condition.ConditionMet(connection, currentlyAdded, out notProcessed));
-
+                                
                                 if (notProcessed)
                                     conditionMet = currentlyAdded;
 
@@ -330,12 +331,13 @@ namespace FishNet.Observing
         {
             if (_timedConditions.Count == 0)
                 return;
-            //Already registered or no timed conditions.
             if (_registeredAsTimed)
                 return;
-
             _registeredAsTimed = true;
-            _networkObject.NetworkManager.ServerManager.Objects.AddTimedNetworkObserver(_networkObject);
+
+            if (_serverManager == null)
+                return;
+            _serverManager.Objects.AddTimedNetworkObserver(_networkObject);
         }
 
         /// <summary>
@@ -347,9 +349,11 @@ namespace FishNet.Observing
                 return;
             if (!_registeredAsTimed)
                 return;
-
             _registeredAsTimed = false;
-            _networkObject.NetworkManager.ServerManager.Objects.RemoveTimedNetworkObserver(_networkObject);
+
+            if (_serverManager == null)
+                return;
+            _serverManager.Objects.RemoveTimedNetworkObserver(_networkObject);
         }
 
         /// <summary>

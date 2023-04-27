@@ -429,18 +429,6 @@ namespace FishNet.Managing.Predicting
             }
         }
 
-        private static int _inputs = 0;
-        private static HashSet<NetworkBehaviour> _inputNbs = new HashSet<NetworkBehaviour>();
-        private static string _collectedInputs = string.Empty;
-        public static void InputCollected(NetworkBehaviour nb, uint tick)
-        {
-            if (_inputNbs.Count == 1 && !_inputNbs.Contains(nb))
-                Debug.LogError("Multiple NB");
-
-            _inputs++;
-            _collectedInputs += $"{tick}, ";
-        }
-
         /// <summary>
         /// Reconciles to received states.
         /// </summary>
@@ -452,13 +440,7 @@ namespace FishNet.Managing.Predicting
             /* Keep a state in buffer. This helps ensure all packets have come through for the state
              * by waiting until another is received. */
             if (_recievedStates.Count < 2)
-                return;
-
-            //Debug.Log($"Inputs collected {_inputs}. {_collectedInputs}");
-            _inputNbs.Clear();
-            _collectedInputs = string.Empty;
-            _inputs = 0;
-
+                return;    
 
             StatePacket state = _recievedStates.Dequeue();
             PooledReader reader = ReaderPool.GetReader(state.Data, _networkManager, Reader.DataSource.Server);

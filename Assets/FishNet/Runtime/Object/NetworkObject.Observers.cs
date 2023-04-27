@@ -237,6 +237,7 @@ namespace FishNet.Object
 
             int startCount = Observers.Count;
             ObserverStateChange osc = NetworkObserver.RebuildObservers(connection, timedOnly);
+
             if (osc == ObserverStateChange.Added)
                 Observers.Add(connection);
             else if (osc == ObserverStateChange.Removed)

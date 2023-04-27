@@ -142,7 +142,7 @@ namespace FishNet.Utility.Performance
         }
 
         /// <summary>
-        /// Clears pools for all collectionIds
+        /// Clears pools destroying objects for all collectionIds
         /// </summary>
         public void ClearPool()
         {
@@ -152,7 +152,7 @@ namespace FishNet.Utility.Performance
         }
 
         /// <summary>
-        /// Clears a pool for collectionId.
+        /// Clears a pool destroying objects for collectionId.
         /// </summary>
         /// <param name="collectionId">CollectionId to clear for.</param>
         public void ClearPool(int collectionId)
@@ -161,13 +161,17 @@ namespace FishNet.Utility.Performance
                 return;
 
             Dictionary<int, Stack<NetworkObject>> dict = _cache[collectionId];
-            //Convert to a list from the stack so we do not modify the stack directly.
-            ListCache<NetworkObject> nobCache = ListCaches.RetrieveNetworkObjectCache();
             foreach (Stack<NetworkObject> item in dict.Values)
             {
                 while (item.Count > 0)
-                    nobCache.AddValue(item.Pop());
+                {
+                    NetworkObject nob = item.Pop();
+                    if (nob != null)
+                        Destroy(nob.gameObject);
+                }
             }
+
+            dict.Clear();
         }
 
 

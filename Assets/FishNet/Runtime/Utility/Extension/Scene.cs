@@ -8,23 +8,7 @@ namespace FishNet.Utility.Extension
 {
 
     public static class SceneFN
-    {
-        #region Private.
-
-        /// <summary>
-        /// Used for performance gains when getting objects.
-        /// </summary>
-        private static List<GameObject> _gameObjectList = new List<GameObject>();
-        /// <summary>
-        /// List for NetworkObjects.
-        /// </summary>
-        private static List<NetworkObject> _networkObjectListA = new List<NetworkObject>();
-        /// <summary>
-        /// List for NetworkObjects.
-        /// </summary>
-        private static List<NetworkObject> _networkObjectListB = new List<NetworkObject>();
-        #endregion
-
+    {        
         /// <summary>
         /// Gets all NetworkObjects in a scene.
         /// </summary>
@@ -32,18 +16,19 @@ namespace FishNet.Utility.Extension
         /// <param name="firstOnly">True to only return the first NetworkObject within an object chain. False will return nested NetworkObjects.</param>
         /// <param name="cache">ListCache of found NetworkObjects.</param>
         /// <returns></returns>
-        public static void GetSceneNetworkObjects(Scene s, bool firstOnly, out ListCache<NetworkObject> nobCache)
+        public static void GetSceneNetworkObjects(Scene s, bool firstOnly, ref List<NetworkObject> result)
         {
-            nobCache = ListCaches.RetrieveNetworkObjectCache();
+            List<NetworkObject> nobCacheA = CollectionCaches<NetworkObject>.Retrieve();
+            List<NetworkObject> nobCacheB = CollectionCaches<NetworkObject>.Retrieve();
+            List<GameObject> gameObjectCache = CollectionCaches<GameObject>.Retrieve();
             //Iterate all root objects for the scene.
-            s.GetRootGameObjects(_gameObjectList);
-            foreach (GameObject go in _gameObjectList)
+            s.GetRootGameObjects(gameObjectCache);
+            foreach (GameObject go in gameObjectCache)
             {
-
                 //Get NetworkObjects within children of each root.
-                go.GetComponentsInChildren<NetworkObject>(true, _networkObjectListA);
+                go.GetComponentsInChildren<NetworkObject>(true, nobCacheA);
                 //If network objects are found.
-                if (_networkObjectListA.Count > 0)
+                if (nobCacheA.Count > 0)
                 {
                     //Add only the first networkobject 
                     if (firstOnly)
@@ -53,18 +38,18 @@ namespace FishNet.Utility.Extension
                          * it is nested. The technique used here isn't exactly fast but
                          * it will only occur during scene loads, so I'm trading off speed
                          * for effort and readability. */
-                        foreach (NetworkObject nob in _networkObjectListA)
+                        foreach (NetworkObject nob in nobCacheA)
                         {
-                            nob.GetComponentsInParent<NetworkObject>(true, _networkObjectListB);
+                            nob.GetComponentsInParent<NetworkObject>(true, nobCacheB);
                             //No extra nobs, only this one.
-                            if (_networkObjectListB.Count == 1)
-                                nobCache.AddValue(nob);
+                            if (nobCacheB.Count == 1)
+                                result.Add(nob);
                         }
                     }
                     //Not first only, add them all.
                     else
                     {
-                        nobCache.AddValues(_networkObjectListA);
+                        result.AddRange(nobCacheA);
                     }
 
                 }

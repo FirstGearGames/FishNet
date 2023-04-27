@@ -126,17 +126,18 @@ namespace FishNet.Editing
             {
                 Scene s = SceneManager.GetSceneAt(i);
 
-                ListCache<NetworkObject> nobs;
-                SceneFN.GetSceneNetworkObjects(s, false, out nobs);
-                for (int z = 0; z < nobs.Written; z++)
+                List<NetworkObject> nobs = CollectionCaches<NetworkObject>.Retrieve();
+                SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
+                int nobCount = nobs.Count;
+                for (int z = 0; z < nobCount; z++)
                 {
-                    NetworkObject nob = nobs.Collection[z];
+                    NetworkObject nob = nobs[z];
                     nob.TryCreateSceneID();
                     EditorUtility.SetDirty(nob);
                 }
-                generatedCount += nobs.Written;
+                generatedCount += nobCount;
 
-                ListCaches.StoreCache(nobs);
+                CollectionCaches<NetworkObject>.Store(nobs);
             }
 
             Debug.Log($"Generated sceneIds for {generatedCount} objects over {SceneManager.sceneCount} scenes. Please save your open scenes.");
@@ -183,18 +184,19 @@ namespace FishNet.Editing
             {
                 Scene s = SceneManager.GetSceneAt(i);
 
-                ListCache<NetworkObject> nobs;
-                SceneFN.GetSceneNetworkObjects(s, false, out nobs);
-                for (int z = 0; z < nobs.Written; z++)
+                List<NetworkObject> nobs = CollectionCaches<NetworkObject>.Retrieve();
+                SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
+                int nobsCount = nobs.Count;
+                for (int z = 0; z < nobsCount; z++)
                 {
-                    NetworkObject nob = nobs.Collection[z];
+                    NetworkObject nob = nobs[z];
                     nob.TryCreateSceneID();
                     EditorUtility.SetDirty(nob);
                 }
-                for (int z = 0; z < nobs.Written; z++)
-                    foundNobs.Add(nobs.Collection[i]);
+                for (int z = 0; z < nobsCount; z++)
+                    foundNobs.Add(nobs[i]);
 
-                ListCaches.StoreCache(nobs);
+                CollectionCaches<NetworkObject>.Store(nobs);
             }
 
             //Remove duplicates.

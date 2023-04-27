@@ -43,29 +43,11 @@ namespace FishNet.Object
         }
 
         private void PredictionManager_OnPreReconcile(uint clientReconcileTick, uint serverReconcileTick)
-        {
-
+        {            
             uint tick = (IsOwner) ? clientReconcileTick : serverReconcileTick;
-            if (!IsOwner)
-                Debug.LogWarning("Reconcilg tick " + tick);
-
-            //If there's no data to replay then 
-            if (LastReplicateTick < tick)
-            {
-                Debug.LogError("Pausing no reconcile");
-                PauseRigidbodies();
-                return;
-            }
 
             for (int i = 0; i < _predictionBehaviours.Count; i++)
                 _predictionBehaviours[i].Reconcile_Client_Start();
-
-            //If there's no data to replay then 
-            if (LastReplicateTick < tick)
-            {
-                PauseRigidbodies();
-                return;
-            }
         }
 
         private void PredictionManager_OnPostReconcile(uint clientTick, uint serverTick)
@@ -100,7 +82,7 @@ namespace FishNet.Object
         /// <summary>
         /// Pauses rigidbodies from simulating.
         /// </summary>
-        internal void PauseRigidbodies()
+        public void PauseRigidbodies()
         {
             if (!_pauserInitialized)
             {
@@ -121,7 +103,7 @@ namespace FishNet.Object
         /// <summary>
         /// Unpauses rigidbodies allowing them to simulate.
         /// </summary>
-        internal void UnpauseRigidbodies()
+        public void UnpauseRigidbodies()
         {
             _pauser.Unpause();
         }
