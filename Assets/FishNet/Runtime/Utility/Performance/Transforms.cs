@@ -8,30 +8,19 @@ namespace FishNet.Utility.Performance
     public static class GetNonAlloc
     {
         /// <summary>
-        /// 
-        /// </summary>
-        private static List<Transform> _transformList = new List<Transform>();
-        /// <summary>
-        /// 
-        /// </summary>
-        private static List<NetworkBehaviour> _networkBehavioursList = new List<NetworkBehaviour>();
-
-        /// <summary>
         /// Gets all NetworkBehaviours on a transform.
         /// </summary>
-        public static List<NetworkBehaviour> GetNetworkBehaviours(this Transform t)
+        public static void GetNetworkBehavioursNonAlloc(this Transform t, ref List<NetworkBehaviour> results)
         {
-            t.GetComponents(_networkBehavioursList);
-            return _networkBehavioursList;
+            t.GetComponents(results);
         }
 
         /// <summary>
         /// Gets all transforms on transform and it's children.
         /// </summary>
-        public static List<Transform> GetTransformsInChildrenNonAlloc(this Transform t, bool includeInactive = false)
+        public static void GetTransformsInChildrenNonAlloc(this Transform t, ref List<Transform> results, bool includeInactive = false)
         {
-            t.GetComponentsInChildren<Transform>(includeInactive, _transformList);
-            return _transformList;
+            t.GetComponentsInChildren<Transform>(includeInactive, results);
         }
 
     }

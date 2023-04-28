@@ -882,8 +882,6 @@ namespace FishNet.Serializing
             bool isServer = NetworkManager.ServerManager.Started;
             bool isClient = NetworkManager.ClientManager.Started;
 
-            Debug.Log($"Reading nob. Id {objectOrPrefabId}. IsSpawned {isSpawned}. IsClient {isClient}. IsServer {isServer}");
-
             NetworkObject result;
             //Is spawned.
             if (isSpawned)
@@ -944,15 +942,12 @@ namespace FishNet.Serializing
                 initializeOrder = 0;
                 collectionid = 0;
                 spawned = false;
-                Debug.Log($"Reading for spawn. IsNull");
             }
             else
             {
                 collectionid = ReadUInt16();
                 initializeOrder = ReadSByte();
                 spawned = ReadBoolean();
-
-                Debug.Log($"Reading for spawn. Id {objectId}. CollectionId {collectionid}. InitializeOrder {initializeOrder}. Spawned {spawned}.");
             }
 
             return objectId;

@@ -10,6 +10,7 @@ using System;
 using FishNet.Managing.Object;
 using FishNet.Component.Ownership;
 using FishNet.Component.Observing;
+using FishNet.Serializing.Helping;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -433,7 +434,7 @@ namespace FishNet.Object
         /// <summary>
         /// Adds a NetworkBehaviour and serializes it's components.
         /// </summary>
-        internal T AddAndSerialize<T>() where T : NetworkBehaviour //runtimeNB make public.
+        internal T AddAndSerialize<T>() where T : NetworkBehaviour //runtimeNB, might need to be public for users.
         {
             int startingLength = NetworkBehaviours.Length;
             T result = gameObject.AddComponent<T>();
@@ -448,8 +449,7 @@ namespace FishNet.Object
         /// <summary>
         /// Updates NetworkBehaviours and initializes them with serialized values.
         /// </summary>
-        /// <param name="fromPrefabCollection">True if this call originated from a prefab collection, such as during it's initialization.</param>
-        internal void UpdateNetworkBehaviours(NetworkObject parentNob, ref byte componentIndex) //runtimeNB make public.
+        internal void UpdateNetworkBehaviours(NetworkObject parentNob, ref byte componentIndex) //runtimeNB, might need to be public for users.
         {
             /* This method can be called by the developer initializing prefabs, the prefab collection doing it automatically,
              * or when the networkobject is modified or added to an object.
@@ -517,8 +517,13 @@ namespace FishNet.Object
             //Iterate all cached transforms and get networkbehaviours.
             List<NetworkBehaviour> nbCache = CollectionCaches<NetworkBehaviour>.Retrieve();
             //
+            List<NetworkBehaviour> nbCache2 = CollectionCaches<NetworkBehaviour>.Retrieve();
             for (int i = 0; i < transformCount; i++)
-                nbCache.AddRange(transformCache[i].GetNetworkBehaviours());
+            {
+                nbCache2.Clear();
+                transformCache[i].GetNetworkBehavioursNonAlloc(ref nbCache2);
+                nbCache.AddRange(nbCache2);
+            }
 
             //Copy to array.
             int nbCount = nbCache.Count;
@@ -532,6 +537,7 @@ namespace FishNet.Object
 
             CollectionCaches<Transform>.Store(transformCache);
             CollectionCaches<NetworkBehaviour>.Store(nbCache);
+            CollectionCaches<NetworkBehaviour>.Store(nbCache2);
 
             //Tell children nobs to update their NetworkBehaviours.
             foreach (NetworkObject item in ChildNetworkObjects)
@@ -540,6 +546,7 @@ namespace FishNet.Object
                 item.UpdateNetworkBehaviours(this, ref componentIndex);
             }
         }
+
 
         /// <summary>
         /// Called after all data is synchronized with this NetworkObject.
