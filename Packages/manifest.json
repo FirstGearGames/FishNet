@@ -41,6 +41,27 @@
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
-    "com.unity.modules.xr": "1.0.0"
-  }
+    "com.unity.modules.xr": "1.0.0",
+    "com.cysharp.unitask": "2.3.1",
+    "com.laicasaane.unity-addressables-manager": "https://github.com/WolffunGame/unity-addressables-manager.git#master",
+    "com.laicasaane.unity-supplements": "2.6.0",
+    "com.dre0dru.addressables.services": "https://github.com/felixngd/AddressablesServices.git#upm/v1.2.0",
+    "com.unity.addressables": "1.20.5"
+
+  },
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.brunomikoski.animationsequencer",
+        "com.cysharp.unitask",
+        "com.laicasaane.unity-supplements",
+        "com.laicasaane.unity.pooling",
+        "com.littlebigfun.addressable-importer",
+        "com.openupm",
+        "com.yasirkula.nativeshare"
+      ]
+    }
+  ]
 }

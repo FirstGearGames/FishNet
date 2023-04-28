@@ -3,6 +3,8 @@ using UnityEngine;
 using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 using UnityScene = UnityEngine.SceneManagement.Scene;
 using System.Collections;
+using Cysharp.Threading.Tasks;
+using System;
 
 namespace FishNet.Managing.Scened
 {
@@ -13,15 +15,15 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Currently active loading AsyncOperations.
         /// </summary>
-        protected List<AsyncOperation> LoadingAsyncOperations = new List<AsyncOperation>();
+        private List<AsyncOperation> _loadingAsyncOperations = new List<AsyncOperation>();
         /// <summary>
         /// A collection of scenes used both for loading and unloading.
         /// </summary>
-        protected List<UnityScene> Scenes = new List<UnityScene>();
+        private List<UnityScene> _scenes = new List<UnityScene>();
         /// <summary>
         /// Current AsyncOperation being processed.
         /// </summary>
-        protected AsyncOperation CurrentAsyncOperation;
+        private AsyncOperation _currentAsyncOperation;
         #endregion
 
         /// <summary>
@@ -44,8 +46,8 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private void ResetValues()
         {
-            CurrentAsyncOperation = null;
-            LoadingAsyncOperations.Clear();
+            _currentAsyncOperation = null;
+            _loadingAsyncOperations.Clear();
         }
 
         /// <summary>
@@ -55,7 +57,7 @@ namespace FishNet.Managing.Scened
         public override void UnloadStart(UnloadQueueData queueData)
         {
             base.UnloadStart(queueData);
-            Scenes.Clear();
+            _scenes.Clear();
         }
 
         /// <summary>
@@ -65,38 +67,30 @@ namespace FishNet.Managing.Scened
         public override void BeginLoadAsync(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters)
         {
             AsyncOperation ao = UnitySceneManager.LoadSceneAsync(sceneName, parameters);
-            LoadingAsyncOperations.Add(ao);
-            
-            CurrentAsyncOperation = ao;
-            CurrentAsyncOperation.allowSceneActivation = false;
+            _loadingAsyncOperations.Add(ao);
+
+            _currentAsyncOperation = ao;
+            _currentAsyncOperation.allowSceneActivation = false;
         }
 
         /// <summary>
         /// Begin unloading a scene using an async method.
         /// </summary>
         /// <param name="sceneName">Scene name to unload.</param>
-        public override void BeginUnloadAsync(UnityScene scene)
-        {
-            CurrentAsyncOperation = UnitySceneManager.UnloadSceneAsync(scene);
-        }
+
+        public override void BeginUnloadAsync(UnityScene scene) => _currentAsyncOperation = UnitySceneManager.UnloadSceneAsync(scene);
 
         /// <summary>
         /// Returns if a scene load or unload percent is done.
         /// </summary>
         /// <returns></returns>
-        public override bool IsPercentComplete()
-        {
-            return (GetPercentComplete() >= 0.9f);
-        }
+        public override bool IsComplete() => (GetPercentComplete() >= 0.9f);
 
         /// <summary>
         /// Returns the progress on the current scene load or unload.
         /// </summary>
         /// <returns></returns>
-        public override float GetPercentComplete()
-        {
-            return (CurrentAsyncOperation == null) ? 1f : CurrentAsyncOperation.progress;
-        }
+        public override float GetPercentComplete() => (_currentAsyncOperation == null) ? 1f : _currentAsyncOperation.progress;
 
         /// <summary>
         /// Adds a loaded scene.
@@ -105,51 +99,39 @@ namespace FishNet.Managing.Scened
         public override void AddLoadedScene(UnityScene scene)
         {
             base.AddLoadedScene(scene);
-            Scenes.Add(scene);
+            _scenes.Add(scene);
         }
 
         /// <summary>
         /// Returns scenes which were loaded during a load operation.
         /// </summary>
-        public override List<UnityScene> GetLoadedScenes()
-        {
-            return Scenes;
-        }
+        public override List<UnityScene> GetLoadedScenes() => _scenes;
 
         /// <summary>
         /// Activates scenes which were loaded.
         /// </summary>
         public override void ActivateLoadedScenes()
         {
-            foreach (AsyncOperation ao in LoadingAsyncOperations)
+            foreach (AsyncOperation ao in _loadingAsyncOperations)
                 ao.allowSceneActivation = true;
         }
+        private static TimeoutController timeOutController = new TimeoutController();
 
         /// <summary>
         /// Returns if all asynchronized tasks are considered IsDone.
         /// </summary>
         /// <returns></returns>
-        public override IEnumerator AsyncsIsDone()
+        public override async UniTask AsyncsIsDone()
         {
-            bool notDone;
-            do
+            try
             {
-                notDone = false;
-                foreach (AsyncOperation ao in LoadingAsyncOperations)
-                {
-
-                    if (!ao.isDone)
-                    {
-                        notDone = true;
-                        break;
-                    }
-                }
-                yield return null;
-            } while (notDone);
-
-            yield break;
+                foreach (AsyncOperation ao in _loadingAsyncOperations)
+                    await UniTask.WaitUntil(() => ao.isDone, cancellationToken: timeOutController.Timeout(TimeSpan.FromSeconds(7)));
+            }
+            catch
+            {
+                Debug.LogError("AsyncsIsDone Fail");
+            }
         }
     }
-
-
 }

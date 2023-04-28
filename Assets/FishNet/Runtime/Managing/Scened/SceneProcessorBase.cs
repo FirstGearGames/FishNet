@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityScene = UnityEngine.SceneManagement.Scene;
@@ -62,7 +63,7 @@ namespace FishNet.Managing.Scened
         /// Returns if a scene load or unload percent is done.
         /// </summary>
         /// <returns></returns>
-        public abstract bool IsPercentComplete();
+        public abstract bool IsComplete();
         /// <summary>
         /// Returns the progress on the current scene load or unload.
         /// </summary>
@@ -85,9 +86,9 @@ namespace FishNet.Managing.Scened
         /// Returns if all asynchronized tasks are considered IsDone.
         /// </summary>
         /// <returns></returns>
-        public abstract IEnumerator AsyncsIsDone();
 
+
+
+        public virtual async UniTask AsyncsIsDone() { }
     }
-
-
 }
