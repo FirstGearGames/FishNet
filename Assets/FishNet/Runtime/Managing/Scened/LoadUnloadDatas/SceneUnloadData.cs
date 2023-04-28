@@ -10,10 +10,6 @@ namespace FishNet.Managing.Scened
     public class SceneUnloadData
     {
         /// <summary>
-        /// When specified this scene will be set as the active scene after unloading occurs.
-        /// </summary>
-        public SceneLookupData PreferredActiveScene = null;
-        /// <summary>
         /// SceneLookupData for each scene to load.
         /// </summary>
         public SceneLookupData[] SceneLookupDatas = new SceneLookupData[0];
@@ -50,6 +46,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name="scenes">Scenes to unload.</param>
         public SceneUnloadData(List<Scene> scenes) : this(scenes.ToArray()) { }
+
         /// <summary>
         /// 
         /// </summary>
@@ -64,7 +61,7 @@ namespace FishNet.Managing.Scened
         /// 
         /// </summary>
         /// <param name="scenes">Scenes to unload.</param>
-        public SceneUnloadData(Scene[] scenes)
+        public SceneUnloadData(IEnumerable<Scene> scenes)
         {
             SceneLookupDatas = SceneLookupData.CreateData(scenes);
         }
@@ -98,19 +95,34 @@ namespace FishNet.Managing.Scened
         /// Returns if any data is invalid, such as null entries.
         /// </summary>
         /// <returns></returns>
-        internal bool DataInvalid()
+        internal bool IsDataValid(out string invalidReason)
         {
-            //Null values.
-            if (Params == null || SceneLookupDatas == null ||
-                Options == null)
-                return true;
+            invalidReason = string.Empty;
+            bool isValidData = true;
+            if (Params == null)
+            {
+                invalidReason += "Params is Null | ";
+                isValidData = false;
+            }
+            if (SceneLookupDatas == null)
+            {
+                invalidReason += "SceneLookupDatas is Null | ";
+                isValidData = false;
+            }
+            if (Options == null)
+            {
+                invalidReason += "Options is Null | ";
+                isValidData = false;
+            }
+
             //No lookups.
             if (SceneLookupDatas.Length == 0)
-                return true;
+            {
+                invalidReason += "No lookups";
+                isValidData = false;
+            }
 
-            return false;
+            return isValidData;
         }
     }
-
-
 }

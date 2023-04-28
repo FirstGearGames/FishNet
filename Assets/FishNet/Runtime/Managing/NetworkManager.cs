@@ -310,7 +310,7 @@ namespace FishNet.Managing
         {
             TimeManager.InitializeOnce_Internal(this);
             TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
-            SceneManager.InitializeOnce_Internal(this);
+            SceneManager.InitializeOnceInternal(this);
             TransportManager.InitializeOnce_Internal(this);
             ClientManager.InitializeOnce_Internal(this);
             ServerManager.InitializeOnce_Internal(this);
