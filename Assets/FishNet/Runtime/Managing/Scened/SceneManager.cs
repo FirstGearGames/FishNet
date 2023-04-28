@@ -929,7 +929,7 @@ namespace FishNet.Managing.Scened
                 MoveClientHostObjects(unloadableScenes[i], asServer);
                 //Unload one at a time.
                 _sceneProcessor.BeginUnloadAsync(unloadableScenes[i]);
-                while (!_sceneProcessor.IsPercentComplete())
+                while (!_sceneProcessor.IsComplete())
                     yield return null;
             }
             _sceneProcessor.UnloadEnd(data);
@@ -953,7 +953,7 @@ namespace FishNet.Managing.Scened
                 float maximumIndexWorth = (1f / (float)loadableScenes.Count);
 
                 _sceneProcessor.BeginLoadAsync(loadableScenes[i].Name, loadSceneParameters);
-                while (!_sceneProcessor.IsPercentComplete())
+                while (!_sceneProcessor.IsComplete())
                 {
                     float percent = _sceneProcessor.GetPercentComplete();
                     InvokePercentageChange(i, maximumIndexWorth, percent);
@@ -1373,7 +1373,7 @@ namespace FishNet.Managing.Scened
                     _manualUnloadScenes.Remove(s);
 
                     _sceneProcessor.BeginUnloadAsync(s);
-                    while (!_sceneProcessor.IsPercentComplete())
+                    while (!_sceneProcessor.IsComplete())
                         yield return null;
                 }
 
