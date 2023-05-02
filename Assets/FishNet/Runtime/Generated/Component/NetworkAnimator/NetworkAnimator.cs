@@ -11,7 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-
+using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
 namespace FishNet.Component.Animating
 {
@@ -417,7 +417,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Tick when the buffer may begin to run.
         /// </summary>
-        private uint _startTick = uint.MaxValue;
+        private uint _startTick = TimeManagerCls.UNSET_TICK;
         #endregion
 
         #region Const.
@@ -762,7 +762,7 @@ namespace FishNet.Component.Animating
                     if (buffer == null || bufferLength == 0)
                         continue;
 
-                    ObserversAnimatorUpdated(new ArraySegment<byte>(buffer, 0, bufferLength));
+                    SendSegment(new ArraySegment<byte>(buffer, 0, bufferLength));
                 }
                 //Reset client auth buffer.
                 _clientAuthoritativeUpdates.Reset();
@@ -771,9 +771,24 @@ namespace FishNet.Component.Animating
             else
             {
                 if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, _forceAllOnTimed))
-                    ObserversAnimatorUpdated(updatedBytes);
+                    SendSegment(updatedBytes);
 
                 _forceAllOnTimed = false;
+            }
+
+            //Sends segment to clients
+            void SendSegment(ArraySegment<byte> data)
+            {
+                foreach (NetworkConnection nc in base.Observers)
+                {
+                    //If to not send to owner.
+                    if (!_sendToOwner && nc == base.Owner)
+                        continue;
+#if !DEVELOPMENT
+                    if (!nc.IsLocalClient)
+#endif
+                        TargetAnimatorUpdated(nc, data);
+                }
             }
         }
 
@@ -968,15 +983,6 @@ namespace FishNet.Component.Animating
             if (_layerWeights == null)
                 return;
             if (updatedParameters.Count == 0)
-                return;
-            //Exit if client authoritative and has authority.
-            if (ClientAuthoritative && base.IsOwner)
-                return;
-            //Exit if not client authoritative, but also not sync to owner, and is owner.
-            if (!ClientAuthoritative && !_sendToOwner && base.IsOwner)
-                return;
-            //Exit if trying to apply when server and not client authoritative.
-            if (base.IsServer && !ClientAuthoritative)
                 return;
 
             try
@@ -1321,16 +1327,21 @@ namespace FishNet.Component.Animating
         {
             if (!_isAnimatorEnabled)
                 return;
-            /* Allow triggers to run on owning client if using client authority,
-             * as well when not using client authority but also not using synchronize to owner.
-             * This allows clients to run animations locally while maintaining server authority. */
-            //Using client authority but not owner.
-            if (ClientAuthoritative && !base.IsOwner)
-                return;
 
-            //Also block if not using client authority, synchronizing to owner, and not server.
-            if (!ClientAuthoritative && _sendToOwner && !base.IsServer)
-                return;
+            bool clientAuth = ClientAuthoritative;
+            //If there is an owner perform checks.
+            if (base.Owner.IsValid)
+            {
+                //If client auth and not owner.
+                if (clientAuth && !base.IsOwner)
+                    return;
+            }
+            //There is no owner.
+            else
+            {
+                if (!base.IsServer)
+                    return;
+            }
 
             //Update locally.
             if (set)
@@ -1338,10 +1349,14 @@ namespace FishNet.Component.Animating
             else
                 _animator.ResetTrigger(hash);
 
-            /* Can send if not client auth but is server,
-            * or if client auth and owner. */
-            bool canSend = (!ClientAuthoritative && base.IsServer) ||
-                (ClientAuthoritative && base.IsOwner);
+            /* Can send if any of the following are true:
+             * ClientAuth + Owner.
+             * ClientAuth + No Owner + IsServer
+             * !ClientAuth + IsServer. */
+            bool canSend = (clientAuth && base.IsOwner)
+                || (clientAuth && !base.Owner.IsValid)
+                || (!clientAuth && base.IsServer);
+
             //Only queue a send if proper side.
             if (canSend)
             {
@@ -1364,19 +1379,36 @@ namespace FishNet.Component.Animating
         /// Called on clients to receive an animator update.
         /// </summary>
         /// <param name="data"></param>
-        [ObserversRpc]
-        private void ObserversAnimatorUpdated(ArraySegment<byte> data)
-        {
-            ServerDataReceived(ref data);
-        }
-        /// <summary>
-        /// Called on clients to receive an animator update.
-        /// </summary>
-        /// <param name="data"></param>
-        [TargetRpc]
+        [TargetRpc(ValidateTarget = false)]
         private void TargetAnimatorUpdated(NetworkConnection connection, ArraySegment<byte> data)
         {
-            ServerDataReceived(ref data);
+            if (!_isAnimatorEnabled)
+                return;
+
+#if DEVELOPMENT
+            //If receiver is client host then do nothing, clientHost need not process.
+            if (base.IsServer && conn.IsLocalClient)
+                return;
+#endif
+            bool clientAuth = ClientAuthoritative;
+            bool isOwner = base.IsOwner;
+            /* If set for client auth and owner then do not process.
+             * This could be the case if an update was meant to come before
+             * ownership gain but came out of late due to out of order when using unreliable. 
+             * Cannot check sendToOwner given clients may not
+             * always be aware of owner depending on ShareIds setting. */
+            if (clientAuth && isOwner)
+                return;
+            /* If not client auth and not to send to owner, and is owner
+             * then also return. */
+            if (!clientAuth && !_sendToOwner && isOwner)
+                return;
+
+            ReceivedServerData rd = new ReceivedServerData(data);
+            _fromServerBuffer.Enqueue(rd);
+
+            if (_startTick == 0)
+                _startTick = (base.TimeManager.LocalTick + _interpolation);
         }
         /// <summary>
         /// Called on server to receive an animator update.
@@ -1400,36 +1432,6 @@ namespace FishNet.Component.Animating
              * a little depending on their components interpolation. */
             ApplyParametersUpdated(ref data);
             _clientAuthoritativeUpdates.AddToBuffer(ref data);
-        }
-        /// <summary>
-        /// Called on clients to receive an animator update.
-        /// </summary>
-        /// <param name="data"></param>
-        private void ServerDataReceived(ref ArraySegment<byte> data)
-        {
-            if (!_isAnimatorEnabled)
-                return;
-            //If also server, client host, then do nothing. Animations already ran on server.
-            if (base.IsServer)
-                return;
-
-            //If has authority.
-            if (base.IsOwner)
-            {
-                //No need to sync to self if client authoritative.
-                if (ClientAuthoritative)
-                    return;
-                //Not client authoritative, but also don't sync to owner.
-                else if (!ClientAuthoritative && !_sendToOwner)
-                    return;
-            }
-
-            ReceivedServerData rd = new ReceivedServerData(data);
-            _fromServerBuffer.Enqueue(rd);
-
-            if (_startTick == 0)
-                _startTick = (base.TimeManager.LocalTick + _interpolation);
-            //ApplyParametersUpdated(ref data);
         }
         #endregion
 

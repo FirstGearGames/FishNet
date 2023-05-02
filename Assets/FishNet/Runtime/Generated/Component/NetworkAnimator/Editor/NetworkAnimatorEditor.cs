@@ -49,7 +49,7 @@ namespace FishNet.Component.Animating.Editing
             //Animator
             EditorGUILayout.LabelField("Animator", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_animator, new GUIContent("Animator", "The animator component to synchronize."));
+            EditorGUILayout.PropertyField(_animator);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
@@ -58,18 +58,18 @@ namespace FishNet.Component.Animating.Editing
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_interpolation);
             //EditorGUILayout.PropertyField(_synchronizeInterval, new GUIContent("Synchronize Interval", "How often to synchronize this animator."));
-            EditorGUILayout.PropertyField(_smoothFloats, new GUIContent("Smooth Floats", "True to smooth floats on spectators rather than snap to their values immediately. Commonly set to true for smooth blend tree animations."));
+            EditorGUILayout.PropertyField(_smoothFloats);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
             //Authority.
             EditorGUILayout.LabelField("Authority", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_clientAuthoritative, new GUIContent("Client Authoritative", "True if using client authoritative movement."));
+            EditorGUILayout.PropertyField(_clientAuthoritative);
             if (_clientAuthoritative.boolValue == false)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_sendToOwner, new GUIContent("Synchronize To Owner", "True to synchronize server results back to owner. Typically used when you are sending inputs to the server and are relying on the server response to move the transform."));
+                EditorGUILayout.PropertyField(_sendToOwner);
                 EditorGUI.indentLevel--;
             }
             EditorGUI.indentLevel--;

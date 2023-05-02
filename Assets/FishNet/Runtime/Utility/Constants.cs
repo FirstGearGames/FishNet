@@ -1,6 +1,6 @@
 ﻿namespace FishNet.Utility.Constant
 {
-    internal static class UtilityConstants
+    internal static class UtilityConstants //Remove -- move to Constant folder on 2023/06/01
     {
         public const string CODEGEN_ASSEMBLY_NAME = "Unity.FishNet.CodeGen";
         public const string GENERATED_ASSEMBLY_NAME = "FishNet.Generated";

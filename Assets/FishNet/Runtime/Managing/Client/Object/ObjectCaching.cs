@@ -305,13 +305,15 @@ namespace FishNet.Managing.Client
 
                     if (spawn)
                     {
-                        //If not also server then object also has to be preinitialized.
+                        NetworkConnection owner;
+                        int objectId;
+                        //If not server then initialize by using lookups.
                         if (!_networkManager.IsServer)
                         {
+                            objectId = cnob.ObjectId;
                             int ownerId = cnob.OwnerId;
                             //If local client is owner then use localconnection reference.
                             NetworkConnection localConnection = _networkManager.ClientManager.Connection;
-                            NetworkConnection owner;
                             //If owner is self.
                             if (ownerId == localConnection.ClientId)
                             {
@@ -324,8 +326,15 @@ namespace FishNet.Managing.Client
                                 if (!_networkManager.ClientManager.Clients.TryGetValueIL2CPP(ownerId, out owner))
                                     owner = NetworkManager.EmptyConnection;
                             }
-                            nob.Preinitialize_Internal(_networkManager, cnob.ObjectId, owner, false);
                         }
+                        //Otherwise initialize using server values.
+                        else
+                        {
+                            owner = nob.Owner;
+                            objectId = nob.ObjectId;
+                        }
+                        //Preinitialize client side.
+                        nob.Preinitialize_Internal(_networkManager,  objectId, owner, false);
 
                         _clientObjects.AddToSpawned(cnob.NetworkObject, false);
                         SpawningObjects.Add(cnob.ObjectId, cnob.NetworkObject);

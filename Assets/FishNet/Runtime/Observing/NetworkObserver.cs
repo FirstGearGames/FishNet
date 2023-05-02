@@ -137,12 +137,15 @@ namespace FishNet.Observing
             if (_serverManager != null)
                 _serverManager.OnRemoteConnectionState -= ServerManager_OnRemoteConnectionState;
 
-            foreach (ObserverCondition item in _observerConditions)
+            if (_initializedPreviously)
             {
-                item.Deinitialize(destroyed);
-                //If also destroying then destroy SO reference.
-                if (destroyed)
-                    Destroy(item);
+                foreach (ObserverCondition item in _observerConditions)
+                {
+                    item.Deinitialize(destroyed);
+                    //If also destroying then destroy SO reference.
+                    if (destroyed)
+                        Destroy(item);
+                }
             }
 
             _serverManager = null;
@@ -290,7 +293,7 @@ namespace FishNet.Observing
                                  * A condition is automatically met if it's not enabled. */
                                 bool notProcessed = false;
                                 bool conditionMet = (!condition.GetIsEnabled() || condition.ConditionMet(connection, currentlyAdded, out notProcessed));
-                                
+
                                 if (notProcessed)
                                     conditionMet = currentlyAdded;
 

@@ -1,4 +1,5 @@
 ﻿using FishNet.Documenting;
+using FishNet.Object;
 using UnityEngine;
 
 namespace FishNet.Utility.Extension
@@ -17,6 +18,23 @@ namespace FishNet.Utility.Extension
                 return;
             pos = (t.position - target.position);
             rot = (t.rotation * Quaternion.Inverse(target.rotation));
+        }
+
+        /// <summary>
+        /// Sets the offset values of target from a transform.
+        /// </summary>
+        /// <param name="pos">Position offset result.</param>
+        /// <param name="rot">Rotation offset result.</param>
+        internal static TransformProperties GetTransformOffsets(this Transform t, Transform target)
+        {
+            if (target == null)
+                return default;
+
+            return new TransformProperties(
+                (t.position - target.position),
+                (t.rotation * Quaternion.Inverse(target.rotation)),
+                (t.localScale - target.localScale)
+                );
         }
 
         /// <summary>

@@ -50,9 +50,13 @@ namespace FishNet.Object
 
         #region Private.
         /// <summary>
-        /// True if already initialized at some point.
+        /// True if initialized at some point asServer.
         /// </summary>
-        private bool _initializedOnce;
+        private bool _initializedOnceServer;
+        /// <summary>
+        /// True if initialized at some point not asServer.
+        /// </summary>
+        private bool _initializedOnceClient;
         #endregion
 
         /// <summary>
@@ -64,17 +68,22 @@ namespace FishNet.Object
             if (asServer)
             {                
                 InitializeRpcLinks();
+                _initializedOnceServer = true;
             }
             else
             {
 #if PREDICTION_V2
-                if (!_initializedOnce && UsesPrediction && !nob.NetworkManager.IsServer)
+                if (!_initializedOnceClient && nob.UsePrediction)
                     nob.RegisterPredictionBehaviourOnce(this);
 #endif
+                _initializedOnceClient = true;
             }
-            _initializedOnce = true;
         }
 
+        internal void Deinitialize(bool asServer)
+        {
+            
+        }
 
         /// <summary>
         /// Serializes information for network components.

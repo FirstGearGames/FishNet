@@ -31,7 +31,7 @@ namespace FishNet.CodeGenerating.ILCore
             if (compiledAssembly.Name.StartsWith("UnityEditor."))
                 return false;
             if (compiledAssembly.Name.Contains("Editor"))
-                return false;
+                return false; 
 
             /* This line contradicts the one below where referencesFishNet
              * becomes true if the assembly is FishNetAssembly. This is here

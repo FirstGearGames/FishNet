@@ -11,6 +11,9 @@ using FishNet.Managing.Object;
 using FishNet.Component.Ownership;
 using FishNet.Component.Observing;
 using FishNet.Serializing.Helping;
+using FishNet.Component.Transforming;
+using FishNet.Utility.Extension;
+using FishNet.Object.Prediction;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -35,12 +38,91 @@ namespace FishNet.Object
         /// </summary>
         [System.NonSerialized]
         internal bool ActiveDuringEdit;
+#if PREDICTION_V2
         /// <summary>
-        /// Set true if this object uses prediction methods.
+        /// True if this object uses prediciton methods.
         /// </summary>
-        [Tooltip("Set true if this object uses prediction methods.")]
+        public bool UsePrediction => _usePrediction;
+        [Tooltip("True if this object uses prediction methods.")]
         [SerializeField]
-        private bool _usesPrediction;
+        private bool _usePrediction;
+        /// <summary>
+        /// Object containing graphics when using prediction. This should be child of the predicted root.
+        /// </summary>
+        [Tooltip("Object containing graphics when using prediction. This should be child of the predicted root.")]
+        [SerializeField]
+        private Transform _graphicalObject;
+        /// <summary>
+        /// True to use state and input forwarding. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.
+        /// </summary>
+        [Tooltip("True to use state and input forwarding. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.")]
+        [SerializeField]
+        private bool _useStates = true;
+        /// <summary>
+        /// How many ticks to interpolate graphics on objects owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.
+        /// </summary>
+        [Tooltip("How many ticks to interpolate graphics on objects owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.")]
+        [Range(1, byte.MaxValue)]
+        [SerializeField]
+        private byte _ownerInterpolation = 1;
+        /// <summary>
+        /// True to enable teleport threshhold.
+        /// </summary>
+        [Tooltip("True to enable teleport threshhold.")]
+        [SerializeField]
+        private bool _enableTeleport;
+        /// <summary>
+        /// Distance the graphical object must be from root to teleport rather than smooth over time.
+        /// </summary>
+        [Tooltip("Distance the graphical object must be from root to teleport rather than smooth over time.")]
+        [Range(0f, short.MaxValue)]
+        [SerializeField]
+        private float _ownerTeleportThreshold = 1f;
+        ///// <summary>
+        ///// How far into the future to predict inputs. This is best set to 0f for player controllers, but may provide more real time physics interactions with force driven rigidbodies.
+        ///// </summary>
+        //[Tooltip("How far into the future to predict inputs. This is best set to 0f for player controllers, but may provide more real time physics interactions with force driven rigidbodies.")]
+        //[Range(0f, 1f)]
+        //[SerializeField]
+        //private float _futurePredictionTime = 0f;
+        ///// <summary>
+        ///// True if this object is set to use future prediction.
+        ///// </summary>
+        //internal bool PredictsFuture => (_futurePredictionTime > 0f);
+        /// <summary>
+        /// True to use a flat amount of interpolation for graphics. This is ideal for controllers that will not carry velocity, such as setting velocity directly when there is input.
+        /// False to adapt interpolation based on a variety of factors. This can be beneficial when velocities are affected by forces and may change irratically.
+        /// </summary>
+        internal bool SpectatorAdaptiveInterpolation => _spectatorAdaptiveInterpolation;
+        [Tooltip("True to use a flat amount of interpolation for graphics. This is ideal for controllers that will not carry velocity, such as setting velocity directly when there is input." +
+            "False to adapt interpolation based on a variety of factors. This can be beneficial when velocities are affected by forces and may change irratically.")]
+        [SerializeField]
+        private bool _spectatorAdaptiveInterpolation;
+        /// <summary>
+        /// How many ticks to interpolate graphics on objects not owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.
+        /// </summary>
+        [Tooltip("How many ticks to interpolate graphics on objects not owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.")]
+        [Range(1, byte.MaxValue)]
+        [SerializeField]
+        private byte _spectatorInterpolation = 1;
+        /// <summary>
+        /// How to favor smoothing for non-owned objects.
+        /// </summary>
+        [Tooltip("How to favor smoothing for non-owned objects. Accuracy will keep graphics more real-time while gradual will keep them further in the past to handle desynchronizations better at the cost of visuals being behind.")]
+        [SerializeField]
+        private AdaptiveSmoothingType _adaptiveSmoothingType = AdaptiveSmoothingType.Accuracy;
+        /// <summary>
+        /// Custom settings for smoothing data.
+        /// </summary>
+        [Tooltip("Custom settings for smoothing data.")]
+        [SerializeField]
+        private AdaptiveInterpolationSmoothingData _customSmoothingData = _mixedSmoothingData;
+        /// <summary>
+        /// Preview of selected preconfigured smoothing data. This is only used for the inspector.
+        /// </summary>
+        [SerializeField]
+        private AdaptiveInterpolationSmoothingData _preconfiguredSmoothingDataPreview;
+#endif
         /// <summary>
         /// Returns if this object was placed in the scene during edit-time.
         /// </summary>
@@ -210,6 +292,9 @@ namespace FishNet.Object
         {
             _isStatic = gameObject.isStatic;
             SetChildDespawnedState();
+#if PREDICTION_V2
+            Prediction_Awake();
+#endif
         }
 
         protected virtual void Start()
@@ -217,53 +302,6 @@ namespace FishNet.Object
             TryStartDeactivation();
         }
 
-        /// <summary>
-        /// Initializes NetworkBehaviours if they are disabled.
-        /// </summary>
-        private void InitializeNetworkBehavioursIfDisabled()
-        {
-            if (_disabledNetworkBehavioursInitialized)
-                return;
-            _disabledNetworkBehavioursInitialized = true;
-
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
-                NetworkBehaviours[i].InitializeIfDisabled();
-        }
-
-        /// <summary>
-        /// Sets Despawned on child NetworkObjects if they are not enabled.
-        /// </summary>
-        private void SetChildDespawnedState()
-        {
-            NetworkObject nob;
-            for (int i = 0; i < ChildNetworkObjects.Count; i++)
-            {
-                nob = ChildNetworkObjects[i];
-                if (!nob.gameObject.activeSelf)
-                    nob.State = NetworkObjectState.Despawned;
-            }
-        }
-
-        /// <summary>
-        /// Deactivates this NetworkObject during it's start cycle if conditions are met.
-        /// </summary>
-        internal void TryStartDeactivation()
-        {
-            if (!IsNetworked)
-                return;
-
-            //Global.
-            if (IsGlobal && !IsSceneObject)
-                DontDestroyOnLoad(gameObject);
-
-            if (NetworkManager == null || (!NetworkManager.IsClient && !NetworkManager.IsServer))
-            {
-                //ActiveDuringEdit is only used for scene objects.
-                if (IsSceneObject)
-                    ActiveDuringEdit = true;
-                gameObject.SetActive(false);
-            }
-        }
 
         private void OnDisable()
         {
@@ -360,6 +398,61 @@ namespace FishNet.Object
             //Don't need to reset sync types if object is being destroyed.
         }
 
+#if PREDICTION_V2
+        private void Update()
+        {
+            Prediction_Update();
+        }
+#endif
+
+        /// <summary>
+        /// Initializes NetworkBehaviours if they are disabled.
+        /// </summary>
+        private void InitializeNetworkBehavioursIfDisabled()
+        {
+            if (_disabledNetworkBehavioursInitialized)
+                return;
+            _disabledNetworkBehavioursInitialized = true;
+
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].InitializeIfDisabled();
+        }
+
+        /// <summary>
+        /// Sets Despawned on child NetworkObjects if they are not enabled.
+        /// </summary>
+        private void SetChildDespawnedState()
+        {
+            NetworkObject nob;
+            for (int i = 0; i < ChildNetworkObjects.Count; i++)
+            {
+                nob = ChildNetworkObjects[i];
+                if (!nob.gameObject.activeSelf)
+                    nob.State = NetworkObjectState.Despawned;
+            }
+        }
+
+        /// <summary>
+        /// Deactivates this NetworkObject during it's start cycle if conditions are met.
+        /// </summary>
+        internal void TryStartDeactivation()
+        {
+            if (!IsNetworked)
+                return;
+
+            //Global.
+            if (IsGlobal && !IsSceneObject)
+                DontDestroyOnLoad(gameObject);
+
+            if (NetworkManager == null || (!NetworkManager.IsClient && !NetworkManager.IsServer))
+            {
+                //ActiveDuringEdit is only used for scene objects.
+                if (IsSceneObject)
+                    ActiveDuringEdit = true;
+                gameObject.SetActive(false);
+            }
+        }
+
         /// <summary>
         /// Sets IsClient or IsServer to isActive.
         /// </summary>
@@ -385,28 +478,32 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Preinitialize_Internal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
-            State = NetworkObjectState.Spawned;
-            InitializeNetworkBehavioursIfDisabled();
-            IsDeinitializing = false;
-            //QOL references.
-            NetworkManager = networkManager;
-            ServerManager = networkManager.ServerManager;
-            ClientManager = networkManager.ClientManager;
-            ObserverManager = networkManager.ObserverManager;
-            TransportManager = networkManager.TransportManager;
-            TimeManager = networkManager.TimeManager;
-            SceneManager = networkManager.SceneManager;
-            PredictionManager = networkManager.PredictionManager;
-            RollbackManager = networkManager.RollbackManager;
+            //Only initialize this bit once even if clientHost.
+            if (!networkManager.DoubleLogic(asServer))
+            {
+                State = NetworkObjectState.Spawned;
+                InitializeNetworkBehavioursIfDisabled();
+                IsDeinitializing = false;
+                //QOL references.
+                NetworkManager = networkManager;
+                ServerManager = networkManager.ServerManager;
+                ClientManager = networkManager.ClientManager;
+                ObserverManager = networkManager.ObserverManager;
+                TransportManager = networkManager.TransportManager;
+                TimeManager = networkManager.TimeManager;
+                SceneManager = networkManager.SceneManager;
+                PredictionManager = networkManager.PredictionManager;
+                RollbackManager = networkManager.RollbackManager;
 
-            SetOwner(owner);
-            ObjectId = objectId;
+                SetOwner(owner);
+                ObjectId = objectId;
 
-            /* This must be called at the beginning
-             * so that all conditions are handled by the observer
-             * manager prior to the preinitialize call on networkobserver. 
-             * The method called is dependent on NetworkManager being set. */
-            AddDefaultNetworkObserverConditions();
+                /* This must be called at the beginning
+                 * so that all conditions are handled by the observer
+                 * manager prior to the preinitialize call on networkobserver. 
+                 * The method called is dependent on NetworkManager being set. */
+                AddDefaultNetworkObserverConditions();
+            }
 
             for (int i = 0; i < NetworkBehaviours.Length; i++)
                 NetworkBehaviours[i].Preinitialize_Internal(this, asServer);
@@ -426,9 +523,8 @@ namespace FishNet.Object
 #if PREDICTION_V2
             Prediction_Preinitialize(networkManager, asServer);
 #endif
-            //Add to connection objects if owner exist.
-            if (owner != null)
-                owner.AddObject(this);
+            //Add to connections objects. Collection is a hashset so this can be called twice for clientHost.
+            owner?.AddObject(this);
         }
 
         /// <summary>
@@ -486,8 +582,7 @@ namespace FishNet.Object
             ChildNetworkObjects.Clear();
 
             transformCache.Add(transform);
-            int transformCount = transformCache.Count;
-            for (int z = 0; z < transformCount; z++)
+            for (int z = 0; z < transformCache.Count; z++)
             {
                 Transform currentT = transformCache[z];
                 for (int i = 0; i < currentT.childCount; i++)
@@ -518,7 +613,7 @@ namespace FishNet.Object
             List<NetworkBehaviour> nbCache = CollectionCaches<NetworkBehaviour>.Retrieve();
             //
             List<NetworkBehaviour> nbCache2 = CollectionCaches<NetworkBehaviour>.Retrieve();
-            for (int i = 0; i < transformCount; i++)
+            for (int i = 0; i < transformCache.Count; i++)
             {
                 nbCache2.Clear();
                 transformCache[i].GetNetworkBehavioursNonAlloc(ref nbCache2);
@@ -566,6 +661,9 @@ namespace FishNet.Object
             Prediction_Deinitialize(asServer);
 #endif
             InvokeStopCallbacks(asServer);
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].Deinitialize(asServer);
+
             if (asServer)
             {
                 IsDeinitializing = true;
@@ -831,6 +929,9 @@ namespace FishNet.Object
             SetIsNestedThroughTraversal();
             SceneUpdateNetworkBehaviours();
             ReferenceIds_OnValidate();
+#if PREDICTION_V2
+            Prediction_OnValidate();
+#endif
 
             if (IsGlobal && IsSceneObject)
                 Debug.LogWarning($"Object {gameObject.name} will have it's IsGlobal state ignored because it is a scene object. Instantiated copies will still be global. This warning is informative only.");
@@ -878,8 +979,8 @@ namespace FishNet.Object
             }
         }
 #endif
-        #endregion
-    }
+#endregion
+        }
 
 }
 

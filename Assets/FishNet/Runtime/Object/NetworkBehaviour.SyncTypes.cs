@@ -125,7 +125,7 @@ namespace FishNet.Object
         {
             if (asServer)
             {
-                if (!_initializedOnce)
+                if (!_initializedOnceServer)
                 {
                     //optimization Cache synctypewriters on despawn and get from cache on spawn.
                     //Only need to initialize readpermissions once, it's static.
