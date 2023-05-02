@@ -356,7 +356,7 @@ namespace FishNet.Object
             if (Owner.IsValid)
                 Owner.RemoveObject(this);
 
-            NetworkObserver.Deinitialize(true);
+            NetworkObserver?.Deinitialize(true);
             //Already being deinitialized by FishNet.
             if (IsDeinitializing)
                 return;
