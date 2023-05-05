@@ -190,34 +190,34 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Stops the local client connection.
         /// </summary>
-        public void StopConnection()
+        public bool StopConnection()
         {
-            NetworkManager.TransportManager.Transport.StopConnection(false);
+            return NetworkManager.TransportManager.Transport.StopConnection(false);
         }
 
         /// <summary>
         /// Starts the local client connection.
         /// </summary>
-        public void StartConnection()
+        public bool StartConnection()
         {
-            NetworkManager.TransportManager.Transport.StartConnection(false);
+            return NetworkManager.TransportManager.Transport.StartConnection(false);
         }
 
         /// <summary>
         /// Sets the transport address and starts the local client connection.
         /// </summary>
-        public void StartConnection(string address)
+        public bool StartConnection(string address)
         {
-            StartConnection(address, NetworkManager.TransportManager.Transport.GetPort());
+            return StartConnection(address, NetworkManager.TransportManager.Transport.GetPort());
         }
         /// <summary>
         /// Sets the transport address and port, and starts the local client connection.
         /// </summary>
-        public void StartConnection(string address, ushort port)
+        public bool StartConnection(string address, ushort port)
         {
             NetworkManager.TransportManager.Transport.SetClientAddress(address);
             NetworkManager.TransportManager.Transport.SetPort(port);
-            StartConnection();
+            return StartConnection();
         }
 
         /// <summary>
