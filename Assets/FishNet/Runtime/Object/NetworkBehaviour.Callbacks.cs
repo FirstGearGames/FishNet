@@ -26,6 +26,10 @@ namespace FishNet.Object
 
         #region Private.
         /// <summary>
+        /// True if OnAwakeNetwork has been called.
+        /// </summary>
+        private bool _onAwakeNetworkCalled;
+        /// <summary>
         /// True if OnStartNetwork has been called.
         /// </summary>
         private bool _onStartNetworkCalled;
@@ -57,12 +61,21 @@ namespace FishNet.Object
                 item.OnStopCallback(asServer);
         }
 
+        /// <summary>
+        /// Invokes the <see cref="OnAwakeNetwork"/>.
+        /// </summary>
+        internal void InvokeOnAwakeNetwork()
+        {
+            if (_onAwakeNetworkCalled)
+                return;
+            OnAwakeNetwork();
+        }
 
         /// <summary>
         /// Invokes the OnStart/StopNetwork.
         /// </summary>
         /// <param name="start"></param>
-        internal void InvokeOnNetwork(bool start)
+        internal void InvokeOnStartNetwork(bool start)
         {
             if (start)
             {
@@ -79,7 +92,22 @@ namespace FishNet.Object
         }
 
         /// <summary>
-        /// Called when the network has initialized this object. May be called for server or client but will only be called once.
+        /// Called when the network is deinitializing this object. May be called for server or client but will only be called once.
+        /// This method will run before OnStartNetwork.
+        /// When as host or server this method will run before OnStartServer. 
+        /// When as client only the method will run before OnStartClient.
+        /// </summary>
+#if UNITY_2020_3_OR_NEWER && UNITY_EDITOR_WIN
+        [OverrideMustCallBase(BaseCallMustBeFirstStatement = true)]
+#endif
+        public virtual void OnAwakeNetwork()
+        {
+            _onAwakeNetworkCalled = true;
+        }
+
+        /// <summary>
+        /// Called when the network is deinitializing this object. May be called for server or client but will only be called once.
+        /// This method will run after OnAwakeNetwork.
         /// When as host or server this method will run before OnStartServer. 
         /// When as client only the method will run before OnStartClient.
         /// </summary>
@@ -102,6 +130,7 @@ namespace FishNet.Object
         public virtual void OnStopNetwork()
         {
             _onStopNetworkCalled = true;
+            _onAwakeNetworkCalled = false;
             _onStartNetworkCalled = false;
         }
 

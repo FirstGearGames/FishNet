@@ -98,6 +98,7 @@ namespace FishNet.Object
         /// </summary>
 #if UNITY_2020_3_OR_NEWER && UNITY_EDITOR_WIN
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartServer", "")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnAwakeNetwork", " Use base.Owner.IsLocalClient instead.")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartNetwork", " Use base.Owner.IsLocalClient instead.")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Start", "")]

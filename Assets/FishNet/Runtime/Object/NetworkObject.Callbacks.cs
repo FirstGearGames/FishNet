@@ -22,9 +22,13 @@ namespace FishNet.Object
             //Set that client or server is active before callbacks.
             SetActiveStatus(true, asServer);
 
+            //Invoke OnAwakeNetwork.
+            for (int i = 0; i < NetworkBehaviours.Length; i++)
+                NetworkBehaviours[i].InvokeOnAwakeNetwork();
+
             //Invoke OnStartNetwork.
             for (int i = 0; i < NetworkBehaviours.Length; i++)
-                NetworkBehaviours[i].InvokeOnNetwork(true);
+                NetworkBehaviours[i].InvokeOnStartNetwork(true);
 
             //As server.
             if (asServer)
@@ -115,7 +119,7 @@ namespace FishNet.Object
             if (asServer || (!asServer && !IsServer))
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].InvokeOnNetwork(false);
+                    NetworkBehaviours[i].InvokeOnStartNetwork(false);
             }
 
             if (asServer)
