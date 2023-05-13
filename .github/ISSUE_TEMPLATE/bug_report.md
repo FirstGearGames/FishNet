@@ -13,7 +13,7 @@ If General, Description, and Replication are not completed the issue will be clo
 **General**
 Unity version:
 Fish-Networking version:
-Link to Discord where you troubleshot the issue:
+Link on our Discord where you troubleshot the issue:
 
 **Description**
 A clear and concise description of what the bug is.
