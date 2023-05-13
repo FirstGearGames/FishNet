@@ -7,13 +7,20 @@ assignees: ''
 
 ---
 
+# Important
+If General, Description, and Replication are not completed the issue will be closed immediately.
+
+# Report
+
+**General**
 Unity version:
 Fish-Networking version:
+Link to Discord where you troubleshot the issue:
 
-**Describe the bug**
+**Description**
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+**Replication**
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Click on '....'
