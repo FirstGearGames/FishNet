@@ -10,8 +10,6 @@ assignees: ''
 # Important
 If General, Description, and Replication are not completed the issue will be closed immediately.
 
-# Report
-
 **General**
 Unity version:
 Fish-Networking version:
