@@ -515,7 +515,10 @@ namespace FishNet.Object
             {
                 _hashGrid = networkManager.GetInstance<HashGrid>(false);
                 if (_hashGrid != null)
-                    HashGridEntry = _hashGrid.GetGridEntry(this);
+                {
+                    _hashGridPosition = _hashGrid.GetHashGridPosition(this);                    
+                    HashGridEntry = _hashGrid.GetGridEntry(_hashGridPosition);
+                }
                 NetworkObserver.Initialize(this);
             }
             _networkObserverInitiliazed = true;
