@@ -603,13 +603,13 @@ namespace FishNet.Object
             if (replicateIndex == -1)
             {
                 data = default;
-                data.SetTick(replayTick);
-                state = ReplicateState.ReplayedUnsetData;
+                data.SetTick(replayTick);  
+                state = ReplicateState.ReplayedPredicted;
             }
             else
             {
                 data = replicatesHistory[replicateIndex];
-                state = ReplicateState.ReplayedNewData;
+                state = ReplicateState.ReplayedUserCreated;
             }
 
             del.Invoke(data, state, channel);
@@ -715,7 +715,7 @@ namespace FishNet.Object
                 //Add to history.
                 replicatesHistory.Add(data);
                 //Invoke replicate method.
-                ReplicateState state = (defaultData) ? ReplicateState.UnsetData : ReplicateState.NewData;
+                ReplicateState state = (defaultData) ? ReplicateState.Predicted : ReplicateState.UserCreated;
                 del.Invoke(data, state, channel);
             }
         }
@@ -888,7 +888,7 @@ namespace FishNet.Object
             //Update last replicate tick.
             _networkObjectCache.SetReplicateTick(localTick);
             //Owner always replicates with new data.
-            del.Invoke(data, ReplicateState.NewData, channel);
+            del.Invoke(data, ReplicateState.UserCreated, channel);
         }
 #endif
 
