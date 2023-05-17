@@ -1,0 +1,27 @@
+{
+  "name": "com.firstgeargames.fishnet",
+  "version": "3.6.9",
+  "displayName": "FishNet: Networking Evolved",
+  "description": "A feature-rich Unity networking solution aimed towards reliability, ease of use, efficiency, and flexibility.",
+  "unity": "2019.4",
+  "documentationUrl": "https://fish-networking.gitbook.io/docs/",
+  "licensesUrl": "https://github.com/FirstGearGames/FishNet/blob/main/LICENSE.md",
+  "license": "See LICENSE.txt file",
+  "keywords": [
+    "FishNetworking",
+    "Networking",
+    "FishNet",
+    "Unity Networking",
+    "Bolt",
+    "Mirror",
+    "Photon",
+    "DarkRift",
+    "DedicatedServer",
+    "Fusion",
+    "Netcode"
+  ],
+  "author": {
+    "name": "FirstGearGames",
+    "url": "http://www.firstgeargames.com"
+  }
+}

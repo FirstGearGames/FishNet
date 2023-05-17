@@ -1,13 +1,11 @@
-﻿using System.IO;
+﻿#if UNITY_EDITOR
+using System.IO;
 using System.Xml.Serialization;
 using UnityEngine;
-
-#if UNITY_EDITOR
 using UnityEditor.Compilation;
 using UnityEditor.Build.Reporting;
 using UnityEditor;
 using UnityEditor.Build;
-#endif
 
 namespace FishNet.Configuring
 {
@@ -100,3 +98,4 @@ namespace FishNet.Configuring
 
 
 }
+#endif

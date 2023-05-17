@@ -126,7 +126,7 @@ namespace FishNet.Editing
             {
                 Scene s = SceneManager.GetSceneAt(i);
 
-                List<NetworkObject> nobs = CollectionCaches<NetworkObject>.Retrieve();
+                List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
                 SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
                 int nobCount = nobs.Count;
                 for (int z = 0; z < nobCount; z++)
@@ -184,7 +184,7 @@ namespace FishNet.Editing
             {
                 Scene s = SceneManager.GetSceneAt(i);
 
-                List<NetworkObject> nobs = CollectionCaches<NetworkObject>.Retrieve();
+                List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
                 SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
                 int nobsCount = nobs.Count;
                 for (int z = 0; z < nobsCount; z++)

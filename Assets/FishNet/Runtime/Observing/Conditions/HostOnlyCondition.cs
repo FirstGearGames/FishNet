@@ -16,10 +16,11 @@ namespace FishNet.Component.Observing
             return (base.NetworkObject.ClientManager.Connection == connection);
         }
 
-        public override bool Timed()
-        {
-            return false;
-        }
+        /// <summary>
+        /// How a condition is handled.
+        /// </summary>
+        /// <returns></returns>
+        public override ObserverConditionType GetConditionType() => ObserverConditionType.Normal;
 
         public override ObserverCondition Clone()
         {

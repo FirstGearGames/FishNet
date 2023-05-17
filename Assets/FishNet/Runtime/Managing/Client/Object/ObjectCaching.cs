@@ -591,8 +591,8 @@ namespace FishNet.Managing.Client
             RpcLinks = rpcLinks;
             SyncValues = syncValues;
 
-            RpcLinkReader = ReaderPool.GetReader(rpcLinks, manager);
-            SyncValuesReader = ReaderPool.GetReader(syncValues, manager);
+            RpcLinkReader = ReaderPool.RetrieveReader(rpcLinks, manager);
+            SyncValuesReader = ReaderPool.RetrieveReader(syncValues, manager);
         }
 
         /// <summary>

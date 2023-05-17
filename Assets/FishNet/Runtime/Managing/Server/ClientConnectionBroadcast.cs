@@ -25,7 +25,7 @@ namespace FishNet.Managing.Server
 
         public static ConnectedClientsBroadcast ReadConnectedClientsBroadcast(this PooledReader reader)
         {
-            List<int> cache = CollectionCaches<int>.Retrieve();
+            List<int> cache = CollectionCaches<int>.RetrieveList();
             reader.ReadList(ref cache);
             return new ConnectedClientsBroadcast()
             {

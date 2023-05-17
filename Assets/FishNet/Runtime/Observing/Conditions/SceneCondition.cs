@@ -35,41 +35,16 @@ namespace FishNet.Component.Observing
         public override bool ConditionMet(NetworkConnection connection, bool currentlyAdded, out bool notProcessed)
         {
             notProcessed = false;
-            /* If this objects connection is valid then check if
-             * connection and this objects owner shares any scenes.
-             * Don't check if the object resides in the same scene
-             * because thats not reliable as server might be moving
-             * objects. */
-            if (base.NetworkObject.Owner.IsValid)
-            {
-                foreach (Scene s in base.NetworkObject.Owner.Scenes)
-                {
-                    //Scenes match.
-                    if (connection.Scenes.Contains(s))
-                        return true;
-                }
-
-                //Fall through, no scenes shared.
-                return false;
-            }
-            /* If there is no owner as a fallback see if
-             * the connection is in the same scene as this object. */
-            else
-            {
-                /* When there is no owner only then is the gameobject
-                 * scene checked. That's the only way to know at this point. */
-                return connection.Scenes.Contains(base.NetworkObject.gameObject.scene);
-            }
+            /* When there is no owner only then is the gameobject
+             * scene checked. That's the only way to know at this point. */
+            return connection.Scenes.Contains(base.NetworkObject.gameObject.scene);
         }
 
         /// <summary>
-        /// True if the condition requires regular updates.
+        /// How a condition is handled.
         /// </summary>
         /// <returns></returns>
-        public override bool Timed()
-        {
-            return false;
-        }
+        public override ObserverConditionType GetConditionType() => ObserverConditionType.Normal;
 
 
         /// <summary>

@@ -26,13 +26,11 @@ namespace FishNet.Component.Observing
         }
 
         /// <summary>
-        /// True if the condition requires regular updates.
+        /// How a condition is handled.
         /// </summary>
         /// <returns></returns>
-        public override bool Timed()
-        {
-            return false;
-        }
+        public override ObserverConditionType GetConditionType() => ObserverConditionType.Normal;
+
 
         /// <summary>
         /// Clones referenced ObserverCondition. This must be populated with your conditions settings.

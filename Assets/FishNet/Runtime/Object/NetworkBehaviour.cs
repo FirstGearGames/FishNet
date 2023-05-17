@@ -53,12 +53,15 @@ namespace FishNet.Object
         /// True if initialized at some point asServer.
         /// </summary>
         private bool _initializedOnceServer;
+#pragma warning disable CS0414
         /// <summary>
         /// True if initialized at some point not asServer.
         /// </summary>
         private bool _initializedOnceClient;
+#pragma warning restore CS0414
         #endregion
 
+#if !PREDICTION_V2
         /// <summary>
         /// Preinitializes this script for the network.
         /// </summary>
@@ -72,17 +75,48 @@ namespace FishNet.Object
             }
             else
             {
-#if PREDICTION_V2
+                _initializedOnceClient = true;
+            }
+        }
+#else
+        /// <summary>
+        /// Preinitializes this script for the network.
+        /// </summary>
+        internal void Preinitialize_Internal(NetworkObject nob, bool asServer)
+        {
+            /* Guestimate the last replicate tick 
+             * based on latency and last packet tick.
+             * Going to try and send last input with spawn
+             * packet which will have definitive tick. //todo
+             */
+            if (!asServer && !nob.IsServer && !IsOwner)
+            {
+                long estimatedTickDelay = (TimeManager.Tick - TimeManager.LastPacketTick);
+                if (estimatedTickDelay < 0)
+                    estimatedTickDelay = 0;
+                //todo also update this with the value from packet.
+                _networkObjectCache.ReplicateTick.Update(nob.TimeManager, nob.TimeManager.LastPacketTick - (uint)estimatedTickDelay);
+            }
+
+            InitializeOnceSyncTypes(asServer);
+            if (asServer)
+            {
+                InitializeRpcLinks();
+                _initializedOnceServer = true;
+            }
+            else
+            {
                 if (!_initializedOnceClient && nob.UsePrediction)
                     nob.RegisterPredictionBehaviourOnce(this);
-#endif
+
                 _initializedOnceClient = true;
             }
         }
 
+#endif
         internal void Deinitialize(bool asServer)
         {
-            
+
         }
 
         /// <summary>

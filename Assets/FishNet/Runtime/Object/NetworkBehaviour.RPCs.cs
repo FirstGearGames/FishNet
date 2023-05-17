@@ -332,7 +332,7 @@ namespace FishNet.Object
             int rpcHeaderBufferLength = GetEstimatedRpcHeaderLength();
             int methodWriterLength = methodWriter.Length;
             //Writer containing full packet.
-            PooledWriter writer = WriterPool.GetWriter(rpcHeaderBufferLength + methodWriterLength);
+            PooledWriter writer = WriterPool.RetrieveWriter(rpcHeaderBufferLength + methodWriterLength);
             writer.WritePacketId(packetId);
             writer.WriteNetworkBehaviour(this);
             //Only write length if reliable.

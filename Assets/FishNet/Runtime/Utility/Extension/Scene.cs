@@ -18,9 +18,9 @@ namespace FishNet.Utility.Extension
         /// <returns></returns>
         public static void GetSceneNetworkObjects(Scene s, bool firstOnly, ref List<NetworkObject> result)
         {
-            List<NetworkObject> nobCacheA = CollectionCaches<NetworkObject>.Retrieve();
-            List<NetworkObject> nobCacheB = CollectionCaches<NetworkObject>.Retrieve();
-            List<GameObject> gameObjectCache = CollectionCaches<GameObject>.Retrieve();
+            List<NetworkObject> nobCacheA = CollectionCaches<NetworkObject>.RetrieveList();
+            List<NetworkObject> nobCacheB = CollectionCaches<NetworkObject>.RetrieveList();
+            List<GameObject> gameObjectCache = CollectionCaches<GameObject>.RetrieveList();
             //Iterate all root objects for the scene.
             s.GetRootGameObjects(gameObjectCache);
             foreach (GameObject go in gameObjectCache)

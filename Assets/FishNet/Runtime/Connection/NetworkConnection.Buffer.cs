@@ -63,7 +63,7 @@ namespace FishNet.Connection
 
             if (!IsActive)
             {
-                NetworkManager.LogWarning($"Data cannot be sent to connection {ClientId} because it is not active.");
+                NetworkManager?.LogWarning($"Data cannot be sent to connection {ClientId} because it is not active.");
                 return;
             }
             //If channel is out of bounds then default to the first channel.

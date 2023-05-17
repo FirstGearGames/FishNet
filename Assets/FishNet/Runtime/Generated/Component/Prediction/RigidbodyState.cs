@@ -111,7 +111,7 @@ public static class RigidbodyStateSerializers
         writer.WriteVector3(value.Position);
         writer.WriteQuaternion(value.Rotation);
         writer.WriteBoolean(value.Simulated);
-        writer.WriteBoolean(!value.IsKinematic);
+        writer.WriteBoolean(value.IsKinematic);
 
         if (value.Simulated)
         {

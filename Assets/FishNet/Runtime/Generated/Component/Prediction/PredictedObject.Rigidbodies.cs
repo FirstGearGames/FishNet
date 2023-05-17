@@ -159,7 +159,7 @@ namespace FishNet.Component.Prediction
             if (c.IsLocalClient)
                 return;
 
-            uint tick = c.LastPacketTick;
+            uint tick = c.PacketTick.RemoteTick;
             if (_predictionType == PredictionType.Rigidbody)
                 SendRigidbodyState(tick, c, true);
             else
@@ -359,9 +359,9 @@ namespace FishNet.Component.Prediction
                 _preReplicateReplayCacheIndex = GetCachedStateIndex(tick, true);
                 if (_preReplicateReplayCacheIndex != -1)
                 {
-                    bool prevSimulated = _rigidbody2dStates[_preReplicateReplayCacheIndex].Simulated;
-                    _rigidbody2d.simulated = prevSimulated;
-                    _rigidbody2d.isKinematic = !prevSimulated;
+                    Rigidbody2DState state = _rigidbody2dStates[_preReplicateReplayCacheIndex];
+                    _rigidbody2d.simulated = state.Simulated;
+                    _rigidbody2d.isKinematic = state.IsKinematic;
                 }
                 PredictVelocity(ps2d);
             }
@@ -903,7 +903,7 @@ namespace FishNet.Component.Prediction
             //No need to send to owner if they implement prediction methods.
             if (_isPredictingOwner(conn))
                 return;
-            reconcileTick = (conn == base.NetworkObject.PredictedSpawner) ? conn.LastPacketTick : reconcileTick;
+            reconcileTick = (conn == base.NetworkObject.PredictedSpawner) ? conn.PacketTick.RemoteTick : reconcileTick;
             RigidbodyState state = new RigidbodyState(_rigidbody, reconcileTick);
             TargetSendRigidbodyState(conn, state, applyImmediately);
         }
@@ -1036,7 +1036,7 @@ namespace FishNet.Component.Prediction
             _rigidbody2d.transform.rotation = state.Rotation;
             bool simulated = state.Simulated;
             _rigidbody2d.simulated = simulated;
-            _rigidbody2d.isKinematic = !simulated;
+            _rigidbody2d.isKinematic = state.IsKinematic;
             if (simulated)
             {
                 _rigidbody2d.velocity = state.Velocity;

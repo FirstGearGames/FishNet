@@ -20,12 +20,36 @@ using UnityEditor;
 
 namespace FishNet.Object
 {
+    public class NetworkObjectIdComparer : IEqualityComparer<NetworkObject>
+    {
+        public bool Equals(NetworkObject x, NetworkObject y)
+        {
+            bool xNull = (x is null);
+            bool yNull = (y is null);
+            //One null, one isn't.
+            if (xNull != yNull)
+                return false;
+            //Both null.
+            if (xNull && yNull)
+                return true;
+
+            //If here neither are null.
+            return (x.ObjectId == y.ObjectId);
+        }
+
+        public int GetHashCode(NetworkObject obj)
+        {
+            return obj.ObjectId;
+        }
+    }
+
     [DisallowMultipleComponent]
     public partial class NetworkObject : MonoBehaviour
     {
         #region Public.
         /// <summary>
-        /// True if was nested during scene setup or within a prefab.
+        /// True if this object is nested.
+        /// This value is automatically applied for prefabs and scene objects during serialization. However, if changing parents at runtime use NetworkObject.SetParent().
         /// </summary>
         [field: SerializeField, HideInInspector]
         public bool IsNested { get; private set; }
@@ -78,17 +102,6 @@ namespace FishNet.Object
         [Range(0f, short.MaxValue)]
         [SerializeField]
         private float _ownerTeleportThreshold = 1f;
-        ///// <summary>
-        ///// How far into the future to predict inputs. This is best set to 0f for player controllers, but may provide more real time physics interactions with force driven rigidbodies.
-        ///// </summary>
-        //[Tooltip("How far into the future to predict inputs. This is best set to 0f for player controllers, but may provide more real time physics interactions with force driven rigidbodies.")]
-        //[Range(0f, 1f)]
-        //[SerializeField]
-        //private float _futurePredictionTime = 0f;
-        ///// <summary>
-        ///// True if this object is set to use future prediction.
-        ///// </summary>
-        //internal bool PredictsFuture => (_futurePredictionTime > 0f);
         /// <summary>
         /// True to use a flat amount of interpolation for graphics. This is ideal for controllers that will not carry velocity, such as setting velocity directly when there is input.
         /// False to adapt interpolation based on a variety of factors. This can be beneficial when velocities are affected by forces and may change irratically.
@@ -169,6 +182,20 @@ namespace FishNet.Object
         /// </summary> 
         [field: SerializeField, HideInInspector]
         public List<NetworkObject> ChildNetworkObjects { get; private set; } = new List<NetworkObject>();
+        /// <summary>
+        /// NetworkObject parenting this instance when set at runtime using NetworkObject.SetParent.
+        /// </summary>
+        [HideInInspector]
+        public NetworkObject RuntimeParentNetworkObject { get; private set; }
+        /// <summary>
+        /// Transform which this instance was set a child of at runtime.
+        /// </summary>
+        public Transform RuntimeParentTransform { get; private set; }
+        /// <summary>
+        /// NetworkObjects which are made child at runtime using NetworkObject.SetParent.
+        /// </summary>
+        [HideInInspector]
+        public List<NetworkObject> RuntimeChildNetworkObjects { get; private set; }
         /// <summary>
         /// 
         /// </summary>
@@ -291,6 +318,7 @@ namespace FishNet.Object
         protected virtual void Awake()
         {
             _isStatic = gameObject.isStatic;
+            RuntimeChildNetworkObjects = CollectionCaches<NetworkObject>.RetrieveList();
             SetChildDespawnedState();
 #if PREDICTION_V2
             Prediction_Awake();
@@ -352,14 +380,12 @@ namespace FishNet.Object
 
         private void OnDestroy()
         {
-            //Does this need to be here? I'm thinking no, remove it and examine later. //todo
-            if (Owner.IsValid)
-                Owner.RemoveObject(this);
-
-            NetworkObserver?.Deinitialize(true);
             //Already being deinitialized by FishNet.
             if (IsDeinitializing)
                 return;
+
+            Owner?.RemoveObject(this);
+            NetworkObserver?.Deinitialize(true);
 
             if (NetworkManager != null)
             {
@@ -391,6 +417,8 @@ namespace FishNet.Object
                 Owner.RemoveObject(this);
 
             Observers.Clear();
+            RuntimeParentNetworkObject?.RuntimeChildNetworkObjects.Remove(this);
+            CollectionCaches<NetworkObject>.Store(RuntimeChildNetworkObjects);
             IsDeinitializing = true;
 
             SetActiveStatus(false);
@@ -515,7 +543,10 @@ namespace FishNet.Object
             {
                 _hashGrid = networkManager.GetInstance<HashGrid>(false);
                 if (_hashGrid != null)
+                {
+                    _hashGridPosition = _hashGrid.GetHashGridPosition(this);
                     HashGridEntry = _hashGrid.GetGridEntry(this);
+                }
                 NetworkObserver.Initialize(this);
             }
             _networkObserverInitiliazed = true;
@@ -526,6 +557,107 @@ namespace FishNet.Object
             //Add to connections objects. Collection is a hashset so this can be called twice for clientHost.
             owner?.AddObject(this);
         }
+
+        /// <summary>
+        /// Sets this NetworkObject as a child of another at runtime.
+        /// </summary>
+        /// <param name="nb">NetworkBehaviour to use as root. Use null to remove parenting.</param>
+        public void SetParent(NetworkBehaviour nb)
+        {
+            if (InvalidParent(nb.NetworkObject))
+                return;
+
+            UpdateParent(nb.NetworkObject, nb);
+        }
+
+        /// <summary>
+        /// Sets this NetworkObject as a child of another at runtime.
+        /// </summary>
+        /// <param name="nob">NetworkObject to use as root. Use null to remove parenting.</param>
+        public void SetParent(NetworkObject nob)
+        {
+            if (InvalidParent(nob))
+                return;
+
+            UpdateParent(nob, null);
+        }
+
+        /// <summary>
+        /// Unsets this NetworkObject's parent at runtime.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void UnsetParent()
+        {
+            NetworkObject nob = null;
+            if (InvalidParent(nob))
+                return;
+
+            SetParent(nob);
+        }
+
+        /// <summary>
+        /// Updates parent NetworkObject.
+        /// </summary>
+        private void UpdateParent(NetworkObject nob, NetworkBehaviour nb)
+        {
+            //If current is set then remove from as child.
+            RuntimeParentNetworkObject?.RuntimeChildNetworkObjects.Remove(this);
+
+            //If both nob and nb are null then parent is being removed.
+            if (nob == null && nb == null)
+            {
+                RuntimeParentNetworkObject = null;
+                RuntimeParentTransform = null;
+            }
+            //Being set to something.
+            else
+            {
+                //Prefer NetworkBehaviour if available.
+                Transform t = (nb != null) ? nb.transform : nob.transform;
+                RuntimeParentNetworkObject = nob;
+                RuntimeParentTransform = t;
+                nob.RuntimeChildNetworkObjects.Add(this);
+                transform.SetParent(t);
+            }
+
+            //Rebuild observers since root changed.
+            NetworkManager.ServerManager.Objects.RebuildObservers(this);
+        }
+
+        /// <summary>
+        /// True if the NetworkObject specified cannot be used as a parent.
+        /// </summary>
+        /// <param name="nob"></param>
+        /// <returns></returns>
+        private bool InvalidParent(NetworkObject nob)
+        {
+            /* Scene objects could face destruction if the user
+             * childs them to an instantiated object that gets despawned.
+             * If that occurs, the user is at fault. However a destroyed
+             * scene object should be fine, it just won't spawn later given
+             * it's been destroyed. Allow scene objects to change parents freely. */
+            if (IsSceneObject)
+                return false;
+
+            //Setting to already runtime parent. Fail silently just to skip work.
+            if (nob == RuntimeParentNetworkObject)
+                return false;
+            //Setting to self.
+            if (nob == this)
+            {
+                NetworkManager.LogWarning($"{gameObject.name} cannot be set as a child of itself.");
+                return true;
+            }
+            //Nested prefabs cannot be moved.
+            if (ParentNetworkObject != null)
+            {
+                NetworkManager.LogWarning($"{gameObject.name} cannot have the parent changed because it is a nested prefab.");
+                return true;
+            }
+
+            return false;
+        }
+        
 
         /// <summary>
         /// Adds a NetworkBehaviour and serializes it's components.
@@ -578,7 +710,7 @@ namespace FishNet.Object
             ParentNetworkObject = parentNob;
 
             //Transforms which can be searched for networkbehaviours.
-            List<Transform> transformCache = CollectionCaches<Transform>.Retrieve();
+            List<Transform> transformCache = CollectionCaches<Transform>.RetrieveList();
             ChildNetworkObjects.Clear();
 
             transformCache.Add(transform);
@@ -610,9 +742,9 @@ namespace FishNet.Object
             }
 
             //Iterate all cached transforms and get networkbehaviours.
-            List<NetworkBehaviour> nbCache = CollectionCaches<NetworkBehaviour>.Retrieve();
+            List<NetworkBehaviour> nbCache = CollectionCaches<NetworkBehaviour>.RetrieveList();
             //
-            List<NetworkBehaviour> nbCache2 = CollectionCaches<NetworkBehaviour>.Retrieve();
+            List<NetworkBehaviour> nbCache2 = CollectionCaches<NetworkBehaviour>.RetrieveList();
             for (int i = 0; i < transformCache.Count; i++)
             {
                 nbCache2.Clear();
@@ -666,6 +798,7 @@ namespace FishNet.Object
 
             if (asServer)
             {
+                NetworkObserver?.Deinitialize(false);
                 IsDeinitializing = true;
             }
             else
@@ -681,6 +814,8 @@ namespace FishNet.Object
             SetActiveStatus(false, asServer);
             if (asServer)
                 Observers.Clear();
+
+            
         }
 
         /// <summary>
@@ -695,7 +830,7 @@ namespace FishNet.Object
 
             State = NetworkObjectState.Unset;
             SetOwner(NetworkManager.EmptyConnection);
-            NetworkObserver.Deinitialize(false);
+            NetworkObserver?.Deinitialize(false);
             //QOL references.
             NetworkManager = null;
             ServerManager = null;
@@ -768,7 +903,7 @@ namespace FishNet.Object
             {
                 if (activeNewOwner)
                     newOwner.AddObject(this);
-                if (prevOwner.IsValid && prevOwner != newOwner)
+                if (prevOwner != newOwner)
                     prevOwner.RemoveObject(this);
             }
 
@@ -781,7 +916,7 @@ namespace FishNet.Object
                 if (activeNewOwner)
                     ServerManager.Objects.RebuildObservers(this, newOwner);
 
-                using (PooledWriter writer = WriterPool.GetWriter())
+                using (PooledWriter writer = WriterPool.RetrieveWriter())
                 {
                     writer.WritePacketId(PacketId.OwnershipChange);
                     writer.WriteNetworkObject(this);
@@ -979,8 +1114,8 @@ namespace FishNet.Object
             }
         }
 #endif
-#endregion
-        }
+        #endregion
+    }
 
 }
 

@@ -615,7 +615,7 @@ namespace FishNet.Managing.Scened
             else
             {
                 return _globalScenes;
-            }            
+            }
         }
 
         //#region IsQueuedScene.
@@ -1611,7 +1611,7 @@ namespace FishNet.Managing.Scened
              * wiped from SceneConnections earlier depending on how scenes are
              * loaded or unloaded. Instead we must iterate through spawned objects. */
 
-            List<NetworkObject> movingNobs = CollectionCaches<NetworkObject>.Retrieve();
+            List<NetworkObject> movingNobs = CollectionCaches<NetworkObject>.RetrieveList();
             /* Rather than a get all networkobjects in scene
              * let's iterate the spawned objects instead. I imagine
              * in most scenarios iterating spawned would be faster.
@@ -2097,6 +2097,15 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private void SetActiveScene(Scene preferredScene = default, bool byUser = false)
         {
+            //Setting active scene is not used.
+            if (!_setActiveScene)
+            {
+                //Still invoke event with current scene.
+                Scene s = UnitySceneManager.GetActiveScene();
+                CompleteSetActive(s);
+                return;
+            }
+
             //If user specified then skip figuring it out checks.
             if (byUser && preferredScene.IsValid())
             {
@@ -2107,27 +2116,18 @@ namespace FishNet.Managing.Scened
             {
                 Scene s = default;
 
-                //Feature is disabled.
-                if (!_setActiveScene)
-                {
-                    //Still call complete to invoke events.
-                    CompleteSetActive(s);
-                }
-                else
-                {
-                    if (_globalScenes != null && _globalScenes.Length > 0)
-                        s = GetScene(_globalScenes[0]);
-                    else if (preferredScene.IsValid())
-                        s = preferredScene;
+                if (_globalScenes != null && _globalScenes.Length > 0)
+                    s = GetScene(_globalScenes[0]);
+                else if (preferredScene.IsValid())
+                    s = preferredScene;
 
-                    /* If scene isn't set from global then make
-                     * sure currently active isn't the movedobjectscene.
-                     * If it is, then use the fallback scene. */
-                    if (string.IsNullOrEmpty(s.name) && UnitySceneManager.GetActiveScene() == _movedObjectsScene)
-                        s = GetFallbackActiveScene();
+                /* If scene isn't set from global then make
+                 * sure currently active isn't the movedobjectscene.
+                 * If it is, then use the fallback scene. */
+                if (string.IsNullOrEmpty(s.name) && UnitySceneManager.GetActiveScene() == _movedObjectsScene)
+                    s = GetFallbackActiveScene();
 
-                    CompleteSetActive(s);
-                }
+                CompleteSetActive(s);
             }
 
             //Completes setting the active scene with specified value.

@@ -13,21 +13,24 @@ namespace FishNet.Object
         /// </summary>
         Invalid = 0,
         /// <summary>
-        /// Data being used is confirmed to be actual, non-future data.
+        /// Data is user made, such if it were created within OnTick.
+        /// This occurs when a replicate is called from user code.
         /// </summary>
-        NewData = 1,
+        UserCreated = 1,
         /// <summary>
-        /// No data was available for use from the replicate queue.
-        /// When this value is present you may manually predict future data.
+        /// No data was made from the user; default data is used with an estimated tick.
+        /// This occurs on non-owned objects or server when a replicate is called from user code, and there are no datas enqeued.
         /// </summary>
-        UnsetData = 2,
+        Predicted = 2,
         /// <summary>
-        /// Data which was confirmed is being replayed.
+        /// Data is user made, such if it were created within OnTick.
+        /// This occurs when a replicate is replaying past datas, triggered by a reconcile. 
         /// </summary>
-        ReplayedNewData = 3,
+        ReplayedUserCreated = 3,
         /// <summary>
-        /// Data which was unset or predicted is being replayed.
+        /// No data was made from the user; default data is used with an estimated tick.
+        /// This occurs when a replicate would be replaying past datas, triggered by a reconcile, but there is no user created data for the tick.
         /// </summary>
-        ReplayedUnsetData = 4,
+        ReplayedPredicted = 4,
     }
 }

@@ -47,7 +47,7 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            uint packetTick = conn.LastPacketTick;
+            uint packetTick = conn.PacketTick.Value(NetworkManager.TimeManager);
             //Check if conn can send LOD.
             uint lastLod = conn.LastLevelOfDetailUpdate;
             //If previously set see if client is potentially exploiting.

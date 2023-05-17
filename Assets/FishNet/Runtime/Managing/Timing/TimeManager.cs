@@ -578,7 +578,7 @@ namespace FishNet.Managing.Timing
             _receivedPong = false;
 
             uint tick = (tickOverride == null) ? LocalTick : tickOverride.Value;
-            using (PooledWriter writer = WriterPool.GetWriter())
+            using (PooledWriter writer = WriterPool.RetrieveWriter())
             {
                 writer.WritePacketId(PacketId.PingPong);
                 writer.WriteTickUnpacked(tick);
@@ -594,7 +594,7 @@ namespace FishNet.Managing.Timing
             if (!conn.IsActive || !conn.Authenticated)
                 return;
 
-            using (PooledWriter writer = WriterPool.GetWriter())
+            using (PooledWriter writer = WriterPool.RetrieveWriter())
             {
                 writer.WritePacketId(PacketId.PingPong);
                 writer.WriteTickUnpacked(clientTick);
@@ -793,6 +793,19 @@ namespace FishNet.Managing.Timing
                 _networkManager.LogError($"TickType {tickType} is unhandled.");
                 return 0d;
             }
+        }
+
+        /// <summary>
+        /// Converts a PreciseTick to time.
+        /// </summary>
+        /// <param name="pt">PreciseTick to convert.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double TicksToTime(PreciseTick pt)
+        {
+            double tickTime = TicksToTime(pt.Tick);
+            double percentTime = (pt.Percent * TickDelta);
+            return (tickTime + percentTime);
         }
 
         /// <summary>
@@ -995,7 +1008,7 @@ namespace FishNet.Managing.Timing
             if (tick - _lastUpdateTicks >= requiredTicks)
             {
                 //Now send using a packetId.
-                PooledWriter writer = WriterPool.GetWriter();
+                PooledWriter writer = WriterPool.RetrieveWriter();
                 writer.WritePacketId(PacketId.TimingUpdate);
                 _networkManager.TransportManager.SendToClients((byte)Channel.Unreliable, writer.GetArraySegment());
                 writer.Dispose();

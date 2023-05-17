@@ -987,7 +987,7 @@ namespace FishNet.Component.Animating
 
             try
             {
-                using (PooledReader reader = ReaderPool.GetReader(updatedParameters, base.NetworkManager))
+                using (PooledReader reader = ReaderPool.RetrieveReader(updatedParameters, base.NetworkManager))
                 {
                     while (reader.Remaining > 0)
                     {

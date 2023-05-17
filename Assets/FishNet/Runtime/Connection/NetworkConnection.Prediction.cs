@@ -1,5 +1,10 @@
-﻿using FishNet.Managing.Predicting;
+﻿using FishNet.Managing;
+using FishNet.Managing.Predicting;
+using FishNet.Managing.Timing;
 using FishNet.Serializing;
+using FishNet.Transporting;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Connection
@@ -10,52 +15,84 @@ namespace FishNet.Connection
     /// </summary>
     public partial class NetworkConnection
     {
-#if PREDICTION_V2
-        internal PooledWriter PredictionStateWriter = WriterPool.GetWriter(1000);
+#if !PREDICTION_V2
+        /// <summary>
+        /// Local tick when the connection last replicated.
+        /// </summary>
+        public uint LocalReplicateTick { get; internal set; }
+#else
+        /// <summary>
+        /// Approximate replicate tick on the server for this connection.
+        /// This also contains the last set value for local and remote.
+        /// </summary>
+        public EstimatedTick ReplicateTick;
+        /// <summary>
+        /// Writers for states.
+        /// </summary>
+        internal List<PooledWriter> PredictionStateWriters = new List<PooledWriter>();
 
+        /// <summary>
+        /// Writes a prediction state.
+        /// </summary>
+        /// <param name="writer"></param>
         internal void WriteState(PooledWriter writer)
         {
             //Do not send states to clientHost.
             if (IsLocalClient)
                 return;
 
-            PooledWriter predictionWriter = PredictionStateWriter;
-            //If no length this is the first write for the tick.
-            if (predictionWriter.Length == 0)
-            {
-                /* If clients lastpackettick was not set this tick
-                 * then the server doesn't know with absolute certainty
-                 * if the data it would be sending to the client is for
-                 * their lastpackettick. NetworkConnection.LocalTick guestimates
-                 * client lastpackettick based on past time and lastpackettick but
-                 * there's no way to know with certainty of the accuracy.
-                 * Sending states with the wrong tick could drastically misalign
-                 * the simulation for the client. Because of this only send states
-                 * if received a packet from client this tick, giving us an exact
-                 * tick the client is on. */
-                if (!UpdatedLastPacketTick)
-                    return;
+            TimeManager tm = NetworkManager.TimeManager;
+            uint ticksBehind = PacketTick.LocalTickDifference(tm);
+            if (ticksBehind > 0)
+                return;
+            /* If it's been a really long while the client could just be setting up
+             * or dropping. Only send if they've communicated within 15 seconds. */
+            if (ticksBehind > (tm.TickRate * 15))
+                return;
 
-                /* Reserve 5 for the amount of data written and packetId.
-                 * This will be send as an unpacked int. This is done
-                 * instead of copying into a new writer with length to save CPU perf
-                 * at the cost of 4 bytes. */
-                predictionWriter.Reserve(PredictionManager.STATE_HEADER_RESERVE_COUNT);
-                predictionWriter.WriteTickUnpacked(LastReplicateTick);
+            int mtu = NetworkManager.TransportManager.GetMTU((byte)Channel.Unreliable);
+            PooledWriter stateWriter;
+            int writerCount = PredictionStateWriters.Count;
+            if (writerCount == 0 || (writer.Length + PredictionManager.STATE_HEADER_RESERVE_COUNT) > mtu)
+            {
+                stateWriter = WriterPool.RetrieveWriter(mtu);
+                PredictionStateWriters.Add(stateWriter);
+
+                stateWriter.Reserve(PredictionManager.STATE_HEADER_RESERVE_COUNT);
+                //Estimated replicate tick on the client.
+                stateWriter.WriteTickUnpacked(ReplicateTick.Value(NetworkManager.TimeManager));
                 /* No need to send localTick here, it can be read from LastPacketTick that's included with every packet.
                  * Note: the LastPacketTick we're sending here is the last packet received from this connection.
                  * The server and client ALWAYS prefix their packets with their local tick, which is
                  * what we are going to use for the last packet tick from the server. */
             }
+            else
+            {
+                stateWriter = PredictionStateWriters[writerCount - 1];
+            }
 
-            predictionWriter.WriteArraySegment(writer.GetArraySegment());
+            stateWriter.WriteArraySegment(writer.GetArraySegment());
         }
 
-        internal uint LastReplicateTick;
+        /// <summary>
+        /// Stores prediction writers to be re-used later.
+        /// </summary>
+        internal void StorePredictionStateWriters()
+        {
+            for (int i = 0; i < PredictionStateWriters.Count; i++)
+                WriterPool.Store(PredictionStateWriters[i]);
 
+            PredictionStateWriters.Clear();
+        }
+
+        /// <summary>
+        /// Resets NetworkConnection.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Prediction_Reset()
         {
-            PredictionStateWriter.Reset();
+            StorePredictionStateWriters();
+            ReplicateTick.Reset();
         }
 #endif
 

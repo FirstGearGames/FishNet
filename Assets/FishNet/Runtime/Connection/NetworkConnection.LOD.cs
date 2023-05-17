@@ -14,7 +14,7 @@ namespace FishNet.Connection
         /// Level of detail for each NetworkObject.
         /// Since this is called frequently this field is intentionally not an accessor to increase performance.
         /// </summary>
-        public Dictionary<NetworkObject, byte> LevelOfDetails = new Dictionary<NetworkObject, byte>();
+        public Dictionary<NetworkObject, byte> LevelOfDetails = new Dictionary<NetworkObject, byte>(new NetworkObjectIdComparer());
         /// <summary>
         /// Number oftimes this connection may send a forced LOD update.
         /// </summary>
@@ -35,7 +35,8 @@ namespace FishNet.Connection
             if (IsLocalClient)
                 return false;
 
-            return ((LastPacketTick - LastLevelOfDetailUpdate) > expectedInterval);
+            uint lastPacketTick = PacketTick.RemoteTick;
+            return ((lastPacketTick - LastLevelOfDetailUpdate) > expectedInterval);
         }
         
         /// <summary>

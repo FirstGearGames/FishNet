@@ -1,4 +1,5 @@
 ﻿using FishNet.Managing;
+using FishNet.Managing.Timing;
 using FishNet.Object.Prediction;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,7 +14,7 @@ namespace FishNet.Object
         /// <summary>
         /// Last tick this object replicated.
         /// </summary>
-        internal uint LastReplicateTick;
+        internal EstimatedTick ReplicateTick;
         #endregion
 
         #region Private.
@@ -169,7 +170,10 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
         {
-            _adaptiveSmoother.OnPostReplay(serverTick);
+            /* Adaptive smoother uses localTick (clientTick) to track graphical datas.
+            * There's no need to use serverTick since the only purpose of adaptiveSmoother
+            * is to smooth graphic changes, not update the transform itself. */
+            _adaptiveSmoother.OnPostReplay(clientTick);
         }
 
         private void PredictionManager_OnReplicateReplay(uint clientTick, uint serverTick)
@@ -181,7 +185,10 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPreReplicateReplay(uint clientTick, uint serverTick)
         {
-            _adaptiveSmoother.OnPreReplay(serverTick);
+            /* Adaptive smoother uses localTick (clientTick) to track graphical datas.
+             * There's no need to use serverTick since the only purpose of adaptiveSmoother
+             * is to smooth graphic changes, not update the transform itself. */
+            _adaptiveSmoother.OnPreReplay(clientTick);
         }
 
         /// <summary>
@@ -193,6 +200,14 @@ namespace FishNet.Object
             _predictionBehaviours.Add(nb);
         }
 
+        /// <summary>
+        /// Sets the last tick this NetworkBehaviour replicated with.
+        /// </summary>
+        internal void SetReplicateTick(uint value)
+        {
+            ReplicateTick.Update(NetworkManager.TimeManager, value, EstimatedTick.OldTickOption.Discard);
+            Owner.ReplicateTick.Update(NetworkManager.TimeManager, value, EstimatedTick.OldTickOption.Discard);
+        }
 
 #if UNITY_EDITOR
         private void Prediction_OnValidate()

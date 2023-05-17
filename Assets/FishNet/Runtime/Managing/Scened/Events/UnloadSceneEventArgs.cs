@@ -33,12 +33,12 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Handles of scenes which were successfully unloaded.
         /// </summary>
-        [Obsolete("Use UnloadedScenesV2")]
+        [Obsolete("Use UnloadedScenesV2")]  //Remove on 2023/06/01
         public int[] UnloadedSceneHandles;
         /// <summary>
         /// Names of scenes which were successfully unloaded.
         /// </summary>
-        [Obsolete("Use UnloadedScenesV2")]
+        [Obsolete("Use UnloadedScenesV2")] //Remove on 2023/06/01
         public string[] UnloadedSceneNames;
 
         /// <summary>

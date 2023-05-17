@@ -462,7 +462,7 @@ namespace FishNet.CodeGenerating.Helping
 
         /// <summary>
         /// Creates a PooledWriter within the body/ and returns its variable index.
-        /// EG: PooledWriter writer = WriterPool.GetWriter();
+        /// EG: PooledWriter writer = WriterPool.RetrieveWriter();
         /// </summary>
         internal VariableDefinition CreatePooledWriter(MethodDefinition methodDef, int length)
         {
@@ -475,7 +475,7 @@ namespace FishNet.CodeGenerating.Helping
         }
         /// <summary>
         /// Creates a PooledWriter within the body/ and returns its variable index.
-        /// EG: PooledWriter writer = WriterPool.GetWriter();
+        /// EG: PooledWriter writer = WriterPool.RetrieveWriter();
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="methodDef"></param>

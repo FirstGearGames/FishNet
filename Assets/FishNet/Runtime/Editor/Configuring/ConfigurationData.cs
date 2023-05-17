@@ -1,12 +1,11 @@
-﻿
+﻿#if UNITY_EDITOR
+using FishNet.Editing.PrefabCollectionGenerator;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
-
-#if UNITY_EDITOR
 using UnityEditor;
-#endif
+
 
 namespace FishNet.Configuring
 {
@@ -29,6 +28,7 @@ namespace FishNet.Configuring
         public bool FullRebuild = false;
         public bool SaveChanges = true;
         public string DefaultPrefabObjectsPath = Path.Combine("Assets", "DefaultPrefabObjects.asset");
+        internal string DefaultPrefabObjectsPath_Platform => Generator.GetPlatformPath(DefaultPrefabObjectsPath);
         public int SearchScope = (int)SearchScopeType.EntireProject;
         public List<string> ExcludedFolders = new List<string>();
         public List<string> IncludedFolders = new List<string>();
@@ -144,3 +144,4 @@ namespace FishNet.Configuring
 
 
 }
+#endif

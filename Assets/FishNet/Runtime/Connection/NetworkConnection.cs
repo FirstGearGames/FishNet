@@ -1,6 +1,7 @@
 ﻿using FishNet.Component.Observing;
 using FishNet.Documenting;
 using FishNet.Managing;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using System;
 using System.Collections.Generic;
@@ -60,6 +61,11 @@ namespace FishNet.Connection
         /// ObjectIds to use for predicted spawning.
         /// </summary>
         internal Queue<int> PredictedObjectIds = new Queue<int>();
+        /// <summary>
+        /// TransportIndex this connection is on.
+        /// For security reasons this value will be unset on clients if this is not their connection.
+        /// </summary>
+        public int TransportIndex { get; internal set; } = -1;
         /// <summary>
         /// True if this connection is authenticated. Only available to server.
         /// </summary>
@@ -122,63 +128,17 @@ namespace FishNet.Connection
         /// </summary>
         public object CustomData = null;
         /// <summary>
-        /// Local tick when the connection last replicated.
-        /// </summary>
-        public uint LocalReplicateTick { get; internal set; }
-        /// <summary>
-        /// Tick of the last packet received from this connection.
+        /// Tick of the last packet received from this connection which was not out of order.
         /// This value is only available on the server.
         /// </summary>
-        /* This is not used internally. At this time it's just
-         * here for the users convienence. */
-        public uint LastPacketTick { get; private set; }
-        /// <summary>
-        /// Sets LastPacketTick value.
-        /// </summary>
-        /// <param name="value"></param>
-        internal void SetLastPacketTick(uint value)
-        {
-            //If new largest tick from the client then update client tick data.
-            if (value > LastPacketTick)
-            {
-                _latestTick = value;
-                _serverLatestTick = NetworkManager.TimeManager.LocalTick;
-            }
-            LastPacketTick = value;
-        }
-        /// <summary>
-        /// True if LastPacketTick was updated this tick to a higher value than the previous.
-        /// </summary>
-        internal bool UpdatedLastPacketTick => (_serverLatestTick == NetworkManager.TimeManager.LocalTick);
-        /// <summary>
-        /// Latest tick that did not arrive out of order from this connection.
-        /// </summary>
-        private uint _latestTick;
-        /// <summary>
-        /// Tick on the server when latestTick was set.
-        /// </summary>
-        private uint _serverLatestTick;
+        public EstimatedTick PacketTick;
         [Obsolete("Use LocalTick instead.")] //Remove on 2023/06/01
-        public uint Tick => LocalTick;
+        public uint Tick => LocalTick.Value(NetworkManager.TimeManager);
         /// <summary>
-        /// Current approximate local tick as it is on this connection.
+        /// Approximate local tick as it is on this connection.
+        /// This also contains the last set value for local and remote.
         /// </summary>
-        public uint LocalTick
-        {
-            get
-            {
-                NetworkManager nm = NetworkManager;
-                if (nm != null)
-                {
-                    uint diff = (nm.TimeManager.LocalTick - _serverLatestTick);
-                    return (diff + _latestTick);
-                }
-
-                //Fall through, could not process.
-                return 0;
-            }
-
-        }
+        public EstimatedTick LocalTick;
         #endregion
 
         #region Const.
@@ -231,18 +191,20 @@ namespace FishNet.Connection
         [APIExclude]
         public NetworkConnection() { }
         [APIExclude]
-        public NetworkConnection(NetworkManager manager, int clientId, bool asServer)
+        public NetworkConnection(NetworkManager manager, int clientId, int transportIndex, bool asServer)
         {
-            Initialize(manager, clientId, asServer);
+            Initialize(manager, clientId, transportIndex, asServer);
         }
 
-        public void Dispose()
+        internal void Dispose()
         {
-            foreach (PacketBundle p in _toClientBundles)
-                p.Dispose();
-            _toClientBundles.Clear();
+            Deinitialize();
         }
 
+        /// <summary>
+        /// Outputs data about this connection as a string.
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             int clientId = ClientId;
@@ -254,9 +216,10 @@ namespace FishNet.Connection
         /// Initializes this for use.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Initialize(NetworkManager nm, int clientId, bool asServer)
+        private void Initialize(NetworkManager nm, int clientId, int transportIndex, bool asServer)
         {
             NetworkManager = nm;
+            TransportIndex = transportIndex;
             ClientId = clientId;
             Observers_Initialize(nm);
             //Only the server uses the ping and buffer.
@@ -270,20 +233,17 @@ namespace FishNet.Connection
         /// <summary>
         /// Deinitializes this NetworkConnection. This is called prior to resetting.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Deinitialize()
         {
             MatchCondition.RemoveFromMatchesWithoutRebuild(this, NetworkManager);
-        }
 
-        /// <summary>
-        /// Resets this instance.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Reset()
-        {
-            _latestTick = 0;
-            _serverLatestTick = 0;
-            LastPacketTick = 0;
+            foreach (PacketBundle p in _toClientBundles)
+                p.Dispose();
+            _toClientBundles.Clear();
+
+            PacketTick.Reset();
+            TransportIndex = -1;
             ClientId = -1;
             ClearObjects();
             Authenticated = false;
@@ -320,6 +280,12 @@ namespace FishNet.Connection
         /// <param name="immediately">True to disconnect immediately. False to send any pending data first.</param>
         public void Disconnect(bool immediately)
         {
+            if (!IsValid)
+            {
+                //NetworkManager is likely null if invalid.
+                NetworkManager.StaticLogWarning($"Disconnect called on an invalid connection.");
+                return;
+            }
             if (Disconnecting)
             {
                 NetworkManager.LogWarning($"ClientId {ClientId} is already disconnecting.");
@@ -369,6 +335,9 @@ namespace FishNet.Connection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AddObject(NetworkObject nob)
         {
+            if (!IsValid)
+                return;
+
             Objects.Add(nob);
             //If adding the first object then set new FirstObject.
             if (Objects.Count == 1)
@@ -384,6 +353,12 @@ namespace FishNet.Connection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RemoveObject(NetworkObject nob)
         {
+            if (!IsValid)
+            {
+                ClearObjects();
+                return;
+            }
+
             Objects.Remove(nob);
             //If removing the first object then set a new one.
             if (nob == FirstObject)

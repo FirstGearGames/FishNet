@@ -174,6 +174,12 @@ namespace FishNet.Managing.Server
                     _objectIdCache.Clear();
                     base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients);
                 }
+                //If at least one server is started then only clear for disconnecting server.
+                else
+                {
+                    //Remove connections only for transportIndex.
+                    base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients, args.TransportIndex);
+                }
             }
         }
 
@@ -190,7 +196,7 @@ namespace FishNet.Managing.Server
             /* A cache is made because the Objects
              * collection would end up modified during
              * iteration from removing ownership and despawning. */
-            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.Retrieve();
+            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
             foreach (NetworkObject nob in connection.Objects)
                 nobs.Add(nob);
 
@@ -353,7 +359,10 @@ namespace FishNet.Managing.Server
         /// <param name="s"></param>
         private void SetupSceneObjects(Scene s)
         {
-            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.Retrieve();
+            if (!s.IsValid())
+                return;
+
+            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
             SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
 
             bool isHost = base.NetworkManager.IsHost;
@@ -493,7 +502,7 @@ namespace FishNet.Managing.Server
              * the same objects would be rebuilt again. This likely
              * would not affect anything other than perf but who
              * wants that. */
-            List<NetworkObject> spawnCacheCopy = CollectionCaches<NetworkObject>.Retrieve();
+            List<NetworkObject> spawnCacheCopy = CollectionCaches<NetworkObject>.RetrieveList();
             spawnCacheCopy.AddRange(_spawnCache);
             _spawnCache.Clear();
             //Also rebuild observers for the object so it spawns for others.
@@ -596,7 +605,7 @@ namespace FishNet.Managing.Server
             if (nob.AllowPredictedSyncTypes)
             {
                 ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
-                PooledReader syncTypeReader = ReaderPool.GetReader(syncValues, base.NetworkManager);
+                PooledReader syncTypeReader = ReaderPool.RetrieveReader(syncValues, base.NetworkManager);
                 foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
                 {
                     //SyncVars.
@@ -616,7 +625,7 @@ namespace FishNet.Managing.Server
             //Writes a predicted spawn result to a client.
             void WriteResponse(bool success)
             {
-                PooledWriter writer = WriterPool.GetWriter();
+                PooledWriter writer = WriterPool.RetrieveWriter();
                 writer.WritePacketId(PacketId.PredictedSpawnResult);
                 writer.WriteNetworkObjectId(nob.ObjectId);
                 writer.WriteBoolean(success);
@@ -652,7 +661,7 @@ namespace FishNet.Managing.Server
             if (!base.NetworkManager.TimeManager.FrameTicked)
                 return;
 
-            List<int> intCache = CollectionCaches<int>.Retrieve();
+            List<int> intCache = CollectionCaches<int>.RetrieveList();
 
             uint requiredTicks = _cleanRecentlyDespawnedMaxTicks;
             uint currentTick = base.NetworkManager.TimeManager.LocalTick;
@@ -822,13 +831,13 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         private void WriteDespawnAndSend(NetworkObject nob, DespawnType despawnType)
         {
-            PooledWriter everyoneWriter = WriterPool.GetWriter();
+            PooledWriter everyoneWriter = WriterPool.RetrieveWriter();
             WriteDespawn(nob, despawnType, everyoneWriter);
 
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
 
             //Add observers to a list cache.
-            List<NetworkConnection> cache = CollectionCaches<NetworkConnection>.Retrieve();
+            List<NetworkConnection> cache = CollectionCaches<NetworkConnection>.RetrieveList();
             cache.AddRange(nob.Observers);
             int cacheCount = cache.Count;
             for (int i = 0; i < cacheCount; i++)

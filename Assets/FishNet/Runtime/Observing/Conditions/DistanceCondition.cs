@@ -36,7 +36,7 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// How often this condition may change for a connection. This prevents objects from appearing and disappearing rapidly. A value of 0f will cause the object the update quickly as possible while any other value will be used as a delay.
         /// </summary>
-        [Obsolete("UpdateFrequency is no longer used.")]
+        [Obsolete("UpdateFrequency is no longer used.")] //Remove on 2023/06/01
         [HideInInspector]
         public float UpdateFrequency;
         #endregion
@@ -92,13 +92,10 @@ namespace FishNet.Component.Observing
         }
 
         /// <summary>
-        /// True if the condition requires regular updates.
+        /// How a condition is handled.
         /// </summary>
         /// <returns></returns>
-        public override bool Timed()
-        {
-            return true;
-        }
+        public override ObserverConditionType GetConditionType() => ObserverConditionType.Timed;
 
         /// <summary>
         /// Clones referenced ObserverCondition. This must be populated with your conditions settings.

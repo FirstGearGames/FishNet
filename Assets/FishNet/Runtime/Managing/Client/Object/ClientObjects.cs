@@ -127,7 +127,7 @@ namespace FishNet.Managing.Client
             NetworkManager.ClientManager.Objects.AddToSpawned(networkObject, false);
             networkObject.Initialize(false, true);
 
-            PooledWriter writer = WriterPool.GetWriter();
+            PooledWriter writer = WriterPool.RetrieveWriter();
             WriteSpawn(networkObject, writer);
             base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
             writer.Dispose();
@@ -139,7 +139,7 @@ namespace FishNet.Managing.Client
         /// <param name="nob"></param>
         public void WriteSpawn(NetworkObject nob, Writer writer)
         {
-            PooledWriter headerWriter = WriterPool.GetWriter();
+            PooledWriter headerWriter = WriterPool.RetrieveWriter();
             headerWriter.WritePacketId(PacketId.ObjectSpawn);
             headerWriter.WriteNetworkObjectForSpawn(nob);
             headerWriter.WriteNetworkConnection(nob.Owner);
@@ -175,7 +175,7 @@ namespace FishNet.Managing.Client
             //If allowed to write synctypes.
             if (nob.AllowPredictedSyncTypes)
             {
-                PooledWriter tempWriter = WriterPool.GetWriter();
+                PooledWriter tempWriter = WriterPool.RetrieveWriter();
                 WriteSyncTypes(writer, tempWriter, SyncTypeWriteType.All);
                 void WriteSyncTypes(Writer finalWriter, PooledWriter tWriter, SyncTypeWriteType writeType)
                 {
@@ -197,7 +197,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         internal void PredictedDespawn(NetworkObject networkObject)
         {
-            PooledWriter writer = WriterPool.GetWriter();
+            PooledWriter writer = WriterPool.RetrieveWriter();
             WriteDepawn(networkObject, writer);
             base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
             writer.Dispose();
@@ -230,7 +230,7 @@ namespace FishNet.Managing.Client
         /// <param name="s"></param>
         private void RegisterAndDespawnSceneObjects(Scene s)
         {
-            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.Retrieve();
+            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
             SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
 
             int nobsCount = nobs.Count;
@@ -416,12 +416,12 @@ namespace FishNet.Managing.Client
                 //If not predicted the nob should not be in spawned.
                 if (!nob.PredictedSpawner.IsValid)
                 {
-                    NetworkManager.LogError($"Received a spawn objectId of {objectId} which was already found in spawned, and was not predicted.");
+                    NetworkManager.LogWarning($"Received a spawn objectId of {objectId} which was already found in spawned, and was not predicted. This sometimes may occur on clientHost when the server destroys an object unexpectedly before the clientHost gets the spawn message.");
                 }
                 //Everything is proper, apply RPC links.
                 else
                 {
-                    PooledReader linkReader = ReaderPool.GetReader(rpcLinks, NetworkManager);
+                    PooledReader linkReader = ReaderPool.RetrieveReader(rpcLinks, NetworkManager);
                     ApplyRpcLinks(nob, linkReader);
                     linkReader.Dispose();
                 }
@@ -613,7 +613,7 @@ namespace FishNet.Managing.Client
                     result = so.GetFromPending(cnob.ObjectId);
 
                 if (result == null)
-                    networkManager.LogError($"ObjectId {cnob.ObjectId} could not be found in Server spawned, nor Server pending despawn.");
+                    networkManager.LogWarning($"ObjectId {cnob.ObjectId} could not be found in Server spawned, nor Server pending despawn. This may occur as clientHost when objects are destroyed before the client receives a despawn packet. In most cases this may be ignored.");
             }
 
             return result;

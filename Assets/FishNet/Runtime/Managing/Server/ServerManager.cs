@@ -255,7 +255,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void SendDisconnectMessages(List<NetworkConnection> conns, bool iterate)
         {
-            PooledWriter writer = WriterPool.GetWriter();
+            PooledWriter writer = WriterPool.RetrieveWriter();
             writer.WritePacketId(PacketId.Disconnect);
             ArraySegment<byte> segment = writer.GetArraySegment();
             //Send segment to each client, authenticated or not.
@@ -409,7 +409,7 @@ namespace FishNet.Managing.Server
                 if (args.ConnectionState == RemoteConnectionState.Started)
                 {
                     NetworkManager.Log($"Remote connection started for Id {id}.");
-                    NetworkConnection conn = new NetworkConnection(NetworkManager, id, true);
+                    NetworkConnection conn = new NetworkConnection(NetworkManager, id, args.TransportIndex, true);
                     Clients.Add(args.ConnectionId, conn);
                     OnRemoteConnectionState?.Invoke(conn, args);
                     //Connection is no longer valid. This can occur if the user changes the state using the OnRemoteConnectionState event.
@@ -433,7 +433,6 @@ namespace FishNet.Managing.Server
                         conn.SetDisconnecting(true);
                         OnRemoteConnectionState?.Invoke(conn, args);
                         Clients.Remove(id);
-                        conn.Deinitialize();
                         Objects.ClientDisconnected(conn);
                         BroadcastClientConnectionChange(false, conn);
                         //Return predictedObjectIds.
@@ -441,7 +440,7 @@ namespace FishNet.Managing.Server
                         while (pqId.Count > 0)
                             Objects.CacheObjectId(pqId.Dequeue());
 
-                        conn.Reset();
+                        conn.Dispose();
                         NetworkManager.Log($"Remote connection stopped for Id {id}.");
                     }
                 }
@@ -454,7 +453,7 @@ namespace FishNet.Managing.Server
         /// <param name="connectionid"></param>
         private void SendAuthenticated(NetworkConnection conn)
         {
-            using (PooledWriter writer = WriterPool.GetWriter())
+            using (PooledWriter writer = WriterPool.RetrieveWriter())
             {
                 writer.WritePacketId(PacketId.Authenticated);
                 writer.WriteNetworkConnection(conn);
@@ -520,7 +519,7 @@ namespace FishNet.Managing.Server
             {
 #endif
             Reader.DataSource dataSource = Reader.DataSource.Client;
-            using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager, dataSource))
+            using (PooledReader reader = ReaderPool.RetrieveReader(segment, NetworkManager, dataSource))
             {
                 uint tick = reader.ReadTickUnpacked();
                 NetworkManager.TimeManager.LastPacketTick = tick;
@@ -588,7 +587,7 @@ namespace FishNet.Managing.Server
                         Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"ConnectionId {conn.ClientId} not found within Clients. Connection will be kicked immediately.");
                         return;
                     }
-                    conn.SetLastPacketTick(tick);
+                    conn.PacketTick.Update(NetworkManager.TimeManager, tick, Timing.EstimatedTick.OldTickOption.SetLastRemoteTick);
                     /* If connection isn't authenticated and isn't a broadcast
                      * then disconnect client. If a broadcast then process
                      * normally; client may still become disconnected if the broadcast
@@ -730,14 +729,18 @@ namespace FishNet.Managing.Server
                     Connected = connected,
                     Id = conn.ClientId
                 };
-                Broadcast(changeMsg);
+                foreach (NetworkConnection c in Clients.Values)
+                {
+                    if (c.Authenticated)
+                        Broadcast(c, changeMsg);
+                }
 
                 /* If state is connected then the conn client
                  * must also receive all currently connected client ids. */
                 if (connected)
                 {
                     //Send already connected clients to the connection that just joined.
-                    List<int> cache = CollectionCaches<int>.Retrieve();
+                    List<int> cache = CollectionCaches<int>.RetrieveList();
                     foreach (int key in Clients.Keys)
                         cache.Add(key);
 

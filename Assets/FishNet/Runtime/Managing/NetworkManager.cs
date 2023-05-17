@@ -466,12 +466,45 @@ namespace FishNet.Managing
         /// Clears a client collection after disposing of the NetworkConnections.
         /// </summary>
         /// <param name="clients"></param>
-        internal void ClearClientsCollection(Dictionary<int, NetworkConnection> clients)
+        internal void ClearClientsCollection(Dictionary<int, NetworkConnection> clients, int transportIndex = -1)
         {
-            foreach (NetworkConnection conn in clients.Values)
-                conn.Dispose();
+            //True to dispose all connections.
+            bool disposeAll = (transportIndex < 0);
+            List<int> cache = CollectionCaches<int>.RetrieveList();
 
-            clients.Clear();
+
+            foreach (KeyValuePair<int, NetworkConnection> kvp in clients)
+            {
+                NetworkConnection value = kvp.Value;
+                //If to check transport index.
+                if (!disposeAll)
+                {
+                    if (value.TransportIndex == transportIndex)
+                    {
+                        cache.Add(kvp.Key);
+                        value.Dispose();
+                    }
+                }
+                //Not using transport index, no check required.
+                else
+                {
+                    value.Dispose();
+                }
+            }
+
+            //If all are being disposed the collection can be cleared.
+            if (disposeAll)
+            {
+                clients.Clear();
+            }
+            //Otherwise, only remove those which were disposed.
+            else
+            {
+                foreach (int item in cache)
+                    clients.Remove(item);
+            }
+
+            CollectionCaches<int>.Store(cache);
         }
 
         #region Object pool.

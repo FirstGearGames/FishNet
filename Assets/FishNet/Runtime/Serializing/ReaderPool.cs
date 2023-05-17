@@ -12,7 +12,7 @@ namespace FishNet.Serializing
     {
         internal PooledReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(bytes, networkManager, null, source) { }
         internal PooledReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(segment, networkManager, null, source) { }
-        public void Dispose() => ReaderPool.Recycle(this);
+        public void Dispose() => ReaderPool.Store(this);
     }
 
     /// <summary>
@@ -31,16 +31,29 @@ namespace FishNet.Serializing
         /// Get the next reader in the pool
         /// <para>If pool is empty, creates a new Reader</para>
         /// </summary>
+        [Obsolete("Use RetrieveReader(byte[], NetworkManager, DataSource)")] //Remove on 2024/01/01
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledReader GetReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
+        public static PooledReader GetReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) => RetrieveReader(bytes, networkManager, source); 
+        /// <summary>
+        /// Get the next reader in the pool
+        /// <para>If pool is empty, creates a new Reader</para>
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PooledReader RetrieveReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
         {
-            return GetReader(new ArraySegment<byte>(bytes), networkManager, source);
+            return RetrieveReader(new ArraySegment<byte>(bytes), networkManager, source);
         }
 
         /// <summary>
         /// Get the next reader in the pool or creates a new one if none are available.
         /// </summary>
-        public static PooledReader GetReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
+        [Obsolete("Use RetrieveReader(ArraySegment, NetworkManager, DataSource)")] //Remove on 2024/01/01
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PooledReader GetReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) => RetrieveReader(segment, networkManager, source);
+        /// <summary>
+        /// Get the next reader in the pool or creates a new one if none are available.
+        /// </summary>
+        public static PooledReader RetrieveReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
         {
             PooledReader result;
             if (_pool.Count > 0)
@@ -60,7 +73,13 @@ namespace FishNet.Serializing
         /// Puts reader back into pool
         /// <para>When pool is full, the extra reader is left for the GC</para>
         /// </summary>
-        public static void Recycle(PooledReader reader)
+        [Obsolete("Use Store(PooledReader)")] //Remove on 2024/01/01
+        public static void Recycle(PooledReader reader) => Store(reader);
+        /// <summary>
+        /// Puts reader back into pool
+        /// <para>When pool is full, the extra reader is left for the GC</para>
+        /// </summary>
+        public static void Store(PooledReader reader)
         {
             _pool.Push(reader);
         }

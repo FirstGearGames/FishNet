@@ -79,7 +79,14 @@ namespace FishNet.Observing
         /// True if the condition requires regular updates.
         /// </summary>
         /// <returns></returns>
-        public abstract bool Timed();
+        [Obsolete("Use GetConditionType()")] //Remove on 2024/01/01.
+        public virtual bool Timed() => false;
+        /// <summary>
+        /// How a condition is handled.
+        /// In a later release this will be set abstract.
+        /// </summary>
+        /// <returns></returns>
+        public virtual ObserverConditionType GetConditionType() => ObserverConditionType.Normal;
         /// <summary>
         /// Creates a clone of this condition to be instantiated.
         /// </summary>

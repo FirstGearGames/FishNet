@@ -34,7 +34,7 @@ namespace FishNet.Object
                 ReadPermission = readPermission;
                 Writers = new PooledWriter[TransportManager.CHANNEL_COUNT];
                 for (int i = 0; i < Writers.Length; i++)
-                    Writers[i] = WriterPool.GetWriter();
+                    Writers[i] = WriterPool.RetrieveWriter();
             }
 
             /// <summary>
@@ -303,12 +303,12 @@ namespace FishNet.Object
                         //If there is data to send.
                         if (channelWriter.Length > 0)
                         {
-                            using (PooledWriter headerWriter = WriterPool.GetWriter())
+                            using (PooledWriter headerWriter = WriterPool.RetrieveWriter())
                             {
                                 //Write the packetId and NB information.
                                 PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
                                 headerWriter.WritePacketId(packetId);
-                                PooledWriter dataWriter = WriterPool.GetWriter();
+                                PooledWriter dataWriter = WriterPool.RetrieveWriter();
                                 dataWriter.WriteNetworkBehaviour(this);
 
                                 /* SyncVars need length written regardless because amount
@@ -402,7 +402,7 @@ namespace FishNet.Object
 
             void WriteSyncType(Dictionary<uint, SyncBase> collection)
             {
-                using (PooledWriter syncTypeWriter = WriterPool.GetWriter())
+                using (PooledWriter syncTypeWriter = WriterPool.RetrieveWriter())
                 {
                     /* Since all values are being written everything is
                      * written in order so there's no reason to pass

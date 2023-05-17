@@ -193,7 +193,7 @@ namespace FishNet.Serializing
         /// </summary>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [Obsolete("Use ReadDictionaryAllocated.")]
+        [Obsolete("Use ReadDictionaryAllocated.")] //Remove on 2023/06/01
         public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>()
         {
             return ReadDictionaryAllocated<TKey, TValue>();
@@ -1094,7 +1094,7 @@ namespace FishNet.Serializing
                          * initialize it either way. Connections rarely come through
                          * without being in server/client side collection. */
                         else
-                            return new NetworkConnection(NetworkManager, value, true);
+                            return new NetworkConnection(NetworkManager, value, -1, true);
 
                     }
                     //Only server and not found.
@@ -1118,7 +1118,7 @@ namespace FishNet.Serializing
                     * initialize it either way. Connections rarely come through
                     * without being in server/client side collection. */
                     else
-                        return new NetworkConnection(NetworkManager, value, true);
+                        return new NetworkConnection(NetworkManager, value, -1, true);
                 }
 
             }

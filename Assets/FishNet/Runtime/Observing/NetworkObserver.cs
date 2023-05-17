@@ -3,6 +3,7 @@ using FishNet.Documenting;
 using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Transporting;
+using FishNet.Utility.Performance;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -14,6 +15,7 @@ namespace FishNet.Observing
     /// Controls which clients can see and get messages for an object.
     /// </summary>
     [DisallowMultipleComponent]
+    [RequireComponent(typeof(NetworkObject))]
     [AddComponentMenu("FishNet/Component/NetworkObserver")]
     public sealed class NetworkObserver : MonoBehaviour
     {
@@ -95,11 +97,11 @@ namespace FishNet.Observing
         /// <summary>
         /// Conditions under this component which are timed.
         /// </summary>
-        private List<ObserverCondition> _timedConditions = new List<ObserverCondition>();
+        private List<ObserverCondition> _timedConditions;
         /// <summary>
         /// Connections which have all non-timed conditions met.
         /// </summary>
-        private HashSet<NetworkConnection> _nonTimedMet = new HashSet<NetworkConnection>();
+        private HashSet<NetworkConnection> _nonTimedMet;
         /// <summary>
         /// NetworkObject this belongs to.
         /// </summary>
@@ -121,6 +123,10 @@ namespace FishNet.Observing
         /// ServerManager for this script.
         /// </summary>
         private ServerManager _serverManager;
+        /// <summary>
+        /// Becomes true if there are non-timed, normal conditions.
+        /// </summary>
+        private bool _hasNormalConditions;
         #endregion
 
         /// <summary>
@@ -131,7 +137,7 @@ namespace FishNet.Observing
         {
 
             _lastParentVisible = false;
-            _nonTimedMet.Clear();
+            _nonTimedMet?.Clear();
             UnregisterTimedConditions();
 
             if (_serverManager != null)
@@ -139,12 +145,21 @@ namespace FishNet.Observing
 
             if (_initializedPreviously)
             {
+                _hasNormalConditions = false;
+
                 foreach (ObserverCondition item in _observerConditions)
                 {
                     item.Deinitialize(destroyed);
                     //If also destroying then destroy SO reference.
                     if (destroyed)
                         Destroy(item);
+                }
+
+                //Clean up lists.
+                if (destroyed)
+                {
+                    CollectionCaches<ObserverCondition>.Store(_timedConditions);
+                    CollectionCaches<NetworkConnection>.Store(_nonTimedMet);
                 }
             }
 
@@ -170,6 +185,31 @@ namespace FishNet.Observing
                 if (!ignoringManager)
                     UpdateHostVisibility = networkObject.ObserverManager.UpdateHostVisibility;
 
+                /* Sort the conditions so that normal conditions are first.
+                 * This prevents normal conditions from being skipped if a timed
+                 * condition fails before the normal passed. 
+                 * 
+                 * Example: Let's say an object has a distance and scene condition, with
+                 * the distance condition being first. Normal conditions are only checked
+                 * as the change occurs, such as when the scene was loaded. So if the client
+                 * loaded into the scene and they were not within the distance the condition
+                 * iterations would skip remaining, which would be the scene condition. As
+                 * result normal conditions (non timed) would never be met since they are only
+                 * checked as-needed, in this case during a scene change.
+                 * 
+                 * By moving normal conditions to the front they will always be checked first
+                 * and timed can update at intervals per expectancy. This could also be resolved
+                 * by simply not exiting early when a condition fails but that's going to
+                 * cost hotpath performance where sorting is only done once. */
+                //Linq would be easier but less performant.
+                List<ObserverCondition> sortedConditions = CollectionCaches<ObserverCondition>.RetrieveList();
+
+                //Initialize collections.
+                _timedConditions = CollectionCaches<ObserverCondition>.RetrieveList();
+                _nonTimedMet = CollectionCaches<NetworkConnection>.RetrieveHashSet();
+
+                //Next index a sorted condition will be inserted into.
+                int nextSortedNormalConditionIndex = 0;
                 bool observerFound = false;
                 for (int i = 0; i < _observerConditions.Count; i++)
                 {
@@ -181,12 +221,41 @@ namespace FishNet.Observing
                          * not overwritten when the condition exist more than
                          * once in the scene. Double edged sword of using scriptable
                          * objects for conditions. */
-                        _observerConditions[i] = _observerConditions[i].Clone();
-                        ObserverCondition oc = _observerConditions[i];
-                        oc.Initialize(_networkObject);
-                        //If timed also register as containing timed conditions.
-                        if (oc.Timed())
-                            _timedConditions.Add(oc);
+                        ObserverCondition ocCopy = _observerConditions[i].Clone();
+                        _observerConditions[i] = ocCopy;
+
+                        //Condition type.
+                        ObserverConditionType oct = ocCopy.GetConditionType();
+
+                        //REMOVE ON 2024/01/01 THIS BLOCK v
+#pragma warning disable CS0618 // Type or member is obsolete
+                        bool timed = ocCopy.Timed() || (oct == ObserverConditionType.Timed);
+#pragma warning restore CS0618 // Type or member is obsolete
+                        if (timed)
+                        {
+                            oct = ObserverConditionType.Timed;
+                            sortedConditions.Add(ocCopy);
+                        }
+                        else
+                        {
+                            _hasNormalConditions = true;
+                            sortedConditions.Insert(nextSortedNormalConditionIndex++, ocCopy);
+                        }
+                        //REMOVE ON 2024/01/01 THIS BLOCK ^
+                        //REPLACE WITH THIS BLOCK ..v
+                        //if (oct == ObserverConditionType.Timed)
+                        //{ 
+                        //    oct = ObserverConditionType.Timed;
+                        //    sortedConditions.Add(ocCopy);
+                        //}
+                        //else
+                        //{ 
+                        //    _hasNormalConditions = true;
+                        //    sortedConditions.Insert(nextSortedNormalConditionIndex++, ocCopy);
+                        //}
+                        //REPLACE WITH THIS BLOCK ..^
+                        if (oct == ObserverConditionType.Timed)
+                            _timedConditions.Add(ocCopy);
                     }
                     else
                     {
@@ -195,10 +264,18 @@ namespace FishNet.Observing
                     }
                 }
 
+                //Store original collection and replace with one from cache.
+                CollectionCaches<ObserverCondition>.Store(_observerConditions);
+                _observerConditions = sortedConditions;
+
                 //No observers specified, do not need to take further action.
                 if (!observerFound)
                     return;
             }
+
+            //Initialize conditions.
+            for (int i = 0; i < _observerConditions.Count; i++)
+                _observerConditions[i].Initialize(_networkObject);
 
 
             RegisterTimedConditions();
@@ -235,40 +312,40 @@ namespace FishNet.Observing
             bool currentlyAdded = (_networkObject.Observers.Contains(connection));
             //True if all conditions are met.
             bool allConditionsMet = true;
-
-            //Only need to check beyond this if conditions exist.
-            if (_observerConditions.Count > 0)
+            /* If cnnection is owner then they can see the object. */
+            bool notOwner = (connection != _networkObject.Owner);
+            /* Only check conditions if not owner. Owner will always
+            * have visibility. */
+            if (notOwner)
             {
-                /* If cnnection is owner then they can see the object. */
-                bool notOwner = (connection != _networkObject.Owner);
+                bool parentVisible = true;
+                if (_networkObject.ParentNetworkObject != null)
+                    parentVisible = _networkObject.ParentNetworkObject.Observers.Contains(connection);
+                if (_networkObject.RuntimeParentNetworkObject != null)
+                    parentVisible &= _networkObject.RuntimeParentNetworkObject.Observers.Contains(connection);
 
-                /* Only check conditions if not owner. Owner will always
-                * have visibility. */
-                if (notOwner)
+                /* If parent is visible but was not previously
+                 * then unset timedOnly to make sure all conditions
+                 * are checked again. This ensures that the _nonTimedMet
+                 * collection is updated. */
+                if (parentVisible && !_lastParentVisible)
+                    timedOnly = false;
+                _lastParentVisible = parentVisible;
+
+                //If parent is not visible no further checks are required.
+                if (!parentVisible)
                 {
-                    bool parentVisible = true;
-                    if (_networkObject.ParentNetworkObject != null)
+                    allConditionsMet = false;
+                }
+                //Parent is visible, perform checks.
+                else
+                {
+                    //Only need to check beyond this if conditions exist.
+                    if (_observerConditions.Count > 0)
                     {
-                        parentVisible = _networkObject.ParentNetworkObject.Observers.Contains(connection);
-                        /* If parent is visible but was not previously
-                         * then unset timedOnly to make sure all conditions
-                         * are checked again. This ensures that the _nonTimedMet
-                         * collection is updated. */
-                        if (parentVisible && !_lastParentVisible)
-                            timedOnly = false;
-                        _lastParentVisible = parentVisible;
-                    }
-
-                    //If parent is not visible no further checks are required.
-                    if (!parentVisible)
-                    {
-                        allConditionsMet = false;
-                    }
-                    //Parent is visible, perform checks.
-                    else
-                    {
-                        //True if connection starts with meeting non-timed conditions.
-                        bool startNonTimedMet = _nonTimedMet.Contains(connection);
+                        /* True if all conditions are timed or
+                         * if connection has met non timed. */
+                        bool startNonTimedMet = (!_hasNormalConditions || _nonTimedMet.Contains(connection));
                         /* If a timed update an1d nonTimed
                          * have not been met then there's
                          * no reason to check timed. */
@@ -301,17 +378,20 @@ namespace FishNet.Observing
                                 if (!conditionMet)
                                 {
                                     allConditionsMet = false;
-                                    if (!condition.Timed())
+                                    if (condition.GetConditionType() != ObserverConditionType.Timed)
                                         nonTimedMet = false;
                                     break;
                                 }
                             }
 
-                            //If all conditions are being checked and nonTimedMet has updated.
-                            if (!timedOnly && (startNonTimedMet != nonTimedMet))
+                            //If nonTimedMet changed.
+                            if (startNonTimedMet != nonTimedMet)
                             {
+                                /* If the collection was iterated without breaks
+                                 * then add to nontimed met. */
                                 if (nonTimedMet)
                                     _nonTimedMet.Add(connection);
+                                //If there were breaks not all conditions were checked.
                                 else
                                     _nonTimedMet.Remove(connection);
                             }
@@ -332,7 +412,7 @@ namespace FishNet.Observing
         /// </summary>
         private void RegisterTimedConditions()
         {
-            if (_timedConditions.Count == 0)
+            if (_timedConditions == null || _timedConditions.Count == 0)
                 return;
             if (_registeredAsTimed)
                 return;
@@ -348,7 +428,7 @@ namespace FishNet.Observing
         /// </summary>
         private void UnregisterTimedConditions()
         {
-            if (_timedConditions.Count == 0)
+            if (_timedConditions == null || _timedConditions.Count == 0)
                 return;
             if (!_registeredAsTimed)
                 return;

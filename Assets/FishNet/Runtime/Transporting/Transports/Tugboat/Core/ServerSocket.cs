@@ -1,4 +1,5 @@
 using FishNet.Connection;
+using FishNet.Managing;
 using FishNet.Managing.Logging;
 using LiteNetLib;
 using LiteNetLib.Layers;
@@ -226,7 +227,23 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <returns>Returns string.empty if Id is not found.</returns>
         internal string GetConnectionAddress(int connectionId)
         {
+            if (GetConnectionState() != LocalConnectionState.Started)
+            {
+                string msg = "Server socket is not started.";
+                if (Transport == null)
+                    NetworkManager.StaticLogWarning(msg);
+                else
+                    Transport.NetworkManager.LogWarning(msg);
+                return string.Empty;
+            }
+
             NetPeer peer = GetNetPeer(connectionId, false);
+            if (peer == null)
+            { 
+                Transport.NetworkManager.LogWarning($"ConnectId {connectionId} returned a null NetPeer.");
+                return string.Empty;
+            }
+
             return peer.EndPoint.Address.ToString();
         }
 

@@ -11,38 +11,39 @@ namespace FishNet.Utility.Performance
     /// <summary>
     /// Holds cached Lists of value types.
     /// </summary>
-    public static class DisposableListCaches<T> where T : IDisposable
+    public static class DisposableCollectionCaches<T> where T : IDisposable
     {
-
         /// <summary>
-        /// Cache.
-        /// </summary>
-        private static Stack<List<T>> _listCache = new Stack<List<T>>();
-        
-        /// <summary>
-        /// Retrieves a List<T>.
+        /// Retrieves a collection.
         /// </summary>
         /// <returns></returns>
-        public static List<T> Retrieve()
-        {
-            if (_listCache.Count == 0)
-                return new List<T>();
-            else
-                return _listCache.Pop();
-        }
+        public static List<T> RetrieveList() => CollectionCaches<T>.RetrieveList();
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        /// <returns></returns>
+        public static HashSet<T> RetrieveHashSet() => CollectionCaches<T>.RetrieveHashSet();
 
         /// <summary>
-        /// Stores an instance of List<T>.
+        /// Stores a collection.
         /// </summary>
         /// <param name="value">Value to store.</param>
         public static void Store(List<T> value)
         {
             foreach (T item in value)
                 item.Dispose();
-            value.Clear();
-            _listCache.Push(value);
+            CollectionCaches<T>.Store(value);            
         }
-
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        public static void Store(HashSet<T> value)
+        {
+            foreach (T item in value)
+                item.Dispose();
+            CollectionCaches<T>.Store(value);
+        }
     }
 
     /// <summary>
@@ -51,52 +52,17 @@ namespace FishNet.Utility.Performance
     public static class DisposableObjectCaches<T> where T : IDisposable
     {
         /// <summary>
-        /// Cache.
-        /// </summary>
-        private static DisposableObjectCache<T> _objectCache = new DisposableObjectCache<T>();
-
-        /// <summary>
         /// Retrieves an instance of T.
         /// </summary>
-        public static T Retrieve() => _objectCache.Retrieve();
+        public static T Retrieve() => ObjectCaches<T>.Retrieve();
         /// <summary>
         /// Stores an instance of T.
         /// </summary>
         /// <param name="value">Value to store.</param>
-        public static void Store(T value) => _objectCache.Store(value);
-    }
-
-    /// <summary>
-    /// A cache for a disposable type.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class DisposableObjectCache<T> where T : IDisposable
-    {
-        /// <summary>
-        /// Stack to use.
-        /// </summary>
-        private Stack<T> _stack = new Stack<T>();
-
-        /// <summary>
-        /// Returns a value from the stack or creates an instance when the stack is empty.
-        /// </summary>
-        /// <returns></returns>
-        public T Retrieve()
-        {
-            if (_stack.Count == 0)
-                return Activator.CreateInstance<T>();
-            else
-                return _stack.Pop();
-        }
-
-        /// <summary>
-        /// Stores a value to the stack.
-        /// </summary>
-        /// <param name="value"></param>
-        public void Store(T value)
+        public static void Store(T value)
         {
             value.Dispose();
-            _stack.Push(value);
+            ObjectCaches<T>.Store(value);
         }
     }
     #endregion
@@ -109,24 +75,70 @@ namespace FishNet.Utility.Performance
     {
 
         /// <summary>
-        /// Cache.
+        /// Cache for lists.
         /// </summary>
-        private static Stack<List<T>> _listCache = new Stack<List<T>>();
+        private readonly static Stack<List<T>> _listCache = new Stack<List<T>>();
+        /// <summary>
+        /// Cache for hashset.
+        /// </summary>
+        private readonly static Stack<HashSet<T>> _hashsetCache = new Stack<HashSet<T>>();
 
         /// <summary>
-        /// Retrieves a List<T>.
+        /// Retrieves a collection.
         /// </summary>
         /// <returns></returns>
-        public static List<T> Retrieve()
+        public static List<T> RetrieveList()
         {
             if (_listCache.Count == 0)
                 return new List<T>();
             else
                 return _listCache.Pop();
         }
+        /// <summary>
+        /// Retrieves a collection adding one entry.
+        /// </summary>
+        /// <returns></returns>
+        public static List<T> RetrieveList(T entry)
+        {
+            List<T> result;
+            if (_listCache.Count == 0)
+                result =  new List<T>();
+            else
+               result = _listCache.Pop();
+
+            result.Add(entry);
+            return result;
+        }
 
         /// <summary>
-        /// Stores an instance of List<T>.
+        /// Retrieves a HashSet<T>.
+        /// </summary>
+        /// <returns></returns>
+        public static HashSet<T> RetrieveHashSet()
+        {
+            if (_hashsetCache.Count == 0)
+                return new HashSet<T>();
+            else
+                return _hashsetCache.Pop();
+        }
+        /// <summary>
+        /// Retrieves a collection adding one entry.
+        /// </summary>
+        /// <returns></returns>
+        public static HashSet<T> RetrieveHashSet(T entry)
+        {
+            HashSet<T> result;
+            if (_hashsetCache.Count == 0)
+                result = new HashSet<T>();
+            else
+                result = _hashsetCache.Pop();
+
+            result.Add(entry);
+            return result;
+        }
+
+        /// <summary>
+        /// Stores a collection.
         /// </summary>
         /// <param name="value">Value to store.</param>
         public static void Store(List<T> value)
@@ -134,46 +146,33 @@ namespace FishNet.Utility.Performance
             value.Clear();
             _listCache.Push(value);
         }
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        public static void Store(HashSet<T> value)
+        {
+            value.Clear();
+            _hashsetCache.Push(value);
+        }
 
     }
 
     /// <summary>
-    /// Holds cached diposable types.
+    /// Holds cached types.
     /// </summary>
     public static class ObjectCaches<T>
     {
         /// <summary>
-        /// Cache.
-        /// </summary>
-        private static ObjectCache<T> _objectCache = new ObjectCache<T>();
-
-        /// <summary>
-        /// Retrieves an instance of T.
-        /// </summary>
-        public static T Retrieve() => _objectCache.Retrieve();
-        /// <summary>
-        /// Stores an instance of T.
-        /// </summary>
-        /// <param name="value">Value to store.</param>
-        public static void Store(T value) => _objectCache.Store(value);
-    }
-
-    /// <summary>
-    /// A cache for a disposable type.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class ObjectCache<T>
-    {
-        /// <summary>
         /// Stack to use.
         /// </summary>
-        private Stack<T> _stack = new Stack<T>();
+        private readonly static Stack<T> _stack = new Stack<T>();
 
         /// <summary>
         /// Returns a value from the stack or creates an instance when the stack is empty.
         /// </summary>
         /// <returns></returns>
-        public T Retrieve()
+        public static T Retrieve()
         {
             if (_stack.Count == 0)
                 return Activator.CreateInstance<T>();
@@ -185,7 +184,7 @@ namespace FishNet.Utility.Performance
         /// Stores a value to the stack.
         /// </summary>
         /// <param name="value"></param>
-        public void Store(T value)
+        public static void Store(T value)
         {
             _stack.Push(value);
         }

@@ -17,7 +17,6 @@ namespace FishNet.Managing.Transporting
         public bool IsLocalTransport(int connectionId) => (Transport == null) ? false : Transport.IsLocalTransport(connectionId);
         #endregion
 
-
         /// <summary>
         /// Gets transport on index.
         /// Commonly index will be 0 unless using Multipass.

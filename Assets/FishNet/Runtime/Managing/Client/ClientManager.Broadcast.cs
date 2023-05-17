@@ -164,7 +164,7 @@ namespace FishNet.Managing.Client
                 return;
             }
 
-            using (PooledWriter writer = WriterPool.GetWriter())
+            using (PooledWriter writer = WriterPool.RetrieveWriter())
             {
                 Broadcasts.WriteBroadcast<T>(writer, message, channel);
                 ArraySegment<byte> segment = writer.GetArraySegment();

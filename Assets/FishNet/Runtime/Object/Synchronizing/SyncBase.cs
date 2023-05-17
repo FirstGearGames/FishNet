@@ -249,7 +249,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Sets current value as client.
         /// </summary>
         /// <param name="reader"></param>
-        [Obsolete("Use Read(PooledReader, bool).")]
+        [Obsolete("Use Read(PooledReader, bool).")] //Remove on 2023/06/01
         public virtual void Read(PooledReader reader) { }
         /// <summary>
         /// Sets current value as server or client.

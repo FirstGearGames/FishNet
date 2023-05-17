@@ -78,7 +78,9 @@ namespace FishNet.Object.Editing
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_graphicalObject);
+                GUI.enabled = false;
                 EditorGUILayout.PropertyField(_useStates);
+                GUI.enabled = true;
                 EditorGUILayout.LabelField("Owner", EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_ownerInterpolation, new GUIContent("Interpolation"));
@@ -92,9 +94,8 @@ namespace FishNet.Object.Editing
                 EditorGUI.indentLevel--;
                 EditorGUILayout.LabelField("Spectator", EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
-                //EditorGUILayout.PropertyField(_futurePredictionTime);
+                GUI.enabled = false;
                 EditorGUILayout.PropertyField(_spectatorAdaptiveInterpolation, new GUIContent("Adaptive Interpolation"));
-
                 //if (_futurePredictionTime.floatValue <= 0f)
                 if (_spectatorAdaptiveInterpolation.boolValue == false)
                 {
@@ -116,6 +117,7 @@ namespace FishNet.Object.Editing
                     }
                     EditorGUI.indentLevel--;
                 }
+                GUI.enabled = true;
 
                 EditorGUI.indentLevel--;
                 EditorGUI.indentLevel--;

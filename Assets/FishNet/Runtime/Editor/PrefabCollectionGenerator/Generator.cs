@@ -402,10 +402,21 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     recursive = false;
                 }
 
+                p = GetPlatformPath(p);
                 results.Add(new SpecifiedFolder(p, recursive));
             }
 
             return results;
+        }
+
+        internal static string GetPlatformPath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return path;
+
+            path = path.Replace(@"\"[0], Path.DirectorySeparatorChar);
+            path = path.Replace(@"/"[0], Path.DirectorySeparatorChar);
+            return path;
         }
 
         /// <summary>
@@ -417,8 +428,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 settings = Configuration.Configurations.PrefabGenerator;
 
             //Load the prefab collection 
-            string defaultPrefabsPath = settings.DefaultPrefabObjectsPath;
-            defaultPrefabsPath = defaultPrefabsPath.Replace(@"\", "/");
+            string defaultPrefabsPath = settings.DefaultPrefabObjectsPath_Platform;
             string fullDefaultPrefabsPath = (defaultPrefabsPath.Length > 0) ? Path.GetFullPath(defaultPrefabsPath) : string.Empty;
             
             //If cached prefabs is not the same path as assetPath.
@@ -525,7 +535,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     return;
 
                 //normalizes path.
-                string dpoPath = Path.GetFullPath(settings.DefaultPrefabObjectsPath);
+                string dpoPath = Path.GetFullPath(settings.DefaultPrefabObjectsPath_Platform);
                 //If total changes is 1 and the only changed file is the default prefab collection then do nothing.
                 if (totalChanges == 1)
                 {

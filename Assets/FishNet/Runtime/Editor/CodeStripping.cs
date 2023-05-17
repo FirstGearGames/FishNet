@@ -1,16 +1,15 @@
-﻿
+﻿#if UNITY_EDITOR
+
 using FishNet.Configuring;
 using System.IO;
 using UnityEngine;
 using System.Xml.Serialization;
 
-#if UNITY_EDITOR
 using FishNet.Editing.PrefabCollectionGenerator;
 using UnityEditor.Compilation;
 using UnityEditor.Build.Reporting;
 using UnityEditor;
 using UnityEditor.Build;
-#endif
 
 namespace FishNet.Configuring
 {
@@ -68,7 +67,6 @@ namespace FishNet.Configuring
 
         private static object _compilationContext;
         public int callbackOrder => 0;
-#if UNITY_EDITOR
 
         public void OnPreprocessBuild(BuildReport report)
         {
@@ -112,7 +110,7 @@ namespace FishNet.Configuring
             
                 BuildingEnded();
         }
-#endif
     }
 
 }
+#endif

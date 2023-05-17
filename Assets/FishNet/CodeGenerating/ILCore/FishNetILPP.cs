@@ -28,7 +28,7 @@ namespace FishNet.CodeGenerating.ILCore
                 return false;
             if (compiledAssembly.Name.StartsWith("UnityEngine."))
                 return false;
-            if (compiledAssembly.Name.StartsWith("UnityEditor."))
+            if (compiledAssembly.Name.StartsWith("UnityEditor.")) 
                 return false;
             if (compiledAssembly.Name.Contains("Editor"))
                 return false; 
@@ -60,7 +60,7 @@ namespace FishNet.CodeGenerating.ILCore
 
             CodegenSession session = new CodegenSession();
             if (!session.Initialize(assemblyDef.MainModule))
-                return null;
+                return null; 
 
             bool modified = false;
 

@@ -2,6 +2,7 @@
 using FishNet.Component.Prediction;
 using FishNet.Object;
 using FishNet.Transporting;
+using FishNet.Utility;
 using FishNet.Utility.Extension;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -19,7 +20,10 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private class GoalData
         {
-            public bool IsActive;
+            /// <summary>
+            /// True if this GoalData is valid.
+            /// </summary>
+            public bool IsValid;
             /// <summary>
             /// LocalTick this data is for.
             /// </summary>
@@ -27,11 +31,11 @@ namespace FishNet.Object.Prediction
             /// <summary>
             /// Data on how fast to move to transform values.
             /// </summary>
-            public RateData Rates = new RateData();
+            public RateData MoveRates = new RateData();
             /// <summary>
             /// Transform values to move towards.
             /// </summary> 
-            public TransformProperties Transforms;
+            public TransformPropertiesCls TransformProperties = new TransformPropertiesCls();
 
             public GoalData() { }
             /// <summary>
@@ -40,9 +44,9 @@ namespace FishNet.Object.Prediction
             public void Reset()
             {
                 LocalTick = 0;
-                Transforms.Reset();
-                Rates.Reset();
-                IsActive = false;
+                TransformProperties.Reset();
+                MoveRates.Reset();
+                IsValid = false;
             }
 
             /// <summary>
@@ -51,17 +55,17 @@ namespace FishNet.Object.Prediction
             public void Update(GoalData gd)
             {
                 LocalTick = gd.LocalTick;
-                Rates.Update(gd.Rates);
-                Transforms.Update(gd.Transforms);
-                IsActive = true;
+                MoveRates.Update(gd.MoveRates);
+                TransformProperties.Update(gd.TransformProperties);
+                IsValid = true;
             }
 
-            public void Update(uint localTick, RateData rd, TransformProperties tp)
+            public void Update(uint localTick, RateData rd, TransformPropertiesCls tp)
             {
                 LocalTick = localTick;
-                Rates = rd;
-                Transforms = tp;
-                IsActive = true;
+                MoveRates = rd;
+                TransformProperties = tp;
+                IsValid = true;
             }
         }
         /// <summary>
@@ -121,10 +125,6 @@ namespace FishNet.Object.Prediction
 
         #region Private.
         /// <summary>
-        /// How quickly to move towards goal values.
-        /// </summary>
-        private MoveRates _moveRates;
-        /// <summary>
         /// Offsets of the graphical object when this was initialized.
         /// </summary>
         private TransformProperties _initializedOffsets;
@@ -137,22 +137,18 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private GoalData _currentGoalData = new GoalData();
         /// <summary>
-        /// How far in the past to keep the graphical object.
-        /// </summary>
-        private uint _interpolation = 4;
-        /// <summary>
-        /// Sets the interpolation value to use when the owner of this object.
-        /// </summary>
-        /// <param name="value"></param>
-        public void SetInterpolation(uint value) => _interpolation = value;
-        /// <summary>
         /// GoalDatas to move towards.
         /// </summary>
-        private List<GoalData> _goalDatas = new List<GoalData>();
+        private RingBuffer<GoalData> _goalDatas = new RingBuffer<GoalData>();
         /// <summary>
         /// Offsets of the graphical object prior to the NetworkObject transform moving.
         /// </summary>
         private TransformProperties _interpolationOffsets;
+        /// <summary>
+        /// How far in the past to keep the graphical object.
+        /// This value changes based on a number of factors.
+        /// </summary>
+        private uint _interpolation = 4;
         /// <summary>
         /// Cache of GoalDatas to prevent allocations.
         /// </summary>
@@ -169,6 +165,14 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private const float UNDERFLOW_MULTIPLIER = 0.02f;
         #endregion
+
+        public AdaptiveInterpolationSmoother()
+        {
+            /* Initialize for up to 50
+             * goal datas. Anything beyond that
+             * is unreasonable. */
+            _goalDatas.Initialize(50);
+        }
 
         /// <summary>
         /// Initializes this for use.
@@ -198,7 +202,7 @@ namespace FishNet.Object.Prediction
             if (CanSmooth())
             {
                 Transform t = _smoothingData.NetworkObject.transform;
-                _interpolationOffsets.Update(t.position, t.rotation);
+               _interpolationOffsets.Update(t.position, t.rotation);
             }
         }
 
@@ -215,7 +219,7 @@ namespace FishNet.Object.Prediction
         }
 
         public void OnPreReplay(uint tick)
-        {
+        {            
             if (CanSmooth())
             {
                 CreateGoalData(tick, false);
@@ -285,7 +289,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns if there is any change between two datas.
         /// </summary>
-        private bool HasChanged(TransformProperties a, TransformProperties b)
+        private bool HasChanged(TransformPropertiesCls a, TransformPropertiesCls b)
         {
             return (a.Position != b.Position) ||
                 (a.Rotation != b.Rotation);
@@ -294,7 +298,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns if the transform differs from td.
         /// </summary>
-        private bool HasChanged(TransformProperties tp)
+        private bool HasChanged(TransformPropertiesCls tp)
         {
             Transform t = _smoothingData.NetworkObject.transform;
             bool changed = (tp.Position != t.position) || (tp.Rotation != t.rotation);
@@ -303,13 +307,14 @@ namespace FishNet.Object.Prediction
         }
 
         /// <summary>
-        /// Sets CurrentGoalData to the next in queue.
+        /// Sets CurrentGoalData to the next in queue. Returns if was set successfully.
         /// </summary>
-        private void SetCurrentGoalData(bool afterMove)
+        private bool SetCurrentGoalData()
         {
             if (_goalDatas.Count == 0)
             {
-                _currentGoalData.IsActive = false;
+                _currentGoalData.IsValid = false;
+                return false;
             }
             else
             {
@@ -317,7 +322,8 @@ namespace FishNet.Object.Prediction
                 _currentGoalData.Update(_goalDatas[0]);
                 //Store old and remove it.
                 StoreGoalData(_goalDatas[0]);
-                _goalDatas.RemoveAt(0);
+                _goalDatas.RemoveRange(true, 1);
+                return true;
             }
         }
 
@@ -330,11 +336,9 @@ namespace FishNet.Object.Prediction
             /* If the current goal data is not active then
              * try to set a new one. If none are available
              * it will remain inactive. */
-            if (!_currentGoalData.IsActive)
+            if (!_currentGoalData.IsValid)
             {
-                SetCurrentGoalData(false);
-                //If still inactive then it could not be updated.
-                if (!_currentGoalData.IsActive)
+                if (!SetCurrentGoalData())
                     return;
             }
 
@@ -343,8 +347,8 @@ namespace FishNet.Object.Prediction
              * Any checks which would stop it from moving be it client
              * auth and owner, or server controlled and server, ect,
              * would have already been run. */
-            TransformProperties tp = _currentGoalData.Transforms;
-            RateData rd = _currentGoalData.Rates;
+            TransformPropertiesCls tp = _currentGoalData.TransformProperties;
+            RateData rd = _currentGoalData.MoveRates;
 
             int queueCount = _goalDatas.Count;
             /* Begin moving even if interpolation buffer isn't
@@ -411,15 +415,15 @@ namespace FishNet.Object.Prediction
             {
                 float leftOver = Mathf.Abs(rd.TimeRemaining);
                 //Set to next goal data if available.
-                SetCurrentGoalData(true);
-
                 //New data was set.
-                if (_currentGoalData.IsActive)
+                if (SetCurrentGoalData())
                 {
                     if (leftOver > 0f)
                         MoveToTarget(leftOver);
                 }
-                //No more in buffer, see if can extrapolate.
+                /* No more in buffer. If graphical is not lined up
+                 * yet then set current back to valid
+                 * so another move can be performed. */
                 else
                 {
                     /* Everything should line up when
@@ -428,7 +432,7 @@ namespace FishNet.Object.Prediction
                      * somehow, then set goaldata active again to continue
                      * moving it until it lines up with the goal. */
                     if (!GraphicalObjectMatches(tp.Position, tp.Rotation))
-                        _currentGoalData.IsActive = true;
+                        _currentGoalData.IsValid = true;
                 }
             }
         }
@@ -454,9 +458,9 @@ namespace FishNet.Object.Prediction
              * unreliable packet. When this happens no change has occurred
              * and the distance of change woudl also be 0; this prevents
              * the NT from moving. Only need to compare data if channel is reliable. */
-            if (channel == Channel.Reliable && HasChanged(prevGoalData.Transforms, nextGoalData.Transforms))
+            if (channel == Channel.Reliable && HasChanged(prevGoalData.TransformProperties, nextGoalData.TransformProperties))
             {
-                nextGoalData.Rates.Update(prevGoalData.Rates);
+                nextGoalData.MoveRates.Update(prevGoalData.MoveRates);
                 return;
             }
 
@@ -469,13 +473,13 @@ namespace FishNet.Object.Prediction
 
             uint tickDifference = (nextGoalData.LocalTick - lastTick);
             float timePassed = (float)_smoothingData.NetworkObject.TimeManager.TicksToTime(tickDifference);
-            RateData nextRd = nextGoalData.Rates;
+            RateData nextRd = nextGoalData.MoveRates;
 
             //Distance between properties.
             float distance;
             //Position.
-            Vector3 lastPosition = prevGoalData.Transforms.Position;
-            distance = Vector3.Distance(lastPosition, nextGoalData.Transforms.Position);
+            Vector3 lastPosition = prevGoalData.TransformProperties.Position;
+            distance = Vector3.Distance(lastPosition, nextGoalData.TransformProperties.Position);
             //If distance teleports assume rest do.
             if (_smoothingData.TeleportThreshold != MoveRates.UNSET_VALUE && distance >= _smoothingData.TeleportThreshold)
             {
@@ -486,27 +490,30 @@ namespace FishNet.Object.Prediction
             //Position distance already calculated.
             float positionRate = (distance / timePassed);
             //Rotation.
-            distance = prevGoalData.Transforms.Rotation.Angle(nextGoalData.Transforms.Rotation, true);
+            distance = prevGoalData.TransformProperties.Rotation.Angle(nextGoalData.TransformProperties.Rotation, true);
             float rotationRate = (distance / timePassed);
 
             /* If no speed then snap just in case.
              * 0f could be from floating errors. */
             if (positionRate == 0f)
             {
-                Debug.Log("Setting position instant.");
+                if (!_smoothingData.NetworkObject.IsServer)
+                    Debug.Log("Setting position instant.");
                 positionRate = MoveRates.INSTANT_VALUE;
             }
             if (rotationRate == 0f)
             {
-                Debug.Log("Setting rotation instant.");
+                if (!_smoothingData.NetworkObject.IsServer)
+                    Debug.Log("Setting rotation instant.");
                 rotationRate = MoveRates.INSTANT_VALUE;
             }
 
             nextRd.Update(positionRate, rotationRate, tickDifference, timePassed);
             nextRd.Position = 1f;
-            Debug.Log("TickDifference " + tickDifference + " > TimePassed " + timePassed);
+            // Debug.Log("TickDifference " + tickDifference + " > TimePassed " + timePassed);
         }
-        #endregion       
+        #endregion
+
 
         /// <summary>
         /// Creates a new goal data for tick. The result will be placed into the goalDatas queue at it's proper position.
@@ -514,6 +521,10 @@ namespace FishNet.Object.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CreateGoalData(uint tick, bool postTick)
         {
+            //Debug
+            if (!postTick)
+                return;
+
             /* It's possible a removed entry would void further
              * logic so remove excess entires first. */
 
@@ -521,14 +532,14 @@ namespace FishNet.Object.Prediction
              * This could create a starting jitter but it will ensure
              * the buffer does not fill too much. The buffer next should
              * actually get unreasonably high but rather safe than sorry. */
-            int maximumBufferAllowance = ((int)_interpolation * 8);
+            int maximumBufferAllowance = ((int)_interpolation * 5);
             int removedBufferCount = (_goalDatas.Count - maximumBufferAllowance);
             //If there are some to remove.
             if (removedBufferCount > 0)
             {
                 for (int i = 0; i < removedBufferCount; i++)
-                    StoreGoalData(_goalDatas[0 + i]);
-                _goalDatas.RemoveRange(0, removedBufferCount);
+                    StoreGoalData(_goalDatas[i]);
+                _goalDatas.RemoveRange(true, removedBufferCount);
             }
 
             uint currentGoalDataTick = _currentGoalData.LocalTick;
@@ -536,111 +547,99 @@ namespace FishNet.Object.Prediction
             if (tick <= currentGoalDataTick)
                 return;
 
-            //GoalData from previous calculation.
-            GoalData prevGoalData;
+
             int datasCount = _goalDatas.Count;
+            /* GoalData to use as created for tick before the one being processed.
+            * This is used to compare distances, changes, ect. */
+            GoalData prevGoalData = null;
+
+
             /* Where to insert next data. This could have value
              * somewhere in the middle of goalDatas if the tick
              * is a replay rather than post tick. */
-            int injectionIndex = datasCount + 1;
+            //int injectionIndex = -1;
+
+
             //If being added at the end of a tick rather than from replay.
             if (postTick)
             {
-                //Becomes true if transform differs from previous data.
-                bool changed;
-
                 //If there is no goal data then create one using pretick data.
                 if (datasCount == 0)
-                {
                     prevGoalData = MakeGoalDataFromPreTickTransform();
-                    changed = HasChanged(prevGoalData.Transforms);
-                }
                 //If there's goal datas grab the last, it will always be the tick before.
                 else
-                {
                     prevGoalData = _goalDatas[datasCount - 1];
-                    /* If the tick is not exactly 1 past the last
-                     * then there's gaps in the saved values. This can
-                     * occur if the transform went idle and the buffer
-                     * hasn't emptied out yet. When this occurs use the
-                     * preTick data to calculate differences. */
-                    if (tick - prevGoalData.LocalTick != 1)
-                    {
-                        prevGoalData = MakeGoalDataFromPreTickTransform();
-                    }
 
-                    changed = HasChanged(prevGoalData.Transforms);
-                }
-
-                //Nothing has changed so no further action is required.
-                if (!changed)
-                {
-                    if (datasCount > 0 && prevGoalData != _goalDatas[datasCount - 1])
-                        StoreGoalData(prevGoalData);
-                    return;
-                }
+                //bool changed = HasChanged(prevGoalData.TransformProperties);
+                ////Nothing has changed so no further action is required.
+                //if (!changed)
+                //{
+                //    if (datasCount > 0 && prevGoalData != _goalDatas[datasCount - 1])
+                //        StoreGoalData(prevGoalData);
+                //    return;
+                //}
             }
             //Not post tick so it's from a replay.
             else
             {
-                int prevIndex = -1;
-                /* If the tick is 1 past current goalData
-                 * then it's the next in line for smoothing
-                 * from the current.
-                 * When this occurs use currentGoalData as
-                 * the previous. */
-                if (tick == (currentGoalDataTick + 1))
-                {
-                    prevGoalData = _currentGoalData;
-                    injectionIndex = 0;
-                }
-                //When not the next in line find out where to place data.
-                else
-                {
-                    if (tick > 0)
-                        prevGoalData = GetGoalData(tick - 1, out prevIndex);
-                    //Cannot find prevGoalData if tick is 0.
-                    else
-                        prevGoalData = null;
-                }
+                //int prevIndex = -1;
+                ///* If the tick is 1 past current goalData
+                // * then it's the next in line for smoothing
+                // * from the current.
+                // * When this occurs use currentGoalData as
+                // * the previous. */
+                //if (tick == (currentGoalDataTick + 1))
+                //{
+                //    prevGoalData = _currentGoalData;
+                //    injectionIndex = 0;
+                //}
+                ////When not the next in line find out where to place data.
+                //else
+                //{
+                //    if (tick > 0)
+                //        prevGoalData = GetGoalData(tick - 1, out prevIndex);
+                //    //Cannot find prevGoalData if tick is 0.
+                //    else
+                //        prevGoalData = null;
+                //}
 
-                //If previous goalData was found then inject just past the previous value.
-                if (prevIndex != -1)
-                    injectionIndex = prevIndex + 1;
+                ////If previous goalData was found then inject just past the previous value.
+                //if (prevIndex != -1)
+                //    injectionIndex = prevIndex + 1;
 
-                /* Should previous goalData be null then it could not be found.
-                 * Create a new previous goal data based on rigidbody state
-                 * during pretick. */
-                if (prevGoalData == null)
-                {
-                    //Create a goaldata based on information. If it differs from pretick then throw.
-                    GoalData gd = RetrieveGoalData();
-                    gd.Transforms.Update(_interpolationOffsets);
+                ///* Should previous goalData be null then it could not be found.
+                // * Create a new previous goal data based on rigidbody state
+                // * during pretick. */
+                //if (prevGoalData == null)
+                //{
+                //    //Create a goaldata based on information. If it differs from pretick then throw.
+                //    GoalData gd = RetrieveGoalData();
+                //    gd.TransformProperties.Update(_interpolationOffsets);
 
-                    if (HasChanged(gd.Transforms))
-                    {
-                        prevGoalData = gd;
-                    }
-                    else
-                    {
-                        StoreGoalData(gd);
-                        return;
-                    }
-                }
-                /* Previous goal data is not active.
-                 * This should not be possible but this
-                 * is here as a sanity check anyway. */
-                else if (!prevGoalData.IsActive)
-                {
-                    return;
-                }
+                //    if (HasChanged(gd.TransformProperties))
+                //    {
+                //        prevGoalData = gd;
+                //    }
+                //    else
+                //    {
+                //        StoreGoalData(gd);
+                //        return;
+                //    }
+                //}
+                ///* Previous goal data is not active.
+                // * This should not be possible but this
+                // * is here as a sanity check anyway. */
+                //else if (!prevGoalData.IsValid)
+                //{
+                //    return;
+                //}
             }
 
             //Begin building next goal data.
             GoalData nextGoalData = RetrieveGoalData();
             nextGoalData.LocalTick = tick;
             //Set next transform data.
-            TransformProperties nextTp = default;
+            TransformPropertiesCls nextTp = nextGoalData.TransformProperties;
             nextTp.Update(_smoothingData.NetworkObject.transform);
 
             /* Reset properties if smoothing is not enabled
@@ -651,28 +650,197 @@ namespace FishNet.Object.Prediction
             if (!_smoothingData.SmoothRotation)
                 nextTp.Rotation = _initializedOffsets.Rotation;
 
-            nextGoalData.Transforms = nextTp;
+            nextGoalData.TransformProperties = nextTp;
 
             //Calculate rates for prev vs next data.
             SetCalculatedRates(prevGoalData, nextGoalData, Channel.Unreliable);
-            /* If injectionIndex would place at the end
-             * then add. to goalDatas. */
-            if (injectionIndex >= _goalDatas.Count)
-                _goalDatas.Add(nextGoalData);
-            //Otherwise insert into the proper location.
-            else
-                _goalDatas[injectionIndex].Update(nextGoalData);
+            _goalDatas.Add(nextGoalData);
+
+            ///* If injectionIndex would place at the end
+            // * then add. to goalDatas. */
+            //if (injectionIndex >= _goalDatas.Count)
+            //    _goalDatas.Add(nextGoalData);
+            ////Otherwise insert into the proper location.
+            //else
+            //    _goalDatas[injectionIndex].Update(nextGoalData);
 
             //Makes previous goal data from transforms pretick values.
             GoalData MakeGoalDataFromPreTickTransform()
             {
                 GoalData gd = RetrieveGoalData();
                 //RigidbodyData contains the data from preTick.
-                gd.Transforms.Update(_initializedOffsets);
+                gd.TransformProperties.Update(_interpolationOffsets);
                 //No need to update rates because this is just a starting point reference for interpolation.
                 return gd;
             }
         }
+
+
+        ///// <summary>
+        ///// Creates a new goal data for tick. The result will be placed into the goalDatas queue at it's proper position.
+        ///// </summary>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public void CreateGoalData(uint tick, bool postTick)
+        //{
+        //    /* It's possible a removed entry would void further
+        //     * logic so remove excess entires first. */
+
+        //    /* Remove entries which are excessive to the buffer.
+        //     * This could create a starting jitter but it will ensure
+        //     * the buffer does not fill too much. The buffer next should
+        //     * actually get unreasonably high but rather safe than sorry. */
+        //    int maximumBufferAllowance = ((int)_interpolation * 8);
+        //    int removedBufferCount = (_goalDatas.Count - maximumBufferAllowance);
+        //    //If there are some to remove.
+        //    if (removedBufferCount > 0)
+        //    {
+        //        for (int i = 0; i < removedBufferCount; i++)
+        //            StoreGoalData(_goalDatas[0 + i]);
+        //        _goalDatas.RemoveRange(0, removedBufferCount);
+        //    }
+
+        //    uint currentGoalDataTick = _currentGoalData.LocalTick;
+        //    //Tick has already been interpolated past, no reason to process it.
+        //    if (tick <= currentGoalDataTick)
+        //        return;
+
+        //    //GoalData from previous calculation.
+        //    GoalData prevGoalData;
+        //    int datasCount = _goalDatas.Count;
+        //    /* Where to insert next data. This could have value
+        //     * somewhere in the middle of goalDatas if the tick
+        //     * is a replay rather than post tick. */
+        //    int injectionIndex = datasCount + 1;
+        //    //If being added at the end of a tick rather than from replay.
+        //    if (postTick)
+        //    {
+        //        //Becomes true if transform differs from previous data.
+        //        bool changed;
+
+        //        //If there is no goal data then create one using pretick data.
+        //        if (datasCount == 0)
+        //        {
+        //            prevGoalData = MakeGoalDataFromPreTickTransform();
+        //            changed = HasChanged(prevGoalData.TransformProperties);
+        //        }
+        //        //If there's goal datas grab the last, it will always be the tick before.
+        //        else
+        //        {
+        //            prevGoalData = _goalDatas[datasCount - 1];
+        //            /* If the tick is not exactly 1 past the last
+        //             * then there's gaps in the saved values. This can
+        //             * occur if the transform went idle and the buffer
+        //             * hasn't emptied out yet. When this occurs use the
+        //             * preTick data to calculate differences. */
+        //            if (tick - prevGoalData.LocalTick != 1)
+        //            {
+        //                prevGoalData = MakeGoalDataFromPreTickTransform();
+        //            }
+
+        //            changed = HasChanged(prevGoalData.TransformProperties);
+        //        }
+
+        //        //Nothing has changed so no further action is required.
+        //        if (!changed)
+        //        {
+        //            if (datasCount > 0 && prevGoalData != _goalDatas[datasCount - 1])
+        //                StoreGoalData(prevGoalData);
+        //            return;
+        //        }
+        //    }
+        //    //Not post tick so it's from a replay.
+        //    else
+        //    {
+        //        int prevIndex = -1;
+        //        /* If the tick is 1 past current goalData
+        //         * then it's the next in line for smoothing
+        //         * from the current.
+        //         * When this occurs use currentGoalData as
+        //         * the previous. */
+        //        if (tick == (currentGoalDataTick + 1))
+        //        {
+        //            prevGoalData = _currentGoalData;
+        //            injectionIndex = 0;
+        //        }
+        //        //When not the next in line find out where to place data.
+        //        else
+        //        {
+        //            if (tick > 0)
+        //                prevGoalData = GetGoalData(tick - 1, out prevIndex);
+        //            //Cannot find prevGoalData if tick is 0.
+        //            else
+        //                prevGoalData = null;
+        //        }
+
+        //        //If previous goalData was found then inject just past the previous value.
+        //        if (prevIndex != -1)
+        //            injectionIndex = prevIndex + 1;
+
+        //        /* Should previous goalData be null then it could not be found.
+        //         * Create a new previous goal data based on rigidbody state
+        //         * during pretick. */
+        //        if (prevGoalData == null)
+        //        {
+        //            //Create a goaldata based on information. If it differs from pretick then throw.
+        //            GoalData gd = RetrieveGoalData();
+        //            gd.TransformProperties.Update(_interpolationOffsets);
+
+        //            if (HasChanged(gd.TransformProperties))
+        //            {
+        //                prevGoalData = gd;
+        //            }
+        //            else
+        //            {
+        //                StoreGoalData(gd);
+        //                return;
+        //            }
+        //        }
+        //        /* Previous goal data is not active.
+        //         * This should not be possible but this
+        //         * is here as a sanity check anyway. */
+        //        else if (!prevGoalData.IsValid)
+        //        {
+        //            return;
+        //        }
+        //    }
+
+        //    //Begin building next goal data.
+        //    GoalData nextGoalData = RetrieveGoalData();
+        //    nextGoalData.LocalTick = tick;
+        //    //Set next transform data.
+        //    TransformPropertiesCls nextTp = nextGoalData.TransformProperties;
+        //    nextTp.Update(_smoothingData.NetworkObject.transform);
+
+        //    /* Reset properties if smoothing is not enabled
+        //     * for them. It's less checks and easier to do it
+        //     * after the nextGoalData is populated. */
+        //    if (!_smoothingData.SmoothPosition)
+        //        nextTp.Position = _initializedOffsets.Position;
+        //    if (!_smoothingData.SmoothRotation)
+        //        nextTp.Rotation = _initializedOffsets.Rotation;
+
+        //    nextGoalData.TransformProperties = nextTp;
+
+        //    //Calculate rates for prev vs next data.
+        //    SetCalculatedRates(prevGoalData, nextGoalData, Channel.Unreliable);
+        //    /* If injectionIndex would place at the end
+        //     * then add. to goalDatas. */
+        //    if (injectionIndex >= _goalDatas.Count)
+        //        _goalDatas.Add(nextGoalData);
+        //    //Otherwise insert into the proper location.
+        //    else
+        //        _goalDatas[injectionIndex].Update(nextGoalData);
+
+        //    //Makes previous goal data from transforms pretick values.
+        //    GoalData MakeGoalDataFromPreTickTransform()
+        //    {
+        //        GoalData gd = RetrieveGoalData();
+        //        //RigidbodyData contains the data from preTick.
+        //        gd.TransformProperties.Update(_initializedOffsets);
+        //        //No need to update rates because this is just a starting point reference for interpolation.
+        //        return gd;
+        //    }
+        //}
 
         /// <summary>
         /// Returns the GoalData at tick.
@@ -705,7 +873,7 @@ namespace FishNet.Object.Prediction
         private GoalData RetrieveGoalData()
         {
             GoalData result = (_goalDataCache.Count > 0) ? _goalDataCache.Pop() : new GoalData();
-            result.IsActive = true;
+            result.IsValid = true;
             return result;
         }
 #endif

@@ -34,7 +34,7 @@ namespace FishNet.Component.Observing
         #endregion
 
         #region Private.
-        [Obsolete("Use GetMatchConnections(NetworkManager).")]
+        [Obsolete("Use GetMatchConnections(NetworkManager).")] //Remove on 2023/06/01
         public static Dictionary<int, HashSet<NetworkConnection>> MatchConnections => GetMatchConnections();
         [Obsolete("Use GetConnectionMatches(NetworkManager).")] //Remove on 2024/01/01.
         public static Dictionary<NetworkConnection, HashSet<int>> ConnectionMatch => GetConnectionMatches();
@@ -782,13 +782,10 @@ namespace FishNet.Component.Observing
         }
 
         /// <summary>
-        /// True if the condition requires regular updates.
+        /// How a condition is handled.
         /// </summary>
         /// <returns></returns>
-        public override bool Timed()
-        {
-            return false;
-        }
+        public override ObserverConditionType GetConditionType() => ObserverConditionType.Normal;
 
         /// <summary>
         /// Clones referenced ObserverCondition. This must be populated with your conditions settings.
