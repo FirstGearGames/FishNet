@@ -835,6 +835,37 @@ namespace FishNet.Component.Transforming
         }
 
         /// <summary>
+        /// Returns if controlling logic can be run. This may be the server when there is no owner, even if client authoritative, and more.
+        /// </summary>
+        /// <returns></returns>
+        private bool CanControl()
+        {
+            bool isServer = base.IsServer;
+
+            //Client auth.
+            if (_clientAuthoritative)
+            {
+                //Is owner.
+                if (base.IsOwner)
+                    return true;
+                //No owner but server.
+                if (!base.Owner.IsValid && isServer)
+                    return true;
+            }
+            //Server auth.
+            else
+            {
+                //Only server can control.
+                if (isServer)
+                    return true;
+            }
+
+            //Fall through.
+            return false;
+        }
+
+
+        /// <summary>
         /// Sets SendToOwner value.
         /// </summary>
         /// <param name="value"></param>
@@ -1356,11 +1387,12 @@ namespace FishNet.Component.Transforming
         private void SendToClients(byte lodIndex)
         {
             //True if clientAuthoritative and there is an owner.
-            bool clientAuthoritativeWithOwner = (_clientAuthoritative && base.Owner.IsValid && !base.Owner.IsLocalClient);
+            bool clientAuthoritativeWithOwner = (_clientAuthoritative && base.Owner.IsValid);
             //Channel to send rpc on.
             Channel channel = Channel.Unreliable;
-            //If relaying from client.
-            if (clientAuthoritativeWithOwner)
+            /* If relaying from client and owner isnt clientHost.
+             * If owner is clientHost just send current server values. */
+            if (clientAuthoritativeWithOwner && !base.Owner.IsLocalClient)
             {
                 if (_receivedClientData.HasData[lodIndex])
                 {

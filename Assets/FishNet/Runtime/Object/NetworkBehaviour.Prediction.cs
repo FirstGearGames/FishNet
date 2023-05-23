@@ -603,7 +603,7 @@ namespace FishNet.Object
             if (replicateIndex == -1)
             {
                 data = default;
-                data.SetTick(replayTick);  
+                data.SetTick(replayTick);
                 state = ReplicateState.ReplayedPredicted;
             }
             else
