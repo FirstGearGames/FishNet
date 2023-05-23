@@ -13,7 +13,5 @@ Discord: https://discord.gg/fishnetworking
 # Donation Options
 
   Github sponsor (preferred): https://github.com/sponsors/FirstGearGames
-
-  Gofundme: https://www.gofundme.com/f/fishnet
   
   Patreon: https://www.patreon.com/firstgeargames
