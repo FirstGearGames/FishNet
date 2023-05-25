@@ -10,6 +10,10 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityDebug = UnityEngine.Debug;
+using Debug = UnityEngine.Debug;
+#if PARRELSYNC
+using ParrelSync;
+#endif
 
 namespace FishNet.Editing.PrefabCollectionGenerator
 {
@@ -205,6 +209,14 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         public static void GenerateChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths, PrefabGeneratorConfigurations settings = null)
         {
+#if PARRELSYNC
+            if (ClonesManager.IsClone())
+            {
+                Debug.Log("Skipping prefab generation in ParrelSync clone");
+                return;
+            }
+#endif
+
             if (settings == null)
                 settings = Configuration.Configurations.PrefabGenerator;
             if (!settings.Enabled)
@@ -304,6 +316,14 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         public static void GenerateFull(PrefabGeneratorConfigurations settings = null, bool forced = false)
         {
+#if PARRELSYNC
+            if (ClonesManager.IsClone())
+            {
+                Debug.Log("Skipping prefab generation in ParrelSync clone");
+                return;
+            }
+#endif
+
             if (settings == null)
                 settings = Configuration.Configurations.PrefabGenerator;
             if (!forced && !settings.Enabled)
@@ -464,22 +484,29 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 }
             }
 
-            if (_cachedDefaultPrefabs == null)
+#if PARRELSYNC
+            if (!ClonesManager.IsClone())
             {
-                string fullPath = Path.GetFullPath(defaultPrefabsPath);
-                UnityDebug.Log($"Creating a new DefaultPrefabsObject at {fullPath}.");
-                string directory = Path.GetDirectoryName(fullPath);
+#endif
+                if (_cachedDefaultPrefabs == null)
+                {
+                    string fullPath = Path.GetFullPath(defaultPrefabsPath);
+                    UnityDebug.Log($"Creating a new DefaultPrefabsObject at {fullPath}.");
+                    string directory = Path.GetDirectoryName(fullPath);
 
-                if (!Directory.Exists(directory))
-                { 
-                    Directory.CreateDirectory(directory);
-                    AssetDatabase.Refresh();
+                    if (!Directory.Exists(directory))
+                    { 
+                        Directory.CreateDirectory(directory);
+                        AssetDatabase.Refresh();
+                    }
+
+                    _cachedDefaultPrefabs = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
+                    AssetDatabase.CreateAsset(_cachedDefaultPrefabs, defaultPrefabsPath);
+                    AssetDatabase.SaveAssets();
                 }
-
-                _cachedDefaultPrefabs = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
-                AssetDatabase.CreateAsset(_cachedDefaultPrefabs, defaultPrefabsPath);
-                AssetDatabase.SaveAssets();
+#if PARRELSYNC
             }
+#endif
 
             if (_cachedDefaultPrefabs != null && _retryRefreshDefaultPrefabs)
                 UnityDebug.Log("DefaultPrefabObjects found on the second iteration.");
