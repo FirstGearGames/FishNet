@@ -10,6 +10,7 @@ using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -36,6 +37,11 @@ namespace FishNet.Managing.Client
         /// This is only available when using ServerManager.ShareIds.
         /// </summary>
         public event Action<RemoteConnectionStateArgs> OnRemoteConnectionState;
+        /// <summary>
+        /// Called when the server sends all currently connected clients.
+        /// This is only available when using ServerManager.ShareIds.
+        /// </summary>
+        public event Action<ConnectedClientsStateArgs> OnConnectedClientsState;
         /// <summary>
         /// True if the client connection is connected to the server.
         /// </summary>
@@ -144,6 +150,7 @@ namespace FishNet.Managing.Client
 
         /// <summary>
         /// Called when the server sends all currently connected clients.
+        /// This is only available when using ServerManager.ShareIds.
         /// </summary>
         /// <param name="args"></param>
         private void OnConnectedClientsBroadcast(ConnectedClientsBroadcast args)
@@ -153,7 +160,10 @@ namespace FishNet.Managing.Client
             List<int> collection = args.Values;
             //No connected clients except self.
             if (collection == null)
+            {
+                OnConnectedClientsState?.Invoke(new ConnectedClientsStateArgs(Enumerable.Empty<int>()));
                 return;
+            }
 
             int count = collection.Count;
             for (int i = 0; i < count; i++)
@@ -162,7 +172,7 @@ namespace FishNet.Managing.Client
                 Clients[id] = new NetworkConnection(NetworkManager, id, -1, false);
             }
 
-            CollectionCaches<int>.Store(collection);
+            OnConnectedClientsState?.Invoke(new ConnectedClientsStateArgs(collection));
         }
 
         /// <summary>

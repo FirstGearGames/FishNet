@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace FishNet.Transporting
 {
@@ -102,6 +103,22 @@ namespace FishNet.Transporting
             ConnectionState = connectionState;
             ConnectionId = connectionId;
             TransportIndex = transportIndex;
+        }
+    }
+
+    /// <summary>
+    /// Container for connected clients state for a client.
+    /// </summary>
+    public struct ConnectedClientsStateArgs
+    {
+        /// <summary>
+        /// Collection of client ids connected to the server.
+        /// </summary>
+        public IEnumerable<int> ClientIds;
+
+        public ConnectedClientsStateArgs(IEnumerable<int> clientIds)
+        {
+            ClientIds = clientIds;
         }
     }
 
