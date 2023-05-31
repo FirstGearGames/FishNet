@@ -164,13 +164,12 @@ namespace FishNet.Managing.Client
                 return;
             }
 
-            using (PooledWriter writer = WriterPool.RetrieveWriter())
-            {
-                Broadcasts.WriteBroadcast<T>(writer, message, channel);
-                ArraySegment<byte> segment = writer.GetArraySegment();
+            PooledWriter writer = WriterPool.Retrieve();
+            Broadcasts.WriteBroadcast<T>(writer, message, channel);
+            ArraySegment<byte> segment = writer.GetArraySegment();
 
-                NetworkManager.TransportManager.SendToServer((byte)channel, segment);
-            }
+            NetworkManager.TransportManager.SendToServer((byte)channel, segment);
+            writer.Store();
         }
 
     }

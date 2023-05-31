@@ -259,9 +259,7 @@ namespace FishNet.Connection
             LastLevelOfDetailUpdate = 0;
             LevelOfDetailInfractions = 0;
             Observers_Reset();
-#if PREDICTION_V2
             Prediction_Reset();
-#endif
         }
 
         /// <summary>

@@ -255,14 +255,14 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void SendDisconnectMessages(List<NetworkConnection> conns, bool iterate)
         {
-            PooledWriter writer = WriterPool.RetrieveWriter();
+            PooledWriter writer = WriterPool.Retrieve();
             writer.WritePacketId(PacketId.Disconnect);
             ArraySegment<byte> segment = writer.GetArraySegment();
             //Send segment to each client, authenticated or not.
             foreach (NetworkConnection c in conns)
                 c.SendToClient((byte)Channel.Reliable, segment);
             //Recycle writer.
-            writer.Dispose();
+            writer.Store();
 
             if (iterate)
                 NetworkManager.TransportManager.IterateOutgoing(true);
@@ -453,29 +453,28 @@ namespace FishNet.Managing.Server
         /// <param name="connectionid"></param>
         private void SendAuthenticated(NetworkConnection conn)
         {
-            using (PooledWriter writer = WriterPool.RetrieveWriter())
+            PooledWriter writer = WriterPool.Retrieve();
+            writer.WritePacketId(PacketId.Authenticated);
+            writer.WriteNetworkConnection(conn);
+            /* If predicted spawning is enabled then also send
+             * reserved objectIds. */
+            ;
+            PredictionManager pm = NetworkManager.PredictionManager;
+            if (pm.GetAllowPredictedSpawning())
             {
-                writer.WritePacketId(PacketId.Authenticated);
-                writer.WriteNetworkConnection(conn);
-                /* If predicted spawning is enabled then also send
-                 * reserved objectIds. */
-                ;
-                PredictionManager pm = NetworkManager.PredictionManager;
-                if (pm.GetAllowPredictedSpawning())
+                int count = Mathf.Min(Objects.GetObjectIdCache().Count, pm.GetReservedObjectIds());
+                writer.WriteByte((byte)count);
+
+                for (int i = 0; i < count; i++)
                 {
-                    int count = Mathf.Min(Objects.GetObjectIdCache().Count, pm.GetReservedObjectIds());
-                    writer.WriteByte((byte)count);
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        ushort val = (ushort)Objects.GetNextNetworkObjectId(false);
-                        writer.WriteNetworkObjectId(val);
-                        conn.PredictedObjectIds.Enqueue(val);
-                    }
+                    ushort val = (ushort)Objects.GetNextNetworkObjectId(false);
+                    writer.WriteNetworkObjectId(val);
+                    conn.PredictedObjectIds.Enqueue(val);
                 }
-
-                NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), conn);
             }
+
+            NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), conn);
+            writer.Store();
         }
         /// <summary>
         /// Called when the server socket receives data.
@@ -514,91 +513,91 @@ namespace FishNet.Managing.Server
 
             bool hasIntermediateLayer = NetworkManager.TransportManager.HasIntermediateLayer;
             PacketId packetId = PacketId.Unset;
+            PooledReader reader = null;
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
             {
 #endif
             Reader.DataSource dataSource = Reader.DataSource.Client;
-            using (PooledReader reader = ReaderPool.RetrieveReader(segment, NetworkManager, dataSource))
+            reader = ReaderPool.Retrieve(segment, NetworkManager, dataSource);
+            uint tick = reader.ReadTickUnpacked();
+            NetworkManager.TimeManager.LastPacketTick = tick;
+            /* This is a special condition where a message may arrive split.
+            * When this occurs buffer each packet until all packets are
+            * received. */
+            if (reader.PeekPacketId() == PacketId.Split)
             {
-                uint tick = reader.ReadTickUnpacked();
-                NetworkManager.TimeManager.LastPacketTick = tick;
-                /* This is a special condition where a message may arrive split.
-                * When this occurs buffer each packet until all packets are
-                * received. */
-                if (reader.PeekPacketId() == PacketId.Split)
-                {
-                    //Skip packetId.
-                    reader.ReadPacketId();
+                //Skip packetId.
+                reader.ReadPacketId();
 
-                    int expectedMessages;
-                    _splitReader.GetHeader(reader, out expectedMessages);
-                    //If here split message can be written.
-                    _splitReader.Write(NetworkManager.TimeManager.LastPacketTick, reader, expectedMessages);
+                int expectedMessages;
+                _splitReader.GetHeader(reader, out expectedMessages);
+                //If here split message can be written.
+                _splitReader.Write(NetworkManager.TimeManager.LastPacketTick, reader, expectedMessages);
 
-                    /* If fullMessage returns 0 count then the split
-                     * has not written fully yet. Otherwise, if there is
-                     * data within then reinitialize reader with the
-                     * full message. */
-                    ArraySegment<byte> fullMessage = _splitReader.GetFullMessage();
-                    if (fullMessage.Count == 0)
-                        return;
+                /* If fullMessage returns 0 count then the split
+                 * has not written fully yet. Otherwise, if there is
+                 * data within then reinitialize reader with the
+                 * full message. */
+                ArraySegment<byte> fullMessage = _splitReader.GetFullMessage();
+                if (fullMessage.Count == 0)
+                    return;
 
-                    /* If here then all data has been received.
-                     * It's possible the client could have exceeded 
-                     * maximum MTU but not the maximum number of splits.
-                     * This is because the length of each split
-                     * is not written, so we don't know how much data of the
-                     * final message actually belonged to the split vs
-                     * unrelated data added afterwards. We're going to cut
-                     * the client some slack in this situation for the sake
-                     * of keeping things simple. */
+                /* If here then all data has been received.
+                 * It's possible the client could have exceeded 
+                 * maximum MTU but not the maximum number of splits.
+                 * This is because the length of each split
+                 * is not written, so we don't know how much data of the
+                 * final message actually belonged to the split vs
+                 * unrelated data added afterwards. We're going to cut
+                 * the client some slack in this situation for the sake
+                 * of keeping things simple. */
 
-                    //Initialize reader with full message.
-                    if (hasIntermediateLayer)
-                        reader.Initialize(NetworkManager.TransportManager.ProcessIntermediateIncoming(fullMessage, false), NetworkManager, dataSource);
-                    else
-                        reader.Initialize(fullMessage, NetworkManager, dataSource);
-                }
-                //Not Split.
+                //Initialize reader with full message.
+                if (hasIntermediateLayer)
+                    reader.Initialize(NetworkManager.TransportManager.ProcessIntermediateIncoming(fullMessage, false), NetworkManager, dataSource);
                 else
+                    reader.Initialize(fullMessage, NetworkManager, dataSource);
+            }
+            //Not Split.
+            else
+            {
+                //Override values with intermediate layer changes.
+                if (hasIntermediateLayer)
                 {
-                    //Override values with intermediate layer changes.
-                    if (hasIntermediateLayer)
-                    {
-                        ArraySegment<byte> modified = NetworkManager.TransportManager.ProcessIntermediateIncoming(reader.GetRemainingData(), false);
-                        reader.Initialize(modified, NetworkManager, dataSource);
-                    }
+                    ArraySegment<byte> modified = NetworkManager.TransportManager.ProcessIntermediateIncoming(reader.GetRemainingData(), false);
+                    reader.Initialize(modified, NetworkManager, dataSource);
                 }
-                
-                //Parse reader.
-                while (reader.Remaining > 0)
-                {
-                    packetId = reader.ReadPacketId();
+            }
+
+            //Parse reader.
+            while (reader.Remaining > 0)
+            {
+                packetId = reader.ReadPacketId();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    _parseLogger.AddPacket(packetId);
+                _parseLogger.AddPacket(packetId);
 #endif
-                    NetworkConnection conn;
+                NetworkConnection conn;
 
-                    /* Connection isn't available. This should never happen.
-                     * Force an immediate disconnect. */
-                    if (!Clients.TryGetValueIL2CPP(args.ConnectionId, out conn))
-                    {
-                        Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"ConnectionId {conn.ClientId} not found within Clients. Connection will be kicked immediately.");
-                        return;
-                    }
-                    conn.PacketTick.Update(NetworkManager.TimeManager, tick, Timing.EstimatedTick.OldTickOption.SetLastRemoteTick);
-                    /* If connection isn't authenticated and isn't a broadcast
-                     * then disconnect client. If a broadcast then process
-                     * normally; client may still become disconnected if the broadcast
-                     * does not allow to be called while not authenticated. */
-                    if (!conn.Authenticated && packetId != PacketId.Broadcast)
-                    {
-                        conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a Broadcast without being authenticated. Connection will be kicked immediately.");
-                        return;
-                    }
+                /* Connection isn't available. This should never happen.
+                 * Force an immediate disconnect. */
+                if (!Clients.TryGetValueIL2CPP(args.ConnectionId, out conn))
+                {
+                    Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"ConnectionId {conn.ClientId} not found within Clients. Connection will be kicked immediately.");
+                    return;
+                }
+                conn.PacketTick.Update(NetworkManager.TimeManager, tick, Timing.EstimatedTick.OldTickOption.SetLastRemoteTick);
+                /* If connection isn't authenticated and isn't a broadcast
+                 * then disconnect client. If a broadcast then process
+                 * normally; client may still become disconnected if the broadcast
+                 * does not allow to be called while not authenticated. */
+                if (!conn.Authenticated && packetId != PacketId.Broadcast)
+                {
+                    conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a Broadcast without being authenticated. Connection will be kicked immediately.");
+                    return;
+                }
 
-                    //Only check if not developer build because users pay pause editor.
+                //Only check if not developer build because users pay pause editor.
 #if !DEVELOPMENT_BUILD && !UNITY_EDITOR
                     /* If hasn't sent LOD recently enough. LODs are sent every half a second, so
                      * by multiplaying interval by 60 this gives the client a 30 second window. */
@@ -608,55 +607,54 @@ namespace FishNet.Managing.Server
                         return;
                     }
 #endif
-                    if (packetId == PacketId.Replicate)
+                if (packetId == PacketId.Replicate)
+                {
+                    Objects.ParseReplicateRpc(reader, conn, args.Channel);
+                }
+                else if (packetId == PacketId.ServerRpc)
+                {
+                    Objects.ParseServerRpc(reader, conn, args.Channel);
+                }
+                else if (packetId == PacketId.ObjectSpawn)
+                {
+                    if (!NetworkManager.PredictionManager.GetAllowPredictedSpawning())
                     {
-                        Objects.ParseReplicateRpc(reader, conn, args.Channel);
+                        conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a predicted spawn while predicted spawning is not enabled. Connection will be kicked immediately.");
+                        return;
                     }
-                    else if (packetId == PacketId.ServerRpc)
+                    Objects.ReadPredictedSpawn(reader, conn);
+                }
+                else if (packetId == PacketId.ObjectDespawn)
+                {
+                    if (!NetworkManager.PredictionManager.GetAllowPredictedSpawning())
                     {
-                        Objects.ParseServerRpc(reader, conn, args.Channel);
+                        conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a predicted spawn while predicted spawning is not enabled. Connection will be kicked immediately.");
+                        return;
                     }
-                    else if (packetId == PacketId.ObjectSpawn)
-                    {
-                        if (!NetworkManager.PredictionManager.GetAllowPredictedSpawning())
-                        {
-                            conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a predicted spawn while predicted spawning is not enabled. Connection will be kicked immediately.");
-                            return;
-                        }
-                        Objects.ReadPredictedSpawn(reader, conn);
-                    }
-                    else if (packetId == PacketId.ObjectDespawn)
-                    {
-                        if (!NetworkManager.PredictionManager.GetAllowPredictedSpawning())
-                        {
-                            conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a predicted spawn while predicted spawning is not enabled. Connection will be kicked immediately.");
-                            return;
-                        }
-                        Objects.ReadPredictedDespawn(reader, conn);
-                    }
-                    else if (packetId == PacketId.NetworkLODUpdate)
-                    {
-                        ParseNetworkLODUpdate(reader, conn);
-                    }
-                    else if (packetId == PacketId.Broadcast)
-                    {
-                        ParseBroadcast(reader, conn, args.Channel);
-                    }
-                    else if (packetId == PacketId.PingPong)
-                    {
-                        ParsePingPong(reader, conn);
-                    }
-                    else
-                    {
+                    Objects.ReadPredictedDespawn(reader, conn);
+                }
+                else if (packetId == PacketId.NetworkLODUpdate)
+                {
+                    ParseNetworkLODUpdate(reader, conn);
+                }
+                else if (packetId == PacketId.Broadcast)
+                {
+                    ParseBroadcast(reader, conn, args.Channel);
+                }
+                else if (packetId == PacketId.PingPong)
+                {
+                    ParsePingPong(reader, conn);
+                }
+                else
+                {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                        NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
-                        _parseLogger.Print(NetworkManager);
+                    NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
+                    _parseLogger.Print(NetworkManager);
 #else
                         NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately.");
                         NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
 #endif
-                        return;
-                    }
+                    return;
                 }
             }
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
@@ -665,6 +663,12 @@ namespace FishNet.Managing.Server
             {
                 Kick(args.ConnectionId, KickReason.MalformedData, LoggingType.Error, $"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately. Message: {e.Message}.");
             }
+            finally
+            {
+                reader?.Store();
+            }
+#else
+            reader?.Store();
 #endif
 
             //Kicks connection for exceeding MTU.

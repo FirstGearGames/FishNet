@@ -125,6 +125,21 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// 
         /// </summary>
+        [Tooltip("Number of inputs to keep in queue should the server miss receiving an input update from the client. " +
+            "Higher values will increase the likeliness of the server always having input from the client while lower values will allow the client input to run on the server faster. " +
+            "This value cannot be higher than MaximumServerReplicates.")]
+        [Range(1, 15)]
+        [SerializeField]
+        private ushort _queuedInputs = 1;
+        /// <summary>
+        /// Number of inputs to keep in queue should the server miss receiving an input update from the client.
+        /// Higher values will increase the likeliness of the server always having input from the client while lower values will allow the client input to run on the server faster.
+        /// This value cannot be higher than MaximumServerReplicates.
+        /// </summary>
+        public ushort QueuedInputs => _queuedInputs;
+        /// <summary>
+        /// 
+        /// </summary>
         [Tooltip("How often to send reconcile states to clients.")]
         [Range(0f, 2f)]
         [SerializeField]
@@ -456,7 +471,7 @@ namespace FishNet.Managing.Predicting
                 return;
 
             StatePacket state = _recievedStates.Dequeue();
-            PooledReader reader = ReaderPool.RetrieveReader(state.Data, _networkManager, Reader.DataSource.Server);
+            PooledReader reader = ReaderPool.Retrieve(state.Data, _networkManager, Reader.DataSource.Server);
             StateClientTick = reader.ReadTickUnpacked();
             StateServerTick = state.ServerTick;
 
@@ -532,6 +547,14 @@ namespace FishNet.Managing.Predicting
             //Make segment and store into states.
             ArraySegment<byte> segment = new ArraySegment<byte>(arr, 0, length);
             _recievedStates.Enqueue(new StatePacket(segment, _networkManager.TimeManager.LastPacketTick));
+        }
+#endif
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (_queuedInputs > _maximumServerReplicates && _dropExcessiveReplicates)
+                _queuedInputs = _maximumServerReplicates;
         }
 #endif
     }

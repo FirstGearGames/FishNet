@@ -10,8 +10,12 @@ namespace FishNet.Serializing
     /// </summary>
     public sealed class PooledWriter : Writer, IDisposable
     {
-        public void Dispose() => WriterPool.Store(this);
-        public void DisposeLength() => WriterPool.StoreLength(this);
+        public void Store() => WriterPool.Store(this);
+        public void StoreLength() => WriterPool.StoreLength(this);
+        [Obsolete("Use Store().")] //Remove on 2024/01/01.
+        public void Dispose() => this.Store();
+        [Obsolete("Use StoreLength().")] //Remove on 2024/01/01.
+        public void DisposeLength() => this.StoreLength();
     }
 
     /// <summary>
@@ -41,12 +45,12 @@ namespace FishNet.Serializing
         /// Gets a writer from the pool.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [Obsolete("Use RetrieveWriter(NetworkManager).")] //Remove on 2024/01/01
-        public static PooledWriter GetWriter(NetworkManager networkManager) => RetrieveWriter(networkManager);
+        [Obsolete("Use Retrieve(NetworkManager).")] //Remove on 2024/01/01
+        public static PooledWriter GetWriter(NetworkManager networkManager) => Retrieve(networkManager);
         /// <summary>
         /// Gets a writer from the pool.
         /// </summary>
-        public static PooledWriter RetrieveWriter(NetworkManager networkManager)
+        public static PooledWriter Retrieve(NetworkManager networkManager)
         {
             PooledWriter result = (_pool.Count > 0) ? _pool.Pop() : new PooledWriter();
             result.Reset(networkManager);
@@ -56,14 +60,14 @@ namespace FishNet.Serializing
         /// Gets a writer from the pool.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [Obsolete("Use RetrieveWriter().")] //Remove on 2024/01/01
-        public static PooledWriter GetWriter() => RetrieveWriter();
+        [Obsolete("Use Retrieve().")] //Remove on 2024/01/01
+        public static PooledWriter GetWriter() => Retrieve();
         /// Gets a writer from the pool.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledWriter RetrieveWriter()
+        public static PooledWriter Retrieve()
         {
-            return RetrieveWriter(null);
+            return Retrieve(null);
         }
 
 
@@ -71,31 +75,31 @@ namespace FishNet.Serializing
         /// Gets the next writer in the pool of minimum length.
         /// </summary>
         /// <param name="length">Minimum length the writer buffer must be.</param>
-        [Obsolete("Use RetrieveWriter(int).")] //Remove on 2024/01/01
+        [Obsolete("Use Retrieve(int).")] //Remove on 2024/01/01
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledWriter GetWriter(int length) => RetrieveWriter(length);
+        public static PooledWriter GetWriter(int length) => Retrieve(length);
         /// <summary>
         /// Gets the next writer in the pool of minimum length.
         /// </summary>
         /// <param name="length">Minimum length the writer buffer must be.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledWriter RetrieveWriter(int length)
+        public static PooledWriter Retrieve(int length)
         {
-            return RetrieveWriter(null, length);
+            return Retrieve(null, length);
         }
         /// <summary>
         /// Gets the next writer in the pool of minimum length.
         /// </summary>
         /// <param name="length">Minimum length the writer buffer must be.</param>
-        [Obsolete("Use RetrieveWriter(NetworkManager, int).")] //Remove on 2024/01/01
+        [Obsolete("Use Retrieve(NetworkManager, int).")] //Remove on 2024/01/01
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledWriter GetWriter(NetworkManager networkManager, int length) => RetrieveWriter(networkManager, length);
+        public static PooledWriter GetWriter(NetworkManager networkManager, int length) => Retrieve(networkManager, length);
         /// <summary>
         /// Gets the next writer in the pool of minimum length.
         /// </summary>
         /// <param name="length">Minimum length the writer buffer must be.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledWriter RetrieveWriter(NetworkManager networkManager, int length)
+        public static PooledWriter Retrieve(NetworkManager networkManager, int length)
         {
             /* The index returned will be for writers which have
              * length as a minimum capacity.
@@ -115,7 +119,7 @@ namespace FishNet.Serializing
             else
             {
                 //Get any ol' writer.
-                PooledWriter writer = RetrieveWriter(networkManager);
+                PooledWriter writer = Retrieve(networkManager);
                 /* Ensure length to fill it's bracket.
                  * Increase index by 1 since 0 index would
                  * just return 0 as the capacity. */

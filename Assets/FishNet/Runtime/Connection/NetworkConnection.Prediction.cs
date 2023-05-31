@@ -15,11 +15,42 @@ namespace FishNet.Connection
     /// </summary>
     public partial class NetworkConnection
     {
+        private int _highestQueueCount;
+        private uint _lastHighestQueueCountUpdateTick;
+        internal void SetHighestQueueCount(int value, uint serverTick)
+        {
+            if (serverTick != _lastHighestQueueCountUpdateTick)
+                _highestQueueCount = 0;
+            _lastHighestQueueCountUpdateTick = serverTick;
+
+            _highestQueueCount = Mathf.Max(_highestQueueCount, value);
+        }
+        /// <summary>
+        /// Returns the highest queue count after resetting it.
+        /// </summary>
+        /// <returns></returns>
+        internal int GetAndResetHighestQueueCount()
+        {
+            int value = _highestQueueCount;
+            _highestQueueCount = 0;
+            _lastHighestQueueCountUpdateTick = 0;
+            return value;
+        }
+
 #if !PREDICTION_V2
         /// <summary>
         /// Local tick when the connection last replicated.
         /// </summary>
         public uint LocalReplicateTick { get; internal set; }
+
+        /// <summary>
+        /// Resets NetworkConnection.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Prediction_Reset()
+        {
+            GetAndResetHighestQueueCount();
+        }
 #else
         /// <summary>
         /// Approximate replicate tick on the server for this connection.
@@ -55,7 +86,7 @@ namespace FishNet.Connection
             int writerCount = PredictionStateWriters.Count;
             if (writerCount == 0 || (writer.Length + PredictionManager.STATE_HEADER_RESERVE_COUNT) > mtu)
             {
-                stateWriter = WriterPool.RetrieveWriter(mtu);
+                stateWriter = WriterPool.Retrieve(mtu);
                 PredictionStateWriters.Add(stateWriter);
 
                 stateWriter.Reserve(PredictionManager.STATE_HEADER_RESERVE_COUNT);
@@ -91,6 +122,7 @@ namespace FishNet.Connection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Prediction_Reset()
         {
+            GetAndResetHighestQueueCount();
             StorePredictionStateWriters();
             ReplicateTick.Reset();
         }

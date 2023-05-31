@@ -481,7 +481,7 @@ namespace FishNet.Managing.Transporting
             }
 
             byte channelId = (byte)Channel.Reliable;
-            PooledWriter headerWriter = WriterPool.RetrieveWriter();
+            PooledWriter headerWriter = WriterPool.Retrieve();
             headerWriter.WritePacketId(PacketId.Split);
             headerWriter.WriteInt32(requiredMessages);
             ArraySegment<byte> headerSegment = headerWriter.GetArraySegment();
@@ -518,7 +518,7 @@ namespace FishNet.Managing.Transporting
                 writeIndex += chunkSize;
             }
 
-            headerWriter.Dispose();
+            headerWriter.Store();
         }
         #endregion
 

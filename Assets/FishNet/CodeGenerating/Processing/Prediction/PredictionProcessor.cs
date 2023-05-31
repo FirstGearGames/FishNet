@@ -7,6 +7,7 @@ using FishNet.Object.Prediction;
 using FishNet.Object.Prediction.Delegating;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Extension;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
@@ -220,22 +221,22 @@ namespace FishNet.CodeGenerating.Processing
             replicateMd = null;
             reconcileMd = null;
 
-            string replicateFullName = base.GetClass<AttributeHelper>().ReplicateAttribute_FullName;
-            string reconcileFullName = base.GetClass<AttributeHelper>().ReconcileAttribute_FullName;
+            string replicateAttributeFullName = base.GetClass<AttributeHelper>().ReplicateAttribute_FullName;
+            string reconcileAttributeFullName = base.GetClass<AttributeHelper>().ReconcileAttribute_FullName;
 
             bool error = false;
             foreach (MethodDefinition methodDef in typeDef.Methods)
             {
                 foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
                 {
-                    if (customAttribute.Is(replicateFullName))
+                    if (customAttribute.Is(replicateAttributeFullName))
                     {
                         if (!MethodIsPrivate(methodDef) || AlreadyFound(replicateMd))
                             error = true;
                         else
                             replicateMd = methodDef;
                     }
-                    else if (customAttribute.Is(reconcileFullName))
+                    else if (customAttribute.Is(reconcileAttributeFullName))
                     {
                         if (!MethodIsPrivate(methodDef) || AlreadyFound(reconcileMd))
                             error = true;
@@ -779,6 +780,9 @@ namespace FishNet.CodeGenerating.Processing
 
             bool CreateReplicate()
             {
+                CustomAttribute replicateAttribute = replicateMd.GetCustomAttribute(base.GetClass<AttributeHelper>().ReplicateAttribute_FullName);
+                bool allowServerControl = replicateAttribute.GetField(nameof(ReplicateAttribute.AllowServerControl), false);
+
                 ILProcessor processor = replicateMd.Body.GetILProcessor();
                 ParameterDefinition replicateDataPd = replicateMd.Parameters[0];
                 MethodDefinition comparerMd = gh.CreateEqualityComparer(replicateDataPd.ParameterType);
@@ -792,6 +796,7 @@ namespace FishNet.CodeGenerating.Processing
                 processor.Emit(OpCodes.Ldarg_0); //base.
                 processor.Emit(OpCodes.Ldarg, asServerPd);
                 processor.Emit(OpCodes.Ldarg, replayingPd);
+                processor.Emit(OpCodes.Ldc_I4, allowServerControl.ToInt());
                 processor.Emit(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().Replicate_ExitEarly_A_MethodRef);
                 processor.Emit(OpCodes.Brtrue, exitMethodInst);
 
@@ -800,7 +805,7 @@ namespace FishNet.CodeGenerating.Processing
                 processor.Emit(OpCodes.Ldarg, asServerPd);
                 processor.Emit(OpCodes.Brfalse, notAsServerInst);
                 /***************************/
-                ServerCreateReplicate(replicateMd, predictionFields);
+                ServerCreateReplicate(replicateMd, predictionFields, allowServerControl);
                 processor.Emit(OpCodes.Br, exitMethodInst);
                 /***************************/
 
@@ -892,7 +897,7 @@ namespace FishNet.CodeGenerating.Processing
             if (!CreateReplicate())
                 return false;
             if (!CreateReconcile())
-                return false;
+                return false; 
             if (!CreateReconcileStart())
                 return false;
             if (!CreateReplicateReplayStart())
@@ -1159,7 +1164,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates replicate code for client.
         /// </summary>
-        private void ServerCreateReplicate(MethodDefinition replicateMd, CreatedPredictionFields predictionFields)
+        private void ServerCreateReplicate(MethodDefinition replicateMd, CreatedPredictionFields predictionFields, bool allowServerControl)
         {
             ILProcessor processor = replicateMd.Body.GetILProcessor();
 
@@ -1174,6 +1179,11 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateULDelegate);
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ServerReplicateDatas);
+
+            //Used for allowServerControl.
+            processor.Emit(OpCodes.Ldarg, replicateDataPd);
+            processor.Emit(OpCodes.Ldc_I4, allowServerControl.ToInt());
+
             processor.Emit(OpCodes.Ldarg, channelPd);
             processor.Emit(OpCodes.Call, replicateGim);
         }

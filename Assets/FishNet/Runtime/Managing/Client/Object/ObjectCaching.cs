@@ -334,7 +334,7 @@ namespace FishNet.Managing.Client
                             objectId = nob.ObjectId;
                         }
                         //Preinitialize client side.
-                        nob.Preinitialize_Internal(_networkManager,  objectId, owner, false);
+                        nob.Preinitialize_Internal(_networkManager, objectId, owner, false);
 
                         _clientObjects.AddToSpawned(cnob.NetworkObject, false);
                         SpawningObjects.Add(cnob.ObjectId, cnob.NetworkObject);
@@ -491,7 +491,8 @@ namespace FishNet.Managing.Client
         {
             _initializeOrderChanged = false;
             foreach (CachedNetworkObject item in _cachedObjects)
-                item.Dispose();
+                DisposableObjectCaches<CachedNetworkObject>.Store(item);
+
             _cachedObjects.Clear();
             _iteratedSpawns.Clear();
             SpawningObjects.Clear();
@@ -591,8 +592,8 @@ namespace FishNet.Managing.Client
             RpcLinks = rpcLinks;
             SyncValues = syncValues;
 
-            RpcLinkReader = ReaderPool.RetrieveReader(rpcLinks, manager);
-            SyncValuesReader = ReaderPool.RetrieveReader(syncValues, manager);
+            RpcLinkReader = ReaderPool.Retrieve(rpcLinks, manager);
+            SyncValuesReader = ReaderPool.Retrieve(syncValues, manager);
         }
 
         /// <summary>
@@ -613,6 +614,16 @@ namespace FishNet.Managing.Client
         private void ResetValues()
         {
             NetworkObject = null;
+            if (RpcLinkReader != null)
+            { 
+                ReaderPool.Store(RpcLinkReader);
+                RpcLinkReader = null;
+            }
+            if (SyncValuesReader != null)
+            { 
+                ReaderPool.Store(SyncValuesReader);
+                SyncValuesReader = null;
+            }
         }
 
         public void Dispose()
@@ -622,10 +633,9 @@ namespace FishNet.Managing.Client
 
         ~CachedNetworkObject()
         {
-            if (RpcLinkReader != null)
-                RpcLinkReader.Dispose();
-            if (SyncValuesReader != null)
-                SyncValuesReader.Dispose();
+            NetworkObject = null;
+            //RpcLinkReader?.Dispose();
+            //SyncValuesReader?.Dispose();
         }
     }
 

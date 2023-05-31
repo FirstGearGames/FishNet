@@ -127,10 +127,10 @@ namespace FishNet.Managing.Client
             NetworkManager.ClientManager.Objects.AddToSpawned(networkObject, false);
             networkObject.Initialize(false, true);
 
-            PooledWriter writer = WriterPool.RetrieveWriter();
+            PooledWriter writer = WriterPool.Retrieve();
             WriteSpawn(networkObject, writer);
             base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
-            writer.Dispose();
+            writer.Store();
         }
 
         /// <summary>
@@ -139,7 +139,7 @@ namespace FishNet.Managing.Client
         /// <param name="nob"></param>
         public void WriteSpawn(NetworkObject nob, Writer writer)
         {
-            PooledWriter headerWriter = WriterPool.RetrieveWriter();
+            PooledWriter headerWriter = WriterPool.Retrieve();
             headerWriter.WritePacketId(PacketId.ObjectSpawn);
             headerWriter.WriteNetworkObjectForSpawn(nob);
             headerWriter.WriteNetworkConnection(nob.Owner);
@@ -175,7 +175,7 @@ namespace FishNet.Managing.Client
             //If allowed to write synctypes.
             if (nob.AllowPredictedSyncTypes)
             {
-                PooledWriter tempWriter = WriterPool.RetrieveWriter();
+                PooledWriter tempWriter = WriterPool.Retrieve();
                 WriteSyncTypes(writer, tempWriter, SyncTypeWriteType.All);
                 void WriteSyncTypes(Writer finalWriter, PooledWriter tWriter, SyncTypeWriteType writeType)
                 {
@@ -184,11 +184,11 @@ namespace FishNet.Managing.Client
                         nb.WriteSyncTypesForSpawn(tWriter, writeType);
                     finalWriter.WriteBytesAndSize(tWriter.GetBuffer(), 0, tWriter.Length);
                 }
-                tempWriter.Dispose();
+                tempWriter.Store();
             }
 
             //Dispose of writers created in this method.
-            headerWriter.Dispose();
+            headerWriter.Store();
         }
 
 
@@ -197,10 +197,10 @@ namespace FishNet.Managing.Client
         /// </summary>
         internal void PredictedDespawn(NetworkObject networkObject)
         {
-            PooledWriter writer = WriterPool.RetrieveWriter();
+            PooledWriter writer = WriterPool.Retrieve();
             WriteDepawn(networkObject, writer);
             base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
-            writer.Dispose();
+            writer.Store();
 
             //Deinitialize after writing despawn so all the right data is sent.
             networkObject.DeinitializePredictedObject_Client();
@@ -421,9 +421,9 @@ namespace FishNet.Managing.Client
                 //Everything is proper, apply RPC links.
                 else
                 {
-                    PooledReader linkReader = ReaderPool.RetrieveReader(rpcLinks, NetworkManager);
+                    PooledReader linkReader = ReaderPool.Retrieve(rpcLinks, NetworkManager);
                     ApplyRpcLinks(nob, linkReader);
-                    linkReader.Dispose();
+                    linkReader.Store();
                 }
                 //No further initialization needed when predicting.
                 return;

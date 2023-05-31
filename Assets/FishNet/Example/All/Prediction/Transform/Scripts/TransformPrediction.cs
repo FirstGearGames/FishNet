@@ -175,7 +175,7 @@ namespace FishNet.Example.Prediction.Transforms
         /// such as if you only want to show effects the first time input is run you will
         /// do so when replaying is false.
         /// </summary>
-        [Replicate]
+        [Replicate(AllowServerControl = true)]
         private void Move(MoveData md, bool asServer, Channel channel = Channel.Unreliable, bool replaying = false)
         {
             /* You can check if being run as server to

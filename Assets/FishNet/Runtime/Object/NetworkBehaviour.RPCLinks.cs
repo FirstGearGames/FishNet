@@ -90,7 +90,7 @@ namespace FishNet.Object
             int rpcHeaderBufferLength = GetEstimatedRpcHeaderLength();
             int methodWriterLength = methodWriter.Length;
             //Writer containing full packet.
-            PooledWriter writer = WriterPool.RetrieveWriter(rpcHeaderBufferLength + methodWriterLength);
+            PooledWriter writer = WriterPool.Retrieve(rpcHeaderBufferLength + methodWriterLength);
             writer.WriteUInt16(link.LinkIndex);
             //Write length only if reliable.
             if (channel == Channel.Reliable)
@@ -118,7 +118,7 @@ namespace FishNet.Object
         /// </summary>
         internal void WriteRpcLinks(Writer writer)
         {
-            PooledWriter rpcLinkWriter = WriterPool.RetrieveWriter();
+            PooledWriter rpcLinkWriter = WriterPool.Retrieve();
             foreach (KeyValuePair<uint, RpcLinkType> item in _rpcLinks)
             {
                 //RpcLink index.
@@ -130,7 +130,7 @@ namespace FishNet.Object
             }
 
             writer.WriteBytesAndSize(rpcLinkWriter.GetBuffer(), 0, rpcLinkWriter.Length);
-            rpcLinkWriter.Dispose();
+            rpcLinkWriter.Store();
         }
     }
 }

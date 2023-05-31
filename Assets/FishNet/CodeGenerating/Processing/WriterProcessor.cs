@@ -142,7 +142,7 @@ namespace FishNet.CodeGenerating.Helping
         public bool IsSpecialWriteMethod(SR.MethodInfo methodInfo)
         {
             /* Special methods. */
-            if (methodInfo.Name == nameof(PooledWriter.Dispose))
+            if (methodInfo.Name == nameof(PooledWriter.Store))
                 return true;
             else if (methodInfo.Name == nameof(PooledWriter.WritePackedWhole))
                 return true;

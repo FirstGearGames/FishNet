@@ -2,6 +2,7 @@
 
 namespace FishNet.Managing.Object
 {
+    [System.Flags]
     internal enum SpawnType : byte
     {
         Unset = 0,

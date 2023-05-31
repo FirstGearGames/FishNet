@@ -540,7 +540,7 @@ namespace FishNet.Component.Transforming
         {
             if (_receivedClientData.Writer != null)
             {
-                _receivedClientData.Writer.Dispose();
+                _receivedClientData.Writer.Store();
                 _receivedClientData.Writer = null;
             }
         }
@@ -567,12 +567,11 @@ namespace FishNet.Component.Transforming
             if (base.NetworkObject.gameObject != gameObject && _changedSinceStart)
             {
                 //Send latest.
-                using (PooledWriter writer = WriterPool.RetrieveWriter())
-                {
-                    ChangedDelta fullTransform = (ChangedDelta.PositionX | ChangedDelta.PositionY | ChangedDelta.PositionZ | ChangedDelta.Extended | ChangedDelta.ScaleX | ChangedDelta.ScaleY | ChangedDelta.ScaleZ | ChangedDelta.Rotation);
-                    SerializeChanged(fullTransform, writer);
-                    TargetUpdateTransform(connection, writer.GetArraySegment(), Channel.Reliable);
-                }
+                PooledWriter writer = WriterPool.Retrieve();
+                ChangedDelta fullTransform = (ChangedDelta.PositionX | ChangedDelta.PositionY | ChangedDelta.PositionZ | ChangedDelta.Extended | ChangedDelta.ScaleX | ChangedDelta.ScaleY | ChangedDelta.ScaleZ | ChangedDelta.Rotation);
+                SerializeChanged(fullTransform, writer);
+                TargetUpdateTransform(connection, writer.GetArraySegment(), Channel.Reliable);
+                writer.Store();
             }
 
             
@@ -678,7 +677,7 @@ namespace FishNet.Component.Transforming
             //Initialize for LODs.
             for (int i = 0; i < base.ObserverManager.GetLevelOfDetailDistances().Count; i++)
             {
-                _changedWriters.Add(WriterPool.RetrieveWriter());
+                _changedWriters.Add(WriterPool.Retrieve());
                 TransformData td = DisposableObjectCaches<TransformData>.Retrieve();
                 _lastSentTransformDatas.Add(td);
                 if (asServer)
@@ -1151,98 +1150,96 @@ namespace FishNet.Component.Transforming
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void DeserializePacket(ArraySegment<byte> data, TransformData prevTransformData, TransformData nextTransformData, ref ChangedFull changedFull)
         {
-            using (PooledReader r = ReaderPool.RetrieveReader(data, base.NetworkManager))
+            PooledReader reader = ReaderPool.Retrieve(data, base.NetworkManager);
+            UpdateFlagA flagsA = (UpdateFlagA)reader.ReadByte();
+
+            int readerRemaining;
+            readerRemaining = reader.Remaining;
+            //X
+            if (UpdateFlagAContains(flagsA, UpdateFlagA.X2))
+                nextTransformData.Position.x = reader.ReadInt16() / 100f;
+            else if (UpdateFlagAContains(flagsA, UpdateFlagA.X4))
+                nextTransformData.Position.x = reader.ReadSingle();
+            else
+                nextTransformData.Position.x = prevTransformData.Position.x;
+            //Y
+            if (UpdateFlagAContains(flagsA, UpdateFlagA.Y2))
+                nextTransformData.Position.y = reader.ReadInt16() / 100f;
+            else if (UpdateFlagAContains(flagsA, UpdateFlagA.Y4))
+                nextTransformData.Position.y = reader.ReadSingle();
+            else
+                nextTransformData.Position.y = prevTransformData.Position.y;
+            //Z
+            if (UpdateFlagAContains(flagsA, UpdateFlagA.Z2))
+                nextTransformData.Position.z = reader.ReadInt16() / 100f;
+            else if (UpdateFlagAContains(flagsA, UpdateFlagA.Z4))
+                nextTransformData.Position.z = reader.ReadSingle();
+            else
+                nextTransformData.Position.z = prevTransformData.Position.z;
+            //If remaining has changed then a position was read.
+            if (readerRemaining != reader.Remaining)
+                changedFull |= ChangedFull.Position;
+
+            //Rotation.
+            if (UpdateFlagAContains(flagsA, UpdateFlagA.Rotation))
             {
-                UpdateFlagA flagsA = (UpdateFlagA)r.ReadByte();
+                //Always use _packing value even if nested.
+                nextTransformData.Rotation = reader.ReadQuaternion(_packing.Rotation);
+                changedFull |= ChangedFull.Rotation;
+            }
+            else
+            {
+                nextTransformData.Rotation = prevTransformData.Rotation;
+            }
 
-                int readerRemaining;
-                readerRemaining = r.Remaining;
+            //Extended settings.
+            if (UpdateFlagAContains(flagsA, UpdateFlagA.Extended))
+            {
+                UpdateFlagB flagsB = (UpdateFlagB)reader.ReadByte();
+                readerRemaining = reader.Remaining;
+
                 //X
-                if (UpdateFlagAContains(flagsA, UpdateFlagA.X2))
-                    nextTransformData.Position.x = r.ReadInt16() / 100f;
-                else if (UpdateFlagAContains(flagsA, UpdateFlagA.X4))
-                    nextTransformData.Position.x = r.ReadSingle();
+                if (UpdateFlagBContains(flagsB, UpdateFlagB.X2))
+                    nextTransformData.Scale.x = reader.ReadInt16() / 100f;
+                else if (UpdateFlagBContains(flagsB, UpdateFlagB.X4))
+                    nextTransformData.Scale.x = reader.ReadSingle();
                 else
-                    nextTransformData.Position.x = prevTransformData.Position.x;
+                    nextTransformData.Scale.x = prevTransformData.Scale.x;
                 //Y
-                if (UpdateFlagAContains(flagsA, UpdateFlagA.Y2))
-                    nextTransformData.Position.y = r.ReadInt16() / 100f;
-                else if (UpdateFlagAContains(flagsA, UpdateFlagA.Y4))
-                    nextTransformData.Position.y = r.ReadSingle();
+                if (UpdateFlagBContains(flagsB, UpdateFlagB.Y2))
+                    nextTransformData.Scale.y = reader.ReadInt16() / 100f;
+                else if (UpdateFlagBContains(flagsB, UpdateFlagB.Y4))
+                    nextTransformData.Scale.y = reader.ReadSingle();
                 else
-                    nextTransformData.Position.y = prevTransformData.Position.y;
-                //Z
-                if (UpdateFlagAContains(flagsA, UpdateFlagA.Z2))
-                    nextTransformData.Position.z = r.ReadInt16() / 100f;
-                else if (UpdateFlagAContains(flagsA, UpdateFlagA.Z4))
-                    nextTransformData.Position.z = r.ReadSingle();
+                    nextTransformData.Scale.y = prevTransformData.Scale.y;
+                //X
+                if (UpdateFlagBContains(flagsB, UpdateFlagB.Z2))
+                    nextTransformData.Scale.z = reader.ReadInt16() / 100f;
+                else if (UpdateFlagBContains(flagsB, UpdateFlagB.Z4))
+                    nextTransformData.Scale.z = reader.ReadSingle();
                 else
-                    nextTransformData.Position.z = prevTransformData.Position.z;
-                //If remaining has changed then a position was read.
-                if (readerRemaining != r.Remaining)
-                    changedFull |= ChangedFull.Position;
+                    nextTransformData.Scale.z = prevTransformData.Scale.z;
 
-                //Rotation.
-                if (UpdateFlagAContains(flagsA, UpdateFlagA.Rotation))
-                {
-                    //Always use _packing value even if nested.
-                    nextTransformData.Rotation = r.ReadQuaternion(_packing.Rotation);
-                    changedFull |= ChangedFull.Rotation;
-                }
+                if (reader.Remaining != readerRemaining)
+                    changedFull |= ChangedFull.Scale;
                 else
-                {
-                    nextTransformData.Rotation = prevTransformData.Rotation;
-                }
-
-                //Extended settings.
-                if (UpdateFlagAContains(flagsA, UpdateFlagA.Extended))
-                {
-                    UpdateFlagB flagsB = (UpdateFlagB)r.ReadByte();
-                    readerRemaining = r.Remaining;
-
-                    //X
-                    if (UpdateFlagBContains(flagsB, UpdateFlagB.X2))
-                        nextTransformData.Scale.x = r.ReadInt16() / 100f;
-                    else if (UpdateFlagBContains(flagsB, UpdateFlagB.X4))
-                        nextTransformData.Scale.x = r.ReadSingle();
-                    else
-                        nextTransformData.Scale.x = prevTransformData.Scale.x;
-                    //Y
-                    if (UpdateFlagBContains(flagsB, UpdateFlagB.Y2))
-                        nextTransformData.Scale.y = r.ReadInt16() / 100f;
-                    else if (UpdateFlagBContains(flagsB, UpdateFlagB.Y4))
-                        nextTransformData.Scale.y = r.ReadSingle();
-                    else
-                        nextTransformData.Scale.y = prevTransformData.Scale.y;
-                    //X
-                    if (UpdateFlagBContains(flagsB, UpdateFlagB.Z2))
-                        nextTransformData.Scale.z = r.ReadInt16() / 100f;
-                    else if (UpdateFlagBContains(flagsB, UpdateFlagB.Z4))
-                        nextTransformData.Scale.z = r.ReadSingle();
-                    else
-                        nextTransformData.Scale.z = prevTransformData.Scale.z;
-
-                    if (r.Remaining != readerRemaining)
-                        changedFull |= ChangedFull.Scale;
-                    else
-                        nextTransformData.Scale = prevTransformData.Scale;
-
-                    if (UpdateFlagBContains(flagsB, UpdateFlagB.Nested))
-                    {
-                        nextTransformData.ParentBehaviour = r.ReadNetworkBehaviour();
-                        changedFull |= ChangedFull.Nested;
-                    }
-                    else
-                    {
-                        Unnest();
-                    }
-                }
-                //No extended settings.
-                else
-                {
                     nextTransformData.Scale = prevTransformData.Scale;
+
+                if (UpdateFlagBContains(flagsB, UpdateFlagB.Nested))
+                {
+                    nextTransformData.ParentBehaviour = reader.ReadNetworkBehaviour();
+                    changedFull |= ChangedFull.Nested;
+                }
+                else
+                {
                     Unnest();
                 }
+            }
+            //No extended settings.
+            else
+            {
+                nextTransformData.Scale = prevTransformData.Scale;
+                Unnest();
             }
 
             void Unnest()
@@ -1260,6 +1257,8 @@ namespace FishNet.Component.Transforming
             {
                 return (whole & part) == part;
             }
+
+            reader.Store();
         }
 
         
@@ -1528,11 +1527,10 @@ namespace FishNet.Component.Transforming
             lastSentTransformData.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, _parentBehaviour);
 
             //Send latest.
-            using (PooledWriter writer = WriterPool.RetrieveWriter())
-            {
-                SerializeChanged(changed, writer);
-                ServerUpdateTransform(writer.GetArraySegment(), channel);
-            }
+            PooledWriter writer = WriterPool.Retrieve();
+            SerializeChanged(changed, writer);
+            ServerUpdateTransform(writer.GetArraySegment(), channel);
+            writer.Store();
         }
 
 
@@ -1950,7 +1948,7 @@ namespace FishNet.Component.Transforming
 
             //Populate writer if it doesn't exist.
             if (_receivedClientData.Writer == null)
-                _receivedClientData.Writer = WriterPool.RetrieveWriter();
+                _receivedClientData.Writer = WriterPool.Retrieve();
             _receivedClientData.Channel = channel;
             _receivedClientData.Writer.Reset();
             _receivedClientData.Writer.WriteArraySegment(data);

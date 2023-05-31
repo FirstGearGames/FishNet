@@ -588,11 +588,7 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UnsetParent()
         {
-            NetworkObject nob = null;
-            if (InvalidParent(nob))
-                return;
-
-            SetParent(nob);
+            UpdateParent(null, null);
         }
 
         /// <summary>
@@ -608,6 +604,7 @@ namespace FishNet.Object
             {
                 RuntimeParentNetworkObject = null;
                 RuntimeParentTransform = null;
+                transform.SetParent(null);
             }
             //Being set to something.
             else
@@ -632,16 +629,16 @@ namespace FishNet.Object
         private bool InvalidParent(NetworkObject nob)
         {
             /* Scene objects could face destruction if the user
-             * childs them to an instantiated object that gets despawned.
-             * If that occurs, the user is at fault. However a destroyed
-             * scene object should be fine, it just won't spawn later given
-             * it's been destroyed. Allow scene objects to change parents freely. */
+            * childs them to an instantiated object that gets despawned.
+            * If that occurs, the user is at fault. However a destroyed
+            * scene object should be fine, it just won't spawn later given
+            * it's been destroyed. Allow scene objects to change parents freely. */
             if (IsSceneObject)
                 return false;
 
-            //Setting to already runtime parent. Fail silently just to skip work.
+            //Setting to already current runtime parent. No need to make a change.
             if (nob == RuntimeParentNetworkObject)
-                return false;
+                return true;
             //Setting to self.
             if (nob == this)
             {
@@ -657,7 +654,7 @@ namespace FishNet.Object
 
             return false;
         }
-        
+
 
         /// <summary>
         /// Adds a NetworkBehaviour and serializes it's components.
@@ -815,7 +812,7 @@ namespace FishNet.Object
             if (asServer)
                 Observers.Clear();
 
-            
+
         }
 
         /// <summary>
@@ -916,25 +913,24 @@ namespace FishNet.Object
                 if (activeNewOwner)
                     ServerManager.Objects.RebuildObservers(this, newOwner);
 
-                using (PooledWriter writer = WriterPool.RetrieveWriter())
+                PooledWriter writer = WriterPool.Retrieve();
+                writer.WritePacketId(PacketId.OwnershipChange);
+                writer.WriteNetworkObject(this);
+                writer.WriteNetworkConnection(Owner);
+                //If sharing then send to all observers.
+                if (NetworkManager.ServerManager.ShareIds)
                 {
-                    writer.WritePacketId(PacketId.OwnershipChange);
-                    writer.WriteNetworkObject(this);
-                    writer.WriteNetworkConnection(Owner);
-                    //If sharing then send to all observers.
-                    if (NetworkManager.ServerManager.ShareIds)
-                    {
-                        NetworkManager.TransportManager.SendToClients((byte)Channel.Reliable, writer.GetArraySegment(), this);
-                    }
-                    //Only sending to old / new.
-                    else
-                    {
-                        if (prevOwner.IsActive)
-                            NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), prevOwner);
-                        if (activeNewOwner)
-                            NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), newOwner);
-                    }
+                    NetworkManager.TransportManager.SendToClients((byte)Channel.Reliable, writer.GetArraySegment(), this);
                 }
+                //Only sending to old / new.
+                else
+                {
+                    if (prevOwner.IsActive)
+                        NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), prevOwner);
+                    if (activeNewOwner)
+                        NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), newOwner);
+                }
+                writer.Store();
 
                 if (prevOwner.IsActive)
                     ServerManager.Objects.RebuildObservers(prevOwner);

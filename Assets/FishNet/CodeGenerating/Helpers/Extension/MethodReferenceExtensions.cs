@@ -1,4 +1,5 @@
-﻿using MonoFN.Cecil;
+﻿using FishNet.CodeGenerating.Extension;
+using MonoFN.Cecil;
 using MonoFN.Cecil.Rocks;
 using System;
 
@@ -7,6 +8,16 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
     internal static class MethodReferenceExtensions
     {
+
+        /// <summary>
+        /// Returns a custom attribute.
+        /// </summary>
+        public static CustomAttribute GetCustomAttribute(this MethodReference mr, string attributeFullName)
+        {
+            MethodDefinition md = mr.Resolve();
+            return MethodDefinitionExtensions.GetCustomAttribute(md, attributeFullName);
+        }
+
         /// <summary>
         /// Makes a generic method with specified arguments.
         /// </summary>

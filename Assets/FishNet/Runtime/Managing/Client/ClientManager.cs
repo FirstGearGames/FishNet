@@ -299,7 +299,7 @@ namespace FishNet.Managing.Client
             if (segment.Count <= TransportManager.TICK_BYTES)
                 return;
 
-            PooledReader reader = ReaderPool.RetrieveReader(segment, NetworkManager, Reader.DataSource.Server);
+            PooledReader reader = ReaderPool.Retrieve(segment, NetworkManager, Reader.DataSource.Server);
             NetworkManager.TimeManager.LastPacketTick = reader.ReadTickUnpacked();
             ParseReader(reader, args.Channel);
             ReaderPool.Store(reader);
@@ -433,7 +433,7 @@ namespace FishNet.Managing.Client
                     }
                     else if (packetId == PacketId.TimingUpdate)
                     {
-                        NetworkManager.TimeManager.ParseTimingUpdate();
+                        NetworkManager.TimeManager.ParseTimingUpdate(reader);
                     }
                     else if (packetId == PacketId.OwnershipChange)
                     {

@@ -58,7 +58,7 @@ namespace FishNet.Managing.Object
              * for every connection it's going to and filling a single
              * writer with values based on if owner or not. This would
              * result in significantly more iterations. */
-            PooledWriter headerWriter = WriterPool.RetrieveWriter();
+            PooledWriter headerWriter = WriterPool.Retrieve();
             headerWriter.WritePacketId(PacketId.ObjectSpawn);
             headerWriter.WriteNetworkObjectForSpawn(nob);
             if (NetworkManager.ServerManager.ShareIds || connection == nob.Owner)
@@ -169,7 +169,7 @@ namespace FishNet.Managing.Object
 
             /* Used to write latest data which must be sent to
              * clients, such as SyncTypes and RpcLinks. */
-            PooledWriter tempWriter = WriterPool.RetrieveWriter();
+            PooledWriter tempWriter = WriterPool.Retrieve();
             //Send RpcLinks first.
             foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
                 nb.WriteRpcLinks(tempWriter);
@@ -196,8 +196,8 @@ namespace FishNet.Managing.Object
             }
 
             //Dispose of writers created in this method.
-            headerWriter.Dispose();
-            tempWriter.Dispose();
+            headerWriter.Store();
+            tempWriter.Store();
         }
 
         /// <summary>

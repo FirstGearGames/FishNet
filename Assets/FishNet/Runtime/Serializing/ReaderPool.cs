@@ -12,7 +12,9 @@ namespace FishNet.Serializing
     {
         internal PooledReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(bytes, networkManager, null, source) { }
         internal PooledReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(segment, networkManager, null, source) { }
-        public void Dispose() => ReaderPool.Store(this);
+        public void Store() => ReaderPool.Store(this);
+        [Obsolete("Use Store().")] //Remove on 2024/01/01.
+        public void Dispose() => this.Store();
     }
 
     /// <summary>
@@ -31,29 +33,29 @@ namespace FishNet.Serializing
         /// Get the next reader in the pool
         /// <para>If pool is empty, creates a new Reader</para>
         /// </summary>
-        [Obsolete("Use RetrieveReader(byte[], NetworkManager, DataSource)")] //Remove on 2024/01/01
+        [Obsolete("Use Retrieve(byte[], NetworkManager, DataSource)")] //Remove on 2024/01/01
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledReader GetReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) => RetrieveReader(bytes, networkManager, source); 
+        public static PooledReader GetReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) => Retrieve(bytes, networkManager, source); 
         /// <summary>
         /// Get the next reader in the pool
         /// <para>If pool is empty, creates a new Reader</para>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledReader RetrieveReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
+        public static PooledReader Retrieve(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
         {
-            return RetrieveReader(new ArraySegment<byte>(bytes), networkManager, source);
+            return Retrieve(new ArraySegment<byte>(bytes), networkManager, source);
         }
 
         /// <summary>
         /// Get the next reader in the pool or creates a new one if none are available.
         /// </summary>
-        [Obsolete("Use RetrieveReader(ArraySegment, NetworkManager, DataSource)")] //Remove on 2024/01/01
+        [Obsolete("Use Retrieve(ArraySegment, NetworkManager, DataSource)")] //Remove on 2024/01/01
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledReader GetReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) => RetrieveReader(segment, networkManager, source);
+        public static PooledReader GetReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) => Retrieve(segment, networkManager, source);
         /// <summary>
         /// Get the next reader in the pool or creates a new one if none are available.
         /// </summary>
-        public static PooledReader RetrieveReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
+        public static PooledReader Retrieve(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
         {
             PooledReader result;
             if (_pool.Count > 0)

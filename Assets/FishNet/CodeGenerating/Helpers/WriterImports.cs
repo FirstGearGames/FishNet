@@ -77,7 +77,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 int parameterCount = methodInfo.GetParameters().Length;
 
-                if (methodInfo.Name == nameof(PooledWriter.Dispose))
+                if (methodInfo.Name == nameof(PooledWriter.Store))
                     PooledWriter_Dispose_MethodRef = base.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(PooledWriter.WritePackedWhole))
                     Writer_WritePackedWhole_MethodRef = base.ImportReference(methodInfo);

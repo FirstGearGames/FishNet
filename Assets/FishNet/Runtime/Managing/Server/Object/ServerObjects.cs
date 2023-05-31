@@ -605,7 +605,7 @@ namespace FishNet.Managing.Server
             if (nob.AllowPredictedSyncTypes)
             {
                 ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
-                PooledReader syncTypeReader = ReaderPool.RetrieveReader(syncValues, base.NetworkManager);
+                PooledReader syncTypeReader = ReaderPool.Retrieve(syncValues, base.NetworkManager);
                 foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
                 {
                     //SyncVars.
@@ -615,7 +615,7 @@ namespace FishNet.Managing.Server
                     length = syncTypeReader.ReadInt32();
                     nb.OnSyncType(syncTypeReader, length, true, true);
                 }
-                syncTypeReader.Dispose();
+                syncTypeReader.Store();
             }
 
             SpawnWithoutChecks(nob, owner, objectId);
@@ -625,7 +625,7 @@ namespace FishNet.Managing.Server
             //Writes a predicted spawn result to a client.
             void WriteResponse(bool success)
             {
-                PooledWriter writer = WriterPool.RetrieveWriter();
+                PooledWriter writer = WriterPool.Retrieve();
                 writer.WritePacketId(PacketId.PredictedSpawnResult);
                 writer.WriteNetworkObjectId(nob.ObjectId);
                 writer.WriteBoolean(success);
@@ -831,7 +831,7 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         private void WriteDespawnAndSend(NetworkObject nob, DespawnType despawnType)
         {
-            PooledWriter everyoneWriter = WriterPool.RetrieveWriter();
+            PooledWriter everyoneWriter = WriterPool.Retrieve();
             WriteDespawn(nob, despawnType, everyoneWriter);
 
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
@@ -850,7 +850,7 @@ namespace FishNet.Managing.Server
                 //nob.Observers.Remove(conn);
             }
 
-            everyoneWriter.Dispose();
+            everyoneWriter.Store();
             CollectionCaches<NetworkConnection>.Store(cache);
         }
         /// <summary>

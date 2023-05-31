@@ -325,7 +325,7 @@ namespace FishNet.Object
             _lastSentReplicateTick = TimeManager.LocalTick;
 
             //Write history to methodWriter.
-            PooledWriter methodWriter = WriterPool.RetrieveWriter(WriterPool.LENGTH_BRACKET);
+            PooledWriter methodWriter = WriterPool.Retrieve(WriterPool.LENGTH_BRACKET);
             methodWriter.WriteReplicate<T>(replicates, offset);
             PooledWriter writer;
             //if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
@@ -344,8 +344,8 @@ namespace FishNet.Object
                 _remainingResends = 0;
             }
 
-            methodWriter.DisposeLength();
-            writer.DisposeLength();
+            methodWriter.StoreLength();
+            writer.StoreLength();
         }
 #endif
 
@@ -365,7 +365,7 @@ namespace FishNet.Object
             if (!Owner.IsActive)
                 return;
 
-            PooledWriter methodWriter = WriterPool.RetrieveWriter();
+            PooledWriter methodWriter = WriterPool.Retrieve();
             methodWriter.WriteUInt32(GetLastReplicateTick());
             methodWriter.Write(reconcileData);
 
@@ -381,8 +381,8 @@ namespace FishNet.Object
 
             _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), Owner);
 
-            methodWriter.Dispose();
-            writer.Dispose();
+            methodWriter.Store();
+            writer.Store();
         }
 #else
         /// <summary>
@@ -397,7 +397,7 @@ namespace FishNet.Object
             if (!IsSpawned)
                 return;
 
-            PooledWriter methodWriter = WriterPool.RetrieveWriter();
+            PooledWriter methodWriter = WriterPool.Retrieve();
             methodWriter.Write(reconcileData);
 
             PooledWriter writer;
@@ -413,8 +413,8 @@ namespace FishNet.Object
             foreach (NetworkConnection nc in Observers)
                 nc.WriteState(writer);
 
-            methodWriter.Dispose();
-            writer.Dispose();
+            methodWriter.Store();
+            writer.Store();
         }
 #endif
 #if !PREDICTION_V2
@@ -509,14 +509,14 @@ namespace FishNet.Object
         /// <returns>Returns true if to exit the replicate early.</returns>
         [CodegenMakePublic] //internal
         [APIExclude]
-        public bool Replicate_ExitEarly_A_Internal(bool asServer, bool replaying)
+        public bool Replicate_ExitEarly_A_Internal(bool asServer, bool replaying, bool allowServerControl)
         {
             bool isOwner = IsOwner;
             //Server.
             if (asServer)
             {
                 //No owner, do not try to replicate 'owner' input.
-                if (!Owner.IsActive)
+                if (!Owner.IsActive && !allowServerControl)
                 {
                     ClearReplicateCache(true);
                     return true;
@@ -622,41 +622,53 @@ namespace FishNet.Object
         /// </summary>
         [CodegenMakePublic] //internal
         [APIExclude]
-        public void Replicate_NonOwner_Internal<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<T> q, Channel channel) where T : IReplicateData
+        internal void Replicate_NonOwner_Internal<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<T> q, T serverControlData, bool allowServerControl, Channel channel) where T : IReplicateData
         {
-            int count = q.Count;
-            if (count > 0)
+            //If to allow server control make sure there is no owner.
+            if (allowServerControl && !Owner.IsValid)
             {
-                ReplicateData(q.Dequeue());
-                count--;
-
-                PredictionManager pm = PredictionManager;
-                bool consumeExcess = !pm.DropExcessiveReplicates;
-                //Number of entries to leave in buffer when consuming.
-                const int leaveInBuffer = 2;
-                //Only consume if the queue count is over leaveInBuffer.
-                if (consumeExcess && count > leaveInBuffer)
-                {
-                    byte maximumAllowedConsumes = pm.MaximumReplicateConsumeCount;
-                    int maximumPossibleConsumes = (count - leaveInBuffer);
-                    int consumeAmount = Mathf.Min(maximumAllowedConsumes, maximumPossibleConsumes);
-
-                    for (int i = 0; i < consumeAmount; i++)
-                        ReplicateData(q.Dequeue());
-                }
-
-                void ReplicateData(T data)
-                {
-                    uint tick = data.GetTick();
-                    SetLastReplicateTick(tick);
-                    del.Invoke(data, true, channel, false);
-                }
-
-                _remainingResends = pm.RedundancyCount;
+                uint tick = TimeManager.LocalTick;
+                serverControlData.SetTick(tick);
+                SetLastReplicateTick(tick);
+                del.Invoke(serverControlData, true, channel, false);
             }
+            //Using client inputs.
             else
             {
-                del.Invoke(default, true, channel, false);
+                int count = q.Count;
+                if (count > 0)
+                {
+                    ReplicateData(q.Dequeue());
+                    count--;
+
+                    PredictionManager pm = PredictionManager;
+                    bool consumeExcess = !pm.DropExcessiveReplicates;
+                    //Number of entries to leave in buffer when consuming.
+                    const int leaveInBuffer = 2;
+                    //Only consume if the queue count is over leaveInBuffer.
+                    if (consumeExcess && count > leaveInBuffer)
+                    {
+                        byte maximumAllowedConsumes = pm.MaximumReplicateConsumeCount;
+                        int maximumPossibleConsumes = (count - leaveInBuffer);
+                        int consumeAmount = Mathf.Min(maximumAllowedConsumes, maximumPossibleConsumes);
+
+                        for (int i = 0; i < consumeAmount; i++)
+                            ReplicateData(q.Dequeue());
+                    }
+
+                    void ReplicateData(T data)
+                    {
+                        uint tick = data.GetTick();
+                        SetLastReplicateTick(tick);
+                        del.Invoke(data, true, channel, false);
+                    }
+
+                    _remainingResends = pm.RedundancyCount;
+                }
+                else
+                {
+                    del.Invoke(default, true, channel, false);
+                }
             }
         }
 #else
@@ -915,7 +927,7 @@ namespace FishNet.Object
             int offset = (historyCount - pastInputs);
 
             //Write history to methodWriter.
-            PooledWriter methodWriter = WriterPool.RetrieveWriter(WriterPool.LENGTH_BRACKET);
+            PooledWriter methodWriter = WriterPool.Retrieve(WriterPool.LENGTH_BRACKET);
             methodWriter.WriteReplicate<T>(replicatesHistory, offset);
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
 
@@ -939,8 +951,8 @@ namespace FishNet.Object
             if (channel == Channel.Reliable)
                 _remainingResends = 0;
 
-            methodWriter.DisposeLength();
-            writer.DisposeLength();
+            methodWriter.StoreLength();
+            writer.StoreLength();
         }
 #endif
 
@@ -965,7 +977,7 @@ namespace FishNet.Object
 
             if (receivedReplicatesCount > pm.RedundancyCount)
             {
-                sender.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection {sender.ToString()} sent to many past replicates. Connection will be kicked immediately.");
+                sender.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection {sender.ToString()} sent too many past replicates. Connection will be kicked immediately.");
                 return;
             }
 
@@ -1003,7 +1015,7 @@ namespace FishNet.Object
             {
                 if (receivedReplicatesCount > pm.RedundancyCount)
                 {
-                    sender.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection {sender.ToString()} sent to many past replicates. Connection will be kicked immediately.");
+                    sender.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection {sender.ToString()} sent too many past replicates. Connection will be kicked immediately.");
                     return;
                 }
             }
@@ -1042,6 +1054,9 @@ namespace FishNet.Object
                     _lastReceivedReplicateTick = tick;
                 }
             }
+
+            if (IsServer && Owner.IsValid)
+                Owner.SetHighestQueueCount(replicates.Count, TimeManager.LocalTick);
         }
 #else
         /// <summary>

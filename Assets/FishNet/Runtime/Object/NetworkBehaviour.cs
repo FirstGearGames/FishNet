@@ -143,7 +143,7 @@ namespace FishNet.Object
         /// </summary>
         [CodegenMakePublic]
         [APIExclude]
-        protected internal virtual void NetworkInitializeIfDisabled() { }
+        internal virtual void NetworkInitializeIfDisabled() { }
 
         #region Editor.
         protected virtual void Reset()

@@ -213,12 +213,11 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            using (PooledWriter writer = WriterPool.RetrieveWriter())
-            {
-                Broadcasts.WriteBroadcast<T>(writer, message, channel);
-                ArraySegment<byte> segment = writer.GetArraySegment();
-                NetworkManager.TransportManager.SendToClient((byte)channel, segment, connection);
-            }
+            PooledWriter writer = WriterPool.Retrieve();
+            Broadcasts.WriteBroadcast<T>(writer, message, channel);
+            ArraySegment<byte> segment = writer.GetArraySegment();
+            NetworkManager.TransportManager.SendToClient((byte)channel, segment, connection);
+            writer.Store();
         }
 
 
@@ -239,19 +238,18 @@ namespace FishNet.Managing.Server
             }
 
             bool failedAuthentication = false;
-            using (PooledWriter writer = WriterPool.RetrieveWriter())
-            {
-                Broadcasts.WriteBroadcast<T>(writer, message, channel);
-                ArraySegment<byte> segment = writer.GetArraySegment();
+            PooledWriter writer = WriterPool.Retrieve();
+            Broadcasts.WriteBroadcast<T>(writer, message, channel);
+            ArraySegment<byte> segment = writer.GetArraySegment();
 
-                foreach (NetworkConnection conn in connections)
-                {
-                    if (requireAuthenticated && !conn.Authenticated)
-                        failedAuthentication = true;
-                    else
-                        NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);
-                }
+            foreach (NetworkConnection conn in connections)
+            {
+                if (requireAuthenticated && !conn.Authenticated)
+                    failedAuthentication = true;
+                else
+                    NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);
             }
+            writer.Store();
 
             if (failedAuthentication)
             {
@@ -429,20 +427,19 @@ namespace FishNet.Managing.Server
             }
 
             bool failedAuthentication = false;
-            using (PooledWriter writer = WriterPool.RetrieveWriter())
-            {
-                Broadcasts.WriteBroadcast<T>(writer, message, channel);
-                ArraySegment<byte> segment = writer.GetArraySegment();
+            PooledWriter writer = WriterPool.Retrieve();
+            Broadcasts.WriteBroadcast<T>(writer, message, channel);
+            ArraySegment<byte> segment = writer.GetArraySegment();
 
-                foreach (NetworkConnection conn in Clients.Values)
-                {
-                    //
-                    if (requireAuthenticated && !conn.Authenticated)
-                        failedAuthentication = true;
-                    else
-                        NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);
-                }
+            foreach (NetworkConnection conn in Clients.Values)
+            {
+                //
+                if (requireAuthenticated && !conn.Authenticated)
+                    failedAuthentication = true;
+                else
+                    NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);
             }
+            writer.Store();
 
             if (failedAuthentication)
             {

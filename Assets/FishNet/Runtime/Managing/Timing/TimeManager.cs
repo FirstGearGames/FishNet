@@ -1,5 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing.Transporting;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
@@ -267,21 +268,21 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public const uint UNSET_TICK = 0;
         /// <summary>
-        /// Maximum percentage timing may vary from SimulationInterval for clients.
+        /// Maximum percentage timing may vary from TickDelta for clients.
         /// </summary>
         private const float CLIENT_TIMING_PERCENT_RANGE = 0.5f;
         /// <summary>
         /// Percentage of TickDelta client will adjust when needing to speed up.
         /// </summary>
-        private const double CLIENT_SPEEDUP_PERCENT = 0.003d;
+        private const double CLIENT_SPEEDUP_PERCENT = 0.006d;
         /// <summary>
         /// Percentage of TickDelta client will adjust when needing to slow down.
         /// </summary>
-        private const double CLIENT_SLOWDOWN_PERCENT = 0.005d;
+        private const double CLIENT_SLOWDOWN_PERCENT = 0.035d;
         /// <summary>
         /// When steps to be sent to clients are equal to or higher than this value in either direction a reset steps will be sent.
         /// </summary>
-        private const byte RESET_STEPS_THRESHOLD = 5;
+        private const byte RESET_STEPS_THRESHOLD = 15;
         /// <summary>
         /// Playerprefs string to load and save user fixed time.
         /// </summary>
@@ -578,12 +579,11 @@ namespace FishNet.Managing.Timing
             _receivedPong = false;
 
             uint tick = (tickOverride == null) ? LocalTick : tickOverride.Value;
-            using (PooledWriter writer = WriterPool.RetrieveWriter())
-            {
-                writer.WritePacketId(PacketId.PingPong);
-                writer.WriteTickUnpacked(tick);
-                _networkManager.TransportManager.SendToServer((byte)Channel.Unreliable, writer.GetArraySegment());
-            }
+            PooledWriter writer = WriterPool.Retrieve();
+            writer.WritePacketId(PacketId.PingPong);
+            writer.WriteTickUnpacked(tick);
+            _networkManager.TransportManager.SendToServer((byte)Channel.Unreliable, writer.GetArraySegment());
+            writer.Store();
         }
 
         /// <summary>
@@ -594,12 +594,11 @@ namespace FishNet.Managing.Timing
             if (!conn.IsActive || !conn.Authenticated)
                 return;
 
-            using (PooledWriter writer = WriterPool.RetrieveWriter())
-            {
-                writer.WritePacketId(PacketId.PingPong);
-                writer.WriteTickUnpacked(clientTick);
-                conn.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
-            }
+            PooledWriter writer = WriterPool.Retrieve();
+            writer.WritePacketId(PacketId.PingPong);
+            writer.WriteTickUnpacked(clientTick);
+            conn.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
+            writer.Store();
         }
         #endregion
 
@@ -614,6 +613,9 @@ namespace FishNet.Managing.Timing
             double tickDelta = TickDelta;
             double timePerSimulation = (isServer) ? tickDelta : _adjustedTickDelta;
             double time = Time.unscaledDeltaTime;
+
+            double nextAdjustedTickDelta = Mathf.MoveTowards((float)_adjustedTickDelta, (float)TickDelta, _deltaStabilizationRate * Time.deltaTime);
+            _adjustedTickDelta = nextAdjustedTickDelta;
 
             _elapsedTickTime += time;
             FrameTicked = (_elapsedTickTime >= timePerSimulation);
@@ -1008,10 +1010,31 @@ namespace FishNet.Managing.Timing
             if (tick - _lastUpdateTicks >= requiredTicks)
             {
                 //Now send using a packetId.
-                PooledWriter writer = WriterPool.RetrieveWriter();
-                writer.WritePacketId(PacketId.TimingUpdate);
-                _networkManager.TransportManager.SendToClients((byte)Channel.Unreliable, writer.GetArraySegment());
-                writer.Dispose();
+                PooledWriter writer = WriterPool.Retrieve();
+                foreach (NetworkConnection item in _networkManager.ServerManager.Clients.Values)
+                {
+                    if (!item.Authenticated)
+                        continue;
+
+                    writer.Reset();
+                    writer.WritePacketId(PacketId.TimingUpdate);
+                    int highestQueueCount = item.GetAndResetHighestQueueCount();
+
+                    /* Timing updates are sent after the tick so there should be
+                     * ideally no more than one in buffer. */
+                    int desiredQueueCount = 1;
+                    //Don't force a tick reset, we want the client to slow down.
+                    int maxOverageCount = (RESET_STEPS_THRESHOLD - 1);
+                    byte overage = (highestQueueCount > 1) ?
+                        (byte)Mathf.Clamp(highestQueueCount - desiredQueueCount, 0, maxOverageCount)
+                        : (byte)0;
+
+                    writer.WriteByte(overage);
+                    item.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
+                }
+                //writer.WritePacketId(PacketId.TimingUpdate);
+                //_networkManager.TransportManager.SendToClients((byte)Channel.Unreliable, writer.GetArraySegment());
+                writer.Store();
 
                 _lastUpdateTicks = tick;
             }
@@ -1021,8 +1044,10 @@ namespace FishNet.Managing.Timing
         /// Called on client when server sends a timing update.
         /// </summary>
         /// <param name="ta"></param>
-        internal void ParseTimingUpdate()
+        internal void ParseTimingUpdate(PooledReader reader)
         {
+            //Number of ticks that the client sent vs expected.
+            byte tickOverage = reader.ReadByte();
             //Don't adjust timing on server.
             if (_networkManager.IsServer)
                 return;
@@ -1031,14 +1056,36 @@ namespace FishNet.Managing.Timing
             uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
             Tick = LastPacketTick + rttTicks;
             uint expected = (uint)(TickRate * _timingInterval);
+            /* Add excessive ticks onto clientTicks.
+             * This is the value in which the server has identified the client to be over. */
+
+            //Value which can be substracted from difference to try and keep input in queue for the client.
+            int queueDifferenceBonus;
+            /* Set client ticks to locally calculated value
+             * unless server is saying client is sending too fast,
+             * then use servers value. */
+            uint clientTicks;
+            if (tickOverage <= 0)
+            {
+                clientTicks = _clientTicks;
+                queueDifferenceBonus = _networkManager.PredictionManager.QueuedInputs;
+            }
+            else
+            {
+                clientTicks = ((uint)TickRate + tickOverage);
+                //Reduce 1 less to let the overage values count down a little faster.
+                queueDifferenceBonus = (_networkManager.PredictionManager.QueuedInputs - 1);
+            }
+
             long difference;
             //If ticking too fast.
-            if (_clientTicks > expected)
-                difference = (long)(_clientTicks - expected);
+            if (clientTicks > expected)
+                difference = (long)(clientTicks - expected);
             //Not ticking fast enough.
             else
-                difference = (long)((expected - _clientTicks) * -1);
+                difference = (long)((expected - clientTicks) * -1);
 
+            difference -= queueDifferenceBonus;
             //If difference is unusually off then reset timings.
             if (Mathf.Abs(difference) >= RESET_STEPS_THRESHOLD)
             {
@@ -1051,10 +1098,17 @@ namespace FishNet.Managing.Timing
                 double change = (steps * (percent * TickDelta));
 
                 _adjustedTickDelta = MathFN.ClampDouble(_adjustedTickDelta + change, _clientTimingRange[0], _clientTimingRange[1]);
+
+                float tickDeltaDifference = Mathf.Abs((float)_adjustedTickDelta - (float)TickDelta);
+                /* Stablize rate is set to move adjustedTickDelta to actual tickDelta over the
+                 * course of each expected timing update. */
+                _deltaStabilizationRate = ((float)tickDeltaDifference / (float)_timingInterval);
             }
 
             _clientTicks = 0;
         }
+
+        private float _deltaStabilizationRate;
         #endregion
 
         /// <summary>

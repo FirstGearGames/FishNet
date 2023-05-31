@@ -101,7 +101,7 @@ namespace FishNet.Managing.Client
                 _nextLodNobIndex = 0;
             int nobIndex = _nextLodNobIndex;
 
-            PooledWriter tmpWriter = WriterPool.RetrieveWriter(1000);
+            PooledWriter tmpWriter = WriterPool.Retrieve(1000);
             int written = 0;
 
             //Only check if player has objects.
@@ -179,15 +179,15 @@ namespace FishNet.Managing.Client
              * we are using deltas. This is also why
              * updates are sent larger chunked twice a second rather
              * than smaller chunks regularly. */
-            PooledWriter writer = WriterPool.RetrieveWriter(1000);
+            PooledWriter writer = WriterPool.Retrieve(1000);
             writer.WritePacketId(PacketId.NetworkLODUpdate);
             writer.WriteInt32(written);
             writer.WriteArraySegment(tmpWriter.GetArraySegment());
             NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment(), true);
 
             //Dispose writers.
-            writer.DisposeLength();
-            tmpWriter.DisposeLength();
+            writer.StoreLength();
+            tmpWriter.StoreLength();
         }
 
 

@@ -61,10 +61,6 @@ namespace FishNet.CodeGenerating.Processing
         internal const string LATE_INITIALIZED_NAME = "NetworkInitializeLate_";
         internal const string NETWORKINITIALIZE_EARLY_INTERNAL_NAME = "NetworkInitialize___Early";
         internal const string NETWORKINITIALIZE_LATE_INTERNAL_NAME = "NetworkInitialize__Late";
-        private MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
-#pragma warning disable CS0414
-        private MethodAttributes PROTECTED_VIRTUAL_ATTRIBUTES = (MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig);
-#pragma warning restore CS0414
         #endregion
 
         internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, Dictionary<TypeDefinition, uint> childSyncTypeCounts, Dictionary<TypeDefinition, uint> childRpcCounts)
@@ -532,18 +528,12 @@ namespace FishNet.CodeGenerating.Processing
         {
             CreateMethod(NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             CreateMethod(NETWORKINITIALIZE_LATE_INTERNAL_NAME);
-
-            MethodDefinition baseInitIfDisabled = base.GetClass<NetworkBehaviourHelper>().NetworkInitializeIfDisabled_MethodRef.CachedResolve(base.Session);
-            networkInitializeIfDisabledMd = CreateMethod(baseInitIfDisabled.Name, baseInitIfDisabled);
+            networkInitializeIfDisabledMd = CreateMethod(nameof(NetworkBehaviour.NetworkInitializeIfDisabled));
 
             MethodDefinition CreateMethod(string name, MethodDefinition copied = null)
             {
-                MethodDefinition md;
                 bool created;
-                if (copied == null)
-                    md = typeDef.GetOrCreateMethodDefinition(base.Session, name, PUBLIC_VIRTUAL_ATTRIBUTES, typeDef.Module.TypeSystem.Void, out created);
-                else
-                    md = typeDef.GetOrCreateMethodDefinition(base.Session, name, copied, true, out created);
+                    MethodDefinition md = typeDef.GetOrCreateMethodDefinition(base.Session, name, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES, typeDef.Module.TypeSystem.Void, out created);
 
                 if (created)
                 {
@@ -590,7 +580,7 @@ namespace FishNet.CodeGenerating.Processing
             do
             {
                 bool created;
-                MethodDefinition awakeMd = copyTypeDef.GetOrCreateMethodDefinition(base.Session, NetworkBehaviourHelper.AWAKE_METHOD_NAME, PUBLIC_VIRTUAL_ATTRIBUTES, copyTypeDef.Module.TypeSystem.Void, out created);
+                MethodDefinition awakeMd = copyTypeDef.GetOrCreateMethodDefinition(base.Session, NetworkBehaviourHelper.AWAKE_METHOD_NAME, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES, copyTypeDef.Module.TypeSystem.Void, out created);
 
                 //Awake is found. Check for invalid return type.
                 if (!created)
@@ -600,7 +590,7 @@ namespace FishNet.CodeGenerating.Processing
                         base.LogError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
                         return false;
                     }
-                    awakeMd.Attributes = PUBLIC_VIRTUAL_ATTRIBUTES;
+                    awakeMd.SetPublicAttributes();
                 }
                 //Aways was made.
                 else
@@ -638,7 +628,7 @@ namespace FishNet.CodeGenerating.Processing
             {
                 created = true;
 
-                thisAwakeMethodDef = new MethodDefinition(NetworkBehaviourHelper.AWAKE_METHOD_NAME, PUBLIC_VIRTUAL_ATTRIBUTES,
+                thisAwakeMethodDef = new MethodDefinition(NetworkBehaviourHelper.AWAKE_METHOD_NAME, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES,
                     typeDef.Module.TypeSystem.Void);
                 thisAwakeMethodDef.Body.InitLocals = true;
                 typeDef.Methods.Add(thisAwakeMethodDef);

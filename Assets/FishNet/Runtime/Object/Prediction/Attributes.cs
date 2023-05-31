@@ -14,6 +14,10 @@ namespace FishNet.Object.Prediction
         /// </summary>
         [Obsolete("Use PredictionManager.RedundancyCount.")] //Remove on 2023/06/01
         public byte Resends = 5;
+        /// <summary>
+        /// True to allow running input passed in with asServer true when there is no owner.
+        /// </summary>
+        public bool AllowServerControl = false;
     }
     /// <summary>
     /// Reconcile methods indicate how to reset your script or object after the server has replicated user data.

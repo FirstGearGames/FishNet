@@ -24,7 +24,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Writer containing split packet combined.
         /// </summary>
-        private PooledWriter _writer = WriterPool.RetrieveWriter();
+        private PooledWriter _writer = WriterPool.Retrieve();
         #endregion
 
         internal SplitReader()
