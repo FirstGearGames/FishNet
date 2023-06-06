@@ -203,7 +203,7 @@ namespace FishNet.Component.Prediction
             if (_graphicalAnimators.Length > 0)
             {
                 for (int i = 0; i < _graphicalAnimators.Length; i++)
-#if UNITY_2020_1_OR_NEWER
+#if UNITY_2022_1_OR_NEWER
                     _graphicalAnimators[i].keepAnimatorStateOnDisable = true;
 #else
                     _graphicalAnimators[i].keepAnimatorControllerStateOnDisable = true;
