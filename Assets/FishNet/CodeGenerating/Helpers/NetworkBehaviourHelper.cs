@@ -59,6 +59,7 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference IsOwner_MethodRef;
         public MethodReference IsServer_MethodRef;
         public MethodReference IsHost_MethodRef;
+        public MethodReference IsNetworked_MethodRef;
         //Misc.
         public TypeReference TypeRef;
         public MethodReference OwnerMatches_MethodRef;
@@ -164,6 +165,8 @@ namespace FishNet.CodeGenerating.Helping
                     IsHost_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkBehaviour.IsOwner))
                     IsOwner_MethodRef = base.ImportReference(pi.GetMethod);
+                else if (pi.Name == nameof(NetworkBehaviour.IsNetworked))
+                    IsNetworked_MethodRef = base.ImportReference(pi.GetMethod);
                 //Owner.
                 else if (pi.Name == nameof(NetworkBehaviour.Owner))
                     Owner_MethodRef = base.ImportReference(pi.GetMethod);
@@ -355,7 +358,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="retInstruction"></param>
         /// <param name="warn"></param>
-        internal void CreateIsClientCheck(MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst)
+        internal void CreateIsClientCheck(MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst, bool checkIsNetworked)
         {
             /* This is placed after the if check.
              * Should the if check pass then code
@@ -364,6 +367,10 @@ namespace FishNet.CodeGenerating.Helping
             Instruction endIf = processor.Create(OpCodes.Nop);
 
             List<Instruction> instructions = new List<Instruction>();
+
+            if (checkIsNetworked)
+                instructions.AddRange(CreateIsNetworkedCheck(methodDef, endIf));
+
             //Checking against the NetworkObject.
             if (!useStatic)
             {
@@ -399,13 +406,12 @@ namespace FishNet.CodeGenerating.Helping
             }
         }
 
-
         /// <summary>
         /// Creates exit method condition if not server.
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="warn"></param>
-        internal void CreateIsServerCheck(MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst)
+        internal void CreateIsServerCheck(MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst, bool checkIsNetworked)
         {
             /* This is placed after the if check.
             * Should the if check pass then code
@@ -414,6 +420,10 @@ namespace FishNet.CodeGenerating.Helping
             Instruction endIf = processor.Create(OpCodes.Nop);
 
             List<Instruction> instructions = new List<Instruction>();
+
+            if (checkIsNetworked)
+                instructions.AddRange(CreateIsNetworkedCheck(methodDef, endIf));
+            
             if (!useStatic)
             {
                 instructions.Add(processor.Create(OpCodes.Ldarg_0)); //argument: this
@@ -447,6 +457,21 @@ namespace FishNet.CodeGenerating.Helping
                     processor.Append(inst);
             }
         }
+
+        /// <summary>
+        /// Creates a call to base.IsNetworked and returns instructions.
+        /// </summary>
+        private List<Instruction> CreateIsNetworkedCheck(MethodDefinition methodDef, Instruction endIfInst)
+        {
+            List<Instruction> insts = new List<Instruction>();
+            ILProcessor processor = methodDef.Body.GetILProcessor();
+            insts.Add(processor.Create(OpCodes.Ldarg_0));
+            insts.Add(processor.Create(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().IsNetworked_MethodRef));
+            insts.Add(processor.Create(OpCodes.Brfalse, endIfInst));
+
+            return insts;
+        }
+
 
         /// <summary>
         /// Creates a return using the ReturnType for methodDef.

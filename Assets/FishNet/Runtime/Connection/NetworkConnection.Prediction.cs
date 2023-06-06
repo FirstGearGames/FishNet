@@ -15,23 +15,24 @@ namespace FishNet.Connection
     /// </summary>
     public partial class NetworkConnection
     {
-        private int _highestQueueCount;
+        private ushort _highestQueueCount;
         private uint _lastHighestQueueCountUpdateTick;
-        internal void SetHighestQueueCount(int value, uint serverTick)
+
+        internal void SetHighestQueueCount(ushort value, uint serverTick)
         {
             if (serverTick != _lastHighestQueueCountUpdateTick)
                 _highestQueueCount = 0;
             _lastHighestQueueCountUpdateTick = serverTick;
 
-            _highestQueueCount = Mathf.Max(_highestQueueCount, value);
+            _highestQueueCount = (ushort)Mathf.Max(_highestQueueCount, value);
         }
         /// <summary>
         /// Returns the highest queue count after resetting it.
         /// </summary>
         /// <returns></returns>
-        internal int GetAndResetHighestQueueCount()
+        internal ushort GetAndResetHighestQueueCount()
         {
-            int value = _highestQueueCount;
+            ushort value = _highestQueueCount;
             _highestQueueCount = 0;
             _lastHighestQueueCountUpdateTick = 0;
             return value;

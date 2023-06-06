@@ -136,7 +136,7 @@ namespace FishNet.Managing.Predicting
         /// Higher values will increase the likeliness of the server always having input from the client while lower values will allow the client input to run on the server faster.
         /// This value cannot be higher than MaximumServerReplicates.
         /// </summary>
-        public ushort QueuedInputs => _queuedInputs;
+        public ushort QueuedInputs => (ushort)(_queuedInputs + 1);
         /// <summary>
         /// 
         /// </summary>

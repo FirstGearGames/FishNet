@@ -138,7 +138,7 @@ namespace FishNet.CodeGenerating.Processing
                         base.GetClass<NetworkBehaviourHelper>().CreateLocalClientIsOwnerCheck(methodDef, logging, true, false, true);
                     //Otherwise normal IsClient check.
                     else
-                        base.GetClass<NetworkBehaviourHelper>().CreateIsClientCheck(methodDef, logging, useStatic, true);
+                        base.GetClass<NetworkBehaviourHelper>().CreateIsClientCheck(methodDef, logging, useStatic, true, !useStatic);
                 }
             }
             else if (qolType == QolAttributeType.Server)
@@ -146,7 +146,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (!StripMethod(methodDef))
                 {
                     LoggingType logging = qolAttribute.GetField("Logging", LoggingType.Warning);
-                    base.GetClass<NetworkBehaviourHelper>().CreateIsServerCheck(methodDef, logging, useStatic, true);
+                    base.GetClass<NetworkBehaviourHelper>().CreateIsServerCheck(methodDef, logging, useStatic, true, !useStatic);
                 }
             }
 

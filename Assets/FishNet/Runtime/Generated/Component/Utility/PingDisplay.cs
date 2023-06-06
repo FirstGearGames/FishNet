@@ -40,6 +40,8 @@ namespace FishNet.Component.Utility
         private bool _hideTickRate = true;
         #endregion
 
+#if !UNITY_EDITOR && UNITY_SERVER
+
         #region Private.
         /// <summary>
         /// Style for drawn ping.
@@ -49,11 +51,6 @@ namespace FishNet.Component.Utility
 
         private void OnGUI()
         {
-            //No need to perform these actions on server.
-#if !UNITY_EDITOR && UNITY_SERVER
-            return;
-#endif
-
             //Only clients can see pings.
             if (!InstanceFinder.IsClient)
                 return;
@@ -99,19 +96,15 @@ namespace FishNet.Component.Utility
                 ping = tm.RoundTripTime;
                 long deduction = 0;
                 if (_hideTickRate)
-                {
-                    deduction = (long)(tm.TickDelta * 1000d);
-                    /* If host subtract two ticks, if client only subtract one tick.
-                    * This will reflect the users real ping without the tick rate latency. */
-                    if (InstanceFinder.IsHost)
-                        deduction *= 2;
-                }
+                    deduction = (long)(tm.TickDelta * 2000d);
 
-                ping = (long)Mathf.Max(0, ping - deduction);
+                ping = (long)Mathf.Max(1, ping - deduction);
             }
 
             GUI.Label(new Rect(horizontal, vertical, width, height), $"Ping: {ping}ms", _style);
         }
+#endif
+
     }
 
 

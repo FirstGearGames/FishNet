@@ -553,7 +553,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * this should not occur but there's a chance as host
              * because deinitializations are slightly delayed to support
              * the clientHost deinitializing the object as well. */
-            base.GetClass<NetworkBehaviourHelper>().CreateIsServerCheck(createdMd, LoggingType.Off, false, false);
+            base.GetClass<NetworkBehaviourHelper>().CreateIsServerCheck(createdMd, LoggingType.Off, false, false, false);
             //
             CreateServerRpcConditionsForServer(processor, requireOwnership, connectionParameterDef);
 
@@ -628,7 +628,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             * this should not occur but there's a chance as host
             * because deinitializations are slightly delayed to support
             * the clientHost deinitializing the object as well. */
-            base.GetClass<NetworkBehaviourHelper>().CreateIsClientCheck(createdMd, LoggingType.Off, false, false);
+            base.GetClass<NetworkBehaviourHelper>().CreateIsClientCheck(createdMd, LoggingType.Off, false, false, false);
 
             //Block from running twice as host.
             if (runLocally)
@@ -812,7 +812,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             if (requireOwnership)
                 base.GetClass<NetworkBehaviourHelper>().CreateLocalClientIsOwnerCheck(methodDef, LoggingType.Warning, false, false, true);
             //If (!base.IsClient)
-            base.GetClass<NetworkBehaviourHelper>().CreateIsClientCheck(methodDef, LoggingType.Warning, false, true);
+            base.GetClass<NetworkBehaviourHelper>().CreateIsClientCheck(methodDef, LoggingType.Warning, false, true, false);
         }
 
         /// <summary>
@@ -839,7 +839,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         private void CreateClientRpcConditionsForServer(MethodDefinition methodDef)
         {
             //If (!base.IsServer)
-            base.GetClass<NetworkBehaviourHelper>().CreateIsServerCheck(methodDef, LoggingType.Warning, false, false);
+            base.GetClass<NetworkBehaviourHelper>().CreateIsServerCheck(methodDef, LoggingType.Warning, false, false, false);
         }
 
         /// <summary>

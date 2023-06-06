@@ -260,6 +260,10 @@ namespace FishNet.Managing.Timing
         /// Number of TimeManagers open which are using manual physics.
         /// </summary>
         private static uint _manualPhysics;
+        /// <summary>
+        /// Number of times the client had sent too fast in a row.
+        /// </summary>
+        private float _timingTooFastCount;
         #endregion
 
         #region Const.
@@ -274,15 +278,15 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Percentage of TickDelta client will adjust when needing to speed up.
         /// </summary>
-        private const double CLIENT_SPEEDUP_PERCENT = 0.006d;
+        private const double CLIENT_SPEEDUP_VALUE = 0.01d;
         /// <summary>
         /// Percentage of TickDelta client will adjust when needing to slow down.
         /// </summary>
-        private const double CLIENT_SLOWDOWN_PERCENT = 0.035d;
+        private const double CLIENT_SLOWDOWN_VALUE = 0.05d;
         /// <summary>
         /// When steps to be sent to clients are equal to or higher than this value in either direction a reset steps will be sent.
         /// </summary>
-        private const byte RESET_STEPS_THRESHOLD = 15;
+        private byte RESET_ADJUSTMENT_THRESHOLD => (byte)Mathf.Max(3, TickRate / 3);
         /// <summary>
         /// Playerprefs string to load and save user fixed time.
         /// </summary>
@@ -400,6 +404,8 @@ namespace FishNet.Managing.Timing
                 {
                     LocalTick = 0;
                     Tick = 0;
+                    SetTickRate(TickRate);
+                    _timingTooFastCount = 0f;
                 }
             }
             //Started.
@@ -436,16 +442,40 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void UnsetSimulationSettings()
         {
-            Physics.autoSimulation = true;
-#if !UNITY_2020_2_OR_NEWER
-            Physics2D.autoSimulation = true;
-#else
-            Physics2D.simulationMode = SimulationMode2D.FixedUpdate;
-#endif
+            SetAutomaticPhysicsSimulation(true);
 
             float simulationTime = PlayerPrefs.GetFloat(SAVED_FIXED_TIME_TEXT, float.MinValue);
             if (simulationTime != float.MinValue)
                 Time.fixedDeltaTime = simulationTime;
+        }
+
+        /// <summary>
+        /// Sets automatic physics simulation mode.
+        /// </summary>
+        /// <param name="automatic"></param>
+        private void SetAutomaticPhysicsSimulation(bool automatic)
+        {
+#if UNITY_2022_1_OR_NEWER
+            if (automatic)
+            {
+                Physics.simulationMode = SimulationMode.FixedUpdate;
+                Physics2D.simulationMode = SimulationMode2D.FixedUpdate;
+            }
+            else
+            {
+                Physics.simulationMode = SimulationMode.Script;
+                Physics2D.simulationMode = SimulationMode2D.Script;
+            }
+#elif UNITY_2020_1_OR_NEWER
+            Physics.autoSimulation = automatic;
+            if (automatic)
+                Physics2D.simulationMode = SimulationMode2D.FixedUpdate;
+            else
+                Physics2D.simulationMode = SimulationMode2D.Script;
+#elif UNITY_2019_1_OR_NEWER
+            Physics.autoSimulation = automatic;
+            Physics2D.autoSimulation = automatic;
+#endif
         }
 
         /// <summary>
@@ -511,24 +541,10 @@ namespace FishNet.Managing.Timing
 
             //Disable.
             if (mode == PhysicsMode.Disabled || mode == PhysicsMode.TimeManager)
-            {
-                Physics.autoSimulation = false;
-#if !UNITY_2020_2_OR_NEWER
-                Physics2D.autoSimulation = false;
-#else
-                Physics2D.simulationMode = SimulationMode2D.Script;
-#endif
-            }
+                SetAutomaticPhysicsSimulation(false);
             //Automatically simulate.
             else
-            {
-                Physics.autoSimulation = true;
-#if !UNITY_2020_2_OR_NEWER
-                Physics2D.autoSimulation = true;
-#else
-                Physics2D.simulationMode = SimulationMode2D.FixedUpdate;
-#endif
-            }
+                SetAutomaticPhysicsSimulation(true);
         }
 
         #region PingPong.
@@ -612,10 +628,13 @@ namespace FishNet.Managing.Timing
 
             double tickDelta = TickDelta;
             double timePerSimulation = (isServer) ? tickDelta : _adjustedTickDelta;
-            double time = Time.unscaledDeltaTime;
+            if (timePerSimulation == 0d)
+            {
+                Debug.LogWarning($"Simulation delta cannot be 0. Network timing will not continue.");
+                return;
+            }
 
-            double nextAdjustedTickDelta = Mathf.MoveTowards((float)_adjustedTickDelta, (float)TickDelta, _deltaStabilizationRate * Time.deltaTime);
-            _adjustedTickDelta = nextAdjustedTickDelta;
+            double time = Time.unscaledDeltaTime;
 
             _elapsedTickTime += time;
             FrameTicked = (_elapsedTickTime >= timePerSimulation);
@@ -1018,18 +1037,10 @@ namespace FishNet.Managing.Timing
 
                     writer.Reset();
                     writer.WritePacketId(PacketId.TimingUpdate);
-                    int highestQueueCount = item.GetAndResetHighestQueueCount();
+                    //Write the highest number of replicates the client had for the latest tick.
+                    ushort highestQueueCount = item.GetAndResetHighestQueueCount();
+                    writer.WriteUInt16(highestQueueCount);
 
-                    /* Timing updates are sent after the tick so there should be
-                     * ideally no more than one in buffer. */
-                    int desiredQueueCount = 1;
-                    //Don't force a tick reset, we want the client to slow down.
-                    int maxOverageCount = (RESET_STEPS_THRESHOLD - 1);
-                    byte overage = (highestQueueCount > 1) ?
-                        (byte)Mathf.Clamp(highestQueueCount - desiredQueueCount, 0, maxOverageCount)
-                        : (byte)0;
-
-                    writer.WriteByte(overage);
                     item.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
                 }
                 //writer.WritePacketId(PacketId.TimingUpdate);
@@ -1046,69 +1057,94 @@ namespace FishNet.Managing.Timing
         /// <param name="ta"></param>
         internal void ParseTimingUpdate(PooledReader reader)
         {
-            //Number of ticks that the client sent vs expected.
-            byte tickOverage = reader.ReadByte();
+            ushort targetQueuedInputs = _networkManager.PredictionManager.QueuedInputs;
+            /* The amount of inputs which are over or below
+             * the targeted queued inputs. If over target the
+             * difference will be positive. Negative values
+             * are ignored because the client may not send
+             * inputs if idle but values over the target
+             * need to slow down the client. */
+            ushort queuedInputs = reader.ReadUInt16();
             //Don't adjust timing on server.
             if (_networkManager.IsServer)
                 return;
 
-            //Add half of rtt onto tick.
-            uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
-            Tick = LastPacketTick + rttTicks;
-            uint expected = (uint)(TickRate * _timingInterval);
-            /* Add excessive ticks onto clientTicks.
-             * This is the value in which the server has identified the client to be over. */
+            UpdateTick();
 
-            //Value which can be substracted from difference to try and keep input in queue for the client.
-            int queueDifferenceBonus;
-            /* Set client ticks to locally calculated value
-             * unless server is saying client is sending too fast,
-             * then use servers value. */
-            uint clientTicks;
-            if (tickOverage <= 0)
-            {
-                clientTicks = _clientTicks;
-                queueDifferenceBonus = _networkManager.PredictionManager.QueuedInputs;
-            }
-            else
-            {
-                clientTicks = ((uint)TickRate + tickOverage);
-                //Reduce 1 less to let the overage values count down a little faster.
-                queueDifferenceBonus = (_networkManager.PredictionManager.QueuedInputs - 1);
-            }
-
-            long difference;
-            //If ticking too fast.
-            if (clientTicks > expected)
-                difference = (long)(clientTicks - expected);
-            //Not ticking fast enough.
-            else
-                difference = (long)((expected - clientTicks) * -1);
-
-            difference -= queueDifferenceBonus;
-            //If difference is unusually off then reset timings.
-            if (Mathf.Abs(difference) >= RESET_STEPS_THRESHOLD)
-            {
-                _adjustedTickDelta = TickDelta;
-            }
-            else
-            {
-                sbyte steps = (sbyte)Mathf.Clamp(difference, sbyte.MinValue, sbyte.MaxValue);
-                double percent = (steps < 0) ? CLIENT_SPEEDUP_PERCENT : CLIENT_SLOWDOWN_PERCENT;
-                double change = (steps * (percent * TickDelta));
-
-                _adjustedTickDelta = MathFN.ClampDouble(_adjustedTickDelta + change, _clientTimingRange[0], _clientTimingRange[1]);
-
-                float tickDeltaDifference = Mathf.Abs((float)_adjustedTickDelta - (float)TickDelta);
-                /* Stablize rate is set to move adjustedTickDelta to actual tickDelta over the
-                 * course of each expected timing update. */
-                _deltaStabilizationRate = ((float)tickDeltaDifference / (float)_timingInterval);
-            }
-
+            //If over target set to overage. Otherwise set to 0.
+            ushort inputsOverTargetQueued = (queuedInputs > targetQueuedInputs) ? (ushort)(queuedInputs - targetQueuedInputs) : (ushort)0;
+            //Number of ticks expected for the tick rate.
+            uint expectedClientTicks = (uint)(TickRate * _timingInterval);
+            //Ticks iterated since last update.
+            uint clientTicks = _clientTicks;
+            //Reset client ticks.
             _clientTicks = 0;
-        }
 
-        private float _deltaStabilizationRate;
+            /* Multiplier to apply towards tickrate to
+             * adjust for misaligned timing. */
+            double adjustment;
+            /* Number of ticks which exceed expected
+             * ticks. If positive the client is sending too fast,
+             * if negative too slow. If the value is 0, juuuust right. */
+            long tickDifference;
+            /* If queuedInputDifference is 0 then no replicates were
+             * performed for the tick or there were not enough to meet
+             * the target queue count. If that is the case then the client
+             * could not be sending replicates, such as idle, or not
+             * sending fast enough. We do not really know unless we sent
+             * packets every tick to keep track but that's a bit wasteful.
+             * When this occurs calculate based off local ticks vs expected. */
+            if (inputsOverTargetQueued == 0)
+            {
+                /* If no replicates were in queue at the time of the update
+                 * then base timing on local ticks. This can happen due to the
+                 * idle/not replicating mentioned above. */
+                if (queuedInputs == 0)
+                    tickDifference = ((long)clientTicks - (long)expectedClientTicks);
+                //If there were queued inputs then assume the client is behind target queue.
+                else
+                    tickDifference = -(targetQueuedInputs - queuedInputs);
+            }
+            //If the server confirmed client is sending too fast.
+            else
+            {
+                tickDifference = inputsOverTargetQueued;
+            }
+
+            //If over the reset limitation then set difference to 0 forcing use of normal tickdelta.
+            if (Mathf.Abs(tickDifference) >= RESET_ADJUSTMENT_THRESHOLD)
+                tickDifference = 0;
+
+            double multiplierValue = (tickDifference > 0) ? CLIENT_SLOWDOWN_VALUE : CLIENT_SPEEDUP_VALUE;
+            adjustment = TickDelta * ((double)tickDifference * multiplierValue);
+
+            //Set adjustedTickValue to contain adjustment.
+            _adjustedTickDelta = TickDelta + adjustment;
+            /* If client was sending too fast last update
+             * then add more slowdown to the adjusted delta based on
+             * number of times client was too fast. */
+            _adjustedTickDelta += (TickDelta * (CLIENT_SLOWDOWN_VALUE * _timingTooFastCount));
+            //Lerp between new and old adjusted value to blend them so the change isn't sudden.
+            //Clamp adjusted tick delta so it cannot be unreasonably fast or slow.
+            _adjustedTickDelta = MathFN.ClampDouble(_adjustedTickDelta, _clientTimingRange[0], _clientTimingRange[1]);
+
+            const float tooFastModifier = 0.5f;
+            //Increase too fast count if needed.
+            if (tickDifference > 0)
+                _timingTooFastCount += (tooFastModifier * 2);
+            //Otherwise reduce it by 1 but not below 0.
+            else if (_timingTooFastCount >= tooFastModifier)
+                _timingTooFastCount -= 0.5f;
+            else
+                _timingTooFastCount = 0f;
+
+            //Updates synchronized tick.
+            void UpdateTick()
+            {
+                uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
+                Tick = LastPacketTick + rttTicks;
+            }
+        }
         #endregion
 
         /// <summary>

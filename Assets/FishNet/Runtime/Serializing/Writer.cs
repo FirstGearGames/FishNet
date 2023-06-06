@@ -749,14 +749,31 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteGameObject(GameObject go)
         {
+            //There needs to be a header to indicate if null, nob, or nb.
             if (go == null)
             {
-                WriteNetworkObject(null);
+                WriteByte(0);
             }
             else
             {
-                NetworkObject nob = go.GetComponent<NetworkObject>();
-                WriteNetworkObject(nob);
+                //Try to write the NetworkObject first.
+                if (go.TryGetComponent<NetworkObject>(out NetworkObject nob))
+                {
+                    WriteByte(1);
+                    WriteNetworkObject(nob);
+                }
+                //If there was no nob try to write a NetworkBehaviour.
+                else if (go.TryGetComponent<NetworkBehaviour>(out NetworkBehaviour nb))
+                {
+                    WriteByte(2);
+                    WriteNetworkBehaviour(nb);
+                }
+                //Object cannot be serialized so write null.
+                else
+                {
+                    WriteByte(0);
+                    LogError($"GameObject {go.name} cannot be serialized because it does not have a NetworkObject nor NetworkBehaviour.");
+                }
             }
         }
 

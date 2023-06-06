@@ -56,6 +56,8 @@ namespace FishNet.Component.Utility
         public void SetShowIncoming(bool value) => _showIncoming = value;
         #endregion
 
+#if !UNITY_EDITOR && UNITY_SERVER
+
         #region Private.
         /// <summary>
         /// Style for drawn ping.
@@ -130,11 +132,6 @@ namespace FishNet.Component.Utility
 
         private void OnGUI()
         {
-            //No need to perform these actions on server.
-#if !UNITY_EDITOR && UNITY_SERVER
-            return;
-#endif
-
             _style.normal.textColor = _color;
             _style.fontSize = 15;
 
@@ -186,6 +183,8 @@ namespace FishNet.Component.Utility
 
             GUI.Label(new Rect(horizontal, vertical, width, height), (_clientText + _serverText), _style);
         }
+#endif
+
     }
 
 

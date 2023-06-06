@@ -200,6 +200,12 @@ namespace FishNet
         /// <returns></returns>
         public static T GetInstance<T>() where T : UnityEngine.Component => NetworkManager?.GetInstance<T>();
         /// <summary>
+        /// Returns if class of type is registered with the NetworkManager.
+        /// </summary>
+        /// <typeparam name="T">Type to check for.</typeparam>
+        /// <returns></returns>
+        public static bool HasInstance<T>() where T : UnityEngine.Component => (NetworkManager == null) ? false : NetworkManager.HasInstance<T>();
+        /// <summary>
         /// Registers a new component to this NetworkManager.
         /// </summary>
         /// <typeparam name="T">Type to register.</typeparam>

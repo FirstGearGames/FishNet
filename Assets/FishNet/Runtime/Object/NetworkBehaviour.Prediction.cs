@@ -1056,7 +1056,7 @@ namespace FishNet.Object
             }
 
             if (IsServer && Owner.IsValid)
-                Owner.SetHighestQueueCount(replicates.Count, TimeManager.LocalTick);
+                Owner.SetHighestQueueCount((ushort)replicates.Count, TimeManager.LocalTick);
         }
 #else
         /// <summary>
@@ -1093,6 +1093,9 @@ namespace FishNet.Object
                     replicatesQueue.Enqueue(arrBuffer[i]);
                 }
             }
+
+            if (IsServer && Owner.IsValid)
+                Owner.SetHighestQueueCount((ushort)replicatesQueue.Count, TimeManager.LocalTick);
         }
 #endif
 

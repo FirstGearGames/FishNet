@@ -828,8 +828,32 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GameObject ReadGameObject()
         {
-            NetworkObject nob = ReadNetworkObject();
-            return (nob == null) ? null : nob.gameObject;
+            //0 null, 1 nob, 2 nb.
+            byte writtenType = ReadByte();
+
+            GameObject result;
+            //Do nothing for 0.
+            if (writtenType == 0)
+            {
+                result = null;
+            }
+            else if (writtenType == 1)
+            {
+                NetworkObject nob = ReadNetworkObject();
+                result = (nob == null) ? null : nob.gameObject;
+            }
+            else if (writtenType == 2)
+            {
+                NetworkBehaviour nb = ReadNetworkBehaviour();
+                result = (nb == null) ? null : nb.gameObject;
+            }
+            else
+            {
+                result = null;
+                LogError($"Unhandled ReadGameObject type of {writtenType}.");
+            }
+
+            return result;
         }
 
 

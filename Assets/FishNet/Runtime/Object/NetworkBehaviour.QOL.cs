@@ -90,6 +90,10 @@ namespace FishNet.Object
         /// </summary>
         public bool IsOffline => _networkObjectCache.IsOffline;
         /// <summary>
+        /// True if this instance is considered networked.
+        /// </summary>
+        public bool IsNetworked => _networkObjectCache.IsNetworked;
+        /// <summary>
         /// Observers for this NetworkBehaviour.
         /// </summary>
         public HashSet<NetworkConnection> Observers => _networkObjectCache.Observers;
