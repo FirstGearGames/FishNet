@@ -56,7 +56,7 @@ namespace FishNet.Component.Utility
         public void SetShowIncoming(bool value) => _showIncoming = value;
         #endregion
 
-#if !UNITY_SERVER
+#if UNITY_EDITOR || !UNITY_SERVER
 
         #region Private.
         /// <summary>
