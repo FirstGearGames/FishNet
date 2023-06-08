@@ -40,7 +40,7 @@ namespace FishNet.Component.Utility
         private bool _hideTickRate = true;
         #endregion
 
-#if !UNITY_EDITOR && UNITY_SERVER
+#if UNITY_EDITOR || !UNITY_SERVER
 
         #region Private.
         /// <summary>
