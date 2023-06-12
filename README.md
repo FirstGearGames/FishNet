@@ -7,7 +7,7 @@ Asset Store: https://assetstore.unity.com/packages/tools/network/fish-net-networ
 
 Documentation and Addons: https://fish-networking.gitbook.io/docs/
 
-Discord: [Join Server!](https://discord.gg/Ta9HgDh4Hj)
+Community Discord: https://discord.gg/Ta9HgDh4Hj
 
 
 # Donation Options
