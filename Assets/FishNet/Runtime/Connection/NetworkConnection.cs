@@ -222,6 +222,7 @@ namespace FishNet.Connection
             TransportIndex = transportIndex;
             ClientId = clientId;
             Observers_Initialize(nm);
+            Prediction_Initialize(nm, asServer);
             //Only the server uses the ping and buffer.
             if (asServer)
             {

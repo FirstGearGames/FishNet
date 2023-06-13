@@ -260,7 +260,6 @@ namespace FishNet.Object
             if (replicatesHistory == null)
                 return;
 
-            Debug.LogError("Clearing");
             //Queue.
             while (replicatesQueue.Count > 0)
             {
@@ -644,7 +643,7 @@ namespace FishNet.Object
                     PredictionManager pm = PredictionManager;
                     bool consumeExcess = !pm.DropExcessiveReplicates;
                     //Number of entries to leave in buffer when consuming.
-                    const int leaveInBuffer = 2;
+                    int leaveInBuffer = (int)pm.QueuedInputs;
                     //Only consume if the queue count is over leaveInBuffer.
                     if (consumeExcess && count > leaveInBuffer)
                     {
@@ -1037,7 +1036,7 @@ namespace FishNet.Object
             PredictionManager pm = PredictionManager;
             bool consumeExcess = !pm.DropExcessiveReplicates;
             //Maximum number of replicates allowed to be queued at once.
-            int replicatesCountLimit = (consumeExcess) ? PredictionManager.MaximumReplicateConsumeCount : pm.GetMaximumServerReplicates();
+            int replicatesCountLimit = (consumeExcess) ? (TimeManager.TickRate * 2) : pm.GetMaximumServerReplicates();
             for (int i = 0; i < receivedReplicatesCount; i++)
             {
                 uint tick = arrBuffer[i].GetTick();
@@ -1056,7 +1055,7 @@ namespace FishNet.Object
             }
 
             if (IsServer && Owner.IsValid)
-                Owner.SetHighestQueueCount((ushort)replicates.Count, TimeManager.LocalTick);
+                Owner.AddAverageQueueCount((ushort)replicates.Count, TimeManager.LocalTick);
         }
 #else
         /// <summary>
@@ -1095,10 +1094,10 @@ namespace FishNet.Object
             }
 
             if (IsServer && Owner.IsValid)
-                Owner.SetHighestQueueCount((ushort)replicatesQueue.Count, TimeManager.LocalTick);
+                Owner.AddAverageQueueCount((ushort)replicatesQueue.Count, TimeManager.LocalTick);
         }
 #endif
-
+         
 #if !PREDICTION_V2
         /// <summary>
         /// Checks conditions for a reconcile.

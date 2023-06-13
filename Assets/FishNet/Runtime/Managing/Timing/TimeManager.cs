@@ -174,13 +174,13 @@ namespace FishNet.Managing.Timing
         /// How often in seconds to a connections ping. This is also responsible for approximating server tick. This value does not affect prediction.
         /// </summary>
         internal byte PingInterval => _pingInterval;
-        /// <summary>
-        /// How often in seconds to update prediction timing. Lower values will result in marginally more accurate timings at the cost of bandwidth.
-        /// </summary>        
-        [Tooltip("How often in seconds to update prediction timing. Lower values will result in marginally more accurate timings at the cost of bandwidth.")]
-        [Range(1, 15)]
-        [SerializeField]
-        private byte _timingInterval = 2;
+        ///// <summary>
+        ///// How often in seconds to update prediction timing. Lower values will result in marginally more accurate timings at the cost of bandwidth.
+        ///// </summary>        
+        //[Tooltip("How often in seconds to update prediction timing. Lower values will result in marginally more accurate timings at the cost of bandwidth.")]
+        //[Range(1, 15)]
+        //[SerializeField]
+        //private byte _timingInterval = 2;
         /// <summary>
         /// 
         /// </summary>
@@ -268,6 +268,10 @@ namespace FishNet.Managing.Timing
 
         #region Const.
         /// <summary>
+        /// How often to send timing updates to clients.
+        /// </summary>
+        private const float TIMING_INTERVAL = 1f;
+        /// <summary>
         /// Value for a tick that is invalid.
         /// </summary>
         public const uint UNSET_TICK = 0;
@@ -278,11 +282,11 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Percentage of TickDelta client will adjust when needing to speed up.
         /// </summary>
-        private const double CLIENT_SPEEDUP_VALUE = 0.01d;
+        private const double CLIENT_SPEEDUP_VALUE = 0.035d;
         /// <summary>
         /// Percentage of TickDelta client will adjust when needing to slow down.
         /// </summary>
-        private const double CLIENT_SLOWDOWN_VALUE = 0.05d;
+        private const double CLIENT_SLOWDOWN_VALUE = 0.02d;
         /// <summary>
         /// When steps to be sent to clients are equal to or higher than this value in either direction a reset steps will be sent.
         /// </summary>
@@ -1024,7 +1028,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void SendTimingAdjustment()
         {
-            uint requiredTicks = TimeToTicks(_timingInterval);
+            uint requiredTicks = TimeToTicks(TIMING_INTERVAL);
             uint tick = Tick;
             if (tick - _lastUpdateTicks >= requiredTicks)
             {
@@ -1038,7 +1042,7 @@ namespace FishNet.Managing.Timing
                     writer.Reset();
                     writer.WritePacketId(PacketId.TimingUpdate);
                     //Write the highest number of replicates the client had for the latest tick.
-                    ushort highestQueueCount = item.GetAndResetHighestQueueCount();
+                    ushort highestQueueCount = item.GetAndResetAverageQueueCount();
                     writer.WriteUInt16(highestQueueCount);
 
                     item.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
@@ -1050,6 +1054,15 @@ namespace FishNet.Managing.Timing
                 _lastUpdateTicks = tick;
             }
         }
+
+        private enum TimingUpdateChange : int
+        {
+            JustRight = 0,
+            TooFast = 1,
+            TooSlow = -1,
+        }
+        private TimingUpdateChange _timingUpdateChange = TimingUpdateChange.JustRight;
+        private float _updateChangeMultiplier = 1f;
 
         /// <summary>
         /// Called on client when server sends a timing update.
@@ -1074,12 +1087,11 @@ namespace FishNet.Managing.Timing
             //If over target set to overage. Otherwise set to 0.
             ushort inputsOverTargetQueued = (queuedInputs > targetQueuedInputs) ? (ushort)(queuedInputs - targetQueuedInputs) : (ushort)0;
             //Number of ticks expected for the tick rate.
-            uint expectedClientTicks = (uint)(TickRate * _timingInterval);
+            uint expectedClientTicks = (uint)(TickRate * TIMING_INTERVAL);
             //Ticks iterated since last update.
             uint clientTicks = _clientTicks;
             //Reset client ticks.
             _clientTicks = 0;
-
             /* Multiplier to apply towards tickrate to
              * adjust for misaligned timing. */
             double adjustment;
@@ -1101,15 +1113,41 @@ namespace FishNet.Managing.Timing
                  * idle/not replicating mentioned above. */
                 if (queuedInputs == 0)
                     tickDifference = ((long)clientTicks - (long)expectedClientTicks);
-                //If there were queued inputs then assume the client is behind target queue.
+                ////If there were queued inputs then assume the client is behind target queue.
                 else
-                    tickDifference = -(targetQueuedInputs - queuedInputs);
+                tickDifference = -(targetQueuedInputs - queuedInputs);
             }
             //If the server confirmed client is sending too fast.
             else
             {
                 tickDifference = inputsOverTargetQueued;
             }
+
+            TimingUpdateChange timingUpdateChange;
+            if (tickDifference == 0)
+                timingUpdateChange = TimingUpdateChange.JustRight;
+            else if (tickDifference > 0)
+                timingUpdateChange = TimingUpdateChange.TooFast;
+            else
+                timingUpdateChange = TimingUpdateChange.TooSlow;
+
+            const float updateChangeModifier = 0.1f;
+            if (timingUpdateChange != _timingUpdateChange)
+            {                
+                if (_updateChangeMultiplier > updateChangeModifier)
+                    _updateChangeMultiplier -= updateChangeModifier;
+            }
+            else
+            {
+                if (_updateChangeMultiplier < 1)
+                    _updateChangeMultiplier += (updateChangeModifier * 0.25f);
+            }
+            _timingUpdateChange = timingUpdateChange;
+
+            float newTickDifference = ((float)tickDifference * _updateChangeMultiplier);
+            tickDifference = (int)newTickDifference;
+
+            //Debug.Log($"ChangeMultiplier {_updateChangeMultiplier}. ClientTicks {clientTicks}. Queued {queuedInputs}. Over target queued {inputsOverTargetQueued}. Difference {tickDifference}. TooFastCount {_timingTooFastCount}.");
 
             //If over the reset limitation then set difference to 0 forcing use of normal tickdelta.
             if (Mathf.Abs(tickDifference) >= RESET_ADJUSTMENT_THRESHOLD)
@@ -1131,10 +1169,10 @@ namespace FishNet.Managing.Timing
             const float tooFastModifier = 0.5f;
             //Increase too fast count if needed.
             if (tickDifference > 0)
-                _timingTooFastCount += (tooFastModifier * 2);
+                _timingTooFastCount += tooFastModifier;
             //Otherwise reduce it by 1 but not below 0.
             else if (_timingTooFastCount >= tooFastModifier)
-                _timingTooFastCount -= 0.5f;
+                _timingTooFastCount -= tooFastModifier;
             else
                 _timingTooFastCount = 0f;
 

@@ -72,7 +72,9 @@ namespace FishNet.CodeGenerating.Helping
         #endregion
 
         #region Const.
+        internal const uint MAX_SYNCTYPE_ALLOWANCE = byte.MaxValue;
         internal const uint MAX_RPC_ALLOWANCE = ushort.MaxValue;
+        internal const uint MAX_PREDICTION_ALLOWANCE = byte.MaxValue;
         internal const string AWAKE_METHOD_NAME = "Awake";
         internal const string DISABLE_LOGGING_TEXT = "This message may be disabled by setting the Logging field in your attribute to LoggingType.Off";
         #endregion

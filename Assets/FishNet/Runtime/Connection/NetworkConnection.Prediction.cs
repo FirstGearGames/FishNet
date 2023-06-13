@@ -15,27 +15,53 @@ namespace FishNet.Connection
     /// </summary>
     public partial class NetworkConnection
     {
-        private ushort _highestQueueCount;
-        private uint _lastHighestQueueCountUpdateTick;
+        /// <summary>
+        /// Average number of replicates in queue for the past x received replicates.
+        /// </summary>
+        private MovingAverage _replicateQueueAverage;
+        /// <summary>
+        /// Last tick replicateQueueAverage was updated.
+        /// </summary>
+        private uint _lastAverageQueueAddTick;
 
-        internal void SetHighestQueueCount(ushort value, uint serverTick)
+        internal void Prediction_Initialize(NetworkManager manager, bool asServer)
         {
-            if (serverTick != _lastHighestQueueCountUpdateTick)
-                _highestQueueCount = 0;
-            _lastHighestQueueCountUpdateTick = serverTick;
-
-            _highestQueueCount = (ushort)Mathf.Max(_highestQueueCount, value);
+            if (asServer)
+            {
+                int movingAverageCount = (int)Mathf.Max((float)manager.TimeManager.TickRate * 0.25f, 3f);
+                _replicateQueueAverage = new MovingAverage(movingAverageCount);
+            }
         }
+
+
+        /// <summary>
+        /// Adds to the average number of queued replicates.
+        /// </summary>
+        internal void AddAverageQueueCount(ushort value, uint tick)
+        {
+            /* If have not added anything to the averages for several ticks
+             * then reset average. */
+            if ((tick - _lastAverageQueueAddTick) > _replicateQueueAverage.SampleSize)
+                _replicateQueueAverage.Reset();
+            _lastAverageQueueAddTick = tick;
+
+            _replicateQueueAverage.ComputeAverage((float)value);
+        }
+
         /// <summary>
         /// Returns the highest queue count after resetting it.
         /// </summary>
         /// <returns></returns>
-        internal ushort GetAndResetHighestQueueCount()
+        internal ushort GetAndResetAverageQueueCount()
         {
-            ushort value = _highestQueueCount;
-            _highestQueueCount = 0;
-            _lastHighestQueueCountUpdateTick = 0;
-            return value;
+            if (_replicateQueueAverage == null)
+                return 0;
+
+            int avg = (int)(_replicateQueueAverage.Average);
+            if (avg < 0)
+                avg = 0;
+
+            return (ushort)avg;
         }
 
 #if !PREDICTION_V2
@@ -50,7 +76,7 @@ namespace FishNet.Connection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Prediction_Reset()
         {
-            GetAndResetHighestQueueCount();
+            GetAndResetAverageQueueCount();
         }
 #else
         /// <summary>
@@ -123,7 +149,7 @@ namespace FishNet.Connection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Prediction_Reset()
         {
-            GetAndResetHighestQueueCount();
+            GetAndResetAverageQueueCount();
             StorePredictionStateWriters();
             ReplicateTick.Reset();
         }

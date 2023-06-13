@@ -61,11 +61,13 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="typeDef"></param>
         /// <param name="diagnostics"></param>
-        internal bool Process(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs, ref uint syncTypeStartCount)
+        internal bool ProcessLocal(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs)
         {
             bool modified = false;
             _createdSyncTypeMethodDefinitions.Clear();
             _lastReadInstruction = null;
+
+            uint syncTypeStartCount = GetSyncTypeCountInParents(typeDef);
 
             FieldDefinition[] fieldDefs = typeDef.Fields.ToArray();
             foreach (FieldDefinition fd in fieldDefs)
@@ -117,6 +119,23 @@ namespace FishNet.CodeGenerating.Processing
                 if (HasSyncTypeAttributeUnchecked(fd))
                     count++;
             }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Gets SyncType count in all of typeDefs parents, excluding typeDef itself.
+        /// </summary>
+        internal uint GetSyncTypeCountInParents(TypeDefinition typeDef)
+        {
+            uint count = 0;
+            do
+            {
+                typeDef = typeDef.GetNextBaseClassToProcess(base.Session);
+                if (typeDef != null)
+                    count += GetSyncTypeCount(typeDef);
+
+            } while (typeDef != null);
 
             return count;
         }

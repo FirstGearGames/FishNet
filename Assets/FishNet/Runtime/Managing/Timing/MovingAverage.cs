@@ -1,18 +1,21 @@
 ﻿using FishNet.Documenting;
 using System;
-using UnityEngine;
 
 namespace FishNet.Managing.Timing
 {
 
     [APIExclude]
-    public class MovingAverage
+    public class MovingAverage : IDisposable
     {
         #region Public.
         /// <summary>
         /// Average from samples favoring the most recent sample.
         /// </summary>
         public float Average { get; private set; }
+        /// <summary>
+        /// Sample size being used.
+        /// </summary>
+        public int SampleSize { get; private set; }
         #endregion
 
         /// <summary>
@@ -34,11 +37,13 @@ namespace FishNet.Managing.Timing
 
         public MovingAverage(int sampleSize)
         {
-            if (sampleSize < 0)
-                sampleSize = 0;
-            else if (sampleSize < 2)
+            if (sampleSize < 2)
+            { 
                 NetworkManager.StaticLogWarning("Using a sampleSize of less than 2 will always return the most recent value as Average.");
+                sampleSize = 1;
+            }
 
+            SampleSize = sampleSize;
             _samples = new float[sampleSize];
         }
 
@@ -74,6 +79,21 @@ namespace FishNet.Managing.Timing
             if (_writtenSamples >= _samples.Length)
                 _sampleAccumulator -= _samples[_writeIndex];
 
+        }
+
+        /// <summary>
+        /// Resets values.
+        /// </summary>
+        public void Reset()
+        {
+            _sampleAccumulator = 0f;
+            _writeIndex = 0;
+            _writtenSamples = 0;
+        }
+
+        public void Dispose()
+        {
+            Reset();
         }
     }
 

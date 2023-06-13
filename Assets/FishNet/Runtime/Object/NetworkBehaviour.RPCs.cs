@@ -68,10 +68,15 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void RegisterServerRpc_Internal(uint hash, ServerRpcDelegate del)
         {
-            bool contains = _serverRpcDelegates.ContainsKey(hash);
-            _serverRpcDelegates[hash] = del;
-            if (!contains)
+            if (_serverRpcDelegates.TryGetValueIL2CPP(hash, out ServerRpcDelegate currentDelegate))
+            {
+                FishNet.Managing.NetworkManager.StaticLogError($"ServerRpc hash {hash} registered multiple times. First registration by {currentDelegate.Method.DeclaringType.GetType().FullName}. New registration by {GetType().FullName}.");
+            }
+            else
+            {
+                _serverRpcDelegates[hash] = del;
                 IncreaseRpcMethodCount();
+            }
         }
         /// <summary>
         /// Registers a RPC method.
@@ -83,10 +88,15 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void RegisterObserversRpc_Internal(uint hash, ClientRpcDelegate del)
         {
-            bool contains = _observersRpcDelegates.ContainsKey(hash);
-            _observersRpcDelegates[hash] = del;
-            if (!contains)
+            if (_observersRpcDelegates.TryGetValueIL2CPP(hash, out ClientRpcDelegate currentDelegate))
+            {
+                FishNet.Managing.NetworkManager.StaticLogError($"ObserverRpc hash {hash} registered multiple times. First registration by {currentDelegate.Method.DeclaringType.GetType().FullName}. New registration by {GetType().FullName}.");
+            }
+            else
+            {
+                _observersRpcDelegates[hash] = del;
                 IncreaseRpcMethodCount();
+            }
         }
         /// <summary>
         /// Registers a RPC method.
@@ -98,10 +108,15 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void RegisterTargetRpc_Internal(uint hash, ClientRpcDelegate del)
         {
-            bool contains = _targetRpcDelegates.ContainsKey(hash);
-            _targetRpcDelegates[hash] = del;
-            if (!contains)
+            if (_targetRpcDelegates.TryGetValueIL2CPP(hash, out ClientRpcDelegate currentDelegate))
+            {
+                FishNet.Managing.NetworkManager.StaticLogError($"TargetRpc hash {hash} registered multiple times. First registration by {currentDelegate.Method.DeclaringType.GetType().FullName}. New registration by {GetType().FullName}.");
+            }
+            else
+            {
+                _targetRpcDelegates[hash] = del;
                 IncreaseRpcMethodCount();
+            }
         }
 
         /// <summary>
@@ -205,7 +220,7 @@ namespace FishNet.Object
             _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
             writer.StoreLength();
         }
-        
+
         /// <summary>
         /// Sends a RPC to observers.
         /// </summary>
@@ -306,7 +321,7 @@ namespace FishNet.Object
             if (addClientHost && IsClient)
                 _networkConnectionCache.Add(LocalConnection);
             if (addOwner && Owner.IsValid)
-                _networkConnectionCache.Add(Owner);                
+                _networkConnectionCache.Add(Owner);
         }
 
 

@@ -318,12 +318,6 @@ namespace FishNet.CodeGenerating.ILCore
             /* Remove types which are inherited. This gets the child most networkbehaviours.
              * Since processing iterates all parent classes there's no reason to include them */
             RemoveInheritedTypeDefinitions(networkBehaviourTypeDefs);
-            //Set how many rpcs are in children classes for each typedef.
-            Dictionary<TypeDefinition, uint> inheritedRpcCounts = new Dictionary<TypeDefinition, uint>();
-            SetChildRpcCounts(inheritedRpcCounts, networkBehaviourTypeDefs);
-            //Set how many synctypes are in children classes for each typedef.
-            Dictionary<TypeDefinition, uint> inheritedSyncTypeCounts = new Dictionary<TypeDefinition, uint>();
-            SetChildSyncTypeCounts(inheritedSyncTypeCounts, networkBehaviourTypeDefs);
 
             /* This holds all sync types created, synclist, dictionary, var
              * and so on. This data is used after all syncvars are made so
@@ -338,8 +332,7 @@ namespace FishNet.CodeGenerating.ILCore
                 session.ImportReference(typeDef);
                 //Synctypes processed for this nb and it's inherited classes.
                 List<(SyncType, ProcessedSync)> processedSyncs = new List<(SyncType, ProcessedSync)>();
-                session.GetClass<NetworkBehaviourProcessor>().Process(typeDef, processedSyncs,
-                    inheritedSyncTypeCounts, inheritedRpcCounts);
+                session.GetClass<NetworkBehaviourProcessor>().ProcessLocal(typeDef, processedSyncs);
                 //Add to all processed.
                 allProcessedSyncs.AddRange(processedSyncs);
             }
@@ -386,100 +379,6 @@ namespace FishNet.CodeGenerating.ILCore
                 //Remove all inherited types.
                 foreach (TypeDefinition item in inheritedTds)
                     tds.Remove(item);
-            }
-
-            /* Sets how many Rpcs are within the children
-             * of each typedefinition. EG: if our structure is
-             * A : B : C, with the following RPC counts...
-             * A 3
-             * B 1
-             * C 2
-             * then B child rpc counts will be 3, and C will be 4. */
-            void SetChildRpcCounts(Dictionary<TypeDefinition, uint> typeDefCounts, List<TypeDefinition> tds)
-            {
-                foreach (TypeDefinition typeDef in tds)
-                {
-                    //Number of RPCs found while climbing typeDef.
-                    uint childCount = 0;
-
-                    TypeDefinition copyTd = typeDef;
-                    do
-                    {
-                        //How many RPCs are in copyTd.
-                        uint copyCount = session.GetClass<RpcProcessor>().GetRpcCount(copyTd);
-
-                        /* If not found it this is the first time being
-                         * processed. When this occurs set the value
-                         * to 0. It will be overwritten below if baseCount
-                         * is higher. */
-                        uint previousCopyChildCount = 0;
-                        if (!typeDefCounts.TryGetValue(copyTd, out previousCopyChildCount))
-                            typeDefCounts[copyTd] = 0;
-                        /* If baseCount is higher then replace count for copyTd.
-                         * This can occur when a class is inherited by several types
-                         * and the first processed type might only have 1 rpc, while
-                         * the next has 2. This could be better optimized but to keep
-                         * the code easier to read, it will stay like this. */
-                        if (childCount > previousCopyChildCount)
-                            typeDefCounts[copyTd] = childCount;
-
-                        //Increase baseCount with RPCs found here.
-                        childCount += copyCount;
-
-                        copyTd = copyTd.GetNextBaseClassToProcess(session);
-                    } while (copyTd != null);
-                }
-
-            }
-
-
-            /* This performs the same functionality as SetChildRpcCounts
-             * but for SyncTypes. */
-            void SetChildSyncTypeCounts(Dictionary<TypeDefinition, uint> typeDefCounts, List<TypeDefinition> tds)
-            {
-                foreach (TypeDefinition typeDef in tds)
-                {
-                    //Number of RPCs found while climbing typeDef.
-                    uint childCount = 0;
-
-                    TypeDefinition copyTd = typeDef;
-                    /* Iterate up to the parent script and then reverse
-                     * the order. This is so that the topmost is 0
-                     * and each inerhiting script adds onto that.
-                     * Setting child types this way makes it so parent
-                     * types don't need to have their synctype/rpc counts
-                     * rebuilt when scripts are later to be found
-                     * inheriting from them. */
-                    List<TypeDefinition> reversedTypeDefs = new List<TypeDefinition>();
-                    do
-                    {
-                        reversedTypeDefs.Add(copyTd);
-                        copyTd = copyTd.GetNextBaseClassToProcess(session);
-                    } while (copyTd != null);
-                    reversedTypeDefs.Reverse();
-
-                    foreach (TypeDefinition td in reversedTypeDefs)
-                    {
-                        //How many RPCs are in copyTd.
-                        uint copyCount = session.GetClass<NetworkBehaviourSyncProcessor>().GetSyncTypeCount(td);
-                        /* If not found it this is the first time being
-                         * processed. When this occurs set the value
-                         * to 0. It will be overwritten below if baseCount
-                         * is higher. */
-                        uint previousCopyChildCount = 0;
-                        if (!typeDefCounts.TryGetValue(td, out previousCopyChildCount))
-                            typeDefCounts[td] = 0;
-                        /* If baseCount is higher then replace count for copyTd.
-                         * This can occur when a class is inherited by several types
-                         * and the first processed type might only have 1 rpc, while
-                         * the next has 2. This could be better optimized but to keep
-                         * the code easier to read, it will stay like this. */
-                        if (childCount > previousCopyChildCount)
-                            typeDefCounts[td] = childCount;
-                        //Increase baseCount with RPCs found here.
-                        childCount += copyCount;
-                    }
-                }
             }
 
 

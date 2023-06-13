@@ -70,10 +70,11 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             return base.ImportReferences();
         }
 
-        internal bool ProcessLocal(TypeDefinition typeDef, ref uint rpcCount)
+        internal bool ProcessLocal(TypeDefinition typeDef)
         {
             bool modified = false;
 
+            uint rpcCount = GetRpcCountInParents(typeDef);
             //All createdRpcs for typeDef.
             List<CreatedRpc> typeDefCeatedRpcs = new List<CreatedRpc>();
             List<MethodDefinition> methodDefs = typeDef.Methods.ToList();
@@ -160,6 +161,23 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         private string GetRpcMethodName(RpcType rpcType, MethodDefinition originalMd)
         {
             return $"{rpcType}_{GetMethodNameAsParameters(originalMd)}";
+        }
+
+        /// <summary>
+        /// Gets RPCcount count in all of typeDefs parents, excluding typeDef itself.
+        /// </summary>
+        internal uint GetRpcCountInParents(TypeDefinition typeDef)
+        {
+            uint count = 0;
+            do
+            {
+                typeDef = typeDef.GetNextBaseClassToProcess(base.Session);
+                if (typeDef != null)
+                    count += GetRpcCount(typeDef);
+
+            } while (typeDef != null);
+
+            return count;
         }
 
         /// <summary>
@@ -1032,7 +1050,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             insts.Add(processor.Create(OpCodes.Ldc_I4, bufferLast.ToInt()));
             insts.Add(processor.Create(OpCodes.Ldc_I4, excludeServer.ToInt()));
-            insts.Add(processor.Create(OpCodes.Ldc_I4, excludeOwner.ToInt())); 
+            insts.Add(processor.Create(OpCodes.Ldc_I4, excludeOwner.ToInt()));
             //Call NetworkBehaviour.
             insts.Add(processor.Create(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().SendObserversRpc_MethodRef));
 
@@ -1056,7 +1074,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             //Exclude server from rpc.
             insts.Add(processor.Create(OpCodes.Ldc_I4, excludeServer.ToInt()));
             //Validate target receiving the rpc.
-            insts.Add(processor.Create(OpCodes.Ldc_I4, validateTarget.ToInt()));            
+            insts.Add(processor.Create(OpCodes.Ldc_I4, validateTarget.ToInt()));
             //Call NetworkBehaviour.
             insts.Add(processor.Create(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().SendTargetRpc_MethodRef));
 
