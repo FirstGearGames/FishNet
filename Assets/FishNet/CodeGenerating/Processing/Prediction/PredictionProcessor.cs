@@ -1,6 +1,7 @@
 ﻿using FishNet.CodeGenerating.Extension;
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.CodeGenerating.Processing.Rpc;
 using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Prediction;
@@ -317,7 +318,8 @@ namespace FishNet.CodeGenerating.Processing
             if (!GetPredictionMethods(typeDef, out replicateMd, out reconcileMd))
                 return false;
 
-            uint predictionRpcCount = GetPredictionCountInParents(typeDef);
+            RpcProcessor rp = base.GetClass<RpcProcessor>();
+            uint predictionRpcCount = GetPredictionCountInParents(typeDef) + rp.GetRpcCountInParents(typeDef); ;
             //If replication methods found but this hierarchy already has max.
             if (predictionRpcCount >= NetworkBehaviourHelper.MAX_RPC_ALLOWANCE)
             {
@@ -455,12 +457,12 @@ namespace FishNet.CodeGenerating.Processing
                 MethodReference callMr;
                 if (replicate)
                 {
-                    ctorMr = base.GetClass<NetworkBehaviourHelper>().ReplicateRpcDelegateConstructor_MethodRef;
+                    ctorMr = base.GetClass<NetworkBehaviourHelper>().ReplicateRpcDelegate_Ctor_MethodRef;
                     callMr = base.GetClass<NetworkBehaviourHelper>().RegisterReplicateRpc_MethodRef;
                 }
                 else
                 {
-                    ctorMr = base.GetClass<NetworkBehaviourHelper>().ReconcileRpcDelegateConstructor_MethodRef;
+                    ctorMr = base.GetClass<NetworkBehaviourHelper>().ReconcileRpcDelegate_Ctor_MethodRef;
                     callMr = base.GetClass<NetworkBehaviourHelper>().RegisterReconcileRpc_MethodRef;
                 }
 

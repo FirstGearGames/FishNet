@@ -10,13 +10,13 @@ namespace FishNet.Serializing.Helping
         /// <summary>
         /// Compare if T is default.
         /// </summary>
-        public static Func<T, bool> IsDefault { internal get; set; }
+        public static Func<T, bool> IsDefault { get; set; }
         /// <summary>
         /// Compare if T is the same as T2.
         /// </summary>
-        public static Func<T, T, bool> Compare { internal get; set; }
+        public static Func<T, T, bool> Compare { get; set; }
     }
-
+     
 
     public class Comparers
     {

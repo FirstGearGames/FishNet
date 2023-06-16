@@ -823,7 +823,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void ChangeTickSubscription(bool subscribe)
         {
-            if (subscribe == _subscribedToTicks)
+            if (subscribe == _subscribedToTicks || base.NetworkManager == null)
                 return;
 
             _subscribedToTicks = subscribe;

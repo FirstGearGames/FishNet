@@ -74,7 +74,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         {
             bool modified = false;
 
-            uint rpcCount = GetRpcCountInParents(typeDef);
+            PredictionProcessor pp = base.GetClass<PredictionProcessor>();
+            uint rpcCount = GetRpcCountInParents(typeDef) + pp.GetPredictionCountInParents(typeDef) + pp.GetPredictionCount(typeDef);
             //All createdRpcs for typeDef.
             List<CreatedRpc> typeDefCeatedRpcs = new List<CreatedRpc>();
             List<MethodDefinition> methodDefs = typeDef.Methods.ToList();

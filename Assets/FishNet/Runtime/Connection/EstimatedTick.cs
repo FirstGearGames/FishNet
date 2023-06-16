@@ -53,7 +53,9 @@ namespace FishNet.Managing.Timing
         {
             long value = (tm.LocalTick - LocalTick);
             //Shouldn't be possible to be less than 0.
-            if (value < 0 || value > uint.MaxValue)
+            if (value < 0)
+                return 0;
+            else if (value > uint.MaxValue)
                 value = uint.MaxValue;
 
             return (uint)value;

@@ -17,6 +17,23 @@ namespace FishNet.CodeGenerating.Extension
             return (td.Name == typeof(System.Nullable<>).Name);
         }
 
+        /// <summary>
+        /// Finds the first method by a given name.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <param name="methodName"></param>
+        /// <returns></returns>
+        internal static MethodDefinition GetMethod(this TypeDefinition typeDef, string methodName)
+        {
+            foreach (MethodDefinition md in typeDef.Methods)
+            {
+                if (md.Name == methodName)
+                    return md;
+            }
+
+            return null;
+        }
+
 
         public static MethodReference GetMethodReferenceInBase(this TypeDefinition td, CodegenSession session, string methodName)
         {

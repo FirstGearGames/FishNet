@@ -3,6 +3,7 @@ using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Configuring;
 using FishNet.Object;
+using FishNet.Object.Delegating;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
@@ -12,6 +13,7 @@ using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
 using MonoFN.Collections.Generic;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
@@ -19,7 +21,8 @@ namespace FishNet.CodeGenerating.Processing
     internal class NetworkBehaviourSyncProcessor : CodegenBase
     {
         #region Reflection references.
-        private TypeDefinition SyncBase_TypeDef;
+        internal TypeDefinition SyncBase_TypeDef;
+        internal MethodReference SyncVarReadDelegate_Ctor_MethodRef;
         #endregion
 
         #region Private.
@@ -31,10 +34,6 @@ namespace FishNet.CodeGenerating.Processing
         /// Sync objects, such as get and set, created during this process. Used to skip modifying created methods.
         /// </summary>
         private List<object> _createdSyncTypeMethodDefinitions = new List<object>();
-        /// <summary>
-        /// ReadSyncVar methods which have had their base call already made.
-        /// </summary>
-        private HashSet<MethodDefinition> _baseCalledReadSyncVars = new HashSet<MethodDefinition>();
         #endregion
 
         #region Const.
@@ -52,6 +51,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             System.Type syncBaseType = typeof(SyncBase);
             SyncBase_TypeDef = base.ImportReference(syncBaseType).Resolve();
+            SyncVarReadDelegate_Ctor_MethodRef = base.ImportReference(typeof(SyncVarReadDelegate).GetConstructors().First());
 
             return true;
         }
@@ -68,6 +68,8 @@ namespace FishNet.CodeGenerating.Processing
             _lastReadInstruction = null;
 
             uint syncTypeStartCount = GetSyncTypeCountInParents(typeDef);
+            //Becomes set if a syncvar is created.
+            MethodDefinition readSyncVarMd = null;
 
             FieldDefinition[] fieldDefs = typeDef.Fields.ToArray();
             foreach (FieldDefinition fd in fieldDefs)
@@ -80,7 +82,7 @@ namespace FishNet.CodeGenerating.Processing
 
                 if (st == SyncType.Variable)
                 {
-                    if (TryCreateSyncVar(syncTypeStartCount, allProcessedSyncs, typeDef, fd, syncAttribute))
+                    if (TryCreateSyncVar(syncTypeStartCount, allProcessedSyncs, typeDef, fd, syncAttribute, ref readSyncVarMd))
                         syncTypeStartCount++;
                 }
                 else if (st == SyncType.List || st == SyncType.HashSet)
@@ -101,6 +103,8 @@ namespace FishNet.CodeGenerating.Processing
 
                 modified = true;
             }
+
+            RegisterSyncVarReadDelegate(readSyncVarMd);
 
             return modified;
         }
@@ -139,6 +143,43 @@ namespace FishNet.CodeGenerating.Processing
 
             return count;
         }
+
+        /// <summary>
+        /// Creates a RPC delegate for rpcType.
+        /// </summary>
+        /// <param name="processor"></param>
+        /// <param name="originalMethodDef"></param>
+        /// <param name="readerMethodDef"></param>
+        /// <param name="rpcType"></param>
+        internal void RegisterSyncVarReadDelegate(MethodDefinition localReadMd)
+        {
+            if (localReadMd == null)
+                return;
+
+            NetworkBehaviourSyncProcessor nbsp = base.GetClass<NetworkBehaviourSyncProcessor>();
+            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
+            ILProcessor processor = localReadMd.DeclaringType.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME).Body.GetILProcessor();
+
+
+        //IL_0000: ldarg.0
+        //IL_0001: ldarg.0
+        //IL_0002: ldftn instance bool C::MyRead(uint8, bool)
+        //IL_0008: newobj instance void SyncVarReadDelegate::.ctor(object, native int)
+        //IL_000d: call instance void D::RegisterDelegate(class SyncVarReadDelegate)
+
+            List<Instruction> insts = new List<Instruction>();
+            /* Create delegate and call NetworkBehaviour method. */
+            insts.Add(processor.Create(OpCodes.Ldarg_0));
+            insts.Add(processor.Create(OpCodes.Ldarg_0));
+            insts.Add(processor.Create(OpCodes.Ldftn, localReadMd));
+            insts.Add(processor.Create(OpCodes.Newobj, nbsp.SyncVarReadDelegate_Ctor_MethodRef));
+            insts.Add(processor.Create(OpCodes.Call, nbh.RegisterSyncVarRead_MethodRef));
+
+            /* Has to be done last. This allows the NetworkBehaviour to
+             * initialize it's fields first. */
+            processor.InsertLast(insts);
+        }
+
 
         /// <summary>
         /// Replaces GetSets for methods which may use a SyncType.
@@ -373,7 +414,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Tries to create a SyncVar.
         /// </summary>
-        private bool TryCreateSyncVar(uint syncCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition fieldDef, CustomAttribute syncAttribute)
+        private bool TryCreateSyncVar(uint syncCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition fieldDef, CustomAttribute syncAttribute, ref MethodDefinition readSyncVarMd)
         {
             bool canSerialize = base.GetClass<GeneralHelper>().HasSerializerAndDeserializer(fieldDef.FieldType, true);
             if (!canSerialize)
@@ -394,7 +435,7 @@ namespace FishNet.CodeGenerating.Processing
             MethodReference accessorSetValueMr;
             MethodReference accessorGetValueMr;
 
-            bool created = CreateSyncVar(syncCount, typeDef, fieldDef, syncAttribute, out syncVarFd, out accessorSetValueMr, out accessorGetValueMr);
+            bool created = CreateSyncVar(syncCount, typeDef, fieldDef, syncAttribute, out syncVarFd, out accessorSetValueMr, out accessorGetValueMr, ref readSyncVarMd);
             if (created)
             {
                 FieldReference originalFr = base.ImportReference(fieldDef);
@@ -494,7 +535,8 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="originalFieldDef"></param>
         /// <param name="syncTypeAttribute"></param>
         /// <returns></returns>
-        private bool CreateSyncVar(uint syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncTypeAttribute, out FieldDefinition createdSyncVarFd, out MethodReference accessorSetValueMethodRef, out MethodReference accessorGetValueMethodRef)
+        private bool CreateSyncVar(uint syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, CustomAttribute syncTypeAttribute, out FieldDefinition createdSyncVarFd, out MethodReference accessorSetValueMethodRef
+            , out MethodReference accessorGetValueMethodRef, ref MethodDefinition readSyncVarMd)
         {
             accessorGetValueMethodRef = null;
             accessorSetValueMethodRef = null;
@@ -516,7 +558,7 @@ namespace FishNet.CodeGenerating.Processing
 
                 InitializeSyncVar(syncCount, createdSyncVarFd, typeDef, originalFieldDef, syncTypeAttribute, createdSyncVar);
 
-                MethodDefinition syncVarReadMd = CreateSyncVarRead(typeDef, syncCount, originalFieldDef, accessorSetValueMethodRef);
+                MethodDefinition syncVarReadMd = CreateSyncVarRead(typeDef, syncCount, originalFieldDef, accessorSetValueMethodRef, ref readSyncVarMd);
                 if (syncVarReadMd != null)
                     _createdSyncTypeMethodDefinitions.Add(syncVarReadMd);
 
@@ -1262,101 +1304,47 @@ namespace FishNet.CodeGenerating.Processing
         }
 
         /// <summary>
-        /// Calls ReadSyncVar going up the hierarchy.
-        /// </summary>
-        /// <param name="firstTypeDef"></param>
-        internal void CallBaseReadSyncVar(TypeDefinition firstTypeDef)
-        {
-            string readSyncVarName = base.GetClass<NetworkBehaviourHelper>().ReadSyncVar_MethodRef.Name;
-            //TypeDef which needs to make the base call.
-            MethodDefinition callerMd = null;
-            TypeDefinition copyTd = firstTypeDef;
-            do
-            {
-                MethodDefinition readMd;
-
-                readMd = copyTd.GetMethod(readSyncVarName);
-                if (readMd != null)
-                    callerMd = readMd;
-
-                /* If baseType exist and it's not networkbehaviour
-                 * look into calling the ReadSyncVar method. */
-                if (copyTd.BaseType != null && copyTd.BaseType.FullName != base.GetClass<NetworkBehaviourHelper>().FullName)
-                {
-                    readMd = copyTd.BaseType.CachedResolve(base.Session).GetMethod(readSyncVarName);
-                    //Not all classes will have syncvars to read.
-                    if (!_baseCalledReadSyncVars.Contains(callerMd) && readMd != null && callerMd != null)
-                    {
-                        MethodReference baseReadMr = copyTd.GetMethodReferenceInBase(base.Session, readSyncVarName);//  readMd.GetMethodReferenceInBase (base.Session, base.ImportReference(readMd);
-                        ILProcessor processor = callerMd.Body.GetILProcessor();
-                        ParameterDefinition asServerPd = callerMd.Parameters[2];
-                        /* Calls base.ReadSyncVar and if result is true
-                         * then exit methods. This is because a true return means the base
-                         * was able to process the syncvar. */
-                        List<Instruction> baseCallInsts = new List<Instruction>();
-                        Instruction skipBaseReturn = processor.Create(OpCodes.Nop);
-                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_0)); //This.
-                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_1)); //PooledReader.
-                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg_2)); //Index.
-                        baseCallInsts.Add(processor.Create(OpCodes.Ldarg, asServerPd)); //AsServer.
-                        baseCallInsts.Add(processor.Create(OpCodes.Call, baseReadMr));
-                        baseCallInsts.Add(processor.Create(OpCodes.Brfalse_S, skipBaseReturn));
-                        baseCallInsts.Add(processor.Create(OpCodes.Ldc_I4_1));
-                        baseCallInsts.Add(processor.Create(OpCodes.Ret));
-                        baseCallInsts.Add(skipBaseReturn);
-                        processor.InsertFirst(baseCallInsts);
-
-                        _baseCalledReadSyncVars.Add(callerMd);
-                    }
-                }
-
-                copyTd = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(copyTd, base.Session);
-
-            } while (copyTd != null);
-
-        }
-
-        /// <summary>
         /// Reads a PooledReader locally then sets value to the SyncVars accessor.
         /// </summary>
         /// <param name="typeDef"></param>
         /// <param name="syncIndex"></param>
         /// <param name="originalFieldDef"></param>
-        private MethodDefinition CreateSyncVarRead(TypeDefinition typeDef, uint syncIndex, FieldDefinition originalFieldDef, MethodReference accessorSetMethodRef)
+        private MethodDefinition CreateSyncVarRead(TypeDefinition typeDef, uint syncIndex, FieldDefinition originalFieldDef, MethodReference accessorSetMethodRef, ref MethodDefinition readSyncVarMd)
         {
             Instruction jmpGoalInst;
             ILProcessor processor;
 
             //Get the read sync method, or create it if not present.
-            MethodDefinition readSyncMethodDef = typeDef.GetMethod(base.GetClass<NetworkBehaviourHelper>().ReadSyncVar_MethodRef.Name);
-            if (readSyncMethodDef == null)
+            string readSyncVarMethodName = $"ReadSyncVar___{typeDef.FullName}";
+            readSyncVarMd = typeDef.GetMethod(readSyncVarMethodName);
+            if (readSyncVarMd == null)
             {
-                readSyncMethodDef = new MethodDefinition(base.GetClass<NetworkBehaviourHelper>().ReadSyncVar_MethodRef.Name,
+                readSyncVarMd = new MethodDefinition(readSyncVarMethodName,
                 (MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.Virtual),
                     typeDef.Module.TypeSystem.Void);
-                readSyncMethodDef.ReturnType = base.GetClass<GeneralHelper>().GetTypeReference(typeof(bool));
+                readSyncVarMd.ReturnType = base.GetClass<GeneralHelper>().GetTypeReference(typeof(bool));
 
-                base.GetClass<GeneralHelper>().CreateParameter(readSyncMethodDef, typeof(PooledReader));
-                base.GetClass<GeneralHelper>().CreateParameter(readSyncMethodDef, typeof(uint));
-                base.GetClass<GeneralHelper>().CreateParameter(readSyncMethodDef, typeof(bool));
-                readSyncMethodDef.Body.InitLocals = true;
+                base.GetClass<GeneralHelper>().CreateParameter(readSyncVarMd, typeof(PooledReader));
+                base.GetClass<GeneralHelper>().CreateParameter(readSyncVarMd, typeof(uint));
+                base.GetClass<GeneralHelper>().CreateParameter(readSyncVarMd, typeof(bool));
+                readSyncVarMd.Body.InitLocals = true;
 
-                processor = readSyncMethodDef.Body.GetILProcessor();
+                processor = readSyncVarMd.Body.GetILProcessor();
                 //Return false as fall through.
                 processor.Emit(OpCodes.Ldc_I4_0);
                 processor.Emit(OpCodes.Ret);
 
-                typeDef.Methods.Add(readSyncMethodDef);
+                typeDef.Methods.Add(readSyncVarMd);
             }
             //Already created. 
             else
             {
-                processor = readSyncMethodDef.Body.GetILProcessor();
+                processor = readSyncVarMd.Body.GetILProcessor();
             }
 
-            ParameterDefinition pooledReaderPd = readSyncMethodDef.Parameters[0];
-            ParameterDefinition indexPd = readSyncMethodDef.Parameters[1];
-            ParameterDefinition asServerPd = readSyncMethodDef.Parameters[2];
+            ParameterDefinition pooledReaderPd = readSyncVarMd.Parameters[0];
+            ParameterDefinition indexPd = readSyncVarMd.Parameters[1];
+            ParameterDefinition asServerPd = readSyncVarMd.Parameters[2];
             VariableDefinition nextValueVariableDef;
             List<Instruction> readInsts;
 
@@ -1367,14 +1355,14 @@ namespace FishNet.CodeGenerating.Processing
              * created read instruction when the latest one fails conditions. */
             Instruction nopPlaceHolderInst = processor.Create(OpCodes.Nop);
 
-            readSyncMethodDef.Body.Instructions.Insert(0, nopPlaceHolderInst);
+            readSyncVarMd.Body.Instructions.Insert(0, nopPlaceHolderInst);
 
             /* If there was a previously made read then set jmp goal to the first
              * condition for it. Otherwise set it to the last instruction, which would
              * be a ret. Keep in mind if ret has a value we must go back 2 index
              * rather than one. */
             jmpGoalInst = (_lastReadInstruction != null) ? _lastReadInstruction :
-                readSyncMethodDef.Body.Instructions[readSyncMethodDef.Body.Instructions.Count - 2];
+                readSyncVarMd.Body.Instructions[readSyncVarMd.Body.Instructions.Count - 2];
 
             //Check index first. if (index != syncIndex) return
             Instruction nextLastReadInstruction = processor.Create(OpCodes.Ldarg, indexPd);
@@ -1385,7 +1373,7 @@ namespace FishNet.CodeGenerating.Processing
             //processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4, syncIndex));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Bne_Un, jmpGoalInst));
             //PooledReader.ReadXXXX()
-            readInsts = base.GetClass<ReaderProcessor>().CreateRead(readSyncMethodDef, pooledReaderPd,
+            readInsts = base.GetClass<ReaderProcessor>().CreateRead(readSyncVarMd, pooledReaderPd,
                  originalFieldDef.FieldType, out nextValueVariableDef);
             if (readInsts == null)
                 return null;
@@ -1406,7 +1394,7 @@ namespace FishNet.CodeGenerating.Processing
             _lastReadInstruction = nextLastReadInstruction;
             processor.Remove(nopPlaceHolderInst);
 
-            return readSyncMethodDef;
+            return readSyncVarMd;
         }
 
         /// <summary>

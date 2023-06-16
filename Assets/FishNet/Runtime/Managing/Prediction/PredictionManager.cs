@@ -437,7 +437,6 @@ namespace FishNet.Managing.Predicting
                     int dataLength = (segment.Count - STATE_HEADER_RESERVE_COUNT);
                     //Write length.
                     writer.WriteInt32(dataLength, AutoPackType.Unpacked);
-
                     tm.SendToClient((byte)Channel.Reliable, segment, nc, true);
                 }
 
@@ -539,14 +538,26 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         internal void ParseStateUpdate(PooledReader reader)
         {
-            //Length of packet.
-            int length = reader.ReadInt32(AutoPackType.Unpacked);
-            //Read data into array.
-            byte[] arr = ByteArrayPool.Retrieve(length);
-            reader.ReadBytes(ref arr, length);
-            //Make segment and store into states.
-            ArraySegment<byte> segment = new ArraySegment<byte>(arr, 0, length);
-            _recievedStates.Enqueue(new StatePacket(segment, _networkManager.TimeManager.LastPacketTick));
+            if (_networkManager.IsServer)
+            {
+                /* If the server is receiving a state update it can
+                 * simply discard the data since the server will never
+                 * need to reset states. This can occur on the clientHost
+                 * side. */
+                int length = reader.ReadInt32(AutoPackType.Unpacked);
+                reader.Skip(length);
+            }
+            else
+            {
+                //Length of packet.
+                int length = reader.ReadInt32(AutoPackType.Unpacked);
+                //Read data into array.
+                byte[] arr = ByteArrayPool.Retrieve(length);
+                reader.ReadBytes(ref arr, length);
+                //Make segment and store into states.
+                ArraySegment<byte> segment = new ArraySegment<byte>(arr, 0, length);
+                _recievedStates.Enqueue(new StatePacket(segment, _networkManager.TimeManager.LastPacketTick));
+            }
         }
 #endif
 

@@ -1,4 +1,5 @@
 ﻿
+using FishNet.CodeGenerating.Extension;
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Serializing;
@@ -230,7 +231,7 @@ namespace FishNet.CodeGenerating.Processing
                 //If class and not value type check for accessible constructor.
                 if (typeDefinition.IsClass && !typeDefinition.IsValueType)
                 {
-                    MethodDefinition constructor = typeDefinition.GetMethod(".ctor");
+                    MethodDefinition constructor = typeDefinition.GetConstructor(base.Session);
                     //Constructor is inaccessible, cannot create serializer for type.
                     if (!constructor.IsPublic)
                     {

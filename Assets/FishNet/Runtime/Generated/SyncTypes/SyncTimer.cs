@@ -113,7 +113,7 @@ namespace FishNet.Object.Synchronizing
 
             Paused = true;
             SyncTimerOperation op = (sendRemaining) ? SyncTimerOperation.PauseUpdated : SyncTimerOperation.Pause;
-            AddOperation(op, -1f, -1f);
+            AddOperation(op, Remaining, Remaining);
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             Paused = false;
-            AddOperation(SyncTimerOperation.Unpause, -1f, -1f);
+            AddOperation(SyncTimerOperation.Unpause, Remaining, Remaining);
         }
 
         /// <summary>
@@ -290,15 +290,18 @@ namespace FishNet.Object.Synchronizing
             {
                 bool newPauseState = (op == SyncTimerOperation.Pause || op == SyncTimerOperation.PauseUpdated);
 
-                float prev = -1f;
-                float next = -1f;
+                float prev = Remaining;
+                float next;
                 //If updated time as well.
                 if (op == SyncTimerOperation.PauseUpdated)
                 {
-                    prev = Remaining;
                     next = reader.ReadSingle();
                     if (CanSetValues(asServer))
                         Remaining = next;
+                }
+                else
+                {
+                    next = Remaining;
                 }
 
                 if (CanSetValues(asServer))

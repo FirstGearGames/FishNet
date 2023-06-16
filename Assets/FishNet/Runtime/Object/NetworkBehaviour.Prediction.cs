@@ -1323,9 +1323,7 @@ namespace FishNet.Object
         public void Reconcile_Reader_Internal<T>(PooledReader reader, ref T data, Channel channel) where T : IReconcileData
         {
             T newData = reader.Read<T>();
-            //Server will still get reconcile but should not perform it.
-            if (reader.Source == Reader.DataSource.Client)
-                return;
+
             uint tick = (IsOwner) ? PredictionManager.StateClientTick : PredictionManager.StateServerTick;
             /* //TODO old states cannot happen for reliable but can for unreliable.
              * Be sure to check if state is old before processing for unreliable.

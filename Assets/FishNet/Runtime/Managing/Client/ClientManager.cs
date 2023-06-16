@@ -355,7 +355,7 @@ namespace FishNet.Managing.Client
                 packetId = reader.ReadPacketId();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 if (print)
-                    Debug.Log($"PacketId {packetId}");
+                    Debug.Log($"PacketId {packetId} - Remaining {reader.Remaining}.");
                 _parseLogger.AddPacket(packetId);
 #endif
                 bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
@@ -458,6 +458,11 @@ namespace FishNet.Managing.Client
                         return;
                     }
                 }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                if (print)
+                    Debug.Log($"Reader remaining {reader.Remaining}");
+#endif
             }
 
             /* Iterate cache when reader is emptied.

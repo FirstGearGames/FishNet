@@ -1,9 +1,11 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing.Transporting;
+using FishNet.Object.Delegating;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
+using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using System.Collections.Generic;
@@ -76,7 +78,20 @@ namespace FishNet.Object
         /// All ReadPermission values.
         /// </summary>
         private static ReadPermission[] _readPermissions;
+        /// <summary>
+        /// Delegates to read methods for SyncVars.
+        /// </summary>
+        private List<SyncVarReadDelegate> _syncVarReadDelegates = new List<SyncVarReadDelegate>();
         #endregion
+
+        /// <summary>
+        /// Registers a SyncVarReadDelegate for this NetworkBehaviour.
+        /// </summary>
+        [CodegenMakePublic]
+        internal void RegisterSyncVarRead(SyncVarReadDelegate del)
+        {
+            _syncVarReadDelegates.Add(del);
+        }
 
         /// <summary>
         /// Registers a SyncType.
@@ -184,22 +199,23 @@ namespace FishNet.Object
                 }
                 else
                 {
-                    if (_syncVars.ContainsKey(index))
-                        ReadSyncVar(reader, index, asServer);
-                    else
+                    bool readSyncVar = false;
+                    //Try reading with each delegate.
+                    for (int i = 0; i < _syncVarReadDelegates.Count; i++)
+                    {
+                        //Success.
+                        if (_syncVarReadDelegates[i](reader, index, asServer))
+                        {
+                            readSyncVar = true;
+                            break;
+                        }
+                    }
+
+                    if (!readSyncVar)
                         NetworkManager.LogWarning($"SyncVar not found for index {index} on {transform.name}. Remainder of packet may become corrupt.");
                 }
             }
         }
-
-        /// <summary>
-        /// Codegen overrides this method to read syncVars for each script which inherits NetworkBehaviour.
-        /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="index"></param>
-        /// <param name="asServer">True if reading into SyncVars for the server, false for client. This would be true for predicted spawning if the predicted spawner sent syncvars.</param>
-        [APIExclude]
-        internal virtual bool ReadSyncVar(PooledReader reader, uint index, bool asServer) { return false; }
 
         /// <summary>
         /// Writers dirty SyncTypes if their write tick has been met.

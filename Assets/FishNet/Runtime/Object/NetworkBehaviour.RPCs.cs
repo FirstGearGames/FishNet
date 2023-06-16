@@ -66,7 +66,7 @@ namespace FishNet.Object
         [APIExclude]
         [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterServerRpc_Internal(uint hash, ServerRpcDelegate del)
+        internal void RegisterServerRpc(uint hash, ServerRpcDelegate del)
         {
             if (_serverRpcDelegates.TryGetValueIL2CPP(hash, out ServerRpcDelegate currentDelegate))
             {
@@ -86,7 +86,7 @@ namespace FishNet.Object
         [APIExclude]
         [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterObserversRpc_Internal(uint hash, ClientRpcDelegate del)
+        internal void RegisterObserversRpc(uint hash, ClientRpcDelegate del)
         {
             if (_observersRpcDelegates.TryGetValueIL2CPP(hash, out ClientRpcDelegate currentDelegate))
             {
@@ -106,7 +106,7 @@ namespace FishNet.Object
         [APIExclude]
         [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void RegisterTargetRpc_Internal(uint hash, ClientRpcDelegate del)
+        internal void RegisterTargetRpc(uint hash, ClientRpcDelegate del)
         {
             if (_targetRpcDelegates.TryGetValueIL2CPP(hash, out ClientRpcDelegate currentDelegate))
             {

@@ -340,29 +340,6 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return method;
         }
 
-
-        /// <summary>
-        /// Finds the first method by a given name.
-        /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="methodName"></param>
-        /// <returns></returns>
-        internal static MethodDefinition GetMethod(this TypeDefinition typeDef, string methodName)
-        {
-            return typeDef.Methods.FirstOrDefault(method => method.Name == methodName);
-        }
-
-        /// <summary>
-        /// Finds the first method by a given name.
-        /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="methodName"></param>
-        /// <returns></returns>
-        internal static MethodDefinition GetMethod(this TypeDefinition typeDef, string methodName, Type[] types)
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// Returns if a type is a subclass of another.
         /// </summary>

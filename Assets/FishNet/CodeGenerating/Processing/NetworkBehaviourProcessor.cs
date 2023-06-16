@@ -191,8 +191,6 @@ namespace FishNet.CodeGenerating.Processing
             //Since awake methods are erased ret has to be added at the end.
             AddReturnsToAwake(awakeDatas);
 
-            base.GetClass<NetworkBehaviourSyncProcessor>().CallBaseReadSyncVar(firstTypeDef);
-
             return modified;
         }
 

@@ -1,4 +1,5 @@
-﻿using FishNet.CodeGenerating.Helping.Extension;
+﻿using FishNet.CodeGenerating.Extension;
+using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.Processing;
 using FishNet.Configuring;
 using FishNet.Managing.Logging;
@@ -41,8 +42,8 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference Reconcile_Reader_MethodRef;
         public MethodReference RegisterReplicateRpc_MethodRef;
         public MethodReference RegisterReconcileRpc_MethodRef;
-        public MethodReference ReplicateRpcDelegateConstructor_MethodRef;
-        public MethodReference ReconcileRpcDelegateConstructor_MethodRef;
+        public MethodReference ReplicateRpcDelegate_Ctor_MethodRef;
+        public MethodReference ReconcileRpcDelegate_Ctor_MethodRef;
         //public MethodReference Replicate_Server_SendToSpectators_MethodRef;
         //RPCs.
         public MethodReference SendServerRpc_MethodRef;
@@ -52,8 +53,8 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference RegisterServerRpc_MethodRef;
         public MethodReference RegisterObserversRpc_MethodRef;
         public MethodReference RegisterTargetRpc_MethodRef;
-        public MethodReference ServerRpcDelegateConstructor_MethodRef;
-        public MethodReference ClientRpcDelegateConstructor_MethodRef;
+        public MethodReference ServerRpcDelegate_Ctor_MethodRef;
+        public MethodReference ClientRpcDelegate_Ctor_MethodRef;
         //Is checks.
         public MethodReference IsClient_MethodRef;
         public MethodReference IsOwner_MethodRef;
@@ -65,7 +66,7 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference OwnerMatches_MethodRef;
         public MethodReference LocalConnection_MethodRef;
         public MethodReference Owner_MethodRef;
-        public MethodReference ReadSyncVar_MethodRef;
+        public MethodReference RegisterSyncVarRead_MethodRef;
         public MethodReference NetworkInitializeIfDisabled_MethodRef;
         //TimeManager.
         public MethodReference TimeManager_MethodRef;
@@ -87,20 +88,20 @@ namespace FishNet.CodeGenerating.Helping
             base.ImportReference(networkBehaviourType);
 
             //ServerRpcDelegate and ClientRpcDelegate constructors.
-            ServerRpcDelegateConstructor_MethodRef = base.ImportReference(typeof(ServerRpcDelegate).GetConstructors().First());
-            ClientRpcDelegateConstructor_MethodRef = base.ImportReference(typeof(ClientRpcDelegate).GetConstructors().First());
+            ServerRpcDelegate_Ctor_MethodRef = base.ImportReference(typeof(ServerRpcDelegate).GetConstructors().First());
+            ClientRpcDelegate_Ctor_MethodRef = base.ImportReference(typeof(ClientRpcDelegate).GetConstructors().First());
             //Prediction Rpc delegate constructors.
-            ReplicateRpcDelegateConstructor_MethodRef = base.ImportReference(typeof(ReplicateRpcDelegate).GetConstructors().First());
-            ReconcileRpcDelegateConstructor_MethodRef = base.ImportReference(typeof(ReconcileRpcDelegate).GetConstructors().First());
+            ReplicateRpcDelegate_Ctor_MethodRef = base.ImportReference(typeof(ReplicateRpcDelegate).GetConstructors().First());
+            ReconcileRpcDelegate_Ctor_MethodRef = base.ImportReference(typeof(ReconcileRpcDelegate).GetConstructors().First());
 
             foreach (MethodInfo mi in networkBehaviourType.GetMethods((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
                 //CreateDelegates.
-                if (mi.Name == nameof(NetworkBehaviour.RegisterServerRpc_Internal))
+                if (mi.Name == nameof(NetworkBehaviour.RegisterServerRpc))
                     RegisterServerRpc_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.RegisterObserversRpc_Internal))
+                else if (mi.Name == nameof(NetworkBehaviour.RegisterObserversRpc))
                     RegisterObserversRpc_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.RegisterTargetRpc_Internal))
+                else if (mi.Name == nameof(NetworkBehaviour.RegisterTargetRpc))
                     RegisterTargetRpc_MethodRef = base.ImportReference(mi);
                 //Prediction delegates.
                 else if (mi.Name == nameof(NetworkBehaviour.RegisterReplicateRpc_Internal))
@@ -148,8 +149,8 @@ namespace FishNet.CodeGenerating.Helping
                 //Misc.
                 else if (mi.Name == nameof(NetworkBehaviour.OwnerMatches))
                     OwnerMatches_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.ReadSyncVar))
-                    ReadSyncVar_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.RegisterSyncVarRead))
+                    RegisterSyncVarRead_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.DirtySyncType))
                     DirtySyncType_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.NetworkInitializeIfDisabled))
@@ -257,19 +258,19 @@ namespace FishNet.CodeGenerating.Helping
             //Server.
             if (rpcType == RpcType.Server)
             {
-                insts.Add(processor.Create(OpCodes.Newobj, ServerRpcDelegateConstructor_MethodRef));
+                insts.Add(processor.Create(OpCodes.Newobj, ServerRpcDelegate_Ctor_MethodRef));
                 insts.Add(processor.Create(OpCodes.Call, RegisterServerRpc_MethodRef));
             }
             //Observers.
             else if (rpcType == RpcType.Observers)
             {
-                insts.Add(processor.Create(OpCodes.Newobj, ClientRpcDelegateConstructor_MethodRef));
+                insts.Add(processor.Create(OpCodes.Newobj, ClientRpcDelegate_Ctor_MethodRef));
                 insts.Add(processor.Create(OpCodes.Call, RegisterObserversRpc_MethodRef));
             }
             //Target
             else if (rpcType == RpcType.Target)
             {
-                insts.Add(processor.Create(OpCodes.Newobj, ClientRpcDelegateConstructor_MethodRef));
+                insts.Add(processor.Create(OpCodes.Newobj, ClientRpcDelegate_Ctor_MethodRef));
                 insts.Add(processor.Create(OpCodes.Call, RegisterTargetRpc_MethodRef));
             }
 
@@ -425,7 +426,7 @@ namespace FishNet.CodeGenerating.Helping
 
             if (checkIsNetworked)
                 instructions.AddRange(CreateIsNetworkedCheck(methodDef, endIf));
-            
+
             if (!useStatic)
             {
                 instructions.Add(processor.Create(OpCodes.Ldarg_0)); //argument: this

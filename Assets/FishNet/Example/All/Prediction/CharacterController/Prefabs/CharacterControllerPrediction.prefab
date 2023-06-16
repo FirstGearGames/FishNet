@@ -258,6 +258,8 @@ MonoBehaviour:
   _teleportThreshold: 1
   _clientAuthoritative: 1
   _sendToOwner: 1
+  _useNetworkLod: 1
+  _interval: 1
   _synchronizePosition: 1
   _positionSnapping:
     X: 0

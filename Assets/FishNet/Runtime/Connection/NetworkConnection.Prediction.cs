@@ -95,14 +95,16 @@ namespace FishNet.Connection
         /// <param name="writer"></param>
         internal void WriteState(PooledWriter writer)
         {
+#if !DEVELOPMENT_BUILD && !UNITY_EDITOR
             //Do not send states to clientHost.
             if (IsLocalClient)
                 return;
+#endif
 
             TimeManager tm = NetworkManager.TimeManager;
-            uint ticksBehind = PacketTick.LocalTickDifference(tm);
-            if (ticksBehind > 0)
-                return;
+            uint ticksBehind = (IsLocalClient) ? 0 : PacketTick.LocalTickDifference(tm);
+            //if (ticksBehind > 0)
+            //    return;
             /* If it's been a really long while the client could just be setting up
              * or dropping. Only send if they've communicated within 15 seconds. */
             if (ticksBehind > (tm.TickRate * 15))
@@ -155,7 +157,7 @@ namespace FishNet.Connection
         }
 #endif
 
-    }
+        }
 
 
 }
