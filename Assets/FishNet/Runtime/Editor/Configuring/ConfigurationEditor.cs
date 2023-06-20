@@ -7,9 +7,6 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-#if PARRELSYNC
-using ParrelSync;
-#endif
 
 namespace FishNet.Editing
 {
@@ -125,7 +122,7 @@ namespace FishNet.Editing
         public static void RebuildSceneIds()
         {
 #if PARRELSYNC
-            if (ClonesManager.IsClone())
+            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
                 Debug.Log("Cannot perform this operation on a ParrelSync clone");
                 return;
@@ -166,7 +163,7 @@ namespace FishNet.Editing
         public static void RebuildDefaultPrefabs()
         {
 #if PARRELSYNC
-            if (ClonesManager.IsClone())
+            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
                 Debug.Log("Cannot perform this operation on a ParrelSync clone");
                 return;
@@ -190,7 +187,7 @@ namespace FishNet.Editing
         public static void RemoveDuplicateNetworkObjects()
         {
 #if PARRELSYNC
-            if (ClonesManager.IsClone())
+            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
                 Debug.Log("Cannot perform this operation on a ParrelSync clone");
                 return;

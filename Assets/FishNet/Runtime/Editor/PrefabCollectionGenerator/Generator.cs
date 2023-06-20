@@ -12,7 +12,7 @@ using UnityEngine;
 using UnityDebug = UnityEngine.Debug;
 using Debug = UnityEngine.Debug;
 #if PARRELSYNC
-using ParrelSync;
+//using ParrelSync;
 #endif
 
 namespace FishNet.Editing.PrefabCollectionGenerator
@@ -210,7 +210,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         public static void GenerateChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths, PrefabGeneratorConfigurations settings = null)
         {
 #if PARRELSYNC
-            if (ClonesManager.IsClone())
+            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
                 Debug.Log("Skipping prefab generation in ParrelSync clone");
                 return;
@@ -317,7 +317,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         public static void GenerateFull(PrefabGeneratorConfigurations settings = null, bool forced = false)
         {
 #if PARRELSYNC
-            if (ClonesManager.IsClone())
+            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
                 Debug.Log("Skipping prefab generation in ParrelSync clone");
                 return;
@@ -485,7 +485,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             }
 
 #if PARRELSYNC
-            if (!ClonesManager.IsClone())
+            if (!ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
 #endif
                 if (_cachedDefaultPrefabs == null)
