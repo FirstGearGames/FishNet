@@ -129,22 +129,69 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <returns></returns>
         private List<NetworkObject> RetrieveOrderedSpawnedObjects()
-        {
+        {            
             List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
-            foreach (NetworkObject networkObject in Spawned.Values)
+
+            bool initializationOrderChanged = false;
+            foreach (NetworkObject item in Spawned.Values)
             {
-                if (networkObject.IsNested)
+                if (item.IsNested)
                     continue;
 
-                //Add nob and children recursively.
-                AddChildNetworkObjects(networkObject);
+                sbyte currentItemInitOrder = item.GetInitializeOrder();
+                initializationOrderChanged |= (currentItemInitOrder != 0);
+                int count = cache.Count;
+
+                /* If initialize order has not changed or count is
+                 * 0 then add normally. */
+                if (!initializationOrderChanged || count == 0)
+                {
+                    cache.Add(item);
+                }
+                else
+                {
+                    /* If current item init order is larger or equal than
+                     * the last entry in copy then add to the end.
+                     * Otherwise check where to add from the beginning. */
+                    if (currentItemInitOrder >= cache[count - 1].GetInitializeOrder())
+                    {
+                        cache.Add(item);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < count; i++)
+                        {
+                            /* If item being sorted is lower than the one in already added.
+                             * then insert it before the one already added. */
+                            if (currentItemInitOrder <= cache[i].GetInitializeOrder())
+                            {
+                                cache.Insert(i, item);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
-            void AddChildNetworkObjects(NetworkObject n)
+            //After everything is sorted by root only insert children.
+            for (int i = 0; i < cache.Count; i++)
             {
-                cache.Add(n);
-                foreach (NetworkObject nob in n.ChildNetworkObjects)
-                    AddChildNetworkObjects(nob);
+                NetworkObject nob = cache[i];
+                //Skip root.
+                if (nob.IsNested)
+                    continue;
+
+                int startingIndex = i;
+                AddChildNetworkObjects(nob, ref startingIndex);
+            }
+
+            void AddChildNetworkObjects(NetworkObject n, ref int index)
+            {
+                foreach (NetworkObject childObject in n.ChildNetworkObjects)
+                {
+                    cache.Insert(++index, childObject);
+                    AddChildNetworkObjects(childObject, ref index);
+                }
             }
 
             return cache;

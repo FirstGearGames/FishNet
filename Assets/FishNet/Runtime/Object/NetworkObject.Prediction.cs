@@ -58,7 +58,7 @@ namespace FishNet.Object
 
         private void Prediction_Awake()
         {
-            if (!_usePrediction)
+            if (!_enablePrediction)
                 return;
 
             //Create SetInterpolation smoother.
@@ -99,7 +99,7 @@ namespace FishNet.Object
 
         private void Prediction_Update()
         {
-            if (!_usePrediction)
+            if (!_enablePrediction)
                 return;
 
             _setSmoother.Update();
@@ -121,7 +121,7 @@ namespace FishNet.Object
 
         private void Prediction_Preinitialize(NetworkManager manager, bool asServer)
         {
-            if (!_usePrediction)
+            if (!_enablePrediction)
                 return;
             if (asServer)
                 return;
@@ -142,7 +142,7 @@ namespace FishNet.Object
 
         private void Prediction_Deinitialize(bool asServer)
         {
-            if (!_usePrediction)
+            if (!_enablePrediction)
                 return;
             if (asServer)
                 return;

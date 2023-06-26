@@ -231,9 +231,9 @@ namespace FishNet.CodeGenerating.Processing
                 //If class and not value type check for accessible constructor.
                 if (typeDefinition.IsClass && !typeDefinition.IsValueType)
                 {
-                    MethodDefinition constructor = typeDefinition.GetConstructor(base.Session);
+                    MethodDefinition constructor = typeDefinition.GetDefaultConstructor(base.Session);
                     //Constructor is inaccessible, cannot create serializer for type.
-                    if (!constructor.IsPublic)
+                    if (constructor != null && !constructor.IsPublic)
                     {
                         base.LogError($"Unable to generator serializers for {typeDefinition.FullName} because it's constructor is not public.");
                         return;
@@ -246,6 +246,7 @@ namespace FishNet.CodeGenerating.Processing
                 MethodReference createdMethodRef = (extensionType == ExtensionType.Write) ?
                     base.GetClass<WriterProcessor>().GetWriteMethodReference(parameterType) :
                     base.GetClass<ReaderProcessor>().GetReadMethodReference(parameterType);
+
                 //If a created method already exist nothing further is required.
                 if (createdMethodRef != null)
                 {

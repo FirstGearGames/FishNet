@@ -490,7 +490,7 @@ namespace FishNet.CodeGenerating.Processing
 
             void Generate(FieldReference fr, bool isList)
             {
-                MethodDefinition ctorMd = base.GetClass<GeneralHelper>().List_TypeRef.CachedResolve(base.Session).GetConstructor();
+                MethodDefinition ctorMd = base.GetClass<GeneralHelper>().List_TypeRef.CachedResolve(base.Session).GetDefaultConstructor();
                 GenericInstanceType collectionGit;
                 if (isList)
                     gh.GetGenericList(replicateDataTr, out collectionGit);
@@ -522,7 +522,7 @@ namespace FishNet.CodeGenerating.Processing
             Generate(predictionFields.ReplicateDatasList, true);
             void Generate(FieldReference fr, bool isList)
             {
-                MethodDefinition ctorMd = base.GetClass<GeneralHelper>().List_TypeRef.CachedResolve(base.Session).GetConstructor();
+                MethodDefinition ctorMd = base.GetClass<GeneralHelper>().List_TypeRef.CachedResolve(base.Session).GetDefaultConstructor(base.Session);
                 GenericInstanceType collectionGit;
                 if (isList)
                     gh.GetGenericList(replicateDataTr, out collectionGit);

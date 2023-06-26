@@ -66,10 +66,10 @@ namespace FishNet.Object
         /// <summary>
         /// True if this object uses prediciton methods.
         /// </summary>
-        public bool UsePrediction => _usePrediction;
+        public bool EnablePrediction => _enablePrediction;
         [Tooltip("True if this object uses prediction methods.")]
         [SerializeField]
-        private bool _usePrediction;
+        private bool _enablePrediction;
         /// <summary>
         /// Object containing graphics when using prediction. This should be child of the predicted root.
         /// </summary>
@@ -77,11 +77,11 @@ namespace FishNet.Object
         [SerializeField]
         private Transform _graphicalObject;
         /// <summary>
-        /// True to use state and input forwarding. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.
+        /// True to forward replicate and reconcile states to all clients. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.
         /// </summary>
-        [Tooltip("True to use state and input forwarding. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.")]
+        [Tooltip("True to forward replicate and reconcile states to all clients. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.")]
         [SerializeField]
-        private bool _useStates = true;
+        private bool _enableStateForwarding = true;
         /// <summary>
         /// How many ticks to interpolate graphics on objects owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.
         /// </summary>
@@ -103,14 +103,14 @@ namespace FishNet.Object
         [SerializeField]
         private float _ownerTeleportThreshold = 1f;
         /// <summary>
-        /// True to use a flat amount of interpolation for graphics. This is ideal for controllers that will not carry velocity, such as setting velocity directly when there is input.
-        /// False to adapt interpolation based on a variety of factors. This can be beneficial when velocities are affected by forces and may change irratically.
+        /// False to use a flat amount of interpolation for graphics. This is ideal for controllers that will not carry velocity, such as setting velocity directly when there is input.
+        /// True to adapt interpolation based on a variety of factors. This can be beneficial when velocities are affected by forces and may change irratically.
         /// </summary>
         internal bool SpectatorAdaptiveInterpolation => _spectatorAdaptiveInterpolation;
         [Tooltip("True to use a flat amount of interpolation for graphics. This is ideal for controllers that will not carry velocity, such as setting velocity directly when there is input." +
             "False to adapt interpolation based on a variety of factors. This can be beneficial when velocities are affected by forces and may change irratically.")]
         [SerializeField]
-        private bool _spectatorAdaptiveInterpolation;
+        private bool _spectatorAdaptiveInterpolation = true;
         /// <summary>
         /// How many ticks to interpolate graphics on objects not owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.
         /// </summary>
@@ -540,9 +540,8 @@ namespace FishNet.Object
              * NetworkBehaviour so it must be preinitialized
              * after NetworkBehaviours are. */
             if (asServer)
-            {
-                _hashGrid = networkManager.GetInstance<HashGrid>(false);
-                if (_hashGrid != null)
+            {                
+                if (networkManager.TryGetInstance<HashGrid>(out _hashGrid))
                 {
                     _hashGridPosition = _hashGrid.GetHashGridPosition(this);
                     HashGridEntry = _hashGrid.GetGridEntry(this);
@@ -811,8 +810,6 @@ namespace FishNet.Object
             SetActiveStatus(false, asServer);
             if (asServer)
                 Observers.Clear();
-
-
         }
 
         /// <summary>

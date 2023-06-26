@@ -110,7 +110,7 @@ namespace FishNet.CodeGenerating.Helping
             //
             tmpType = typeof(System.Runtime.CompilerServices.ExtensionAttribute);
             tmpTr = base.ImportReference(tmpType);
-            Extension_Attribute_Ctor_MethodRef = base.ImportReference(tmpTr.GetConstructor(base.Session));
+            Extension_Attribute_Ctor_MethodRef = base.ImportReference(tmpTr.GetDefaultConstructor(base.Session));
 
             //Networkbehaviour.
             Type networkBehaviourType = typeof(NetworkBehaviour);
@@ -997,7 +997,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                MethodDefinition constructorMethodDef = type.GetConstructor(base.Session);
+                MethodDefinition constructorMethodDef = type.GetDefaultConstructor(base.Session);
                 if (constructorMethodDef == null)
                 {
                     base.LogError($"{type.Name} can't be deserialized because a default constructor could not be found. Create a default constructor or a custom serializer/deserializer.");

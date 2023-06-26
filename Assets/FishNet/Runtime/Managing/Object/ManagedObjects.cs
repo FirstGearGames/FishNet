@@ -54,7 +54,7 @@ namespace FishNet.Managing.Object
         protected virtual void Initialize(NetworkManager manager)
         {
             NetworkManager = manager;
-            _hashGrid = manager.GetInstance<HashGrid>(false);
+            manager.TryGetInstance<HashGrid>(out _hashGrid);
         }
 
         /// <summary>

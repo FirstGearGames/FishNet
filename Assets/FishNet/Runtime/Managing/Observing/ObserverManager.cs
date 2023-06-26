@@ -31,17 +31,18 @@ namespace FishNet.Managing.Observing
         /// 
         /// </summary>
         [Tooltip("True to use the NetworkLOD system.")]
+        [FormerlySerializedAs("_useNetworkLod")]//Remove on 2024/01/01
         [SerializeField]
-        private bool _useNetworkLod;
+        private bool _enableNetworkLod;
         /// <summary>
         /// True to use the NetworkLOD system.
         /// </summary>
         /// <returns></returns>
-        internal bool GetUseNetworkLod() => _useNetworkLod;
+        internal bool GetEnableNetworkLod() => _enableNetworkLod;
         /// <summary>
         /// Distance for each level of detal.
         /// </summary>
-        internal List<float> GetLevelOfDetailDistances() => (_useNetworkLod) ? _levelOfDetailDistances : _singleLevelOfDetailDistances;
+        internal List<float> GetLevelOfDetailDistances() => (_enableNetworkLod) ? _levelOfDetailDistances : _singleLevelOfDetailDistances;
         [Tooltip("Distance for each level of detal.")]
         [SerializeField]
         private List<float> _levelOfDetailDistances = new List<float>();
@@ -53,7 +54,7 @@ namespace FishNet.Managing.Observing
         /// 
         /// </summary>
         [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")]
-        [FormerlySerializedAs("_setHostVisibility")]
+        [FormerlySerializedAs("_setHostVisibility")]//Remove on 2024/01/01
         [SerializeField]
         private bool _updateHostVisibility = true;
         /// <summary>
@@ -86,10 +87,10 @@ namespace FishNet.Managing.Observing
         private void Awake()
         {
 #if !NETWORK_LOD
-            if (_useNetworkLod && _levelOfDetailDistances.Count > 1)
+            if (_enableNetworkLod && _levelOfDetailDistances.Count > 1)
             {
                 Debug.LogWarning("Network Level of Detail has been disabled while bugs are resolved in relation to this feature. You do not need to make any changes to your project. This warning will be removed once all issues are resolved.");
-                _useNetworkLod = false;
+                _enableNetworkLod = false;
             }
 #endif
         }
@@ -263,7 +264,7 @@ namespace FishNet.Managing.Observing
         /// </summary>
         private void ValidateLevelOfDetails()
         {
-            if (!_useNetworkLod)
+            if (!_enableNetworkLod)
                 return;
 
             //No distances specified.
@@ -272,7 +273,7 @@ namespace FishNet.Managing.Observing
                 if (_networkManager != null)
                 {
                     _networkManager.LogWarning("Level of detail distances contains no entries. NetworkLOD has been disabled.");
-                    _useNetworkLod = false;
+                    _enableNetworkLod = false;
                 }
                 return;
             }
@@ -286,7 +287,7 @@ namespace FishNet.Managing.Observing
                     if (_networkManager != null)
                     {
                         _networkManager.LogError($"Level of detail distances must be greater than 0f, and each distance larger than the previous. NetworkLOD has been disabled.");
-                        _useNetworkLod = false;
+                        _enableNetworkLod = false;
                     }
                     return;
                 }

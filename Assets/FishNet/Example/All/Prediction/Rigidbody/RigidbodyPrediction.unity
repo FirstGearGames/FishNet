@@ -143,9 +143,9 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 30
+  _tickRate: 50
   _pingInterval: 1
-  _timingInterval: 3
+  _timingInterval: 1
   _physicsMode: 1
 --- !u!114 &192429405
 MonoBehaviour:
@@ -236,6 +236,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e08bb003fce297d4086cf8cba5aa459a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _queuedInputs: 1
+  _reconcileInterval: 0.1
   _dropExcessiveReplicates: 1
   _maximumServerReplicates: 15
   _maximumConsumeCount: 4

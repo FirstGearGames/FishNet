@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace FishNet.Component.Transforming
 {
@@ -363,8 +364,9 @@ namespace FishNet.Component.Transforming
         /// True to use Network Level of Detail when the feature is enabled.
         /// </summary>
         [Tooltip("True to use Network Level of Detail when the feature is enabled.")]
+        [FormerlySerializedAs("_useNetworkLod")]//Remove on 2024/01/01
         [SerializeField]
-        private bool _useNetworkLod = true;
+        private bool _enableNetworkLod = true;
         /// <summary>
         /// How often in ticks to synchronize. This is default to 1 but can be set longer to send less often. This value may also be changed at runtime. Enabling Network level of detail for this NetworkTransform disables manual control of this feature as it will be handled internally.
         /// </summary>
@@ -784,7 +786,7 @@ namespace FishNet.Component.Transforming
              * is set higher than 1. An interval of 1 indicates to send
              * every tick. Only check to wait more ticks if interval
              * is larger than 1. */
-            if (!_useNetworkLod && _interval > 1)
+            if (!_enableNetworkLod && _interval > 1)
             {
                 /* If intervalsRemaining is unset then that means the transform
                  * did not change last tick. See if transform changed and if so then
@@ -810,7 +812,7 @@ namespace FishNet.Component.Transforming
 
             if (base.IsServer)
             {
-                byte lodIndex = (_useNetworkLod) ? base.ObserverManager.LevelOfDetailIndex : (byte)0;
+                byte lodIndex = (_enableNetworkLod) ? base.ObserverManager.LevelOfDetailIndex : (byte)0;
                 SendToClients(lodIndex);
             }
 
@@ -1452,7 +1454,7 @@ namespace FishNet.Component.Transforming
                     //todo - resolve networklod sending 0 count data properly. Count should never be 0.
                     if (dataSegment.Count > 0)
                     {
-                        bool useLod = _useNetworkLod;
+                        bool useLod = _enableNetworkLod;
                         foreach (NetworkConnection nc in base.Observers)
                         {
                             //If to not send to owner.
@@ -1873,7 +1875,7 @@ namespace FishNet.Component.Transforming
                 lod = 0;
 
             //Update the interval so speed calculations are proper.
-            if (_useNetworkLod)
+            if (_enableNetworkLod)
                 _interval = base.ObserverManager.GetLevelOfDetailInterval(lod);
 
             DataReceived(data, channel, false);

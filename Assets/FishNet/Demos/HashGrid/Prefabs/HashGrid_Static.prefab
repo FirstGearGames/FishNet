@@ -133,9 +133,9 @@ MonoBehaviour:
   <AssetPathHash>k__BackingField: 17472515426990886281
   _sceneNetworkObjects: []
   <IsNested>k__BackingField: 0
-  _usePrediction: 0
+  _enablePrediction: 0
   _graphicalObject: {fileID: 0}
-  _useStates: 1
+  _enableStateForwarding: 1
   _ownerInterpolation: 1
   _enableTeleport: 0
   _ownerTeleportThreshold: 1

@@ -2,6 +2,7 @@
 using FishNet.Object;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityComponent = UnityEngine.Component;
 
@@ -130,9 +131,9 @@ namespace FishNet.Managing
         /// <param name="handler">Action to invoke.</param>
         public void RegisterInvokeOnInstance<T>(Action<UnityComponent> handler) where T : UnityComponent
         {
-            T result = GetInstance<T>(false);
+            T result;
             //If not found yet make a pending invoke.
-            if (result == default(T))
+            if (!TryGetInstance<T>(out result))
             {
                 string tName = GetInstanceName<T>();
                 List<Action<UnityComponent>> handlers;
@@ -163,32 +164,68 @@ namespace FishNet.Managing
                 return;
 
             handlers.Remove(handler);
-            //Do not remove pending to prevent garbage collection later on list recreation.
+            //Do not remove pending to prevent garbage collection later from recreation.
         }
         /// <summary>
         /// Returns if an instance exists for type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">Type to check.</typeparam>
         /// <returns></returns>
         public bool HasInstance<T>() where T : UnityComponent
         {
-            return (GetInstance<T>(false) != null);
+            return TryGetInstance<T>(out _);
         }
+
         /// <summary>
-        /// Returns class of type if found within CodegenBase classes.
+        /// Returns class of type from registered instances.
+        /// A warning will display if not found.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="warn">True to warn if component is not registered.</param>
+        /// <typeparam name="T">Type to get.</typeparam>
         /// <returns></returns>
-        public T GetInstance<T>(bool warn = true) where T : UnityComponent
+        public T GetInstance<T>() where T : UnityComponent
         {
-            string tName = GetInstanceName<T>();
-            if (_registeredComponents.TryGetValue(tName, out UnityComponent result))
-                return (T)result;
-            else if (warn)
-                LogWarning($"Component {tName} is not registered.");
+            T result;
+            if (TryGetInstance<T>(out result))
+                return result;
+            else
+                LogWarning($"Component {GetInstanceName<T>()} is not registered. To avoid this warning use TryGetInstance(T).");
 
             return default(T);
+        }
+        /// <summary>
+        /// Returns class of type from registered instances.
+        /// </summary>
+        /// <typeparam name="T">Type to get.</typeparam>
+        /// <param name="warn">True to warn if component is not registered.</param>
+        /// <returns></returns>
+        [Obsolete("Use GetInstance() or TryGetInstance(T).")] //Remove on 2024/01/01.
+        public T GetInstance<T>(bool warn = true) where T : UnityComponent
+        {
+            T result;
+            if (!TryGetInstance<T>(out result) && warn)
+                LogWarning($"Component {GetInstanceName<T>()} is not registered.");
+
+            return result;
+        }
+        /// <summary>
+        /// Returns class of type from registered instances.
+        /// </summary>
+        /// <param name="component">Outputted component.</param>
+        /// <typeparam name="T">Type to get.</typeparam>
+        /// <returns>True if was able to get instance.</returns>
+        public bool TryGetInstance<T>(out T result) where T : UnityComponent
+        {
+            string tName = GetInstanceName<T>();
+            if (_registeredComponents.TryGetValue(tName, out UnityComponent v))
+            {
+                result = (T)v;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
         }
         /// <summary>
         /// Registers a new component to this NetworkManager.
@@ -218,6 +255,26 @@ namespace FishNet.Managing
                 }
             }
         }
+
+        /// <summary>
+        /// Tries to registers a new component to this NetworkManager.
+        /// This will not register the instance if another already exists.
+        /// </summary>
+        /// <typeparam name="T">Type to register.</typeparam>
+        /// <param name="component">Reference of the component being registered.</param>
+        /// <returns>True if was able to register, false if an instance is already registered.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryRegisterInstance<T>(T component) where T : UnityComponent
+        {
+            string tName = GetInstanceName<T>();
+            if (_registeredComponents.ContainsKey(tName))
+                return false;
+            else
+                RegisterInstance(component, false);
+
+            return true;
+        }
+
         /// <summary>
         /// Unregisters a component from this NetworkManager.
         /// </summary>

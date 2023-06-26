@@ -29,7 +29,7 @@ namespace FishNet.Managing.Server
         {
             if (!conn.Authenticated)
                 return;
-            if (!NetworkManager.ObserverManager.GetUseNetworkLod())
+            if (!NetworkManager.ObserverManager.GetEnableNetworkLod())
             {
                 conn.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection [{conn.ClientId}] sent a level of detail update when the feature is not enabled.");
                 return;

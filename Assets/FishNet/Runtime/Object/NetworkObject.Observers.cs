@@ -12,6 +12,17 @@ namespace FishNet.Object
     {
         #region Public.
         /// <summary>
+        /// Called when the clientHost gains or loses visibility of this object.
+        /// Boolean value will be true if clientHost has visibility.
+        /// </summary>        
+        public event HostVisibilityUpdatedDelegate OnHostVisibilityUpdated;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="prevVisible">True if clientHost was known to have visibility of the object prior to this invoking.</param>
+        /// <param name="nextVisible">True if the clientHost now has visibility of the object.</param>
+        public delegate void HostVisibilityUpdatedDelegate(bool prevVisible, bool nextVisible);
+        /// <summary>
         /// Called when this NetworkObject losses all observers or gains observers while previously having none.
         /// </summary>
         public event Action<NetworkObject> OnObserversActive;
@@ -170,7 +181,9 @@ namespace FishNet.Object
                 r.enabled = visible;
             }
 
+            OnHostVisibilityUpdated?.Invoke(_lastClientHostVisibility, visible);
             _lastClientHostVisibility = visible;
+
             //If to rebuild then do so, while updating visibility.
             if (rebuildRenderers)
                 UpdateRenderers(true);

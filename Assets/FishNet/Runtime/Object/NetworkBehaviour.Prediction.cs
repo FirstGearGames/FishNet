@@ -238,7 +238,7 @@ namespace FishNet.Object
         /// <param name="asServer"></param>
         [CodegenMakePublic]
         [APIExclude]
-        protected internal virtual void ClearReplicateCache_Internal(bool asServer) { }
+        internal virtual void ClearReplicateCache_Internal(bool asServer) { }
 #else
         /// <summary>
         /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
@@ -994,6 +994,11 @@ namespace FishNet.Object
             bool isLocalClient = Owner.IsLocalClient;
             PredictionManager pm = PredictionManager;
             uint lastPacketTick = TimeManager.LastPacketTick;
+
+            //Reader position before anything is read.
+            int startingPosition = reader.Position;
+            int startingQueueCount = replicatesQueue.Count;
+
             int receivedReplicatesCount = reader.ReadReplicate<T>(ref arrBuffer, lastPacketTick);
             //Early exit if old data.
             if (lastPacketTick <= _networkObjectCache.ReplicateTick.RemoteTick)
@@ -1020,12 +1025,78 @@ namespace FishNet.Object
             }
             Replicate_HandleReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicatesQueue, channel);
 
-            ////Only server needs to send to spectators.
-            //if (IsServer)
-            //{
-            //    ArraySegment<byte> replicateDataOnly = new ArraySegment<byte>(reader.GetByteBuffer(), startingPosition, (reader.Position - startingPosition));
-            //    Replicate_Server_SendToSpectators_Internal(hash, replicateDataOnly, replicates.Count);
-            //}
+            //Only server needs to send to spectators.
+            if (IsServer)
+            {
+                ArraySegment<byte> replicateDataOnly = new ArraySegment<byte>(reader.GetByteBuffer(), startingPosition, (reader.Position - startingPosition));
+                Replicate_Server_SendToSpectators_Internal<T>(hash, startingQueueCount, replicateDataOnly, receivedReplicatesCount);
+            }
+        }
+#endif
+
+#if PREDICTION_V2
+
+        /// <summary>
+        /// Sends data from a reader which only contains the replicate packet.
+        /// </summary>
+        [CodegenMakePublic]
+        [APIExclude]
+        internal void Replicate_Server_SendToSpectators_Internal<T>(uint hash, int startingReplicatesQueueCount, ArraySegment<byte> data, int queueCount) where T : IReplicateData
+        {
+            //Should not be possible.
+            if (queueCount == 0)
+                return;
+
+            /* This is a patch for a very unrealistic situation, but being safe
+            * regardless.
+            * In the event that the data is forward on tick 0 then 
+            * exit method. To send the tick must be at least 1 on the most recent
+            * tick. */
+            uint localTick = TimeManager.LocalTick;
+            if (localTick == 0)
+                return;
+
+            int observersCount = Observers.Count;
+            //Quick exit for no observers other than owner.
+            if (observersCount == 0 || (Owner.IsValid && observersCount == 1))
+                return;
+
+            PooledWriter methodWriter = WriterPool.Retrieve(WriterPool.LENGTH_BRACKET);
+            /* The queueCount can be used to determine the tick
+            * for the last entry of data being sent.
+            * Data is read before any tick events occur so this data would
+            * be forwarded before any potential input is processed.
+            * 
+            * Its unrealistic there would be 5 items in queue but for the sake
+            * of example lets say server tick is 100 and there are 5 items in queue.
+            * 
+            * the first queue entry will be on tick 100, since the tick events have
+            * not occurred yet. The last entry will be tick 100 + (queueCount - 1).
+            * 1 is subtracted from the queueCount since it's being run this frame/tick. */
+
+            /* IMPORTANT DO THIS FIRST. */
+            /* The first value to be written is the expected tick in which these packets will run.
+             * Since this is called directly from a read the server still has not processed
+             * any data from the replicatesQueue. To get the starting for these forwarded replicates
+             * take the localtick + startingReplicatesQueueCount. This will be the next tick the data
+             * being forwarded will run. */
+            methodWriter.WriteTickUnpacked(localTick + (uint)startingReplicatesQueueCount);
+
+            //Write history to methodWriter.
+            methodWriter.WriteArraySegment(data);
+            Channel channel = Channel.Unreliable;
+            PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
+
+            //Exclude owner and if clientHost, also localClient.
+            _networkConnectionCache.Clear();
+            _networkConnectionCache.Add(Owner);
+            if (IsClient)
+                _networkConnectionCache.Add(ClientManager.Connection);
+
+            NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), Observers, _networkConnectionCache, false);
+
+            methodWriter.StoreLength();
+            writer.StoreLength();
         }
 #endif
 

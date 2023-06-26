@@ -143,9 +143,9 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 20
-  _pingInterval: 15
-  _timingInterval: 15
+  _tickRate: 50
+  _pingInterval: 1
+  _timingInterval: 1
   _physicsMode: 1
 --- !u!114 &192429405
 MonoBehaviour:
@@ -230,6 +230,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e08bb003fce297d4086cf8cba5aa459a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _queuedInputs: 1
   _reconcileInterval: 0.1
   _dropExcessiveReplicates: 1
   _maximumServerReplicates: 15
@@ -237,6 +238,21 @@ MonoBehaviour:
   _redundancyCount: 3
   _allowPredictedSpawning: 0
   _reservedObjectIds: 15
+--- !u!114 &192429410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 192429403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9b6b565cd9533c4ebc18003f0fc18a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _color: {r: 1, g: 1, b: 1, a: 1}
+  _placement: 1
+  _hideTickRate: 1
 --- !u!1 &555580081
 GameObject:
   m_ObjectHideFlags: 0

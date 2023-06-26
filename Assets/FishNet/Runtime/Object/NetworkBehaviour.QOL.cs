@@ -251,6 +251,14 @@ namespace FishNet.Object
         /// <param name="replace">True to replace existing references.</param>
         public void RegisterInstance<T>(T component, bool replace = true) where T : UnityEngine.Component => _networkObjectCache.RegisterInstance<T>(component, replace);
         /// <summary>
+        /// Tries to registers a new component to this NetworkManager.
+        /// This will not register the instance if another already exists.
+        /// </summary>
+        /// <typeparam name="T">Type to register.</typeparam>
+        /// <param name="component">Reference of the component being registered.</param>
+        /// <returns>True if was able to register, false if an instance is already registered.</returns>
+        public bool TryRegisterInstance<T>(T component) where T : UnityEngine.Component => _networkObjectCache.TryRegisterInstance<T>(component);
+        /// <summary>
         /// Unregisters a component from this NetworkManager.
         /// </summary>
         /// <typeparam name="T">Type to unregister.</typeparam>

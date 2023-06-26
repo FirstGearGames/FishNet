@@ -60,6 +60,7 @@ namespace FishNet.Managing.Client
         #endregion
 
         #region Serialized.
+        //todo add remote server timeout (see ServerManager.RemoteClientTimeout).
         /// <summary>
         /// True to automatically set the frame rate when the client connects.
         /// </summary>

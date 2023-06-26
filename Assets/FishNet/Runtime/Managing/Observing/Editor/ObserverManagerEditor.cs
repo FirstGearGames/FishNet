@@ -10,14 +10,14 @@ namespace FishNet.Managing.Observing.Editing
     [CanEditMultipleObjects]
     public class ObserverManagerEditor : Editor
     {
-        private SerializedProperty _useNetworkLod;
+        private SerializedProperty _enableNetworkLod;
         private SerializedProperty _levelOfDetailDistances;
         private SerializedProperty _updateHostVisibility;
         private SerializedProperty _defaultConditions;
 
         protected virtual void OnEnable()
         {
-            _useNetworkLod = serializedObject.FindProperty(nameof(_useNetworkLod));
+            _enableNetworkLod = serializedObject.FindProperty(nameof(_enableNetworkLod));
             _levelOfDetailDistances = serializedObject.FindProperty(nameof(_levelOfDetailDistances));
             _updateHostVisibility = serializedObject.FindProperty(nameof(_updateHostVisibility));
             _defaultConditions = serializedObject.FindProperty(nameof(_defaultConditions));
@@ -32,8 +32,8 @@ namespace FishNet.Managing.Observing.Editing
             GUI.enabled = true;
 
 
-            EditorGUILayout.PropertyField(_useNetworkLod);
-            if (_useNetworkLod.boolValue)
+            EditorGUILayout.PropertyField(_enableNetworkLod);
+            if (_enableNetworkLod.boolValue)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_levelOfDetailDistances);

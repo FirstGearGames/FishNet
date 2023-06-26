@@ -828,20 +828,21 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GameObject ReadGameObject()
         {
-            //0 null, 1 nob, 2 nb.
             byte writtenType = ReadByte();
 
             GameObject result;
-            //Do nothing for 0.
+            //Do nothing for 0, as it indicates null.
             if (writtenType == 0)
             {
                 result = null;
             }
+            //1 indicates a networkObject.
             else if (writtenType == 1)
             {
                 NetworkObject nob = ReadNetworkObject();
                 result = (nob == null) ? null : nob.gameObject;
             }
+            //2 indicates a networkBehaviour.
             else if (writtenType == 2)
             {
                 NetworkBehaviour nb = ReadNetworkBehaviour();
@@ -924,6 +925,9 @@ namespace FishNet.Serializing
                 //If not found on client and server is running then try server.
                 if (result == null && isServer)
                     NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectOrPrefabId, out result);
+
+                if (result == null && !isServer)
+                    LogWarning($"Spawned NetworkObject was expected to exist but does not for Id {objectOrPrefabId}. This may occur if you sent a NetworkObject reference which does not exist, be it destroyed or if the client does not have visibility.");
             }
             //Not spawned.
             else
@@ -1485,6 +1489,19 @@ namespace FishNet.Serializing
 
             string GetLogMessage() => $"Read method not found for {type.FullName}. Use a supported type or create a custom serializer.";
         }
+
+        /// <summary>
+        /// Logs a warning.
+        /// </summary>
+        /// <param name="msg"></param>
+        private void LogWarning(string msg)
+        {
+            if (NetworkManager == null)
+                NetworkManager.StaticLogWarning(msg);
+            else
+                NetworkManager.LogWarning(msg);
+        }
+
 
         /// <summary>
         /// Logs an error.

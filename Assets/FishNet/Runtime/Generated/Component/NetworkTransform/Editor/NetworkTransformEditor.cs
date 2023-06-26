@@ -20,7 +20,7 @@ namespace FishNet.Component.Transforming.Editing
         private SerializedProperty _teleportThreshold;
         private SerializedProperty _clientAuthoritative;
         private SerializedProperty _sendToOwner;
-        private SerializedProperty _useNetworkLod;
+        private SerializedProperty _enableNetworkLod;
         private SerializedProperty _interval;
         private SerializedProperty _synchronizePosition;
         private SerializedProperty _positionSnapping;
@@ -41,7 +41,7 @@ namespace FishNet.Component.Transforming.Editing
             _teleportThreshold = serializedObject.FindProperty("_teleportThreshold");
             _clientAuthoritative = serializedObject.FindProperty("_clientAuthoritative");
             _sendToOwner = serializedObject.FindProperty("_sendToOwner");
-            _useNetworkLod = serializedObject.FindProperty(nameof(_useNetworkLod));
+            _enableNetworkLod = serializedObject.FindProperty(nameof(_enableNetworkLod));
             _interval = serializedObject.FindProperty(nameof(_interval));
             _synchronizePosition = serializedObject.FindProperty("_synchronizePosition");
             _positionSnapping = serializedObject.FindProperty("_positionSnapping");
@@ -105,8 +105,8 @@ namespace FishNet.Component.Transforming.Editing
             EditorGUILayout.LabelField("Synchronizing.", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             //LOD and interval.
-            EditorGUILayout.PropertyField(_useNetworkLod, new GUIContent("Use Network Level of Detail"));
-            if (!_useNetworkLod.boolValue)
+            EditorGUILayout.PropertyField(_enableNetworkLod, new GUIContent("Use Network Level of Detail"));
+            if (!_enableNetworkLod.boolValue)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_interval, new GUIContent("Send Interval"));

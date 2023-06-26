@@ -1,3 +1,4 @@
+- Enable LOD inside the Fish-Networking > Developer menu.
 - Open scene.
 - Select LOD Tester in scene and slide LOD Level.
 - Press Play.

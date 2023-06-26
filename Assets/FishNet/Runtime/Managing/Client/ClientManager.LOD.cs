@@ -44,7 +44,7 @@ namespace FishNet.Managing.Client
                 nm.LogError($"ForceFullUpdate is not yet implemented. Setting this true should not be possible.");
                 return;
             }
-            if (!nm.ObserverManager.GetUseNetworkLod())
+            if (!nm.ObserverManager.GetEnableNetworkLod())
                 return;
 
             //Interval check.

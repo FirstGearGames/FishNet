@@ -20,9 +20,9 @@ namespace FishNet.Object.Editing
         private SerializedProperty _initializeOrder;
         private SerializedProperty _defaultDespawnType;
 
-        private SerializedProperty _usePrediction;
+        private SerializedProperty _enablePrediction;
         private SerializedProperty _graphicalObject;
-        private SerializedProperty _useStates;
+        private SerializedProperty _enableStateForwarding;
 
         private SerializedProperty _ownerInterpolation;
         private SerializedProperty _enableTeleport;
@@ -43,9 +43,9 @@ namespace FishNet.Object.Editing
             _initializeOrder = serializedObject.FindProperty(nameof(_initializeOrder));
             _defaultDespawnType = serializedObject.FindProperty(nameof(_defaultDespawnType));
 
-            _usePrediction = serializedObject.FindProperty(nameof(_usePrediction));
+            _enablePrediction = serializedObject.FindProperty(nameof(_enablePrediction));
             _graphicalObject = serializedObject.FindProperty(nameof(_graphicalObject));
-            _useStates = serializedObject.FindProperty(nameof(_useStates));
+            _enableStateForwarding = serializedObject.FindProperty(nameof(_enableStateForwarding));
 
             _ownerInterpolation = serializedObject.FindProperty(nameof(_ownerInterpolation));
             _enableTeleport = serializedObject.FindProperty(nameof(_enableTeleport));
@@ -73,13 +73,13 @@ namespace FishNet.Object.Editing
             EditorGUILayout.PropertyField(_initializeOrder);
             EditorGUILayout.PropertyField(_defaultDespawnType);
 
-            EditorGUILayout.PropertyField(_usePrediction);
-            if (_usePrediction.boolValue == true)
+            EditorGUILayout.PropertyField(_enablePrediction);
+            if (_enablePrediction.boolValue == true)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_graphicalObject);
                 GUI.enabled = false;
-                EditorGUILayout.PropertyField(_useStates);
+                EditorGUILayout.PropertyField(_enableStateForwarding);
                 GUI.enabled = true;
                 EditorGUILayout.LabelField("Owner", EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;

@@ -137,6 +137,7 @@ namespace FishNet.Managing.Predicting
         /// This value cannot be higher than MaximumServerReplicates.
         /// </summary>
         public ushort QueuedInputs => (ushort)(_queuedInputs + 1);
+#if PREDICTION_V2
         /// <summary>
         /// 
         /// </summary>
@@ -148,6 +149,7 @@ namespace FishNet.Managing.Predicting
         /// How often in ticks to send reconcile states to clients.
         /// </summary>
         internal float ReconcileIntervalTickDivisor => _networkManager.TimeManager.TimeToTicks(_reconcileInterval, TickRounding.RoundUp);
+#endif
         /// <summary>
         /// 
         /// </summary>
