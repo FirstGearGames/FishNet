@@ -29,7 +29,7 @@ namespace FishNet.Managing.Client.Editing
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((ClientManager)target), typeof(ClientManager), false);
             GUI.enabled = true;
 
-            EditorGUILayout.PropertyField(_remoteServerTimeout);
+            //EditorGUILayout.PropertyField(_remoteServerTimeout);
             EditorGUILayout.PropertyField(_changeFrameRate);
             if (_changeFrameRate.boolValue)
             {
