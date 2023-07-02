@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using FishNet.Object;
 
 namespace FishNet.CodeGenerating.Processing.Rpc
 {
@@ -55,13 +56,14 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         private const string LOGIC_PREFIX = "RpcLogic___";
         private const string WRITER_PREFIX = "RpcWriter___";
         private const string READER_PREFIX = "RpcReader___";
-        private const string REQUIREOWNERSHIP_NAME = "RequireOwnership";
-        private const string RUNLOCALLY_NAME = "RunLocally";
-        private const string EXCLUDEOWNER_NAME = "ExcludeOwner";
-        private const string EXCLUDESERVER_NAME = "ExcludeServer";
-        private const string BUFFERLAST_NAME = "BufferLast";
-        private const string DATALENGTH_NAME = "DataLength";
-        private const string VALIDATETARGET_NAME = "ValidateTarget";
+        private const string REQUIREOWNERSHIP_NAME = nameof(ServerRpcAttribute.RequireOwnership);
+        private const string RUNLOCALLY_NAME = nameof(RpcAttribute.RunLocally);
+        private const string EXCLUDEOWNER_NAME = nameof(ObserversRpcAttribute.ExcludeOwner);
+        private const string EXCLUDESERVER_NAME = nameof(TargetRpcAttribute.ExcludeServer);
+        private const string BUFFERLAST_NAME = nameof(ObserversRpcAttribute.BufferLast);
+        private const string DATALENGTH_NAME = nameof(RpcAttribute.DataLength);
+        private const string VALIDATETARGET_NAME = nameof(TargetRpcAttribute.ValidateTarget);
+        private const string DATAORDERTYPE_NAME = nameof(RpcAttribute.OrderType);
         #endregion
 
         public override bool ImportReferences()
@@ -453,7 +455,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             }
 
             //Call the method on NetworkBehaviour responsible for sending out the rpc.
-            processor.Add(CreateSendServerRpc(writerMd, cr.MethodHash, pooledWriterVariableDef, channelVariableDef));
+            processor.Add(CreateSendServerRpc(writerMd, cr.MethodHash, pooledWriterVariableDef, channelVariableDef, cr.Attribute));
             //Dispose of writer.
             processor.Add(wp.DisposePooledWriter(writerMd, pooledWriterVariableDef));
             //Add end of method.
@@ -1010,12 +1012,12 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// </summary>
         /// <param name="writerVariableDef"></param>
         /// <param name="channel"></param>
-        private List<Instruction> CreateSendServerRpc(MethodDefinition methodDef, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
+        private List<Instruction> CreateSendServerRpc(MethodDefinition methodDef, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, CustomAttribute rpcAttribute)
         {
             List<Instruction> insts = new List<Instruction>();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
-            insts.AddRange(CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef));
+            insts.AddRange(CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef, rpcAttribute));
             //Call NetworkBehaviour.
             insts.Add(processor.Create(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().SendServerRpc_MethodRef));
 
@@ -1030,7 +1032,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             List<Instruction> insts = new List<Instruction>();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
-            insts.AddRange(CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef));
+            insts.AddRange(CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef, rpcAttribute));
             //Also add if buffered.
             bool bufferLast = rpcAttribute.GetField(BUFFERLAST_NAME, false);
             bool excludeOwner = rpcAttribute.GetField(EXCLUDEOWNER_NAME, false);
@@ -1069,12 +1071,9 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             bool validateTarget = rpcAttribute.GetField(VALIDATETARGET_NAME, true);
             bool excludeServer = rpcAttribute.GetField(EXCLUDESERVER_NAME, false);
 
-            insts.AddRange(CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef));
-            //Reference to NetworkConnection that RPC is going to.
+            insts.AddRange(CreateSendRpcCommon(processor, methodHash, writerVariableDef, channelVariableDef, rpcAttribute));
             insts.Add(processor.Create(OpCodes.Ldarg, targetConnectionParameterDef));
-            //Exclude server from rpc.
             insts.Add(processor.Create(OpCodes.Ldc_I4, excludeServer.ToInt()));
-            //Validate target receiving the rpc.
             insts.Add(processor.Create(OpCodes.Ldc_I4, validateTarget.ToInt()));
             //Call NetworkBehaviour.
             insts.Add(processor.Create(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().SendTargetRpc_MethodRef));
@@ -1085,7 +1084,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// <summary>
         /// Writes common properties that all SendRpc methods use.
         /// </summary>
-        private List<Instruction> CreateSendRpcCommon(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef)
+        private List<Instruction> CreateSendRpcCommon(ILProcessor processor, uint methodHash, VariableDefinition writerVariableDef, VariableDefinition channelVariableDef, CustomAttribute rpcAttribute)
         {
             List<Instruction> insts = new List<Instruction>();
 
@@ -1095,6 +1094,9 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             insts.Add(processor.Create(OpCodes.Ldloc, writerVariableDef));
             //reference to Channel.
             insts.Add(processor.Create(OpCodes.Ldloc, channelVariableDef));
+
+            int orderType = (int)rpcAttribute.GetField(DATAORDERTYPE_NAME, DataOrderType.Default);
+            insts.Add(processor.Create(OpCodes.Ldc_I4, orderType));
 
             return insts;
         }

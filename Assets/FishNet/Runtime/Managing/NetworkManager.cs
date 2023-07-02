@@ -317,7 +317,7 @@ namespace FishNet.Managing
             ServerManager.InitializeOnce_Internal(this);
             ObserverManager.InitializeOnce_Internal(this);
             RollbackManager.InitializeOnce_Internal(this);
-            PredictionManager.InitializeOnce_Internal(this);
+            PredictionManager.InitializeOnce(this);
             StatisticsManager.InitializeOnce_Internal(this);
             _objectPool.InitializeOnce(this);
         }

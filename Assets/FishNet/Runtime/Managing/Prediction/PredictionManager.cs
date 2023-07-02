@@ -284,7 +284,7 @@ namespace FishNet.Managing.Predicting
         }
 #endif
 
-        internal void InitializeOnce_Internal(NetworkManager manager)
+        internal void InitializeOnce(NetworkManager manager)
         {
             _networkManager = manager;
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
@@ -366,7 +366,7 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         [APIExclude]
         [CodegenMakePublic] //To internal.
-        public void InvokeOnReconcile_Internal(NetworkBehaviour nb, bool before)
+        internal void InvokeOnReconcile(NetworkBehaviour nb, bool before)
         {
             nb.IsReconciling = before;
             if (before)
@@ -382,7 +382,7 @@ namespace FishNet.Managing.Predicting
         /// Internal use.
         /// </summary>
         [APIExclude]
-        internal void InvokeOnReplicateReplay_Internal(UnityScene scene, uint tick, PhysicsScene ps, PhysicsScene2D ps2d, bool before)
+        internal void InvokeOnReplicateReplay(UnityScene scene, uint tick, PhysicsScene ps, PhysicsScene2D ps2d, bool before)
         {
             _isReplaying = before;
             if (before)

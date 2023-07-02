@@ -1,6 +1,7 @@
 ﻿using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
+using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Utility.Performance;
 using System;
@@ -99,7 +100,7 @@ namespace FishNet.Connection
         /// <summary>
         /// True if data has been written.
         /// </summary>
-        internal bool HasData => _buffers[0].HasData;
+        internal bool HasData => (_buffers[0].HasData || (!_isSendLastBundle && _sendLastBundle.HasData));
         /// <summary>
         /// All buffers written. Collection is not cleared when reset but rather the index in which to write is.
         /// </summary>
@@ -124,24 +125,42 @@ namespace FishNet.Connection
         /// NetworkManager this is for.
         /// </summary>
         private NetworkManager _networkManager;
+        /// <summary>
+        /// Packet bundle to use for last enqueued data.
+        /// </summary>
+        private PacketBundle _sendLastBundle;
+        /// <summary>
+        /// True if being used as an sendLast bundle.
+        /// </summary>
+        private bool _isSendLastBundle;
 
-        internal PacketBundle(NetworkManager manager, int mtu, int reserve = 0)
+        internal PacketBundle(NetworkManager manager, int mtu, int reserve = 0, DataOrderType orderType = DataOrderType.Default)
         {
-            //Allow bytes for the tick.
-            reserve += TransportManager.TICK_BYTES;
+            _isSendLastBundle = (orderType == DataOrderType.Last);
+            //If this is not the send last packetbundle then make a new one.
+            if (!_isSendLastBundle)
+                _sendLastBundle = new PacketBundle(manager, mtu, reserve, DataOrderType.Last);
 
             _networkManager = manager;
             _maximumTransportUnit = mtu;
+            /* Allow bytes for the tick.
+             * Modify reserve after making sendLast bundle
+             * so that the wrong reserve is not passed into
+             * the sendLast bundle. */
+            reserve += TransportManager.TICK_BYTES;
             _reserve = reserve;
+            //Add buffer requires the right reserve so call after setting.
             AddBuffer();
 
-            Reset();
+            Reset(false);
         }
 
         public void Dispose()
         {
             for (int i = 0; i < _buffers.Count; i++)
                 _buffers[i].Dispose();
+
+            _sendLastBundle?.Dispose();
         }
 
         /// <summary>
@@ -157,20 +176,31 @@ namespace FishNet.Connection
         /// <summary>
         /// Resets using current settings.
         /// </summary>
-        internal void Reset()
+        internal void Reset(bool resetSendLast)
         {
             _bufferIndex = 0;
 
             for (int i = 0; i < _buffers.Count; i++)
                 _buffers[i].Reset();
+
+            if (resetSendLast)
+                _sendLastBundle.Reset(false);
         }
 
         /// <summary>
         /// Writes a segment to this packet bundle using the current WriteIndex.
         /// </summary>
         /// <param name="forceNewBuffer">True to force data into a new buffer.</param>
-        internal void Write(ArraySegment<byte> segment, bool forceNewBuffer = false)
+        internal void Write(ArraySegment<byte> segment, bool forceNewBuffer = false, DataOrderType orderType = DataOrderType.Default)
         {
+            /* If not the send last bundle and to send data last
+             * then send using the send last bundle. */
+            if (!_isSendLastBundle && orderType == DataOrderType.Last)
+            {
+                _sendLastBundle.Write(segment, forceNewBuffer, orderType);
+                return;
+            }
+
             //Nothing to be written.
             if (segment.Count == 0)
                 return;
@@ -184,6 +214,7 @@ namespace FishNet.Connection
                 _networkManager.LogError($"Segment is length of {segment.Count} while MTU is {_maximumTransportUnit}. Packet was not split properly and will not be sent.");
                 return;
             }
+
 
             ByteBuffer ba = _buffers[_bufferIndex];
             /* Make a new buffer if...
@@ -210,6 +241,12 @@ namespace FishNet.Connection
             uint tick = _networkManager.TimeManager.LocalTick;
             ba.CopySegment(tick, segment);
         }
+
+        /// <summary>
+        /// Returns the packetBundle for send last.
+        /// </summary>
+        /// <returns></returns>
+        internal PacketBundle GetSendLastBundle() => _sendLastBundle;
 
         /// <summary>
         /// Gets a buffer for the specified index. Returns true and outputs the buffer if it was successfully found.

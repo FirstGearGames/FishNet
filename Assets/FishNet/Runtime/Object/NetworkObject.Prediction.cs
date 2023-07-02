@@ -75,26 +75,26 @@ namespace FishNet.Object
                 TeleportThreshold = teleportThreshold,
             };
             _setSmoother.InitializeOnce(osd);
-            //Create adaptive interpolation smoother if enabled.
-            if (_spectatorAdaptiveInterpolation)
-            {
-                _adaptiveSmoother = new AdaptiveInterpolationSmoother();
-                //Smoothing values.
-                AdaptiveInterpolationSmoothingData aisd;
-                if (_adaptiveSmoothingType == AdaptiveSmoothingType.Custom)
-                    aisd = _customSmoothingData;
-                else
-                    aisd = _preconfiguredSmoothingDataPreview;
+            ////Create adaptive interpolation smoother if enabled.
+            //if (_spectatorAdaptiveInterpolation)
+            //{
+            //    _adaptiveSmoother = new AdaptiveInterpolationSmoother();
+            //    //Smoothing values.
+            //    AdaptiveInterpolationSmoothingData aisd;
+            //    if (_adaptiveSmoothingType == AdaptiveSmoothingType.Custom)
+            //        aisd = _customSmoothingData;
+            //    else
+            //        aisd = _preconfiguredSmoothingDataPreview;
 
-                //Other details.
-                aisd.GraphicalObject = _graphicalObject;
-                aisd.SmoothPosition = true;
-                aisd.SmoothRotation = true;
-                aisd.SmoothScale = true;
-                aisd.NetworkObject = this;
-                aisd.TeleportThreshold = teleportThreshold;
-                _adaptiveSmoother.Initialize(aisd);
-            }
+            //    //Other details.
+            //    aisd.GraphicalObject = _graphicalObject;
+            //    aisd.SmoothPosition = true;
+            //    aisd.SmoothRotation = true;
+            //    aisd.SmoothScale = true;
+            //    aisd.NetworkObject = this;
+            //    aisd.TeleportThreshold = teleportThreshold;
+            //    _adaptiveSmoother.Initialize(aisd);
+            //}
         }
 
         private void Prediction_Update()

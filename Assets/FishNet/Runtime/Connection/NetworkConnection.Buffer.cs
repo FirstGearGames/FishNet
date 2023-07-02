@@ -2,6 +2,7 @@
 using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
+using FishNet.Object;
 using FishNet.Transporting;
 using System;
 using System.Collections.Generic;
@@ -55,7 +56,7 @@ namespace FishNet.Connection
         /// Sends data from the server to a client.
         /// </summary>
         /// <param name="forceNewBuffer">True to force data into a new buffer.</param>
-        internal void SendToClient(byte channel, ArraySegment<byte> segment, bool forceNewBuffer = false)
+        internal void SendToClient(byte channel, ArraySegment<byte> segment, bool forceNewBuffer = false, DataOrderType orderType = DataOrderType.Default)
         {
             //Cannot send data when disconnecting.
             if (Disconnecting)
@@ -70,7 +71,7 @@ namespace FishNet.Connection
             if (channel >= _toClientBundles.Count)
                 channel = 0;
 
-            _toClientBundles[channel].Write(segment, forceNewBuffer);
+            _toClientBundles[channel].Write(segment, forceNewBuffer, orderType);
             ServerDirty();
         }
 

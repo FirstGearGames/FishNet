@@ -257,8 +257,8 @@ namespace FishNet.CodeGenerating.Helping
         {
             Dictionary<string, MethodReference> dict = (instanced) ?
             InstancedWriterMethods : StaticWriterMethods;
-
-            dict.Remove(typeRef.FullName);
+            string fullName = typeRef.GetFullnameWithoutBrackets();
+            dict.Remove(fullName);
         }
 
         /// <summary>
@@ -1082,7 +1082,7 @@ namespace FishNet.CodeGenerating.Helping
             GenericInstanceType genericInstance = (GenericInstanceType)objectTr;
             base.ImportReference(genericInstance);
             TypeReference valueTr = genericInstance.GenericArguments[0];
-            
+
             List<TypeReference> genericArguments = new List<TypeReference>();
             //Make sure all arguments have writers.
             foreach (TypeReference gaTr in genericInstance.GenericArguments)

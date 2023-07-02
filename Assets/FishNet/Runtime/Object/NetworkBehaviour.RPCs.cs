@@ -17,6 +17,23 @@ namespace FishNet.Object
 
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
+        #region Types.
+        private struct BufferedRpc
+        {
+            public PooledWriter Writer;
+            public Channel Channel;
+            public DataOrderType OrderType;
+
+            public BufferedRpc(PooledWriter writer, Channel channel, DataOrderType orderType)
+            {
+                Writer = writer;
+                Channel = channel;
+                OrderType = orderType;
+            }
+        }
+
+        #endregion
+
         #region Private.
         /// <summary>
         /// Registered ServerRpc methods.
@@ -41,7 +58,7 @@ namespace FishNet.Object
         /// <summary>
         /// RPCs buffered for new clients.
         /// </summary>
-        private Dictionary<uint, (PooledWriter, Channel)> _bufferedRpcs = new Dictionary<uint, (PooledWriter, Channel)>();
+        private Dictionary<uint, BufferedRpc> _bufferedRpcs = new Dictionary<uint, BufferedRpc>();
         /// <summary>
         /// Connections to exclude from RPCs, such as ExcludeOwner or ExcludeServer.
         /// </summary>
@@ -54,8 +71,8 @@ namespace FishNet.Object
         internal void SendBufferedRpcs(NetworkConnection conn)
         {
             TransportManager tm = _networkObjectCache.NetworkManager.TransportManager;
-            foreach ((PooledWriter writer, Channel ch) in _bufferedRpcs.Values)
-                tm.SendToClient((byte)ch, writer.GetArraySegment(), conn);
+            foreach (BufferedRpc bRpc in _bufferedRpcs.Values)
+                tm.SendToClient((byte)bRpc.Channel, bRpc.Writer.GetArraySegment(), conn, true, bRpc.OrderType);
         }
 
         /// <summary>
@@ -136,8 +153,8 @@ namespace FishNet.Object
         /// </summary>
         public void ClearBuffedRpcs()
         {
-            foreach ((PooledWriter writer, Channel _) in _bufferedRpcs.Values)
-                writer.Store();
+            foreach (BufferedRpc bRpc in _bufferedRpcs.Values)
+                bRpc.Writer.Store();
             _bufferedRpcs.Clear();
         }
 
@@ -211,13 +228,13 @@ namespace FishNet.Object
         /// <param name="channel"></param>
         [CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void SendServerRpc_Internal(uint hash, PooledWriter methodWriter, Channel channel)
+        protected internal void SendServerRpc(uint hash, PooledWriter methodWriter, Channel channel, DataOrderType orderType)
         {
             if (!IsSpawnedWithWarning())
                 return;
 
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.ServerRpc, channel);
-            _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment());
+            _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), true, orderType);
             writer.StoreLength();
         }
 
@@ -230,7 +247,7 @@ namespace FishNet.Object
         [APIExclude]
         [CodegenMakePublic] //Make internal.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void SendObserversRpc_Internal(uint hash, PooledWriter methodWriter, Channel channel, bool buffered, bool excludeServer, bool excludeOwner)
+        protected internal void SendObserversRpc(uint hash, PooledWriter methodWriter, Channel channel, DataOrderType orderType, bool bufferLast, bool excludeServer, bool excludeOwner)
         {
             if (!IsSpawnedWithWarning())
                 return;
@@ -246,17 +263,17 @@ namespace FishNet.Object
                 writer = CreateRpc(hash, methodWriter, PacketId.ObserversRpc, channel);
 
             SetNetworkConnectionCache(excludeServer, excludeOwner);
-            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache, true);
+            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache, true, orderType);
 
             /* If buffered then dispose of any already buffered
              * writers and replace with new one. Writers should
              * automatically dispose when references are lost
              * anyway but better safe than sorry. */
-            if (buffered)
+            if (bufferLast)
             {
-                if (_bufferedRpcs.TryGetValueIL2CPP(hash, out (PooledWriter pw, Channel ch) result))
-                    result.pw.StoreLength();
-                _bufferedRpcs[hash] = (writer, channel);
+                if (_bufferedRpcs.TryGetValueIL2CPP(hash, out BufferedRpc result))
+                    result.Writer.StoreLength();
+                _bufferedRpcs[hash] = new BufferedRpc(writer, channel, orderType);
             }
             //If not buffered then dispose immediately.
             else
@@ -270,7 +287,7 @@ namespace FishNet.Object
         /// </summary>
         [CodegenMakePublic] //Make internal.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected internal void SendTargetRpc_Internal(uint hash, PooledWriter methodWriter, Channel channel, NetworkConnection target, bool excludeServer, bool validateTarget = true)
+        protected internal void SendTargetRpc(uint hash, PooledWriter methodWriter, Channel channel, DataOrderType orderType, NetworkConnection target, bool excludeServer, bool validateTarget = true)
         {
             if (!IsSpawnedWithWarning())
                 return;
@@ -308,7 +325,7 @@ namespace FishNet.Object
             else
                 writer = CreateRpc(hash, methodWriter, PacketId.TargetRpc, channel);
 
-            _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target);
+            _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target, true, orderType);
             writer.Store();
         }
 

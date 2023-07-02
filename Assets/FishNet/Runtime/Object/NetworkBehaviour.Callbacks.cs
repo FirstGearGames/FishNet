@@ -138,7 +138,7 @@ namespace FishNet.Object
         {
             //When switching ownership always clear replicate cache on server.
 #if !PREDICTION_V2
-            ClearReplicateCache_Internal(true);
+            ClearReplicateCache_Virtual(true);
 #else
             ClearReplicateCache();
 #endif
@@ -193,7 +193,7 @@ namespace FishNet.Object
             if (IsOwner || prevOwner == LocalConnection)
             {
 #if !PREDICTION_V2
-                ClearReplicateCache_Internal(false);
+                ClearReplicateCache_Virtual(false);
 #else
                 ClearReplicateCache();
 #endif
