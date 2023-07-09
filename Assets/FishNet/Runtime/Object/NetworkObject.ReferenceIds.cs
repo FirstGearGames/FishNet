@@ -49,15 +49,6 @@ namespace FishNet.Object
         public void SetAssetPathHash(ulong value) => AssetPathHash = value;
         #endregion
 
-#if UNITY_EDITOR
-        /// <summary>
-        /// This is used to store NetworkObjects in the scene during edit time.
-        /// SceneIds are compared against this collection to ensure there are no duplicated.
-        /// </summary>
-        [SerializeField, HideInInspector]
-        private List<NetworkObject> _sceneNetworkObjects = new List<NetworkObject>();
-#endif
-
         /// <summary>
         /// Removes SceneObject state.
         /// This may only be called at runtime.
@@ -187,11 +178,10 @@ namespace FishNet.Object
         /// <returns></returns>
         private bool IsDuplicateSceneId(ulong id)
         {
-            //Find all nobs in scene.
-            _sceneNetworkObjects = GameObject.FindObjectsOfType<NetworkObject>().ToList();
-            foreach (NetworkObject nob in _sceneNetworkObjects)
+            NetworkObject[] nobs = GameObject.FindObjectsOfType<NetworkObject>();
+            foreach (NetworkObject n in nobs)
             {
-                if (nob != null && nob != this && nob.SceneId == id)
+                if (n != null && n != this && n.SceneId == id)
                     return true;
             }
             //If here all checks pass.

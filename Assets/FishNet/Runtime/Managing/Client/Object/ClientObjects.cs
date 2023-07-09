@@ -54,7 +54,10 @@ namespace FishNet.Managing.Client
              *
              * Calling StopConnection on the client will set it's local state
              * to Stopping which will result in a deinit. */
-            if (NetworkManager.IsClient)
+            
+            /* Only perform this step if the transport being stopped
+             * is the one which client is connected to. */
+            if (NetworkManager.IsClient && args.TransportIndex == base.NetworkManager.ClientManager.GetTransportIndex())
                 base.NetworkManager.ClientManager.StopConnection();
         }
 

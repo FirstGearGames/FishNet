@@ -510,34 +510,34 @@ namespace FishNet.Managing
         #region Object pool.
         /// <summary>
         /// Returns an instantiated copy of prefab.
-        /// </summary>
-        [Obsolete("Use GetPooledInstantiated(NetworkObject, ushort, bool).")] //Remove on 2024/01/01.
+        /// </summary>        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject GetPooledInstantiated(NetworkObject prefab, bool asServer)
         {
-            return GetPooledInstantiated(prefab, 0, asServer);
+            return GetPooledInstantiated(prefab, prefab.transform.position, prefab.transform.rotation, asServer);
+        }
+        /// <summary>
+        /// Returns an instantiated copy of prefab.
+        /// </summary>        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NetworkObject GetPooledInstantiated(NetworkObject prefab, Vector3 position, Quaternion rotation, bool asServer)
+        {
+            return GetPooledInstantiated(prefab.PrefabId, prefab.SpawnableCollectionId, position, rotation, asServer);
         }
         /// <summary>
         /// Returns an instantiated copy of prefab.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Obsolete("Use GetPooledInstantiated(NetworkObject,bool).")] //Remove on 2024/01/01.
         public NetworkObject GetPooledInstantiated(NetworkObject prefab, ushort collectionId, bool asServer)
         {
             return GetPooledInstantiated(prefab.PrefabId, collectionId, asServer);
         }
         /// <summary>
         /// Returns an instantiated copy of prefab.
-        /// </summary>
-        [Obsolete("Use GetPooledInstantiated(GameObject, ushort, bool).")] //Remove on 2024/01/01.
+        /// </summary>       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject GetPooledInstantiated(GameObject prefab, bool asServer)
-        {
-            return GetPooledInstantiated(prefab, 0, asServer);
-        }
-        /// <summary>
-        /// Returns an instantiated copy of prefab.
-        /// </summary>
-        public NetworkObject GetPooledInstantiated(GameObject prefab, ushort collectionId, bool asServer)
         {
             NetworkObject nob;
             if (!prefab.TryGetComponent<NetworkObject>(out nob))
@@ -547,7 +547,31 @@ namespace FishNet.Managing
             }
             else
             {
-                return GetPooledInstantiated(nob.PrefabId, collectionId, asServer);
+                return GetPooledInstantiated(nob.PrefabId, nob.SpawnableCollectionId, asServer);
+            }
+        }
+        /// <summary>
+        /// Returns an instantiated copy of prefab.
+        /// </summary>
+        [Obsolete("Use GetPooledInstantiated(GameObject, bool).")] //Remove on 2024/01/01.
+        public NetworkObject GetPooledInstantiated(GameObject prefab, ushort collectionId, bool asServer)
+        {
+            return GetPooledInstantiated(prefab, asServer);
+        }
+        /// <summary>
+        /// Returns an instantiated copy of prefab while setting position and rotation.
+        /// </summary>
+        public NetworkObject GetPooledInstantiated(GameObject prefab, Vector3 position, Quaternion rotation, bool asServer)
+        {
+            NetworkObject nob;
+            if (!prefab.TryGetComponent<NetworkObject>(out nob))
+            {
+                LogError($"NetworkObject was not found on {prefab}. An instantiated NetworkObject cannot be returned.");
+                return null;
+            }
+            else
+            {
+                return GetPooledInstantiated(nob.PrefabId, nob.SpawnableCollectionId, position, rotation, asServer);
             }
         }
         /// <summary>
@@ -565,6 +589,13 @@ namespace FishNet.Managing
         public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, bool asServer)
         {
             return _objectPool.RetrieveObject(prefabId, collectionId, asServer);
+        }
+        /// <summary>
+        /// Returns an instantiated object that has prefabId while setting position and rotation.
+        /// </summary>
+        public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, Vector3 position, Quaternion rotation, bool asServer)
+        {
+            return _objectPool.RetrieveObject(prefabId, collectionId, position, rotation, asServer);
         }
         /// <summary>
         /// Stores an instantiated object.

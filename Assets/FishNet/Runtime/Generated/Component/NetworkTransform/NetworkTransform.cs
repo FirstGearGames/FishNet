@@ -489,9 +489,13 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private bool _subscribedToTicks;
         /// <summary>
-        /// Last TransformData to be received.
+        /// Last TransformData to be received from the server.
         /// </summary>
-        private TransformData _lastReceivedTransformData = new TransformData();
+        private TransformData _lastReceivedServerTransformData;
+        /// <summary>
+        /// Last TransformData to be received from the server.
+        /// </summary>
+        private TransformData _lastReceivedClientTransformData;
         /// <summary>
         /// Last RateData to be calculated from LastReceivedTransformData.
         /// </summary>
@@ -523,7 +527,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Writers for changed data for each level of detail.
         /// </summary>
-        private List<PooledWriter> _changedWriters = new List<PooledWriter>();
+        private List<PooledWriter> _toClientChangedWriters = new List<PooledWriter>();
         #endregion
 
         #region Const.
@@ -550,6 +554,8 @@ namespace FishNet.Component.Transforming
         public override void OnStartServer()
         {
             base.OnStartServer();
+
+            _lastReceivedClientTransformData = ObjectCaches<TransformData>.Retrieve();
             ConfigureComponents();
             AddCollections(true);
             SetDefaultGoalData();
@@ -582,6 +588,7 @@ namespace FishNet.Component.Transforming
         public override void OnStartClient()
         {
             base.OnStartClient();
+            _lastReceivedServerTransformData = ObjectCaches<TransformData>.Retrieve();
             ConfigureComponents();
             AddCollections(false);
             SetDefaultGoalData();
@@ -627,18 +634,24 @@ namespace FishNet.Component.Transforming
             base.OnStopServer();
             //Always unsubscribe; if the server stopped so did client.
             ChangeTickSubscription(false);
-            CacheCollections(true);
+
+            ResetForObjectPool(true);
         }
 
         public override void OnStopClient()
         {
             base.OnStopClient();
-            //If not also server unsubscribe from ticks.
+            /* If not also server unsubscribe from ticks.
+             * Cannot unsubscribe if server because
+             * the server side will still need the ticks.
+             * This is why this is also done inside
+             * OnStopServer. */
             if (!base.IsServer)
                 ChangeTickSubscription(false);
 
-            CacheCollections(false);
+            ResetForObjectPool(false);
         }
+
 
 
         private void Update()
@@ -655,16 +668,19 @@ namespace FishNet.Component.Transforming
             if (!asServer && base.IsServer)
                 return;
 
-            if (_changedWriters.Count > 0)
+
+            if (_toClientChangedWriters.Count > 0)
             {
                 base.NetworkManager.LogWarning($"ChangedWriters collection contains values. This should not be possible.");
-                _changedWriters.Clear();
+                _toClientChangedWriters.Clear();
             }
             if (_lastSentTransformDatas.Count > 0)
             {
                 base.NetworkManager.LogWarning($"LastSentTransformDatas collection contains values. This should not be possible.");
                 _lastSentTransformDatas.Clear();
             }
+
+            int lodCount = base.ObserverManager.GetLevelOfDetailDistances().Count;
 
             if (asServer)
             {
@@ -674,47 +690,72 @@ namespace FishNet.Component.Transforming
                     base.NetworkManager.LogWarning($"ServerChangedSinceReliable collection contains values. This should not be possible.");
                     _serverChangedSinceReliable.Clear();
                 }
-            }
 
-            //Initialize for LODs.
-            for (int i = 0; i < base.ObserverManager.GetLevelOfDetailDistances().Count; i++)
+                //Initialize for LODs.
+                for (int i = 0; i < lodCount; i++)
+                {
+                    _toClientChangedWriters.Add(WriterPool.Retrieve());
+
+                    /* If asServer then also add multiple lastSent, one for
+                     * each LOD. */
+                    TransformData td = DisposableObjectCaches<TransformData>.Retrieve();
+                    _lastSentTransformDatas.Add(td);
+                    if (asServer)
+                    {
+                        _receivedClientData.HasData.Add(false);
+                        _serverChangedSinceReliable.Add(ChangedDelta.Unset);
+                    }
+                }
+            }
+            //As client.
+            else
             {
-                _changedWriters.Add(WriterPool.Retrieve());
+                //Add one last sent.
                 TransformData td = DisposableObjectCaches<TransformData>.Retrieve();
                 _lastSentTransformDatas.Add(td);
-                if (asServer)
-                {
-                    _receivedClientData.HasData.Add(false);
-                    _serverChangedSinceReliable.Add(ChangedDelta.Unset);
-                }
             }
         }
 
         /// <summary>
-        /// Caches collections which have allocating types.
+        /// Resets values as if this were a new object.
         /// </summary>
-        private void CacheCollections(bool asServer)
+        private void ResetForObjectPool(bool asServer)
         {
-            //Do not remove for client if also server, as server would have already added.
-            if (!asServer && base.IsServer)
-                return;
-
-            //Reset writers.
-            foreach (PooledWriter writer in _changedWriters)
-                WriterPool.Store(writer);
-            _changedWriters.Clear();
-            //Reset LastSentTransformDatas.
-            foreach (TransformData td in _lastSentTransformDatas)
-                DisposableObjectCaches<TransformData>.Store(td);
-            _lastSentTransformDatas.Clear();
-
+            //If a full reset.
             if (asServer)
             {
-                CollectionCaches<bool>.Store(_receivedClientData.HasData);
+                //Reset writers.
+                foreach (PooledWriter writer in _toClientChangedWriters)
+                    WriterPool.Store(writer);
+                _toClientChangedWriters.Clear();
+
+                if (_receivedClientData.HasData != null)
+                    CollectionCaches<bool>.Store(_receivedClientData.HasData);
                 _receivedClientData.HasData = null;
                 _serverChangedSinceReliable.Clear();
+                DisposableObjectCaches<TransformData>.Store(_lastReceivedClientTransformData);
+                DisposableObjectCaches<GoalData>.Store(_currentGoalData);
+            }
+            //Client only.
+            else
+            {
+                DisposableObjectCaches<TransformData>.Store(_lastReceivedServerTransformData);
+            }
+
+            //As server or as client and not server (full reset).
+            if (asServer || (!asServer && !base.IsServer))
+            {
+                //Goaldatas. Would only exist if client or clientHost.
+                while (_goalDataQueue.Count > 0)
+                    DisposableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
+                //Reset LastSentTransformDatas.
+                foreach (TransformData td in _lastSentTransformDatas)
+                    DisposableObjectCaches<TransformData>.Store(td);
+                _lastSentTransformDatas.Clear();
+
             }
         }
+
 
         /// <summary>
         /// Configures components automatically.
@@ -732,7 +773,7 @@ namespace FishNet.Component.Transforming
 
                 if (TryGetComponent<Rigidbody>(out Rigidbody c))
                 {
-                    bool isKinematic = (!base.IsOwner || base.IsServerOnly);
+                    bool isKinematic = CanMakeKinematic();
                     c.isKinematic = isKinematic;
                     c.interpolation = RigidbodyInterpolation.None;
                 }
@@ -745,7 +786,7 @@ namespace FishNet.Component.Transforming
                     return;
                 if (TryGetComponent<Rigidbody2D>(out Rigidbody2D c))
                 {
-                    bool isKinematic = (!base.IsOwner || base.IsServerOnly);
+                    bool isKinematic = CanMakeKinematic();
                     c.isKinematic = isKinematic;
                     c.simulated = !isKinematic;
                     c.interpolation = RigidbodyInterpolation2D.None;
@@ -772,6 +813,14 @@ namespace FishNet.Component.Transforming
                             c.enabled = (base.IsServer || base.IsOwner);
                     }
                 }
+            }
+
+            bool CanMakeKinematic()
+            {
+                if (_clientAuthoritative)
+                    return (!base.IsOwner || base.IsServerOnly);
+                else
+                    return !base.IsServer;
             }
         }
 
@@ -963,8 +1012,17 @@ namespace FishNet.Component.Transforming
                 }
             }
 
-            _lastReceivedTransformData.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, parentBehaviour);
+            SetLastReceived(_lastReceivedServerTransformData);
+            SetLastReceived(_lastReceivedClientTransformData);
             SetInstantRates(_currentGoalData.Rates);
+
+            void SetLastReceived(TransformData td)
+            {
+                //Could be null if not initialized due to server or client side not being used.
+                if (td == null)
+                    return;
+                td.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, parentBehaviour);
+            }
         }
 
         /// <summary>
@@ -1414,7 +1472,7 @@ namespace FishNet.Component.Transforming
                     /* Reset writer. If does not have value 
                      * after these checks then we know
                      * there's nothing to send for this lod. */
-                    PooledWriter writer = _changedWriters[i];
+                    PooledWriter writer = _toClientChangedWriters[i];
                     writer.Reset();
 
                     TransformData lastSentData = _lastSentTransformDatas[i];
@@ -1450,7 +1508,7 @@ namespace FishNet.Component.Transforming
                 //Send out changes.
                 if (dataChanged)
                 {
-                    ArraySegment<byte> dataSegment = _changedWriters[lodIndex].GetArraySegment();
+                    ArraySegment<byte> dataSegment = _toClientChangedWriters[lodIndex].GetArraySegment();
                     //todo - resolve networklod sending 0 count data properly. Count should never be 0.
                     if (dataSegment.Count > 0)
                     {
@@ -1964,7 +2022,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void DataReceived(ArraySegment<byte> data, Channel channel, bool asServer)
         {
-            TransformData prevTd = _lastReceivedTransformData;
+            TransformData prevTd = (asServer) ? _lastReceivedClientTransformData : _lastReceivedServerTransformData;
             RateData prevRd = _lastCalculatedRateData;
             ChangedFull changedFull = new ChangedFull();
 
@@ -1982,7 +2040,7 @@ namespace FishNet.Component.Transforming
             else
                 SetCalculatedRates(prevTd.Tick, prevRd, prevTd, nextGd, changedFull, hasChanged, channel);
 
-            _lastReceivedTransformData.Update(nextTd);
+            prevTd.Update(nextTd);
 
             _lastReceiveReliable = (channel == Channel.Reliable);
             /* If channel is reliable then this is a settled packet.

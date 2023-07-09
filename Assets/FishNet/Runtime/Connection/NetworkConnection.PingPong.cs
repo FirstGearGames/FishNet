@@ -67,9 +67,14 @@ namespace FishNet.Connection
             return true;
 #else
             TimeManager tm = (NetworkManager == null) ? InstanceFinder.TimeManager : NetworkManager.TimeManager;
-            //Server FPS is running low, timing isn't reliable enough to kick clients.
+            /* Server FPS is running low, timing isn't reliable enough to kick clients.
+             * Respond with clients ping and remove infractions just in case the
+             * client received some from other server instabilities. */
             if (tm.LowFrameRate)
-                return true;
+            {
+                _excessivePingCount = 0f;
+                return false;
+            }
 
             uint currentTick = tm.Tick;
             uint difference = (currentTick - _lastPingTick);

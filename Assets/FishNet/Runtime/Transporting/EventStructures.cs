@@ -1,7 +1,27 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace FishNet.Transporting
 {
+
+    /// <summary>
+    /// Container for connected clients state for a client.
+    /// </summary>
+    public struct ConnectedClientsArgs
+    {
+        /// <summary>
+        /// Collection of client ids connected to the server.
+        /// </summary>
+        public List<int> ClientIds { get; private set; }
+
+        public ConnectedClientsArgs(List<int> clientIds)
+        {
+            ClientIds = clientIds;
+        }
+    }
+
+
+
     /// <summary>
     /// Container about data received on the server.
     /// </summary>

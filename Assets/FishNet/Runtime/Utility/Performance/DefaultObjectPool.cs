@@ -49,6 +49,52 @@ namespace FishNet.Utility.Performance
             return RetrieveObject(prefabId, 0, asServer);
         }
 
+
+        /// <summary>
+        /// Returns an object that has been stored. A new object will be created if no stored objects are available.
+        /// </summary>
+        /// <param name="prefabId">PrefabId of the object to return.</param>
+        /// <param name="collectionId">CollectionId of the prefab.</param>
+        /// <param name="position">Position for object before enabling it.</param>
+        /// <param name="rotation">Rotation for object before enabling it.</param>
+        /// <param name="asServer">True if being called on the server side.</param>
+        /// <returns></returns>
+        public override NetworkObject RetrieveObject(int prefabId, ushort collectionId, Vector3 position, Quaternion rotation, bool asServer)
+        {
+            PrefabObjects po = base.NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
+            //Quick exit/normal retrieval when not using pooling.
+            if (!_enabled)
+            {
+                NetworkObject prefab = po.GetObject(asServer, prefabId);
+                return Instantiate(prefab, position, rotation);
+            }
+
+            Stack<NetworkObject> cache = GetOrCreateCache(collectionId, prefabId);
+            NetworkObject nob;
+            //Iterate until nob is populated just in case cache entries have been destroyed.
+            do
+            {
+                if (cache.Count == 0)
+                {
+                    NetworkObject prefab = po.GetObject(asServer, prefabId);
+                    /* A null nob should never be returned from spawnables. This means something
+                     * else broke, likely unrelated to the object pool. */
+                    nob = Instantiate(prefab, position, rotation);
+                    //Can break instantly since we know nob is not null.
+                    break;
+                }
+                else
+                {
+                    nob = cache.Pop();
+                    if (nob != null)
+                        nob.transform.SetPositionAndRotation(position, rotation);
+                }
+
+            } while (nob == null);
+
+            nob.gameObject.SetActive(true);
+            return nob;
+        }
         /// <summary>
         /// Returns an object that has been stored. A new object will be created if no stored objects are available.
         /// </summary>

@@ -37,6 +37,13 @@ namespace FishNet.Utility.Performance
         /// <returns></returns>
         public virtual NetworkObject RetrieveObject(int prefabId, ushort collectionId, bool asServer) => null;
         /// <summary>
+        /// Returns an object that has been stored. A new object will be created if no stored objects are available.
+        /// </summary>
+        /// <param name="prefabId">PrefabId of the object to return.</param>
+        /// <param name="asServer">True if being called on the server side.</param>
+        /// <returns></returns>
+        public virtual NetworkObject RetrieveObject(int prefabId, ushort collectionId, Vector3 position, Quaternion rotation, bool asServer) => null;
+        /// <summary>
         /// Stores an object into the pool.
         /// </summary>
         /// <param name="instantiated">Object to store.</param>

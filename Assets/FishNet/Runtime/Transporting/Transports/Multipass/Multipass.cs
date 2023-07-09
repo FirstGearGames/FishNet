@@ -954,7 +954,6 @@ using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -978,6 +977,8 @@ namespace FishNet.Transporting.Multipass
             /// Connection Id assigned by multipass. This Id is the one communicated to the NetworkManager.
             /// </summary>
             public int MultipassId;
+
+            public ClientTransportData() { }
 
             public ClientTransportData(int transportIndex, int transportId, int multipassId)
             {
@@ -1132,6 +1133,7 @@ namespace FishNet.Transporting.Multipass
                 _transports[i].OnClientReceivedData += Multipass_OnClientReceivedData;
                 _transports[i].OnServerReceivedData += Multipass_OnServerReceivedData;
             }
+            Debug.Log("COUNT " + _transports.Count);
         }
 
         private void OnDestroy()
@@ -1160,6 +1162,7 @@ namespace FishNet.Transporting.Multipass
                 DisposableObjectCaches<ClientTransportData>.Store(item);
             }
             _multpassIdLookup.Clear();
+
             for (int i = 0; i < _transportIdLookup.Count; i++)
             {
                 foreach (ClientTransportData item in _transportIdLookup[i].Values)
@@ -1167,8 +1170,9 @@ namespace FishNet.Transporting.Multipass
                     item.Dispose();
                     DisposableObjectCaches<ClientTransportData>.Store(item);
                 }
+
+                _transportIdLookup[i].Clear();
             }
-            _transportIdLookup.Clear();
         }
 
         /// <summary>
@@ -1355,7 +1359,7 @@ namespace FishNet.Transporting.Multipass
                 //Get a multipassId for new connections.
                 multipassId = _availableMultipassIds.Dequeue();
                 //Get and update a clienttransportdata.
-                ClientTransportData ctd = ObjectCaches<ClientTransportData>.Retrieve();
+                ClientTransportData ctd = DisposableObjectCaches<ClientTransportData>.Retrieve();
                 ctd.Update(transportIndex, transportId, multipassId);
                 //Assign the lookup for transportId/index.
                 transportToMultipass[transportId] = ctd;
@@ -1390,7 +1394,7 @@ namespace FishNet.Transporting.Multipass
                 connectionStateArgs.ConnectionId = ctd.MultipassId;
                 OnRemoteConnectionState?.Invoke(connectionStateArgs);
 
-                ObjectCaches<ClientTransportData>.Store(ctd);
+                DisposableObjectCaches<ClientTransportData>.Store(ctd);
             }
         }
         #endregion

@@ -121,6 +121,13 @@ namespace FishNet.Editing
         [MenuItem("Fish-Networking/Rebuild SceneIds", false, 20)]
         public static void RebuildSceneIds()
         {
+#if PARRELSYNC
+            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
+            {
+                Debug.Log("Cannot perform this operation on a ParrelSync clone");
+                return;
+            }
+#endif
             int generatedCount = 0;
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -154,6 +161,13 @@ namespace FishNet.Editing
         [MenuItem("Fish-Networking/Refresh Default Prefabs", false, 22)]
         public static void RebuildDefaultPrefabs()
         {
+#if PARRELSYNC
+            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
+            {
+                Debug.Log("Cannot perform this operation on a ParrelSync clone");
+                return;
+            }
+#endif
             Debug.Log("Refreshing default prefabs.");
             Generator.GenerateFull(null, true);
         }
@@ -170,6 +184,13 @@ namespace FishNet.Editing
 
         public static void RemoveDuplicateNetworkObjects()
         {
+#if PARRELSYNC
+            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
+            {
+                Debug.Log("Cannot perform this operation on a ParrelSync clone");
+                return;
+            }
+#endif
             List<NetworkObject> foundNobs = new List<NetworkObject>();
 
             foreach (string path in Generator.GetPrefabFiles("Assets", new HashSet<string>(), true))

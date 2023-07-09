@@ -37,6 +37,11 @@ namespace FishNet.Managing.Client
         /// </summary>
         public event Action<RemoteConnectionStateArgs> OnRemoteConnectionState;
         /// <summary>
+        /// Called when the server sends all currently connected clients.
+        /// This is only available when using ServerManager.ShareIds.
+        /// </summary>
+        public event Action<ConnectedClientsArgs> OnConnectedClients;
+        /// <summary>
         /// True if the client connection is connected to the server.
         /// </summary>
         public bool Started { get; private set; }
@@ -154,16 +159,22 @@ namespace FishNet.Managing.Client
             List<int> collection = args.Values;
             //No connected clients except self.
             if (collection == null)
-                return;
-
-            int count = collection.Count;
-            for (int i = 0; i < count; i++)
             {
-                int id = collection[i];
-                Clients[id] = new NetworkConnection(NetworkManager, id, -1, false);
+                collection = new List<int>();
+            }
+            //Other clients.
+            else
+            {
+                int count = collection.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    int id = collection[i];
+                    Clients[id] = new NetworkConnection(NetworkManager, id, -1, false);
+                }
             }
 
-            CollectionCaches<int>.Store(collection);
+            OnConnectedClients?.Invoke(new ConnectedClientsArgs(collection));
+
         }
 
         /// <summary>

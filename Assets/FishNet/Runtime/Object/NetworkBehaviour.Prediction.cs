@@ -452,7 +452,7 @@ namespace FishNet.Object
             return changed;
         }
 #else
-     /// <summary> 
+        /// <summary> 
         /// Returns if there is a chance the transform may change after the tick.
         /// </summary>
         /// <returns></returns>
@@ -671,11 +671,6 @@ namespace FishNet.Object
         [APIExclude]
         protected internal void Replicate_NonOwner<T>(ReplicateUserLogicDelegate<T> del, Queue<T> replicatesQueue, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
-            //Debug.LogError("There needs to be a queue for replicates running and a list for past replicates." +
-            //    "The queue will remove an entry every time the replicate is performed, and add it to the past replicates collection." +
-            //    "When a reconcile occurs past replicates are removed up to the reconcile point. Be sure to clear both when resetting prediction." +
-            //    "Also make sure the list of past replicates cannot get too large should some reason the reconcile packet never come.");
-
             if (IsOwner)
                 return;
 
@@ -926,7 +921,7 @@ namespace FishNet.Object
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
 
             if (toServer)
-            { 
+            {
                 NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), false);
             }
             else
@@ -936,6 +931,13 @@ namespace FishNet.Object
                 _networkConnectionCache.Add(Owner);
                 if (IsClient)
                     _networkConnectionCache.Add(ClientManager.Connection);
+
+                //uint localTick = TimeManager.LocalTick;
+                //uint replicateTick = TimeManager.LocalTick;
+                //int queueCount = replicatesHistory.Count;
+
+                //Debug.Log($"Sending states. ServerTick {localTick}. ReplicateTick {replicateTick}. QueueCount {queueCount}");
+                //uncomment
 
                 NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), Observers, _networkConnectionCache, false);
             }
@@ -1022,7 +1024,7 @@ namespace FishNet.Object
                     return;
                 }
             }
-            Replicate_HandleReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicatesQueue, channel);
+            Replicate_HandleReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicatesQueue, channel, lastPacketTick);
 
             //Only server needs to send to spectators.
             if (IsServer)
@@ -1078,8 +1080,9 @@ namespace FishNet.Object
              * any data from the replicatesQueue. To get the starting for these forwarded replicates
              * take the localtick + startingReplicatesQueueCount. This will be the next tick the data
              * being forwarded will run. */
-            methodWriter.WriteTickUnpacked(localTick + (uint)startingReplicatesQueueCount);
-            
+            uint replicateTick = (localTick + (uint)startingReplicatesQueueCount);
+            methodWriter.WriteTickUnpacked(replicateTick);
+
             //Write history to methodWriter.
             methodWriter.WriteArraySegment(data);
             Channel channel = Channel.Unreliable;
@@ -1091,6 +1094,8 @@ namespace FishNet.Object
             if (IsClient)
                 _networkConnectionCache.Add(ClientManager.Connection);
 
+            //Debug.Log($"Sending states. ServerTick {localTick}. ReplicateTick {replicateTick}. QueueCount {queueCount}");
+            //uncomment 
             NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), Observers, _networkConnectionCache, false);
 
             methodWriter.StoreLength();
@@ -1135,7 +1140,7 @@ namespace FishNet.Object
         /// <param name="arrBuffer"></param>
         /// <param name="replicates"></param>
         /// <param name="channel"></param>
-        private void Replicate_HandleReceivedReplicate<T>(int receivedReplicatesCount, T[] arrBuffer, BasicQueue<T> replicatesQueue, Channel channel) where T : IReplicateData
+        private void Replicate_HandleReceivedReplicate<T>(int receivedReplicatesCount, T[] arrBuffer, BasicQueue<T> replicatesQueue, Channel channel, uint replicateTick) where T : IReplicateData
         {
             /* Owner never gets this for their own object so
              * this can be processed under the assumption data is only
@@ -1145,12 +1150,16 @@ namespace FishNet.Object
             //Maximum number of replicates allowed to be queued at once.
             int maximmumReplicates = (IsServer) ? pm.GetMaximumServerReplicates() : pm.MaximumClientReplicates;
 
+            string ticksRead = string.Empty;
+            int enqueudCount = 0;
+
             for (int i = 0; i < receivedReplicatesCount; i++)
             {
                 uint tick = arrBuffer[i].GetTick();
                 //If able to update replicate tick.
                 if (_networkObjectCache.ReplicateTick.Update(NetworkManager.TimeManager, tick, EstimatedTick.OldTickOption.Discard))
                 {
+                    ticksRead += $"{tick}, ";
                     //Cannot queue anymore, discard oldest.
                     if (replicatesQueue.Count >= maximmumReplicates)
                     {
@@ -1158,15 +1167,19 @@ namespace FishNet.Object
                         data.Dispose();
                     }
 
+                    enqueudCount++;
                     replicatesQueue.Enqueue(arrBuffer[i]);
                 }
             }
 
+            //if (!IsServer)
+            //    Debug.Log($"Received Replicate. PacketTick {TimeManager.LastPacketTick}. ReplicateTick {replicateTick}. Replicates Received {receivedReplicatesCount}. Enqueued {enqueudCount}. Ticks Read {ticksRead}");
+            //uncomment
             if (IsServer && Owner.IsValid)
                 Owner.AddAverageQueueCount((ushort)replicatesQueue.Count, TimeManager.LocalTick);
         }
 #endif
-         
+
 #if !PREDICTION_V2
         /// <summary>
         /// Checks conditions for a reconcile.
@@ -1351,7 +1364,11 @@ namespace FishNet.Object
         protected internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, List<T2> replicatesHistory, T data) where T : IReconcileData where T2 : IReplicateData
         {
             if (!ClientHasReconcileData)
+            {
+                //Debug.LogError($"No reconcileData. Should be pausing.");
+                //uncomment
                 return;
+            }
 
             if (replicatesHistory.Count > 0)
             {

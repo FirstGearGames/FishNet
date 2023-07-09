@@ -6,6 +6,7 @@ using FishNet.Object;
 using FishNet.Observing;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility;
 using FishNet.Utility.Performance;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -332,6 +333,9 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RebuildObservers(NetworkObject nob, NetworkConnection conn, bool timedOnly = false)
         {
+            if (ApplicationState.IsQuitting())
+                return;
+
             _everyoneWriter.Reset();
             _ownerWriter.Reset();
 
