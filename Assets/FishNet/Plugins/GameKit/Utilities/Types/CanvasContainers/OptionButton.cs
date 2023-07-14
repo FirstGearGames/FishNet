@@ -1,3 +1,4 @@
+#if TEXTMESHPRO
 using TMPro;
 using UnityEngine;
 
@@ -32,3 +33,4 @@ namespace GameKit.Utilities.Types.CanvasContainers
 
 
 }
+#endif

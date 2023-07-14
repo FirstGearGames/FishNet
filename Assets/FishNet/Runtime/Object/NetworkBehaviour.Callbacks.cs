@@ -203,6 +203,7 @@ namespace FishNet.Object
                 ClearReplicateCache();
 #endif
             }
+            OnOwnershipClient(prevOwner);
         }
         /// <summary>
         /// Called on the client after gaining or losing ownership.

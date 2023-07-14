@@ -240,7 +240,7 @@ namespace FishNet.Transporting.Tugboat.Server
             NetPeer peer = GetNetPeer(connectionId, false);
             if (peer == null)
             { 
-                Transport.NetworkManager.LogWarning($"ConnectId {connectionId} returned a null NetPeer.");
+                Transport.NetworkManager.LogWarning($"Connection Id {connectionId} returned a null NetPeer.");
                 return string.Empty;
             }
 
