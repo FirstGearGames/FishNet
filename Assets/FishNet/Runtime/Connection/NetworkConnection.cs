@@ -255,7 +255,7 @@ namespace FishNet.Connection
             Scenes.Clear();
             PredictedObjectIds.Clear();
             ResetPingPong();
-            LevelOfDetails.Clear();
+            ResetStates_Lod();
             AllowedForcedLodUpdates = 0;
             LastLevelOfDetailUpdate = 0;
             LevelOfDetailInfractions = 0;

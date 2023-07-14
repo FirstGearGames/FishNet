@@ -1,13 +1,18 @@
-﻿using FishNet.Connection;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Connection;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
+using GameKit.Utilities;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+
 
 namespace FishNet.Managing.Object
 {
@@ -92,6 +97,16 @@ namespace FishNet.Managing.Object
             if (sceneObject)
             {
                 headerWriter.WriteUInt64(nob.SceneId, AutoPackType.Unpacked);
+#if DEVELOPMENT
+                bool writeSceneObjectDetails = NetworkManager.DebugManager.WriteSceneObjectDetails;
+                headerWriter.WriteBoolean(writeSceneObjectDetails);
+                //Check to write additional information if a scene object.
+                if (writeSceneObjectDetails)
+                {
+                    headerWriter.WriteString(nob.gameObject.scene.name);
+                    headerWriter.WriteString(nob.gameObject.name);
+                }
+#endif
             }
             /* Writing a spawned object. */
             else
@@ -256,14 +271,25 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Finds a scene NetworkObject and sets transform values.
         /// </summary>
+#if DEVELOPMENT
+        internal NetworkObject GetSceneNetworkObject(ulong sceneId, string sceneName, string objectName)
+#else
         internal NetworkObject GetSceneNetworkObject(ulong sceneId)
+#endif
         {
             NetworkObject nob;
-            SceneObjects.TryGetValueIL2CPP(sceneId, out nob);
+            SceneObjects_Internal.TryGetValueIL2CPP(sceneId, out nob);
             //If found in scene objects.
             if (nob == null)
+            {
+#if DEVELOPMENT
+                string missingObjectDetails = (sceneName == string.Empty) ? "For more information on the missing object add DebugManager to your NetworkManager and enable WriteSceneObjectDetails"
+                    : $"Scene containing the object is '{sceneName}', object name is '{objectName}";
+                NetworkManager.LogError($"SceneId of {sceneId} not found in SceneObjects. {missingObjectDetails}. This may occur if your scene differs between client and server, if client does not have the scene loaded, or if networked scene objects do not have a SceneCondition. See ObserverManager in the documentation for more on conditions.");
+#else
                 NetworkManager.LogError($"SceneId of {sceneId} not found in SceneObjects. This may occur if your scene differs between client and server, if client does not have the scene loaded, or if networked scene objects do not have a SceneCondition. See ObserverManager in the documentation for more on conditions.");
-
+#endif
+            }
             return nob;
         }
 

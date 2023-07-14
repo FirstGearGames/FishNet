@@ -6,18 +6,25 @@ namespace FishNet.Demo.NetworkLod
 
     public class MoveRandomly : NetworkBehaviour
     {
+
         //Colors green for client.
         [SerializeField]
         private Renderer _renderer;
+        [SerializeField]
+        private bool _updateRotation;
 
         //Time to move to new position.
         private const float _moveRate = 3f;
         //Maximum range for new position.
         private const float _range = 10f;
         //Position to move towards.
-        private Vector3 _goal;
+        private Vector3 _goalPosition;
+        //Rotation to move towards.
+        private Quaternion _goalRotation;
         //Position at spawn.
-        private Vector3 _start;
+        private Vector3 _startPosition;
+
+
 
         private void Update()
         {
@@ -28,24 +35,44 @@ namespace FishNet.Demo.NetworkLod
             if (base.Owner.IsValid)
                 return;
 
-            transform.position = Vector3.MoveTowards(transform.position, _goal, _moveRate * Time.deltaTime);
-            if (transform.position == _goal)
+            transform.position = Vector3.MoveTowards(transform.position, _goalPosition, _moveRate * Time.deltaTime);
+            if (_updateRotation)
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, _goalRotation, 15f * Time.deltaTime);
+            if (transform.position == _goalPosition)
                 RandomizeGoal();
         }
 
         public override void OnStartNetwork()
         {
-            base.OnStartNetwork();
-            _start = transform.position;
+            _startPosition = transform.position;
             RandomizeGoal();
 
             if (_renderer != null && base.Owner.IsActive)
                 _renderer.material.color = Color.green;
+
+            if (!base.Owner.IsValid)
+                gameObject.name = "LOD " + base.ObjectId;
+            else
+                gameObject.name = "Owned " + base.ObjectId;
         }
 
         private void RandomizeGoal()
         {
-            _goal = _start + (Random.insideUnitSphere * _range);
+            _goalPosition = _startPosition + (Random.insideUnitSphere * _range);
+
+            if (_updateRotation)
+            {
+                bool rotate = (Random.Range(0f, 1f) <= 0.33f);
+                if (rotate)
+                {
+                    Vector3 euler = Random.insideUnitSphere * 180f;
+                    _goalRotation = Quaternion.Euler(euler);
+                }
+                else
+                {
+                    _goalRotation = transform.rotation;
+                }
+            }
         }
 
     }

@@ -5,9 +5,8 @@ using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
-using FishNet.Utility;
-using FishNet.Utility.Extension;
-using FishNet.Utility.Performance;
+using GameKit.Utilities;
+using GameKit.Utilities.Types;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -780,7 +779,7 @@ namespace FishNet.Managing.Scened
             if (nob.transform.parent != null)
                 return WarnAndReturnFalse($"NetworkObject {nob.name} cannot be moved because it is not the root object. Unity can only move root objects between scenes.");
             //In DDOL and IsGlobal.
-            if (nob.IsGlobal && (nob.gameObject.scene.name == DDOLFinder.GetDDOL().gameObject.scene.name))
+            if (nob.IsGlobal && (nob.gameObject.scene.name == DDOL.GetDDOL().gameObject.scene.name))
                 return WarnAndReturnFalse("NetworkObject {nob.name} cannot be moved because it is global. Global objects must remain in the DontDestroyOnLoad scene.");
 
             //Fall through success.
@@ -2155,39 +2154,19 @@ namespace FishNet.Managing.Scened
         /// Returns the FallbackActiveScene.
         /// </summary>
         /// <returns></returns>
-        private Scene GetFallbackActiveScene()
-        {
-            if (string.IsNullOrEmpty(_fallbackActiveScene.name))
-                _fallbackActiveScene = UnitySceneManager.CreateScene("FallbackActiveScene");
-
-            return _fallbackActiveScene;
-        }
+        private Scene GetFallbackActiveScene() => _sceneProcessor.GetFallbackActiveScene();
 
         /// <summary>
-        /// Returns the MovedObejctsScene.
+        /// Returns the MovedObjectsScene.
         /// </summary>
         /// <returns></returns>
-        private Scene GetMovedObjectsScene()
-        {
-            //Create moved objects scene. It will probably be used eventually. If not, no harm either way.
-            if (string.IsNullOrEmpty(_movedObjectsScene.name))
-                _movedObjectsScene = UnitySceneManager.CreateScene("MovedObjectsHolder");
-
-            return _movedObjectsScene;
-        }
+        private Scene GetMovedObjectsScene() => _sceneProcessor.GetMovedObjectsScene();
 
         /// <summary>
         /// Returns the DelayedDestroyScene.
         /// </summary>
         /// <returns></returns>
-        private Scene GetDelayedDestroyScene()
-        {
-            //Create moved objects scene. It will probably be used eventually. If not, no harm either way.
-            if (string.IsNullOrEmpty(_delayedDestroyScene.name))
-                _delayedDestroyScene = UnitySceneManager.CreateScene("DelayedDestroy");
-
-            return _delayedDestroyScene;
-        }
+        private Scene GetDelayedDestroyScene() => _sceneProcessor.GetDelayedDestroyScene();
 
         /// <summary>
         /// Returns a preferred active scene to use.

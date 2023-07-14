@@ -1,6 +1,6 @@
 using FishNet.Managing.Object;
 using FishNet.Object;
-using FishNet.Utility.Extension;
+using GameKit.Utilities;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -153,7 +153,7 @@ namespace FishNet.Utility.Performance
             }
 
             instantiated.gameObject.SetActive(false);
-            instantiated.ResetForObjectPool();
+            instantiated.ResetState();
             Stack<NetworkObject> cache = GetOrCreateCache(instantiated.SpawnableCollectionId, instantiated.PrefabId);
             cache.Push(instantiated);
         }

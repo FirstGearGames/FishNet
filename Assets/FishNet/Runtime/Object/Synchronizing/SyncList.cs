@@ -330,6 +330,11 @@ namespace FishNet.Object.Synchronizing
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
             bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
+            //True to warn if this object was deinitialized on the server.
+            bool deinitialized = (asClientAndHost && !base.OnStartServerCalled);
+            if (deinitialized)
+                base.NetworkManager.LogWarning($"SyncType {GetType().Name} received a Read but was deinitialized on the server. Client callback values may be incorrect. This is a ClientHost limitation.");
+
             IList<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
 
             //Clear collection since it's a full write.
@@ -350,35 +355,46 @@ namespace FishNet.Object.Synchronizing
                 if (operation == SyncListOperation.Add)
                 {
                     next = reader.Read<T>();
-                    index = collection.Count;
-                    collection.Add(next);
+                    if (!deinitialized)
+                    {
+                        index = collection.Count;
+                        collection.Add(next);
+                    }
                 }
                 //Clear.
                 else if (operation == SyncListOperation.Clear)
                 {
-                    collection.Clear();
+                    if (!deinitialized)
+                        collection.Clear();
                 }
                 //Insert.
                 else if (operation == SyncListOperation.Insert)
                 {
                     index = reader.ReadInt32();
                     next = reader.Read<T>();
-                    collection.Insert(index, next);
+                    if (!deinitialized)
+                        collection.Insert(index, next);
                 }
                 //RemoveAt.
                 else if (operation == SyncListOperation.RemoveAt)
                 {
                     index = reader.ReadInt32();
-                    prev = collection[index];
-                    collection.RemoveAt(index);
+                    if (!deinitialized)
+                    {
+                        prev = collection[index];
+                        collection.RemoveAt(index);
+                    }
                 }
                 //Set
                 else if (operation == SyncListOperation.Set)
                 {
                     index = reader.ReadInt32();
                     next = reader.Read<T>();
-                    prev = collection[index];
-                    collection[index] = next;
+                    if (!deinitialized)
+                    {
+                        prev = collection[index];
+                        collection[index] = next;
+                    }
                 }
 
                 InvokeOnChange(operation, index, prev, next, false);
@@ -413,9 +429,9 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
-        public override void Reset()
+        public override void ResetState()
         {
-            base.Reset();
+            base.ResetState();
             _sendAll = false;
             _changed.Clear();
             ClientHostCollection.Clear();

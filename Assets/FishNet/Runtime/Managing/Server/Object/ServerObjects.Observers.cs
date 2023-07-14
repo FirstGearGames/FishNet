@@ -8,6 +8,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility;
 using FishNet.Utility.Performance;
+using GameKit.Utilities;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -129,51 +130,75 @@ namespace FishNet.Managing.Server
         /// Gets all spawned objects with root objects first.
         /// </summary>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private List<NetworkObject> RetrieveOrderedSpawnedObjects()
-        {            
+        {
             List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
 
             bool initializationOrderChanged = false;
+            //First order root objects.
             foreach (NetworkObject item in Spawned.Values)
+                OrderRootByInitializationOrder(item, cache, ref initializationOrderChanged);
+
+            OrderNestedByInitializationOrder(cache);
+
+            return cache;
+        }
+
+        /// <summary>
+        /// Orders a NetworkObject into a cache based on it's initialization order.
+        /// Only non-nested NetworkObjects will be added.
+        /// </summary>
+        /// <param name="nob">NetworkObject to check.</param>
+        /// <param name="cache">Cache to sort into.</param>
+        /// <param name="initializationOrderChanged">Boolean to indicate if initialization order is specified for one or more objects.</param>
+        private void OrderRootByInitializationOrder(NetworkObject nob, List<NetworkObject> cache, ref bool initializationOrderChanged)
+        {
+            if (nob.IsNested)
+                return;
+
+            sbyte currentItemInitOrder = nob.GetInitializeOrder();
+            initializationOrderChanged |= (currentItemInitOrder != 0);
+            int count = cache.Count;
+
+            /* If initialize order has not changed or count is
+             * 0 then add normally. */
+            if (!initializationOrderChanged || count == 0)
             {
-                if (item.IsNested)
-                    continue;
-
-                sbyte currentItemInitOrder = item.GetInitializeOrder();
-                initializationOrderChanged |= (currentItemInitOrder != 0);
-                int count = cache.Count;
-
-                /* If initialize order has not changed or count is
-                 * 0 then add normally. */
-                if (!initializationOrderChanged || count == 0)
+                cache.Add(nob);
+            }
+            else
+            {
+                /* If current item init order is larger or equal than
+                 * the last entry in copy then add to the end.
+                 * Otherwise check where to add from the beginning. */
+                if (currentItemInitOrder >= cache[count - 1].GetInitializeOrder())
                 {
-                    cache.Add(item);
+                    cache.Add(nob);
                 }
                 else
                 {
-                    /* If current item init order is larger or equal than
-                     * the last entry in copy then add to the end.
-                     * Otherwise check where to add from the beginning. */
-                    if (currentItemInitOrder >= cache[count - 1].GetInitializeOrder())
+                    for (int i = 0; i < count; i++)
                     {
-                        cache.Add(item);
-                    }
-                    else
-                    {
-                        for (int i = 0; i < count; i++)
+                        /* If item being sorted is lower than the one in already added.
+                         * then insert it before the one already added. */
+                        if (currentItemInitOrder <= cache[i].GetInitializeOrder())
                         {
-                            /* If item being sorted is lower than the one in already added.
-                             * then insert it before the one already added. */
-                            if (currentItemInitOrder <= cache[i].GetInitializeOrder())
-                            {
-                                cache.Insert(i, item);
-                                break;
-                            }
+                            cache.Insert(i, nob);
+                            break;
                         }
                     }
                 }
             }
+        }
 
+
+        /// <summary>
+        /// Orders nested NetworkObjects of cache by initialization order.
+        /// </summary>
+        /// <param name="cache">Cache to sort.</param>
+        private void OrderNestedByInitializationOrder(List<NetworkObject> cache)
+        {
             //After everything is sorted by root only insert children.
             for (int i = 0; i < cache.Count; i++)
             {
@@ -194,9 +219,8 @@ namespace FishNet.Managing.Server
                     AddChildNetworkObjects(childObject, ref index);
                 }
             }
-
-            return cache;
         }
+
 
 
         /// <summary>
@@ -352,6 +376,8 @@ namespace FishNet.Managing.Server
             }
             else if (osc == ObserverStateChange.Removed)
             {
+                if (conn.LevelOfDetails.TryGetValue(nob, out NetworkConnection.LevelOfDetailData lodData))
+                    ObjectCaches<NetworkConnection.LevelOfDetailData>.Store(lodData);
                 conn.LevelOfDetails.Remove(nob);
                 WriteDespawn(nob, nob.GetDefaultDespawnType(), _everyoneWriter);
             }

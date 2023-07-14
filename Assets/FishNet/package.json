@@ -1,6 +1,6 @@
 {
   "name": "com.firstgeargames.fishnet",
-  "version": "3.7.11",
+  "version": "3.10.0",
   "displayName": "FishNet: Networking Evolved",
   "description": "A feature-rich Unity networking solution aimed towards reliability, ease of use, efficiency, and flexibility.",
   "unity": "2019.4",

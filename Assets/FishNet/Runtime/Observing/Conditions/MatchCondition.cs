@@ -6,6 +6,7 @@ using FishNet.Object;
 using FishNet.Observing;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
+using GameKit.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,13 +61,13 @@ namespace FishNet.Component.Observing
                 return;
 
             foreach (HashSet<int> item in cc.ObjectMatches.Values)
-                HashSets.StoreCache(item);
+                CollectionCaches<int>.Store(item);
             foreach (HashSet<NetworkConnection> item in cc.MatchConnections.Values)
-                HashSets.StoreCache(item);
+                CollectionCaches<NetworkConnection>.Store(item);
             foreach (HashSet<NetworkObject> item in cc.MatchObjects.Values)
-                HashSets.StoreCache(item);
+                CollectionCaches<NetworkObject>.Store(item);
             foreach (HashSet<int> item in cc.ConnectionMatches.Values)
-                HashSets.StoreCache(item);
+                CollectionCaches<int>.Store(item);
 
             _collections.Remove(manager);
         }
@@ -149,7 +150,7 @@ namespace FishNet.Component.Observing
             HashSet<NetworkConnection> matchConnValues;
             if (!matchConnections.TryGetValueIL2CPP(match, out matchConnValues))
             {
-                matchConnValues = HashSets.RetrieveNetworkConnectionCache();
+                matchConnValues = CollectionCaches<NetworkConnection>.RetrieveHashSet();
                 matchConnections.Add(match, matchConnValues);
             }
 
@@ -184,7 +185,7 @@ namespace FishNet.Component.Observing
             HashSet<int> matches;
             if (!connectionMatches.TryGetValueIL2CPP(conn, out matches))
             {
-                matches = HashSets.RetrieveIntCache();
+                matches = CollectionCaches<int>.RetrieveHashSet();
                 connectionMatches[conn] = matches;
             }
 
@@ -235,7 +236,7 @@ namespace FishNet.Component.Observing
             HashSet<NetworkObject> matchObjectsValues;
             if (!matchObjects.TryGetValueIL2CPP(match, out matchObjectsValues))
             {
-                matchObjectsValues = HashSets.RetrieveNetworkObjectCache();
+                matchObjectsValues = CollectionCaches<NetworkObject>.RetrieveHashSet();
                 matchObjects.Add(match, matchObjectsValues);
             }
             bool added = matchObjectsValues.Add(nob);
@@ -244,7 +245,7 @@ namespace FishNet.Component.Observing
             HashSet<int> objectMatchesValues;
             if (!objectMatches.TryGetValueIL2CPP(nob, out objectMatchesValues))
             {
-                objectMatchesValues = HashSets.RetrieveIntCache();
+                objectMatchesValues = CollectionCaches<int>.RetrieveHashSet();
                 objectMatches.Add(nob, objectMatchesValues);
             }
             objectMatchesValues.Add(match);
@@ -313,7 +314,7 @@ namespace FishNet.Component.Observing
             {
                 isEmpty = (value.Count == 0);
                 if (isEmpty)
-                    HashSets.StoreCache(value);
+                    CollectionCaches<NetworkObject>.Store(value);
             }
 
             if (isEmpty)
@@ -339,7 +340,7 @@ namespace FishNet.Component.Observing
             {
                 isEmpty = (value.Count == 0);
                 if (isEmpty)
-                    HashSets.StoreCache(value);
+                    CollectionCaches<int>.Store(value);
             }
 
             if (isEmpty)
@@ -365,7 +366,7 @@ namespace FishNet.Component.Observing
             {
                 isEmpty = (value.Count == 0);
                 if (isEmpty)
-                    HashSets.StoreCache(value);
+                    CollectionCaches<NetworkConnection>.Store(value);
             }
 
             if (isEmpty)
@@ -391,7 +392,7 @@ namespace FishNet.Component.Observing
             {
                 isEmpty = (value.Count == 0);
                 if (isEmpty)
-                    HashSets.StoreCache(value);
+                    CollectionCaches<int>.Store(value);
             }
 
             if (isEmpty)

@@ -47,7 +47,6 @@ namespace FishNet.Component.Ownership
         /// <param name="prevOwner">Previous owner of this object.</param>
         public override void OnOwnershipClient(NetworkConnection prevOwner)
         {
-            base.OnOwnershipClient(prevOwner);
             /* Unset taken ownership either way.
             * If the new owner it won't be used,
             * if no longer owner then another client

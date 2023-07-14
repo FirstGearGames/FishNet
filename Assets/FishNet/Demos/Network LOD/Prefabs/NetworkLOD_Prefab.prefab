@@ -30,7 +30,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 3106622367778460228}
+  - {fileID: 2745247498903379289}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -47,16 +47,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 0
+  <PrefabId>k__BackingField: 24
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 8082309187455287958
-  _sceneNetworkObjects: []
   <IsNested>k__BackingField: 0
-  _usePrediction: 0
+  _enablePrediction: 0
   _graphicalObject: {fileID: 0}
-  _useStates: 1
+  _enableStateForwarding: 1
   _ownerInterpolation: 1
   _enableTeleport: 0
   _ownerTeleportThreshold: 1
@@ -75,13 +74,15 @@ MonoBehaviour:
     InterpolationIncreaseStep: 2
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
+  _networkBehaviours:
+  - {fileID: 6667641716399555817}
+  - {fileID: -5271135124957689192}
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
-    Rotation: {x: 0, y: 0, z: 0, w: 0}
-    LocalScale: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0, w: 1}
+    LocalScale: {x: 1, y: 1, z: 1}
   _isNetworked: 1
   _isGlobal: 0
   _initializeOrder: 0
@@ -98,10 +99,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9880e85651efd71469092ce519317f7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 4512293259955182956}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 4512293259955182956}
   _renderer: {fileID: 0}
+  _updateRotation: 1
 --- !u!114 &-5271135124957689192
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -114,9 +116,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 4512293259955182956}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 4512293259955182956}
   _componentConfiguration: 0
   _synchronizeParent: 0
   _packing:
@@ -129,7 +131,7 @@ MonoBehaviour:
   _teleportThreshold: 1
   _clientAuthoritative: 1
   _sendToOwner: 1
-  _useNetworkLod: 1
+  _enableNetworkLod: 1
   _interval: 1
   _synchronizePosition: 1
   _positionSnapping:
@@ -146,7 +148,7 @@ MonoBehaviour:
     X: 0
     Y: 0
     Z: 0
---- !u!1 &7544314590428355348
+--- !u!1 &5839577311109879042
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -154,24 +156,23 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 3106622367778460228}
-  - component: {fileID: 300268715198095524}
-  - component: {fileID: 8565678507340770901}
-  - component: {fileID: 6944568664394371648}
+  - component: {fileID: 2745247498903379289}
+  - component: {fileID: 3127415364279584095}
+  - component: {fileID: 5921142425762840611}
   m_Layer: 0
-  m_Name: Sphere
+  m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &3106622367778460228
+--- !u!4 &2745247498903379289
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7544314590428355348}
+  m_GameObject: {fileID: 5839577311109879042}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -179,21 +180,21 @@ Transform:
   m_Father: {fileID: 4512293259955182957}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &300268715198095524
+--- !u!33 &3127415364279584095
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7544314590428355348}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &8565678507340770901
+  m_GameObject: {fileID: 5839577311109879042}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &5921142425762840611
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7544314590428355348}
+  m_GameObject: {fileID: 5839577311109879042}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -226,16 +227,3 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!135 &6944568664394371648
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7544314590428355348}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}

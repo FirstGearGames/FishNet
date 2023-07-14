@@ -8,7 +8,7 @@ using FishNet.Object.Prediction;
 using FishNet.Object.Prediction.Delegating;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using FishNet.Utility.Extension;
+using GameKit.Utilities;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;

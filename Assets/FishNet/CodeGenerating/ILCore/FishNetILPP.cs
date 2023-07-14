@@ -21,7 +21,7 @@ namespace FishNet.CodeGenerating.ILCore
         #region Const.
         internal const string RUNTIME_ASSEMBLY_NAME = "FishNet.Runtime";
         #endregion
-
+         
         public override bool WillProcess(ICompiledAssembly compiledAssembly)
         {
             if (compiledAssembly.Name.StartsWith("Unity."))

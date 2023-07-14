@@ -262,7 +262,7 @@ namespace FishNet.Object
             int count;
             count = NetworkBehaviours.Length;
             for (int i = 0; i < count; i++)
-                NetworkBehaviours[i].OnOwnershipClient(prevOwner);
+                NetworkBehaviours[i].OnOwnershipClient_Internal(prevOwner);
             count = ChildNetworkObjects.Count;
             for (int i = 0; i < count; i++)
                 ChildNetworkObjects[i].SetLocalOwnership(caller);

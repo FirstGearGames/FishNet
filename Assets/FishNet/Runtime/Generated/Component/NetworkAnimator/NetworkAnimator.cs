@@ -7,6 +7,7 @@ using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Utility;
 using FishNet.Utility.Performance;
+using GameKit.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -459,16 +460,14 @@ namespace FishNet.Component.Animating
         }
 
         public override void OnStartNetwork()
-        {
-            base.OnStartNetwork();
+        {            
             base.TimeManager.OnPreTick += TimeManager_OnPreTick;
             base.TimeManager.OnPostTick += TimeManager_OnPostTick;
         }
 
         [APIExclude]
         public override void OnStartServer()
-        {
-            base.OnStartServer();
+        {            
             //If using client authoritative then initialize clientAuthoritativeUpdates.
             if (_clientAuthoritative)
             {
@@ -484,8 +483,7 @@ namespace FishNet.Component.Animating
         }
 
         public override void OnStopNetwork()
-        {
-            base.OnStopNetwork();
+        {            
             base.TimeManager.OnPreTick -= TimeManager_OnPreTick;
             base.TimeManager.OnPostTick -= TimeManager_OnPostTick;
         }

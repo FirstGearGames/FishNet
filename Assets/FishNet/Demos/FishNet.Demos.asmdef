@@ -1,7 +1,8 @@
 {
     "name": "FishNet.Demos",
     "references": [
-        "GUID:7c88a4a7926ee5145ad2dfa06f454c67"
+        "GUID:7c88a4a7926ee5145ad2dfa06f454c67",
+        "GUID:17013b2a21298c14ea4808251346a38a"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

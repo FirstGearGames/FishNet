@@ -2,7 +2,7 @@
 using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
-using FishNet.Utility.Extension;
+using GameKit.Utilities;
 using JetBrains.Annotations;
 using System;
 using System.Collections;
@@ -297,6 +297,11 @@ namespace FishNet.Object.Synchronizing
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
             bool asClientAndHost = (!asServer && base.NetworkBehaviour.IsServer);
+            //True to warn if this object was deinitialized on the server.
+            bool deinitialized = (asClientAndHost && !base.OnStartServerCalled);
+            if (deinitialized)
+                base.NetworkManager.LogWarning($"SyncType {GetType().Name} received a Read but was deinitialized on the server. Client callback values may be incorrect. This is a ClientHost limitation.");
+
             IDictionary<TKey, TValue> collection = (asClientAndHost) ? ClientHostCollection : Collection;
 
             //Clear collection since it's a full write.
@@ -319,18 +324,21 @@ namespace FishNet.Object.Synchronizing
                 {
                     key = reader.Read<TKey>();
                     value = reader.Read<TValue>();
-                    collection[key] = value;
+                    if (!deinitialized)
+                        collection[key] = value;
                 }
                 //Clear.
                 else if (operation == SyncDictionaryOperation.Clear)
                 {
-                    collection.Clear();
+                    if (!deinitialized)
+                        collection.Clear();
                 }
                 //Remove.
                 else if (operation == SyncDictionaryOperation.Remove)
                 {
                     key = reader.Read<TKey>();
-                    collection.Remove(key);
+                    if (!deinitialized)
+                        collection.Remove(key);
                 }
 
                 InvokeOnChange(operation, key, value, false);
@@ -368,9 +376,9 @@ namespace FishNet.Object.Synchronizing
         /// Resets to initialized values.
         /// </summary>
         [APIExclude]
-        public override void Reset()
+        public override void ResetState()
         {
-            base.Reset();
+            base.ResetState();
             _sendAll = false;
             _changed.Clear();
             Collection.Clear();

@@ -8,6 +8,7 @@ using FishNet.Serializing;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
+using GameKit.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;

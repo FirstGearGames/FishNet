@@ -35,21 +35,41 @@ namespace FishNet.Demo.NetworkLod
 
         public override void OnStartServer()
         {
-            base.OnStartServer();
+            //Spawn objects going down the range to make it easier to debug.
+            float xySpacing = (_xyRange / _count);
+            float zSpacing = (_zRange / _count);
+            float x = 0f;
+            float y = 0f;
+            float z = 0f;
 
             for (int i = 0; i < _count; i++)
             {
-                float x = Random.Range(-_xyRange, _xyRange);
-                float y = Random.Range(-_xyRange, _xyRange);
-                float z = Random.Range(0f, _zRange);
 
-                Vector3 position = new Vector3(x, y, z);
+                float nextX = RandomlyFlipFloat(x);
+                float nextY = RandomlyFlipFloat(y);
+                //Z cannot be flipped.
+                float nextZ = z;
+
+                x += xySpacing;
+                y += xySpacing;
+                z += zSpacing;
+                nextX = 0;
+                nextY = 0;
+                Vector3 position = new Vector3(nextX, nextY, nextZ);
                 NetworkObject obj = Instantiate(_prefab, position, Quaternion.identity);
-                obj.name = $"Obj {i.ToString("0000")}";
                 base.Spawn(obj);
             }
 
+            float RandomlyFlipFloat(float a)
+            {
+                if (Random.Range(0f, 1f) <= 0.5f)
+                    return -a;
+                else
+                    return a;
+            }
+
         }
+
 
     }
 

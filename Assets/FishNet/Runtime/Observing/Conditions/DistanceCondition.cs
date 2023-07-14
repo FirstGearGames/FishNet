@@ -1,7 +1,6 @@
 ﻿using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Observing;
-using FishNet.Utility.Extension;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

@@ -169,7 +169,7 @@ namespace FishNet.Object
         /// <summary>
         /// Resets this NetworkBehaviour so that it may be added to an object pool.
         /// </summary>
-        internal void ResetForObjectPool()
+        internal void ResetState()
         {
             ResetSyncTypes();
             ClearReplicateCache();

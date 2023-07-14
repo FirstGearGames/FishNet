@@ -3,6 +3,7 @@ using FishNet.Editing.PrefabCollectionGenerator;
 using FishNet.Object;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
+using GameKit.Utilities;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -25,7 +26,6 @@ namespace FishNet.Editing
     {
         #region const.
         private const string PREDICTIONV2_DEFINE = "PREDICTION_V2";
-        private const string NETWORK_LOD_DEFINE = "NETWORK_LOD";
         private const string QOL_ATTRIBUTES_DEFINE = "DISABLE_QOL_ATTRIBUTES";
         private const string DEVELOPER_ONLY_WARNING = "If you are not a developer or were not instructed to do this by a developer things are likely to break. You have been warned.";
         #endregion
@@ -44,23 +44,6 @@ namespace FishNet.Editing
             bool result = RemoveOrAddDefine(PREDICTIONV2_DEFINE, true);
             if (result)
                 Debug.Log("PredictionV2 has been disabled.");
-        }
-        #endregion
-
-        #region Network LOD.
-        [MenuItem("Fish-Networking/Developer/Network LOD/Enable", false, -999)]
-        private static void EnableNetworkLOD()
-        {
-            bool result = RemoveOrAddDefine(NETWORK_LOD_DEFINE, false);
-            if (result)
-                Debug.LogWarning($"Network LOD has been enabled. {DEVELOPER_ONLY_WARNING}");
-        }
-        [MenuItem("Fish-Networking/Developer/Network LOD/Disable", false, -998)]
-        private static void DisableNetworkLOD()
-        {
-            bool result = RemoveOrAddDefine(NETWORK_LOD_DEFINE, true);
-            if (result)
-                Debug.Log("Network LOD has been disabled.");
         }
         #endregion
 
@@ -134,7 +117,7 @@ namespace FishNet.Editing
                 Scene s = SceneManager.GetSceneAt(i);
 
                 List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-                SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
+                Scenes.GetSceneNetworkObjects(s, false, ref nobs);
                 int nobCount = nobs.Count;
                 for (int z = 0; z < nobCount; z++)
                 {
@@ -206,7 +189,7 @@ namespace FishNet.Editing
                 Scene s = SceneManager.GetSceneAt(i);
 
                 List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-                SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
+                Scenes.GetSceneNetworkObjects(s, false, ref nobs);
                 int nobsCount = nobs.Count;
                 for (int z = 0; z < nobsCount; z++)
                 {

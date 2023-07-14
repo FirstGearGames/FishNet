@@ -30,8 +30,7 @@ namespace FishNet.Demo.HashGrid
         }
 
         public override void OnStartNetwork()
-        {
-            base.OnStartNetwork();
+        {            
             _start = transform.position;
 
             if (base.Owner.IsLocalClient)

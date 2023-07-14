@@ -320,6 +320,12 @@ namespace FishNet.CodeGenerating.Processing
             {
                 foreach (Instruction item in instructions)
                 {
+                    if (item.OpCode == OpCodes.Ldnull)
+                    {
+                        canSerialize = true;
+                        break;
+                    }
+
                     //This token references the type.
                     if (item.OpCode == OpCodes.Ldtoken)
                     {

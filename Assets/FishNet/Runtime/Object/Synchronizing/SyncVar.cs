@@ -278,9 +278,9 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
-        public override void Reset()
+        public override void ResetState()
         {
-            base.Reset();
+            base.ResetState();
             _value = _initialValue;
             _previousClientValue = _initialValue;
         }

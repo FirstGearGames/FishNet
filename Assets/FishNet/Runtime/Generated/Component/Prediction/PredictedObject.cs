@@ -305,9 +305,7 @@ namespace FishNet.Component.Prediction
         }
 
         public override void OnStartNetwork()
-        {
-            base.OnStartNetwork();
-
+        {           
             /* If host then initialize owner smoother.
              * Host will use owner smoothing settings for more
              * accurate results. */
@@ -328,14 +326,12 @@ namespace FishNet.Component.Prediction
 
         public override void OnStartClient()
         {
-            base.OnStartClient();
             ChangeSubscriptions(true);
             Rigidbodies_OnStartClient();
         }
 
         public override void OnOwnershipClient(NetworkConnection prevOwner)
         {
-            base.OnOwnershipClient(prevOwner);
             /* If owner or host then use the
              * owner smoother. The owner smoother
              * is not predictive and is preferred
@@ -362,9 +358,7 @@ namespace FishNet.Component.Prediction
         }
 
         public override void OnStopNetwork()
-        {
-            base.OnStopNetwork();
-
+        {          
             ChangeSubscriptions(false);
             UpdateRigidbodiesCount(false);
             base.TimeManager.OnPostTick -= TimeManager_OnPostTick;

@@ -4,6 +4,8 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Scened;
 using FishNet.Transporting;
 using FishNet.Utility;
+using GameKit.Utilities;
+using GameKit.Utilities.Types;
 using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;

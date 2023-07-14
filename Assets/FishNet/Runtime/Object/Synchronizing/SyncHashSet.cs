@@ -262,6 +262,11 @@ namespace FishNet.Object.Synchronizing
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
             bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
+            //True to warn if this object was deinitialized on the server.
+            bool deinitialized = (asClientAndHost && !base.OnStartServerCalled);
+            if (deinitialized)
+                base.NetworkManager.LogWarning($"SyncType {GetType().Name} received a Read but was deinitialized on the server. Client callback values may be incorrect. This is a ClientHost limitation.");
+
             ISet<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
 
             //Clear collection since it's a full write.
@@ -279,25 +284,31 @@ namespace FishNet.Object.Synchronizing
                 if (operation == SyncHashSetOperation.Add)
                 {
                     next = reader.Read<T>();
-                    collection.Add(next);
+                    if (!deinitialized)
+                        collection.Add(next);
                 }
                 //Clear.
                 else if (operation == SyncHashSetOperation.Clear)
                 {
-                    collection.Clear();
+                    if (!deinitialized)
+                        collection.Clear();
                 }
                 //Remove.
                 else if (operation == SyncHashSetOperation.Remove)
                 {
                     next = reader.Read<T>();
-                    collection.Remove(next);
+                    if (!deinitialized)
+                        collection.Remove(next);
                 }
                 //Updated.
                 else if (operation == SyncHashSetOperation.Update)
                 {
                     next = reader.Read<T>();
-                    collection.Remove(next);
-                    collection.Add(next);
+                    if (!deinitialized)
+                    {
+                        collection.Remove(next);
+                        collection.Add(next);
+                    }
                 }
 
                 InvokeOnChange(operation, next, false);
@@ -332,9 +343,9 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
-        public override void Reset()
+        public override void ResetState()
         {
-            base.Reset();
+            base.ResetState();
             _sendAll = false;
             _changed.Clear();
             Collection.Clear();
@@ -517,9 +528,9 @@ namespace FishNet.Object.Synchronizing
             Intersect(Collection);
             if (base.NetworkManager == null)
                 Intersect(ClientHostCollection);
-            
+
             void Intersect(ISet<T> collection)
-            {                
+            {
                 _cache.AddRange(collection);
 
                 int count = _cache.Count;

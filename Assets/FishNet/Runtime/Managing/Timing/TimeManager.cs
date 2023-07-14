@@ -7,6 +7,7 @@ using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility;
 using FishNet.Utility.Extension;
+using GameKit.Utilities;
 using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -1164,7 +1165,7 @@ namespace FishNet.Managing.Timing
             _adjustedTickDelta += (TickDelta * (CLIENT_SLOWDOWN_VALUE * _timingTooFastCount));
             //Lerp between new and old adjusted value to blend them so the change isn't sudden.
             //Clamp adjusted tick delta so it cannot be unreasonably fast or slow.
-            _adjustedTickDelta = MathFN.ClampDouble(_adjustedTickDelta, _clientTimingRange[0], _clientTimingRange[1]);
+            _adjustedTickDelta = Maths.ClampDouble(_adjustedTickDelta, _clientTimingRange[0], _clientTimingRange[1]);
 
             const float tooFastModifier = 0.5f;
             //Increase too fast count if needed.

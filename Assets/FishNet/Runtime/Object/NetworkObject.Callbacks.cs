@@ -30,17 +30,17 @@ namespace FishNet.Object
             if (asServer)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnStartServer();
+                    NetworkBehaviours[i].OnStartServer_Internal();
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnOwnershipServer(FishNet.Managing.NetworkManager.EmptyConnection);
+                    NetworkBehaviours[i].OnOwnershipServer_Internal(FishNet.Managing.NetworkManager.EmptyConnection);
             }
             //As client.
             else
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnStartClient();
+                    NetworkBehaviours[i].OnStartClient_Internal();
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnOwnershipClient(FishNet.Managing.NetworkManager.EmptyConnection);
+                    NetworkBehaviours[i].OnOwnershipClient_Internal(FishNet.Managing.NetworkManager.EmptyConnection);
             }
 
             if (invokeSyncTypeCallbacks)
@@ -102,12 +102,12 @@ namespace FishNet.Object
             if (asServer)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnStopServer();
+                    NetworkBehaviours[i].OnStopServer_Internal();
             }
             else
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnStopClient();
+                    NetworkBehaviours[i].OnStopClient_Internal();
             }
 
             /* Invoke OnStopNetwork if server is calling
@@ -133,7 +133,7 @@ namespace FishNet.Object
             if (asServer)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
-                    NetworkBehaviours[i].OnOwnershipServer(prevOwner);
+                    NetworkBehaviours[i].OnOwnershipServer_Internal(prevOwner);
             }
             else
             {
@@ -150,7 +150,7 @@ namespace FishNet.Object
                 if (!blockInvoke)
                 {
                     for (int i = 0; i < NetworkBehaviours.Length; i++)
-                        NetworkBehaviours[i].OnOwnershipClient(prevOwner);
+                        NetworkBehaviours[i].OnOwnershipClient_Internal(prevOwner);
                 }
             }
         }

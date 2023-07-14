@@ -3,7 +3,7 @@
     "references": [
         "FishNet.Runtime",
         "FishNet.Codegen.Cecil",
-        "FishNet.Generated"
+        "GameKit.Utilities"
     ],
     "includePlatforms": [
         "Editor"

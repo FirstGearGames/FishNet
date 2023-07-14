@@ -1,9 +1,40 @@
 This package contains third-party software components governed by the license(s) indicated below:
 
+Component Name: GameKit
+License Type: BSD 2-Clause
+Copyright (c) Benjamin Berwick
+
+Paths:	FishNet\GameKit
+
+This software was designed for Fish-Networking on Unity https://github.com/FirstGearGames/FishNet
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
 Component Name: LiteNetLib
 License Type: MIT
 Copyright (c) 2020 Ruslan Pyrch
-Copyright (c) 2021, Benjamin Berwick of FirstGearGames LLC, registered 2018, North Carolina.
+Copyright (c) 2021, Benjamin Berwick
 
 Paths:	FishNet\Runtime\Transporting\Transports\Tugboat\LiteNetLib
 
@@ -31,7 +62,7 @@ Component Name: CodeGen Helpers(extensions).
 License Type: MIT
 Copyright (c) 2015, Unity Technologies
 Copyright (c) 2019, vis2k, Paul and Contributors
-Copyright (c) 2021, Benjamin Berwick of FirstGearGames LLC, registered 2018, North Carolina.
+Copyright (c) 2021, Benjamin Berwick
 
 Paths:	FishNet/CodeGenerating/Helpers/
 

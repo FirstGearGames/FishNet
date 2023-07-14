@@ -45,6 +45,14 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         public NetworkBehaviour NetworkBehaviour = null;
         /// <summary>
+        /// True if the server side has initialized this SyncType.
+        /// </summary>
+        public bool OnStartServerCalled { get; private set; }
+        /// <summary>
+        /// True if the client side has initialized this SyncType.
+        /// </summary>
+        public bool OnStartClientCalled { get; private set; }
+        /// <summary>
         /// Next time this SyncType may send data.
         /// This is also the next time a client may send to the server when using client-authoritative SyncTypes.
         /// </summary>
@@ -123,12 +131,24 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Called after OnStartXXXX has occurred for the NetworkBehaviour.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        public virtual void OnStartCallback(bool asServer) { }
+        public virtual void OnStartCallback(bool asServer)
+        {
+            if (asServer)
+                OnStartServerCalled = true;
+            else
+                OnStartClientCalled = true;
+        }
         /// <summary>
         /// Called before OnStopXXXX has occurred for the NetworkBehaviour.
         /// </summary>
         /// <param name="asServer">True if OnStopServer was called, false if OnStopClient.</param>
-        public virtual void OnStopCallback(bool asServer) { }
+        public virtual void OnStopCallback(bool asServer)
+        {
+            if (asServer)
+                OnStartServerCalled = false;
+            else
+                OnStartClientCalled = false;
+        }
 
         protected bool CanNetworkSetValues(bool warn = true)
         {
@@ -260,7 +280,12 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
-        public virtual void Reset()
+        [Obsolete("Use ResetState().")]
+        public virtual void Reset() { }
+        /// <summary>
+        /// Resets initialized values.
+        /// </summary>
+        public virtual void ResetState()
         {
             NextSyncTick = 0;
             ResetDirty();

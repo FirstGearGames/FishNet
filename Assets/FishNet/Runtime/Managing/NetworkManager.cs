@@ -22,6 +22,7 @@ using FishNet.Utility.Performance;
 using FishNet.Component.ColliderRollback;
 using FishNet.Managing.Predicting;
 using System.Runtime.CompilerServices;
+using GameKit.Utilities;
 #if UNITY_EDITOR
 using FishNet.Editing.PrefabCollectionGenerator;
 #endif
@@ -233,7 +234,7 @@ namespace FishNet.Managing
                 return;
 
             if (StartingRpcLinkIndex == 0)
-                StartingRpcLinkIndex = (ushort)(EnumFN.GetHighestValue<PacketId>() + 1);
+                StartingRpcLinkIndex = (ushort)(Enums.GetHighestValue<PacketId>() + 1);
 
             bool isDefaultPrefabs = (SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects);
 #if UNITY_EDITOR

@@ -8,6 +8,7 @@ using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
+using GameKit.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

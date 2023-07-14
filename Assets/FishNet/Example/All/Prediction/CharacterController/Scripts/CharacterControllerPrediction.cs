@@ -61,7 +61,6 @@ namespace FishNet.Example.Prediction.CharacterControllers
 
         public override void OnStartClient()
         {
-            base.OnStartClient();            
             _characterController.enabled = (base.IsServer || base.IsOwner);
         }
 

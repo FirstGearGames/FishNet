@@ -20,7 +20,7 @@ namespace FishNet.Demo.HashGrid
 
         public override void OnStartServer()
         {
-            base.OnStartServer();
+            
 
             for (int x = (int)(_range * -1); x < _range; x+= _spacing)
             {

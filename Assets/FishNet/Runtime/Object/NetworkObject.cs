@@ -14,6 +14,7 @@ using FishNet.Serializing.Helping;
 using FishNet.Component.Transforming;
 using FishNet.Utility.Extension;
 using FishNet.Object.Prediction;
+using GameKit.Utilities;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -540,7 +541,7 @@ namespace FishNet.Object
              * NetworkBehaviour so it must be preinitialized
              * after NetworkBehaviours are. */
             if (asServer)
-            {                
+            {
                 if (networkManager.TryGetInstance<HashGrid>(out _hashGrid))
                 {
                     _hashGridPosition = _hashGrid.GetHashGridPosition(this);
@@ -799,6 +800,9 @@ namespace FishNet.Object
             }
             else
             {
+                Dictionary<NetworkObject, NetworkConnection.LevelOfDetailData> currentLods = ClientManager.Connection.LevelOfDetails;
+                if (currentLods.TryGetValue(this, out NetworkConnection.LevelOfDetailData lodData))
+                    ObjectCaches<NetworkConnection.LevelOfDetailData>.Store(lodData);
                 ClientManager.Connection.LevelOfDetails.Remove(this);
                 //Client only.
                 if (!NetworkManager.IsServer)
@@ -815,12 +819,18 @@ namespace FishNet.Object
         /// <summary>
         /// Resets states for object to be pooled.
         /// </summary>
-        /// <param name="asServer">True if performing as server.</param>
-        public void ResetForObjectPool()
+        [Obsolete("This is no longer used. Remove any calls to this method.")] //Remove on 2024/01/01.
+        public void ResetForObjectPool() { }
+
+        /// <summary>
+        /// Resets the state of this NetworkObject.
+        /// This is used internally and typically with custom object pooling.
+        /// </summary>
+        public void ResetState()
         {
             int count = NetworkBehaviours.Length;
             for (int i = 0; i < count; i++)
-                NetworkBehaviours[i].ResetForObjectPool();
+                NetworkBehaviours[i].ResetState();
 
             State = NetworkObjectState.Unset;
             SetOwner(NetworkManager.EmptyConnection);

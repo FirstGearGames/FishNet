@@ -8,6 +8,7 @@ using FishNet.Managing.Statistic;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using FishNet.Utility;
+using GameKit.Utilities;
 using System;
 using System.Linq;
 using UnityEngine;

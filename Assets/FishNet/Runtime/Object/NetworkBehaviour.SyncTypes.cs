@@ -8,6 +8,7 @@ using FishNet.Serializing;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
+using GameKit.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -357,7 +358,6 @@ namespace FishNet.Object
                             {
                                 bool excludeOwner = (_syncTypeWriters[i].ReadPermission == ReadPermission.ExcludeOwner);
                                 SetNetworkConnectionCache(false, excludeOwner);
-                                NetworkConnection excludedConnection = (excludeOwner) ? _networkObjectCache.Owner : null;
                                 _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, headerWriter.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache);
 
                             }
@@ -374,33 +374,19 @@ namespace FishNet.Object
         }
 
 
-        /// <summary>
-        /// Resets all SyncTypes for this NetworkBehaviour for server and client side.
-        /// </summary>
-        internal void ResetSyncTypes()
-        {
-            foreach (SyncBase item in _syncVars.Values)
-                item.Reset();
-            foreach (SyncBase item in _syncObjects.Values)
-                item.Reset();
-
-            _syncObjectDirty = false;
-            _syncVarDirty = false;
-        }
-
 
         /// <summary>
         /// Resets all SyncTypes for this NetworkBehaviour.
         /// </summary>
-        internal void ResetSyncTypes(bool asServer)
+        internal void ResetSyncTypes()
         {
-            if (asServer || (!asServer && !IsServer))
-            {
-                foreach (SyncBase item in _syncVars.Values)
-                    item.Reset();
-                foreach (SyncBase item in _syncObjects.Values)
-                    item.Reset();
-            }
+            foreach (SyncBase item in _syncVars.Values)
+                item.ResetState();
+            foreach (SyncBase item in _syncObjects.Values)
+                item.ResetState();
+
+            _syncObjectDirty = false;
+            _syncVarDirty = false;
         }
 
         /// <summary>

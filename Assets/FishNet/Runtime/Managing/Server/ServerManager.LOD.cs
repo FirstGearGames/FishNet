@@ -2,6 +2,7 @@
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing;
+using GameKit.Utilities;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -64,8 +65,8 @@ namespace FishNet.Managing.Server
 
             //Get server objects to save calls.
             Dictionary<int, NetworkObject> serverObjects = Objects.Spawned;
-            //Get level of details for this connection and reset them.
-            Dictionary<NetworkObject, byte> levelOfDetails = conn.LevelOfDetails;
+            //Get level of details for this connection and reset them. 
+            Dictionary<NetworkObject, NetworkConnection.LevelOfDetailData> currentLods = conn.LevelOfDetails;
 
             int written = reader.ReadInt32();
 
@@ -149,15 +150,21 @@ namespace FishNet.Managing.Server
                     //Found in spawned, update lod.
                     if (serverObjects.TryGetValue(objectId, out NetworkObject nob))
                     {
+                        NetworkConnection.LevelOfDetailData cachedLod;
                         //Value is unchanged.
-                        if (levelOfDetails.TryGetValue(nob, out byte oldLod))
+                        if (currentLods.TryGetValue(nob, out cachedLod))
                         {
-                            bool oldMatches = (oldLod == lod);
+                            bool oldMatches = (cachedLod.CurrentLevelOfDetail == lod);
                             if (oldMatches && AddInfraction())
                             {
                                 conn.Kick(reader, KickReason.UnusualActivity, LoggingType.Common, $"Connection [{conn.ClientId}] has excessively sent unchanged LOD information.");
                                 return;
                             }
+                        }
+                        else
+                        {
+                            cachedLod = ObjectCaches<NetworkConnection.LevelOfDetailData>.Retrieve();
+                            currentLods[nob] = cachedLod;
                         }
                         //If to sample.
                         if (samplesRemaining > 0 && UnityEngine.Random.Range(0f, 1f) <= sampleChance)
@@ -184,7 +191,8 @@ namespace FishNet.Managing.Server
                             }
                         }
 
-                        levelOfDetails[nob] = lod;
+                        cachedLod.PreviousLevelOfDetail = cachedLod.CurrentLevelOfDetail;
+                        cachedLod.CurrentLevelOfDetail = lod;
                     }
                     //Not found in spawn; validate that client isn't trying to exploit.
                     else

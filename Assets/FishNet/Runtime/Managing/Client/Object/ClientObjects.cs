@@ -1,4 +1,7 @@
-﻿using FishNet.Connection;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Object;
@@ -10,6 +13,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
+using GameKit.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -54,7 +58,7 @@ namespace FishNet.Managing.Client
              *
              * Calling StopConnection on the client will set it's local state
              * to Stopping which will result in a deinit. */
-            
+
             /* Only perform this step if the transport being stopped
              * is the one which client is connected to. */
             if (NetworkManager.IsClient && args.TransportIndex == base.NetworkManager.ClientManager.GetTransportIndex())
@@ -88,7 +92,7 @@ namespace FishNet.Managing.Client
                  * Spawned would have already be cleared if DespawnSpawned
                  * was called but it won't hurt anything clearing an empty collection. */
                 base.Spawned.Clear();
-                base.SceneObjects.Clear();
+                base.SceneObjects_Internal.Clear();
                 base.LocalClientSpawned.Clear();
             }
         }
@@ -164,6 +168,9 @@ namespace FishNet.Managing.Client
             if (sceneObject)
             {
                 headerWriter.WriteUInt64(nob.SceneId, AutoPackType.Unpacked);
+#if DEVELOPMENT
+                base.CheckWriteSceneObjectDetails(nob, headerWriter);
+#endif
             }
             /* Writing a spawned object. */
             else
@@ -234,7 +241,7 @@ namespace FishNet.Managing.Client
         private void RegisterAndDespawnSceneObjects(Scene s)
         {
             List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-            SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
+            Scenes.GetSceneNetworkObjects(s, false, ref nobs);
 
             int nobsCount = nobs.Count;
             for (int i = 0; i < nobsCount; i++)
@@ -377,7 +384,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         /// <param name="reader"></param>
         internal void CacheSpawn(PooledReader reader)
-        {            
+        {
             sbyte initializeOrder;
             ushort collectionId;
             int objectId = reader.ReadNetworkObjectForSpawn(out initializeOrder, out collectionId, out _);
@@ -399,12 +406,20 @@ namespace FishNet.Managing.Client
             byte? parentComponentIndex = null;
             int? prefabId = null;
             ulong sceneId = 0;
+            string sceneName = string.Empty;
+            string objectName = string.Empty;
 
             if (sceneObject)
+            {
                 ReadSceneObject(reader, out sceneId);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                base.CheckReadSceneObjectDetails(reader, ref sceneName, ref objectName);
+#endif
+            }
             else
+            {
                 ReadSpawnedObject(reader, out parentObjectId, out parentComponentIndex, out prefabId);
-
+            }
             ArraySegment<byte> rpcLinks = reader.ReadArraySegmentAndSize();
             ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
 
@@ -432,7 +447,7 @@ namespace FishNet.Managing.Client
                 return;
             }
 
-            _objectCache.AddSpawn(base.NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, componentIndex, rootObjectId, parentObjectId, parentComponentIndex, prefabId, localPosition, localRotation, localScale, sceneId, rpcLinks, syncValues);
+            _objectCache.AddSpawn(base.NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, componentIndex, rootObjectId, parentObjectId, parentComponentIndex, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, rpcLinks, syncValues);
         }
         /// <summary>
         /// Caches a received despawn to be processed after all spawns and despawns are received for the tick.

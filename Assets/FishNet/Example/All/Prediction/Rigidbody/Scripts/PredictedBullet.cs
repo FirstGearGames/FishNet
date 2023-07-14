@@ -32,13 +32,12 @@ public class PredictedBullet : NetworkBehaviour
     //Simple delay destroy so object does not exist forever.
     public override void OnStartServer()
     {
-        base.OnStartServer();
+        
         StartCoroutine(__DelayDestroy(3f));
     }
 
     public override void OnStartNetwork()
-    {
-        base.OnStartNetwork();
+    {        
         uint timeToTicks = base.TimeManager.TimeToTicks(0.65f);
         /* If server or predicted spawner then add the kinematic
          * tick onto local. Predicted spawner and server should behave
@@ -65,8 +64,7 @@ public class PredictedBullet : NetworkBehaviour
     }
 
     public override void OnStopNetwork()
-    {
-        base.OnStopNetwork();
+    {        
         base.TimeManager.OnTick -= TimeManager_OnTick;
     }
     private void TimeManager_OnTick()

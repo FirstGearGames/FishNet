@@ -12,6 +12,7 @@ using FishNet.Transporting;
 using FishNet.Utility.Constant;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
+using GameKit.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

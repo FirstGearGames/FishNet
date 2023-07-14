@@ -137,7 +137,7 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 5
+  _tickRate: 30
   _pingInterval: 15
   _physicsMode: 0
 --- !u!1 &442045874
@@ -191,9 +191,26 @@ MonoBehaviour:
   _scenePathHash: 2359702710
   <SceneId>k__BackingField: 10134845970961547977
   <AssetPathHash>k__BackingField: 0
-  _sceneNetworkObjects:
-  - {fileID: 442045876}
   <IsNested>k__BackingField: 0
+  _enablePrediction: 0
+  _graphicalObject: {fileID: 0}
+  _enableStateForwarding: 1
+  _ownerInterpolation: 1
+  _enableTeleport: 0
+  _ownerTeleportThreshold: 1
+  _spectatorAdaptiveInterpolation: 1
+  _spectatorInterpolation: 1
+  _adaptiveSmoothingType: 0
+  _customSmoothingData:
+    InterpolationPercent: 1
+    CollisionInterpolationPercent: 0.1
+    InterpolationDecreaseStep: 1
+    InterpolationIncreaseStep: 3
+  _preconfiguredSmoothingDataPreview:
+    InterpolationPercent: 0.5
+    CollisionInterpolationPercent: 0.05
+    InterpolationDecreaseStep: 1
+    InterpolationIncreaseStep: 2
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   _networkBehaviours:
@@ -1032,7 +1049,6 @@ GameObject:
   - component: {fileID: 7443408886575219565}
   - component: {fileID: 7443408886575219564}
   - component: {fileID: 1776591436}
-  - component: {fileID: 7443408886575219566}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1072,31 +1088,6 @@ MonoBehaviour:
   _placement: 2
   _showOutgoing: 1
   _showIncoming: 1
---- !u!114 &7443408886575219566
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886575219563}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 68828c85278210948b9d50a8db3aab74, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _authenticator: {fileID: 0}
-  _remoteClientTimeout: 0
-  _remoteClientTimeoutDuration: 60
-  _syncTypeRate: 0.1
-  SpawnPacking:
-    Position: 0
-    Rotation: 2
-    Scale: 2
-  _changeFrameRate: 1
-  _frameRate: 500
-  _shareIds: 1
-  _startOnHeadless: 1
-  _limitClientMTU: 1
 --- !u!224 &9139860295505404435
 RectTransform:
   m_ObjectHideFlags: 0

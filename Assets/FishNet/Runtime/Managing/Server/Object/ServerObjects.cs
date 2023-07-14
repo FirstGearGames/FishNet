@@ -1,4 +1,7 @@
-﻿using FishNet.Connection;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Connection;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Object;
 using FishNet.Managing.Timing;
@@ -8,6 +11,8 @@ using FishNet.Transporting;
 using FishNet.Utility;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
+using GameKit.Utilities;
+using GameKit.Utilities.Types;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -170,7 +175,7 @@ namespace FishNet.Managing.Server
                 if (!base.NetworkManager.ServerManager.AnyServerStarted())
                 {
                     base.DespawnWithoutSynchronization(true);
-                    base.SceneObjects.Clear();
+                    base.SceneObjects_Internal.Clear();
                     _objectIdCache.Clear();
                     base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients);
                 }
@@ -348,7 +353,7 @@ namespace FishNet.Managing.Server
             for (int i = 0; i < SceneManager.sceneCount; i++)
                 SetupSceneObjects(SceneManager.GetSceneAt(i));
 
-            Scene ddolScene = DDOLFinder.GetDDOL().gameObject.scene;
+            Scene ddolScene = DDOL.GetDDOL().gameObject.scene;
             if (ddolScene.isLoaded)
                 SetupSceneObjects(ddolScene);
         }
@@ -362,14 +367,23 @@ namespace FishNet.Managing.Server
             if (!s.IsValid())
                 return;
 
-            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-            SceneFN.GetSceneNetworkObjects(s, false, ref nobs);
+            List<NetworkObject> sceneNobs = CollectionCaches<NetworkObject>.RetrieveList();
+            Scenes.GetSceneNetworkObjects(s, false, ref sceneNobs);
+
+            //Sort the nobs based on initialization order.
+            bool initializationOrderChanged = false;
+            List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
+            foreach (NetworkObject item in sceneNobs)
+                OrderRootByInitializationOrder(item, cache, ref initializationOrderChanged);
+            OrderNestedByInitializationOrder(cache);
+            //Store sceneNobs.
+            CollectionCaches<NetworkObject>.Store(sceneNobs);
 
             bool isHost = base.NetworkManager.IsHost;
-            int nobsCount = nobs.Count;
+            int nobsCount = cache.Count;
             for (int i = 0; i < nobsCount; i++)
             {
-                NetworkObject nob = nobs[i];
+                NetworkObject nob = cache[i];
                 //Only setup if a scene object and not initialzied.
                 if (nob.IsNetworked && nob.IsSceneObject && nob.IsDeinitializing)
                 {
@@ -391,7 +405,7 @@ namespace FishNet.Managing.Server
                 }
             }
 
-            CollectionCaches<NetworkObject>.Store(nobs);
+            CollectionCaches<NetworkObject>.Store(cache);
         }
 
         /// <summary>
@@ -554,7 +568,14 @@ namespace FishNet.Managing.Server
             if (SpawnTypeEnum.Contains(st, SpawnType.Scene))
             {
                 ulong sceneId = reader.ReadUInt64(AutoPackType.Unpacked);
+#if DEVELOPMENT
+                string sceneName = string.Empty;
+                string objectName = string.Empty;
+                CheckReadSceneObjectDetails(reader, ref sceneName, ref objectName);
+                nob = base.GetSceneNetworkObject(sceneId, sceneName, objectName);
+#else
                 nob = base.GetSceneNetworkObject(sceneId);
+#endif
                 if (!base.CanPredictedSpawn(nob, conn, owner, true))
                     return;
             }

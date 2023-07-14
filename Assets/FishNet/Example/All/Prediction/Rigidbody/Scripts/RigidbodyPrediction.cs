@@ -117,12 +117,10 @@ namespace FishNet.Example.Prediction.Rigidbodies
 
         public override void OnStartClient()
         {
-            base.OnStartClient();
             base.PredictionManager.OnPreReplicateReplay += PredictionManager_OnPreReplicateReplay;
         }
         public override void OnStopClient()
-        {
-            base.OnStopClient();
+        {            
             base.PredictionManager.OnPreReplicateReplay -= PredictionManager_OnPreReplicateReplay;
         }
 

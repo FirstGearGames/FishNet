@@ -17,7 +17,6 @@ namespace FishNet.Example.Scened
 
         public override void OnStartClient()
         {
-            base.OnStartClient();
             if (base.IsOwner)
                 _camera.SetActive(true);
         }

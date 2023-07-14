@@ -1,7 +1,9 @@
-﻿using FishNet.Managing.Timing;
+﻿using FishNet.Connection;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using GameKit.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -93,7 +95,7 @@ namespace FishNet.Managing.Client
             }
 
             //Cache a few more things.
-            Dictionary<NetworkObject, byte> currentLods = Connection.LevelOfDetails;
+            Dictionary<NetworkObject, NetworkConnection.LevelOfDetailData> currentLods = Connection.LevelOfDetails;
             List<float> lodDistances = NetworkManager.ObserverManager.GetLevelOfDetailDistances();
 
             //Index to use next is too high so reset it.
@@ -147,15 +149,22 @@ namespace FishNet.Managing.Client
                          * level of details collection. 
                          * Even if a forced update only delta
                          * needs to send. */
-                        if (currentLods.TryGetValue(nob, out byte oldLod))
-                            changed = (oldLod != lod);
+                        NetworkConnection.LevelOfDetailData cachedLod;
+                        if (currentLods.TryGetValue(nob, out cachedLod))
+                        {
+                            changed = (cachedLod.CurrentLevelOfDetail != lod);
+                        }
                         else
+                        {
+                            cachedLod = ObjectCaches<NetworkConnection.LevelOfDetailData>.Retrieve();
+                            currentLods[nob] = cachedLod;
                             changed = true;
+                        }
 
                         //If changed then set new value and write.
                         if (changed)
                         {
-                            currentLods[nob] = lod;
+                            cachedLod.Update(lod);
                             tmpWriter.WriteNetworkObjectId(nob.ObjectId);
                             tmpWriter.WriteByte(lod);
                             written++;
