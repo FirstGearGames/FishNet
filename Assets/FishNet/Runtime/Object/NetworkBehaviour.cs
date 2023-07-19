@@ -94,7 +94,7 @@ namespace FishNet.Object
                 long estimatedTickDelay = (TimeManager.Tick - TimeManager.LastPacketTick);
                 if (estimatedTickDelay < 0)
                     estimatedTickDelay = 0;
-                //todo also update this with the value from packet.
+
                 _networkObjectCache.ReplicateTick.Update(nob.TimeManager, nob.TimeManager.LastPacketTick - (uint)estimatedTickDelay);
             }
 

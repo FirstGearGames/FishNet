@@ -1,8 +1,11 @@
+using TriInspector;
 using UnityEngine;
 
 namespace GameKit.Utilities.Types
 {
 
+    [DeclareFoldoutGroup("Components")]
+    [DeclareFoldoutGroup("Effects")]
     public class CanvasGroupFader : MonoBehaviour
     {
         #region Types.
@@ -37,19 +40,24 @@ namespace GameKit.Utilities.Types
         /// CanvasGroup to fade in and out.
         /// </summary>
         [Tooltip("CanvasGroup to fade in and out.")]
-        [SerializeField]
+        [SerializeField, Group("Components")]
         protected CanvasGroup CanvasGroup;
-        #endregion
-
-        #region Protected.
+        /// <summary>
+        /// True to update the CanvasGroup blocking settings when showing and hiding.
+        /// </summary>
+        [Tooltip("True to update the CanvasGroup blocking settings when showing and hiding.")]
+        [SerializeField, Group("Effects")]
+        protected bool UpdateCanvasBlocking = true;
         /// <summary>
         /// How long it should take to fade in the CanvasGroup.
         /// </summary>
-        protected virtual float FadeInDuration { get; set; } = 0.1f;
+        [SerializeField, Group("Effects")]
+        protected float FadeInDuration = 0.1f;
         /// <summary>
         /// How long it should take to fade out the CanvasGroup.
         /// </summary>
-        protected virtual float FadeOutDuration { get; set; } = 0.3f;
+        [SerializeField, Group("Effects")]
+        protected float FadeOutDuration = 0.3f;
         #endregion
 
         #region Private.
@@ -84,6 +92,7 @@ namespace GameKit.Utilities.Types
         {
             SetFadeGoal(true);
             CompleteFade(true);
+            OnShow();
         }
 
         /// <summary>
@@ -93,6 +102,7 @@ namespace GameKit.Utilities.Types
         {
             SetFadeGoal(false);
             CompleteFade(false);
+            OnHide();
         }
 
         /// <summary>
@@ -101,10 +111,20 @@ namespace GameKit.Utilities.Types
         public virtual void Show()
         {
             if (FadeInDuration <= 0f)
+            {
                 ShowImmediately();
+            }
             else
+            {
                 SetFadeGoal(true);
+                OnShow();
+            }
         }
+
+        /// <summary>
+        /// Called after Show or ShowImmediate.
+        /// </summary>
+        protected virtual void OnShow() { }
 
         /// <summary>
         /// Hides CanvasGroup with a fade.
@@ -120,8 +140,14 @@ namespace GameKit.Utilities.Types
                 //Immediately make unclickable so players cannot hit UI objects as it's fading out.
                 SetCanvasGroupBlockingType(CanvasGroupBlockingType.Block);
                 SetFadeGoal(false);
+                OnHide();
             }
         }
+
+        /// <summary>
+        /// Called after Hide or HideImmediate.
+        /// </summary>
+        protected virtual void OnHide() { }
 
         /// <summary>
         /// Sets showing and begins fading if required.
@@ -141,7 +167,7 @@ namespace GameKit.Utilities.Types
             //Should not be possible.
             if (FadeGoal == FadeGoalType.Unset)
             {
-                Debug.LogError($"Fade goal is unset. This should not be possible.");
+                Debug.LogError($"{gameObject.name} has an unset FadeGoal. This should not be possible.");
                 return;
             }
 
@@ -202,7 +228,8 @@ namespace GameKit.Utilities.Types
         /// </summary>
         protected virtual void SetCanvasGroupBlockingType(CanvasGroupBlockingType blockingType)
         {
-            CanvasGroup.SetBlockingType(blockingType);
+            if (UpdateCanvasBlocking)
+                CanvasGroup.SetBlockingType(blockingType);
         }
 
     }

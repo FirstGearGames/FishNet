@@ -25,11 +25,6 @@ namespace FishNet.Managing.Object
         /// NetworkObjects which are currently active.
         /// </summary>
         public Dictionary<int, NetworkObject> Spawned = new Dictionary<int, NetworkObject>();
-        /// <summary>
-        /// NetworkObjects which are currently active on the local client.
-        /// //TODO Move this to ClientObjects.
-        /// </summary>
-        internal List<NetworkObject> LocalClientSpawned = new List<NetworkObject>();
         #endregion
 
         #region Protected.
@@ -100,11 +95,9 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Removes a NetworkedObject from spawned.
         /// </summary>
-        private void RemoveFromSpawned(NetworkObject nob, bool unexpectedlyDestroyed, bool asServer)
+        protected virtual void RemoveFromSpawned(NetworkObject nob, bool unexpectedlyDestroyed, bool asServer)
         {
             Spawned.Remove(nob.ObjectId);
-            if (!asServer)
-                LocalClientSpawned.Remove(nob);
             //Do the same with SceneObjects.
             if (unexpectedlyDestroyed && nob.IsSceneObject)
                 RemoveFromSceneObjects(nob);
@@ -324,23 +317,14 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Adds a NetworkObject to Spawned.
         /// </summary>
-        /// <param name="nob"></param>
-        internal void AddToSpawned(NetworkObject nob, bool asServer)
+        internal virtual void AddToSpawned(NetworkObject nob, bool asServer)
         {
             Spawned[nob.ObjectId] = nob;
-            if (!asServer)
-            {
-                LocalClientSpawned.Add(nob);
-                //If being added as client and is also server.
-                if (NetworkManager.IsServer)
-                    nob.SetRenderersVisible(true);
-            }
         }
 
         /// <summary>
         /// Adds a NetworkObject to SceneObjects.
         /// </summary>
-        /// <param name="nob"></param>
         protected internal void AddToSceneObjects(NetworkObject nob)
         {
             SceneObjects_Internal[nob.SceneId] = nob;

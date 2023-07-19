@@ -45,7 +45,7 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Writes a spawn to clients.
         /// </summary>
-        internal void WriteSpawn_Server(NetworkObject nob, NetworkConnection connection, Writer everyoneWriter, Writer ownerWriter)
+        internal void WriteSpawn_Server(NetworkObject nob, NetworkConnection connection, Writer writer)
         {
             /* Using a number of writers to prevent rebuilding the
              * packets excessively for values that are owner only
@@ -178,9 +178,7 @@ namespace FishNet.Managing.Object
             }
 
             //Write headers first.
-            everyoneWriter.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
-            if (nob.Owner.IsValid)
-                ownerWriter.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
+            writer.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
 
             /* Used to write latest data which must be sent to
              * clients, such as SyncTypes and RpcLinks. */
@@ -188,27 +186,13 @@ namespace FishNet.Managing.Object
             //Send RpcLinks first.
             foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
                 nb.WriteRpcLinks(tempWriter);
-            //Add to everyone/owner.
-            everyoneWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
-            if (nob.Owner.IsValid)
-                ownerWriter.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
+            //Send links to everyone.
+            writer.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
 
-            //Add most recent sync type values.
-            /* SyncTypes have to be populated for owner and everyone.
-            * The data may be unique for owner if synctypes are set
-            * to only go to owner. */
-            WriteSyncTypes(everyoneWriter, tempWriter, SyncTypeWriteType.Observers);
-            //If owner is valid then populate owner writer as well.
-            if (nob.Owner.IsValid)
-                WriteSyncTypes(ownerWriter, tempWriter, SyncTypeWriteType.Owner);
-
-            void WriteSyncTypes(Writer finalWriter, PooledWriter tWriter, SyncTypeWriteType writeType)
-            {
-                tWriter.Reset();
-                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                    nb.WriteSyncTypesForSpawn(tWriter, writeType);
-                finalWriter.WriteBytesAndSize(tWriter.GetBuffer(), 0, tWriter.Length);
-            }
+            tempWriter.Reset();
+            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                nb.WriteSyncTypesForSpawn(tempWriter, connection);
+            writer.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
 
             //Dispose of writers created in this method.
             headerWriter.Store();

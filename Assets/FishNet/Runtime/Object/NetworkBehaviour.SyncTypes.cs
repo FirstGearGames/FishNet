@@ -9,6 +9,7 @@ using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using GameKit.Utilities;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -392,10 +393,9 @@ namespace FishNet.Object
         /// <summary>
         /// Writers syncVars for a spawn message.
         /// </summary>
-        internal void WriteSyncTypesForSpawn(PooledWriter writer, SyncTypeWriteType writeType)
+        /// <param name="conn">Connection SyncTypes are being written for.</param>
+        internal void WriteSyncTypesForSpawn(PooledWriter writer, NetworkConnection conn)
         {
-            //Write for owner if writing all or owner, but not observers.
-            bool ownerWrite = (writeType != SyncTypeWriteType.Observers);
             WriteSyncType(_syncVars);
             WriteSyncType(_syncObjects);
 
@@ -407,14 +407,26 @@ namespace FishNet.Object
                  * indexes. */
                 foreach (SyncBase sb in collection.Values)
                 {
-                    //If not for owner and syncvar is owner only.
-                    if (!ownerWrite && sb.Settings.ReadPermission == ReadPermission.OwnerOnly)
+                    /* If connection is null then write for all.
+                     * This can only occur when client is sending syncTypes
+                     * to the server. This will be removed when predicted
+                     * spawning payload is added in. */ //todo remove this after predicted spawning payload.
+                    if (conn != null)
                     {
-                        //If there is an owner then skip.
-                        if (_networkObjectCache.Owner.IsValid)
+                        //True if conn is the owner of this object.
+                        bool connIsOwner = (conn == _networkObjectCache.Owner);
+                        //Read permissions for the synctype.
+                        ReadPermission rp = sb.Settings.ReadPermission;
+                        /* SyncType only allows owner to receive values and
+                         * conn is not the owner. */
+                        if (rp == ReadPermission.OwnerOnly && !connIsOwner)
+                            continue;
+                        //Write to everyone but the owner.
+                        if (rp == ReadPermission.ExcludeOwner && connIsOwner)
                             continue;
                     }
 
+                    //Anything beyond this is fine to write for everyone.
                     sb.WriteFull(syncTypeWriter);
                 }
 
@@ -428,6 +440,7 @@ namespace FishNet.Object
         /// Manually marks a SyncType as dirty, be it SyncVar or SyncObject.
         /// </summary>
         /// <param name="syncType">SyncType variable to dirty.</param>
+        [Obsolete("This method does not function.")]
         protected void DirtySyncType(object syncType)
         {
             /* This doesn't actually do anything.

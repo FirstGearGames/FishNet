@@ -27,6 +27,13 @@ namespace FishNet.Managing.Client
     /// </summary>
     public partial class ClientObjects : ManagedObjects
     {
+        #region Internal.
+        /// <summary>
+        /// NetworkObjects which are currently active on the local client.
+        /// </summary>
+        internal List<NetworkObject> LocalClientSpawned = new List<NetworkObject>();
+        #endregion
+
         #region Private.
         /// <summary>
         /// NetworkObjects which are cached to be spawned or despawned.
@@ -93,7 +100,7 @@ namespace FishNet.Managing.Client
                  * was called but it won't hurt anything clearing an empty collection. */
                 base.Spawned.Clear();
                 base.SceneObjects_Internal.Clear();
-                base.LocalClientSpawned.Clear();
+                LocalClientSpawned.Clear();
             }
         }
 
@@ -116,6 +123,27 @@ namespace FishNet.Managing.Client
             RegisterAndDespawnSceneObjects(s);
         }
 
+        /// <summary>
+        /// Adds a NetworkObject to Spawned.
+        /// </summary>
+        internal override void AddToSpawned(NetworkObject nob, bool asServer)
+        {
+            LocalClientSpawned.Add(nob);
+            base.AddToSpawned(nob, asServer);
+            //If being added as client and is also server.
+            if (NetworkManager.IsServer)
+                nob.SetRenderersVisible(true);
+        }
+
+        /// <summary>
+        /// Removes a NetworkedObject from spawned.
+        /// </summary>
+        protected override void RemoveFromSpawned(NetworkObject nob, bool unexpectedlyDestroyed, bool asServer)
+        {
+            //No need to check if !asServer.
+            LocalClientSpawned.Remove(nob);
+            base.RemoveFromSpawned(nob, unexpectedlyDestroyed, asServer);
+        }
 
         /// <summary>
         /// Sends a predicted spawn to the server.
@@ -186,14 +214,9 @@ namespace FishNet.Managing.Client
             if (nob.AllowPredictedSyncTypes)
             {
                 PooledWriter tempWriter = WriterPool.Retrieve();
-                WriteSyncTypes(writer, tempWriter, SyncTypeWriteType.All);
-                void WriteSyncTypes(Writer finalWriter, PooledWriter tWriter, SyncTypeWriteType writeType)
-                {
-                    tWriter.Reset();
-                    foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                        nb.WriteSyncTypesForSpawn(tWriter, writeType);
-                    finalWriter.WriteBytesAndSize(tWriter.GetBuffer(), 0, tWriter.Length);
-                }
+                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                    nb.WriteSyncTypesForSpawn(tempWriter, null);
+                writer.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
                 tempWriter.Store();
             }
 

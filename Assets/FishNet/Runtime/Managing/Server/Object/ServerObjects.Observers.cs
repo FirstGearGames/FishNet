@@ -10,6 +10,7 @@ using FishNet.Utility;
 using FishNet.Utility.Performance;
 using GameKit.Utilities;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -34,11 +35,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Used to write spawns for everyone. This writer will exclude owner only information.
         /// </summary>
-        private PooledWriter _everyoneWriter = new PooledWriter();
-        /// <summary>
-        /// Used to write spawns for owner. This writer may contain owner only information.
-        /// </summary>
-        private PooledWriter _ownerWriter = new PooledWriter();
+        private PooledWriter _writer = new PooledWriter();
         #endregion
 
 
@@ -344,24 +341,43 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(IEnumerable<NetworkObject> nobs, IEnumerable<NetworkConnection> conns, bool timedOnly = false)
         {
-            foreach (NetworkObject nob in nobs)
+            foreach (NetworkConnection nc in conns)
             {
-                foreach (NetworkConnection nc in conns)
-                    RebuildObservers(nob, nc, timedOnly);
+                _writer.Reset();
+
+                foreach (NetworkObject nob in nobs)
+                    RebuildObservers(nob, nc, timedOnly, false);
+
+                //Send if change.
+                if (_writer.Length > 0)
+                {
+                    NetworkManager.TransportManager.SendToClient(
+                        (byte)Channel.Reliable, _writer.GetArraySegment(), nc);
+                }
             }
+        }
+
+        /// <summary>
+        /// Resets writers then rebuilds observers for a connection on the NetworkObject.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RebuildObservers(NetworkObject nob, NetworkConnection conn, bool timedOnly = false)
+        {
+            RebuildObservers(nob, conn, timedOnly);
         }
 
         /// <summary>
         /// Rebuilds observers for a connection on NetworkObject.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void RebuildObservers(NetworkObject nob, NetworkConnection conn, bool timedOnly = false)
+        internal void RebuildObservers(NetworkObject nob, NetworkConnection conn, bool timedOnly = false, bool sendChanges = true)
         {
             if (ApplicationState.IsQuitting())
                 return;
 
-            _everyoneWriter.Reset();
-            _ownerWriter.Reset();
+            //If sending within this method reset the writer to ensure it doesnt have old data.
+            if (sendChanges)
+                _writer.Reset();
 
             /* When not using a timed rebuild such as this connections must have
              * hashgrid data rebuilt immediately. */
@@ -372,36 +388,31 @@ namespace FishNet.Managing.Server
             ObserverStateChange osc = nob.RebuildObservers(conn, timedOnly);
             if (osc == ObserverStateChange.Added)
             {
-                base.WriteSpawn_Server(nob, conn, _everyoneWriter, _ownerWriter);
+                base.WriteSpawn_Server(nob, conn, _writer);
             }
             else if (osc == ObserverStateChange.Removed)
             {
                 if (conn.LevelOfDetails.TryGetValue(nob, out NetworkConnection.LevelOfDetailData lodData))
                     ObjectCaches<NetworkConnection.LevelOfDetailData>.Store(lodData);
                 conn.LevelOfDetails.Remove(nob);
-                WriteDespawn(nob, nob.GetDefaultDespawnType(), _everyoneWriter);
+                WriteDespawn(nob, nob.GetDefaultDespawnType(), _writer);
             }
             else
             {
                 return;
             }
 
-            /* Only use ownerWriter if an add, and if owner. Owner
-             * doesn't matter if not being added because no owner specific
-             * information would be included. */
-            PooledWriter writerToUse = (osc == ObserverStateChange.Added && nob.Owner == conn) ?
-                _ownerWriter : _everyoneWriter;
-
-            if (writerToUse.Length > 0)
+            //If to send changes.
+            if (sendChanges)
             {
                 NetworkManager.TransportManager.SendToClient(
                     (byte)Channel.Reliable,
-                    writerToUse.GetArraySegment(), conn);
-
-                //If a spawn is being sent.
-                if (osc == ObserverStateChange.Added)
-                    nob.InvokePostOnServerStart(conn);
+                    _writer.GetArraySegment(), conn);
             }
+
+            //If a spawn is being sent.
+            if (osc == ObserverStateChange.Added)
+                nob.InvokePostOnServerStart(conn);
 
             /* If there is change then also rebuild on any runtime children.
              * This is to ensure runtime children have visibility updated
@@ -409,7 +420,7 @@ namespace FishNet.Managing.Server
              *
              * If here there is change. */
             foreach (NetworkObject item in nob.RuntimeChildNetworkObjects)
-                RebuildObservers(item, conn, false);
+                RebuildObservers(item, conn, false, sendChanges);
         }
 
 

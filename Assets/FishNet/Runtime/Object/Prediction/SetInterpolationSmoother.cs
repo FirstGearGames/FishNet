@@ -46,7 +46,7 @@ namespace FishNet.Object.Prediction
         internal void SetGraphicalObject(Transform value)
         {
             _smoothingData.GraphicalObject = value;
-            _initializedOffsets = _smoothingData.NetworkObject.transform.GetTransformOffsets(_smoothingData.GraphicalObject);
+            _initializedOffsets = _smoothingData.GraphicalObject.transform.GetTransformOffsets(_smoothingData.NetworkObject.transform);
         }
         /// <summary>
         /// Sets the interpolation value to use when the owner of this object.

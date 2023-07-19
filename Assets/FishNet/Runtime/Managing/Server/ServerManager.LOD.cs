@@ -69,12 +69,6 @@ namespace FishNet.Managing.Server
             Dictionary<NetworkObject, NetworkConnection.LevelOfDetailData> currentLods = conn.LevelOfDetails;
 
             int written = reader.ReadInt32();
-
-            /* //TODO There is still an instance where client could simply say no LODs need
-             * updating and never update for their objects in the first place. This can be resolved
-             * by adding an observed object count to each connection and compare that to
-             * the size of the LOD collection. */
-
             //Only process if some are written.
             if (written > 0)
             {

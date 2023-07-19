@@ -10,15 +10,22 @@ namespace FishNet.Utility.Performance
     /// </summary>
     public class BasicQueue<T>
     {
-
+        /// <summary>
+        /// Maximum size of the collection.
+        /// </summary>
+        public int Capacity => Collection.Length;
         /// <summary>
         /// Number of elements in the queue.
         /// </summary>
-        public int Count => _length;
+        public int Count => _written;
         /// <summary>
         /// Collection containing data.
         /// </summary>
-        private T[] _array = new T[4];
+        private T[] Collection = new T[4];
+        /// <summary>
+        /// Current write index of the collection.
+        /// </summary>
+        public int WriteIndex { get; private set; }
         /// <summary>
         /// Buffer for resizing.
         /// </summary>
@@ -27,15 +34,11 @@ namespace FishNet.Utility.Performance
         /// Read position of the next Dequeue.
         /// </summary>
         private int _read;
-        /// <summary>
-        /// Write position of the next Enqueue.
-        /// </summary>
-        private int _write;
 
         /// <summary>
         /// Length of the queue.
         /// </summary>
-        private int _length;
+        private int _written;
 
         /// <summary>
         /// Enqueues an entry.
@@ -43,15 +46,15 @@ namespace FishNet.Utility.Performance
         /// <param name="data"></param>
         public void Enqueue(T data)
         {
-            if (_length == _array.Length)
+            if (_written == Collection.Length)
                 Resize();
 
-            if (_write >= _array.Length)
-                _write = 0;
-            _array[_write] = data;
+            if (WriteIndex >= Collection.Length)
+                WriteIndex = 0;
+            Collection[WriteIndex] = data;
 
-            _write++;
-            _length++;
+            WriteIndex++;
+            _written++;
         }
 
         /// <summary>
@@ -61,7 +64,7 @@ namespace FishNet.Utility.Performance
         /// <returns>True if an entry existed to dequeue.</returns>
         public bool TryDequeue(out T result)
         {
-            if (_length == 0)
+            if (_written == 0)
             {
                 result = default;
                 return false;
@@ -77,14 +80,14 @@ namespace FishNet.Utility.Performance
         /// <returns></returns>
         public T Dequeue()
         {
-            if (_length == 0)
+            if (_written == 0)
                 throw new Exception($"Queue of type {typeof(T).Name} is empty.");
 
-            T result = _array[_read];
+            T result = Collection[_read];
 
-            _length--;
+            _written--;
             _read++;
-            if (_read >= _array.Length)
+            if (_read >= Collection.Length)
                 _read = 0;
 
             return result;
@@ -97,7 +100,7 @@ namespace FishNet.Utility.Performance
         /// <returns>True if an entry existed to peek.</returns>
         public bool TryPeek(out T result)
         {
-            if (_length == 0)
+            if (_written == 0)
             {
                 result = default;
                 return false;
@@ -113,10 +116,10 @@ namespace FishNet.Utility.Performance
         /// <returns></returns>
         public T Peek()
         {
-            if (_length == 0)
+            if (_written == 0)
                 throw new Exception($"Queue of type {typeof(T).Name} is empty.");
 
-            return _array[_read];
+            return Collection[_read];
         }
 
         /// <summary>
@@ -126,10 +129,10 @@ namespace FishNet.Utility.Performance
         public void Clear()
         {
             _read = 0;
-            _write = 0;
-            _length = 0;
+            WriteIndex = 0;
+            _written = 0;
 
-            DefaultCollection(_array);
+            DefaultCollection(Collection);
             DefaultCollection(_resizeBuffer);
 
             void DefaultCollection(T[] array)
@@ -145,7 +148,7 @@ namespace FishNet.Utility.Performance
         /// </summary>
         private void Resize()
         {
-            int length = _length;
+            int length = _written;
             int doubleLength = (length * 2);
             int read = _read;
 
@@ -157,18 +160,42 @@ namespace FishNet.Utility.Performance
                 Array.Resize(ref resizeBuffer, doubleLength);
             //Copy from the read of queue first.
             int copyLength = (length - read);
-            Array.Copy(_array, read, resizeBuffer, 0, copyLength);
+            Array.Copy(Collection, read, resizeBuffer, 0, copyLength);
             /* If read index was higher than 0
              * then copy remaining data as well from 0. */
             if (read > 0)
-                Array.Copy(_array, 0, resizeBuffer, copyLength, read);
+                Array.Copy(Collection, 0, resizeBuffer, copyLength, read);
 
             //Set _array to resize.
-            _array = resizeBuffer;
+            Collection = resizeBuffer;
             //Reset positions.
             _read = 0;
-            _write = length;
+            WriteIndex = length;
         }
+
+        /// <summary>
+        /// Returns value in actual index as it relates to simulated index.
+        /// </summary>
+        /// <param name="simulatedIndex">Simulated index to return. A value of 0 would return the first simulated index in the collection.</param>
+        /// <returns></returns>
+        public T this[int simulatedIndex]
+        {
+            get
+            {
+                int offset = (Capacity - _written) + simulatedIndex + WriteIndex;
+                if (offset >= Capacity)
+                    offset -= Capacity;
+                return Collection[offset];
+            }
+            set
+            {
+                int offset = (Capacity - _written) + simulatedIndex + WriteIndex;
+                if (offset >= Capacity)
+                    offset -= Capacity;
+                Collection[offset] = value;
+            }
+        }
+
 
     }
 

@@ -72,6 +72,12 @@ namespace FishNet.Object
         [SerializeField]
         private bool _enablePrediction;
         /// <summary>
+        /// What type of component is being used for prediction? If not using rigidbodies set to other.
+        /// </summary>
+        [Tooltip("What type of component is being used for prediction? If not using rigidbodies set to other.")]
+        [SerializeField]
+        private PredictionType _predictionType = PredictionType.Other;
+        /// <summary>
         /// Object containing graphics when using prediction. This should be child of the predicted root.
         /// </summary>
         [Tooltip("Object containing graphics when using prediction. This should be child of the predicted root.")]
@@ -918,7 +924,7 @@ namespace FishNet.Object
             if (asServer)
             {
                 if (activeNewOwner)
-                    ServerManager.Objects.RebuildObservers(this, newOwner);
+                    ServerManager.Objects.RebuildObservers(this, newOwner, false, true);
 
                 PooledWriter writer = WriterPool.Retrieve();
                 writer.WritePacketId(PacketId.OwnershipChange);

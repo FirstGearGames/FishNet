@@ -21,6 +21,7 @@ namespace FishNet.Object.Editing
         private SerializedProperty _defaultDespawnType;
 
         private SerializedProperty _enablePrediction;
+        private SerializedProperty _predictionType;
         private SerializedProperty _graphicalObject;
         private SerializedProperty _enableStateForwarding;
 
@@ -44,6 +45,7 @@ namespace FishNet.Object.Editing
             _defaultDespawnType = serializedObject.FindProperty(nameof(_defaultDespawnType));
 
             _enablePrediction = serializedObject.FindProperty(nameof(_enablePrediction));
+            _predictionType = serializedObject.FindProperty(nameof(_predictionType));
             _graphicalObject = serializedObject.FindProperty(nameof(_graphicalObject));
             _enableStateForwarding = serializedObject.FindProperty(nameof(_enableStateForwarding));
 
@@ -77,6 +79,7 @@ namespace FishNet.Object.Editing
             if (_enablePrediction.boolValue == true)
             {
                 EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_predictionType);
                 EditorGUILayout.PropertyField(_graphicalObject);
                 GUI.enabled = false;
                 EditorGUILayout.PropertyField(_enableStateForwarding);
@@ -96,6 +99,7 @@ namespace FishNet.Object.Editing
                 EditorGUI.indentLevel++;
                 GUI.enabled = false;
                 EditorGUILayout.PropertyField(_spectatorAdaptiveInterpolation, new GUIContent("Adaptive Interpolation"));
+                GUI.enabled = true;
                 //if (_futurePredictionTime.floatValue <= 0f)
                 if (_spectatorAdaptiveInterpolation.boolValue == false)
                 {
@@ -117,7 +121,6 @@ namespace FishNet.Object.Editing
                     }
                     EditorGUI.indentLevel--;
                 }
-                GUI.enabled = true;
 
                 EditorGUI.indentLevel--;
                 EditorGUI.indentLevel--;

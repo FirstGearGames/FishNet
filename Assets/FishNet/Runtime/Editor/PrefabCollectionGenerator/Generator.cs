@@ -433,7 +433,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             path = path.Replace(@"/"[0], Path.DirectorySeparatorChar);
             return path;
         }
-
+         
         /// <summary>
         /// Returns the DefaultPrefabObjects file.
         /// </summary>

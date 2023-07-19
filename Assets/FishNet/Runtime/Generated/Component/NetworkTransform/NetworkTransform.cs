@@ -1513,6 +1513,7 @@ namespace FishNet.Component.Transforming
                 {
                     ArraySegment<byte> dataSegment = _toClientChangedWriters[lodIndex].GetArraySegment();
                     //todo - resolve networklod sending 0 count data properly. Count should never be 0.
+                    //Retest this, probably not an issue anymore.
                     if (dataSegment.Count > 0)
                     {
                         bool useLod = _enableNetworkLod;

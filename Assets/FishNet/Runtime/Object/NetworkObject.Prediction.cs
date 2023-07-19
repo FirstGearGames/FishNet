@@ -1,4 +1,5 @@
-﻿using FishNet.Managing;
+﻿using FishNet.Component.Prediction;
+using FishNet.Managing;
 using FishNet.Managing.Timing;
 using FishNet.Object.Prediction;
 using System.Collections.Generic;
@@ -10,11 +11,33 @@ namespace FishNet.Object
     public partial class NetworkObject : MonoBehaviour
     {
 
+        #region Types.
+#if PREDICTION_V2
+        /// <summary>
+        /// Type of prediction movement being used.
+        /// </summary>
+        [System.Serializable]
+        internal enum PredictionType : byte
+        {
+            Other = 0,
+            Rigidbody = 1,
+            Rigidbody2D = 2
+        }
+#endif
+        #endregion
+
         #region Public.
         /// <summary>
         /// Last tick this object replicated.
         /// </summary>
         internal EstimatedTick ReplicateTick;
+        #endregion
+
+        #region Internal.
+        /// <summary>
+        /// Pauses rigidbodies for prediction.
+        /// </summary>
+        internal RigidbodyPauser RigidbodyPauser;
         #endregion
 
         #region Private.
@@ -42,27 +65,40 @@ namespace FishNet.Object
         };
         #endregion
         /// <summary>
-        /// Graphical smoother to use when using set.
+        /// Graphical smoother to use when using set for owner.
         /// </summary>
-        private SetInterpolationSmoother _setSmoother;
+        private SetInterpolationSmoother _ownerSetInterpolationSmoother;
+        /// <summary>
+        /// Graphical smoother to use when using set for spectators.
+        /// </summary>
+        private SetInterpolationSmoother _spectatorSetInterpolationSmoother;
         /// <summary>
         /// Graphical smoother to use when using adaptive.
         /// </summary>
-        private AdaptiveInterpolationSmoother _adaptiveSmoother;
-        #endregion
-
+        private AdaptiveInterpolationSmoother _adaptiveInterpolationSmoother;
         /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
         private List<NetworkBehaviour> _predictionBehaviours = new List<NetworkBehaviour>();
+        #endregion
 
         private void Prediction_Awake()
         {
             if (!_enablePrediction)
                 return;
 
+
+            bool usesRb = (_predictionType == PredictionType.Rigidbody);
+            bool usesRb2d = (_predictionType == PredictionType.Rigidbody2D);
+            if (usesRb || usesRb2d)
+            {
+                RigidbodyPauser = new RigidbodyPauser();
+                RigidbodyType rbType = (usesRb) ? RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
+                RigidbodyPauser.UpdateRigidbodies(transform, rbType, true, _graphicalObject);
+            }
+
             //Create SetInterpolation smoother.
-            _setSmoother = new SetInterpolationSmoother();
+            _ownerSetInterpolationSmoother = new SetInterpolationSmoother();
             float teleportThreshold = (_enableTeleport) ? _ownerTeleportThreshold : MoveRates.UNSET_VALUE;
             SetInterpolationSmootherData osd = new SetInterpolationSmootherData()
             {
@@ -74,27 +110,32 @@ namespace FishNet.Object
                 NetworkObject = this,
                 TeleportThreshold = teleportThreshold,
             };
-            _setSmoother.InitializeOnce(osd);
-            ////Create adaptive interpolation smoother if enabled.
-            //if (_spectatorAdaptiveInterpolation)
-            //{
-            //    _adaptiveSmoother = new AdaptiveInterpolationSmoother();
-            //    //Smoothing values.
-            //    AdaptiveInterpolationSmoothingData aisd;
-            //    if (_adaptiveSmoothingType == AdaptiveSmoothingType.Custom)
-            //        aisd = _customSmoothingData;
-            //    else
-            //        aisd = _preconfiguredSmoothingDataPreview;
+            _ownerSetInterpolationSmoother.InitializeOnce(osd);
 
-            //    //Other details.
-            //    aisd.GraphicalObject = _graphicalObject;
-            //    aisd.SmoothPosition = true;
-            //    aisd.SmoothRotation = true;
-            //    aisd.SmoothScale = true;
-            //    aisd.NetworkObject = this;
-            //    aisd.TeleportThreshold = teleportThreshold;
-            //    _adaptiveSmoother.Initialize(aisd);
-            //}
+            //Spectator.
+            //_spectatorSetInterpolationSmoother = new SetInterpolationSmoother();
+            //_spectatorSetInterpolationSmoother.InitializeOnce(osd);
+
+            //Create adaptive interpolation smoother if enabled.
+            if (_spectatorAdaptiveInterpolation)
+            {
+                _adaptiveInterpolationSmoother = new AdaptiveInterpolationSmoother();
+                //Smoothing values.
+                AdaptiveInterpolationSmoothingData aisd;
+                if (_adaptiveSmoothingType == AdaptiveSmoothingType.Custom)
+                    aisd = _customSmoothingData;
+                else
+                    aisd = _preconfiguredSmoothingDataPreview;
+
+                //Other details.
+                aisd.GraphicalObject = _graphicalObject;
+                aisd.SmoothPosition = true;
+                aisd.SmoothRotation = true;
+                aisd.SmoothScale = true;
+                aisd.NetworkObject = this;
+                aisd.TeleportThreshold = teleportThreshold;
+                _adaptiveInterpolationSmoother.Initialize(aisd);
+            }
         }
 
         private void Prediction_Update()
@@ -102,21 +143,24 @@ namespace FishNet.Object
             if (!_enablePrediction)
                 return;
 
-            _setSmoother.Update();
-            _adaptiveSmoother?.Update();
+            _ownerSetInterpolationSmoother.Update();
+            //  _spectatorSetInterpolationSmoother.Update();
+            _adaptiveInterpolationSmoother?.Update();
         }
 
         private void TimeManager_OnPreTick()
         {
             //Do not need to check use prediction because this method only fires if prediction is on for this object.
-            _setSmoother.OnPreTick();
-            _adaptiveSmoother?.OnPreTick();
+            _ownerSetInterpolationSmoother.OnPreTick();
+            //   _spectatorSetInterpolationSmoother.OnPreTick();
+            _adaptiveInterpolationSmoother?.OnPreTick();
         }
         private void TimeManager_OnPostTick()
         {
             //Do not need to check use prediction because this method only fires if prediction is on for this object.
-            _setSmoother.OnPostTick();
-            _adaptiveSmoother?.OnPostTick();
+            _ownerSetInterpolationSmoother.OnPostTick();
+            // _spectatorSetInterpolationSmoother.OnPostTick();
+            _adaptiveInterpolationSmoother?.OnPostTick();
         }
 
         private void Prediction_Preinitialize(NetworkManager manager, bool asServer)
@@ -130,7 +174,8 @@ namespace FishNet.Object
             {
                 manager.PredictionManager.OnPreReconcile += PredictionManager_OnPreReconcile;
                 manager.PredictionManager.OnReplicateReplay += PredictionManager_OnReplicateReplay;
-                if (_adaptiveSmoother != null)
+                manager.PredictionManager.OnPostReconcile += PredictionManager_OnPostReconcile;
+                if (_adaptiveInterpolationSmoother != null)
                 {
                     manager.PredictionManager.OnPreReplicateReplay += PredictionManager_OnPreReplicateReplay;
                     manager.PredictionManager.OnPostReplicateReplay += PredictionManager_OnPostReplicateReplay;
@@ -144,14 +189,16 @@ namespace FishNet.Object
         {
             if (!_enablePrediction)
                 return;
-            if (asServer)
-                return;
 
+            /* Only the client needs to unsubscribe from these but
+             * asServer may not invoke as false if the client is suddenly
+             * dropping their connection. */
             if (_predictionBehaviours.Count > 0 && NetworkManager != null)
             {
                 NetworkManager.PredictionManager.OnPreReconcile -= PredictionManager_OnPreReconcile;
                 NetworkManager.PredictionManager.OnReplicateReplay -= PredictionManager_OnReplicateReplay;
-                if (_adaptiveSmoother != null)
+                NetworkManager.PredictionManager.OnPostReconcile -= PredictionManager_OnPostReconcile;
+                if (_adaptiveInterpolationSmoother != null)
                 {
                     NetworkManager.PredictionManager.OnPreReplicateReplay -= PredictionManager_OnPreReplicateReplay;
                     NetworkManager.PredictionManager.OnPostReplicateReplay -= PredictionManager_OnPostReplicateReplay;
@@ -167,13 +214,25 @@ namespace FishNet.Object
                 _predictionBehaviours[i].Reconcile_Client_Start();
         }
 
+        private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
+        {
+            for (int i = 0; i < _predictionBehaviours.Count; i++)
+                _predictionBehaviours[i].Reconcile_Client_End();
+
+            /* Unpause rigidbody pauser. It's okay to do that here rather
+             * than per NB, where the pausing occurs, because once here
+             * the entire object is out of the replay cycle so there's
+             * no reason to try and unpause per NB. */
+            RigidbodyPauser?.Unpause();
+        }
+
 
         private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
         {
             /* Adaptive smoother uses localTick (clientTick) to track graphical datas.
             * There's no need to use serverTick since the only purpose of adaptiveSmoother
             * is to smooth graphic changes, not update the transform itself. */
-            _adaptiveSmoother.OnPostReplay(clientTick);
+            _adaptiveInterpolationSmoother?.OnPostReplay(clientTick);
         }
 
         private void PredictionManager_OnReplicateReplay(uint clientTick, uint serverTick)
@@ -188,7 +247,7 @@ namespace FishNet.Object
             /* Adaptive smoother uses localTick (clientTick) to track graphical datas.
              * There's no need to use serverTick since the only purpose of adaptiveSmoother
              * is to smooth graphic changes, not update the transform itself. */
-            _adaptiveSmoother.OnPreReplay(clientTick);
+            _adaptiveInterpolationSmoother?.OnPreReplay(clientTick);
         }
 
         /// <summary>

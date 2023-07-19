@@ -448,9 +448,9 @@ namespace FishNet.Managing.Predicting
 
         private struct StatePacket
         {
-            public ArraySegment<byte> Data;
+            public ArraySegment<byte> Data;            
             public uint ServerTick;
-
+            
             public StatePacket(ArraySegment<byte> data, uint serverTick)
             {
                 Data = data;
@@ -465,9 +465,6 @@ namespace FishNet.Managing.Predicting
         {
             if (!_networkManager.IsClient)
                 return;
-
-            /* Keep a state in buffer. This helps ensure all packets have come through for the state
-             * by waiting until another is received. */
             if (_recievedStates.Count < 2)
                 return;
 
@@ -518,7 +515,8 @@ namespace FishNet.Managing.Predicting
                 clientReplayTick++;
                 serverReplayTick++;
                 //TODO
-                /* update replicate replay callbacks to include server replay tick.
+                /* May not be needed anymore with insertions to replicates history.
+                 * update replicate replay callbacks to include server replay tick.
                  * when replaying if not owner then see if server tick is > lastpackettick,
                  * if so then its future predicting. otherwise if owner use what we have
                  * currently for client tick.

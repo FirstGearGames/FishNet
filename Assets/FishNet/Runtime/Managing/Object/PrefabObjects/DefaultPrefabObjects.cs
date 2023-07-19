@@ -7,7 +7,7 @@ using FishNet.Editing;
 using UnityEditor;
 #endif
 using FishNet.Object;
-
+ 
 namespace FishNet.Managing.Object
 {
 
