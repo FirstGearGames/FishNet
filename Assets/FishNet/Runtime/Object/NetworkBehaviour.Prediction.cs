@@ -47,6 +47,12 @@ namespace FishNet.Object
         /// </summary>
         private uint _lastReadReconcileTick;
 #if !PREDICTION_V2
+		/// <summary>
+		/// Last tick a reconcile occured.
+		/// </summary>
+		private uint _lastReconcileTick;
+#endif
+#if !PREDICTION_V2
 		internal void SetLastReconcileTick(uint value, bool updateGlobals = true)
 		{
 			_lastReconcileTick = value;
