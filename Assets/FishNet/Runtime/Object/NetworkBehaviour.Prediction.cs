@@ -47,12 +47,6 @@ namespace FishNet.Object
         /// </summary>
         private uint _lastReadReconcileTick;
 #if !PREDICTION_V2
-		/// <summary>
-		/// Last tick a reconcile occured.
-		/// </summary>
-		private uint _lastReconcileTick;
-#endif
-#if !PREDICTION_V2
 		internal void SetLastReconcileTick(uint value, bool updateGlobals = true)
 		{
 			_lastReconcileTick = value;
@@ -143,15 +137,21 @@ namespace FishNet.Object
         /// </summary>
         private uint _lastPredictedReplicateTick = 0;
 #endif
-        #endregion
+#if !PREDICTION_V2
+		/// <summary>
+		/// Last tick a reconcile occured.
+		/// </summary>
+		private uint _lastReconcileTick;
+#endif
+		#endregion
 
-        /// <summary>
-        /// Registers a RPC method.
-        /// Internal use.
-        /// </summary>
-        /// <param name="hash"></param>
-        /// <param name="del"></param>
-        [CodegenMakePublic]
+		/// <summary>
+		/// Registers a RPC method.
+		/// Internal use.
+		/// </summary>
+		/// <param name="hash"></param>
+		/// <param name="del"></param>
+		[CodegenMakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterReplicateRpc(uint hash, ReplicateRpcDelegate del)
         {
@@ -429,6 +429,9 @@ namespace FishNet.Object
 		/// <returns></returns>
 		protected internal bool PredictedTransformMayChange()
 		{
+			if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
+				return false;
+
 			if (!_predictionInitialized)
 			{
 				_predictionInitialized = true;
@@ -464,12 +467,15 @@ namespace FishNet.Object
 			return changed;
 		}
 #else
-        /// <summary> 
-        /// Returns if there is a chance the transform may change after the tick.
-        /// </summary>
-        /// <returns></returns>
-        protected internal bool PredictedTransformMayChange()
+		/// <summary> 
+		/// Returns if there is a chance the transform may change after the tick.
+		/// </summary>
+		/// <returns></returns>
+		protected internal bool PredictedTransformMayChange()
         {
+			if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
+				return false;
+
             if (!_predictionInitialized)
             {
                 _predictionInitialized = true;
@@ -1197,24 +1203,19 @@ namespace FishNet.Object
             //Maximum number of replicates allowed to be queued at once.
             int maximmumReplicates = (IsServer) ? pm.GetMaximumServerReplicates() : pm.MaximumClientReplicates;
 
-            string ticksRead = string.Empty;
-            int enqueudCount = 0;
-
             for (int i = 0; i < receivedReplicatesCount; i++)
             {
                 uint tick = arrBuffer[i].GetTick();
                 //If able to update replicate tick.
                 if (_networkObjectCache.ReplicateTick.Update(NetworkManager.TimeManager, tick, EstimatedTick.OldTickOption.Discard))
                 {
-                    ticksRead += $"{tick}, ";
                     //Cannot queue anymore, discard oldest.
                     if (replicatesQueue.Count >= maximmumReplicates)
                     {
                         T data = replicatesQueue.Dequeue();
                         data.Dispose();
                     }
-
-                    enqueudCount++;
+					
                     replicatesQueue.Enqueue(arrBuffer[i]);
                 }
             }

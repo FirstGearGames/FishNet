@@ -341,43 +341,39 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(IEnumerable<NetworkObject> nobs, IEnumerable<NetworkConnection> conns, bool timedOnly = false)
         {
+            List<NetworkObject> nobCache = CollectionCaches<NetworkObject>.RetrieveList();
+
             foreach (NetworkConnection nc in conns)
             {
                 _writer.Reset();
+                nobCache.Clear();
 
                 foreach (NetworkObject nob in nobs)
-                    RebuildObservers(nob, nc, timedOnly, false);
+                    RebuildObservers(nob, nc, nobCache, timedOnly);
 
                 //Send if change.
                 if (_writer.Length > 0)
                 {
                     NetworkManager.TransportManager.SendToClient(
                         (byte)Channel.Reliable, _writer.GetArraySegment(), nc);
+
+                    foreach (NetworkObject n in nobCache)
+                        n.OnSpawnServer(nc);
                 }
             }
-        }
 
-        /// <summary>
-        /// Resets writers then rebuilds observers for a connection on the NetworkObject.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RebuildObservers(NetworkObject nob, NetworkConnection conn, bool timedOnly = false)
-        {
-            RebuildObservers(nob, conn, timedOnly);
+            CollectionCaches<NetworkObject>.Store(nobCache);
         }
 
         /// <summary>
         /// Rebuilds observers for a connection on NetworkObject.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void RebuildObservers(NetworkObject nob, NetworkConnection conn, bool timedOnly = false, bool sendChanges = true)
+        public void RebuildObservers(NetworkObject nob, NetworkConnection conn, bool timedOnly = false)
         {
             if (ApplicationState.IsQuitting())
                 return;
-
-            //If sending within this method reset the writer to ensure it doesnt have old data.
-            if (sendChanges)
-                _writer.Reset();
+            _writer.Reset();
 
             /* When not using a timed rebuild such as this connections must have
              * hashgrid data rebuilt immediately. */
@@ -402,17 +398,15 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            //If to send changes.
-            if (sendChanges)
-            {
-                NetworkManager.TransportManager.SendToClient(
-                    (byte)Channel.Reliable,
-                    _writer.GetArraySegment(), conn);
-            }
+            NetworkManager.TransportManager.SendToClient(
+                (byte)Channel.Reliable,
+                _writer.GetArraySegment(), conn);
 
-            //If a spawn is being sent.
+            /* If spawning then also invoke server
+             * start events, such as buffer last
+             * and onspawnserver. */
             if (osc == ObserverStateChange.Added)
-                nob.InvokePostOnServerStart(conn);
+                nob.OnSpawnServer(conn);
 
             /* If there is change then also rebuild on any runtime children.
              * This is to ensure runtime children have visibility updated
@@ -420,8 +414,51 @@ namespace FishNet.Managing.Server
              *
              * If here there is change. */
             foreach (NetworkObject item in nob.RuntimeChildNetworkObjects)
-                RebuildObservers(item, conn, false, sendChanges);
+                RebuildObservers(item, conn, timedOnly);
         }
+
+        /// <summary>
+        /// Rebuilds observers for a connection on NetworkObject.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void RebuildObservers(NetworkObject nob, NetworkConnection conn, List<NetworkObject> addedNobs, bool timedOnly = false)
+        {
+            if (ApplicationState.IsQuitting())
+                return;
+
+            /* When not using a timed rebuild such as this connections must have
+             * hashgrid data rebuilt immediately. */
+            if (!timedOnly)
+                conn.UpdateHashGridPositions(true);
+
+            //If observer state changed then write changes.
+            ObserverStateChange osc = nob.RebuildObservers(conn, timedOnly);
+            if (osc == ObserverStateChange.Added)
+            {
+                base.WriteSpawn_Server(nob, conn, _writer);
+                addedNobs.Add(nob);
+            }
+            else if (osc == ObserverStateChange.Removed)
+            {
+                if (conn.LevelOfDetails.TryGetValue(nob, out NetworkConnection.LevelOfDetailData lodData))
+                    ObjectCaches<NetworkConnection.LevelOfDetailData>.Store(lodData);
+                conn.LevelOfDetails.Remove(nob);
+                WriteDespawn(nob, nob.GetDefaultDespawnType(), _writer);
+            }
+            else
+            {
+                return;
+            }
+
+            /* If there is change then also rebuild on any runtime children.
+             * This is to ensure runtime children have visibility updated
+             * in relation to parent. 
+             *
+             * If here there is change. */
+            foreach (NetworkObject item in nob.RuntimeChildNetworkObjects)
+                RebuildObservers(item, conn, addedNobs, timedOnly);
+        }
+
 
 
 

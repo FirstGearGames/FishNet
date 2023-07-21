@@ -435,15 +435,12 @@ namespace FishNet.Managing.Object
         /// </summary>
         protected void CheckWriteSceneObjectDetails(NetworkObject nob, Writer w)
         {
-                bool writeSceneObjectDetails = NetworkManager.DebugManager.WriteSceneObjectDetails;
-                //This is written so the developer can toggle the write debug on one side without having to rebuild/restart the other.
-                w.WriteBoolean(writeSceneObjectDetails);
-                //Check to write additional information if a scene object.
-                if (writeSceneObjectDetails)
-                {
-                    w.WriteString(nob.gameObject.scene.name);
-                    w.WriteString(nob.gameObject.name);
-                }
+            //Check to write additional information if a scene object.
+            if (NetworkManager.DebugManager.WriteSceneObjectDetails)
+            {
+                w.WriteString(nob.gameObject.scene.name);
+                w.WriteString(nob.gameObject.name);
+            }
         }
 
         /// <summary>
@@ -451,9 +448,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         protected void CheckReadSceneObjectDetails(Reader r, ref string sceneName, ref string objectName)
         {
-            //Check to read scene and object name.
-            bool readSceneObjectDetails = r.ReadBoolean();
-            if (readSceneObjectDetails)
+            if (NetworkManager.DebugManager.WriteSceneObjectDetails)
             {
                 sceneName = r.ReadString();
                 objectName = r.ReadString();

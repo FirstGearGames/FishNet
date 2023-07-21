@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static FishNet.Managing.Timing.EstimatedTick;
 
 namespace FishNet.Connection
 {
@@ -221,6 +222,10 @@ namespace FishNet.Connection
             NetworkManager = nm;
             TransportIndex = transportIndex;
             ClientId = clientId;
+            /* Set PacketTick to current values so
+            * that timeouts and other things around
+           * first packet do not occur due to an unset value. */
+            PacketTick.Update(nm.TimeManager, 0, OldTickOption.SetLastRemoteTick);
             Observers_Initialize(nm);
             Prediction_Initialize(nm, asServer);
             //Only the server uses the ping and buffer.

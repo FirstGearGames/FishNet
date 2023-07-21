@@ -924,7 +924,7 @@ namespace FishNet.Object
             if (asServer)
             {
                 if (activeNewOwner)
-                    ServerManager.Objects.RebuildObservers(this, newOwner, false, true);
+                    ServerManager.Objects.RebuildObservers(this, newOwner, false);
 
                 PooledWriter writer = WriterPool.Retrieve();
                 writer.WritePacketId(PacketId.OwnershipChange);

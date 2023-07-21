@@ -30,7 +30,7 @@ namespace FishNet.Managing.Server
         {
             if (!conn.Authenticated)
                 return;
-            if (!NetworkManager.ObserverManager.GetEnableNetworkLod())
+            if (!_cachedUseLod)
             {
                 conn.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection [{conn.ClientId}] sent a level of detail update when the feature is not enabled.");
                 return;
@@ -48,7 +48,7 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            uint packetTick = conn.PacketTick.Value(NetworkManager.TimeManager);
+            uint packetTick = conn.PacketTick.LastRemoteTick;
             //Check if conn can send LOD.
             uint lastLod = conn.LastLevelOfDetailUpdate;
             //If previously set see if client is potentially exploiting.

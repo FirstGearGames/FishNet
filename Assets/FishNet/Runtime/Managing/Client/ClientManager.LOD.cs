@@ -36,7 +36,7 @@ namespace FishNet.Managing.Client
         /// This may be useful when teleporting clients.
         /// This must be called by on the server by using ServerManager.ForceLodUpdate(NetworkConnection).
         /// </param>
-        internal void SendLodUpdate(bool forceFullUpdate)
+        internal void TrySendLodUpdate(uint localTick, bool forceFullUpdate)
         {
             if (!Connection.Authenticated)
                 return;
@@ -50,7 +50,6 @@ namespace FishNet.Managing.Client
                 return;
 
             //Interval check.
-            uint localTick = nm.TimeManager.LocalTick;
             uint intervalRequirement = LevelOfDetailInterval;
             bool intervalMet = ((localTick - Connection.LastLevelOfDetailUpdate) >= intervalRequirement);
             if (!forceFullUpdate && !intervalMet)

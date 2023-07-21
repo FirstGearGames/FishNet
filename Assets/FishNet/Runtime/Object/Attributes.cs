@@ -144,7 +144,7 @@ namespace FishNet.Object.Synchronizing
         public WritePermission WritePermissions = WritePermission.ServerOnly;
         /// <summary>
         /// True if to require the readonly attribute.
-        /// Setting to false will allow inspector serialization of this object, but you must never manually initialize this object.
+        /// Setting to false will allow inspector serialization of this object. When false you must still initialize this object on it's field declaration, but never anywhere else.
         /// </summary>
         public bool RequireReadOnly = true;
     }

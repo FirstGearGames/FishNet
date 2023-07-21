@@ -98,10 +98,8 @@ namespace FishNet.Managing.Object
             {
                 headerWriter.WriteUInt64(nob.SceneId, AutoPackType.Unpacked);
 #if DEVELOPMENT
-                bool writeSceneObjectDetails = NetworkManager.DebugManager.WriteSceneObjectDetails;
-                headerWriter.WriteBoolean(writeSceneObjectDetails);
                 //Check to write additional information if a scene object.
-                if (writeSceneObjectDetails)
+                if (NetworkManager.DebugManager.WriteSceneObjectDetails)
                 {
                     headerWriter.WriteString(nob.gameObject.scene.name);
                     headerWriter.WriteString(nob.gameObject.name);

@@ -701,7 +701,7 @@ namespace FishNet.Managing.Timing
                      * last tick during this loop. */
                     if (isClient && (_elapsedTickTime < timePerSimulation))
                     {
-                        _networkManager.ClientManager.SendLodUpdate(false);
+                        _networkManager.ClientManager.TrySendLodUpdate(LocalTick, false);
                         TrySendPing(LocalTick + 1);
                     }
 

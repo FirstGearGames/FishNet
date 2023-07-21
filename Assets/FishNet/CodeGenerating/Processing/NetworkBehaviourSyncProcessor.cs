@@ -518,8 +518,10 @@ namespace FishNet.CodeGenerating.Processing
                      * they want the object to be serialized. */
                     bool requireReadOnly = customAttribute.GetField(nameof(SyncObjectAttribute.RequireReadOnly), true);
                     if (requireReadOnly)
+                    {
                         base.LogError($"{fieldDef.Name} SyncObject must be readonly.");
-                    error = true;
+                        error = true;
+                    }                    
                 }
 
 

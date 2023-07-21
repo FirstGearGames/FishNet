@@ -71,7 +71,7 @@ namespace FishNet.Object
         /// This is made one method to save instruction calls.
         /// </summary>
         /// <param name=""></param>
-        internal void InvokePostOnServerStart(NetworkConnection conn)
+        internal void OnSpawnServer(NetworkConnection conn)
         {
             for (int i = 0; i < NetworkBehaviours.Length; i++)
                 NetworkBehaviours[i].SendBufferedRpcs(conn);
