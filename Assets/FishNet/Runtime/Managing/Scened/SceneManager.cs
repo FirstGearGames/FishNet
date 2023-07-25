@@ -1439,7 +1439,7 @@ namespace FishNet.Managing.Scened
              * the unload should continue. */
             if (scenes.Length == 0 && !asClientHost)
             {
-                NetworkManager.LogWarning($"No scenes were found to unload.");
+                NetworkManager.LogWarning($"Scene lookup data of length {sceneUnloadData.SceneLookupDatas.Length} could not find any scenes to unload. This may occur when trying to unload a scene only by handle. Consider using the scene reference or handle and name while creating SceneLookupData.");
                 yield break;
             }
 
@@ -1470,6 +1470,7 @@ namespace FishNet.Managing.Scened
             }
 
 
+
             /* This will contain all scenes which can be unloaded.
              * The collection will be modified through various checks. */
             List<Scene> unloadableScenes = scenes.ToList();
@@ -1481,6 +1482,9 @@ namespace FishNet.Managing.Scened
              * The clients will still unload the scenes. */
             if ((asServer || asClientHost) && sceneUnloadData.Options.Mode == UnloadOptions.ServerUnloadMode.KeepUnused)
                 unloadableScenes.Clear();
+            //If clientOnly then force mode to unloadUnused.
+            else if (!asServer && !asClientHost)
+                sceneUnloadData.Options.Mode = UnloadOptions.ServerUnloadMode.UnloadUnused;
             /* Check to remove global scenes unloadableScenes.
              * This will need to be done if scenes are being unloaded
              * for connections. Global scenes cannot be unloaded as

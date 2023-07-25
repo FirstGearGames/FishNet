@@ -48,6 +48,14 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="sceneLookupData">Scene to unload by SceneLookupData.</param>
+        public SceneUnloadData(SceneLookupData sceneLookupData)
+        {
+            SceneLookupDatas = new SceneLookupData[] { sceneLookupData };
+        }
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="scenes">Scenes to unload.</param>
         public SceneUnloadData(List<Scene> scenes) : this(scenes.ToArray()) { }
         /// <summary>

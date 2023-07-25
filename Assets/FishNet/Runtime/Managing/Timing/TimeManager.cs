@@ -265,6 +265,10 @@ namespace FishNet.Managing.Timing
         /// Number of times the client had sent too fast in a row.
         /// </summary>
         private float _timingTooFastCount;
+        /// <summary>
+        /// True if FixedUpdate called this frame and using Unity physics mode.
+        /// </summary>
+        private bool _fixedUpdateTimeStep;
         #endregion
 
         #region Const.
@@ -323,7 +327,18 @@ namespace FishNet.Managing.Timing
             /* Invoke onsimulation if using Unity time.
              * Otherwise let the tick cycling part invoke. */
             if (PhysicsMode == PhysicsMode.Unity)
+            {
+                /* If fixedUpdateTimeStep then that means
+                 * FixedUpdate already called for this frame, which
+                 * means a post physics should also be called.
+                 * This can only happen if a FixedUpdate occurs
+                 * multiple times per frame. */
+                if (_fixedUpdateTimeStep)
+                    OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+
+                _fixedUpdateTimeStep = true;
                 OnPrePhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+            }
         }
 
         /// <summary>
@@ -353,8 +368,11 @@ namespace FishNet.Managing.Timing
                 IncreaseTick();
                 /* Invoke onsimulation if using Unity time.
                 * Otherwise let the tick cycling part invoke. */
-                if (PhysicsMode == PhysicsMode.Unity && Time.inFixedTimeStep)
+                if (PhysicsMode == PhysicsMode.Unity && _fixedUpdateTimeStep)
+                {
+                    _fixedUpdateTimeStep = false;
                     OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                }
             }
         }
 

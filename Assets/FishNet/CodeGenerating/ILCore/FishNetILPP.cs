@@ -32,7 +32,7 @@ namespace FishNet.CodeGenerating.ILCore
                 return false;
             if (compiledAssembly.Name.Contains("Editor"))
                 return false; 
-
+             
             /* This line contradicts the one below where referencesFishNet
              * becomes true if the assembly is FishNetAssembly. This is here
              * intentionally to stop codegen from running on the runtime
