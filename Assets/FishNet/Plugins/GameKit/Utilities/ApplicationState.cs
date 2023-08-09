@@ -35,6 +35,11 @@ namespace GameKit.Utilities
 #endif
         }
 
+
+        /// <summary>
+        /// Returns if the application is quitting for editor or builds.
+        /// </summary>
+        /// <returns></returns>
         public static bool IsQuitting()
         {
 #if UNITY_EDITOR
@@ -47,12 +52,28 @@ namespace GameKit.Utilities
 #endif
         }
 
+        /// <summary>
+        /// Returns if the application is playing for editor or builds.
+        /// </summary>
+        /// <returns></returns>
         public static bool IsPlaying()
         {
 #if UNITY_EDITOR
             return EditorApplication.isPlaying;
 #else
             return Application.isPlaying;
+#endif
+        }
+
+        /// <summary>
+        /// Quits the application for editor or builds.
+        /// </summary>
+        public static void Quit()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
 #endif
         }
 

@@ -1,4 +1,4 @@
-﻿using FishNet.Object.Helping;
+﻿using GameKit.Utilities;
 
 namespace FishNet.Broadcast.Helping
 {
@@ -12,7 +12,7 @@ namespace FishNet.Broadcast.Helping
         /// <returns></returns>
         public static ushort GetKey<T>()
         {
-            return typeof(T).FullName.GetStableHash16();
+            return typeof(T).FullName.GetStableHashU16();
         }
     }
 

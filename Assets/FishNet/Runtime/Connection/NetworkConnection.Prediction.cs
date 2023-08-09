@@ -119,8 +119,20 @@ namespace FishNet.Connection
                 PredictionStateWriters.Add(stateWriter);
 
                 stateWriter.Reserve(PredictionManager.STATE_HEADER_RESERVE_COUNT);
+
+                uint clientReplicateTick;
+                //If client has performed a replicate.
+                if (!ReplicateTick.IsUnset)
+                    clientReplicateTick = ReplicateTick.Value(NetworkManager.TimeManager);
+                /* If not then use what is estimated to be the clients
+                 * current tick along with desired prediction queue count.
+                 * This should be just about the same as if the client used replicate,
+                 * but even if it's not it doesn't matter because the client
+                 * isn't replicating himself, just reconciling and replaying other objects. */
+                else
+                    clientReplicateTick = (PacketTick.Value(NetworkManager.TimeManager) + NetworkManager.PredictionManager.QueuedInputs);
                 //Estimated replicate tick on the client.
-                stateWriter.WriteTickUnpacked(ReplicateTick.Value(NetworkManager.TimeManager));
+                stateWriter.WriteTickUnpacked(clientReplicateTick);
                 /* No need to send localTick here, it can be read from LastPacketTick that's included with every packet.
                  * Note: the LastPacketTick we're sending here is the last packet received from this connection.
                  * The server and client ALWAYS prefix their packets with their local tick, which is
@@ -157,7 +169,7 @@ namespace FishNet.Connection
         }
 #endif
 
-        }
+    }
 
 
 }

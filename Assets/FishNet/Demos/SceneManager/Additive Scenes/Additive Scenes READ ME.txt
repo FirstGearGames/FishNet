@@ -1,6 +1,6 @@
 This demo shows how to use additive scenes per connection, both prewarming scenes on the server
 as well hot-loading and unloading them on clients. AOI is separated by scenes and objects in
-each scene.
+each scene, as well relative distance to the player.
 
 
 Setup:

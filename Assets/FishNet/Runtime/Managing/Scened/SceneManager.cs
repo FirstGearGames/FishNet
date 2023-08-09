@@ -110,6 +110,14 @@ namespace FishNet.Managing.Scened
         /// Called after the active scene has been set, immediately after scene loads.
         /// </summary>
         internal event Action OnActiveSceneSetInternal;
+        /// <summary>
+        /// True if the SceneManager has items in queue.
+        /// </summary>
+        internal bool IteratingQueue { get; private set; }
+        /// <summary>
+        /// Unscaled time when the SceneManager completed it's last queue.
+        /// </summary>
+        internal float QueueCompleteTime { get; private set; }
         #endregion
 
         #region Serialized.
@@ -464,6 +472,7 @@ namespace FishNet.Managing.Scened
                 return;
 
             _sceneQueueStartInvoked = true;
+            IteratingQueue = true;
             OnQueueStart?.Invoke();
         }
         /// <summary>
@@ -475,6 +484,8 @@ namespace FishNet.Managing.Scened
                 return;
 
             _sceneQueueStartInvoked = false;
+            IteratingQueue = false;
+            QueueCompleteTime = Time.unscaledTime;
             OnQueueEnd?.Invoke();
         }
         /// <summary>
@@ -1078,7 +1089,7 @@ namespace FishNet.Managing.Scened
                     * 1f / 2f is 0.5f. */
                     float maximumIndexWorth = (1f / (float)loadableScenes.Count);
 
-                    _sceneProcessor.BeginLoadAsync(loadableScenes[i].Name, loadSceneParameters);
+                    _sceneProcessor.BeginLoadAsync(loadableScenes[i].NameOnly, loadSceneParameters);
                     while (!_sceneProcessor.IsPercentComplete())
                     {
                         float percent = _sceneProcessor.GetPercentComplete();
@@ -1143,7 +1154,7 @@ namespace FishNet.Managing.Scened
                             /* Shouldn't be possible since the scene will always exist either by 
                              * just being loaded or already loaded. */
                             if (string.IsNullOrEmpty(lastSameSceneName.name))
-                                NetworkManager.LogError($"Scene {sceneLoadData.SceneLookupDatas[0].Name} could not be found in loaded scenes.");
+                                NetworkManager.LogError($"Scene {sceneLoadData.SceneLookupDatas[0].NameOnly} could not be found in loaded scenes.");
                             else
                                 firstValidScene = lastSameSceneName;
                         }
@@ -2024,7 +2035,7 @@ namespace FishNet.Managing.Scened
             int startCount = newGlobalScenes.Count;
             //Remove scenes.
             for (int i = 0; i < datas.Length; i++)
-                newGlobalScenes.Remove(datas[i].Name);
+                newGlobalScenes.Remove(datas[i].NameOnly);
 
             //If any were removed remake globalscenes.
             if (startCount != newGlobalScenes.Count)
@@ -2188,6 +2199,13 @@ namespace FishNet.Managing.Scened
         }
 
         #region Sanity checks.
+        /// <summary>
+        /// Returns if iterating queue.
+        /// True will be returned even if not iterating queue if the iteration had completed with the time requirement.
+        internal bool IsIteratingQueue(float completionTimeRequirement = 0f)
+        {
+            return (IteratingQueue || (Time.unscaledTime - QueueCompleteTime) < completionTimeRequirement);
+        }
         /// <summary>
         /// Returns if a SceneLoadData is valid.
         /// </summary>

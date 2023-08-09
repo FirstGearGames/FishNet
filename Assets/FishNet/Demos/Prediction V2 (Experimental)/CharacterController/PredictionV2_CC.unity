@@ -137,7 +137,7 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 30
+  _tickRate: 10
   _pingInterval: 1
   _physicsMode: 1
 --- !u!114 &192429405
@@ -232,7 +232,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _queuedInputs: 2
-  _reconcileInterval: 1
+  _reconcileInterval: 0.01
   _dropExcessiveReplicates: 1
   _maximumServerReplicates: 15
   _maximumConsumeCount: 4
@@ -299,8 +299,8 @@ MonoBehaviour:
   NetworkObserver: {fileID: 0}
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  _scenePathHash: 3045600205
-  <SceneId>k__BackingField: 13080753277781778184
+  _scenePathHash: 2478811136
+  <SceneId>k__BackingField: 10646412763218034985
   <AssetPathHash>k__BackingField: 0
   <IsNested>k__BackingField: 0
   _enablePrediction: 0
@@ -1069,8 +1069,8 @@ MonoBehaviour:
   NetworkObserver: {fileID: 0}
   <PrefabId>k__BackingField: 65535
   <SpawnableCollectionId>k__BackingField: 0
-  _scenePathHash: 3045600205
-  <SceneId>k__BackingField: 13080753277550569070
+  _scenePathHash: 2478811136
+  <SceneId>k__BackingField: 10646412763343888858
   <AssetPathHash>k__BackingField: 0
   <IsNested>k__BackingField: 0
   _enablePrediction: 0

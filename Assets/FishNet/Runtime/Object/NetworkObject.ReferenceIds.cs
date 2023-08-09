@@ -1,8 +1,6 @@
 ﻿using UnityEngine;
-using System.Collections.Generic;
 using System;
-using FishNet.Object.Helping;
-using System.Linq;
+using GameKit.Utilities;
 #if UNITY_EDITOR
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -99,7 +97,7 @@ namespace FishNet.Object
             else
             {
                 System.Random rnd = new System.Random();
-                scenePathHash = gameObject.scene.path.ToLower().GetStableHash32();
+                scenePathHash = gameObject.scene.path.ToLower().GetStableHashU32();
                 sceneId = SceneId;
                 //Not a valid sceneId or is a duplicate. 
                 if (scenePathHash != _scenePathHash || SceneId == 0 || IsDuplicateSceneId(SceneId))

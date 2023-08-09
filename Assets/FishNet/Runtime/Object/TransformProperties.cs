@@ -1,10 +1,11 @@
-﻿using System.Runtime.CompilerServices;
+﻿using GameKit.Utilities;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Object
 {
     [System.Serializable]
-    public class TransformPropertiesCls
+    public class TransformPropertiesCls : IResettable
     {
         public Vector3 Position;
         public Quaternion Rotation;
@@ -17,9 +18,11 @@ namespace FishNet.Object
             Rotation = rotation;
             LocalScale = localScale;
         }
-       
+
+        public void InitializeState() { }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Reset()
+        public void ResetState()
         {
             Update(Vector3.zero, Quaternion.identity, Vector3.zero);
         }

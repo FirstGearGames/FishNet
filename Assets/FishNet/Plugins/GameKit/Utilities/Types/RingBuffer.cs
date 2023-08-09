@@ -210,6 +210,73 @@ namespace GameKit.Utilities.Types
             _enumerator.Reset();
         }
 
+
+        ///// <summary>
+        ///// Inserts an entry into the collection.
+        ///// </summary>
+        ///// <param name="simulatedIndex">Simulated index to return. A value of 0 would return the first simulated index in the collection.</param>
+        ///// <param name="data">Data to insert.</param>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public void Insert(int simulatedIndex, T data)
+        //{
+        //    if (!IsInitializedWithError())
+        //        return;
+
+        //    if (simulatedIndex < 0 || simulatedIndex > _written)
+        //    {
+        //        NetworkManager.StaticLogError($"Index of {simulatedIndex} is out of range. There are {_written} values.");
+        //        return;
+        //    }
+
+        //    int written = _written;
+        //    //If adding to the end.
+        //    if (simulatedIndex == written)
+        //    {
+        //        Add(data);
+        //    }
+        //    /* If not adding to the end move everything up.
+        //     * This is not very performant. */
+        //    else
+        //    {
+        //        int cap = Capacity;
+        //        /* There will be a one time initialization cost
+        //         * when using insert. */
+        //        if (_insertCollectionCopy == null)
+        //            _insertCollectionCopy = new T[cap];
+
+        //        int offset = GetRealIndex(simulatedIndex);
+        //        /* Move everything by setting values into array.
+        //         * This could be slower on larger arrays. */
+        //        for (int i = 0; i < cap; i++)
+        //        {
+        //            int srcIndex = i + offset;
+        //            if (srcIndex >= cap)
+        //                srcIndex = 0;
+
+        //            int goalIndex = srcIndex + 1;
+        //            if (goalIndex >= cap)
+        //                goalIndex = 0;
+
+        //            _insertCollectionCopy[goalIndex] = Collection[srcIndex];
+        //        }
+        //        //Insert new data.
+
+        //        offset++;
+        //        //                _insertCollectionCopy[offset] = data;
+        //        for (int i = 0; i < _insertCollectionCopy.Length; i++)
+        //        {
+        //            Debug.Log("Val " + _insertCollectionCopy[i]);
+        //        }
+        //        //Swap arrays.
+        //        T[] collectionBeforeReplace = Collection;
+        //        Collection = _insertCollectionCopy;
+        //        _insertCollectionCopy = collectionBeforeReplace;
+
+        //        IncreaseWritten();
+        //    }
+
+        //}
+
         /// <summary>
         /// Adds an entry to the collection, returning a replaced entry.
         /// </summary>
@@ -221,9 +288,39 @@ namespace GameKit.Utilities.Types
             if (!IsInitializedWithError())
                 return default;
 
-            int capacity = Capacity;
             T current = Collection[WriteIndex];
-            Collection[WriteIndex] = data;
+            Collection[WriteIndex] = data;            
+            IncreaseWritten();
+
+            return current;
+        }
+
+        /// <summary>
+        /// Returns value in actual index as it relates to simulated index.
+        /// </summary>
+        /// <param name="simulatedIndex">Simulated index to return. A value of 0 would return the first simulated index in the collection.</param>
+        /// <returns></returns>
+        public T this[int simulatedIndex]
+        {
+            get
+            {
+                int offset = GetRealIndex(simulatedIndex);
+                return Collection[offset];
+            }
+            set
+            {
+                int offset = GetRealIndex(simulatedIndex);
+                Collection[offset] = value;
+            }
+        }
+
+
+        /// <summary>
+        /// Increases written count and handles offset changes.
+        /// </summary>
+        private void IncreaseWritten()
+        {
+            int capacity = Capacity;
 
             WriteIndex++;
             _written++;
@@ -239,31 +336,19 @@ namespace GameKit.Utilities.Types
                 _written = capacity;
                 _enumerator.SetStartIndex(WriteIndex);
             }
-
-            return current;
         }
 
+
         /// <summary>
-        /// Returns value in actual index as it relates to simulated index.
+        /// Returns the real index of the collection using a simulated index.
         /// </summary>
-        /// <param name="simulatedIndex">Simulated index to return. A value of 0 would return the first simulated index in the collection.</param>
-        /// <returns></returns>
-        public T this[int simulatedIndex]
+        private int GetRealIndex(int simulatedIndex)
         {
-            get
-            {
-                int offset = (Capacity - _written) + simulatedIndex + WriteIndex;
-                if (offset >= Capacity)
-                    offset -= Capacity;
-                return Collection[offset];
-            }
-            set
-            {
-                int offset = (Capacity - _written) + simulatedIndex + WriteIndex;
-                if (offset >= Capacity)
-                    offset -= Capacity;
-                Collection[offset] = value;
-            }
+            int offset = (Capacity - _written) + simulatedIndex + WriteIndex;
+            if (offset >= Capacity)
+                offset -= Capacity;
+
+            return offset;
         }
 
         /// <summary>

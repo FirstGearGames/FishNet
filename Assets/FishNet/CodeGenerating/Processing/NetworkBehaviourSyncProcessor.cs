@@ -37,7 +37,7 @@ namespace FishNet.CodeGenerating.Processing
         #endregion
 
         #region Const.
-        private const string SYNCVAR_PREFIX = "syncVar___";
+        internal const string SYNCVAR_PREFIX = "syncVar___";
         private const string ACCESSOR_PREFIX = "sync___";
         private const string SETREGISTERED_METHOD_NAME = "SetRegistered";
         private const string INITIALIZEINSTANCE_METHOD_NAME = "InitializeInstance";
@@ -159,13 +159,6 @@ namespace FishNet.CodeGenerating.Processing
             NetworkBehaviourSyncProcessor nbsp = base.GetClass<NetworkBehaviourSyncProcessor>();
             NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
             ILProcessor processor = localReadMd.DeclaringType.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME).Body.GetILProcessor();
-
-
-        //IL_0000: ldarg.0
-        //IL_0001: ldarg.0
-        //IL_0002: ldftn instance bool C::MyRead(uint8, bool)
-        //IL_0008: newobj instance void SyncVarReadDelegate::.ctor(object, native int)
-        //IL_000d: call instance void D::RegisterDelegate(class SyncVarReadDelegate)
 
             List<Instruction> insts = new List<Instruction>();
             /* Create delegate and call NetworkBehaviour method. */
@@ -521,7 +514,7 @@ namespace FishNet.CodeGenerating.Processing
                     {
                         base.LogError($"{fieldDef.Name} SyncObject must be readonly.");
                         error = true;
-                    }                    
+                    }
                 }
 
 
@@ -566,7 +559,7 @@ namespace FishNet.CodeGenerating.Processing
 
                 InitializeSyncVar(syncCount, createdSyncVarFd, typeDef, originalFieldDef, syncTypeAttribute, createdSyncVar);
 
-                MethodDefinition syncVarReadMd = CreateSyncVarRead(typeDef, syncCount, originalFieldDef, accessorSetValueMethodRef, ref readSyncVarMd);
+                MethodDefinition syncVarReadMd = CreateSyncVarRead(typeDef, syncCount, createdSyncVar, originalFieldDef, accessorSetValueMethodRef, ref readSyncVarMd);
                 if (syncVarReadMd != null)
                     _createdSyncTypeMethodDefinitions.Add(syncVarReadMd);
 
@@ -598,6 +591,8 @@ namespace FishNet.CodeGenerating.Processing
                 base.LogError($"Could not create field for Sync type {originalFieldDef.FieldType.FullName}, name of {originalFieldDef.Name}.");
                 return null;
             }
+            //Add to CreatedSyncVar.
+            createdSyncVar.SetSyncVarClassField(createdFieldDef);
 
             typeDef.Fields.Add(createdFieldDef);
             return createdFieldDef;
@@ -1317,7 +1312,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="typeDef"></param>
         /// <param name="syncIndex"></param>
         /// <param name="originalFieldDef"></param>
-        private MethodDefinition CreateSyncVarRead(TypeDefinition typeDef, uint syncIndex, FieldDefinition originalFieldDef, MethodReference accessorSetMethodRef, ref MethodDefinition readSyncVarMd)
+        private MethodDefinition CreateSyncVarRead(TypeDefinition typeDef, uint syncIndex, CreatedSyncVar createdSyncVar, FieldDefinition originalFieldDef, MethodReference accessorSetMethodRef, ref MethodDefinition readSyncVarMd)
         {
             Instruction jmpGoalInst;
             ILProcessor processor;
@@ -1375,11 +1370,31 @@ namespace FishNet.CodeGenerating.Processing
             //Check index first. if (index != syncIndex) return
             Instruction nextLastReadInstruction = processor.Create(OpCodes.Ldarg, indexPd);
             processor.InsertBefore(jmpGoalInst, nextLastReadInstruction);
-
             uint hash = (uint)syncIndex;
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4, (int)hash));
             //processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4, syncIndex));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Bne_Un, jmpGoalInst));
+
+            Instruction setValueInst = processor.Create(OpCodes.Nop);
+            /* This section will call GetValue from the SyncVar
+             * class and set it to the syncvar field. */
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldarg_1));
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Brtrue_S, setValueInst));
+            //Load field and class.
+
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldarg_0));
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldarg_0));
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldfld, createdSyncVar.SyncVarClassFd));
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_1)); //True for calledByUser.
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Call, createdSyncVar.GetValueMr));
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_1)); //True for calledByUser.
+            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Call, accessorSetMethodRef));
+
+            InsertReturnTrue();
+
+            processor.InsertBefore(jmpGoalInst, setValueInst);
+            /* This section will pull data from the reader
+             * and call SetValue on the SyncVar class. */
             //PooledReader.ReadXXXX()
             readInsts = base.GetClass<ReaderProcessor>().CreateRead(readSyncVarMd, pooledReaderPd,
                  originalFieldDef.FieldType, out nextValueVariableDef);
@@ -1395,9 +1410,14 @@ namespace FishNet.CodeGenerating.Processing
             //processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_0));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldarg, asServerPd));
             processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Call, accessorSetMethodRef));
-            //Return true when able to process.
-            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_1));
-            processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ret));
+            InsertReturnTrue();
+
+            void InsertReturnTrue()
+            {
+                //Return true when able to process.
+                processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ldc_I4_1));
+                processor.InsertBefore(jmpGoalInst, processor.Create(OpCodes.Ret));
+            }
 
             _lastReadInstruction = nextLastReadInstruction;
             processor.Remove(nopPlaceHolderInst);

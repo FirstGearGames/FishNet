@@ -540,6 +540,22 @@ namespace FishNet.Object
                 AddDefaultNetworkObserverConditions();
             }
 
+            /* Guestimate the last replicate tick 
+             * based on latency and last packet tick.
+             * Going to try and send last input with spawn
+            * packet which will have definitive tick. //todo
+            */
+            if (!asServer && !IsServer && !IsOwner)
+            {
+                long estimatedTickDelay = (TimeManager.Tick - TimeManager.LastPacketTick);
+                if (estimatedTickDelay < 0)
+                    estimatedTickDelay = 0;
+
+#if PREDICTION_V2
+                ReplicateTick.Update(TimeManager, TimeManager.LastPacketTick - (uint)estimatedTickDelay);
+#endif
+            }
+
             for (int i = 0; i < NetworkBehaviours.Length; i++)
                 NetworkBehaviours[i].Preinitialize_Internal(this, asServer);
 
@@ -1029,7 +1045,7 @@ namespace FishNet.Object
             return ctp;
         }
 
-        #region Editor.
+#region Editor.
 #if UNITY_EDITOR
         /// <summary>
         /// Removes duplicate NetworkObject components on this object returning the removed count.
@@ -1123,7 +1139,7 @@ namespace FishNet.Object
             }
         }
 #endif
-        #endregion
+#endregion
     }
 
 }

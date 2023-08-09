@@ -13,6 +13,8 @@ namespace FishNet.CodeGenerating.Helping
         public readonly MethodReference SetSyncIndexMr;
         public readonly MethodReference ConstructorMr;
         public readonly GenericInstanceType SyncVarGit;
+        public FieldDefinition SyncVarClassFd { get; private set; }
+
         public MethodReference HookMr;
         public CreatedSyncVar(GenericInstanceType syncVarGit, TypeDefinition variableTd, MethodReference getValueMr, MethodReference setValueMr, MethodReference setSyncIndexMr,MethodReference hookMr,  MethodReference constructorMr)
         {
@@ -23,6 +25,11 @@ namespace FishNet.CodeGenerating.Helping
             SetSyncIndexMr = setSyncIndexMr;
             HookMr = hookMr;
             ConstructorMr = constructorMr;
+        }
+
+        public void SetSyncVarClassField(FieldDefinition fd)
+        {
+            SyncVarClassFd = fd;
         }
     }
 

@@ -29,7 +29,7 @@ namespace GameKit.Utilities
         {
             if (precise)
             {
-                //This is run Unitys implementation without the error tolerance.
+                //This Unitys implementation without the error tolerance.
                 float dot = (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
                 return (Mathf.Acos(Mathf.Min(Mathf.Abs(dot), 1f)) * 2f * 57.29578f);
             }

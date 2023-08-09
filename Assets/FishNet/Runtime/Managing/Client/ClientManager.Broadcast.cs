@@ -2,7 +2,6 @@
 using FishNet.Broadcast.Helping;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Utility;
-using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
@@ -40,7 +39,7 @@ namespace FishNet.Managing.Client
         /// <param name="handler">Method to call.</param>
         public void RegisterBroadcast<T>(Action<T> handler) where T : struct, IBroadcast
         {
-            ushort key = typeof(T).FullName.GetStableHash16();
+            ushort key = typeof(T).FullName.GetStableHashU16();
             /* Create delegate and add for
              * handler method. */
             HashSet<ServerBroadcastDelegate> handlers;

@@ -448,9 +448,9 @@ namespace FishNet.Managing.Predicting
 
         private struct StatePacket
         {
-            public ArraySegment<byte> Data;            
+            public ArraySegment<byte> Data;
             public uint ServerTick;
-            
+
             public StatePacket(ArraySegment<byte> data, uint serverTick)
             {
                 Data = data;
@@ -465,7 +465,7 @@ namespace FishNet.Managing.Predicting
         {
             if (!_networkManager.IsClient)
                 return;
-            if (_recievedStates.Count < 2)
+            if (_recievedStates.Count < 4)
                 return;
 
             StatePacket state = _recievedStates.Dequeue();
@@ -499,8 +499,9 @@ namespace FishNet.Managing.Predicting
              * Replay up to localtick, excluding localtick. There will
              * be no input for localtick since reconcile runs before
              * OnTick. */
-            uint clientReplayTick = (StateClientTick + 1);
-            uint serverReplayTick = (StateServerTick + 1);
+            uint clientReplayTick = StateClientTick + 1;
+            uint serverReplayTick = StateServerTick + 1; 
+            //Debug.Log($"Replay Start. StateClientTick {StateClientTick}. StateServerTick {StateServerTick}");
             while (clientReplayTick < localTick)
             {
                 OnPreReplicateReplay?.Invoke(clientReplayTick, serverReplayTick);
@@ -509,6 +510,8 @@ namespace FishNet.Managing.Predicting
                 {
                     Physics2D.Simulate(tickDelta);
                     Physics.Simulate(tickDelta);
+                    Physics2D.SyncTransforms();
+                    Physics.SyncTransforms();
                 }
                 OnPostReplicateReplay?.Invoke(clientReplayTick, serverReplayTick);
                 replays++;
@@ -523,6 +526,7 @@ namespace FishNet.Managing.Predicting
                  * 
                  */
             }
+            //Debug.Log($"Last replayed ticks. Client {clientReplayTick - 1}. Server {serverReplayTick - 1}");
 
             //Debug.Log("PM Replays " + replays);
             OnPostReconcile?.Invoke(StateClientTick, StateServerTick);
@@ -557,6 +561,7 @@ namespace FishNet.Managing.Predicting
                 //Make segment and store into states.
                 ArraySegment<byte> segment = new ArraySegment<byte>(arr, 0, length);
                 _recievedStates.Enqueue(new StatePacket(segment, _networkManager.TimeManager.LastPacketTick));
+                //Debug.Log($"Saving reconcile for packetTick {_networkManager.TimeManager.LastPacketTick}");
             }
         }
 #endif

@@ -65,6 +65,14 @@ namespace FishNet.Object
         private HashSet<NetworkConnection> _networkConnectionCache = new HashSet<NetworkConnection>();
         #endregion
 
+        #region Const.
+        /// <summary>
+        /// This is an estimated value of what the maximum possible size of a RPC could be.
+        /// Realistically this value is much smaller but this value is used as a buffer.
+        /// </summary>
+        private const int MAXIMUM_RPC_HEADER_SIZE = 10;
+        #endregion
+
         /// <summary>
         /// Called when buffered RPCs should be sent.
         /// </summary>
@@ -232,11 +240,13 @@ namespace FishNet.Object
         {
             if (!IsSpawnedWithWarning())
                 return;
+            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
 
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.ServerRpc, channel);
             _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), true, orderType);
             writer.StoreLength();
         }
+
 
         /// <summary>
         /// Sends a RPC to observers.
@@ -251,6 +261,7 @@ namespace FishNet.Object
         {
             if (!IsSpawnedWithWarning())
                 return;
+            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
 
             PooledWriter writer;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -291,6 +302,8 @@ namespace FishNet.Object
         {
             if (!IsSpawnedWithWarning())
                 return;
+
+            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
 
             if (validateTarget)
             {

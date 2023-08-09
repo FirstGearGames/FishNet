@@ -31,6 +31,10 @@ namespace FishNet.Object
         /// Last tick this object replicated.
         /// </summary>
         internal EstimatedTick ReplicateTick;
+        /// <summary>
+        /// Last tick to replicate even if out of order. This could be from tick events or even replaying inputs.
+        /// </summary>
+        internal uint LastUnorderedReplicateTick;
         #endregion
 
         #region Internal.
@@ -75,11 +79,19 @@ namespace FishNet.Object
         /// <summary>
         /// Graphical smoother to use when using adaptive.
         /// </summary>
-        private AdaptiveInterpolationSmoother _adaptiveInterpolationSmoother;
+        private AdaptiveInterpolationSmoother _spectatorAdaptiveInterpolationSmoother;
         /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
         private List<NetworkBehaviour> _predictionBehaviours = new List<NetworkBehaviour>();
+        /// <summary>
+        /// Tick when CollionStayed last called. This only has value if using prediction.
+        /// </summary>
+        private uint _collisionStayedTick;
+        /// <summary>
+        /// Local client objects this object is currently colliding with.
+        /// </summary>
+        private HashSet<GameObject> _localClientCollidedObjects = new HashSet<GameObject>();
         #endregion
 
         private void Prediction_Awake()
@@ -119,7 +131,7 @@ namespace FishNet.Object
             //Create adaptive interpolation smoother if enabled.
             if (_spectatorAdaptiveInterpolation)
             {
-                _adaptiveInterpolationSmoother = new AdaptiveInterpolationSmoother();
+                _spectatorAdaptiveInterpolationSmoother = new AdaptiveInterpolationSmoother();
                 //Smoothing values.
                 AdaptiveInterpolationSmoothingData aisd;
                 if (_adaptiveSmoothingType == AdaptiveSmoothingType.Custom)
@@ -134,7 +146,7 @@ namespace FishNet.Object
                 aisd.SmoothScale = true;
                 aisd.NetworkObject = this;
                 aisd.TeleportThreshold = teleportThreshold;
-                _adaptiveInterpolationSmoother.Initialize(aisd);
+                _spectatorAdaptiveInterpolationSmoother.Initialize(aisd);
             }
         }
 
@@ -145,7 +157,7 @@ namespace FishNet.Object
 
             _ownerSetInterpolationSmoother.Update();
             //  _spectatorSetInterpolationSmoother.Update();
-            _adaptiveInterpolationSmoother?.Update();
+            _spectatorAdaptiveInterpolationSmoother?.Update();
         }
 
         private void TimeManager_OnPreTick()
@@ -153,14 +165,16 @@ namespace FishNet.Object
             //Do not need to check use prediction because this method only fires if prediction is on for this object.
             _ownerSetInterpolationSmoother.OnPreTick();
             //   _spectatorSetInterpolationSmoother.OnPreTick();
-            _adaptiveInterpolationSmoother?.OnPreTick();
+            _spectatorAdaptiveInterpolationSmoother?.OnPreTick();
         }
         private void TimeManager_OnPostTick()
         {
             //Do not need to check use prediction because this method only fires if prediction is on for this object.
             _ownerSetInterpolationSmoother.OnPostTick();
             // _spectatorSetInterpolationSmoother.OnPostTick();
-            _adaptiveInterpolationSmoother?.OnPostTick();
+            _spectatorAdaptiveInterpolationSmoother?.OnPostTick();
+
+            TrySetCollisionExited();
         }
 
         private void Prediction_Preinitialize(NetworkManager manager, bool asServer)
@@ -175,7 +189,7 @@ namespace FishNet.Object
                 manager.PredictionManager.OnPreReconcile += PredictionManager_OnPreReconcile;
                 manager.PredictionManager.OnReplicateReplay += PredictionManager_OnReplicateReplay;
                 manager.PredictionManager.OnPostReconcile += PredictionManager_OnPostReconcile;
-                if (_adaptiveInterpolationSmoother != null)
+                if (_spectatorAdaptiveInterpolationSmoother != null)
                 {
                     manager.PredictionManager.OnPreReplicateReplay += PredictionManager_OnPreReplicateReplay;
                     manager.PredictionManager.OnPostReplicateReplay += PredictionManager_OnPostReplicateReplay;
@@ -198,7 +212,7 @@ namespace FishNet.Object
                 NetworkManager.PredictionManager.OnPreReconcile -= PredictionManager_OnPreReconcile;
                 NetworkManager.PredictionManager.OnReplicateReplay -= PredictionManager_OnReplicateReplay;
                 NetworkManager.PredictionManager.OnPostReconcile -= PredictionManager_OnPostReconcile;
-                if (_adaptiveInterpolationSmoother != null)
+                if (_spectatorAdaptiveInterpolationSmoother != null)
                 {
                     NetworkManager.PredictionManager.OnPreReplicateReplay -= PredictionManager_OnPreReplicateReplay;
                     NetworkManager.PredictionManager.OnPostReplicateReplay -= PredictionManager_OnPostReplicateReplay;
@@ -227,14 +241,6 @@ namespace FishNet.Object
         }
 
 
-        private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
-        {
-            /* Adaptive smoother uses localTick (clientTick) to track graphical datas.
-            * There's no need to use serverTick since the only purpose of adaptiveSmoother
-            * is to smooth graphic changes, not update the transform itself. */
-            _adaptiveInterpolationSmoother?.OnPostReplay(clientTick);
-        }
-
         private void PredictionManager_OnReplicateReplay(uint clientTick, uint serverTick)
         {
             uint replayTick = (IsOwner) ? clientTick : serverTick;
@@ -247,7 +253,129 @@ namespace FishNet.Object
             /* Adaptive smoother uses localTick (clientTick) to track graphical datas.
              * There's no need to use serverTick since the only purpose of adaptiveSmoother
              * is to smooth graphic changes, not update the transform itself. */
-            _adaptiveInterpolationSmoother?.OnPreReplay(clientTick);
+            _spectatorAdaptiveInterpolationSmoother?.OnPreReplicateReplay(clientTick, serverTick);
+        }
+
+        private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
+        {
+            /* Adaptive smoother uses localTick (clientTick) to track graphical datas.
+            * There's no need to use serverTick since the only purpose of adaptiveSmoother
+            * is to smooth graphic changes, not update the transform itself. */
+            _spectatorAdaptiveInterpolationSmoother?.OnPostReplicateReplay(clientTick, serverTick);
+        }
+
+
+        /// <summary>
+        /// Returns if this object is colliding with any local client objects.
+        /// </summary>
+        /// <returns></returns>
+        internal bool CollidingWithLocalClient()
+        {
+            /* If it's been more than 1 tick since collision stayed
+             * then do not consider as collided. */
+            return (TimeManager.LocalTick - _collisionStayedTick) < 1;
+        }
+
+        /// <summary>
+        /// Called when colliding with another object.
+        /// </summary>
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (!ClientInitialized)
+                return;
+            if (_predictionType != PredictionType.Rigidbody)
+                return;
+
+            GameObject go = collision.gameObject;
+            if (CollisionEnteredLocalClientObject(go))
+                CollisionEntered(go);
+        }
+
+        /// <summary>
+        /// Called when collision has entered a local clients object.
+        /// </summary>
+        private void CollisionEntered(GameObject go)
+        {
+            _collisionStayedTick = TimeManager.LocalTick;
+            _localClientCollidedObjects.Add(go);
+        }
+
+        /// <summary>
+        /// Called when colliding with another object.
+        /// </summary>
+        private void OnCollisionEnter2D(Collision2D collision)
+        {
+            if (!ClientInitialized)
+                return;
+            if (_predictionType != PredictionType.Rigidbody2D)
+                return;
+
+            GameObject go = collision.gameObject;
+            if (CollisionEnteredLocalClientObject(go))
+                CollisionEntered(go);
+        }
+
+
+        /// <summary>
+        /// Called when staying in collision with another object.
+        /// </summary>
+        private void OnCollisionStay(Collision collision)
+        {
+            if (!ClientInitialized)
+                return;
+            if (_predictionType != PredictionType.Rigidbody)
+                return;
+
+            if (_localClientCollidedObjects.Contains(collision.gameObject))
+                _collisionStayedTick = TimeManager.LocalTick;
+        }
+        /// <summary>
+        /// Called when staying in collision with another object.
+        /// </summary>
+        private void OnCollisionStay2D(Collision2D collision)
+        {
+            if (!ClientInitialized)
+                return;
+            if (_predictionType != PredictionType.Rigidbody2D)
+                return;
+
+            if (_localClientCollidedObjects.Contains(collision.gameObject))
+                _collisionStayedTick = TimeManager.LocalTick;
+        }
+
+        /// <summary>
+        /// Called when a collision occurs and the smoothing type must perform operations.
+        /// </summary>
+        private bool CollisionEnteredLocalClientObject(GameObject go)
+        {
+            if (go.TryGetComponent<NetworkObject>(out NetworkObject nob))
+                return nob.Owner.IsLocalClient;
+
+            //Fall through.
+            return false;
+        }
+
+
+        /// <summary>
+        /// Called when collision has exited a local clients object.
+        /// </summary>
+        private void TrySetCollisionExited()
+        {
+            /* If this object is no longer
+             * colliding with local client objects
+             * then unset collision.
+             * This is done here instead of using
+             * OnCollisionExit because often collisionexit
+             * will be missed due to ignored ticks. 
+             * While not ignoring ticks is always an option
+             * its not ideal because ignoring ticks helps
+            * prevent over predicting. */
+            TimeManager tm = TimeManager;
+            if (tm == null || (_collisionStayedTick != 0 && (tm.LocalTick != _collisionStayedTick)))
+            {
+                _localClientCollidedObjects.Clear();
+                _collisionStayedTick = 0;
+            }
         }
 
         /// <summary>
@@ -260,10 +388,22 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Resets replicate tick and unordered replicate tick.
+        /// </summary>
+        internal void ResetReplicateTick()
+        {
+            ReplicateTick.Reset();
+            LastUnorderedReplicateTick = 0;
+        }
+
+        /// <summary>
         /// Sets the last tick this NetworkBehaviour replicated with.
         /// </summary>
-        internal void SetReplicateTick(uint value)
+        internal void SetReplicateTick(uint value, bool setUnordered)
         {
+            if (setUnordered)
+                LastUnorderedReplicateTick = value;
+
             ReplicateTick.Update(NetworkManager.TimeManager, value, EstimatedTick.OldTickOption.Discard);
             Owner.ReplicateTick.Update(NetworkManager.TimeManager, value, EstimatedTick.OldTickOption.Discard);
         }

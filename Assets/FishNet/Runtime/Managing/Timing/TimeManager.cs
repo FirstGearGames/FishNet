@@ -275,7 +275,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// How often to send timing updates to clients.
         /// </summary>
-        private const float TIMING_INTERVAL = 1f;
+        internal const float TIMING_INTERVAL = 1f;
         /// <summary>
         /// Value for a tick that is invalid.
         /// </summary>

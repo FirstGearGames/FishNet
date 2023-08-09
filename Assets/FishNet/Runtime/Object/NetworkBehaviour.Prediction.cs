@@ -135,10 +135,14 @@ namespace FishNet.Object
         /// Last tick the local client predicted inputs for this object.
         /// </summary>
         private uint _lastPredictedReplicateTick = 0;
-		/// <summary>
-        /// The last tick this NetworkBehaviour read for a reconcile.
+        /// <summary>
+        /// Last tick read read for a reconcile.
         /// </summary>
         private uint _lastReadReconcileTick;
+        /// <summary>
+        /// Last tick read for a replicate.
+        /// </summary>
+        private uint _lastReadReplicateTick;
 #endif
 #if !PREDICTION_V2
         /// <summary>
@@ -257,7 +261,7 @@ namespace FishNet.Object
         /// </summary>
         public void ClearReplicateCache()
         {
-            _networkObjectCache.ReplicateTick.Reset();
+            _networkObjectCache.ResetReplicateTick();
             ClearReplicateCache_Virtual<IReplicateData>(null, null);
         }
         /// <summary>
@@ -470,14 +474,14 @@ namespace FishNet.Object
             return changed;
         }
 #else
-		/// <summary> 
-		/// Returns if there is a chance the transform may change after the tick.
-		/// </summary>
-		/// <returns></returns>
-		protected internal bool PredictedTransformMayChange()
+        /// <summary> 
+        /// Returns if there is a chance the transform may change after the tick.
+        /// </summary>
+        /// <returns></returns>
+        protected internal bool PredictedTransformMayChange()
         {
-			if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
-				return false;
+            if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
+                return false;
 
             if (!_predictionInitialized)
             {
@@ -609,18 +613,18 @@ namespace FishNet.Object
         /// </summary>
         protected internal void Replicate_Replay<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
-			//Reconcile data was not received so cannot replay.
-			if (!ClientHasReconcileData)
-			{
-				/* If rbPauser exists then pause. This is done here
+            //Reconcile data was not received so cannot replay.
+            if (!ClientHasReconcileData)
+            {
+                /* If rbPauser exists then pause. This is done here
 				 * instead of in the OnPreReconcile event for NetworkObject
 				 * because each NB can have different replicate logic
 				 * and have different states. Ideally everything would
 				 * get its data together at the same time but things
 				 * don't always work out that way. */
-				_networkObjectCache.RigidbodyPauser?.Pause();
-				return;
-			}
+                _networkObjectCache.RigidbodyPauser?.Pause();
+                return;
+            }
             int replicateIndex = GetReplicateHistoryIndex<T>(replayTick, replicatesHistory);
 
             T data;
@@ -638,6 +642,7 @@ namespace FishNet.Object
             }
 
             del.Invoke(data, state, channel);
+            _networkObjectCache.LastUnorderedReplicateTick = data.GetTick();
         }
 #endif
 
@@ -747,7 +752,7 @@ namespace FishNet.Object
                 else
                 {
                     uint dataTick = data.GetTick();
-                    _networkObjectCache.SetReplicateTick(dataTick);
+                    _networkObjectCache.SetReplicateTick(dataTick, true);
                     /* If the arrived data has a tick less or equal
 					 * to the last predicted tick then it's very possible
 					 * the predicted tick has the incorrect data so we
@@ -948,7 +953,7 @@ namespace FishNet.Object
             }
 
             //Update last replicate tick.
-            _networkObjectCache.SetReplicateTick(localTick);
+            _networkObjectCache.SetReplicateTick(localTick, true);
             //Owner always replicates with new data.
             del.Invoke(data, ReplicateState.UserCreated, channel);
         }
@@ -1082,7 +1087,7 @@ namespace FishNet.Object
                     return;
                 }
             }
-            Replicate_HandleReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicatesQueue, channel, lastPacketTick);
+            Replicate_HandleReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicatesQueue, channel);
 
             //Only server needs to send to spectators.
             if (IsServer)
@@ -1191,12 +1196,7 @@ namespace FishNet.Object
         /// <summary>
         /// Handles a received replicate packet.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="receivedReplicatesCount"></param>
-        /// <param name="arrBuffer"></param>
-        /// <param name="replicates"></param>
-        /// <param name="channel"></param>
-        private void Replicate_HandleReceivedReplicate<T>(int receivedReplicatesCount, T[] arrBuffer, BasicQueue<T> replicatesQueue, Channel channel, uint replicateTick) where T : IReplicateData
+        private void Replicate_HandleReceivedReplicate<T>(int receivedReplicatesCount, T[] arrBuffer, BasicQueue<T> replicatesQueue, Channel channel) where T : IReplicateData
         {
             /* Owner never gets this for their own object so
 			 * this can be processed under the assumption data is only
@@ -1209,16 +1209,16 @@ namespace FishNet.Object
             for (int i = 0; i < receivedReplicatesCount; i++)
             {
                 uint tick = arrBuffer[i].GetTick();
-                //If able to update replicate tick.
-                if (_networkObjectCache.ReplicateTick.Update(NetworkManager.TimeManager, tick, EstimatedTick.OldTickOption.Discard))
+                if (tick > _lastReadReplicateTick)
                 {
+                    _lastReadReplicateTick = tick;
                     //Cannot queue anymore, discard oldest.
                     if (replicatesQueue.Count >= maximmumReplicates)
                     {
                         T data = replicatesQueue.Dequeue();
                         data.Dispose();
                     }
-					
+
                     replicatesQueue.Enqueue(arrBuffer[i]);
                 }
             }

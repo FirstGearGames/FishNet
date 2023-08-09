@@ -1,8 +1,5 @@
-﻿using FishNet.Managing.Scened;
-using FishNet.Managing.Server;
-using FishNet.Object.Helping;
-using FishNet.Transporting;
-using UnityEngine;
+﻿using FishNet.Transporting;
+using GameKit.Utilities;
 
 namespace FishNet.Serializing.Helping
 {
@@ -20,7 +17,7 @@ namespace FishNet.Serializing.Helping
         internal static PooledWriter WriteBroadcast<T>(PooledWriter writer, T message, Channel channel)
         {
             writer.WritePacketId(PacketId.Broadcast);
-            writer.WriteUInt16(typeof(T).FullName.GetStableHash16()); //muchlater codegen this to pass in hash. use technique similar to rpcs to limit byte/shorts.            
+            writer.WriteUInt16(typeof(T).FullName.GetStableHashU16());
             //Write data to a new writer.
             PooledWriter dataWriter = WriterPool.Retrieve();
             dataWriter.Write<T>(message);

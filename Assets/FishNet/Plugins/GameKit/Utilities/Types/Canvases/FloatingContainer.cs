@@ -1,13 +1,11 @@
+using GameKit.Dependencies.Inspectors;
 using System.Runtime.CompilerServices;
-using TriInspector;
 using UnityEngine;
 
 
 namespace GameKit.Utilities.Types.CanvasContainers
 {
 
-    [DeclareFoldoutGroup("Components")]
-    [DeclareFoldoutGroup("Sizing")]
     public class FloatingContainer : CanvasGroupFader
     {
         #region Serialized.
@@ -16,7 +14,6 @@ namespace GameKit.Utilities.Types.CanvasContainers
         /// </summary>
         [Tooltip("RectTransform to move.")]
         [SerializeField, Group("Components")]
-
         protected RectTransform RectTransform;
         /// <summary>
         /// True to use edge avoidance.
@@ -28,7 +25,7 @@ namespace GameKit.Utilities.Types.CanvasContainers
         /// How much to avoid screen edges when being moved.
         /// </summary>
         [Tooltip("How much to avoid screen edges when being moved.")]
-        [SerializeField, Group("Sizing"), ShowIf(nameof(UseEdgeAvoidance))]
+        [SerializeField, Group("Sizing"), ShowIf(nameof(UseEdgeAvoidance), true)]
         protected Vector2 EdgeAvoidance;
         #endregion
 

@@ -1,8 +1,5 @@
-﻿using FishNet.Managing.Logging;
-using FishNet.Serializing.Helping;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Scened
@@ -25,6 +22,19 @@ namespace FishNet.Managing.Scened
 
             return names;
         }
+        /// <summary>
+        /// Returns Names from SceneLookupData.
+        /// </summary>
+        /// <param name="datas"></param>
+        /// <returns></returns>
+        public static string[] GetNamesOnly(this SceneLookupData[] datas)
+        {
+            string[] names = new string[datas.Length];
+            for (int i = 0; i < datas.Length; i++)
+                names[i] = datas[i].NameOnly;
+
+            return names;
+        }
     }
 
     /// <summary>
@@ -43,7 +53,16 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Returns the scene name without a directory path should one exist.
         /// </summary>
-        public string NameOnly => System.IO.Path.GetFileNameWithoutExtension(Name);
+        public string NameOnly
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(Name))
+                    return string.Empty;
+                string name = System.IO.Path.GetFileName(Name);
+                return RemoveUnityExtension(name);
+            }
+        }
         /// <summary>
         /// Returns if this data is valid for use.
         /// Being valid does not mean that the scene exist, rather that there is enough data to try and lookup a scene.
@@ -252,8 +271,7 @@ namespace FishNet.Managing.Scened
                     continue;
                 }
 
-                string nameOnly = System.IO.Path.GetFileNameWithoutExtension(item);
-                result.Add(CreateData(nameOnly));
+                result.Add(CreateData(item));
             }
 
             if (invalidFound)
@@ -289,6 +307,19 @@ namespace FishNet.Managing.Scened
         #endregion
 
         /// <summary>
+        /// Removes .Unity from text.
+        /// </summary>
+        private static string RemoveUnityExtension(string text)
+        {
+            string extension = ".unity";
+            int extIndex = text.ToLower().IndexOf(extension);
+            if (extIndex != -1 && (text.Length - extIndex) == extension.Length)
+                text = text.Substring(0, extIndex);
+
+            return text;
+        }
+
+        /// <summary>
         /// Returns the first scene found using Handle or Name, preferring Handle.
         /// </summary>
         /// <returns></returns>
@@ -297,7 +328,7 @@ namespace FishNet.Managing.Scened
         {
             foundByHandle = false;
 
-            if (Handle == 0 && string.IsNullOrEmpty(Name))
+            if (Handle == 0 && string.IsNullOrEmpty(NameOnly))
             {
                 NetworkManager.StaticLogWarning("Scene handle and name is unset; scene cannot be returned.");
                 return default;

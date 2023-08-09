@@ -27,24 +27,6 @@ namespace FishNet.Managing.Server
     [AddComponentMenu("FishNet/Manager/ServerManager")]
     public sealed partial class ServerManager : MonoBehaviour
     {
-        #region Types.
-        public enum RemoteTimeoutType
-        {
-            /// <summary>
-            /// Disable this feature.
-            /// </summary>
-            Disabled = 0,
-            /// <summary>
-            /// Only enable in release builds.
-            /// </summary>
-            Release = 1,
-            /// <summary>
-            /// Enable in all builds and editor.
-            /// </summary>
-            Development = 2,
-        }
-        #endregion
-
         #region Public.
         /// <summary>
         /// Called after the local server connection state changes.
@@ -110,7 +92,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         [Tooltip("What platforms to enable remote client timeout.")]
         [SerializeField]
-        private RemoteTimeoutType _remoteClientTimeout = RemoteTimeoutType.Disabled;
+        private RemoteTimeoutType _remoteClientTimeout = RemoteTimeoutType.Development;
         /// <summary>
         /// How long in seconds client must go without sending any packets before getting disconnected. This is independent of any transport settings.
         /// </summary>
@@ -216,7 +198,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Maximum value the remote client timeout can be set to.
         /// </summary>
-        private const ushort MAXIMUM_REMOTE_CLIENT_TIMEOUT_DURATION = 1500;
+        public const ushort MAXIMUM_REMOTE_CLIENT_TIMEOUT_DURATION = 1500;
         #endregion
 
         private void OnDestroy()
@@ -358,6 +340,10 @@ namespace FishNet.Managing.Server
             else if (_remoteClientTimeout != RemoteTimeoutType.Development)
                 return;
 #endif
+            //Wait two timing intervals to give packets a chance to come through.
+            if (NetworkManager.SceneManager.IsIteratingQueue(TimeManager.TIMING_INTERVAL * 2f))
+                return;
+
             float unscaledTime = Time.unscaledTime;
             if (unscaledTime < _nextTimeoutCheckTime)
                 return;
@@ -395,7 +381,7 @@ namespace FishNet.Managing.Server
                     uint difference = (localTick - item.PacketTick.LocalTick);
                     //Client has timed out.
                     if (difference >= requiredTicks)
-                        item.Kick(KickReason.UnexpectedProblem, LoggingType.Common, $"{item.ToString()} has timed out.");
+                        item.Kick(KickReason.UnexpectedProblem, LoggingType.Common, $"{item.ToString()} has timed out. You can modify this feature on the ServerManager component.");
                     //If all iterations are complete.
                     if (--targetIterations <= 0)
                         break;
@@ -775,10 +761,10 @@ namespace FishNet.Managing.Server
                 else
                 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Remaining data has been purged.");
+                    NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} on channel {args.Channel} from connectionId {args.ConnectionId}. Remaining data has been purged.");
                     _parseLogger.Print(NetworkManager);
 #else
-                        NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately.");
+                        NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} on channel {args.Channel} from connectionId {args.ConnectionId}. Connection will be kicked immediately.");
                         NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
 #endif
                     return;

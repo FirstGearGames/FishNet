@@ -45,7 +45,7 @@ namespace FishNet.Managing.Timing
         /// True if value is unset.
         /// </summary>
         //Only need to check one value for unset as they all would be if not set.
-        public bool IsUnset => (LocalTick == TimeManager.UNSET_TICK);
+        public bool IsUnset => (LocalTick == 0);
         /// <summary>
         /// Number of ticks LocalTick is being current LocalTick.
         /// </summary>
@@ -60,6 +60,7 @@ namespace FishNet.Managing.Timing
 
             return (uint)value;
         }
+
         /// <summary>
         /// Updates values.
         /// </summary>
@@ -69,9 +70,8 @@ namespace FishNet.Managing.Timing
         /// <returns>True if was able to update values.</returns>
         public bool Update(TimeManager tm, uint remoteTick, OldTickOption oldTickOption = OldTickOption.Discard)
         {
-            //If anything but discard LastRemoteTick can be set.
-            if (oldTickOption != OldTickOption.Discard)
-                LastRemoteTick = remoteTick;
+            //Always set LastRemoteTick even if out of order.
+            LastRemoteTick = remoteTick;
             //If cannot update with old values return.
             if (oldTickOption != OldTickOption.SetRemoteTick && remoteTick <= RemoteTick)
                 return false;

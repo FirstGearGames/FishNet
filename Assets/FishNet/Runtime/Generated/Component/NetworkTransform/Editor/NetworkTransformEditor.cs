@@ -20,6 +20,7 @@ namespace FishNet.Component.Transforming.Editing
         private SerializedProperty _extrapolation;
         private SerializedProperty _enableTeleport;
         private SerializedProperty _teleportThreshold;
+        private SerializedProperty _scaleThreshold;
         private SerializedProperty _clientAuthoritative;
         private SerializedProperty _sendToOwner;
         private SerializedProperty _enableNetworkLod;
@@ -41,6 +42,7 @@ namespace FishNet.Component.Transforming.Editing
             _extrapolation = serializedObject.FindProperty("_extrapolation");
             _enableTeleport = serializedObject.FindProperty("_enableTeleport");
             _teleportThreshold = serializedObject.FindProperty("_teleportThreshold");
+            _scaleThreshold = serializedObject.FindProperty(nameof(_scaleThreshold));
             _clientAuthoritative = serializedObject.FindProperty("_clientAuthoritative");
             _sendToOwner = serializedObject.FindProperty("_sendToOwner");
             _enableNetworkLod = serializedObject.FindProperty(nameof(_enableNetworkLod));
@@ -82,6 +84,8 @@ namespace FishNet.Component.Transforming.Editing
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_teleportThreshold);
+                if (_enableNetworkLod.boolValue)
+                    EditorGUILayout.PropertyField(_scaleThreshold);
                 EditorGUI.indentLevel--;
             }
             EditorGUI.indentLevel--;

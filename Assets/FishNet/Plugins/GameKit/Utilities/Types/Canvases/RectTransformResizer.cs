@@ -84,6 +84,7 @@ namespace GameKit.Utilities.Types
         /// <summary>
         /// Used to call a delegate twice, over two frames.
         /// This is an easy way to resize RectTransforms multiple times as they will often fail after the first resize due to Unity limitations.
+        /// Note: this work-around may not be required for newer Unity versions.
         /// </summary>
         /// <param name="del">Delegate to invoke when resizing completes.</param>
         public static void Resize(ResizeDelegate del)
@@ -100,7 +101,6 @@ namespace GameKit.Utilities.Types
         }
         private  void Resize_Internal(ResizeDelegate del)
         {
-
             ResizeData rd = ResettableObjectCaches<ResizeData>.Retrieve();
             rd.Delegate = del;
             _instance._resizeDatas.Add(rd);

@@ -28,6 +28,11 @@ namespace GameKit.Utilities
         /// Retrieves a collection.
         /// </summary>
         /// <returns></returns>
+        public static T[] RetrieveArray() => CollectionCaches<T>.RetrieveArray();
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        /// <returns></returns>
         public static List<T> RetrieveList() => CollectionCaches<T>.RetrieveList();
         /// <summary>
         /// Retrieves a collection.
@@ -35,6 +40,17 @@ namespace GameKit.Utilities
         /// <returns></returns>
         public static HashSet<T> RetrieveHashSet() => CollectionCaches<T>.RetrieveHashSet();
 
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        /// <param name="count">Number of entries in the array from the beginning.</param>
+        public static void Store(T[] value, int count)
+        {
+            for (int i = 0; i < count; i++)
+                value[i].ResetState();
+            CollectionCaches<T>.Store(value, count);
+        }
         /// <summary>
         /// Stores a collection.
         /// </summary>
@@ -89,7 +105,10 @@ namespace GameKit.Utilities
     /// </summary>
     public static class CollectionCaches<T>
     {
-
+        /// <summary>
+        /// Cache for arrays.
+        /// </summary>
+        private readonly static Stack<T[]> _arrayCache = new Stack<T[]>();
         /// <summary>
         /// Cache for lists.
         /// </summary>
@@ -99,6 +118,17 @@ namespace GameKit.Utilities
         /// </summary>
         private readonly static Stack<HashSet<T>> _hashsetCache = new Stack<HashSet<T>>();
 
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        /// <returns></returns>
+        public static T[] RetrieveArray()
+        {
+            if (_arrayCache.Count == 0)
+                return new T[0];
+            else
+                return _arrayCache.Pop();
+        }
         /// <summary>
         /// Retrieves a collection.
         /// </summary>
@@ -153,6 +183,17 @@ namespace GameKit.Utilities
             return result;
         }
 
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        public static void Store(T[] value, int count)
+        {
+            for (int i = 0; i < count; i++)
+                value[i] = default;
+
+            _arrayCache.Push(value);
+        }
         /// <summary>
         /// Stores a collection.
         /// </summary>

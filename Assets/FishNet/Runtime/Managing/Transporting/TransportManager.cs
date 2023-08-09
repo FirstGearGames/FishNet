@@ -388,8 +388,6 @@ namespace FishNet.Managing.Transporting
             }
         }
 
-
-
         /// <summary>
         /// Sends data to all clients.
         /// </summary>
@@ -456,18 +454,45 @@ namespace FishNet.Managing.Transporting
                 SplitRequired(channelId, segment.Count, out requiredSplitMessages, out maxSplitMessageSize);
             }
         }
+
+        /// <summary>
+        /// Checks to set channel to reliable if dataLength is too long.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void CheckSetReliableChannel(int dataLength, ref Channel channel)
+        {
+            if (channel == Channel.Reliable)
+                return;
+
+            bool requiresMultipleMessages = (GetRequiredMessageCount((byte)channel, dataLength, out _) > 1);
+            if (requiresMultipleMessages)
+                channel = Channel.Reliable;
+        }
+
+        /// <summary>
+        /// Gets the required number of messages needed for segmentSize and channel.
+        /// </summary>
+        private int GetRequiredMessageCount(byte channelId, int segmentSize, out int maxMessageSize)
+        {
+            maxMessageSize = GetLowestMTU(channelId) - (TransportManager.TICK_BYTES + SPLIT_INDICATOR_SIZE);
+            return Mathf.CeilToInt((float)segmentSize / maxMessageSize);
+        }
+
         /// <summary>
         /// True if data must be split.
         /// </summary>
         /// <param name="channelId"></param>
         /// <param name="segmentSize"></param>
-        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool SplitRequired(byte channelId, int segmentSize, out int requiredMessages, out int maxMessageSize)
         {
-            maxMessageSize = GetLowestMTU(channelId) - (TransportManager.TICK_BYTES + SPLIT_INDICATOR_SIZE);
-            requiredMessages = Mathf.CeilToInt((float)segmentSize / maxMessageSize);
+            requiredMessages = GetRequiredMessageCount(channelId, segmentSize, out maxMessageSize);
 
-            return (requiredMessages > 1);
+            bool splitRequired = (requiredMessages > 1);
+            if (splitRequired && channelId != (byte)Channel.Reliable)
+                _networkManager.LogError($"A message of length {segmentSize} requires the reliable channel but was sent on channel {(Channel)channelId}. Please file this stack trace as a bug report.");
+
+            return splitRequired;
         }
 
         /// <summary>

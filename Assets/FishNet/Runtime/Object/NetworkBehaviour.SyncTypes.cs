@@ -231,7 +231,7 @@ namespace FishNet.Object
              * pushed through when despawn is called. */
             if (!IsSpawned)
             {
-                ResetSyncTypes();
+                SyncTypes_ResetState();
                 return true;
             }
 
@@ -375,20 +375,31 @@ namespace FishNet.Object
         }
 
 
-
         /// <summary>
         /// Resets all SyncTypes for this NetworkBehaviour.
         /// </summary>
-        internal void ResetSyncTypes()
+        internal void SyncTypes_ResetState()
         {
             foreach (SyncBase item in _syncVars.Values)
+            {
+                byte syncIndex = (byte)item.SyncIndex;
                 item.ResetState();
-            foreach (SyncBase item in _syncObjects.Values)
-                item.ResetState();
+                /* Should never be possible to be out of bounds but check anyway.
+                 * This block of code resets the field to values from the SyncBase(syncVar class). */
+                if (syncIndex < _syncVarReadDelegates.Count)
+                    _syncVarReadDelegates[syncIndex]?.Invoke(null, syncIndex, true);
+            }
 
             _syncObjectDirty = false;
             _syncVarDirty = false;
         }
+
+        /// <summary>
+        /// Resets all SyncVar fields for the class to the values within their SyncVar class.
+        /// EG: _mySyncVar = generated_mySyncVar.GetValue(...)
+        /// </summary>
+        [CodegenMakePublic]
+        internal virtual void ResetSyncVarFields() { }
 
         /// <summary>
         /// Writers syncVars for a spawn message.

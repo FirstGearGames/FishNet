@@ -1,11 +1,9 @@
-using TriInspector;
+using GameKit.Dependencies.Inspectors;
 using UnityEngine;
 
 namespace GameKit.Utilities.Types
 {
 
-    [DeclareFoldoutGroup("Components")]
-    [DeclareFoldoutGroup("Effects")]
     public class CanvasGroupFader : MonoBehaviour
     {
         #region Types.

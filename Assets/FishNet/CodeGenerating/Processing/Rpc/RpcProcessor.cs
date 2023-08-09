@@ -192,7 +192,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             foreach (ParameterDefinition pd in methodDef.Parameters)
                 sb.Append(pd.ParameterType.FullName);
 
-            return $"{methodDef.Name}_{sb.ToString().GetStableHash32()}";
+            return $"{methodDef.Name}_{sb.ToString().GetStableHashU32()}";
         }
 
         /// <summary>

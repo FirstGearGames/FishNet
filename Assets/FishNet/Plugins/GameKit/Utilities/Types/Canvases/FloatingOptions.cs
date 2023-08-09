@@ -1,7 +1,9 @@
+using GameKit.Utilities.Types;
+using GameKit.Utilities.Types.CanvasContainers;
 using System.Collections.Generic;
 
 
-namespace GameKit.Utilities.Types.CanvasContainers
+namespace GameKit.Utilities.Types.OptionMenuButtons
 {
 
     public class FloatingOptions : CanvasGroupFader

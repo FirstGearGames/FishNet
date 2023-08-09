@@ -1,11 +1,10 @@
-using TriInspector;
+using GameKit.Dependencies.Inspectors;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace GameKit.Utilities.Types.CanvasContainers
 {
 
-    [DeclareFoldoutGroup("Components")]
     public class FloatingImage : FloatingContainer
     {
         /// <summary>

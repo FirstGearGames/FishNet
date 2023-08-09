@@ -45,7 +45,7 @@ namespace FishNet.Managing.Server.Editing
 
             EditorGUILayout.PropertyField(_authenticator);
             EditorGUILayout.PropertyField(_remoteClientTimeout);
-            if ((ServerManager.RemoteTimeoutType)_remoteClientTimeout.intValue != ServerManager.RemoteTimeoutType.Disabled)
+            if ((RemoteTimeoutType)_remoteClientTimeout.intValue != RemoteTimeoutType.Disabled)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_remoteClientTimeoutDuration,new GUIContent("Timeout"));

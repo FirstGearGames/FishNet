@@ -25,20 +25,42 @@ namespace FishNet.Editing
     public class DeveloperMenu : MonoBehaviour
     {
         #region const.
+        private const string RELEASE_DEFINE = "FISHNET_RELEASE_MODE";
         private const string PREDICTIONV2_DEFINE = "PREDICTION_V2";
         private const string QOL_ATTRIBUTES_DEFINE = "DISABLE_QOL_ATTRIBUTES";
         private const string DEVELOPER_ONLY_WARNING = "If you are not a developer or were not instructed to do this by a developer things are likely to break. You have been warned.";
         #endregion
 
+
+        #region Release mode.
+#if !FISHNET_RELEASE_MODE
+        [MenuItem("Fish-Networking/Switch to Release Mode", false, -1100)]
+        private static void SwitchToReleaseMode()
+        {
+            bool result = RemoveOrAddDefine(RELEASE_DEFINE, false);
+            if (result)
+                Debug.LogWarning($"Release mode has been enabled. Please note that experimental features may not function in release mode.");
+        }
+#else
+        [MenuItem("Fish-Networking/Switch to Development Mode", false, -1100)]
+        private static void SwitchToReleaseMode()
+        {
+            bool result = RemoveOrAddDefine(RELEASE_DEFINE, true);
+            if (result)
+                Debug.LogWarning($"Development mode has been enabled.");
+        }
+#endif
+        #endregion
+
         #region PredictionV2.
-        [MenuItem("Fish-Networking/Developer/PredictionV2/Enable", false, -999)]
+        [MenuItem("Fish-Networking/Experimental/PredictionV2/Enable", false, -999)]
         private static void EnablePredictionV2()
         {
             bool result = RemoveOrAddDefine(PREDICTIONV2_DEFINE, false);
             if (result)
                 Debug.LogWarning($"PredictionV2 has been enabled. {DEVELOPER_ONLY_WARNING}");
         }
-        [MenuItem("Fish-Networking/Developer/PredictionV2/Disable", false, -998)]
+        [MenuItem("Fish-Networking/Experimental/PredictionV2/Disable", false, -998)]
         private static void DisablePredictionV2()
         {
             bool result = RemoveOrAddDefine(PREDICTIONV2_DEFINE, true);
@@ -48,14 +70,14 @@ namespace FishNet.Editing
         #endregion
 
         #region QOL Attributes
-        [MenuItem("Fish-Networking/Developer/Quality of Life Attributes/Enable", false, -999)]
+        [MenuItem("Fish-Networking/Experimental/Quality of Life Attributes/Enable", false, -999)]
         private static void EnableQOLAttributes()
         {
             bool result = RemoveOrAddDefine(QOL_ATTRIBUTES_DEFINE, true);
             if (result)
                 Debug.LogWarning($"Quality of Life Attributes have been enabled.");
         }
-        [MenuItem("Fish-Networking/Developer/Quality of Life Attributes/Disable", false, -998)]
+        [MenuItem("Fish-Networking/Experimental/Quality of Life Attributes/Disable", false, -998)]
         private static void DisableQOLAttributes()
         {
             bool result = RemoveOrAddDefine(QOL_ATTRIBUTES_DEFINE, false);
