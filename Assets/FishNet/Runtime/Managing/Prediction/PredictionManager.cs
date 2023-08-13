@@ -465,10 +465,23 @@ namespace FishNet.Managing.Predicting
         {
             if (!_networkManager.IsClient)
                 return;
-            if (_recievedStates.Count < 4)
+            if (_recievedStates.Count == 0)
+                return;
+            //No states.
+            if (_recievedStates.Count == 0)
                 return;
 
-            StatePacket state = _recievedStates.Dequeue();
+            StatePacket state = _recievedStates.Peek();
+            /* If last packet tick minus statepacket tick is not larger
+             * than queued inputs+1 then there's no way the queued inputs
+             * could have run for the which the state tick is.
+             * If there were no buffer on inputs we could run them as
+             * they arrive and this would not be a problem but that strongly
+             * increases the likeliness of wrongfully predicted inputs. */
+            if ((_networkManager.TimeManager.LastOrderedPacketTick - state.ServerTick) < (QueuedInputs + 1))
+                return;
+
+            //StatePacket state = _recievedStates.Dequeue();
             PooledReader reader = ReaderPool.Retrieve(state.Data, _networkManager, Reader.DataSource.Server);
             StateClientTick = reader.ReadTickUnpacked();
             StateServerTick = state.ServerTick;
@@ -530,6 +543,10 @@ namespace FishNet.Managing.Predicting
 
             //Debug.Log("PM Replays " + replays);
             OnPostReconcile?.Invoke(StateClientTick, StateServerTick);
+
+            /* We used the peek state so it's
+            * okay to just dequeue here. */
+            _recievedStates.Dequeue();
 
             ByteArrayPool.Store(state.Data.Array);
             ReaderPool.Store(reader);

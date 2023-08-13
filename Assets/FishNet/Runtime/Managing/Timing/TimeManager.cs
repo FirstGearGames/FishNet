@@ -97,7 +97,22 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Tick on the last received packet, be it from server or client.
         /// </summary>
-        public uint LastPacketTick { get; internal set; }
+        public uint LastPacketTick { get; private set; }
+        /// <summary>
+        /// Last packet tick which did not arrive out of order.
+        /// </summary>
+        internal uint LastOrderedPacketTick;
+        /// <summary>
+        /// Sets LastPacketTick and LastOrderedPacketTick.
+        /// </summary>
+        /// <param name="tick"></param>
+        internal void SetLastPacketTick(uint tick)
+        {
+            if (tick > LastPacketTick)
+                LastOrderedPacketTick = tick;
+
+            LastPacketTick = tick;
+        }
         /// <summary>
         /// Current approximate network tick as it is on server.
         /// When running as client only this is an approximation to what the server tick is.

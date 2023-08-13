@@ -353,7 +353,7 @@ namespace FishNet.Managing.Client
                 return;
 
             PooledReader reader = ReaderPool.Retrieve(segment, NetworkManager, Reader.DataSource.Server);
-            NetworkManager.TimeManager.LastPacketTick = reader.ReadTickUnpacked();
+            NetworkManager.TimeManager.SetLastPacketTick(reader.ReadTickUnpacked());
             ParseReader(reader, args.Channel);
             ReaderPool.Store(reader);
 

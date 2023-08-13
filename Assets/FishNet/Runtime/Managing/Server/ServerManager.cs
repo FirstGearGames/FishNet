@@ -634,7 +634,7 @@ namespace FishNet.Managing.Server
             Reader.DataSource dataSource = Reader.DataSource.Client;
             reader = ReaderPool.Retrieve(segment, NetworkManager, dataSource);
             uint tick = reader.ReadTickUnpacked();
-            NetworkManager.TimeManager.LastPacketTick = tick;
+            NetworkManager.TimeManager.SetLastPacketTick(tick);
             /* This is a special condition where a message may arrive split.
             * When this occurs buffer each packet until all packets are
             * received. */
