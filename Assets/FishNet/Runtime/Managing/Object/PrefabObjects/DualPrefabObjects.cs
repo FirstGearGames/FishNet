@@ -20,7 +20,7 @@ namespace FishNet.Managing.Object
         private List<DualPrefab> _prefabs = new List<DualPrefab>();
         /// <summary>
         /// Prefabs which may be spawned.
-        /// </summary>
+        /// </summary>  //Remove on 2024/01/01 Convert to IReadOnlyList.
         public IReadOnlyCollection<DualPrefab> Prefabs => _prefabs;
 
         public override void Clear()

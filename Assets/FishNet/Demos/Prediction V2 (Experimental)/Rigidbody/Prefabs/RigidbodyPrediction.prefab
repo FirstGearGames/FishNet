@@ -138,7 +138,7 @@ SphereCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 303449598114786579}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: b31539408c1f95d4281bb4484bb6b78e, type: 2}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -157,32 +157,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 57
+  <PrefabId>k__BackingField: 60
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 17739649624728995833
+  AdaptiveInterpolationValue: 1
   <IsNested>k__BackingField: 0
   _enablePrediction: 1
   _predictionType: 1
   _graphicalObject: {fileID: 303449599178274091}
   _enableStateForwarding: 1
-  _ownerInterpolation: 1
+  _ownerInterpolation: 2
   _enableTeleport: 0
   _ownerTeleportThreshold: 1
   _spectatorAdaptiveInterpolation: 1
   _spectatorInterpolation: 1
-  _adaptiveSmoothingType: 2
+  _adaptiveSmoothingType: 0
   _customSmoothingData:
-    InterpolationPercent: 1
-    CollisionInterpolationPercent: 0.1
-    InterpolationDecreaseStep: 1
-    InterpolationIncreaseStep: 3
-  _preconfiguredSmoothingDataPreview:
-    InterpolationPercent: 1.5
-    CollisionInterpolationPercent: 0.2
+    InterpolationPercent: 2.5
+    CollisionInterpolationPercent: 1
     InterpolationDecreaseStep: 1
     InterpolationIncreaseStep: 5
+  _preconfiguredSmoothingDataPreview:
+    InterpolationPercent: 0.5
+    CollisionInterpolationPercent: 0.05
+    InterpolationDecreaseStep: 1
+    InterpolationIncreaseStep: 2
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   _networkBehaviours:
@@ -211,7 +212,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 8
   m_CollisionDetection: 1
 --- !u!1 &303449598207636365
 GameObject:

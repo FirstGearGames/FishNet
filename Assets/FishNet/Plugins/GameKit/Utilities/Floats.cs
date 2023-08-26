@@ -11,6 +11,33 @@ namespace GameKit.Utilities
         /// </summary>
         private static System.Random _random = new System.Random();
 
+        /// <summary>
+        /// Sets a source float to value if equal to or greater than tolerance.
+        /// </summary>
+        /// <param name="source">Float to check against tolerance.</param>
+        /// <param name="tolerance">Tolerance float must be equal to or greater than to change to value.</param>
+        /// <param name="value">Value source is set to when breaking tolerance.</param>
+        public static float SetIfOverTolerance(this float source, float tolerance, float value)
+        {
+            if (source >= tolerance)
+                source = value;
+
+            return source;
+        }
+
+        /// <summary>
+        /// Sets a source float to value if equal to or less than tolerance.
+        /// </summary>
+        /// <param name="source">Float to check against tolerance.</param>
+        /// <param name="tolerance">Tolerance float must be equal to or less than to change to value.</param>
+        /// <param name="value">Value source is set to when breaking tolerance.</param>
+        public static float SetIfUnderTolerance(this float source, float tolerance, float value)
+        {
+            if (source <= tolerance)
+                source = value;
+
+            return source;
+        }
 
         /// <summary>
         /// Returns how much time is left on an endTime. Returns -1 if no time is left.

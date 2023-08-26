@@ -129,6 +129,10 @@ namespace FishNet.Connection
         /// </summary>
         public object CustomData = null;
         /// <summary>
+        /// LocalTick of the server when this connection was established. This value is not set for clients.
+        /// </summary>
+        internal uint ServerConnectionTick;
+        /// <summary>
         /// Tick of the last packet received from this connection which was not out of order.
         /// This value is only available on the server.
         /// </summary>
@@ -220,6 +224,8 @@ namespace FishNet.Connection
         private void Initialize(NetworkManager nm, int clientId, int transportIndex, bool asServer)
         {
             NetworkManager = nm;
+            if (asServer)
+                ServerConnectionTick = nm.TimeManager.LocalTick;
             TransportIndex = transportIndex;
             ClientId = clientId;
             /* Set PacketTick to current values so
@@ -248,6 +254,7 @@ namespace FishNet.Connection
                 p.Dispose();
             _toClientBundles.Clear();
 
+            ServerConnectionTick = 0;
             PacketTick.Reset();
             TransportIndex = -1;
             ClientId = -1;

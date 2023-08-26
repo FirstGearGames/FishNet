@@ -42,7 +42,7 @@ namespace FishNet.Managing.Predicting.Editing
 
             EditorGUILayout.LabelField("Server", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_queuedInputs);
+            //EditorGUILayout.PropertyField(_queuedInputs);
 #if PREDICTION_V2
             EditorGUILayout.PropertyField(_reconcileInterval);
 #endif

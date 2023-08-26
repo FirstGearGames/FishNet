@@ -47,6 +47,9 @@ namespace FishNet.Object
     [DisallowMultipleComponent]
     public partial class NetworkObject : MonoBehaviour
     {
+        [HideInInspector] //DEBUG
+        public long AdaptiveInterpolationValue = 4;
+
         #region Public.
         /// <summary>
         /// True if this object is nested.
@@ -328,7 +331,7 @@ namespace FishNet.Object
             RuntimeChildNetworkObjects = CollectionCaches<NetworkObject>.RetrieveList();
             SetChildDespawnedState();
 #if PREDICTION_V2
-            Prediction_Awake();
+            //Prediction_Awake();
 #endif
         }
 
@@ -437,6 +440,8 @@ namespace FishNet.Object
         private void Update()
         {
             Prediction_Update();
+            if (_spectatorAdaptiveInterpolationSmoother != null)
+                _spectatorAdaptiveInterpolationSmoother._currentInterpolation = AdaptiveInterpolationValue;
         }
 #endif
 
@@ -667,10 +672,10 @@ namespace FishNet.Object
                 NetworkManager.LogWarning($"{gameObject.name} cannot be set as a child of itself.");
                 return true;
             }
-            //Nested prefabs cannot be moved.
-            if (ParentNetworkObject != null)
+            //Nested prefabs cannot be moved to new parent nobs.
+            if (ParentNetworkObject != null && ParentNetworkObject != nob)
             {
-                NetworkManager.LogWarning($"{gameObject.name} cannot have the parent changed because it is a nested prefab.");
+                NetworkManager.LogWarning($"{gameObject.name} cannot have the parent changed because it is a nested NetworkObject.");
                 return true;
             }
 
@@ -1045,7 +1050,7 @@ namespace FishNet.Object
             return ctp;
         }
 
-#region Editor.
+        #region Editor.
 #if UNITY_EDITOR
         /// <summary>
         /// Removes duplicate NetworkObject components on this object returning the removed count.
@@ -1139,7 +1144,7 @@ namespace FishNet.Object
             }
         }
 #endif
-#endregion
+        #endregion
     }
 
 }

@@ -109,7 +109,7 @@ namespace FishNet.Managing.Scened
         {
             //Create moved objects scene. It will probably be used eventually. If not, no harm either way.
             if (string.IsNullOrEmpty(MovedObjectsScene.name))
-                MovedObjectsScene = UnitySceneManager.CreateScene("MovedObjectsHolder");
+                MovedObjectsScene = FindOrCreateScene("MovedObjectsHolder");
 
             return MovedObjectsScene;
         }
@@ -122,7 +122,7 @@ namespace FishNet.Managing.Scened
         {
             //Create moved objects scene. It will probably be used eventually. If not, no harm either way.
             if (string.IsNullOrEmpty(DelayedDestroyScene.name))
-                DelayedDestroyScene = UnitySceneManager.CreateScene("DelayedDestroy");
+                DelayedDestroyScene = FindOrCreateScene("DelayedDestroy");
 
             return DelayedDestroyScene;
         }
@@ -134,9 +134,23 @@ namespace FishNet.Managing.Scened
         public virtual Scene GetFallbackActiveScene()
         {
             if (string.IsNullOrEmpty(FallbackActiveScene.name))
-                FallbackActiveScene = UnitySceneManager.CreateScene("FallbackActiveScene");
+                FallbackActiveScene = FindOrCreateScene("FallbackActiveScene");
 
             return FallbackActiveScene;
+        }
+
+        /// <summary>
+        /// Tries to find a scene by name and if it does not exist creates an empty scene of name.
+        /// </summary>
+        /// <param name="name">Name of the scene to find or create.</param>
+        /// <returns></returns>
+        public virtual Scene FindOrCreateScene(string name)
+        {
+            Scene result = UnitySceneManager.GetSceneByName(name);
+            if (!result.IsValid())
+                result = UnitySceneManager.CreateScene(name);
+
+            return result;
         }
     }
 

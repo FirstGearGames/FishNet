@@ -15,12 +15,34 @@ namespace GameKit.Utilities
         /// Float epislon.
         /// </summary>
         private const float FLOAT_EPSILON = 0.00001f;
-        /// <summary>
-        /// Float square epislon.
-        /// </summary>
-        private const float FLOAT_SQR_EPSILON = 1e-15f;
 
         #region Vector3.
+        /// <summary>
+        /// Returns how fast an object must move over duration to reach goal.
+        /// </summary>
+        /// <param name="goal">Vector3 to measure distance against.</param>
+        /// <param name="duration">How long it should take to move to goal.</param>
+        /// <param name="interval">A multiplier applied towards interval. Typically this is used for ticks passed.</param>
+        /// <returns></returns>
+        public static float GetRate(this Vector3 a, Vector3 goal, float duration, out float distance, uint interval = 1)
+        {
+            distance = Vector3.Distance(a, goal);
+            return distance / (duration * interval);
+        }
+        /// <summary>
+        /// Adds a Vector2 X/Y onto a Vector3.
+        /// </summary>
+        public static Vector3 Add(this Vector3 v3, Vector2 v2)
+        {
+            return (v3 + new Vector3(v2.x, v2.y, 0f));
+        }
+        /// <summary>
+        /// Subtracts a Vector2 X/Y from a Vector3.
+        /// </summary>
+        public static Vector3 Subtract(this Vector3 v3, Vector2 v2)
+        {
+            return (v3 - new Vector3(v2.x, v2.y, 0f));
+        }
         /// <summary>
         /// Calculates the linear parameter t that produces the interpolant value within the range [a, b].
         /// </summary>
@@ -166,6 +188,18 @@ namespace GameKit.Utilities
         #endregion
 
         #region Vector2.
+        /// <summary>
+        /// Returns how fast an object must move over duration to reach goal.
+        /// </summary>
+        /// <param name="goal">Vector3 to measure distance against.</param>
+        /// <param name="duration">How long it should take to move to goal.</param>
+        /// <param name="interval">A multiplier applied towards interval. Typically this is used for ticks passed.</param>
+        /// <returns></returns>
+        public static float GetRate(this Vector2 a, Vector2 goal, float duration, out float distance, uint interval = 1)
+        {
+            distance = Vector2.Distance(a, goal);
+            return distance / (duration * interval);
+        }
 
         /// <summary>
         /// Lerp between three Vector2 values.

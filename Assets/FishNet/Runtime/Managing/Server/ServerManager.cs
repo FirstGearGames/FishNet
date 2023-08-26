@@ -378,7 +378,13 @@ namespace FishNet.Managing.Server
                 //If iterations are met then we can begin checking for timeouts.
                 if (connsIterated >= _nextClientTimeoutCheckIndex)
                 {
-                    uint difference = (localTick - item.PacketTick.LocalTick);
+                    uint clientLocalTick = item.PacketTick.LocalTick;
+                    /* If client tick has not been set yet then use the tick
+                     * when they connected to the server. */
+                    if (clientLocalTick == 0)
+                        clientLocalTick = item.ServerConnectionTick;
+
+                    uint difference = (localTick - clientLocalTick);
                     //Client has timed out.
                     if (difference >= requiredTicks)
                         item.Kick(KickReason.UnexpectedProblem, LoggingType.Common, $"{item.ToString()} has timed out. You can modify this feature on the ServerManager component.");

@@ -128,15 +128,16 @@ namespace FishNet.Managing.Predicting
         [Tooltip("Number of inputs to keep in queue should the server miss receiving an input update from the client. " +
             "Higher values will increase the likeliness of the server always having input from the client while lower values will allow the client input to run on the server faster. " +
             "This value cannot be higher than MaximumServerReplicates.")]
-        [Range(1, 15)]
-        [SerializeField]
+        //[Range(1, 15)]
+        //[SerializeField]
         private ushort _queuedInputs = 1;
         /// <summary>
         /// Number of inputs to keep in queue should the server miss receiving an input update from the client.
         /// Higher values will increase the likeliness of the server always having input from the client while lower values will allow the client input to run on the server faster.
         /// This value cannot be higher than MaximumServerReplicates.
         /// </summary>
-        public ushort QueuedInputs => (ushort)(_queuedInputs + 1);
+        //public ushort QueuedInputs => (ushort)(_queuedInputs + 1);
+        public ushort QueuedInputs => 1;
 #if PREDICTION_V2
         /// <summary>
         /// 
@@ -282,13 +283,22 @@ namespace FishNet.Managing.Predicting
         {
             UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= SceneManager_sceneUnloaded;
         }
-#endif
 
         internal void InitializeOnce(NetworkManager manager)
         {
             _networkManager = manager;
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
         }
+#endif
+
+#if PREDICTION_V2
+        internal void InitializeOnce(NetworkManager manager)
+        {
+            _networkManager = manager;
+            ClampQueuedInputs();
+            _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
+        }
+#endif
 
         /// <summary>
         /// Called after the local client connection state changes.
@@ -416,6 +426,29 @@ namespace FishNet.Managing.Predicting
         internal const int STATE_HEADER_RESERVE_COUNT = 6;
 
         /// <summary>
+        /// Clamps queued inputs to a valid value.
+        /// </summary>
+        private void ClampQueuedInputs()
+        {
+            ushort startingValue = _queuedInputs;
+            //Check for setting if dropping.
+            if (_dropExcessiveReplicates && _queuedInputs > _maximumServerReplicates)
+                _queuedInputs = _maximumServerReplicates;
+
+            /* Check for setting if exceeding threshhold.
+             * This must be done because if the difference
+             * in queued inputs target vs actual exceeds
+             * threshold then timing will reset when it
+             * would actually need to speed up or slow down. */
+            if (_networkManager != null && _queuedInputs > _networkManager.TimeManager.RESET_ADJUSTMENT_THRESHOLD)
+                _queuedInputs = _networkManager.TimeManager.RESET_ADJUSTMENT_THRESHOLD;
+
+            //If changed.
+            if (_queuedInputs != startingValue)
+                _networkManager.Log($"QueuedInputs has been set to {_queuedInputs}.");
+        }
+
+        /// <summary>
         /// Sends written states for clients.
         /// </summary>
         internal void SendStates()
@@ -446,7 +479,7 @@ namespace FishNet.Managing.Predicting
             }
         }
 
-        private struct StatePacket
+        public struct StatePacket
         {
             public ArraySegment<byte> Data;
             public uint ServerTick;
@@ -458,6 +491,8 @@ namespace FishNet.Managing.Predicting
             }
         }
 
+        public uint LastNonReplayed;
+
         /// <summary>
         /// Reconciles to received states.
         /// </summary>
@@ -465,26 +500,16 @@ namespace FishNet.Managing.Predicting
         {
             if (!_networkManager.IsClient)
                 return;
-            if (_recievedStates.Count == 0)
-                return;
             //No states.
             if (_recievedStates.Count == 0)
                 return;
-
-            StatePacket state = _recievedStates.Peek();
-            /* If last packet tick minus statepacket tick is not larger
-             * than queued inputs+1 then there's no way the queued inputs
-             * could have run for the which the state tick is.
-             * If there were no buffer on inputs we could run them as
-             * they arrive and this would not be a problem but that strongly
-             * increases the likeliness of wrongfully predicted inputs. */
-            if ((_networkManager.TimeManager.LastOrderedPacketTick - state.ServerTick) < (QueuedInputs + 1))
-                return;
-
-            //StatePacket state = _recievedStates.Dequeue();
+            
+            StatePacket state = _recievedStates.Dequeue();
             PooledReader reader = ReaderPool.Retrieve(state.Data, _networkManager, Reader.DataSource.Server);
             StateClientTick = reader.ReadTickUnpacked();
             StateServerTick = state.ServerTick;
+
+           // Debug.Log($"Reconciling. ServerTick {StateServerTick}. LastNonReplayed {LastNonReplayed}");
 
             //Have the reader get processed.
             _networkManager.ClientManager.ParseReader(reader, Channel.Reliable);
@@ -513,9 +538,10 @@ namespace FishNet.Managing.Predicting
              * be no input for localtick since reconcile runs before
              * OnTick. */
             uint clientReplayTick = StateClientTick + 1;
-            uint serverReplayTick = StateServerTick + 1; 
+            uint serverReplayTick = StateServerTick + 1;
             //Debug.Log($"Replay Start. StateClientTick {StateClientTick}. StateServerTick {StateServerTick}");
             while (clientReplayTick < localTick)
+            //while (serverReplayTick <= LastUserCreated)
             {
                 OnPreReplicateReplay?.Invoke(clientReplayTick, serverReplayTick);
                 OnReplicateReplay?.Invoke(clientReplayTick, serverReplayTick);
@@ -530,29 +556,21 @@ namespace FishNet.Managing.Predicting
                 replays++;
                 clientReplayTick++;
                 serverReplayTick++;
-                //TODO
-                /* May not be needed anymore with insertions to replicates history.
-                 * update replicate replay callbacks to include server replay tick.
-                 * when replaying if not owner then see if server tick is > lastpackettick,
-                 * if so then its future predicting. otherwise if owner use what we have
-                 * currently for client tick.
-                 * 
-                 */
             }
-            //Debug.Log($"Last replayed ticks. Client {clientReplayTick - 1}. Server {serverReplayTick - 1}");
 
-            //Debug.Log("PM Replays " + replays);
             OnPostReconcile?.Invoke(StateClientTick, StateServerTick);
-
-            /* We used the peek state so it's
-            * okay to just dequeue here. */
-            _recievedStates.Dequeue();
 
             ByteArrayPool.Store(state.Data.Array);
             ReaderPool.Store(reader);
+
+            if (_recievedStates.Count > 0)
+            {
+                Debug.LogError($"Remove this probably.");
+                ReconcileToStates();
+            }
         }
 
-        private Queue<StatePacket> _recievedStates = new Queue<StatePacket>();
+        public Queue<StatePacket> _recievedStates = new Queue<StatePacket>();
 
         /// <summary>
         /// Parses a received state update.
@@ -583,12 +601,14 @@ namespace FishNet.Managing.Predicting
         }
 #endif
 
+#if PREDICTION_V2
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (_queuedInputs > _maximumServerReplicates && _dropExcessiveReplicates)
-                _queuedInputs = _maximumServerReplicates;
+
+            ClampQueuedInputs();
         }
+#endif
 #endif
     }
 

@@ -6,6 +6,18 @@ namespace GameKit.Utilities
     public static class Quaternions
     {
 
+        /// <summary>
+        /// Returns how fast an object must rotate over duration to reach goal.
+        /// </summary>
+        /// <param name="goal">Quaternion to measure distance against.</param>
+        /// <param name="duration">How long it should take to move to goal.</param>
+        /// <param name="interval">A multiplier applied towards interval. Typically this is used for ticks passed.</param>
+        /// <returns></returns>
+        public static float GetRate(this Quaternion a, Quaternion goal, float duration, out float angle, uint interval = 1, float tolerance = 0f)
+        {
+            angle = a.Angle(goal, true);
+            return angle / (duration * interval);
+        }
 
         /// <summary>
         /// Returns if two quaternions match.
@@ -29,7 +41,7 @@ namespace GameKit.Utilities
         {
             if (precise)
             {
-                //This Unitys implementation without the error tolerance.
+                //This is run Unitys implementation without the error tolerance.
                 float dot = (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
                 return (Mathf.Acos(Mathf.Min(Mathf.Abs(dot), 1f)) * 2f * 57.29578f);
             }

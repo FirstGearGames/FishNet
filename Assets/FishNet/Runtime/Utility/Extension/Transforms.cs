@@ -8,6 +8,26 @@ namespace FishNet.Utility.Extension
     public static class TransformFN
     {
         /// <summary>
+        /// Sets values of TransformProperties to a transforms world properties.
+        /// </summary>
+        public static TransformProperties GetWorldProperties(this Transform t)
+        {
+            TransformProperties tp = new TransformProperties(t.position, t.rotation, t.localScale);
+            return tp;
+        }
+
+        /// <summary>
+        /// Sets values of TransformPropertiesCls to a transforms world properties.
+        /// </summary>
+        public static void SetWorldProperties(this TransformPropertiesCls tp, Transform t)
+        {
+            tp.Position = t.position;
+            tp.Rotation = t.rotation;
+            tp.LocalScale = t.localScale;
+        }
+
+
+        /// <summary>
         /// Sets the offset values of target from a transform.
         /// </summary>
         /// <param name="pos">Position offset result.</param>

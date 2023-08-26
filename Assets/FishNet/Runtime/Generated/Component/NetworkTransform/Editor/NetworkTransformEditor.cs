@@ -69,7 +69,7 @@ namespace FishNet.Component.Transforming.Editing
             EditorGUILayout.LabelField("Misc", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_componentConfiguration);
-            EditorGUILayout.PropertyField(_synchronizeParent, new GUIContent("* Synchronize Parent"));
+            EditorGUILayout.PropertyField(_synchronizeParent, new GUIContent("Synchronize Parent"));
             EditorGUILayout.PropertyField(_packing);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();

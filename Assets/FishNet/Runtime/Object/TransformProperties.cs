@@ -56,6 +56,16 @@ namespace FishNet.Object
             Rotation = rotation;
             LocalScale = localScale;
         }
+
+        /// <summary>
+        /// Returns this classes values as the struct version of TransformProperties.
+        /// </summary>
+        /// <returns></returns>
+        public TransformProperties ToStruct()
+        {
+            TransformProperties result = new TransformProperties(Position, Rotation, LocalScale);
+            return result;
+        }
     }
 
     [System.Serializable]

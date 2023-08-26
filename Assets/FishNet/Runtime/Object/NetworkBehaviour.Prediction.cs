@@ -715,6 +715,7 @@ namespace FishNet.Object
             int count = replicatesQueue.Count;
             if (count > 0)
             {
+                //Debug.Log($"Replicates Count {replicatesQueue.Count}");
                 ReplicateData(replicatesQueue.Dequeue(), false);
                 count--;
 

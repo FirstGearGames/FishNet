@@ -173,6 +173,7 @@ namespace FishNet.Utility.Performance
     /// <summary>
     /// Creates a reusable cache of T which auto expands.
     /// </summary>
+    [Obsolete("Use CollectionCache<T> instead.")] //Remove on 2024/01/01.
     public class ListCache<T>
     {
         #region Public.
@@ -334,7 +335,6 @@ namespace FishNet.Utility.Performance
             foreach (T item in values)
                 AddValue(item);
         }
-
 
         /// <summary>
         /// Resets cache.

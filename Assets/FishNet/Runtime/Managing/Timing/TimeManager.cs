@@ -310,7 +310,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// When steps to be sent to clients are equal to or higher than this value in either direction a reset steps will be sent.
         /// </summary>
-        private byte RESET_ADJUSTMENT_THRESHOLD => (byte)Mathf.Max(3, TickRate / 3);
+        internal byte RESET_ADJUSTMENT_THRESHOLD => (byte)Mathf.Max(3, TickRate / 3);
         /// <summary>
         /// Playerprefs string to load and save user fixed time.
         /// </summary>
@@ -1147,9 +1147,9 @@ namespace FishNet.Managing.Timing
                  * idle/not replicating mentioned above. */
                 if (queuedInputs == 0)
                     tickDifference = ((long)clientTicks - (long)expectedClientTicks);
-                ////If there were queued inputs then assume the client is behind target queue.
+                //If there were queued inputs then assume the client is behind target queue.
                 else
-                tickDifference = -(targetQueuedInputs - queuedInputs);
+                    tickDifference = -(targetQueuedInputs - queuedInputs);
             }
             //If the server confirmed client is sending too fast.
             else
@@ -1167,7 +1167,7 @@ namespace FishNet.Managing.Timing
 
             const float updateChangeModifier = 0.1f;
             if (timingUpdateChange != _timingUpdateChange)
-            {                
+            {
                 if (_updateChangeMultiplier > updateChangeModifier)
                     _updateChangeMultiplier -= updateChangeModifier;
             }
@@ -1195,6 +1195,7 @@ namespace FishNet.Managing.Timing
             /* If client was sending too fast last update
              * then add more slowdown to the adjusted delta based on
              * number of times client was too fast. */
+
             _adjustedTickDelta += (TickDelta * (CLIENT_SLOWDOWN_VALUE * _timingTooFastCount));
             //Lerp between new and old adjusted value to blend them so the change isn't sudden.
             //Clamp adjusted tick delta so it cannot be unreasonably fast or slow.

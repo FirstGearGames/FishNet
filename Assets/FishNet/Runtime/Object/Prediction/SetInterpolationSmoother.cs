@@ -1,4 +1,6 @@
 ﻿using FishNet.Utility.Extension;
+using GameKit.Utilities;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -14,13 +16,13 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private MoveRates _moveRates;
         /// <summary>
-        /// Offsets of the graphical object when this was initialized.
+        /// Local values of the graphical object when this was initialized.
         /// </summary>
-        private TransformProperties _initializedOffsets;
+        private TransformProperties _graphicalInitializedLocalValues;
         /// <summary>
-        /// Offsets of the graphical object prior to the NetworkObject transform moving.
+        /// Values of the graphical object during PreTick or PreReplay.
         /// </summary>
-        private TransformProperties _interpolationOffsets;
+        private TransformProperties _graphicalPreSimulateWorldValues;
         /// <summary>
         /// SmoothingData to use.
         /// </summary>
@@ -36,7 +38,7 @@ namespace FishNet.Object.Prediction
             _smoothingData = data;
             SetGraphicalObject(data.GraphicalObject);
             _moveRates = new MoveRates(MoveRates.UNSET_VALUE);
-            SetGraphicalPreviousProperties();
+            _graphicalPreSimulateWorldValues = _smoothingData.GraphicalObject.GetWorldProperties();
         }
 
         /// <summary>
@@ -46,7 +48,7 @@ namespace FishNet.Object.Prediction
         internal void SetGraphicalObject(Transform value)
         {
             _smoothingData.GraphicalObject = value;
-            _initializedOffsets = _smoothingData.GraphicalObject.transform.GetTransformOffsets(_smoothingData.NetworkObject.transform);
+            _graphicalInitializedLocalValues.Update(value.localPosition, value.localRotation, value.localScale);
         }
         /// <summary>
         /// Sets the interpolation value to use when the owner of this object.
@@ -69,6 +71,7 @@ namespace FishNet.Object.Prediction
                 MoveToTarget();
         }
 
+
         /// <summary>
         /// Called when the TimeManager invokes OnPreTick.
         /// </summary>
@@ -80,9 +83,9 @@ namespace FishNet.Object.Prediction
                  * This ensures the graphics will be at the proper location
                  * before the next movement rates are calculated. */
                 if (_smoothingData.Interpolation == 1)
-                    ResetGraphicalToInstantiatedProperties(true, true);
+                    ResetGraphicalToInitializedLocalOffsets(true, true);
 
-                SetGraphicalPreviousProperties();
+                _graphicalPreSimulateWorldValues = _smoothingData.GraphicalObject.GetWorldProperties();
             }
         }
 
@@ -93,7 +96,7 @@ namespace FishNet.Object.Prediction
         {
             if (CanSmooth())
             {
-                ResetGraphicalToPreviousProperties();
+                _smoothingData.GraphicalObject.SetPositionAndRotation(_graphicalPreSimulateWorldValues.Position, _graphicalPreSimulateWorldValues.Rotation);
                 SetGraphicalMoveRates();
             }
         }
@@ -109,7 +112,7 @@ namespace FishNet.Object.Prediction
                 return false;
             if (nob.IsServerOnly)
                 return false;
-            if (nob.SpectatorAdaptiveInterpolation && !nob.IsOwner)
+            if (!nob.IsHost && nob.SpectatorAdaptiveInterpolation && !nob.IsOwner)
                 return false;
 
             return true;
@@ -137,32 +140,32 @@ namespace FishNet.Object.Prediction
             if (_smoothingData.SmoothPosition)
             {
                 if (_moveRates.InstantPosition)
-                    ResetGraphicalToInstantiatedProperties(true, false);
+                    ResetGraphicalToInitializedLocalOffsets(true, false);
                 else if (_moveRates.PositionSet)
-                    t.position = Vector3.MoveTowards(t.position, posGoal, _moveRates.Position * delta);
+                    t.localPosition = Vector3.MoveTowards(t.localPosition, posGoal, _moveRates.Position * delta);
             }
 
             //Rotation.
             if (_smoothingData.SmoothRotation)
             {
                 if (_moveRates.InstantRotation)
-                    ResetGraphicalToInstantiatedProperties(false, true);
+                    ResetGraphicalToInitializedLocalOffsets(false, true);
                 else if (_moveRates.RotationSet)
-                    t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, _moveRates.Rotation * delta);
+                    t.localRotation = Quaternion.RotateTowards(t.localRotation, rotGoal, _moveRates.Rotation * delta);
             }
 
-            if (GraphicalObjectMatches(posGoal, rotGoal))
-                _moveRates.SetValues(MoveRates.UNSET_VALUE);
+            if (GraphicalObjectMatchesLocalValues(posGoal, rotGoal))
+                _moveRates.Update(MoveRates.UNSET_VALUE);
         }
 
         /// <summary>
         /// Returns if this transform matches arguments.
         /// </summary>
         /// <returns></returns>
-        private bool GraphicalObjectMatches(Vector3 position, Quaternion rotation)
+        private bool GraphicalObjectMatchesLocalValues(Vector3 position, Quaternion rotation)
         {
-            bool positionMatches = (!_smoothingData.SmoothPosition || (_smoothingData.GraphicalObject.position == position));
-            bool rotationMatches = (!_smoothingData.SmoothRotation || (_smoothingData.GraphicalObject.rotation == rotation));
+            bool positionMatches = (!_smoothingData.SmoothPosition || (_smoothingData.GraphicalObject.localPosition == position));
+            bool rotationMatches = (!_smoothingData.SmoothRotation || (_smoothingData.GraphicalObject.localRotation == rotation));
             return (positionMatches && rotationMatches);
         }
 
@@ -171,22 +174,26 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private void SetGraphicalMoveRates()
         {
-            float delta = ((float)_smoothingData.NetworkObject?.TimeManager.TickDelta * _smoothingData.Interpolation);
+            uint interval = _smoothingData.Interpolation;
+            float delta = (float)_smoothingData.NetworkObject?.TimeManager.TickDelta;
 
+            float rate;
             float distance;
-            distance = Vector3.Distance(_smoothingData.GraphicalObject.position, GetGraphicalGoalPosition());
+            Transform t = _smoothingData.GraphicalObject;
+            /* Position. */
+            rate = t.localPosition.GetRate(_graphicalInitializedLocalValues.Position, delta, out distance, interval);
             //If qualifies for teleporting.
             if (_smoothingData.TeleportThreshold != MoveRates.UNSET_VALUE && distance >= _smoothingData.TeleportThreshold)
             {
-                _moveRates.SetValues(MoveRates.INSTANT_VALUE);
+                _moveRates.Update(MoveRates.INSTANT_VALUE);
             }
             //Smoothing.
             else
             {
-                float positionRate =  (distance / delta);
-                distance = Quaternion.Angle(_smoothingData.GraphicalObject.rotation, GetGraphicalGoalRotation());
-                float rotationRate = (distance > 0f) ? (distance / delta) : MoveRates.INSTANT_VALUE;
-                _moveRates.SetValues(positionRate, rotationRate, MoveRates.UNSET_VALUE);
+                float positionRate = rate.SetIfUnderTolerance(0.0001f, MoveRates.INSTANT_VALUE);
+                rate = t.localRotation.GetRate(_graphicalInitializedLocalValues.Rotation, delta, out _, interval);
+                float rotationRate = rate.SetIfUnderTolerance(0.2f, MoveRates.INSTANT_VALUE);
+                _moveRates.Update(positionRate, rotationRate, MoveRates.UNSET_VALUE);
             }
         }
 
@@ -198,7 +205,7 @@ namespace FishNet.Object.Prediction
         private Vector3 GetGraphicalGoalPosition()
         {
             if (_smoothingData.SmoothPosition)
-                return (_smoothingData.NetworkObject.transform.position + _initializedOffsets.Position);
+                return _graphicalInitializedLocalValues.Position;
             else
                 return _smoothingData.GraphicalObject.position;
         }
@@ -211,39 +218,22 @@ namespace FishNet.Object.Prediction
         private Quaternion GetGraphicalGoalRotation()
         {
             if (_smoothingData.SmoothRotation)
-                return (_initializedOffsets.Rotation * _smoothingData.NetworkObject.transform.rotation);
+                return _graphicalInitializedLocalValues.Rotation;
             else
                 return _smoothingData.GraphicalObject.rotation;
-        }
-        /// <summary>
-        /// Caches the graphical object' current position and rotation.
-        /// </summary>
-        private void SetGraphicalPreviousProperties()
-        {
-            Transform graphical = _smoothingData.GraphicalObject;
-            _interpolationOffsets.Position = graphical.position;
-            _interpolationOffsets.Rotation = graphical.rotation;
-        }
-
-        /// <summary>
-        /// Resets the graphical object to cached position and rotation of the transform.
-        /// </summary>
-        private void ResetGraphicalToPreviousProperties()
-        {
-            _smoothingData.GraphicalObject.SetPositionAndRotation(_interpolationOffsets.Position, _interpolationOffsets.Rotation);
         }
 
         /// <summary>
         /// Resets the graphical object to it's transform offsets during instantiation.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ResetGraphicalToInstantiatedProperties(bool position, bool rotation)
+        private void ResetGraphicalToInitializedLocalOffsets(bool position, bool rotation)
         {
             Transform graphical = _smoothingData.GraphicalObject;
             if (position)
-                graphical.position = GetGraphicalGoalPosition();
+                graphical.localPosition = GetGraphicalGoalPosition();
             if (rotation)
-                graphical.rotation = GetGraphicalGoalRotation();
+                graphical.localRotation = GetGraphicalGoalRotation();
         }
 
 #endif

@@ -1776,10 +1776,9 @@ namespace FishNet.Managing.Scened
 
                 if (connectionsRemoved.Count > 0)
                 {
-                    NetworkConnection[] connectionsRemovedArray = connectionsRemoved.ToArray();
-                    InvokeClientPresenceChange(scene, connectionsRemovedArray, false, true);
-                    RebuildObservers(connectionsRemovedArray);
-                    InvokeClientPresenceChange(scene, connectionsRemovedArray, false, false);
+                    InvokeClientPresenceChange(scene, connectionsRemoved, false, true);
+                    RebuildObservers(connectionsRemoved);
+                    InvokeClientPresenceChange(scene, connectionsRemoved, false, false);
                 }
             }
 
@@ -1911,10 +1910,13 @@ namespace FishNet.Managing.Scened
         /// Rebuilds observers for networkObjects.
         /// </summary>
         /// <param name="networkObjects"></param>
-        private void RebuildObservers(NetworkObject[] networkObjects)
+        private void RebuildObservers(IList<NetworkObject> networkObjects)
         {
-            foreach (NetworkObject nob in networkObjects)
+            NetworkObject nob;
+            int count = networkObjects.Count;
+            for (int i = 0; i < count; i++)
             {
+                nob = networkObjects[i];
                 if (nob != null && nob.IsSpawned)
                     _serverManager.Objects.RebuildObservers(nob);
             }
@@ -1924,27 +1926,29 @@ namespace FishNet.Managing.Scened
         /// </summary>
         internal void RebuildObservers(NetworkConnection connection)
         {
-            RebuildObservers(new NetworkConnection[] { connection });
+            List<NetworkConnection> connCache = CollectionCaches<NetworkConnection>.RetrieveList(connection);
+            RebuildObservers(connCache);
+            CollectionCaches<NetworkConnection>.Store(connCache);
         }
         /// <summary>
         /// Rebuilds all NetworkObjects for connections.
         /// </summary>
-        internal void RebuildObservers(NetworkConnection[] connections)
+        internal void RebuildObservers(IList<NetworkConnection> connections)
         {
-            foreach (NetworkConnection c in connections)
-                _serverManager.Objects.RebuildObservers(c);
+            int count = connections.Count;
+            for (int i = 0; i < count; i++)
+                _serverManager.Objects.RebuildObservers(connections[i]);
         }
         /// <summary>
         /// Invokes OnClientPresenceChange start or end.
         /// </summary>
-        /// <param name="scene"></param>
-        /// <param name="conns"></param>
-        /// <param name="added"></param>
-        /// <param name="start"></param>
-        private void InvokeClientPresenceChange(Scene scene, NetworkConnection[] conns, bool added, bool start)
+        private void InvokeClientPresenceChange(Scene scene, IList<NetworkConnection> conns, bool added, bool start)
         {
-            foreach (NetworkConnection c in conns)
+            NetworkConnection c;
+            int count = conns.Count;
+            for (int i = 0; i < count; i++)
             {
+                c = conns[i];
                 ClientPresenceChangeEventArgs cpc = new ClientPresenceChangeEventArgs(scene, c, added);
                 if (start)
                     OnClientPresenceChangeStart?.Invoke(cpc);

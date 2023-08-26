@@ -137,7 +137,7 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 10
+  _tickRate: 20
   _pingInterval: 1
   _physicsMode: 1
 --- !u!114 &192429405
@@ -231,14 +231,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e08bb003fce297d4086cf8cba5aa459a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _queuedInputs: 2
-  _reconcileInterval: 0.01
+  _reconcileInterval: 0.0001
   _dropExcessiveReplicates: 1
   _maximumServerReplicates: 15
   _maximumConsumeCount: 4
   _redundancyCount: 3
   _allowPredictedSpawning: 0
   _reservedObjectIds: 15
+  LastNonReplayed: 0
 --- !u!114 &192429410
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -251,6 +251,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aca43cf6f20e77c4f8fcc078fd85081f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _remoteServerTimeout: 2
+  _remoteServerTimeoutDuration: 60
   _changeFrameRate: 1
   _frameRate: 100
 --- !u!1 &212039606
@@ -302,6 +304,7 @@ MonoBehaviour:
   _scenePathHash: 1828152806
   <SceneId>k__BackingField: 7851856517478923898
   <AssetPathHash>k__BackingField: 0
+  AdaptiveInterpolationValue: 4
   <IsNested>k__BackingField: 0
   _enablePrediction: 0
   _predictionType: 0
@@ -1165,6 +1168,7 @@ MonoBehaviour:
   _scenePathHash: 1828152806
   <SceneId>k__BackingField: 7851856515000995197
   <AssetPathHash>k__BackingField: 0
+  AdaptiveInterpolationValue: 4
   <IsNested>k__BackingField: 0
   _enablePrediction: 0
   _predictionType: 0
@@ -1409,7 +1413,7 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 2, y: 2, z: 2}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1883869629
 MeshRenderer:

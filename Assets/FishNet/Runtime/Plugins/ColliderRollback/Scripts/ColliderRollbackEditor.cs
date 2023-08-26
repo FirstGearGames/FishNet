@@ -8,7 +8,7 @@ namespace FishNet.Component.ColliderRollback
 
     [CustomEditor(typeof(ColliderRollback), true)]
     [CanEditMultipleObjects]
-    public class NetworkObjectEditor : Editor
+    public class ColliderRollbackEditor : Editor
     {
         private SerializedProperty _boundingBox;
         private SerializedProperty _physicsType;

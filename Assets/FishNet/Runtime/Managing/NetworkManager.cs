@@ -78,7 +78,7 @@ namespace FishNet.Managing
         private static List<NetworkManager> _instances = new List<NetworkManager>();
         /// <summary>
         /// Currently initialized NetworkManagers.
-        /// </summary>
+        /// </summary> //Remove on 2024/01/01 Convert to IReadOnlyList.
         public static IReadOnlyCollection<NetworkManager> Instances
         {
             get
@@ -97,8 +97,7 @@ namespace FishNet.Managing
                 }
                 return _instances;
             }
-        }
-
+        }  
         /// <summary>
         /// True if server is active.
         /// </summary>
