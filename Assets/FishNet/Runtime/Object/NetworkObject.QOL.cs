@@ -8,6 +8,7 @@ using FishNet.Managing.Scened;
 using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
+using FishNet.Serializing.Helping;
 using System;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if predicted spawning is allowed for this object.
         /// </summary>
-        internal bool AllowPredictedSpawning => (PredictedSpawn == null) ? false : PredictedSpawn.GetAllowSpawning();        
+        internal bool AllowPredictedSpawning => (PredictedSpawn == null) ? false : PredictedSpawn.GetAllowSpawning();
         /// <summary>
         /// True if predicted spawning is allowed for this object.
         /// </summary>
@@ -30,42 +31,30 @@ namespace FishNet.Object
         internal bool AllowPredictedSyncTypes => (PredictedSpawn == null) ? false : PredictedSpawn.GetAllowSyncTypes();
         /// <summary>
         /// True if this object has been initialized on the client side.
-        /// This is set true right before client callbacks.
+        /// This is set true right before client start callbacks and after stop callbacks.
         /// </summary>
-        public bool ClientInitialized { get; private set; }
+        public bool IsClientInitialized { get; private set; }
+        [Obsolete("Use IsClientInitialized.")]
+        public bool ClientInitialized => IsClientInitialized;
         /// <summary>
-        /// 
+        /// True if the client is active and authenticated. This will return true on clientHost even if the object has not initialized yet for the client.
+        /// To check if this object has been initialized for the client use IsClientInitialized.
         /// </summary>
-        private bool _isClient;
-        /// <summary>
-        /// True if the client is active and authenticated.
-        /// </summary>
-        public bool IsClient
-        {
-            /* This needs to use a special check when
-             * player is acting as host. Clients won't
-             * set IsClient until they receive the spawn message
-             * but the user may expect this true after client
-             * gains observation but before client gets spawn. */
-            get
-            {
-                if (IsServer)
-                    return (NetworkManager == null) ? false : NetworkManager.IsClient;
-                else
-                    return _isClient;
-            }
-
-            private set => _isClient = value;
-        }
-
+        public bool IsClient => (NetworkManager == null) ? false : NetworkManager.IsClient;
         /// <summary>
         /// True if only the client is active and authenticated.
         /// </summary>
         public bool IsClientOnly => (IsClient && !IsServer);
         /// <summary>
-        /// True if server is active.
+        /// True if this object has been initialized on the server side.
+        /// This is set true right before server start callbacks and after stop callbacks.
         /// </summary>
-        public bool IsServer { get; private set; }
+        public bool IsServerInitialized { get; private set; }
+        /// <summary>
+        /// True if the server is active. This will return true on clientHost even if the object is being deinitialized on the server.
+        /// To check if this object has been initialized for the server use IsServerInitialized.
+        /// </summary>
+        public bool IsServer => (NetworkManager == null) ? false : NetworkManager.IsServer;
         /// <summary>
         /// True if only the server is active.
         /// </summary>
@@ -80,6 +69,7 @@ namespace FishNet.Object
         public bool IsOffline => (!IsClient && !IsServer);
         /// <summary>
         /// True if the local client is the owner of this object.
+        /// This will only return true if IsClientInitialized is also true. You may check ownership status regardless of client initialized state by using Owner.IsLocalClient.
         /// </summary>
         public bool IsOwner
         {
@@ -108,7 +98,7 @@ namespace FishNet.Object
                  * within OnStartNetwork for clients only, but not for host given the client
                  * side won't be initialized yet as host. As a work around CodeAnalysis will
                  * inform users to instead use base.Owner.IsLocalClient within OnStartNetwork. */
-                if (!ClientInitialized)
+                if (!IsClientInitialized)
                     return false;
 
                 return Owner.IsLocalClient;
@@ -177,7 +167,7 @@ namespace FishNet.Object
         /// <summary>
         /// PredictionManager for this object.
         /// </summary>
-        public PredictionManager PredictionManager {get;private set;}
+        public PredictionManager PredictionManager { get; private set; }
         /// <summary>
         /// RollbackManager for this object.
         /// </summary>
@@ -238,16 +228,16 @@ namespace FishNet.Object
         /// <summary>
         /// Spawns an object over the network. Only call from the server.
         /// </summary>
-        public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
+        public void Spawn(GameObject go, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
-            NetworkManager?.ServerManager.Spawn(go, ownerConnection);
+            NetworkManager?.ServerManager.Spawn(go, ownerConnection, scene);
         }
         /// <summary>
         /// Spawns an object over the network. Only call from the server.
         /// </summary>
-        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
+        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
-            NetworkManager?.ServerManager.Spawn(nob, ownerConnection);
+            NetworkManager?.ServerManager.Spawn(nob, ownerConnection, scene);
         }
 
         /// <summary>

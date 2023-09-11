@@ -66,6 +66,11 @@ namespace FishNet.Object
         /// </summary>
         public NetworkObserver NetworkObserver => _networkObjectCache.NetworkObserver;
         /// <summary>
+        /// True if this object has been initialized on the client side.
+        /// This is set true right before client start callbacks and after stop callbacks.
+        /// </summary>
+        public bool IsClientInitialized => _networkObjectCache.IsClientInitialized;
+        /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
         public bool IsClient => _networkObjectCache.IsClient;
@@ -73,6 +78,11 @@ namespace FishNet.Object
         /// True if only the client is active and authenticated.
         /// </summary>
         public bool IsClientOnly => _networkObjectCache.IsClientOnly;
+        /// <summary>
+        /// True if this object has been initialized on the server side.
+        /// This is set true right before server start callbacks and after stop callbacks.
+        /// </summary>
+        public bool IsServerInitialized => _networkObjectCache.IsServerInitialized;
         /// <summary>
         /// True if server is active.
         /// </summary>
@@ -178,22 +188,22 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="go">GameObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
-        public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
+        public void Spawn(GameObject go, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
             if (IsNetworkObjectNull(true))
                 return;
-            _networkObjectCache.Spawn(go, ownerConnection);
+            _networkObjectCache.Spawn(go, ownerConnection, scene);
         }
         /// <summary>
         /// Spawns an object over the network. Can only be called on the server.
         /// </summary>
         /// <param name="nob">GameObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
-        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
+        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
             if (IsNetworkObjectNull(true))
                 return;
-            _networkObjectCache.Spawn(nob, ownerConnection);
+            _networkObjectCache.Spawn(nob, ownerConnection, scene);
         }
         /// <summary>
         /// Returns if NetworkObject is null.

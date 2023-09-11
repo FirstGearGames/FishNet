@@ -1,6 +1,4 @@
-//#define Multipass_V2
-
-#if !Multipass_V2
+#if FISHNET_RELEASE_MODE
 using FishNet.Managing;
 using GameKit.Utilities;
 using System;
@@ -963,8 +961,8 @@ namespace FishNet.Transporting.Multipass
     [AddComponentMenu("FishNet/Transport/Multipass")]
     public class Multipass : Transport
     {
-#region Types.
-        public class ClientTransportData : ICachable
+        #region Types.
+        public class ClientTransportData : IResettable
         {
             /// <summary>
             /// Transport index this connection is on.
@@ -1005,20 +1003,9 @@ namespace FishNet.Transporting.Multipass
 
             public void InitializeState() { }
         }
-        public struct TransportIdData
-        {
-            public int TransportId;
-            public int TransportIndex;
+        #endregion
 
-            public TransportIdData(int transportId, int transportIndex)
-            {
-                TransportId = transportId;
-                TransportIndex = transportIndex;
-            }
-        }
-#endregion
-
-#region Public.
+        #region Public.
         /// <summary>
         /// While true server actions such as starting or stopping the server will run on all transport.
         /// </summary>
@@ -1059,9 +1046,9 @@ namespace FishNet.Transporting.Multipass
 
             private set => _clientTransport = value;
         }
-#endregion
+        #endregion
 
-#region Serialized.
+        #region Serialized.
         /// <summary>
         /// 
         /// </summary>
@@ -1072,9 +1059,9 @@ namespace FishNet.Transporting.Multipass
         /// Transports to use.
         /// </summary>
         public IList<Transport> Transports => _transports;
-#endregion
+        #endregion
 
-#region Private. 
+        #region Private. 
         /// <summary>
         /// MultipassId lookup.
         /// </summary>
@@ -1087,14 +1074,14 @@ namespace FishNet.Transporting.Multipass
         /// Ids available to new connections.
         /// </summary>
         private Queue<int> _availableMultipassIds = new Queue<int>();
-#endregion
+        #endregion
 
-#region Const.
+        #region Const.
         /// <summary>
         /// Id to use for client when acting as host.
         /// </summary>
         internal const int CLIENT_HOST_ID = short.MaxValue;
-#endregion
+        #endregion
 
         public override void Initialize(NetworkManager networkManager, int transportIndex)
         {
@@ -1143,7 +1130,7 @@ namespace FishNet.Transporting.Multipass
         }
 
 
-#region ClientIds.
+        #region ClientIds.
         /// <summary>
         /// Resets lookup collections and caches potential garbage.
         /// </summary>
@@ -1156,7 +1143,7 @@ namespace FishNet.Transporting.Multipass
             foreach (ClientTransportData item in _multpassIdLookup.Values)
             {
                 item.ResetState();
-                DisposableObjectCaches<ClientTransportData>.Store(item);
+                ResettableObjectCaches<ClientTransportData>.Store(item);
             }
             _multpassIdLookup.Clear();
 
@@ -1165,7 +1152,7 @@ namespace FishNet.Transporting.Multipass
                 foreach (ClientTransportData item in _transportIdLookup[i].Values)
                 {
                     item.ResetState();
-                    DisposableObjectCaches<ClientTransportData>.Store(item);
+                    ResettableObjectCaches<ClientTransportData>.Store(item);
                 }
 
                 _transportIdLookup[i].Clear();
@@ -1220,16 +1207,15 @@ namespace FishNet.Transporting.Multipass
             base.NetworkManager.LogError($"TransportIdData could not be found for Multipass connectionId of {multipassId}.");
             return null;
         }
-#endregion
+        #endregion
 
-#region ConnectionStates.
+        #region ConnectionStates.
         /// <summary>
         /// Gets the IP address of a remote connectionId.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string GetConnectionAddress(int multipassId)
         {
-            TransportIdData data;
             ClientTransportData ctd = GetDataFromMultipassId(multipassId);
             if (ctd == null)
                 return string.Empty;
@@ -1356,7 +1342,7 @@ namespace FishNet.Transporting.Multipass
                 //Get a multipassId for new connections.
                 multipassId = _availableMultipassIds.Dequeue();
                 //Get and update a clienttransportdata.
-                ClientTransportData ctd = DisposableObjectCaches<ClientTransportData>.Retrieve();
+                ClientTransportData ctd = ResettableObjectCaches<ClientTransportData>.Retrieve();
                 ctd.Update(transportIndex, transportId, multipassId);
                 //Assign the lookup for transportId/index.
                 transportToMultipass[transportId] = ctd;
@@ -1391,12 +1377,12 @@ namespace FishNet.Transporting.Multipass
                 connectionStateArgs.ConnectionId = ctd.MultipassId;
                 OnRemoteConnectionState?.Invoke(connectionStateArgs);
 
-                DisposableObjectCaches<ClientTransportData>.Store(ctd);
+                ResettableObjectCaches<ClientTransportData>.Store(ctd);
             }
         }
-#endregion
+        #endregion
 
-#region Iterating.
+        #region Iterating.
         /// <summary>
         /// Processes data received by the socket.
         /// </summary>
@@ -1416,9 +1402,9 @@ namespace FishNet.Transporting.Multipass
             foreach (Transport t in _transports)
                 t.IterateOutgoing(server);
         }
-#endregion
+        #endregion
 
-#region ReceivedData.
+        #region ReceivedData.
         /// <summary>
         /// Called when client receives data.
         /// </summary>
@@ -1448,9 +1434,9 @@ namespace FishNet.Transporting.Multipass
             receivedDataArgs.ConnectionId = ctd.MultipassId;
             OnServerReceivedData?.Invoke(receivedDataArgs);
         }
-#endregion
+        #endregion
 
-#region Sending.
+        #region Sending.
         /// <summary>
         /// Sends to the server on ClientTransport.
         /// </summary>
@@ -1477,9 +1463,9 @@ namespace FishNet.Transporting.Multipass
 
             _transports[ctd.TransportIndex].SendToClient(channelId, segment, ctd.TransportId);
         }
-#endregion
+        #endregion
 
-#region Configuration.
+        #region Configuration.
         /// <summary>
         /// Returns if GlobalServerActions is true and if not logs an error.
         /// </summary>
@@ -1719,9 +1705,9 @@ namespace FishNet.Transporting.Multipass
 
             _transports[index].SetPort(port);
         }
-#endregion
+        #endregion
 
-#region Start and stop.
+        #region Start and stop.
         /// <summary>
         /// Starts the local server or client using configured settings on the first transport.
         /// </summary>
@@ -1870,7 +1856,7 @@ namespace FishNet.Transporting.Multipass
             }
         }
 
-#region Privates.
+        #region Privates.
         /// <summary>
         /// Starts server of transport on index.
         /// </summary>
@@ -1925,10 +1911,10 @@ namespace FishNet.Transporting.Multipass
 
             return _transports[ctd.TransportIndex].StopConnection(ctd.TransportId, immediately);
         }
-#endregion
-#endregion
+        #endregion
+        #endregion
 
-#region Channels.
+        #region Channels.
         /// <summary>
         /// Gets the MTU for a channel on the first transport. This should take header size into consideration.
         /// For example, if MTU is 1200 and a packet header for this channel is 10 in size, this method should return 1190.
@@ -1953,9 +1939,9 @@ namespace FishNet.Transporting.Multipass
             return _transports[index].GetMTU(channel);
         }
 
-#endregion
+        #endregion
 
-#region Misc.
+        #region Misc.
         /// <summary>
         /// Returns if an index is within range of the Transports collection.
         /// </summary>
@@ -1979,7 +1965,7 @@ namespace FishNet.Transporting.Multipass
         public override void HandleClientReceivedDataArgs(ClientReceivedDataArgs receivedDataArgs) { }
         public override void HandleServerReceivedDataArgs(ServerReceivedDataArgs receivedDataArgs) { }
         public override void HandleClientConnectionState(ClientConnectionStateArgs connectionStateArgs) { }
-#endregion
+        #endregion
 
     }
 }

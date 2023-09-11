@@ -431,7 +431,7 @@ namespace FishNet.Managing.Server
         /// Spawns an object over the network.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection = null)
+        internal void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
             //Default as false, will change if needed.
             bool predictedSpawn = false;
@@ -479,6 +479,20 @@ namespace FishNet.Managing.Server
             {
                 base.NetworkManager.LogError($"{networkObject.name} cannot be spawned because it has a parent NetworkObject {networkObject.ParentNetworkObject} which is not spawned.");
                 return;
+            }
+            /* If scene is specified make sure the object is root,
+             * and if not move it before network spawning. */
+            if (scene.IsValid())
+            {
+                if (networkObject.transform.parent != null)
+                {
+                    base.NetworkManager.LogError($"{networkObject.name} cannot be moved to scene name {scene.name}, handle {scene.handle} because {networkObject.name} is not root and only root objects may be moved.");
+                    return;
+                }
+                else
+                {
+                    UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(networkObject.gameObject, scene);
+                }
             }
 
             if (predictedSpawn)

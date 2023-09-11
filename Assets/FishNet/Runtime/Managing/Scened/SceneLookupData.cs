@@ -346,7 +346,10 @@ namespace FishNet.Managing.Scened
 
             //If couldnt find handle try by string.
             if (!foundByHandle)
+            { 
                 result = SceneManager.GetScene(NameOnly);
+
+            }
 
             return result;
         }

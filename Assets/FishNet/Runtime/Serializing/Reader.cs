@@ -1338,8 +1338,9 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a ListCache with allocations.
         /// </summary>
-        [CodegenExclude]
+        [CodegenExclude]  //Remove on 2024/01/01.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable CS0618 // Type or member is obsolete
         public ListCache<T> ReadListCacheAllocated<T>()
         {
             List<T> lst = ReadListAllocated<T>();
@@ -1351,12 +1352,13 @@ namespace FishNet.Serializing
         /// Reads a ListCache and returns the item count read.
         /// </summary>
         [CodegenExclude]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]  //Remove on 2024/01/01.
         public int ReadListCache<T>(ref ListCache<T> listCache)
         {
             listCache.Collection = ReadListAllocated<T>();
             return listCache.Collection.Count;
         }
+#pragma warning restore CS0618 // Type or member is obsolete
         /// <summary>
         /// Reads a list with allocations.
         /// </summary>

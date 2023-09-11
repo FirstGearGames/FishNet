@@ -56,9 +56,9 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference ServerRpcDelegate_Ctor_MethodRef;
         public MethodReference ClientRpcDelegate_Ctor_MethodRef;
         //Is checks.
-        public MethodReference IsClient_MethodRef;
+        public MethodReference IsClientInitialized_MethodRef;
         public MethodReference IsOwner_MethodRef;
-        public MethodReference IsServer_MethodRef;
+        public MethodReference IsServerInitialized_MethodRef;
         public MethodReference IsHost_MethodRef;
         public MethodReference IsNetworked_MethodRef;
         //Misc.
@@ -160,10 +160,10 @@ namespace FishNet.CodeGenerating.Helping
             foreach (PropertyInfo pi in networkBehaviourType.GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
                 //Server/Client states.
-                if (pi.Name == nameof(NetworkBehaviour.IsClient))
-                    IsClient_MethodRef = base.ImportReference(pi.GetMethod);
-                else if (pi.Name == nameof(NetworkBehaviour.IsServer))
-                    IsServer_MethodRef = base.ImportReference(pi.GetMethod);
+                if (pi.Name == nameof(NetworkBehaviour.IsClientInitialized))
+                    IsClientInitialized_MethodRef = base.ImportReference(pi.GetMethod);
+                else if (pi.Name == nameof(NetworkBehaviour.IsServerInitialized))
+                    IsServerInitialized_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkBehaviour.IsHost))
                     IsHost_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkBehaviour.IsOwner))
@@ -358,9 +358,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates exit method condition if not client.
         /// </summary>
-        /// <param name="processor"></param>
-        /// <param name="retInstruction"></param>
-        /// <param name="warn"></param>
+        /// <param name="useStatic">When true InstanceFinder.IsClient is used, when false base.IsClientInitialized is used.</param>
         internal void CreateIsClientCheck(MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst, bool checkIsNetworked)
         {
             /* This is placed after the if check.
@@ -379,18 +377,18 @@ namespace FishNet.CodeGenerating.Helping
             {
                 instructions.Add(processor.Create(OpCodes.Ldarg_0)); //argument: this
                 //If (!base.IsClient)
-                instructions.Add(processor.Create(OpCodes.Call, IsClient_MethodRef));
+                instructions.Add(processor.Create(OpCodes.Call, IsClientInitialized_MethodRef));
             }
             //Checking instanceFinder.
             else
-            {
+            { 
                 instructions.Add(processor.Create(OpCodes.Call, base.GetClass<ObjectHelper>().InstanceFinder_IsClient_MethodRef));
             }
             instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
             //If warning then also append warning text.
             if (loggingType != LoggingType.Off)
             {
-                string msg = $"Cannot complete action because client is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component. {DISABLE_LOGGING_TEXT}.";
+                string msg = $"Cannot complete action because client is not active. This may also occur if the object is not yet initialized, has deinitialized, or if it does not contain a NetworkObject component.";
                 instructions.AddRange(base.GetClass<GeneralHelper>().LogMessage(methodDef, msg, loggingType));
             }
             //Add return.
@@ -412,8 +410,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates exit method condition if not server.
         /// </summary>
-        /// <param name="processor"></param>
-        /// <param name="warn"></param>
+        /// <param name="useStatic">When true InstanceFinder.IsServer is used, when false base.IsServerInitialized is used.</param>
         internal void CreateIsServerCheck(MethodDefinition methodDef, LoggingType loggingType, bool useStatic, bool insertFirst, bool checkIsNetworked)
         {
             /* This is placed after the if check.
@@ -431,7 +428,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 instructions.Add(processor.Create(OpCodes.Ldarg_0)); //argument: this
                 //If (!base.IsServer)
-                instructions.Add(processor.Create(OpCodes.Call, IsServer_MethodRef));
+                instructions.Add(processor.Create(OpCodes.Call, IsServerInitialized_MethodRef));
             }
             //Checking instanceFinder.
             else
@@ -442,7 +439,7 @@ namespace FishNet.CodeGenerating.Helping
             //If warning then also append warning text.
             if (loggingType != LoggingType.Off)
             {
-                string msg = $"Cannot complete action because server is not active. This may also occur if the object is not yet initialized or if it does not contain a NetworkObject component. {DISABLE_LOGGING_TEXT}";
+                string msg = $"Cannot complete action because server is not active. This may also occur if the object is not yet initialized, has deinitialized, or if it does not contain a NetworkObject component.";
                 instructions.AddRange(base.GetClass<GeneralHelper>().LogMessage(methodDef, msg, loggingType));
             }
             //Add return.

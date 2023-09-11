@@ -384,7 +384,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);
             /* Create a local PooledWriter variable. */
-            //Default value for data lenght.
+            //Default value for data length.
             int dataLength = -1;
             //Go through each attribute and see if a larger data length is specified.
             foreach (AttributeData ad in attributeDatas)

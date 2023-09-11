@@ -11,7 +11,6 @@ namespace FishNet.Managing.Predicting.Editing
     public class PredictionManagerEditor : Editor
     {
         private SerializedProperty _queuedInputs;
-        private SerializedProperty _reconcileInterval;
         private SerializedProperty _dropExcessiveReplicates;
         private SerializedProperty _maximumServerReplicates;
         private SerializedProperty _maximumConsumeCount;
@@ -23,7 +22,6 @@ namespace FishNet.Managing.Predicting.Editing
         protected virtual void OnEnable()
         {
             _queuedInputs = serializedObject.FindProperty(nameof(_queuedInputs));
-            _reconcileInterval = serializedObject.FindProperty(nameof(_reconcileInterval));
             _dropExcessiveReplicates = serializedObject.FindProperty(nameof(_dropExcessiveReplicates));
             _maximumServerReplicates = serializedObject.FindProperty(nameof(_maximumServerReplicates));
             _maximumConsumeCount = serializedObject.FindProperty(nameof(_maximumConsumeCount));
@@ -42,10 +40,7 @@ namespace FishNet.Managing.Predicting.Editing
 
             EditorGUILayout.LabelField("Server", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            //EditorGUILayout.PropertyField(_queuedInputs);
-#if PREDICTION_V2
-            EditorGUILayout.PropertyField(_reconcileInterval);
-#endif
+            EditorGUILayout.PropertyField(_queuedInputs);
             EditorGUILayout.PropertyField(_dropExcessiveReplicates);
             EditorGUI.indentLevel++;
             if (_dropExcessiveReplicates.boolValue == true)

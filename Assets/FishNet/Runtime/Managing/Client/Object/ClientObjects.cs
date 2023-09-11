@@ -93,7 +93,10 @@ namespace FishNet.Managing.Client
                 else
                 {
                     foreach (NetworkObject n in Spawned.Values)
+                    { 
                         n.InvokeStopCallbacks(false);
+                        n.SetInitializedStatus(false, false);
+                    }
                 }
                 /* Clear spawned and scene objects as they will be rebuilt.
                  * Spawned would have already be cleared if DespawnSpawned

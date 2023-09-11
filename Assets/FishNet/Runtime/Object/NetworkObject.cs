@@ -47,9 +47,6 @@ namespace FishNet.Object
     [DisallowMultipleComponent]
     public partial class NetworkObject : MonoBehaviour
     {
-        [HideInInspector] //DEBUG
-        public long AdaptiveInterpolationValue = 4;
-
         #region Public.
         /// <summary>
         /// True if this object is nested.
@@ -140,11 +137,6 @@ namespace FishNet.Object
         [Tooltip("Custom settings for smoothing data.")]
         [SerializeField]
         private AdaptiveInterpolationSmoothingData _customSmoothingData = _mixedSmoothingData;
-        /// <summary>
-        /// Preview of selected preconfigured smoothing data. This is only used for the inspector.
-        /// </summary>
-        [SerializeField]
-        private AdaptiveInterpolationSmoothingData _preconfiguredSmoothingDataPreview;
 #endif
         /// <summary>
         /// Returns if this object was placed in the scene during edit-time.
@@ -431,7 +423,7 @@ namespace FishNet.Object
             CollectionCaches<NetworkObject>.Store(RuntimeChildNetworkObjects);
             IsDeinitializing = true;
 
-            SetActiveStatus(false);
+            SetDeinitializedStatus();
             //Do not need to set state if being destroyed.
             //Don't need to reset sync types if object is being destroyed.
         }
@@ -440,8 +432,6 @@ namespace FishNet.Object
         private void Update()
         {
             Prediction_Update();
-            if (_spectatorAdaptiveInterpolationSmoother != null)
-                _spectatorAdaptiveInterpolationSmoother._currentInterpolation = AdaptiveInterpolationValue;
         }
 #endif
 
@@ -496,20 +486,20 @@ namespace FishNet.Object
         /// <summary>
         /// Sets IsClient or IsServer to isActive.
         /// </summary>
-        private void SetActiveStatus(bool isActive, bool server)
+        internal void SetInitializedStatus(bool isInitialized, bool asServer)
         {
-            if (server)
-                IsServer = isActive;
+            if (asServer)
+                IsServerInitialized = isInitialized;
             else
-                IsClient = isActive;
+                IsClientInitialized = isInitialized;
         }
         /// <summary>
-        /// Sets IsClient and IsServer to isActive.
+        /// Sets IsServerInitialized and IsClientInitialized as false;
         /// </summary>
-        private void SetActiveStatus(bool isActive)
+        private void SetDeinitializedStatus()
         {
-            IsServer = isActive;
-            IsClient = isActive;
+            IsServerInitialized = false;
+            IsClientInitialized = false;
         }
         /// <summary>
         /// Preinitializes this object for the network.
@@ -805,6 +795,7 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Initialize(bool asServer, bool invokeSyncTypeCallbacks)
         {
+            SetInitializedStatus(true, asServer);
             InitializeCallbacks(asServer, invokeSyncTypeCallbacks);
         }
 
@@ -838,7 +829,8 @@ namespace FishNet.Object
                 RemoveClientRpcLinkIndexes();
             }
 
-            SetActiveStatus(false, asServer);
+            SetInitializedStatus(false, asServer);
+
             if (asServer)
                 Observers.Clear();
         }
@@ -872,8 +864,7 @@ namespace FishNet.Object
             SceneManager = null;
             RollbackManager = null;
             //Misc sets.
-            ObjectId = 0;
-            ClientInitialized = false;
+            ObjectId = 0;          
         }
 
         /// <summary>

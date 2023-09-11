@@ -694,7 +694,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, calledByUserParameterDef);
             processor.Emit(OpCodes.Brtrue, beforeChangeFieldInst);
             processor.Emit(OpCodes.Ldarg_0); //this.            
-            processor.Emit(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().IsServer_MethodRef);
+            processor.Emit(OpCodes.Call, base.GetClass<NetworkBehaviourHelper>().IsServerInitialized_MethodRef);
             processor.Emit(OpCodes.Brtrue, afterChangeFieldInst);
 
             //      _originalField = value;

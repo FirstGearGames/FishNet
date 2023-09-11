@@ -88,10 +88,12 @@ namespace FishNet.CodeGenerating.Helping
             {
                 return SerializerType.List;
             }
-            else if (objectTd.Is(typeof(ListCache<>)))
+#pragma warning disable CS0618 // Type or member is obsolete
+            else if (objectTd.Is(typeof(ListCache<>))) //Remove on 2024/01/01
             {
                 return SerializerType.ListCache;
             }
+#pragma warning restore CS0618 // Type or member is obsolete
             else if (objectTd.InheritsFrom<NetworkBehaviour>(base.Session))
             {
                 return SerializerType.NetworkBehaviour;

@@ -40,12 +40,13 @@ namespace FishNet.Object.Prediction
         public NetworkObject NetworkObject;
         [HideInInspector, System.NonSerialized]
         public float TeleportThreshold;
+
         /// <summary>
         /// Percentage of ping to use as interpolation. Higher values will result in more interpolation.
         /// </summary>
         [Tooltip("Percentage of ping to use as interpolation. Higher values will result in more interpolation.")]
         [Range(0.01f, 5f)]
-        public float InterpolationPercent;
+        public float NormalPercent;
         /// <summary>
         /// Percentage of ping to use as interpolation when colliding with an object local client owns.
         /// This is used to speed up local interpolation when predicted objects collide with a player as well keep graphics closer to the objects root while colliding.
@@ -53,21 +54,30 @@ namespace FishNet.Object.Prediction
         [Tooltip("Percentage of ping to use as interpolation when colliding with an object local client owns." +
             "This is used to speed up local interpolation when predicted objects collide with a player as well keep graphics closer to the objects root while colliding.")]
         [Range(0.01f, 5f)]
-        public float CollisionInterpolationPercent;
+        public float CollisionPercent;
         /// <summary>
         /// How much per tick to decrease to collision interpolation when colliding with a local player object.
         /// Higher values will set interpolation to collision settings faster.
         /// </summary>
         [Tooltip("How much per tick to decrease to collision interpolation when colliding with a local player object. Higher values will set interpolation to collision settings faster.")]
-        [Range(1, byte.MaxValue)]
-        public byte InterpolationDecreaseStep;
+        [Range(0.1f, 10f)]
+        public float CollisionStep;
         /// <summary>
         /// How much per tick to increase to normal interpolation when not colliding with a local player object.
         /// Higher values will set interpolation to normal settings faster.
         /// </summary>
         [Tooltip("How much per tick to increase to normal interpolation when not colliding with a local player object. Higher values will set interpolation to normal settings faster.")]
-        [Range(1, byte.MaxValue)]
-        public byte InterpolationIncreaseStep;
+        [Range(0.1f, 10f)]
+        public float NormalStep;
+
+        /// <summary>
+        /// Interpolation applied regardless of settings when colliding with a localClient object.
+        /// </summary>
+        internal const byte BASE_COLLISION_INTERPOLATION = 0;
+        /// <summary>
+        /// Interpolation applied regardless of settings when not colliding with a localClient object.
+        /// </summary>
+        internal const byte BASE_NORMAL_INTERPOLATION = 1;
     }
 
 }

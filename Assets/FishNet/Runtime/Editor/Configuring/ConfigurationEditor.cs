@@ -53,6 +53,7 @@ namespace FishNet.Editing
         #endregion
 
         #region PredictionV2.
+#if !PREDICTION_V2
         [MenuItem("Fish-Networking/Experimental/PredictionV2/Enable", false, -999)]
         private static void EnablePredictionV2()
         {
@@ -60,6 +61,7 @@ namespace FishNet.Editing
             if (result)
                 Debug.LogWarning($"PredictionV2 has been enabled. {DEVELOPER_ONLY_WARNING}");
         }
+#else
         [MenuItem("Fish-Networking/Experimental/PredictionV2/Disable", false, -998)]
         private static void DisablePredictionV2()
         {
@@ -67,9 +69,11 @@ namespace FishNet.Editing
             if (result)
                 Debug.Log("PredictionV2 has been disabled.");
         }
+#endif
         #endregion
 
         #region QOL Attributes
+#if DISABLE_QOL_ATTRIBUTES
         [MenuItem("Fish-Networking/Experimental/Quality of Life Attributes/Enable", false, -999)]
         private static void EnableQOLAttributes()
         {
@@ -77,6 +81,7 @@ namespace FishNet.Editing
             if (result)
                 Debug.LogWarning($"Quality of Life Attributes have been enabled.");
         }
+#else
         [MenuItem("Fish-Networking/Experimental/Quality of Life Attributes/Disable", false, -998)]
         private static void DisableQOLAttributes()
         {
@@ -84,6 +89,7 @@ namespace FishNet.Editing
             if (result)
                 Debug.LogWarning($"Quality of Life Attributes have been disabled. {DEVELOPER_ONLY_WARNING}");
         }
+#endif
         #endregion
 
 

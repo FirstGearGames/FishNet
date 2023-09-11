@@ -15,7 +15,6 @@ namespace FishNet.Object.Editing
     [CanEditMultipleObjects]
     public class NetworkObjectEditor : Editor
     {
-        private SerializedProperty _aiv;
         private SerializedProperty _isNetworked;
         private SerializedProperty _isGlobal;
         private SerializedProperty _initializeOrder;
@@ -40,7 +39,6 @@ namespace FishNet.Object.Editing
 
         protected virtual void OnEnable()
         {
-            _aiv = serializedObject.FindProperty("AdaptiveInterpolationValue");
             _isNetworked = serializedObject.FindProperty(nameof(_isNetworked));
             _isGlobal = serializedObject.FindProperty(nameof(_isGlobal));
             _initializeOrder = serializedObject.FindProperty(nameof(_initializeOrder));
@@ -55,7 +53,6 @@ namespace FishNet.Object.Editing
             _enableTeleport = serializedObject.FindProperty(nameof(_enableTeleport));
             _ownerTeleportThreshold = serializedObject.FindProperty(nameof(_ownerTeleportThreshold));
 
-            //_futurePredictionTime = serializedObject.FindProperty(nameof(_futurePredictionTime));
             _spectatorAdaptiveInterpolation = serializedObject.FindProperty(nameof(_spectatorAdaptiveInterpolation));
             _spectatorInterpolation = serializedObject.FindProperty(nameof(_spectatorInterpolation));
             _adaptiveSmoothingType = serializedObject.FindProperty(nameof(_adaptiveSmoothingType));
@@ -71,7 +68,6 @@ namespace FishNet.Object.Editing
             GUI.enabled = false;
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(nob), typeof(NetworkObject), false);
             GUI.enabled = true;
-            EditorGUILayout.PropertyField(_aiv);
             EditorGUILayout.PropertyField(_isNetworked);
             EditorGUILayout.PropertyField(_isGlobal);
             EditorGUILayout.PropertyField(_initializeOrder);

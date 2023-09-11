@@ -91,7 +91,7 @@ namespace FishNet.Managing.Server
         /// <param name="go">GameObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Spawn(GameObject go, NetworkConnection ownerConnection = null)
+        public void Spawn(GameObject go, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
             if (go == null)
             {
@@ -100,7 +100,7 @@ namespace FishNet.Managing.Server
             }
 
             NetworkObject nob = go.GetComponent<NetworkObject>();
-            Spawn(nob, ownerConnection);
+            Spawn(nob, ownerConnection, scene);
         }
 
 
@@ -109,9 +109,9 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="nob">MetworkObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
-        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null)
+        public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
-            Objects.Spawn(nob, ownerConnection);
+            Objects.Spawn(nob, ownerConnection, scene);
         }
 
         /// <summary>

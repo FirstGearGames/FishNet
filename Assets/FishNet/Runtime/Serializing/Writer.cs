@@ -969,12 +969,14 @@ namespace FishNet.Serializing
         /// Writes a ListCache.
         /// </summary>
         /// <param name="lc">ListCache to write.</param>
-        [CodegenExclude]
+        [CodegenExclude] //Remove on 2024/01/01.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable CS0618 // Type or member is obsolete
         public void WriteListCache<T>(ListCache<T> lc)
         {
             WriteList<T>(lc.Collection);
         }
+#pragma warning restore CS0618 // Type or member is obsolete
         /// <summary>
         /// Writes a list.
         /// </summary>

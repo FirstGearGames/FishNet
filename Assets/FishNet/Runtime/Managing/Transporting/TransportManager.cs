@@ -172,6 +172,77 @@ namespace FishNet.Managing.Transporting
 #endif
         }
 
+
+        ///// <summary>
+        ///// Gets port for the first transport, or client transport if using Multipass.
+        ///// </summary>
+        //private ushort GetPort(bool asServer)
+        //{
+        //    if (Transport is Multipass mp)
+        //    {
+        //        if (asServer)
+        //            return mp.Transports[0].GetPort();
+        //        else
+        //            return mp.ClientTransport.GetPort();
+        //    }
+        //    else
+        //    {
+        //        return Transport.GetPort();
+        //    }
+        //}
+
+
+        ///// <summary>
+        ///// Stops the local server or client connection.
+        ///// </summary>
+        //internal bool StopConnection(bool asServer)
+        //{
+        //    return Transport.StopConnection(asServer);
+        //}
+
+        ///// <summary>
+        ///// Starts the local server or client connection.
+        ///// </summary>
+        //internal bool StartConnection(bool asServer)
+        //{
+        //    return Transport.StartConnection(asServer);
+        //}
+
+        ///// <summary>
+        ///// Starts the local server or client connection.
+        ///// </summary>
+        //internal bool StartConnection(string address, bool asServer)
+        //{
+        //    return StartConnection(address, GetPort(asServer), asServer);
+        //}
+
+        ///// <summary>
+        ///// Starts the local server or client connection on the first transport or ClientTransport if using Multipass and as client.
+        ///// </summary>
+        //internal bool StartConnection(string address, ushort port, bool asServer)
+        //{
+        //    Transport t;
+        //    if (Transport is Multipass mp)
+        //    {
+        //        if (asServer)
+        //            t = mp.Transports[0];
+        //        else
+        //            t = mp.ClientTransport;
+        //    }
+        //    else
+        //    {
+        //        t = Transport;
+        //    }
+
+        //    /* SetServerBindAddress must be called explictly. Only
+        //     * set address if for client. */
+        //    if (!asServer)
+        //        t.SetClientAddress(address);
+        //    t.SetPort(port);
+
+        //    return t.StartConnection(asServer);
+        //}
+
         /// <summary>
         /// Sets a connection from server to client dirty.
         /// </summary>

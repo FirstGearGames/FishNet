@@ -92,12 +92,12 @@ namespace FishNet.PredictionV2
 
         private void TimeManager_OnTick()
         {
-            _preSimulatePosition = transform.position;
             Move(BuildMoveData());
         }
 
         private MoveData BuildMoveData()
         {
+
             if (!base.IsOwner)
                 return default;
 
@@ -109,30 +109,27 @@ namespace FishNet.PredictionV2
             return md;
         }
 
+        private MoveData _lastData;
 
-
-        private Vector3 _preSimulatePosition;
-        private int _replayedPredictedCount = 0;
-        private int _replayedUserCreatedCount = 0;
         [ReplicateV2]
         private void Move(MoveData md, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
         {
-            if (state == ReplicateState.ReplayedUserCreated || state == ReplicateState.ReplayedPredicted)
-            {
-                // Debug.Log($"Predicted {state}. Tick {md.GetTick()}");
-            }
-            else if (!base.IsOwner)
-            { 
-                base.PredictionManager.LastNonReplayed = md.GetTick();
-               // Debug.Log($"Normal {state}. tick {md.GetTick()}");
-            }
-            //if (!base.IsOwner)
-            //Debug.LogWarning($"Running input on tick {md.GetTick()}. Replayed? {(state == ReplicateState.ReplayedUserCreated || state == ReplicateState.ReplayedPredicted)}");
-            /* ReplicateState is set based on if the data is new, being replayed, ect.
-            * Visit the ReplicationState enum for more information on what each value
-            * indicates. At the end of this guide a more advanced use of state will
-            * be demonstrated. */
 
+            //if (!base.IsOwner)
+            //{
+            //    if (state == ReplicateState.ReplayedPredicted || state == ReplicateState.Predicted)
+            //    {
+            //        uint tick = md.GetTick();
+            //        md = _lastData;
+            //        md.SetTick(tick);
+            //    }
+            //    else
+            //    {
+            //        _lastData = md;
+            //    }
+            //}
+            //if (base.IsOwner && state != ReplicateState.UserCreated && state != ReplicateState.ReplayedUserCreated)
+            //  Debug.LogError($"SDFSD  " + md.GetTick());
             /* If predicted input via replay then slow down velocity.
              * This prevents potential overshooting if the object were to change
              * direction. If your rigidbody has a substantial amount of drag or is
@@ -140,8 +137,8 @@ namespace FishNet.PredictionV2
              * 
              * This is not a requirement by any means but rather a modification for
              * this demo scene/game type. */
-            if (state == ReplicateState.ReplayedPredicted || state == ReplicateState.Predicted)
-                _rigidbody.velocity *= 0.75f;
+            //if (state == ReplicateState.ReplayedPredicted || state == ReplicateState.Predicted)
+            //    _rigidbody.velocity *= 0.75f;
 
             Vector3 forces = new Vector3(md.Horizontal, 0f, md.Vertical) * _moveRate;
             _rigidbody.AddForce(forces);
@@ -160,9 +157,6 @@ namespace FishNet.PredictionV2
             {
                 ReconcileData rd = new ReconcileData(transform.position, transform.rotation, _rigidbody.velocity, _rigidbody.angularVelocity);
                 Reconciliation(rd);
-                float dist = Vector3.Distance(transform.position, _preSimulatePosition);
-                //if (base.IsOwner)
-                    //Debug.Log($"Tick {base.TimeManager.LocalTick}. Rate {dist / (float)base.TimeManager.TickDelta}.");
             }
         }
 

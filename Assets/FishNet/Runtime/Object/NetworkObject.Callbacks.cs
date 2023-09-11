@@ -16,12 +16,6 @@ namespace FishNet.Object
              * always be an empty connection, since the object is just
              * now initializing. */
 
-            if (!asServer)
-                ClientInitialized = true;
-
-            //Set that client or server is active before callbacks.
-            SetActiveStatus(true, asServer);
-
             //Invoke OnStartNetwork.
             for (int i = 0; i < NetworkBehaviours.Length; i++)
                 NetworkBehaviours[i].InvokeOnNetwork(true);
@@ -117,11 +111,6 @@ namespace FishNet.Object
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].InvokeOnNetwork(false);
             }
-
-            if (asServer)
-                IsServer = false;
-            else
-                IsClient = false;
         }
 
         /// <summary>
