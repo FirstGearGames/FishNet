@@ -18,7 +18,7 @@
 
 3.0  Termination. This License will terminate immediately (i) on any breach by you of this License; and (ii) if you commence any form of patent litigation, including a cross-claim or counterclaim, against anyone wherein you allege that the Software constitutes direct or secondary/indirect patent infringement.
 
-4.0 Governing Law and Venue. This License is governed by and construed in accordance with the laws of North Carolina, United States. You and FirstGearGames agree to submit to the personal and exclusive jurisdiction of and venue in the state and federal courts located in Onslow County, North Carolina concerning any dispute arising out of this License (“Dispute”).
+4.0 Governing Law and Venue. This License is governed by and construed in accordance with the laws of Florida, United States. You and FirstGearGames agree to submit to the personal and exclusive jurisdiction of and venue in the state and federal courts located in Flagler County, Florida concerning any dispute arising out of this License (“Dispute”).
 
 5.0 Disclaimer, Limitation of Liability. Software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in action of contract, tort or otherwise, arising from, out of or in connection with Software or the use or other dealings in Software.
 
