@@ -24,7 +24,7 @@ Documentation and Addons: https://fish-networking.gitbook.io/docs/
 
 Discord: https://discord.gg/fishnetworking
 
-# Reinvesting For Our Future
+# Reinvesting In Our Future
   Between 15-25% of monthly profits are reinvested into Fish-Networking. The use of these funds can range from tipping our helpers to hiring coders to support more third-party extensions or complete backlogged features.
 
 # Donation Options
