@@ -4,6 +4,7 @@ using FishNet.CodeAnalysis.Annotations;
 using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Object.Synchronizing.Internal;
+using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -23,6 +24,21 @@ namespace FishNet.Object
         /// </summary>
         [APIExclude]
         public bool OnStartClientCalled { get; private set; }
+
+        /// <summary>
+        /// This <see cref="Action"/> will be invoked after <see cref="OnStartNetwork"/> is called.
+        /// </summary>
+        public event Action OnStartedOnNetwork;
+
+        /// <summary>
+        /// This <see cref="Action"/> will be invoked after <see cref="OnStartClient"/> is called.
+        /// </summary>
+        public event Action OnStartedOnClient;
+
+        /// <summary>
+        /// This <see cref="Action"/> will be invoked after <see cref="OnStartServer"/> is called.
+        /// </summary>
+        public event Action OnStartedOnServer;
         #endregion
 
         #region Private.
@@ -85,6 +101,7 @@ namespace FishNet.Object
             _onStartNetworkCalled = true;
             _onStopNetworkCalled = false;
             OnStartNetwork();
+            OnStartedOnNetwork?.Invoke();
         }
         /// <summary>
         /// Called when the network has initialized this object. May be called for server or client but will only be called once.
@@ -114,6 +131,7 @@ namespace FishNet.Object
         {
             OnStartServerCalled = true;
             OnStartServer();
+            OnStartedOnServer?.Invoke();
         }
         /// <summary>
         /// Called on the server after initializing this object.
@@ -172,6 +190,7 @@ namespace FishNet.Object
         {
             OnStartClientCalled = true;
             OnStartClient();
+            OnStartedOnClient?.Invoke();
         }
         /// <summary>
         /// Called on the client after initializing this object.
