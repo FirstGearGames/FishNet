@@ -716,7 +716,7 @@ namespace FishNet.Managing.Client
             }
             else if (spt == SpawnParentType.NetworkBehaviour)
             {
-                reader.ReadNetworkBehaviour(out int objectId, out byte componentIndex);
+                reader.ReadNetworkBehaviour(out int objectId, out byte componentIndex, _objectCache.ReadSpawningObjects);
                 if (objectId != NetworkObject.UNSET_OBJECTID_VALUE)
                 {
                     parentObjectId = objectId;

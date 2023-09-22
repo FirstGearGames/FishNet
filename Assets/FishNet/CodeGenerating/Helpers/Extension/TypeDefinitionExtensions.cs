@@ -400,6 +400,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         public static bool ImplementsInterface<TInterface>(this TypeDefinition typeDef)
         {
+            if (typeDef.Interfaces == null)
+                return false;
             for (int i = 0; i < typeDef.Interfaces.Count; i++)
             {
                 if (typeDef.Interfaces[i].InterfaceType.Is<TInterface>())

@@ -28,7 +28,7 @@ namespace FishNet.Demo.NetworkLod
 
         private void Awake()
         {
-            //Check for pro..
+            //Check for pro...this will stay false if not on a pro package.
             bool isPro = false;
             
             if (!isPro)

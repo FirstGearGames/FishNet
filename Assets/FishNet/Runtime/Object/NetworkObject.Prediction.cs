@@ -41,7 +41,7 @@ namespace FishNet.Object
         /// <summary>
         /// Pauses rigidbodies for prediction.
         /// </summary>
-        internal RigidbodyPauser RigidbodyPauser;
+        public RigidbodyPauser RigidbodyPauser { get; private set; }
         #endregion
 
         #region Private.
@@ -277,7 +277,6 @@ namespace FishNet.Object
             if (!IsHost)
                 _spectatorAdaptiveInterpolationSmoother?.OnPostReplicateReplay(clientTick, serverTick);
         }
-
 
         /// <summary>
         /// Returns if this object is colliding with any local client objects.

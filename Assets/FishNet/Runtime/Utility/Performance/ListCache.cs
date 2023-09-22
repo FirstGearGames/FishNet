@@ -11,7 +11,7 @@ namespace FishNet.Utility.Performance
     /// <summary>
     /// Various ListCache instances that may be used on the Unity thread.
     /// </summary>
-    [Obsolete("ListCache has been discovered potentially contain a small memory leak depending on the type being cached. Use ObjectCaches, DisposableObjectCaches, CollectionCaches, DisposableCollectionCaches instead.")] //remove on 2023/01/01
+    [Obsolete("ListCache has been discovered potentially contain a small memory leak depending on the type being cached. Use ObjectCaches, ResettableObjectCaches, CollectionCaches, ResettableCollectionCaches instead.")] //remove on 2023/01/01
     public static class ListCaches
     {
 

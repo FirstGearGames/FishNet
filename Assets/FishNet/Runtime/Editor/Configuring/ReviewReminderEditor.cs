@@ -138,7 +138,7 @@ namespace FishNet.Editing
             if (GUILayout.Button("Ask Later", GUILayout.Width(this.position.width)))
             {
                 this.Close();
-                Application.OpenURL("https://discord.gg/Ta9HgDh4Hj");
+                //Application.OpenURL("https://discord.gg/Ta9HgDh4Hj");
             }
             EditorGUILayout.EndHorizontal();
 

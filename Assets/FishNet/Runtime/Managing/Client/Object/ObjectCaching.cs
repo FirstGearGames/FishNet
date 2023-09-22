@@ -33,9 +33,13 @@ namespace FishNet.Managing.Client
 
         #region Internal.
         /// <summary>
-        /// Objets which are being spawned during iteration.
+        /// Objects which are being spawned during iteration.
         /// </summary>
-        internal Dictionary<int, NetworkObject> SpawningObjects = new Dictionary<int, NetworkObject>();
+        internal Dictionary<int, NetworkObject> IteratedSpawningObjects = new Dictionary<int, NetworkObject>();
+        /// <summary>
+        /// ObjectIds which have been read this tick.
+        /// </summary>
+        internal HashSet<int> ReadSpawningObjects = new HashSet<int>();
         #endregion
 
         #region Private.
@@ -168,6 +172,8 @@ namespace FishNet.Managing.Client
 
             cnob.InitializeSpawn(manager, collectionId, objectId, initializeOrder, ownerId, ost, componentIndex, rootObjectId, parentObjectId, parentComponentIndex
                 , prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, rpcLinks, syncValues);
+
+            ReadSpawningObjects.Add(objectId);
         }
 
         public void AddDespawn(int objectId, DespawnType despawnType)
@@ -344,7 +350,7 @@ namespace FishNet.Managing.Client
                         nob.Preinitialize_Internal(_networkManager, objectId, owner, false);
 
                         _clientObjects.AddToSpawned(cnob.NetworkObject, false);
-                        SpawningObjects.Add(cnob.ObjectId, cnob.NetworkObject);
+                        IteratedSpawningObjects.Add(cnob.ObjectId, cnob.NetworkObject);
                         /* Fixes https://github.com/FirstGearGames/FishNet/issues/323
                          * The redundancy may have been caused by a rework. It would seem
                          * IterateSpawn was always running after the above lines, and not
@@ -479,7 +485,7 @@ namespace FishNet.Managing.Client
         {
             NetworkObject result;
             //If not found in Spawning then check Spawned.
-            if (!SpawningObjects.TryGetValue(objectId, out result))
+            if (!IteratedSpawningObjects.TryGetValue(objectId, out result))
             {
                 Dictionary<int, NetworkObject> spawned = (_networkManager.IsHost) ?
                     _networkManager.ServerManager.Objects.Spawned
@@ -502,7 +508,8 @@ namespace FishNet.Managing.Client
 
             _cachedObjects.Clear();
             _iteratedSpawns.Clear();
-            SpawningObjects.Clear();
+            IteratedSpawningObjects.Clear();
+            ReadSpawningObjects.Clear();
         }
     }
 

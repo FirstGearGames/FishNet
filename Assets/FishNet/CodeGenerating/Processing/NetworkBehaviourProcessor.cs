@@ -212,7 +212,9 @@ namespace FishNet.CodeGenerating.Processing
         /// <returns></returns>
         internal bool NonNetworkBehaviourHasInvalidAttributes(Collection<TypeDefinition> typeDefs)
         {
-            bool error = false;
+            NetworkBehaviourSyncProcessor nbSyncProcessor = base.GetClass<NetworkBehaviourSyncProcessor>();
+            RpcProcessor rpcProcessor = base.GetClass<RpcProcessor>();
+
             foreach (TypeDefinition typeDef in typeDefs)
             {
                 //Inherits, don't need to check.
@@ -223,24 +225,25 @@ namespace FishNet.CodeGenerating.Processing
                 foreach (MethodDefinition md in typeDef.Methods)
                 {
                     //Has RPC attribute but doesn't inherit from NB.
-                    if (base.GetClass<RpcProcessor>().Attributes.HasRpcAttributes(md))
+                    if (rpcProcessor.Attributes.HasRpcAttributes(md))
                     {
                         base.LogError($"{typeDef.FullName} has one or more RPC attributes but does not inherit from NetworkBehaviour.");
-                        error = true;
+                        return true;
                     }
                 }
                 //Check fields for attribute.
                 foreach (FieldDefinition fd in typeDef.Fields)
                 {
-                    if (base.GetClass<NetworkBehaviourSyncProcessor>().GetSyncType(fd, false, out _) != SyncType.Unset)
+                    if (nbSyncProcessor.IsSyncType(fd))
                     {
-                        base.LogError($"{typeDef.FullName} has one or more SyncType attributes but does not inherit from NetworkBehaviour.");
-                        error = true;
+                        base.LogError($"{typeDef.FullName} implements one or more SyncTypes but does not inherit from NetworkBehaviour.");
+                        return true;
                     }
                 }
             }
 
-            return error;
+            //Fallthrough / pass.
+            return false;
         }
 
         
@@ -530,7 +533,7 @@ namespace FishNet.CodeGenerating.Processing
             MethodDefinition CreateMethod(string name, MethodDefinition copied = null)
             {
                 bool created;
-                    MethodDefinition md = typeDef.GetOrCreateMethodDefinition(base.Session, name, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES, typeDef.Module.TypeSystem.Void, out created);
+                MethodDefinition md = typeDef.GetOrCreateMethodDefinition(base.Session, name, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES, typeDef.Module.TypeSystem.Void, out created);
 
                 if (created)
                 {

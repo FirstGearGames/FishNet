@@ -66,6 +66,17 @@ namespace FishNet.Object
 #pragma warning restore CS0414
         #endregion
 
+        /// <summary>
+        /// Outputs data about this NetworkBehaviour to string.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Name [{gameObject.name}] ComponentId [{ComponentIndex}] NetworkObject Name [{_networkObjectCache.name}] NetworkObject Id [{_networkObjectCache.ObjectId}]";
+        }
+
+
+
 #if !PREDICTION_V2
         /// <summary>
         /// Preinitializes this script for the network.

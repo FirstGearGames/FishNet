@@ -883,10 +883,11 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a NetworkObject.
         /// </summary>
+        /// <param name="readSpawningObjects">Objects which have been read to be spawned this tick, but may not have spawned yet.</param>
         /// <returns></returns>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NetworkObject ReadNetworkObject(out int objectOrPrefabId)
+        public NetworkObject ReadNetworkObject(out int objectOrPrefabId, HashSet<int> readSpawningObjects = null)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             LastNetworkBehaviour = null;
@@ -927,7 +928,10 @@ namespace FishNet.Serializing
                     NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectOrPrefabId, out result);
 
                 if (result == null && !isServer)
-                    LogWarning($"Spawned NetworkObject was expected to exist but does not for Id {objectOrPrefabId}. This may occur if you sent a NetworkObject reference which does not exist, be it destroyed or if the client does not have visibility.");
+                {
+                    if (readSpawningObjects == null || !readSpawningObjects.Contains(objectOrPrefabId))
+                        LogWarning($"Spawned NetworkObject was expected to exist but does not for Id {objectOrPrefabId}. This may occur if you sent a NetworkObject reference which does not exist, be it destroyed or if the client does not have visibility.");
+                }
             }
             //Not spawned.
             else
@@ -1014,12 +1018,13 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a NetworkBehaviour.
         /// </summary>
+        /// <param name="readSpawningObjects">Objects which have been read to be spawned this tick, but may not have spawned yet.</param>
         /// <returns></returns>
         [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NetworkBehaviour ReadNetworkBehaviour(out int objectId, out byte componentIndex)
+        public NetworkBehaviour ReadNetworkBehaviour(out int objectId, out byte componentIndex, HashSet<int> readSpawningObjects = null)
         {
-            NetworkObject nob = ReadNetworkObject(out objectId);
+            NetworkObject nob = ReadNetworkObject(out objectId, readSpawningObjects);
             componentIndex = ReadByte();
 
             NetworkBehaviour result;

@@ -148,10 +148,6 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private List<Rigidbody2DData> _rigidbody2dDatas = new List<Rigidbody2DData>();
         /// <summary>
-        /// Type of prediction movement which is being used.
-        /// </summary>
-        private RigidbodyType _rigidbodyType;
-        /// <summary>
         /// 
         /// </summary>
         private static Scene _kinematicSceneCache;
@@ -175,7 +171,37 @@ namespace FishNet.Component.Prediction
         /// GraphicalObject to unparent when pausing.
         /// </summary>
         private Transform _graphicalObject;
+        /// <summary>
+        /// True to get rigidbodies in children of transform.
+        /// </summary>
+        private bool _getInChildren;
+        /// <summary>
+        /// Transform to get rigidbodies on.
+        /// </summary>
+        private Transform _transform;
+        /// <summary>
+        /// Type of prediction movement which is being used.
+        /// </summary>
+        private RigidbodyType _rigidbodyType;
+        /// <summary>
+        /// True if initialized at least once.
+        /// </summary>
+        private bool _initialized;
         #endregion
+
+        /// <summary>
+        /// Rebuilds rigidbodies using initialized settings.
+        /// </summary>
+        public void UpdateRigidbodies()
+        {
+            if (!_initialized)
+            {
+                InstanceFinder.NetworkManager.LogError($"T{GetType().Name} has not been initialized yet. This method cannot be used.");
+                return;
+            }
+
+            UpdateRigidbodies(_transform, _rigidbodyType, _getInChildren, _graphicalObject);
+        }
 
         /// <summary>
         /// Assigns rigidbodies.
@@ -184,6 +210,7 @@ namespace FishNet.Component.Prediction
         public void UpdateRigidbodies(Transform t, RigidbodyType rbType, bool getInChildren, Transform graphicalObject)
         {
             _rigidbodyType = rbType;
+            _getInChildren = getInChildren;
             _rigidbodyDatas.Clear();
             _rigidbody2dDatas.Clear();
 
@@ -245,6 +272,7 @@ namespace FishNet.Component.Prediction
                 _graphicalObject = graphicalObject;
                 _graphicalParent = graphicalObject.parent;
             }
+            _initialized = true;
         }
 
         /// <summary>

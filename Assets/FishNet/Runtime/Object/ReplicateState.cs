@@ -33,4 +33,24 @@ namespace FishNet.Object
         /// </summary>
         ReplayedPredicted = 4,
     }
+
+    public static class ReplicateStateExtensions
+    {
+        /// <summary>
+        /// Returns if value is valid.
+        /// </summary>
+        public static bool IsValid(this ReplicateState value) => (value != ReplicateState.Invalid);
+        /// <summary>
+        /// Returns if value is replayed.
+        /// </summary>
+        public static bool IsReplayed(this ReplicateState value) => (value == ReplicateState.ReplayedPredicted || value == ReplicateState.ReplayedUserCreated);
+        /// <summary>
+        /// Returns if value is user created.
+        /// </summary>
+        public static bool IsUserCreated(this ReplicateState value) => (value == ReplicateState.UserCreated || value == ReplicateState.ReplayedUserCreated);
+        /// <summary>
+        /// Returns if value is predicted.
+        /// </summary>
+        public static bool IsPredicted(this ReplicateState value) => !value.IsUserCreated();
+    }
 }

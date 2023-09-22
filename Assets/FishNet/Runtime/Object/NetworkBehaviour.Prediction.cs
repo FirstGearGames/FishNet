@@ -891,7 +891,8 @@ namespace FishNet.Object
         [APIExclude]
         protected internal void Replicate_Owner<T>(ReplicateUserLogicDelegate<T> del, uint methodHash, List<T> replicatesHistory, T data, Channel channel) where T : IReplicateData
         {
-            if (!IsOwner)
+            bool ownerlessAndServer = (!Owner.IsValid && IsServer);
+            if (!IsOwner && !ownerlessAndServer)
                 return;
 
             //Only check to enqueu/send if not clientHost.

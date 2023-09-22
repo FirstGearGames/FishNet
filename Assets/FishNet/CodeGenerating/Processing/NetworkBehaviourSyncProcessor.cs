@@ -59,8 +59,6 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Processes SyncVars and Objects.
         /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="diagnostics"></param>
         internal bool ProcessLocal(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs)
         {
             bool modified = false;
@@ -190,8 +188,6 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Gets SyncType fieldDef is.
         /// </summary>
-        /// <param name="fieldDef"></param>
-        /// <param name="diagnostics"></param>
         /// <returns></returns>
         internal SyncType GetSyncType(FieldDefinition fieldDef, bool validate, out CustomAttribute syncAttribute)
         {
@@ -286,6 +282,83 @@ namespace FishNet.CodeGenerating.Processing
                 return SyncType.Unset;
             }
 
+        }
+
+
+        /// <summary>
+        /// Returns if fieldDef is a syncType.
+        /// </summary>
+        /// <param name="fieldDef"></param>
+        /// <returns></returns>
+        internal bool IsSyncType(FieldDefinition fieldDef)
+        {
+            TypeDefinition ftTypeDef = fieldDef.FieldType.CachedResolve(base.Session);
+            /* TypeDef may be null for certain generated types,
+             * as well for some normal types such as queue because Unity broke
+             * them in 2022+ and decided the issue was not worth resolving. */
+            if (ftTypeDef == null)
+                return false;
+
+            return ftTypeDef.ImplementsInterface<ISyncType>();
+        }
+
+
+        internal SyncType GetSyncType_V4(FieldDefinition fieldDef, out CustomAttribute syncAttribute)
+        {
+            syncAttribute = null;
+
+            //If the generated field for syncvars ignore it.
+            if (fieldDef.Name.StartsWith(SYNCVAR_PREFIX))
+                return SyncType.Unset;
+
+            bool syncObject;
+            bool error;
+            syncAttribute = GetSyncTypeAttribute(fieldDef, out syncObject, out error);
+            if (error)
+                return SyncType.Unset;
+
+            if (syncAttribute != null)
+            {
+                /* First check if it's a syncvar attribute. If so
+                 * then check if the field is SyncVar then log error
+                 * that the attributes are no longer used. If field is
+                 * not a syncvar then error that the user needs to convert to
+                 * SyncVar<T>.
+                 * 
+                 * This is to transition users into the new SyncVar. After they change
+                 * their field tp SyncVar<T> an error will appear that the
+                 * SyncVar/Object attributes are no longer used. */
+                if (!syncObject)
+                {
+                    TypeReference syncVarTr = base.ImportReference(typeof(SyncVar<>));
+                    //Not SyncVar<T>.
+                    if (fieldDef.FieldType != syncVarTr)
+                    {
+                        base.LogError($" SyncVar fields must be declared as SyncVar<T>.");
+                        return SyncType.Unset;
+                    }
+
+                }
+
+                base.LogError($"SyncVar and SyncObject attribute are no longer used. Initialize your SyncTypes in Awake using syncType.Initialize.");
+                return SyncType.Unset;
+            }
+
+            ObjectHelper oh = base.GetClass<ObjectHelper>();
+            string fdName = fieldDef.FieldType.Name;
+            if (fdName == oh.SyncVar_Name)
+                return SyncType.Variable;
+            else if (fdName == oh.SyncList_Name)
+                return SyncType.List;
+            else if (fdName == oh.SyncDictionary_Name)
+                return SyncType.Dictionary;
+            else if (fdName == oh.SyncHashSet_Name)
+                return SyncType.HashSet;
+            //Custom types must also implement ICustomSync.
+            else if (fieldDef.FieldType.CachedResolve(base.Session).ImplementsInterfaceRecursive<ICustomSync>(base.Session))
+                return SyncType.Custom;
+            else
+                return SyncType.Unset;
         }
 
 

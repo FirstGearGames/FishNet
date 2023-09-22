@@ -317,6 +317,16 @@ namespace FishNet.Object
 #endif
         #endregion
 
+        /// <summary>
+        /// Outputs data about this NetworkObject to string.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Name [{gameObject.name}] Id [{ObjectId}]";
+        }
+
+
         protected virtual void Awake()
         {
             _isStatic = gameObject.isStatic;
@@ -634,8 +644,12 @@ namespace FishNet.Object
                 transform.SetParent(t);
             }
 
-            //Rebuild observers since root changed.
-            NetworkManager.ServerManager.Objects.RebuildObservers(this);
+            /* Rebuild observers since root changed.
+             * 
+             * This only occurs if this nob is network spawned.
+             * If not spawned the rebuild will occur after the
+             * user calls Spawn on the nob/object. */
+            NetworkManager?.ServerManager.Objects.RebuildObservers(this);
         }
 
         /// <summary>
