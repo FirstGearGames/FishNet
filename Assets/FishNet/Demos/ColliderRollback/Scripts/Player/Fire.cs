@@ -1,8 +1,10 @@
-﻿using FishNet.Managing.Timing;
+﻿using FishNet.Component.ColliderRollback;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using UnityEngine;
 
-namespace FishNet.Component.ColliderRollback.Demo
+
+namespace FishNet.Example.ColliderRollbacks
 {
 
     /// <summary>

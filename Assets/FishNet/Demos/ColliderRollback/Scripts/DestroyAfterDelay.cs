@@ -1,13 +1,17 @@
 ﻿using UnityEngine;
 
-public class DestroyAfterDelay : MonoBehaviour
+namespace FishNet.Example.ColliderRollbacks
 {
-    [SerializeField]
-    private float _delay = 1f;
-
-    private void Awake()
+    public class DestroyAfterDelay : MonoBehaviour
     {
-        Destroy(gameObject, _delay);
+        [SerializeField]
+        private float _delay = 1f;
+
+        private void Awake()
+        {
+            Destroy(gameObject, _delay);
+        }
+
     }
 
 }

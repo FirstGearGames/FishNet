@@ -51,7 +51,7 @@ namespace FishNet.Component.Transforming
             /// <param name="updateHasData">True to set all HasData to true.</param>
             public void Update(ArraySegment<byte> data, Channel channel, bool updateHasData)
             {
-//#if FISHNET_RELEASE_MODE
+                //#if FISHNET_RELEASE_MODE
                 if (Writer == null)
                     Writer = WriterPool.Retrieve();
 
@@ -61,7 +61,7 @@ namespace FishNet.Component.Transforming
 
                 if (updateHasData)
                     SetHasData(true);
-//#endif
+                //#endif
             }
 
             /// <summary>
@@ -1034,7 +1034,7 @@ namespace FishNet.Component.Transforming
             Transform t = transform;
             NetworkBehaviour parentBehaviour = null;
             //If there is a parent try to output the behaviour on it.
-            if (_synchronizeParent && transform.parent != null)
+            if (_synchronizeParent && base.NetworkObject.ParentNetworkObject != null)
             {
                 transform.parent.TryGetComponent<NetworkBehaviour>(out parentBehaviour);
                 if (parentBehaviour == null)
@@ -1571,7 +1571,7 @@ namespace FishNet.Component.Transforming
             Channel channel = Channel.Unreliable;
             /* If relaying from client and owner isnt clientHost.
              * If owner is clientHost just send current server values. */
-//#if FISHNET_RELEASE_MODE
+            //#if FISHNET_RELEASE_MODE
             if (clientAuthoritativeWithOwner && !base.Owner.IsLocalClient)
             {
                 if (_authoritativeClientData.HasData[lodIndex])
@@ -1584,7 +1584,7 @@ namespace FishNet.Component.Transforming
             }
             //Sending server transform state.
             else
-//#endif
+            //#endif
             {
                 //Becomes true when any lod changes.
                 bool dataChanged = false;
@@ -1833,9 +1833,7 @@ namespace FishNet.Component.Transforming
             if (scale.z != lastScale.z)
                 changed |= ChangedDelta.ScaleZ;
 
-            //Only include parent if there is additional data to send.
-            bool sendParent = (_parentBehaviour == null && lastParentBehaviour != null) || (changed != ChangedDelta.Unset && _parentBehaviour != null);
-            if (sendParent)
+            if (lastParentBehaviour != _parentBehaviour)
                 changed |= ChangedDelta.Nested;
 
             //If added scale or nested then also add extended.

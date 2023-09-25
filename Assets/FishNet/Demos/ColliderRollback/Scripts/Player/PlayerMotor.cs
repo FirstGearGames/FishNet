@@ -1,7 +1,8 @@
 ﻿using FishNet.Object;
 using UnityEngine;
 
-namespace FishNet.Component.ColliderRollback.Demo
+
+namespace FishNet.Example.ColliderRollbacks
 {
 
 
