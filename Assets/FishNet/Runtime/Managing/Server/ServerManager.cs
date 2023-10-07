@@ -145,6 +145,14 @@ namespace FishNet.Managing.Server
         [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
+        /// Sets the maximum frame rate the server may run at. Calling this method will enable ChangeFrameRate.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetFrameRate(ushort value)
+        {
+            _frameRate = (ushort)Mathf.Clamp(value, 0, NetworkManager.MAXIMUM_FRAMERATE);
+            _changeFrameRate = true;
+        }
         /// <summary>
         /// True to share the Ids of clients and the objects they own with other clients. No sensitive information is shared.
         /// </summary>

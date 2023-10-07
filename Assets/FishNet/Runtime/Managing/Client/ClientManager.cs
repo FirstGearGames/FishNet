@@ -105,6 +105,14 @@ namespace FishNet.Managing.Client
         /// Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.
         /// </summary>
         internal ushort FrameRate => (_changeFrameRate) ? _frameRate : (ushort)0;
+        /// Sets the maximum frame rate the client may run at. Calling this method will enable ChangeFrameRate.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetFrameRate(ushort value)
+        {
+            _frameRate = (ushort)Mathf.Clamp(value, 0, NetworkManager.MAXIMUM_FRAMERATE);
+            _changeFrameRate = true;
+        }
         #endregion
 
         #region Private.
