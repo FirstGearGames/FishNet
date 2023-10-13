@@ -405,7 +405,12 @@ namespace FishNet.Object
                 if (NetworkManager.IsServer)
                     NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, true);
                 if (NetworkManager.IsClient)
+                {
                     NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, false);
+#if PREDICTION_V2
+                    Prediction_Deinitialize(asServer: false)
+#endif
+                }
             }
 
             /* When destroyed unexpectedly it's
