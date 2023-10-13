@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace GameKit.Utilities.Types
 {
@@ -10,31 +11,13 @@ namespace GameKit.Utilities.Types
         /// <summary>
         /// Singleton instance of this class.
         /// </summary>
-        public static DDOL Instance { get; private set; }
-        #endregion
-
-        private void Awake()
-        {
-            FirstInitialize();
-        }
-
+        [Obsolete("Use GetDDOL().")] //Remove on 2023/06/01.
+        public static DDOL Instance => GetDDOL();
         /// <summary>
-        /// Initializes this script for use. Should only be completed once.
+        /// Created instance of DDOL.
         /// </summary>
-        private void FirstInitialize()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Debug.LogError("Multiple DDOL scripts found. There should be only one.");
-                return;
-            }
-            else
-            {
-                Instance = this;
-                gameObject.name = "FirstGearGames DDOL";
-                DontDestroyOnLoad(gameObject);
-            }
-        }
+        private static DDOL _instance;
+        #endregion
 
         /// <summary>
         /// Returns the current DDOL or creates one if not yet created.
@@ -42,16 +25,18 @@ namespace GameKit.Utilities.Types
         public static DDOL GetDDOL()
         {
             //Not yet made.
-            if (Instance == null)
+            if (_instance == null)
             {
                 GameObject obj = new GameObject();
+                obj.name = "FirstGearGames DDOL";
                 DDOL ddol = obj.AddComponent<DDOL>();
-                return ddol;
+                DontDestroyOnLoad(ddol);
+                return ddol; 
             }
             //Already  made.
             else
             {
-                return Instance;
+                return _instance;
             }
         }
     }

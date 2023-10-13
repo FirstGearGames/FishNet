@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using LiteNetLib.Utils;
+using GameKit.Utilities.Types;
 
 namespace LiteNetLib
 {
@@ -35,7 +36,6 @@ namespace LiteNetLib
         private Thread _threadv6;
         private IPEndPoint _bufferEndPointv4;
         private IPEndPoint _bufferEndPointv6;
-        private PausedSocketFix _pausedSocketFix;
 
 #if !LITENETLIB_UNSAFE
         [ThreadStatic] private static byte[] _sendToBuffer;
@@ -83,6 +83,7 @@ namespace LiteNetLib
 #endif            
         }
 
+      
         private bool IsActive()
         {
             return IsRunning;
@@ -273,9 +274,6 @@ namespace LiteNetLib
 
             LocalPort = ((IPEndPoint)_udpSocketv4.LocalEndPoint).Port;
 
-            if (_pausedSocketFix == null)
-                _pausedSocketFix = new PausedSocketFix(this, addressIPv4, addressIPv6, port, manualMode);
-
             if (dualMode)
                 _udpSocketv6 = _udpSocketv4;
 
@@ -330,6 +328,7 @@ namespace LiteNetLib
             return true;
         }
 
+     
         private bool BindSocket(Socket socket, IPEndPoint ep)
         {
             //Setup socket

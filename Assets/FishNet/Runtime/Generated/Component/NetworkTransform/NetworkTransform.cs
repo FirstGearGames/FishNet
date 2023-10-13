@@ -531,11 +531,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Current GoalData being used.
         /// </summary>
-        private GoalData _currentGoalData = new GoalData();
-        /// <summary>
-        /// True if queue can be read. While true objects will move to CurrentGoalData.
-        /// </summary>
-        private bool _queueReady = false;
+        private GoalData _currentGoalData;
         /// <summary>
         /// True if the transform has changed since it started.
         /// </summary>
@@ -611,22 +607,22 @@ namespace FishNet.Component.Transforming
                 writer.Store();
             }
 
-            if (_synchronizeParent)
-            {
-                /* Can send under the following conditions.
-                 *  Client auth and not owner. No need to send parent changes to owner when client auth.
-                 *  
-                 *  Not client auth and send to owner. Everyone will get changes in this scenario.
-                 * 
-                 *  Not client auth, not send to owner, and not owner.
-                 *      This should send to everyone but owner.
-                 */
-                bool canSend = (_clientAuthoritative && connection != base.Owner) ||
-                    (!_clientAuthoritative && _sendToOwner) ||
-                    (!_clientAuthoritative && !_sendToOwner && connection != Owner);
-                if (canSend)
-                    TargetSetParent(connection, _parentBehaviour);
-            }
+            //if (_synchronizeParent)
+            //{
+            //    /* Can send under the following conditions.
+            //     *  Client auth and not owner. No need to send parent changes to owner when client auth.
+            //     *  
+            //     *  Not client auth and send to owner. Everyone will get changes in this scenario.
+            //     * 
+            //     *  Not client auth, not send to owner, and not owner.
+            //     *      This should send to everyone but owner.
+            //     */
+            //    bool canSend = (_clientAuthoritative && connection != base.Owner) ||
+            //        (!_clientAuthoritative && _sendToOwner) ||
+            //        (!_clientAuthoritative && !_sendToOwner && connection != Owner);
+            //    if (canSend)
+            //        TargetSetParent(connection, _parentBehaviour);
+            //}
         }
 
         public override void OnStartClient()
@@ -670,25 +666,12 @@ namespace FishNet.Component.Transforming
             }
         }
 
-        public override void OnStopServer()
+        public override void OnStopNetwork()
         {
             //Always unsubscribe; if the server stopped so did client.
-            ChangeTickSubscription(false);
-
-            ResetForObjectPool(true);
-        }
-
-        public override void OnStopClient()
-        {
-            /* If not also server unsubscribe from ticks.
-             * Cannot unsubscribe if server because
-             * the server side will still need the ticks.
-             * This is why this is also done inside
-             * OnStopServer. */
-            if (!base.IsServer)
+            if (base.IsServer || base.IsClientOnly)
                 ChangeTickSubscription(false);
-
-            ResetForObjectPool(false);
+            ResetForObjectPool();
         }
 
         private void Update()
@@ -704,7 +687,6 @@ namespace FishNet.Component.Transforming
             //Do not add for client if also server, as server would have already added.
             if (!asServer && base.IsServer)
                 return;
-
 
             if (_toClientChangedWriters.Count > 0)
             {
@@ -756,41 +738,29 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Resets values as if this were a new object.
         /// </summary>
-        private void ResetForObjectPool(bool asServer)
+        private void ResetForObjectPool()
         {
-            //If a full reset.
-            if (asServer)
-            {
-                //Reset writers.
-                foreach (PooledWriter writer in _toClientChangedWriters)
-                    WriterPool.Store(writer);
-                _toClientChangedWriters.Clear();
+            /* Reset server and client side since this is called from
+             * OnStopNetwork. */
 
-                if (_authoritativeClientData.HasData != null)
-                    CollectionCaches<bool>.Store(_authoritativeClientData.HasData);
-                _authoritativeClientData.HasData = null;
-                _serverChangedSinceReliable.Clear();
-                ResettableObjectCaches<TransformData>.Store(_lastReceivedClientTransformData);
-                ResettableObjectCaches<GoalData>.Store(_currentGoalData);
-            }
-            //Client only.
-            else
-            {
-                ResettableObjectCaches<TransformData>.Store(_lastReceivedServerTransformData);
-            }
+            foreach (PooledWriter writer in _toClientChangedWriters)
+                WriterPool.Store(writer);
+            _toClientChangedWriters.Clear();
 
-            //As server or as client and not server (full reset).
-            if (asServer || (!asServer && !base.IsServer))
-            {
-                //Goaldatas. Would only exist if client or clientHost.
-                while (_goalDataQueue.Count > 0)
-                    ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
-                //Reset LastSentTransformDatas.
-                foreach (TransformData td in _lastSentTransformDatas)
-                    ResettableObjectCaches<TransformData>.Store(td);
-                _lastSentTransformDatas.Clear();
+            CollectionCaches<bool>.StoreAndDefault(ref _authoritativeClientData.HasData);
+            _serverChangedSinceReliable.Clear();
 
-            }
+            ResettableObjectCaches<TransformData>.StoreAndDefault(ref _lastReceivedClientTransformData);
+            ResettableObjectCaches<TransformData>.StoreAndDefault(ref _lastReceivedServerTransformData);
+
+            //Goaldatas. Would only exist if client or clientHost.
+            while (_goalDataQueue.Count > 0)
+                ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
+
+            ResettableCollectionCaches<TransformData>.Store(_lastSentTransformDatas);
+            _lastSentTransformDatas.Clear();
+            ResettableObjectCaches<GoalData>.StoreAndDefault(ref _currentGoalData);
+            _currentGoalData = null;
         }
 
         /// <summary>
@@ -1050,7 +1020,7 @@ namespace FishNet.Component.Transforming
 
             SetLastReceived(_lastReceivedServerTransformData);
             SetLastReceived(_lastReceivedClientTransformData);
-            SetInstantRates(_currentGoalData.Rates, 0, -1f);
+            //SetInstantRates(_currentGoalData.Rates, 0, -1f);
 
             void SetLastReceived(TransformData td)
             {
@@ -1059,6 +1029,15 @@ namespace FishNet.Component.Transforming
                     return;
                 td.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, parentBehaviour);
             }
+        }
+
+        /// <summary>
+        /// Stores an object if it has value then sets it to default.
+        /// </summary>
+        private void StoreObject<T>(ref T obj) where T : IResettable
+        {
+            ResettableObjectCaches<T>.Store(obj);
+            obj = default;
         }
 
         /// <summary>
@@ -1432,7 +1411,12 @@ namespace FishNet.Component.Transforming
                 return;
 
             Vector3 scale = transform.localScale;
-            transform.SetParent(target);
+            //Set parent after scale is cached so scale can be maintained after changing parent.
+            if (target != null)
+                base.NetworkObject.SetParent(parent);
+            else
+                base.NetworkObject.UnsetParent();
+
             transform.localScale = scale;
 
             /* Set ratedata to immediate so there's no blending between transform values when
@@ -1447,7 +1431,7 @@ namespace FishNet.Component.Transforming
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void MoveToTarget(float deltaOverride = -1f)
         {
-            if (!_queueReady)
+            if (_currentGoalData == null)
                 return;
             //Cannot move if neither is active.
             if (!base.IsServer && !base.IsClient)
@@ -1552,7 +1536,7 @@ namespace FishNet.Component.Transforming
                         * but every once in awhile something goes funky
                         * and it's thrown off. */
                         if (!HasChanged(td))
-                            _queueReady = false;
+                            _currentGoalData = null;
                         OnInterpolationComplete?.Invoke();
                         
                 }
@@ -2239,6 +2223,7 @@ namespace FishNet.Component.Transforming
 
             nextGd.ReceivedTick = base.TimeManager.LocalTick;
 
+            bool currentDataNull = (_currentGoalData == null);
             /* If extrapolating then immediately break the extrapolation
             * in favor of newest results. This will keep the buffer
             * at 0 until the transform settles but the only other option is
@@ -2246,9 +2231,8 @@ namespace FishNet.Component.Transforming
             * or slow down the transform while buffer rebuilds. Neither choice
             * is great but later on I might try slowing down the transform slightly
             * to give the buffer a chance to rebuild. */
-            if (_currentGoalData.Transforms.ExtrapolationState == TransformData.ExtrapolateState.Active)
+            if (!currentDataNull && _currentGoalData.Transforms.ExtrapolationState == TransformData.ExtrapolateState.Active)
             {
-                _queueReady = true;
                 SetCurrentGoalData(nextGd);
             }
             /* If queue isn't started and its buffered enough
@@ -2256,10 +2240,9 @@ namespace FishNet.Component.Transforming
              * and set current data.
              * 
              * Also if reliable then begin moving. */
-            else if (!_queueReady && _goalDataQueue.Count >= _interpolation
+            else if (currentDataNull && _goalDataQueue.Count >= _interpolation
                 || channel == Channel.Reliable)
             {
-                _queueReady = true;
                 if (_goalDataQueue.Count > 0)
                 {
                     SetCurrentGoalData(_goalDataQueue.Dequeue());
@@ -2267,7 +2250,6 @@ namespace FishNet.Component.Transforming
                     * enqueue latest. */
                     if (hasChanged)
                         _goalDataQueue.Enqueue(nextGd);
-
                 }
                 else
                 {
@@ -2315,36 +2297,36 @@ namespace FishNet.Component.Transforming
             OnNextGoal?.Invoke(data);
         }
 
-        /// <summary>
-        /// Immediately sets the parent of this NetworkTransform for a single connection.
-        /// </summary>
-        [TargetRpc]
-        private void TargetSetParent(NetworkConnection conn, NetworkBehaviour parent)
-        {
-            /* Same checks on sending end, just making sure
-             * something hasn't changed since packet was sent. */
-            if (!_synchronizeParent)
-                return;
+        ///// <summary>
+        ///// Immediately sets the parent of this NetworkTransform for a single connection.
+        ///// </summary>
+        //[TargetRpc]
+        //private void TargetSetParent(NetworkConnection conn, NetworkBehaviour parent)
+        //{
+        //    /* Same checks on sending end, just making sure
+        //     * something hasn't changed since packet was sent. */
+        //    if (!_synchronizeParent)
+        //        return;
 
-            /* Can be received if
-             *  Client auth and not owner. 
-             * 
-             *  Server auth and send to owner, since all clients should get this.
-             *  
-             *  Server auth, dont send to owner, and not owner.
-             */
-            bool canReceive = (_clientAuthoritative && !base.IsOwner) ||
-                (!_clientAuthoritative && _sendToOwner) ||
-                (!_clientAuthoritative && !_sendToOwner && !base.IsOwner);
+        //    /* Can be received if
+        //     *  Client auth and not owner. 
+        //     * 
+        //     *  Server auth and send to owner, since all clients should get this.
+        //     *  
+        //     *  Server auth, dont send to owner, and not owner.
+        //     */
+        //    bool canReceive = (_clientAuthoritative && !base.IsOwner) ||
+        //        (!_clientAuthoritative && _sendToOwner) ||
+        //        (!_clientAuthoritative && !_sendToOwner && !base.IsOwner);
 
-            if (!canReceive)
-                return;
+        //    if (!canReceive)
+        //        return;
 
-            _parentBehaviour = parent;
-            _lastReceivedServerTransformData.ParentBehaviour = parent;
+        //    _parentBehaviour = parent;
+        //    _lastReceivedServerTransformData.ParentBehaviour = parent;
 
-            SetParent(parent, null);
-        }
+        //    SetParent(parent, null);
+        //}
 
         /// <summary>
         /// Updates a TransformData from packetData.

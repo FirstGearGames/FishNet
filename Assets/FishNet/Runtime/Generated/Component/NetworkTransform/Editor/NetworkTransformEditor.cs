@@ -60,10 +60,13 @@ namespace FishNet.Component.Transforming.Editing
             serializedObject.Update();
 
             GameKitEditing.AddObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkTransform)target), typeof(NetworkTransform), false, EditorLayoutEnableType.Disabled);
+
+            bool isPro = false;
             
-#pragma warning disable CS0162 // Unreachable code detected
+            if (isPro)
+                EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_UNLOCKED_TEXT, MessageType.None);
+            else
                 EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_LOCKED_TEXT, MessageType.Warning);
-#pragma warning restore CS0162 // Unreachable code detected
 
             //Misc.
             EditorGUILayout.LabelField("Misc", EditorStyles.boldLabel);
@@ -108,7 +111,7 @@ namespace FishNet.Component.Transforming.Editing
             EditorGUILayout.LabelField("Synchronizing.", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             //LOD and interval.
-            GameKitEditing.AddPropertyField(_enableNetworkLod, new GUIContent("Use Network Level of Detail"), EditorLayoutEnableType.DisabledWhilePlaying);
+            GameKitEditing.AddPropertyField(_enableNetworkLod, new GUIContent("* Use Network Level of Detail"), EditorLayoutEnableType.DisabledWhilePlaying);
             if (!_enableNetworkLod.boolValue)
             {
                 EditorGUI.indentLevel++;

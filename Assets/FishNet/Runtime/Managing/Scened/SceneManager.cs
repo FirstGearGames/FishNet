@@ -1089,7 +1089,7 @@ namespace FishNet.Managing.Scened
                     * 1f / 2f is 0.5f. */
                     float maximumIndexWorth = (1f / (float)loadableScenes.Count);
 
-                    _sceneProcessor.BeginLoadAsync(loadableScenes[i].NameOnly, loadSceneParameters);
+                    _sceneProcessor.BeginLoadAsync(loadableScenes[i].Name, loadSceneParameters);
                     while (!_sceneProcessor.IsPercentComplete())
                     {
                         float percent = _sceneProcessor.GetPercentComplete();
@@ -1154,7 +1154,7 @@ namespace FishNet.Managing.Scened
                             /* Shouldn't be possible since the scene will always exist either by 
                              * just being loaded or already loaded. */
                             if (string.IsNullOrEmpty(lastSameSceneName.name))
-                                NetworkManager.LogError($"Scene {sceneLoadData.SceneLookupDatas[0].NameOnly} could not be found in loaded scenes.");
+                                NetworkManager.LogError($"Scene {sceneLoadData.SceneLookupDatas[0].Name} could not be found in loaded scenes.");
                             else
                                 firstValidScene = lastSameSceneName;
                         }
@@ -1365,13 +1365,6 @@ namespace FishNet.Managing.Scened
 
             UnloadGlobalScenes_Internal(sceneUnloadData, _globalScenes, true);
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="scope"></param>
-        /// <param name="conns"></param>
-        /// <param name="additiveScenes"></param>
-        /// <param name="asServer"></param>
         private void UnloadGlobalScenes_Internal(SceneUnloadData sceneUnloadData, string[] globalScenes, bool asServer)
         {
             UnloadQueueData uqd = new UnloadQueueData(SceneScopeType.Global, Array.Empty<NetworkConnection>(), sceneUnloadData, globalScenes, asServer);
@@ -1397,7 +1390,6 @@ namespace FishNet.Managing.Scened
         {
             UnloadConnectionScenes_Internal(connections, sceneUnloadData, _globalScenes, true);
         }
-
         /// <summary>
         /// Unloads scenes on server without telling any connections to unload them.
         /// </summary>
@@ -1406,13 +1398,6 @@ namespace FishNet.Managing.Scened
         {
             UnloadConnectionScenes_Internal(Array.Empty<NetworkConnection>(), sceneUnloadData, _globalScenes, true);
         }
-        /// <summary>
-        /// Unloads scenes for connections.
-        /// </summary>
-        /// <param name="connections"></param>
-        /// <param name="sceneUnloadData"></param>
-        /// <param name="globalScenes"></param>
-        /// <param name="asServer"></param>
         private void UnloadConnectionScenes_Internal(NetworkConnection[] connections, SceneUnloadData sceneUnloadData, string[] globalScenes, bool asServer)
         {
             if (!CanExecute(asServer, true))
@@ -1423,6 +1408,7 @@ namespace FishNet.Managing.Scened
             UnloadQueueData uqd = new UnloadQueueData(SceneScopeType.Connections, connections, sceneUnloadData, globalScenes, asServer);
             QueueOperation(uqd);
         }
+
         /// <summary>
         /// Loads scenes within QueuedSceneLoads.
         /// </summary>
@@ -1480,8 +1466,6 @@ namespace FishNet.Managing.Scened
                 }
             }
 
-
-
             /* This will contain all scenes which can be unloaded.
              * The collection will be modified through various checks. */
             List<Scene> unloadableScenes = scenes.ToList();
@@ -1515,6 +1499,12 @@ namespace FishNet.Managing.Scened
                 //Begin unloading.
                 foreach (Scene s in unloadableScenes)
                 {
+                    if (!s.IsValid())
+                    {
+                        NetworkManager.LogWarning($"A scene was expected to be unloaded but could not due to it's referening going missing. This usually occurs when the same scene has been queued for unloading multiple times.");
+                        continue;
+                    }
+
                     unloadedScenes.Add(new UnloadedScene(s));
                     MoveClientHostObjects(s, asServer);
                     /* Remove from manualUnloadedScenes.
@@ -1522,7 +1512,6 @@ namespace FishNet.Managing.Scened
                      * but removing is one call vs checking
                     * then removing. */
                     _manualUnloadScenes.Remove(s);
-
                     _sceneProcessor.BeginUnloadAsync(s);
                     while (!_sceneProcessor.IsPercentComplete())
                         yield return null;
@@ -1971,7 +1960,9 @@ namespace FishNet.Managing.Scened
             {
                 Scene s = sld.GetScene(out _);
                 if (!string.IsNullOrEmpty(s.name))
+                {
                     result.Add(s);
+                }
             }
 
             return result.ToArray();
@@ -1980,11 +1971,44 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Returns a scene by name.
         /// </summary>
-        /// <param name="sceneName"></param>
+        /// <param name="sceneName">Name of scene to retrieve.</param>
+        /// <param name="nm">NetworkManager to use for debug print. This value may be left null.</param>
+        /// <param name="warnIfDuplicates">True to warn if scene name is found loaded multiple times.</param>
         /// <returns></returns>
-        public static Scene GetScene(string sceneName)
+        public static Scene GetScene(string sceneName, NetworkManager nm = null, bool warnIfDuplicates = true)
         {
-            return UnitySceneManager.GetSceneByName(sceneName);
+            Scene result = default;
+            sceneName = sceneName.ToLower();
+
+            int count = UnitySceneManager.sceneCount;
+            for (int i = 0; i < count; i++)
+            {
+                Scene s = UnitySceneManager.GetSceneAt(i);
+                //Matches.
+                if (s.name.ToLower() == sceneName)
+                {
+                    //If result is already set.
+                    if (result.IsValid())
+                    {
+                        if (warnIfDuplicates)
+                        {
+                            string msg = $"Scene name {s.name} is loaded multiple times. The first scene found will be returned. If you wish to unload multiple instances of a scene with the same name create {nameof(SceneLookupData)} using scene handles instead of name.";
+                            if (nm == null)
+                                NetworkManager.StaticLogWarning(msg);
+                            else
+                                nm.LogWarning(msg);
+                            //No need to spam the message, break on first duplicate.
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        result = s;
+                    }
+                }
+            }
+
+            return result;
         }
         /// <summary>
         /// Returns a scene by handle.
@@ -2039,7 +2063,7 @@ namespace FishNet.Managing.Scened
             int startCount = newGlobalScenes.Count;
             //Remove scenes.
             for (int i = 0; i < datas.Length; i++)
-                newGlobalScenes.Remove(datas[i].NameOnly);
+                newGlobalScenes.Remove(datas[i].Name);
 
             //If any were removed remake globalscenes.
             if (startCount != newGlobalScenes.Count)
@@ -2135,7 +2159,7 @@ namespace FishNet.Managing.Scened
                 Scene s = default;
 
                 if (_globalScenes != null && _globalScenes.Length > 0)
-                    s = GetScene(_globalScenes[0]);
+                    s = GetScene(_globalScenes[0], NetworkManager, false);
                 else if (preferredScene.IsValid())
                     s = preferredScene;
 

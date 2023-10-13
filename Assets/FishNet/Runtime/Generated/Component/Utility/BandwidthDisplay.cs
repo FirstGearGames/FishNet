@@ -93,7 +93,7 @@ namespace FishNet.Component.Utility
             if (_networkTrafficStatistics != null)
             {
                 _networkTrafficStatistics.OnClientNetworkTraffic -= NetworkTraffic_OnClientNetworkTraffic;
-                _networkTrafficStatistics.OnServerNetworkTraffic -= NetworkTraffic_OnClientNetworkTraffic;
+                _networkTrafficStatistics.OnServerNetworkTraffic -= NetworkTraffic_OnServerNetworkTraffic;
             }
         }
 

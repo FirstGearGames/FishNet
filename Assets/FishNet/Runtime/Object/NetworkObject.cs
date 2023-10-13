@@ -244,9 +244,9 @@ namespace FishNet.Object
         /// <param name="value">New global value.</param>
         public void SetIsGlobal(bool value)
         {
-            if (IsNested)
+            if (IsNested && !ParentNetworkObject.IsGlobal)
             {
-                NetworkManager.StaticLogWarning($"Object {gameObject.name} cannot change IsGlobal because it is nested. Only root objects may be set global.");
+                NetworkManager.StaticLogWarning($"Object {gameObject.name} cannot change IsGlobal because it is nested and the parent NetorkObject is not global.");
                 return;
             }
             if (!IsDeinitializing)
@@ -459,6 +459,18 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Makes children of this NetworkObject global if this object is global.
+        /// </summary>
+        private void SetChildGlobalState()
+        {
+            if (!IsGlobal)
+                return;
+
+            for (int i = 0; i < ChildNetworkObjects.Count; i++)
+                ChildNetworkObjects[i].SetIsGlobal(true);
+        }
+
+        /// <summary>
         /// Sets Despawned on child NetworkObjects if they are not enabled.
         /// </summary>
         private void SetChildDespawnedState()
@@ -481,7 +493,7 @@ namespace FishNet.Object
                 return;
 
             //Global.
-            if (IsGlobal && !IsSceneObject)
+            if (IsGlobal && !IsSceneObject && !IsNested)
                 DontDestroyOnLoad(gameObject);
 
             if (NetworkManager == null || (!NetworkManager.IsClient && !NetworkManager.IsServer))
@@ -670,6 +682,12 @@ namespace FishNet.Object
             //Setting to already current runtime parent. No need to make a change.
             if (nob == RuntimeParentNetworkObject)
                 return true;
+            //Trying to parent a non-global to a global.
+            if (nob.IsGlobal && !IsGlobal)
+            {
+                NetworkManager.LogWarning($"{nob.name} is a global NetworkObject but {gameObject.name} is not. Only global NetworkObjects can be set as a child of another global NetworkObject.");
+                return true;
+            }
             //Setting to self.
             if (nob == this)
             {
@@ -800,6 +818,8 @@ namespace FishNet.Object
                 componentIndex++;
                 item.UpdateNetworkBehaviours(this, ref componentIndex);
             }
+            //Update global states to that of this one.
+            SetChildGlobalState();
         }
 
 

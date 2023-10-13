@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GameKit.Utilities;
+using System;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
@@ -261,24 +262,77 @@ namespace FishNet.Managing.Scened
         /// <returns></returns>
         public static SceneLookupData[] CreateData(string[] names)
         {
+            SceneLookupData[] result = new SceneLookupData[names.Length];
+            for (int i = 0; i < result.Length; i++)
+                result[i] = new SceneLookupData(names[i]);
+
+            return ValidateData(result);
+        }
+
+        /// <summary>
+        /// Validates SceneLookupdatas and returns only valid entries.
+        /// </summary>
+        public static SceneLookupData[] ValidateData(SceneLookupData data) => ValidateData(new SceneLookupData[] { data });
+        /// <summary>
+        /// Validates SceneLookupdatas and returns only valid entries.
+        /// </summary>
+        /// <param name="datas">Datas to validate.</param>
+        public static SceneLookupData[] ValidateData(SceneLookupData[] datas)
+        {
             bool invalidFound = false;
-            List<SceneLookupData> result = new List<SceneLookupData>();
-            foreach (string item in names)
+            List<SceneLookupData> result = CollectionCaches<SceneLookupData>.RetrieveList();
+            foreach (SceneLookupData item in datas)
             {
-                if (string.IsNullOrEmpty(item))
+                if (item.IsValid)
+                {
+                    int failingIndex = -1;
+                    //Scene name or handle is set, make sure it's not duplicated in datas.
+                    for (int i = 0; i < result.Count; i++)
+                    {
+                        bool nameMatches = (result[i].Name == item.Name);
+                        bool handleMatches = (result[i].Handle == item.Handle);
+                        //Handle is the same (could be 0 handle).
+                        if (handleMatches)
+                        {
+                            //If handle matches and not default then the same scene was added multiple times.
+                            if (item.Handle != 0)
+                                failingIndex = i;
+                        }
+                        //Name is the same.
+                        else if (nameMatches)
+                        {
+                            //If handle and name matches then also fail.
+                            if (handleMatches)
+                                failingIndex = i;
+                        }
+                    }
+
+                    if (failingIndex != -1)
+                        NetworkManager.StaticLogWarning($"Data {item.ToString()} matches {result[failingIndex].ToString()} and has been removed from datas.");
+                    else
+                        result.Add(item);
+                }
+                else
                 {
                     invalidFound = true;
-                    continue;
                 }
-
-                result.Add(CreateData(item));
             }
 
+            SceneLookupData[] returnedValue;
             if (invalidFound)
+            {
                 NetworkManager.StaticLogWarning(INVALID_SCENE);
+                returnedValue = result.ToArray();
+            }
+            else
+            {
+                returnedValue = datas;
+            }
 
-            return result.ToArray();
+            CollectionCaches<SceneLookupData>.Store(result);
+            return returnedValue;
         }
+
         /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
@@ -324,7 +378,8 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <returns></returns>
         /// <param name="foundByHandle">True if scene was found by handle. Handle is always checked first.</param>
-        public Scene GetScene(out bool foundByHandle)
+        /// <param name="warn">True to warn if duplicates are found.</param>
+        public Scene GetScene(out bool foundByHandle, bool warnIfDuplicates = true)
         {
             foundByHandle = false;
 
@@ -346,10 +401,7 @@ namespace FishNet.Managing.Scened
 
             //If couldnt find handle try by string.
             if (!foundByHandle)
-            { 
-                result = SceneManager.GetScene(NameOnly);
-
-            }
+                result = SceneManager.GetScene(NameOnly, null, warnIfDuplicates);
 
             return result;
         }

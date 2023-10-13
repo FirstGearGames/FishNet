@@ -300,6 +300,23 @@ namespace FishNet.Managing.Client
                         {
                             Transform t = cnob.NetworkObject.transform;
                             _clientObjects.GetTransformProperties(cnob.LocalPosition, cnob.LocalRotation, cnob.LocalScale, t, out Vector3 pos, out Quaternion rot, out Vector3 scale);
+                            //Apply runtime parent if needed.
+                            if (cnob.HasParent)
+                            {
+                                if (_networkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(cnob.ParentObjectId.Value, out NetworkObject parentNob))
+                                {
+                                    //If parented to the NOB directly.
+                                    if (!cnob.ParentComponentIndex.HasValue)
+                                        cnob.NetworkObject.SetParent(parentNob);
+                                    //Parented to a NB.
+                                    else
+                                        cnob.NetworkObject.SetParent(parentNob.NetworkBehaviours[cnob.ParentComponentIndex.Value]);
+                                }
+                                else
+                                {
+                                    _networkManager.Log($"Parent NetworkObject Id {cnob.ParentObjectId} could not be found in spawned. NetworkObject {cnob.NetworkObject} will not have it's parent set.");
+                                }
+                            }
                             t.SetLocalPositionRotationAndScale(pos, rot, scale);
                         }
                     }

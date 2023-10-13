@@ -557,6 +557,14 @@ namespace FishNet.Managing.Client
             if (!networkManager.IsServer)
             {
                 Clients.TryGetValueIL2CPP(connectionId, out Connection);
+                /* This is bad and should never happen unless the connection is dropping
+                 * while receiving authenticated. Would have to be a crazy race condition
+                 * but with the network anything is possible. */
+                if (Connection == null)
+                {
+                    NetworkManager.LogWarning($"Client connection could not be found while parsing authenticated status. This usually occurs when the client is receiving a packet immediately before losing connection.");
+                    Connection = new NetworkConnection(networkManager, connectionId, GetTransportIndex(), false);
+                }
             }
             /* If also the server then use the servers connection
              * for the connectionId. This is to resolve host problems
