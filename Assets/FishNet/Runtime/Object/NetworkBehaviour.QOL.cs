@@ -71,36 +71,37 @@ namespace FishNet.Object
         /// </summary>
         public bool IsClientInitialized => _networkObjectCache.IsClientInitialized;
         /// <summary>
-        /// True if the client is active and authenticated.
+        /// True if the client is started and authenticated.
         /// </summary>
         public bool IsClient => _networkObjectCache.IsClient;
         /// <summary>
-        /// True if only the client is active and authenticated.
+        /// True if only the client is started and authenticated.
         /// </summary>
         public bool IsClientOnly => _networkObjectCache.IsClientOnly;
         /// <summary>
-        /// True if this object has been initialized on the server side.
-        /// This is set true right before server start callbacks and after stop callbacks.
-        /// </summary>
+        /// True if the client is started and authenticated. This will return true on clientHost even if the object has not initialized yet for the client.
+        /// To check if this object has been initialized for the client use IsClientInitialized.
+        /// </summary>C
         public bool IsServerInitialized => _networkObjectCache.IsServerInitialized;
         /// <summary>
-        /// True if server is active.
+        /// True if the server is  started. This will return true on clientHost even if the object is being deinitialized on the server.
+        /// To check if this object has been initialized for the server use IsServerInitialized.
         /// </summary>
         public bool IsServer => _networkObjectCache.IsServer;
         /// <summary>
-        /// True if only the server is active.
+        /// True if only the server is started.
         /// </summary>
         public bool IsServerOnly => _networkObjectCache.IsServerOnly;
         /// <summary>
-        /// True if client and server are active.
+        /// True if client and server are started.
         /// </summary>
         public bool IsHost => _networkObjectCache.IsHost;
         /// <summary>
-        /// True if client nor server are active.
+        /// True if client nor server are started.
         /// </summary>
         public bool IsOffline => _networkObjectCache.IsOffline;
         /// <summary>
-        /// True if this instance is considered networked.
+        /// True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.
         /// </summary>
         public bool IsNetworked => _networkObjectCache.IsNetworked;
         /// <summary>
@@ -109,6 +110,7 @@ namespace FishNet.Object
         public HashSet<NetworkConnection> Observers => _networkObjectCache.Observers;
         /// <summary>
         /// True if the local client is the owner of this object.
+        /// This will only return true if IsClientInitialized is also true. You may check ownership status regardless of client initialized state by using Owner.IsLocalClient.
         /// </summary>
 #if UNITY_2020_3_OR_NEWER && UNITY_EDITOR_WIN
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartServer", "")]

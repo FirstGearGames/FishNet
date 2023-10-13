@@ -668,9 +668,7 @@ namespace FishNet.Component.Transforming
 
         public override void OnStopNetwork()
         {
-            //Always unsubscribe; if the server stopped so did client.
-            if (base.IsServer || base.IsClientOnly)
-                ChangeTickSubscription(false);
+            ChangeTickSubscription(false);
             ResetForObjectPool();
         }
 

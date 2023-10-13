@@ -37,12 +37,12 @@ namespace FishNet.Object
         [Obsolete("Use IsClientInitialized.")]
         public bool ClientInitialized => IsClientInitialized;
         /// <summary>
-        /// True if the client is active and authenticated. This will return true on clientHost even if the object has not initialized yet for the client.
+        /// True if the client is started and authenticated. This will return true on clientHost even if the object has not initialized yet for the client.
         /// To check if this object has been initialized for the client use IsClientInitialized.
         /// </summary>
         public bool IsClient => (NetworkManager == null) ? false : NetworkManager.IsClient;
         /// <summary>
-        /// True if only the client is active and authenticated.
+        /// True if only the client is started and authenticated.
         /// </summary>
         public bool IsClientOnly => (IsClient && !IsServer);
         /// <summary>
@@ -51,20 +51,20 @@ namespace FishNet.Object
         /// </summary>
         public bool IsServerInitialized { get; private set; }
         /// <summary>
-        /// True if the server is active. This will return true on clientHost even if the object is being deinitialized on the server.
+        /// True if the server is  started. This will return true on clientHost even if the object is being deinitialized on the server.
         /// To check if this object has been initialized for the server use IsServerInitialized.
         /// </summary>
         public bool IsServer => (NetworkManager == null) ? false : NetworkManager.IsServer;
         /// <summary>
-        /// True if only the server is active.
+        /// True if only the server is started.
         /// </summary>
         public bool IsServerOnly => (IsServer && !IsClient);
         /// <summary>
-        /// True if client and server are active.
+        /// True if client and server are started.
         /// </summary>
         public bool IsHost => (IsClient && IsServer);
         /// <summary>
-        /// True if client nor server are active.
+        /// True if client nor server are started.
         /// </summary>
         public bool IsOffline => (!IsClient && !IsServer);
         /// <summary>
