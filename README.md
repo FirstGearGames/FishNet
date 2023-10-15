@@ -22,7 +22,7 @@ Asset Store: https://assetstore.unity.com/packages/tools/network/fish-net-networ
 
 Documentation and Addons: https://fish-networking.gitbook.io/docs/
 
-Discord: https://discord.gg/fishnetworking
+Discord: https://discord.gg/Ta9HgDh4Hj
 
 # Reinvesting In Our Future
   Between 15-25% of monthly profits are reinvested into Fish-Networking. The use of these funds can range from tipping our helpers to hiring coders to support more third-party extensions or complete backlogged features.
