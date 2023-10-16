@@ -190,6 +190,22 @@ namespace FishNet.Object
         [HideInInspector]
         public NetworkObject RuntimeParentNetworkObject { get; private set; }
         /// <summary>
+        /// NetworkObject parenting this instance. This value will be RuntimeParentNetworkObject if set at runtime, or ParentNetworkObject if not.
+        /// </summary>
+        [HideInInspector]
+        internal NetworkObject CurrentParentNetworkObject
+        {
+            get
+            {
+                if (RuntimeParentNetworkObject != null)
+                    return RuntimeParentNetworkObject;
+                else if (ParentNetworkObject != null)
+                    return ParentNetworkObject;
+                else
+                    return null;
+            }
+        }
+        /// <summary>
         /// Transform which this instance was set a child of at runtime.
         /// </summary>
         public Transform RuntimeParentTransform { get; private set; }
@@ -244,7 +260,7 @@ namespace FishNet.Object
         /// <param name="value">New global value.</param>
         public void SetIsGlobal(bool value)
         {
-            if (IsNested && !ParentNetworkObject.IsGlobal)
+            if (IsNested && !CurrentParentNetworkObject.IsGlobal)
             {
                 NetworkManager.StaticLogWarning($"Object {gameObject.name} cannot change IsGlobal because it is nested and the parent NetorkObject is not global.");
                 return;
@@ -326,7 +342,6 @@ namespace FishNet.Object
             return $"Name [{gameObject.name}] Id [{ObjectId}]";
         }
 
-
         protected virtual void Awake()
         {
             _isStatic = gameObject.isStatic;
@@ -403,13 +418,14 @@ namespace FishNet.Object
             {
                 //Was destroyed without going through the proper methods.
                 if (NetworkManager.IsServer)
+                {
+                    DeinitializePrediction_V2(true);
                     NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, true);
+                }
                 if (NetworkManager.IsClient)
                 {
+                    DeinitializePrediction_V2(false);
                     NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, false);
-#if PREDICTION_V2
-                    Prediction_Deinitialize(asServer: false)
-#endif
                 }
             }
 
@@ -441,6 +457,13 @@ namespace FishNet.Object
             SetDeinitializedStatus();
             //Do not need to set state if being destroyed.
             //Don't need to reset sync types if object is being destroyed.
+
+            void DeinitializePrediction_V2(bool asServer)
+            {
+#if PREDICTION_V2
+                Prediction_Deinitialize(asServer);
+#endif
+            }
         }
 
 #if PREDICTION_V2
@@ -903,7 +926,7 @@ namespace FishNet.Object
             SceneManager = null;
             RollbackManager = null;
             //Misc sets.
-            ObjectId = 0;          
+            ObjectId = 0;
         }
 
         /// <summary>

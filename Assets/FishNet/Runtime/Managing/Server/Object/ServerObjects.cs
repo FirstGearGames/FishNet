@@ -475,9 +475,9 @@ namespace FishNet.Managing.Server
                 base.NetworkManager.LogWarning($"{networkObject.name} is already spawned.");
                 return;
             }
-            if (networkObject.ParentNetworkObject != null && !networkObject.ParentNetworkObject.IsSpawned)
+            if (networkObject.CurrentParentNetworkObject != null && !networkObject.ParentNetworkObject.IsSpawned)
             {
-                base.NetworkManager.LogError($"{networkObject.name} cannot be spawned because it has a parent NetworkObject {networkObject.ParentNetworkObject} which is not spawned.");
+                base.NetworkManager.LogError($"{networkObject.name} cannot be spawned because it has a parent NetworkObject {networkObject.CurrentParentNetworkObject} which is not spawned.");
                 return;
             }
             /* If scene is specified make sure the object is root,

@@ -3,6 +3,8 @@ using UnityEngine;
 
 namespace GameKit.Utilities.Types
 {
+
+
     public class DDOL : MonoBehaviour
     {
         #region Public.
@@ -29,12 +31,16 @@ namespace GameKit.Utilities.Types
                 obj.name = "FirstGearGames DDOL";
                 DDOL ddol = obj.AddComponent<DDOL>();
                 DontDestroyOnLoad(ddol);
-
-                return _instance = ddol;
+                _instance = ddol;
+                return ddol; 
             }
-
             //Already  made.
-            return _instance;
+            else
+            {
+                return _instance;
+            }
         }
     }
+
+
 }

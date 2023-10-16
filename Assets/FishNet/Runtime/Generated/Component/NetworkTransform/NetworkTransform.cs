@@ -51,7 +51,6 @@ namespace FishNet.Component.Transforming
             /// <param name="updateHasData">True to set all HasData to true.</param>
             public void Update(ArraySegment<byte> data, Channel channel, bool updateHasData)
             {
-                //#if FISHNET_RELEASE_MODE
                 if (Writer == null)
                     Writer = WriterPool.Retrieve();
 
@@ -61,7 +60,6 @@ namespace FishNet.Component.Transforming
 
                 if (updateHasData)
                     SetHasData(true);
-                //#endif
             }
 
             /// <summary>
@@ -564,11 +562,7 @@ namespace FishNet.Component.Transforming
 
         private void OnDestroy()
         {
-            if (_authoritativeClientData.Writer != null)
-            {
-                _authoritativeClientData.Writer.Store();
-                _authoritativeClientData.Writer = null;
-            }
+            ResetState(true);
         }
 
         public override void OnStartNetwork()
@@ -668,8 +662,37 @@ namespace FishNet.Component.Transforming
 
         public override void OnStopNetwork()
         {
+            ResetState(false);
+        }
+
+        /// <summary>
+        /// Deinitializes this component.
+        /// </summary>
+        private void ResetState(bool destroyed)
+        {
             ChangeTickSubscription(false);
-            ResetForObjectPool();
+            /* Reset server and client side since this is called from
+            * OnStopNetwork. */
+
+            _authoritativeClientData.Writer?.Store();
+            foreach (PooledWriter writer in _toClientChangedWriters)
+                WriterPool.Store(writer);
+            _toClientChangedWriters.Clear();
+
+            CollectionCaches<bool>.StoreAndDefault(ref _authoritativeClientData.HasData);
+            _serverChangedSinceReliable.Clear();
+
+            ResettableObjectCaches<TransformData>.StoreAndDefault(ref _lastReceivedClientTransformData);
+            ResettableObjectCaches<TransformData>.StoreAndDefault(ref _lastReceivedServerTransformData);
+
+            //Goaldatas. Would only exist if client or clientHost.
+            while (_goalDataQueue.Count > 0)
+                ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
+
+            ResettableCollectionCaches<TransformData>.Store(_lastSentTransformDatas);
+            _lastSentTransformDatas.Clear();
+            ResettableObjectCaches<GoalData>.StoreAndDefault(ref _currentGoalData);
+            _currentGoalData = null;
         }
 
         private void Update()
@@ -731,34 +754,6 @@ namespace FishNet.Component.Transforming
                 TransformData td = ResettableObjectCaches<TransformData>.Retrieve();
                 _lastSentTransformDatas.Add(td);
             }
-        }
-
-        /// <summary>
-        /// Resets values as if this were a new object.
-        /// </summary>
-        private void ResetForObjectPool()
-        {
-            /* Reset server and client side since this is called from
-             * OnStopNetwork. */
-
-            foreach (PooledWriter writer in _toClientChangedWriters)
-                WriterPool.Store(writer);
-            _toClientChangedWriters.Clear();
-
-            CollectionCaches<bool>.StoreAndDefault(ref _authoritativeClientData.HasData);
-            _serverChangedSinceReliable.Clear();
-
-            ResettableObjectCaches<TransformData>.StoreAndDefault(ref _lastReceivedClientTransformData);
-            ResettableObjectCaches<TransformData>.StoreAndDefault(ref _lastReceivedServerTransformData);
-
-            //Goaldatas. Would only exist if client or clientHost.
-            while (_goalDataQueue.Count > 0)
-                ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
-
-            ResettableCollectionCaches<TransformData>.Store(_lastSentTransformDatas);
-            _lastSentTransformDatas.Clear();
-            ResettableObjectCaches<GoalData>.StoreAndDefault(ref _currentGoalData);
-            _currentGoalData = null;
         }
 
         /// <summary>
@@ -1002,17 +997,20 @@ namespace FishNet.Component.Transforming
             Transform t = transform;
             NetworkBehaviour parentBehaviour = null;
             //If there is a parent try to output the behaviour on it.
-            if (_synchronizeParent && base.NetworkObject.ParentNetworkObject != null)
+            if (_synchronizeParent)
             {
-                transform.parent.TryGetComponent<NetworkBehaviour>(out parentBehaviour);
-                if (parentBehaviour == null)
+                if (base.NetworkObject.CurrentParentNetworkObject != null)
                 {
-                    LogInvalidParent();
-                }
-                else
-                {
-                    _parentTransform = transform.parent;
-                    _parentBehaviour = parentBehaviour;
+                    transform.parent.TryGetComponent<NetworkBehaviour>(out parentBehaviour);
+                    if (parentBehaviour == null)
+                    {
+                        LogInvalidParent();
+                    }
+                    else
+                    {
+                        _parentTransform = transform.parent;
+                        _parentBehaviour = parentBehaviour;
+                    }
                 }
             }
 
@@ -1553,7 +1551,6 @@ namespace FishNet.Component.Transforming
             Channel channel = Channel.Unreliable;
             /* If relaying from client and owner isnt clientHost.
              * If owner is clientHost just send current server values. */
-            //#if FISHNET_RELEASE_MODE
             if (clientAuthoritativeWithOwner && !base.Owner.IsLocalClient)
             {
                 if (_authoritativeClientData.HasData[lodIndex])
@@ -1566,7 +1563,6 @@ namespace FishNet.Component.Transforming
             }
             //Sending server transform state.
             else
-            //#endif
             {
                 //Becomes true when any lod changes.
                 bool dataChanged = false;
@@ -1815,7 +1811,8 @@ namespace FishNet.Component.Transforming
             if (scale.z != lastScale.z)
                 changed |= ChangedDelta.ScaleZ;
 
-            if (lastParentBehaviour != _parentBehaviour)
+            //if (lastParentBehaviour != _parentBehaviour)
+            if (_parentBehaviour != null)
                 changed |= ChangedDelta.Nested;
 
             //If added scale or nested then also add extended.
