@@ -674,7 +674,7 @@ namespace FishNet.Component.Transforming
             /* Reset server and client side since this is called from
             * OnStopNetwork. */
 
-            _authoritativeClientData.Writer?.Store();
+            ObjectCaches<PooledWriter>.StoreAndDefault(ref _authoritativeClientData.Writer);
             foreach (PooledWriter writer in _toClientChangedWriters)
                 WriterPool.Store(writer);
             _toClientChangedWriters.Clear();
