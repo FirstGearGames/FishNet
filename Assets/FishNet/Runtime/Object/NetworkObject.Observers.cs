@@ -54,7 +54,7 @@ namespace FishNet.Object
         /// Found renderers on the NetworkObject and it's children. This is only used as clientHost to hide non-observers objects.
         /// </summary>
         [System.NonSerialized]
-        private Renderer[] _renderers;
+        private List<UnityEngine.Component> _renderers;
         /// <summary>
         /// True if renderers have been looked up.
         /// </summary>
@@ -145,16 +145,23 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateRenderers_Internal(bool updateVisibility)
         {
-            _renderers = GetComponentsInChildren<Renderer>(true);
-            List<Renderer> enabledRenderers = new List<Renderer>();
-            foreach (Renderer r in _renderers)
+            List<UnityEngine.Component> enabledRenderers = new List<UnityEngine.Component>();
+
+            var renderers = GetComponentsInChildren<Renderer>(true);
+            foreach (Renderer r in renderers)
             {
                 if (r.enabled)
                     enabledRenderers.Add(r);
             }
-            //If there are any disabled renderers then change _renderers to cached values.
-            if (enabledRenderers.Count != _renderers.Length)
-                _renderers = enabledRenderers.ToArray();
+
+            var canvases = GetComponentsInChildren<Canvas>(true);
+            foreach (Canvas c in canvases)
+            {
+                if (c.enabled)
+                    enabledRenderers.Add(c);
+            }
+
+            _renderers = enabledRenderers;
 
             if (updateVisibility)
                 UpdateRenderVisibility(_lastClientHostVisibility);
@@ -168,18 +175,20 @@ namespace FishNet.Object
         {
             bool rebuildRenderers = false;
 
-            Renderer[] rs = _renderers;
-            int count = rs.Length;
+            List<UnityEngine.Component> rs = _renderers;
+            int count = rs.Count;
             for (int i = 0; i < count; i++)
             {
-                Renderer r = rs[i];
-                if (r == null)
+                Renderer r = rs[i] as Renderer;
+                Canvas c = rs[i] as Canvas;
+                if (r == null && c == null)
                 {
                     rebuildRenderers = true;
                     break;
                 }
 
-                r.enabled = visible;
+                if (r != null) r.enabled = visible;
+                if (c != null) c.enabled = visible;
             }
 
             OnHostVisibilityUpdated?.Invoke(_lastClientHostVisibility, visible);
