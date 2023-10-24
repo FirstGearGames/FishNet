@@ -479,6 +479,11 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private bool _lastReceiveReliable = true;
         /// <summary>
+        /// True once OnStartClient or OnStartServer are called and reset when ResetState is run in any scenario. Used to guard
+        /// against multiple calls to ResetState.
+        /// </summary>
+        private bool _isStarted;
+        /// <summary>
         /// NetworkBehaviour this transform is a child of.
         /// </summary>
         private NetworkBehaviour _parentBehaviour;
@@ -574,10 +579,7 @@ namespace FishNet.Component.Transforming
 
         public override void OnStartServer()
         {
-            _lastReceivedClientTransformData = ObjectCaches<TransformData>.Retrieve();
-            ConfigureComponents();
-            AddCollections(true);
-            SetDefaultGoalData();
+            StartInternal(asServer: true);
             /* Server must always subscribe.
              * Server needs to relay client auth in
              * ticks or send non-auth/non-owner to
@@ -621,10 +623,7 @@ namespace FishNet.Component.Transforming
 
         public override void OnStartClient()
         {
-            _lastReceivedServerTransformData = ObjectCaches<TransformData>.Retrieve();
-            ConfigureComponents();
-            AddCollections(false);
-            SetDefaultGoalData();
+            StartInternal(asServer: false);
         }
 
         public override void OnOwnershipServer(NetworkConnection prevOwner)
@@ -670,6 +669,12 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void ResetState(bool destroyed)
         {
+            if (_isStarted == false) {
+                return; // do not reset twice
+            }
+
+            _isStarted = false;
+
             ChangeTickSubscription(false);
             /* Reset server and client side since this is called from
             * OnStopNetwork. */
@@ -698,6 +703,14 @@ namespace FishNet.Component.Transforming
         private void Update()
         {
             MoveToTarget();
+        }
+
+        private void StartInternal (bool asServer) {
+            _isStarted = true;
+            _lastReceivedServerTransformData = ObjectCaches<TransformData>.Retrieve();
+            ConfigureComponents();
+            AddCollections(asServer);
+            SetDefaultGoalData();
         }
 
         /// <summary>
@@ -2100,7 +2113,7 @@ namespace FishNet.Component.Transforming
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-            
+
         }
 
 
