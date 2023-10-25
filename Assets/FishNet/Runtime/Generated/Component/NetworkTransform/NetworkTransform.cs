@@ -479,11 +479,6 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private bool _lastReceiveReliable = true;
         /// <summary>
-        /// True once OnStartClient or OnStartServer are called and reset when ResetState is run in any scenario. Used to guard
-        /// against multiple calls to ResetState.
-        /// </summary>
-        private bool _isStarted;
-        /// <summary>
         /// NetworkBehaviour this transform is a child of.
         /// </summary>
         private NetworkBehaviour _parentBehaviour;
@@ -669,12 +664,6 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void ResetState(bool destroyed)
         {
-            if (_isStarted == false) {
-                return; // do not reset twice
-            }
-
-            _isStarted = false;
-
             ChangeTickSubscription(false);
             /* Reset server and client side since this is called from
             * OnStopNetwork. */
@@ -694,7 +683,10 @@ namespace FishNet.Component.Transforming
             while (_goalDataQueue.Count > 0)
                 ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
 
-            ResettableCollectionCaches<TransformData>.Store(_lastSentTransformDatas);
+            for (int i = 0; i < _lastSentTransformDatas.Count; i++) {
+                var td = _lastSentTransformDatas[i];
+                ResettableObjectCaches<TransformData>.StoreAndDefault(ref td);
+            }
             _lastSentTransformDatas.Clear();
             ResettableObjectCaches<GoalData>.StoreAndDefault(ref _currentGoalData);
             _currentGoalData = null;
@@ -706,7 +698,6 @@ namespace FishNet.Component.Transforming
         }
 
         private void StartInternal (bool asServer) {
-            _isStarted = true;
             _lastReceivedServerTransformData = ObjectCaches<TransformData>.Retrieve();
             ConfigureComponents();
             AddCollections(asServer);
@@ -1538,7 +1529,7 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-                    
+
                         /* If everything matches up then end queue.
                         * Otherwise let it play out until stuff
                         * aligns. Generally the time remaining is enough
