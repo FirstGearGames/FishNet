@@ -20,7 +20,7 @@
 
 2.0 FishNet-Pro License. Fish-Net Pro uses this license.
 
-2.1 Distribution: Purchasers may distribute FishNet-Pro to their organization, group, team of 20 or fewer members. Purchasers may distributed FishNet-Pro to their physical classroom environments with no member count restrictions.
+2.1 Distribution: Purchasers may distribute FishNet-Pro to their organization, group, team of 20 or fewer members. Purchasers may distribute FishNet-Pro to their physical classroom environments with no member count restrictions.
 
 3.0 Third-Party License Notice. Software may contain third-party licenses. If the Software is accompanied by a “third-party notices” or similar file, you acknowledge and agree that software identified in that file is governed exclusively by those separate license terms.
 
