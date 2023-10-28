@@ -574,10 +574,7 @@ namespace FishNet.Component.Transforming
 
         public override void OnStartServer()
         {
-            _lastReceivedClientTransformData = ObjectCaches<TransformData>.Retrieve();
-            ConfigureComponents();
-            AddCollections(true);
-            SetDefaultGoalData();
+            StartInternal(asServer: true);
             /* Server must always subscribe.
              * Server needs to relay client auth in
              * ticks or send non-auth/non-owner to
@@ -621,10 +618,7 @@ namespace FishNet.Component.Transforming
 
         public override void OnStartClient()
         {
-            _lastReceivedServerTransformData = ObjectCaches<TransformData>.Retrieve();
-            ConfigureComponents();
-            AddCollections(false);
-            SetDefaultGoalData();
+            StartInternal(asServer: false);
         }
 
         public override void OnOwnershipServer(NetworkConnection prevOwner)
@@ -689,7 +683,10 @@ namespace FishNet.Component.Transforming
             while (_goalDataQueue.Count > 0)
                 ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
 
-            ResettableCollectionCaches<TransformData>.Store(_lastSentTransformDatas);
+            for (int i = 0; i < _lastSentTransformDatas.Count; i++) {
+                var td = _lastSentTransformDatas[i];
+                ResettableObjectCaches<TransformData>.StoreAndDefault(ref td);
+            }
             _lastSentTransformDatas.Clear();
             ResettableObjectCaches<GoalData>.StoreAndDefault(ref _currentGoalData);
             _currentGoalData = null;
@@ -698,6 +695,13 @@ namespace FishNet.Component.Transforming
         private void Update()
         {
             MoveToTarget();
+        }
+
+        private void StartInternal (bool asServer) {
+            _lastReceivedServerTransformData = ObjectCaches<TransformData>.Retrieve();
+            ConfigureComponents();
+            AddCollections(asServer);
+            SetDefaultGoalData();
         }
 
         /// <summary>
@@ -1525,7 +1529,7 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-                    
+
                         /* If everything matches up then end queue.
                         * Otherwise let it play out until stuff
                         * aligns. Generally the time remaining is enough
@@ -2100,7 +2104,7 @@ namespace FishNet.Component.Transforming
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-            
+
         }
 
 
