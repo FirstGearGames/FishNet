@@ -1054,7 +1054,7 @@ namespace FishNet.Transporting.Multipass
         /// <summary>
         /// An unset/invalid ClientTransportData.
         /// </summary>
-        private static readonly ClientTransportData INVALID_CLIENTTRANSPORTDATA = new ClientTransportData(int.MinValue, int.MinValue, int.MinValue);
+        private readonly ClientTransportData INVALID_CLIENTTRANSPORTDATA = new ClientTransportData(int.MinValue, int.MinValue, int.MinValue);
         /// <summary>
         /// MultipassId lookup.
         /// </summary>

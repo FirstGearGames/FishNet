@@ -103,11 +103,14 @@ namespace FishNet.Transporting.Tugboat
         public override void Initialize(NetworkManager networkManager, int transportIndex)
         {
             base.Initialize(networkManager, transportIndex);
+            networkManager.TimeManager.OnUpdate += TimeManager_OnUpdate;
         }
 
         protected void OnDestroy()
         {
             Shutdown();
+            if (base.NetworkManager != null)
+                base.NetworkManager.TimeManager.OnUpdate -= TimeManager_OnUpdate;
         }
         #endregion
 
@@ -180,6 +183,15 @@ namespace FishNet.Transporting.Tugboat
         #endregion
 
         #region Iterating.
+        /// <summary>
+        /// Called every update to poll for data.
+        /// </summary>
+        private void TimeManager_OnUpdate()
+        {
+            _server?.PollSocket();
+            _client?.PollSocket();
+        }
+
         /// <summary>
         /// Processes data received by the socket.
         /// </summary>

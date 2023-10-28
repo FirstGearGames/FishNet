@@ -48,6 +48,12 @@ namespace FishNet.Managing.Server
         /// <param name="requireAuthentication">True if the client must be authenticated for the method to call.</param>
         public void RegisterBroadcast<T>(Action<NetworkConnection, T> handler, bool requireAuthentication = true) where T : struct, IBroadcast
         {
+            if (handler == null)
+            {
+                NetworkManager.LogError($"Broadcast cannot be registered because handler is null. This may occur when trying to register to objects which require initialization, such as events.");
+                return;
+            }
+
             ushort key = BroadcastHelper.GetKey<T>();
 
             /* Create delegate and add for

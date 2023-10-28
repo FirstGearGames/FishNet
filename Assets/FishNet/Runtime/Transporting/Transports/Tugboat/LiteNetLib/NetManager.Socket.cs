@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using LiteNetLib.Utils;
-using GameKit.Utilities.Types;
 
 namespace LiteNetLib
 {
@@ -83,7 +82,6 @@ namespace LiteNetLib
 #endif            
         }
 
-      
         private bool IsActive()
         {
             return IsRunning;
@@ -328,7 +326,6 @@ namespace LiteNetLib
             return true;
         }
 
-     
         private bool BindSocket(Socket socket, IPEndPoint ep)
         {
             //Setup socket

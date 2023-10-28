@@ -4,6 +4,7 @@ using FishNet.Managing.Logging;
 using LiteNetLib;
 using LiteNetLib.Layers;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -49,11 +50,11 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Changes to the sockets local connection state.
         /// </summary>
-        private Queue<LocalConnectionState> _localConnectionStates = new Queue<LocalConnectionState>();
+        private ConcurrentQueue<LocalConnectionState> _localConnectionStates = new ConcurrentQueue<LocalConnectionState>();
         /// <summary>
         /// Inbound messages which need to be handled.
         /// </summary>
-        private Queue<Packet> _incoming = new Queue<Packet>();
+        private ConcurrentQueue<Packet> _incoming = new ConcurrentQueue<Packet>();
         /// <summary>
         /// Outbound messages which need to be handled.
         /// </summary>
@@ -61,7 +62,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// ConnectionEvents which need to be handled.
         /// </summary>
-        private Queue<RemoteConnectionEvent> _remoteConnectionEvents = new Queue<RemoteConnectionEvent>();
+        private ConcurrentQueue<RemoteConnectionEvent> _remoteConnectionEvents = new ConcurrentQueue<RemoteConnectionEvent>();
         #endregion
         /// <summary>
         /// Key required to connect.
@@ -118,6 +119,14 @@ namespace FishNet.Transporting.Tugboat.Server
             base.UpdateTimeout(_server, timeout);
         }
 
+        /// <summary>
+        /// Polls the socket for new data.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void PollSocket()
+        {
+            base.PollSocket(_server);
+        }
 
         /// <summary>
         /// Threaded operation to process server actions.
@@ -336,10 +345,10 @@ namespace FishNet.Transporting.Tugboat.Server
         /// </summary>
         private void ResetQueues()
         {
-            _localConnectionStates.Clear();
+            base.ClearGenericQueue<LocalConnectionState>(ref _localConnectionStates);
             base.ClearPacketQueue(ref _incoming);
             base.ClearPacketQueue(ref _outgoing);
-            _remoteConnectionEvents.Clear();
+            base.ClearGenericQueue<RemoteConnectionEvent>(ref _remoteConnectionEvents);
         }
 
 
@@ -459,13 +468,11 @@ namespace FishNet.Transporting.Tugboat.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void IterateIncoming()
         {
-            _server?.PollEvents();
-
             /* Run local connection states first so we can begin
              * to read for data at the start of the frame, as that's
              * where incoming is read. */
-            while (_localConnectionStates.Count > 0)
-                base.SetConnectionState(_localConnectionStates.Dequeue(), true);
+            while (_localConnectionStates.TryDequeue(out LocalConnectionState result))
+                base.SetConnectionState(result, true);
 
             //Not yet started.
             LocalConnectionState localState = base.GetConnectionState();
@@ -481,17 +488,15 @@ namespace FishNet.Transporting.Tugboat.Server
             }
 
             //Handle connection and disconnection events.
-            while (_remoteConnectionEvents.Count > 0)
+            while (_remoteConnectionEvents.TryDequeue(out RemoteConnectionEvent connectionEvent))
             {
-                RemoteConnectionEvent connectionEvent = _remoteConnectionEvents.Dequeue();
                 RemoteConnectionState state = (connectionEvent.Connected) ? RemoteConnectionState.Started : RemoteConnectionState.Stopped;
                 base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(state, connectionEvent.ConnectionId, base.Transport.Index));
             }
 
             //Handle packets.
-            while (_incoming.Count > 0)
+            while (_incoming.TryDequeue(out Packet incoming))
             {
-                Packet incoming = _incoming.Dequeue();
                 //Make sure peer is still connected.
                 NetPeer peer = GetNetPeer(incoming.ConnectionId, true);
                 if (peer != null)

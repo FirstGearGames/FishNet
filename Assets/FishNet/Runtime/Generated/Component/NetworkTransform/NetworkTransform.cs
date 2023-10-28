@@ -379,7 +379,7 @@ namespace FishNet.Component.Transforming
         public void SetSendToOwner(bool value)
         {
             _sendToOwner = value;
-            if (base.IsServer)
+            if (base.IsServerInitialized)
                 ObserversSetSendToOwner(value);
         }
         /// <summary>
@@ -574,7 +574,10 @@ namespace FishNet.Component.Transforming
 
         public override void OnStartServer()
         {
-            StartInternal(asServer: true);
+            _lastReceivedClientTransformData = ObjectCaches<TransformData>.Retrieve();
+            ConfigureComponents();
+            AddCollections(true);
+            SetDefaultGoalData();
             /* Server must always subscribe.
              * Server needs to relay client auth in
              * ticks or send non-auth/non-owner to
@@ -618,7 +621,10 @@ namespace FishNet.Component.Transforming
 
         public override void OnStartClient()
         {
-            StartInternal(asServer: false);
+            _lastReceivedServerTransformData = ObjectCaches<TransformData>.Retrieve();
+            ConfigureComponents();
+            AddCollections(false);
+            SetDefaultGoalData();
         }
 
         public override void OnOwnershipServer(NetworkConnection prevOwner)
@@ -649,7 +655,7 @@ namespace FishNet.Component.Transforming
                 if (_clientAuthoritative)
                     SetDefaultGoalData();
 
-                if (!base.IsServer)
+                if (!base.IsServerInitialized)
                     ChangeTickSubscription(false);
             }
         }
@@ -683,10 +689,7 @@ namespace FishNet.Component.Transforming
             while (_goalDataQueue.Count > 0)
                 ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
 
-            for (int i = 0; i < _lastSentTransformDatas.Count; i++) {
-                var td = _lastSentTransformDatas[i];
-                ResettableObjectCaches<TransformData>.StoreAndDefault(ref td);
-            }
+            ResettableCollectionCaches<TransformData>.Store(_lastSentTransformDatas);
             _lastSentTransformDatas.Clear();
             ResettableObjectCaches<GoalData>.StoreAndDefault(ref _currentGoalData);
             _currentGoalData = null;
@@ -697,20 +700,13 @@ namespace FishNet.Component.Transforming
             MoveToTarget();
         }
 
-        private void StartInternal (bool asServer) {
-            _lastReceivedServerTransformData = ObjectCaches<TransformData>.Retrieve();
-            ConfigureComponents();
-            AddCollections(asServer);
-            SetDefaultGoalData();
-        }
-
         /// <summary>
         /// Adds collections required.
         /// </summary>
         private void AddCollections(bool asServer)
         {
             //Do not add for client if also server, as server would have already added.
-            if (!asServer && base.IsServer)
+            if (!asServer && base.IsServerInitialized)
                 return;
 
             if (_toClientChangedWriters.Count > 0)
@@ -810,10 +806,10 @@ namespace FishNet.Component.Transforming
                     {
                         //Not CSP.
                         if (_sendToOwner)
-                            c.enabled = base.IsServer;
+                            c.enabled = base.IsServerInitialized;
                         //Most likely CSP.
                         else
-                            c.enabled = (base.IsServer || base.IsOwner);
+                            c.enabled = (base.IsServerInitialized || base.IsOwner);
                     }
                 }
             }
@@ -823,7 +819,7 @@ namespace FishNet.Component.Transforming
                 if (_clientAuthoritative)
                     return (!base.IsOwner || base.IsServerOnly);
                 else
-                    return !base.IsServer;
+                    return !base.IsServerInitialized;
             }
         }
 
@@ -862,13 +858,13 @@ namespace FishNet.Component.Transforming
                     _intervalsRemaining = -1;
             }
 
-            if (base.IsServer)
+            if (base.IsServerInitialized)
             {
                 byte lodIndex = (_enableNetworkLod) ? base.ObserverManager.LevelOfDetailIndex : (byte)0;
                 SendToClients(lodIndex);
             }
 
-            if (base.IsClient)
+            if (base.IsClientInitialized)
                 SendToServer(_lastSentTransformDatas[0]);
         }
 
@@ -893,7 +889,7 @@ namespace FishNet.Component.Transforming
         /// <returns></returns>
         private bool CanControl()
         {
-            bool isServer = base.IsServer;
+            bool isServer = base.IsServerInitialized;
 
             //Client auth.
             if (_clientAuthoritative)
@@ -945,14 +941,14 @@ namespace FishNet.Component.Transforming
         /// <param name="value">New interval.</param>
         public void SetInterval(byte value)
         {
-            bool canSet = (base.IsServer && !_clientAuthoritative)
-                || (base.IsServer && _clientAuthoritative && !base.Owner.IsValid)
+            bool canSet = (base.IsServerInitialized && !_clientAuthoritative)
+                || (base.IsServerInitialized && _clientAuthoritative && !base.Owner.IsValid)
                 || (_clientAuthoritative && base.IsOwner);
 
             if (!canSet)
                 return;
 
-            if (base.IsServer)
+            if (base.IsServerInitialized)
                 ObserversSetInterval(value);
             else
                 ServerSetInterval(value);
@@ -1434,7 +1430,7 @@ namespace FishNet.Component.Transforming
             if (_currentGoalData == null)
                 return;
             //Cannot move if neither is active.
-            if (!base.IsServer && !base.IsClient)
+            if (!base.IsServerInitialized && !base.IsClientInitialized)
                 return;
             //If client auth and the owner don't move towards target.
             if (_clientAuthoritative)
@@ -1452,7 +1448,7 @@ namespace FishNet.Component.Transforming
             //True if not client controlled.
             bool controlledByClient = (_clientAuthoritative && base.Owner.IsActive);
             //If not controlled by client and is server then no reason to move.
-            if (!controlledByClient && base.IsServer)
+            if (!controlledByClient && base.IsServerInitialized)
                 return;
 
             float delta = (deltaOverride != -1f) ? deltaOverride : Time.deltaTime;
@@ -1529,7 +1525,7 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-
+                    
                         /* If everything matches up then end queue.
                         * Otherwise let it play out until stuff
                         * aligns. Generally the time remaining is enough
@@ -1675,7 +1671,7 @@ namespace FishNet.Component.Transforming
              * for statistics tracking but to keep the code more simple
              * we won't be doing that. Server out however still is tracked,
              * which is generally considered more important data. */
-            if (base.IsServer)
+            if (base.IsServerInitialized)
                 return;
 
             //Not client auth or not owner.
@@ -2104,7 +2100,7 @@ namespace FishNet.Component.Transforming
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-
+            
         }
 
 
@@ -2116,7 +2112,7 @@ namespace FishNet.Component.Transforming
         {
 #if DEVELOPMENT
             //If receiver is client host then do nothing, clientHost need not process.
-            if (base.IsServer && conn.IsLocalClient)
+            if (base.IsServerInitialized && conn.IsLocalClient)
                 return;
 #endif
             /* Zero data was sent, this should not be possible.
@@ -2139,7 +2135,7 @@ namespace FishNet.Component.Transforming
                 return;
             if (_clientAuthoritative && base.IsOwner)
                 return;
-            if (base.IsServer)
+            if (base.IsServerInitialized)
                 return;
 
             //Not new data.
@@ -2181,6 +2177,9 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void DataReceived(ArraySegment<byte> data, Channel channel, bool asServer)
         {
+            if (base.IsDeinitializing)
+                return;
+
             TransformData prevTd = (asServer) ? _lastReceivedClientTransformData : _lastReceivedServerTransformData;
             RateData prevRd = _lastCalculatedRateData;
 
@@ -2198,7 +2197,7 @@ namespace FishNet.Component.Transforming
             bool hasChanged = HasChanged(prevTd, nextTd);
 
             //If server only teleport.
-            if (asServer && !base.IsClient)
+            if (asServer && !base.IsClientInitialized)
             {
                 uint tickDifference = GetTickDifference(prevTd, nextGd, 1, asServer, out float timePassed);
                 SetInstantRates(nextGd.Rates, tickDifference, timePassed);
@@ -2343,7 +2342,7 @@ namespace FishNet.Component.Transforming
         internal void ConfigureForCSP()
         {
             _clientAuthoritative = false;
-            if (base.IsServer)
+            if (base.IsServerInitialized)
                 _sendToOwner = false;
 
             /* If other or CC then needs to be configured.
@@ -2366,7 +2365,7 @@ namespace FishNet.Component.Transforming
              * Or owner + client auth.
              */
             bool canSend = (
-                base.IsServer ||
+                base.IsServerInitialized ||
                 (_clientAuthoritative && base.IsOwner)
                 );
 
@@ -2374,7 +2373,7 @@ namespace FishNet.Component.Transforming
                 return;
 
             //If server send out observerRpc.
-            if (base.IsServer)
+            if (base.IsServerInitialized)
                 ObserversSetSynchronizedProperties(value);
             //Otherwise send to the server.
             else
@@ -2404,7 +2403,7 @@ namespace FishNet.Component.Transforming
         private void ObserversSetSynchronizedProperties(SynchronizedProperty value)
         {
             //Would have already run on server if host.
-            if (base.IsServer)
+            if (base.IsServerInitialized)
                 return;
 
             SetSynchronizedPropertiesInternal(value);

@@ -864,9 +864,8 @@ namespace FishNet.Managing.Scened
                         int index = _globalScenes.Length;
                         Array.Resize(ref _globalScenes, _globalScenes.Length + names.Length);
                         Array.Copy(names, 0, _globalScenes, index, names.Length);
-
                     }
-
+                    CheckForDuplicateGlobalSceneNames();
                     data.GlobalScenes = _globalScenes;
                 }
 
@@ -1036,11 +1035,9 @@ namespace FishNet.Managing.Scened
                 }
 
                 /* Start event. */
-                if (unloadableScenes.Count > 0 || loadableScenes.Count > 0)
-                {
-                    InvokeOnSceneLoadStart(data);
+                InvokeOnSceneLoadStart(data);
+                if (unloadableScenes.Count > 0 || loadableScenes.Count > 0)                   
                     _sceneProcessor.LoadStart(data);
-                }
                 //Unloaded scenes by name. Only used for information within callbacks.
                 string[] unloadedNames = new string[unloadableScenes.Count];
                 for (int i = 0; i < unloadableScenes.Count; i++)
@@ -1688,7 +1685,7 @@ namespace FishNet.Managing.Scened
                 return;
             }
             //Won't add to default if there are globals.
-            if (_globalScenes != null && _globalScenes.Length > 0)
+            if (_globalScenes.Length > 0)
                 return;
 
             AddConnectionToScene(nob.Owner, nob.gameObject.scene);
@@ -2029,6 +2026,7 @@ namespace FishNet.Managing.Scened
         }
         #endregion
 
+
         /// <summary>
         /// Returns if GlobalScenes contains scene.
         /// </summary>
@@ -2036,14 +2034,40 @@ namespace FishNet.Managing.Scened
         /// <returns></returns>
         private bool IsGlobalScene(Scene scene)
         {
-            for (int i = 0; i < _globalScenes.Length; i++)
+            foreach (string item in _globalScenes)
             {
-                if (_globalScenes[i] == scene.name)
+                string nameOnly = System.IO.Path.GetFileNameWithoutExtension(item);
+                if (item == scene.name || nameOnly == scene.name)
                     return true;
             }
 
             return false;
         }
+
+        /// <summary>
+        /// Warns if any scene names in GlobalScenes are unsupported.
+        /// This only applies to FishNet version 3.
+        /// </summary>
+        private void CheckForDuplicateGlobalSceneNames()
+        {
+#if FISHNET_V3
+            HashSet<string> namesOnly = CollectionCaches<string>.RetrieveHashSet();
+            foreach (string item in _globalScenes)
+            {
+                string name = System.IO.Path.GetFileNameWithoutExtension(item);
+                if (namesOnly.Contains(name))
+                {
+                    NetworkManager.LogWarning($"There are multiple global scenes loaded with the same NameOnly. This occurs when a global scene has the same name as another but resides in a different folder path. Each global scene name must be unique.");
+                    break;
+                }
+                else
+                {
+                    namesOnly.Add(name);
+                }
+            }
+#endif
+        }
+
 
         /// <summary>
         /// Removes datas from GlobalScenes.
@@ -2158,7 +2182,7 @@ namespace FishNet.Managing.Scened
             {
                 Scene s = default;
 
-                if (_globalScenes != null && _globalScenes.Length > 0)
+                if (_globalScenes.Length > 0)
                     s = GetScene(_globalScenes[0], NetworkManager, false);
                 else if (preferredScene.IsValid())
                     s = preferredScene;
