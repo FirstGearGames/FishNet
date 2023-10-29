@@ -26,6 +26,7 @@ namespace FishNet.Configuring
         public bool Enabled = true;
         public bool LogToConsole = true;
         public bool FullRebuild = false;
+        public bool SpawnableOnly = true;
         public bool SaveChanges = true;
         public string DefaultPrefabObjectsPath = Path.Combine("Assets", "DefaultPrefabObjects.asset");
         internal string DefaultPrefabObjectsPath_Platform => Generator.GetPlatformPath(DefaultPrefabObjectsPath);

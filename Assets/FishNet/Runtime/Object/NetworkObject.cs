@@ -246,6 +246,19 @@ namespace FishNet.Object
         [Tooltip("True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.")]
         [SerializeField]
         private bool _isNetworked = true;
+
+        /// <summary>
+        /// True if the object can be spawned at runtime (Rather than being a scene object).
+        /// </summary>
+        public bool IsSpawnable
+        {
+            get => _isSpawnable;
+            private set => _isSpawnable = value;
+        }
+        [Tooltip("True if the object can be spawned at runtime (Rather than being a scene object).")]
+        [SerializeField]
+        private bool _isSpawnable = false;
+
         /// <summary>
         /// True to make this object global, and added to the DontDestroyOnLoad scene. This value may only be set for instantiated objects, and can be changed if done immediately after instantiating.
         /// </summary>
