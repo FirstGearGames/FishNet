@@ -489,7 +489,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Values changed over time that server has sent to clients since last reliable has been sent.
         /// </summary>
-        private List<ChangedDelta> _serverChangedSinceReliable = new List<ChangedDelta>();
+        private List<ChangedDelta> _serverChangedSinceReliable;
         /// <summary>
         /// Values changed over time that client has sent to server since last reliable has been sent.
         /// </summary>
@@ -541,11 +541,11 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Last sent transform data for every LOD.
         /// </summary>
-        private List<TransformData> _lastSentTransformDatas = new List<TransformData>();
+        private List<TransformData> _lastSentTransformDatas;
         /// <summary>
         /// Writers for changed data for each level of detail.
         /// </summary>
-        private List<PooledWriter> _toClientChangedWriters = new List<PooledWriter>();
+        private List<PooledWriter> _toClientChangedWriters;
         #endregion
 
         #region Const.
@@ -600,23 +600,6 @@ namespace FishNet.Component.Transforming
                 TargetUpdateTransform(connection, writer.GetArraySegment(), Channel.Reliable);
                 writer.Store();
             }
-
-            //if (_synchronizeParent)
-            //{
-            //    /* Can send under the following conditions.
-            //     *  Client auth and not owner. No need to send parent changes to owner when client auth.
-            //     *  
-            //     *  Not client auth and send to owner. Everyone will get changes in this scenario.
-            //     * 
-            //     *  Not client auth, not send to owner, and not owner.
-            //     *      This should send to everyone but owner.
-            //     */
-            //    bool canSend = (_clientAuthoritative && connection != base.Owner) ||
-            //        (!_clientAuthoritative && _sendToOwner) ||
-            //        (!_clientAuthoritative && !_sendToOwner && connection != Owner);
-            //    if (canSend)
-            //        TargetSetParent(connection, _parentBehaviour);
-            //}
         }
 
         public override void OnStartClient()
@@ -675,24 +658,25 @@ namespace FishNet.Component.Transforming
             * OnStopNetwork. */
 
             ObjectCaches<PooledWriter>.StoreAndDefault(ref _authoritativeClientData.Writer);
-            foreach (PooledWriter writer in _toClientChangedWriters)
-                WriterPool.Store(writer);
-            _toClientChangedWriters.Clear();
+
+            if (_toClientChangedWriters != null)
+            {
+                foreach (PooledWriter writer in _toClientChangedWriters)
+                    WriterPool.Store(writer);
+            }
+            CollectionCaches<PooledWriter>.StoreAndDefault(ref _toClientChangedWriters);
 
             CollectionCaches<bool>.StoreAndDefault(ref _authoritativeClientData.HasData);
-            _serverChangedSinceReliable.Clear();
+            CollectionCaches<ChangedDelta>.StoreAndDefault(ref _serverChangedSinceReliable);
 
             ResettableObjectCaches<TransformData>.StoreAndDefault(ref _lastReceivedClientTransformData);
             ResettableObjectCaches<TransformData>.StoreAndDefault(ref _lastReceivedServerTransformData);
-
             //Goaldatas. Would only exist if client or clientHost.
             while (_goalDataQueue.Count > 0)
                 ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
 
-            ResettableCollectionCaches<TransformData>.Store(_lastSentTransformDatas);
-            _lastSentTransformDatas.Clear();
+            ResettableCollectionCaches<TransformData>.StoreAndDefault(ref _lastSentTransformDatas);
             ResettableObjectCaches<GoalData>.StoreAndDefault(ref _currentGoalData);
-            _currentGoalData = null;
         }
 
         private void Update()
@@ -705,31 +689,40 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void AddCollections(bool asServer)
         {
-            //Do not add for client if also server, as server would have already added.
-            if (!asServer && base.IsServerInitialized)
-                return;
+            bool asClientAndNotHost = (!asServer && !base.IsServer);
 
-            if (_toClientChangedWriters.Count > 0)
-            {
-                base.NetworkManager.LogWarning($"ChangedWriters collection contains values. This should not be possible.");
-                _toClientChangedWriters.Clear();
-            }
-            if (_lastSentTransformDatas.Count > 0)
-            {
-                base.NetworkManager.LogWarning($"LastSentTransformDatas collection contains values. This should not be possible.");
-                _lastSentTransformDatas.Clear();
-            }
+            /* Even though these collections are nullified on clean up
+             * they could still exist on the reinitialization for clientHost if
+             * an object is despawned to a pool then very quickly respawned
+             * before the clientHost side has not processed the despawn yet.
+             * Because of this check count rather than null. */
 
-            int lodCount = base.ObserverManager.GetLevelOfDetailDistances().Count;
+            if (asServer || asClientAndNotHost)
+            {
+                if (_toClientChangedWriters == null)
+                    _toClientChangedWriters = CollectionCaches<PooledWriter>.RetrieveList();
+                else if (_toClientChangedWriters.Count > 0)
+                    base.NetworkManager.LogWarning($"{nameof(_toClientChangedWriters)} contains values when it should not.");
+
+                if (_lastSentTransformDatas == null)
+                    _lastSentTransformDatas = ResettableCollectionCaches<TransformData>.RetrieveList();
+                else if (_lastSentTransformDatas.Count > 0)
+                    base.NetworkManager.LogWarning($"{nameof(_lastSentTransformDatas)} contains values when it should not. Hash {_lastSentTransformDatas.GetHashCode()}");
+            }
 
             if (asServer)
             {
-                _authoritativeClientData.HasData = CollectionCaches<bool>.RetrieveList();
-                if (_serverChangedSinceReliable.Count > 0)
-                {
-                    base.NetworkManager.LogWarning($"ServerChangedSinceReliable collection contains values. This should not be possible.");
-                    _serverChangedSinceReliable.Clear();
-                }
+                int lodCount = base.ObserverManager.GetLevelOfDetailDistances().Count;
+
+                if (_authoritativeClientData.HasData == null)
+                    _authoritativeClientData.HasData = CollectionCaches<bool>.RetrieveList();
+                else if (_authoritativeClientData.HasData.Count > 0)
+                    base.NetworkManager.LogWarning($"{nameof(_authoritativeClientData.HasData)} contains values when it should not.");
+
+                if (_serverChangedSinceReliable == null)
+                    _serverChangedSinceReliable = CollectionCaches<ChangedDelta>.RetrieveList();
+                else if (_serverChangedSinceReliable.Count > 0)
+                    base.NetworkManager.LogWarning($"{nameof(_serverChangedSinceReliable)} contains values when it should not.");
 
                 //Initialize for LODs.
                 for (int i = 0; i < lodCount; i++)
@@ -747,8 +740,8 @@ namespace FishNet.Component.Transforming
                     }
                 }
             }
-            //As client.
-            else
+
+            if (asClientAndNotHost)
             {
                 //Add one last sent.
                 TransformData td = ResettableObjectCaches<TransformData>.Retrieve();
