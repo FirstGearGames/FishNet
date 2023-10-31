@@ -199,9 +199,9 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 return string.Empty;
         }
 
-        private static bool CanAddNetworkObject(NetworkObject networkObject)
+        private static bool CanAddNetworkObject(NetworkObject networkObject, PrefabGeneratorConfigurations settings)
         {
-            return networkObject != null && CanAddNetworkObject(networkObject);
+            return networkObject != null && (networkObject.IsSpawnable || !settings.SpawnableOnly);
         }
 
         /// <summary>
@@ -256,7 +256,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                         continue;
 
                     NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(item);
-                    if (nob != null && CanAddNetworkObject(nob))
+                    if (nob != null && CanAddNetworkObject(nob, settings))
                     {
                         changedNobPaths.Add(item);
                         prefabCollection.AddObject(nob, true);
@@ -340,7 +340,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 foreach (string path in GetPrefabFiles("Assets", excludedPaths, true))
                 {
                     NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(path);
-                    if (nob != null && CanAddNetworkObject(nob))
+                    if (nob != null && CanAddNetworkObject(nob, settings))
                         foundNobs.Add(nob);
                 }
             }
@@ -359,7 +359,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     foreach (string path in GetPrefabFiles(sf.Path, excludedPaths, sf.Recursive))
                     {
                         NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(path);
-                        if (nob != null && CanAddNetworkObject(nob))
+                        if (nob != null && CanAddNetworkObject(nob, settings))
                             foundNobs.Add(nob);
                     }
                 }
@@ -587,7 +587,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
                         NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(imported);
                         //If is a networked object.
-                        if (nob != null && CanAddNetworkObject(nob))
+                        if (nob != null && CanAddNetworkObject(nob, settings))
                         {
                             //Already added!
                             if (prefabCollection.Prefabs.Contains(nob))
