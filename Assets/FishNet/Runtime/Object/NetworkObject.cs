@@ -250,11 +250,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if the object can be spawned at runtime (Rather than being a scene object).
         /// </summary>
-        public bool IsSpawnable
-        {
-            get => _isSpawnable;
-            private set => _isSpawnable = value;
-        }
+        public bool IsSpawnable => _isSpawnable;
         [Tooltip("True if the object can be spawned at runtime (Rather than being a scene object).")]
         [SerializeField]
         private bool _isSpawnable = false;
