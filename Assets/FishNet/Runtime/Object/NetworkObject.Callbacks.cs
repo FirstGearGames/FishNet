@@ -106,7 +106,7 @@ namespace FishNet.Object
 
             /* Invoke OnStopNetwork if server is calling
             * or if client and not as server. */
-            if (asServer || (!asServer && !IsServer))
+            if (asServer || (!asServer && !IsServerStarted))
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].InvokeOnNetwork(false);
@@ -135,7 +135,7 @@ namespace FishNet.Object
                  * as owner client-side, which invokes the OnOwnership method.
                  * Then when the server approves the owner change it would invoke
                  * again, which is not needed. */
-                bool blockInvoke = ((IsOwner && !IsServer) && (prevOwner == Owner));
+                bool blockInvoke = ((IsOwner && !IsServerStarted) && (prevOwner == Owner));
                 if (!blockInvoke)
                 {
                     for (int i = 0; i < NetworkBehaviours.Length; i++)

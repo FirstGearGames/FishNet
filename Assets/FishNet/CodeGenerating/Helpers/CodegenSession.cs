@@ -66,13 +66,13 @@ namespace FishNet.CodeGenerating
                     ,new WriterImports(), new WriterProcessor()
                     , new PhysicsHelper(), new TimeManagerHelper(), new AttributeHelper(), new GeneralHelper()
                     , new ObjectHelper(), new NetworkBehaviourHelper()
-                    , new CreatedSyncVarGenerator(), new TransportHelper()
+                    , new TransportHelper()
                     , new NetworkConnectionImports(), new PredictedObjectHelper(), new GeneratorHelper()
                     , new CustomSerializerProcessor()
                     , new NetworkBehaviourProcessor()
                     , new QolAttributeProcessor()
                     , new RpcProcessor()
-                    , new NetworkBehaviourSyncProcessor()
+                    , new SyncTypeProcessor()
                     , new PredictionProcessor()
                 };
 
@@ -95,8 +95,6 @@ namespace FishNet.CodeGenerating
         }
 
 
-
-
         #region Logging.
         /// <summary>
         /// Logs a warning.
@@ -104,11 +102,7 @@ namespace FishNet.CodeGenerating
         /// <param name="msg"></param>
         internal void LogWarning(string msg)
         {
-#if UNITY_2020_1_OR_NEWER
             Diagnostics.AddWarning(msg);
-#else
-            Debug.LogWarning(msg);
-#endif
         }
         /// <summary>
         /// Logs an error.
@@ -116,11 +110,7 @@ namespace FishNet.CodeGenerating
         /// <param name="msg"></param>
         internal void LogError(string msg)
         {
-#if UNITY_2020_1_OR_NEWER
             Diagnostics.AddError(msg);
-#else
-            Debug.LogError(msg);
-#endif
         }
         #endregion
 

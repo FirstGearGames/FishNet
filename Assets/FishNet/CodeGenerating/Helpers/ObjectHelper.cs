@@ -32,12 +32,11 @@ namespace FishNet.CodeGenerating.Helping
         public override bool ImportReferences()
         {
             Type tmpType;
-            /* SyncVar names. */
+            /* SyncType names */
             //SyncVar.
             tmpType = typeof(SyncVar<>);
             base.ImportReference(tmpType);
             SyncVar_Name = tmpType.Name;
-            /* SyncObject names. */
             //SyncList.
             tmpType = typeof(SyncList<>);
             base.ImportReference(tmpType);
@@ -78,9 +77,9 @@ namespace FishNet.CodeGenerating.Helping
             Type instanceFinderType = typeof(InstanceFinder);
             foreach (PropertyInfo pi in instanceFinderType.GetProperties())
             {
-                if (pi.Name == nameof(InstanceFinder.IsClient))
+                if (pi.Name == nameof(InstanceFinder.IsClientStarted))
                     InstanceFinder_IsClient_MethodRef = base.ImportReference(pi.GetMethod);
-                else if (pi.Name == nameof(InstanceFinder.IsServer))
+                else if (pi.Name == nameof(InstanceFinder.IsServerStarted))
                     InstanceFinder_IsServer_MethodRef = base.ImportReference(pi.GetMethod);
             }
 

@@ -15,8 +15,7 @@ namespace FishNet.Object
             {
                 //There was a null check here before, shouldn't be needed so it was removed.
                 NetworkBehaviour nb = nbs[i];
-                nb.WriteDirtySyncTypes(true, true);
-                nb.WriteDirtySyncTypes(false, true);
+                nb.WriteDirtySyncTypes(true);
             }
         }
     }

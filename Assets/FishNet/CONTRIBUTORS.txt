@@ -1,1 +1,0 @@
-This file exist only for contributors to submit their name via pull request.

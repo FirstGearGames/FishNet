@@ -73,7 +73,7 @@ namespace FishNet.Example.Authenticating
         /// </summary>
         /// <param name="conn">Connection sending broadcast.</param>
         /// <param name="pb"></param>
-        private void OnPasswordBroadcast(NetworkConnection conn, PasswordBroadcast pb)
+        private void OnPasswordBroadcast(NetworkConnection conn, PasswordBroadcast pb, Channel channel)
         {
             /* If client is already authenticated this could be an attack. Connections
              * are removed when a client disconnects so there is no reason they should
@@ -96,7 +96,7 @@ namespace FishNet.Example.Authenticating
         /// Received on client after server sends an authentication response.
         /// </summary>
         /// <param name="rb"></param>
-        private void OnResponseBroadcast(ResponseBroadcast rb)
+        private void OnResponseBroadcast(ResponseBroadcast rb, Channel channel)
         {
             string result = (rb.Passed) ? "Authentication complete." : "Authenitcation failed.";
             NetworkManager.Log(result);

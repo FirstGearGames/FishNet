@@ -1,7 +1,4 @@
-﻿#if UNITY_2020_3_OR_NEWER && UNITY_EDITOR_WIN
-using FishNet.CodeAnalysis.Annotations;
-#endif
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Object.Synchronizing.Internal;
 using System.Runtime.CompilerServices;
@@ -41,9 +38,7 @@ namespace FishNet.Object
         /// </summary>
         internal void InvokeSyncTypeOnStartCallbacks(bool asServer)
         {
-            foreach (SyncBase item in _syncVars.Values)
-                item.OnStartCallback(asServer);
-            foreach (SyncBase item in _syncObjects.Values)
+            foreach (SyncBase item in _syncTypes.Values)
                 item.OnStartCallback(asServer);
         }
 
@@ -52,9 +47,7 @@ namespace FishNet.Object
         /// </summary>
         internal void InvokeSyncTypeOnStopCallbacks(bool asServer)
         {
-            foreach (SyncBase item in _syncVars.Values)
-                item.OnStopCallback(asServer);
-            foreach (SyncBase item in _syncObjects.Values)
+            foreach (SyncBase item in _syncTypes.Values)
                 item.OnStopCallback(asServer);
         }
 
@@ -138,21 +131,14 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnOwnershipServer_Internal(NetworkConnection prevOwner)
         {
-            //When switching ownership always clear replicate cache on server.
-#if !PREDICTION_V2
-            ClearReplicateCache(true);
-#else
-            ClearReplicateCache();
-#endif
+            CallClearReplicateCache(true);
             OnOwnershipServer(prevOwner);
         }
         /// <summary>
         /// Called on the server after ownership has changed.
         /// </summary>
         /// <param name="prevOwner">Previous owner of this object.</param>
-
         public virtual void OnOwnershipServer(NetworkConnection prevOwner) { }
-
 
         /// <summary>
         /// Called on the server after a spawn message for this object has been sent to clients.
@@ -196,13 +182,8 @@ namespace FishNet.Object
         {
             //If losing or gaining ownership then clear replicate cache.
             if (IsOwner || prevOwner == LocalConnection)
-            {
-#if !PREDICTION_V2
-                ClearReplicateCache(false);
-#else
-                ClearReplicateCache();
-#endif
-            }
+                CallClearReplicateCache(false);
+
             OnOwnershipClient(prevOwner);
         }
         /// <summary>
@@ -211,6 +192,18 @@ namespace FishNet.Object
         /// <param name="prevOwner">Previous owner of this object.</param>
         public virtual void OnOwnershipClient(NetworkConnection prevOwner) { }
 
+
+        /// <summary>
+        /// Calls ClearReplicateCache for prediction v1 or v2.
+        /// </summary>
+        private void CallClearReplicateCache(bool asServer)
+        {
+#if !PREDICTION_V2
+            ClearReplicateCache_Virtual(asServer);
+#else
+            ClearReplicateCache();
+#endif
+        }
     }
 
 

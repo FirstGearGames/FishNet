@@ -1,4 +1,8 @@
-﻿#if UNITY_EDITOR
+﻿/* Commented out due to Unity 2022 bug where
+ * you cannot create a custom editor override
+ * which won't break users custom VisualElements. */
+
+#if UNITY_EDITOR
 //  Project : UNITY FOLDOUT
 // Contacts : Pix - ask@pixeye.games
 // https://github.com/PixeyeHQ/InspectorFoldoutGroup
@@ -9,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -23,13 +28,32 @@ namespace GameKit.Dependencies.Inspectors
 
         public override VisualElement CreateInspectorGUI()
         {
-            return base.CreateInspectorGUI();
-        }
-            //===============================//
-            // Members
-            //===============================//
+            var container = new VisualElement();
 
-            Dictionary<string, CacheFoldProp> cacheFolds = new Dictionary<string, CacheFoldProp>();
+            var iterator = serializedObject.GetIterator();
+            if (iterator.NextVisible(true))
+            {
+                do
+                {
+                    var propertyField = new PropertyField(iterator.Copy()) { name = "PropertyField:" + iterator.propertyPath };
+
+                    if (iterator.propertyPath == "m_Script" && serializedObject.targetObject != null)
+                        propertyField.SetEnabled(value: false);
+
+                    container.Add(propertyField);
+                }
+                while (iterator.NextVisible(false));
+            }
+
+            return container;
+        }
+
+
+        //===============================//
+        // Members
+        //===============================//
+
+        Dictionary<string, CacheFoldProp> cacheFolds = new Dictionary<string, CacheFoldProp>();
         List<SerializedProperty> props = new List<SerializedProperty>();
         List<MethodInfo> methods = new List<MethodInfo>();
         bool initialized;

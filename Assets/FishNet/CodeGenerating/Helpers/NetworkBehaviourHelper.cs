@@ -66,7 +66,6 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference OwnerMatches_MethodRef;
         public MethodReference LocalConnection_MethodRef;
         public MethodReference Owner_MethodRef;
-        public MethodReference RegisterSyncVarRead_MethodRef;
         public MethodReference NetworkInitializeIfDisabled_MethodRef;
         //TimeManager.
         public MethodReference TimeManager_MethodRef;
@@ -149,8 +148,6 @@ namespace FishNet.CodeGenerating.Helping
                 //Misc.
                 else if (mi.Name == nameof(NetworkBehaviour.OwnerMatches))
                     OwnerMatches_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.RegisterSyncVarRead))
-                    RegisterSyncVarRead_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.DirtySyncType))
                     DirtySyncType_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.NetworkInitializeIfDisabled))
@@ -164,7 +161,7 @@ namespace FishNet.CodeGenerating.Helping
                     IsClientInitialized_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkBehaviour.IsServerInitialized))
                     IsServerInitialized_MethodRef = base.ImportReference(pi.GetMethod);
-                else if (pi.Name == nameof(NetworkBehaviour.IsHost))
+                else if (pi.Name == nameof(NetworkBehaviour.IsHostStarted))
                     IsHost_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkBehaviour.IsOwner))
                     IsOwner_MethodRef = base.ImportReference(pi.GetMethod);

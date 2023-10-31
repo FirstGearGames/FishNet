@@ -16,7 +16,6 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference Reader_ReadPackedWhole_MethodRef;
         public MethodReference Reader_ReadDictionary_MethodRef;
         public MethodReference Reader_ReadList_MethodRef;
-        public MethodReference Reader_ReadListCache_MethodRef;
         public MethodReference Reader_ReadArray_MethodRef;
         public TypeReference GenericReaderTypeRef;
         public TypeReference ReaderTypeRef;
@@ -55,12 +54,10 @@ namespace FishNet.CodeGenerating.Helping
                 if (methodInfo.Name == nameof(PooledReader.ReadPackedWhole))
                     Reader_ReadPackedWhole_MethodRef = base.ImportReference(methodInfo);
                 //Relay readers.
-                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadDictionary))
+                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadDictionaryAllocated))
                     Reader_ReadDictionary_MethodRef = base.ImportReference(methodInfo);
                 else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadListAllocated))
                     Reader_ReadList_MethodRef = base.ImportReference(methodInfo);
-                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadListCacheAllocated))
-                    Reader_ReadListCache_MethodRef = base.ImportReference(methodInfo);
                 else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadArrayAllocated))
                     Reader_ReadArray_MethodRef = base.ImportReference(methodInfo);
             }

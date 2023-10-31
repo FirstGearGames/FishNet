@@ -13,7 +13,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -68,7 +68,7 @@ namespace FishNet.Managing.Client
 
             /* Only perform this step if the transport being stopped
              * is the one which client is connected to. */
-            if (NetworkManager.IsClient && args.TransportIndex == base.NetworkManager.ClientManager.GetTransportIndex())
+            if (NetworkManager.IsClientStarted && args.TransportIndex == base.NetworkManager.ClientManager.GetTransportIndex())
                 base.NetworkManager.ClientManager.StopConnection();
         }
 
@@ -85,7 +85,7 @@ namespace FishNet.Managing.Client
                 _objectCache.Reset();
 
                 //If not server then deinitialize normally.
-                if (!base.NetworkManager.IsServer)
+                if (!base.NetworkManager.IsServerStarted)
                 {
                     base.DespawnWithoutSynchronization(false);
                 }
@@ -118,7 +118,7 @@ namespace FishNet.Managing.Client
         {
             base.SceneManager_sceneLoaded(s, arg1);
 
-            if (!base.NetworkManager.IsClient)
+            if (!base.NetworkManager.IsClientStarted)
                 return;
             /* When a scene first loads for a client it should disable
              * all network objects in that scene. The server will send
@@ -134,7 +134,7 @@ namespace FishNet.Managing.Client
             LocalClientSpawned.Add(nob);
             base.AddToSpawned(nob, asServer);
             //If being added as client and is also server.
-            if (NetworkManager.IsServer)
+            if (NetworkManager.IsServerStarted)
                 nob.SetRenderersVisible(true);
         }
 
@@ -166,7 +166,7 @@ namespace FishNet.Managing.Client
             networkObject.Initialize(false, true);
 
             PooledWriter writer = WriterPool.Retrieve();
-            WriteSpawn(networkObject, writer);
+            WriteSpawn_Client(networkObject, writer);
             base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
             writer.Store();
         }
@@ -175,7 +175,7 @@ namespace FishNet.Managing.Client
         /// Writes a predicted spawn.
         /// </summary>
         /// <param name="nob"></param>
-        public void WriteSpawn(NetworkObject nob, Writer writer)
+        internal void WriteSpawn_Client(NetworkObject nob, Writer writer)
         {
             PooledWriter headerWriter = WriterPool.Retrieve();
             headerWriter.WritePacketId(PacketId.ObjectSpawn);
@@ -281,7 +281,7 @@ namespace FishNet.Managing.Client
                 {
                     base.AddToSceneObjects(nob);
                     //Only run if not also server, as this already ran on server.
-                    if (!base.NetworkManager.IsServer)
+                    if (!base.NetworkManager.IsServerStarted)
                         nob.gameObject.SetActive(false);
                 }
             }
@@ -318,11 +318,11 @@ namespace FishNet.Managing.Client
         /// </summary>
         /// <param name="reader"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ParseSyncType(PooledReader reader, bool isSyncObject, Channel channel)
+        internal void ParseSyncType(PooledReader reader, Channel channel)
         {
             //cleanup this is unique to synctypes where length comes first.
             //this will change once I tidy up synctypes.
-            ushort packetId = (isSyncObject) ? (ushort)PacketId.SyncObject : (ushort)PacketId.SyncVar;
+            ushort packetId = (ushort)PacketId.SyncType;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength(packetId, reader, channel);
 
@@ -334,7 +334,7 @@ namespace FishNet.Managing.Client
                  * The only way to know where completion of syncvar is, versus
                  * when another packet starts is by including the length. */
                 if (dataLength > 0)
-                    nb.OnSyncType(reader, dataLength, isSyncObject);
+                    nb.OnSyncType(reader, dataLength);
             }
             else
             {
@@ -455,7 +455,7 @@ namespace FishNet.Managing.Client
              * 
              * Only check if not server, since if server the client doesnt need
              * to predicted spawn. */
-            if (!base.NetworkManager.IsServerOnly && base.Spawned.TryGetValue(objectId, out NetworkObject nob))
+            if (!base.NetworkManager.IsServerOnlyStarted && base.Spawned.TryGetValue(objectId, out NetworkObject nob))
             {
                 //If not predicted the nob should not be in spawned.
                 if (!nob.PredictedSpawner.IsValid)
@@ -521,7 +521,7 @@ namespace FishNet.Managing.Client
             }
 
             NetworkObject nob = null;
-            List<NetworkObject> childNobs = rootNob.ChildNetworkObjects;
+            List<NetworkObject> childNobs = rootNob.NestedRootNetworkBehaviours;
             //Find nob with component index.
             for (int i = 0; i < childNobs.Count; i++)
             {
@@ -602,7 +602,7 @@ namespace FishNet.Managing.Client
             }
 
             //Only instantiate if not host.
-            if (!networkManager.IsHost)
+            if (!networkManager.IsHostStarted)
             {
                 Transform parentTransform = null;
                 bool hasParent = (cnob.ParentObjectId != null);

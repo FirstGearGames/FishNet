@@ -21,18 +21,18 @@ namespace FishNet.CodeGenerating.ILCore
         #region Const.
         internal const string RUNTIME_ASSEMBLY_NAME = "FishNet.Runtime";
         #endregion
-         
+
         public override bool WillProcess(ICompiledAssembly compiledAssembly)
         {
             if (compiledAssembly.Name.StartsWith("Unity."))
                 return false;
             if (compiledAssembly.Name.StartsWith("UnityEngine."))
-                return false;  
-            if (compiledAssembly.Name.StartsWith("UnityEditor.")) 
+                return false;
+            if (compiledAssembly.Name.StartsWith("UnityEditor."))
                 return false;
             if (compiledAssembly.Name.Contains("Editor"))
-                return false; 
-             
+                return false;
+
             /* This line contradicts the one below where referencesFishNet
              * becomes true if the assembly is FishNetAssembly. This is here
              * intentionally to stop codegen from running on the runtime
@@ -60,7 +60,7 @@ namespace FishNet.CodeGenerating.ILCore
 
             CodegenSession session = new CodegenSession();
             if (!session.Initialize(assemblyDef.MainModule))
-                return null; 
+                return null;
 
             bool modified = false;
 
@@ -135,7 +135,7 @@ namespace FishNet.CodeGenerating.ILCore
         /// <returns></returns>
         private bool ModifyMakePublicMethods(CodegenSession session)
         {
-            string makePublicTypeFullName = typeof(CodegenMakePublicAttribute).FullName;
+            string makePublicTypeFullName = typeof(MakePublicAttribute).FullName;
             foreach (TypeDefinition td in session.Module.Types)
             {
                 foreach (MethodDefinition md in td.Methods)
@@ -165,7 +165,7 @@ namespace FishNet.CodeGenerating.ILCore
             List<TypeDefinition> allTypeDefs = session.Module.Types.ToList();
             foreach (TypeDefinition td in allTypeDefs)
             {
-                if (session.GetClass<GeneralHelper>().IgnoreTypeDefinition(td))
+                if (session.GetClass<GeneralHelper>().HasExcludeSerializationAttribute(td))
                     continue;
 
                 if (td.Attributes.HasFlag(readWriteExtensionTypeAttr))
@@ -186,7 +186,7 @@ namespace FishNet.CodeGenerating.ILCore
             List<TypeDefinition> allTypeDefs = session.Module.Types.ToList();
             foreach (TypeDefinition td in allTypeDefs)
             {
-                if (session.GetClass<GeneralHelper>().IgnoreTypeDefinition(td))
+                if (session.GetClass<GeneralHelper>().HasExcludeSerializationAttribute(td))
                     continue;
 
                 if (td.Attributes.HasFlag(readWriteExtensionTypeAttr))
@@ -205,7 +205,7 @@ namespace FishNet.CodeGenerating.ILCore
             List<TypeDefinition> allTypeDefs = session.Module.Types.ToList();
             foreach (TypeDefinition td in allTypeDefs)
             {
-                if (session.GetClass<GeneralHelper>().IgnoreTypeDefinition(td))
+                if (session.GetClass<GeneralHelper>().HasExcludeSerializationAttribute(td))
                     continue;
 
                 modified |= session.GetClass<CustomSerializerProcessor>().CreateComparerDelegates(td);
@@ -287,7 +287,7 @@ namespace FishNet.CodeGenerating.ILCore
              * is to ensure things are removed in the proper order. */
             foreach (TypeDefinition td in allTypeDefs)
             {
-                if (session.GetClass<GeneralHelper>().IgnoreTypeDefinition(td))
+                if (session.GetClass<GeneralHelper>().HasExcludeSerializationAttribute(td))
                     continue;
 
                 modified |= session.GetClass<QolAttributeProcessor>().Process(td, codeStripping);
@@ -301,52 +301,27 @@ namespace FishNet.CodeGenerating.ILCore
         /// <summary>
         /// Creates NetworkBehaviour changes.
         /// </summary>
-        /// <param name="moduleDef"></param>
-        /// <param name="diagnostics"></param>
         private bool CreateNetworkBehaviours(CodegenSession session)
         {
-            bool modified = false;
             //Get all network behaviours to process.
             List<TypeDefinition> networkBehaviourTypeDefs = session.Module.Types
                 .Where(td => td.IsSubclassOf(session, session.GetClass<NetworkBehaviourHelper>().FullName))
                 .ToList();
 
-            //Moment a NetworkBehaviour exist the assembly is considered modified.
-            if (networkBehaviourTypeDefs.Count > 0)
-                modified = true;
-
             /* Remove types which are inherited. This gets the child most networkbehaviours.
-             * Since processing iterates all parent classes there's no reason to include them */
+             * Since processing iterates upward from each child there is no reason
+             * to include any inherited NBs. */
             RemoveInheritedTypeDefinitions(networkBehaviourTypeDefs);
-
-            /* This holds all sync types created, synclist, dictionary, var
-             * and so on. This data is used after all syncvars are made so
-             * other methods can look for references to created synctypes and
-             * replace accessors accordingly. */
-            List<(SyncType, ProcessedSync)> allProcessedSyncs = new List<(SyncType, ProcessedSync)>();
-            HashSet<string> allProcessedCallbacks = new HashSet<string>();
-            List<TypeDefinition> processedClasses = new List<TypeDefinition>();
-
+            
             foreach (TypeDefinition typeDef in networkBehaviourTypeDefs)
             {
                 session.ImportReference(typeDef);
-                //Synctypes processed for this nb and it's inherited classes.
-                List<(SyncType, ProcessedSync)> processedSyncs = new List<(SyncType, ProcessedSync)>();
-                session.GetClass<NetworkBehaviourProcessor>().ProcessLocal(typeDef, processedSyncs);
-                //Add to all processed.
-                allProcessedSyncs.AddRange(processedSyncs);
+                session.GetClass<NetworkBehaviourProcessor>().ProcessLocal(typeDef);
             }
 
-            /* Must run through all scripts should user change syncvar
-             * from outside the networkbehaviour. */
-            if (allProcessedSyncs.Count > 0)
-            {
-                foreach (TypeDefinition td in session.Module.Types)
-                {
-                    session.GetClass<NetworkBehaviourSyncProcessor>().ReplaceGetSets(td, allProcessedSyncs);
-                    session.GetClass<RpcProcessor>().RedirectBaseCalls();
-                }
-            }
+            //Call base methods on RPCs.
+            foreach (TypeDefinition td in session.Module.Types)
+                session.GetClass<RpcProcessor>().RedirectBaseCalls();
 
             /* Removes typedefinitions which are inherited by
              * another within tds. For example, if the collection
@@ -357,8 +332,7 @@ namespace FishNet.CodeGenerating.ILCore
             {
                 HashSet<TypeDefinition> inheritedTds = new HashSet<TypeDefinition>();
                 /* Remove any networkbehaviour typedefs which are inherited by
-                 * another networkbehaviour typedef. When a networkbehaviour typedef
-                 * is processed so are all of the inherited types. */
+                 * another networkbehaviour typedef. */
                 for (int i = 0; i < tds.Count; i++)
                 {
                     /* Iterates all base types and
@@ -381,7 +355,8 @@ namespace FishNet.CodeGenerating.ILCore
                     tds.Remove(item);
             }
 
-
+            //Moment a NetworkBehaviour exist the assembly is considered modified.
+            bool modified = (networkBehaviourTypeDefs.Count > 0);
             return modified;
         }
 

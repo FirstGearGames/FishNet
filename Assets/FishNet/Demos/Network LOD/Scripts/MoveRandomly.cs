@@ -29,7 +29,7 @@ namespace FishNet.Demo.NetworkLod
         private void Update()
         {
             //Client should not move these.
-            if (base.IsClientOnly)
+            if (base.IsClientOnlyStarted)
                 return;
             //Server shouldn't move client one.
             if (base.Owner.IsValid)

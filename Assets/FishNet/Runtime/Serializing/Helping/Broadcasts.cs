@@ -1,5 +1,5 @@
 ﻿using FishNet.Transporting;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 
 namespace FishNet.Serializing.Helping
 {

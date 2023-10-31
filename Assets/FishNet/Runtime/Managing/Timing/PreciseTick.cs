@@ -1,5 +1,5 @@
 ﻿using FishNet.Serializing;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 
 namespace FishNet.Managing.Timing
 {

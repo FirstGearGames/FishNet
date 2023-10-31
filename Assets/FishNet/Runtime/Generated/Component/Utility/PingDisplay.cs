@@ -52,7 +52,7 @@ namespace FishNet.Component.Utility
         private void OnGUI()
         {
             //Only clients can see pings.
-            if (!InstanceFinder.IsClient)
+            if (!InstanceFinder.IsClientStarted)
                 return;
 
             _style.normal.textColor = _color;

@@ -2,7 +2,7 @@
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;

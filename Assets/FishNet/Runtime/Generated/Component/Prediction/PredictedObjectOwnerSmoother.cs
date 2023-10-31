@@ -144,7 +144,7 @@ namespace FishNet.Component.Prediction
             if (_interpolation == 0)
                 return false;
             //Only owner needs smoothing.
-            if (!_networkBehaviour.IsOwner && !_networkBehaviour.IsHost)
+            if (!_networkBehaviour.IsOwner && !_networkBehaviour.IsHostStarted)
                 return false;
 
             return true;
@@ -208,12 +208,12 @@ namespace FishNet.Component.Prediction
         /// True to smooth position. When false the graphicalObjects property will not be updated.
         /// </summary>
         /// <returns></returns>
-        private bool SmoothPosition() => (_smoothPosition && (_networkBehaviour.IsOwner || _networkBehaviour.IsHost));
+        private bool SmoothPosition() => (_smoothPosition && (_networkBehaviour.IsOwner || _networkBehaviour.IsHostInitialized));
         /// <summary>
         /// True to smooth rotation. When false the graphicalObjects property will not be updated.
         /// </summary>
         /// <returns></returns>
-        private bool SmoothRotation() => (_smoothRotation && (_networkBehaviour.IsOwner || _networkBehaviour.IsHost));
+        private bool SmoothRotation() => (_smoothRotation && (_networkBehaviour.IsOwner || _networkBehaviour.IsHostInitialized));
 
         /// <summary>
         /// Sets Position and Rotation move rates to reach Target datas.

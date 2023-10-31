@@ -127,6 +127,7 @@ namespace FishNet.Object.Synchronizing
     /// Synchronizes collections or objects from the server to clients. Can be used with custom SyncObjects.
     /// Value must be changed on server.
     /// </summary>
+    [Obsolete("This no longer functions. See console errors and Break Solutions in the documentation for resolution.")]
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public class SyncObjectAttribute : PropertyAttribute
     {
@@ -153,6 +154,7 @@ namespace FishNet.Object.Synchronizing
     /// Synchronizes a variable from server to clients automatically.
     /// Value must be changed on server.
     /// </summary>
+    [Obsolete("This no longer functions. See console errors and Break Solutions in the documentation for resolution.")]
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public class SyncVarAttribute : PropertyAttribute
     {

@@ -1,4 +1,5 @@
-﻿using FishNet.Documenting;
+﻿using FishNet.CodeGenerating;
+using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
@@ -147,12 +148,10 @@ namespace FishNet.Object.Synchronizing
         private bool _sendAll;
         #endregion
 
-        [APIExclude]
-        public SyncList() : this(new List<T>(), EqualityComparer<T>.Default) { }
-        [APIExclude]
-        public SyncList(IEqualityComparer<T> comparer) : this(new List<T>(), (comparer == null) ? EqualityComparer<T>.Default : comparer) { }
-        [APIExclude]
-        public SyncList(IList<T> collection, IEqualityComparer<T> comparer = null)
+        #region Constructors.
+        public SyncList(SyncTypeSetting settings = new SyncTypeSetting()) : this(new List<T>(), EqualityComparer<T>.Default, settings) { }
+        public SyncList(IEqualityComparer<T> comparer, SyncTypeSetting settings = new SyncTypeSetting()) : this(new List<T>(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
+        public SyncList(IList<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSetting settings = new SyncTypeSetting()) : base(settings)
         {
             this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
             this.Collection = collection;
@@ -160,13 +159,14 @@ namespace FishNet.Object.Synchronizing
             foreach (T item in collection)
                 this.ClientHostCollection.Add(item);
         }
+        #endregion
 
         /// <summary>
         /// Called when the SyncType has been registered, but not yet initialized over the network.
         /// </summary>
-        protected override void Registered()
+        protected override void Initialized()
         {
-            base.Registered();
+            base.Initialized();
             foreach (T item in Collection)
                 _initialValues.Add(item);
         }
@@ -178,7 +178,7 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public List<T> GetCollection(bool asServer)
         {
-            bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
+            bool asClientAndHost = (!asServer && base.NetworkManager.IsServerStarted);
             IList<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
             return (collection as List<T>);
         }
@@ -193,7 +193,7 @@ namespace FishNet.Object.Synchronizing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddOperation(SyncListOperation operation, int index, T prev, T next)
         {
-            if (!base.IsRegistered)
+            if (!base.IsInitialized)
                 return;
 
             /* asServer might be true if the client is setting the value
@@ -202,7 +202,7 @@ namespace FishNet.Object.Synchronizing
             * However, when excluding owner for the synctype the client should
             * have permission to update the value locally for use with
             * prediction. */
-            bool asServerInvoke = (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServer);
+            bool asServerInvoke = (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServerStarted);
 
             /* Only the adds asServer may set
              * this synctype as dirty and add
@@ -238,7 +238,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        public override void OnStartCallback(bool asServer)
+        internal protected override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
             List<CachedOnChange> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
@@ -257,7 +257,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="writer"></param>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        public override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
+        internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             //If sending all then clear changed and write full.
             if (_sendAll)
@@ -302,7 +302,7 @@ namespace FishNet.Object.Synchronizing
         /// Writes all values if not initial values.
         /// </summary>
         /// <param name="writer"></param>
-        public override void WriteFull(PooledWriter writer)
+        internal protected override void WriteFull(PooledWriter writer)
         {
             if (!_valuesChanged)
                 return;
@@ -323,13 +323,13 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [APIExclude]
-        public override void Read(PooledReader reader, bool asServer)
+        internal protected override void Read(PooledReader reader, bool asServer)
         {
             /* When !asServer don't make changes if server is running.
             * This is because changes would have already been made on
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
-            bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
+            bool asClientAndHost = (!asServer && base.NetworkManager.IsServerStarted);
             //True to warn if this object was deinitialized on the server.
             bool deinitialized = (asClientAndHost && !base.OnStartServerCalled);
             if (deinitialized)
@@ -429,7 +429,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
-        public override void ResetState()
+        internal protected override void ResetState()
         {
             base.ResetState();
             _sendAll = false;
@@ -679,10 +679,10 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public void DirtyAll()
         {
-            if (!base.IsRegistered)
+            if (!base.IsInitialized)
                 return;
 
-            if (base.NetworkManager != null && !base.NetworkBehaviour.IsServer)
+            if (base.NetworkManager != null && !base.NetworkBehaviour.IsServerStarted)
             {
                 base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;

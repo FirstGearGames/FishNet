@@ -17,7 +17,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Returns true if this connection is a clientHost.
         /// </summary>
-        public bool IsHost => (NetworkManager == null) ? false : (NetworkManager.IsServer && (this == NetworkManager.ClientManager.Connection));
+        public bool IsHost => (NetworkManager == null) ? false : (NetworkManager.IsServerStarted && (this == NetworkManager.ClientManager.Connection));
         /// <summary>
         /// Returns if this connection is for the local client.
         /// </summary>

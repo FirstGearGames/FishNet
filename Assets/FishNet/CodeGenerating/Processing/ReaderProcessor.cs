@@ -141,7 +141,7 @@ namespace FishNet.CodeGenerating.Helping
                 return true;
             else if (methodInfo.Name == nameof(PooledReader.ReadArray))
                 return true;
-            else if (methodInfo.Name == nameof(PooledReader.ReadDictionary))
+            else if (methodInfo.Name == nameof(PooledReader.ReadDictionaryAllocated))
                 return true;
 
             return false;
@@ -154,7 +154,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             autoPackMethod = false;
 
-            if (base.GetClass<GeneralHelper>().CodegenExclude(methodInfo))
+            if (base.GetClass<GeneralHelper>().HasNotSerializableAttribute(methodInfo))
                 return true;
             //Not long enough to be a write method.
             else if (methodInfo.Name.Length < READ_PREFIX.Length)
@@ -684,8 +684,7 @@ namespace FishNet.CodeGenerating.Helping
                 else if (serializerType == SerializerType.Enum)
                     resultMr = CreateEnumReaderMethodDefinition(objectTr);
                 else if (serializerType == SerializerType.Dictionary
-                    || serializerType == SerializerType.List
-                    || serializerType == SerializerType.ListCache)
+                    || serializerType == SerializerType.List)
                     resultMr = CreateGenericCollectionReaderMethodReference(objectTr, serializerType);
                 //NetworkBehaviour.
                 else if (serializerType == SerializerType.NetworkBehaviour)
@@ -863,8 +862,6 @@ namespace FishNet.CodeGenerating.Helping
                 instancedReadMr = ri.Reader_ReadDictionary_MethodRef;
             else if (st == SerializerType.List)
                 instancedReadMr = ri.Reader_ReadList_MethodRef;
-            else if (st == SerializerType.ListCache)
-                instancedReadMr = ri.Reader_ReadListCache_MethodRef;
             else
                 instancedReadMr = null;
 

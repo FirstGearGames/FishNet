@@ -63,7 +63,7 @@ namespace FishNet.CodeGenerating.Processing
         internal const string NETWORKINITIALIZE_LATE_INTERNAL_NAME = "NetworkInitialize__Late";
         #endregion
 
-        internal bool ProcessLocal(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs)
+        internal bool ProcessLocal(TypeDefinition typeDef)
         {
             bool modified = false;
             TypeDefinition copyTypeDef = typeDef;
@@ -121,7 +121,7 @@ namespace FishNet.CodeGenerating.Processing
              * but leaving it alone until a variety of codegen things
              * can be rewritten. */
             typeDefs.Reverse();
-
+            uint declaredSyncTypes = 0;
             foreach (TypeDefinition td in typeDefs)
             {
                 /* Class was already processed. Since child most is processed first
@@ -153,14 +153,14 @@ namespace FishNet.CodeGenerating.Processing
                  * each registers to their own delegates this is possible. */
 
                 /* SyncTypes. */
-                modified |= base.GetClass<NetworkBehaviourSyncProcessor>().ProcessLocal(td, allProcessedSyncs);
+                modified |= base.GetClass<SyncTypeProcessor>().ProcessLocal(td, out declaredSyncTypes);
                 //70ms
                 _processedClasses.Add(td);
             }
-
-            if (allProcessedSyncs.Count > NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE)
+            //Check if too many synctypes are declared by the user.
+            if (declaredSyncTypes > NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE)
             {
-                base.LogError($"Found {allProcessedSyncs.Count} SyncTypes within {firstTypeDef.FullName}. The maximum number of allowed SyncTypes within type and inherited types is {NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
+                base.LogError($"Found {declaredSyncTypes} SyncTypes within {firstTypeDef.FullName} and inherited classes. The maximum number of allowed SyncTypes within type and inherited types is {NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
                 return false;
             }
 
@@ -212,7 +212,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <returns></returns>
         internal bool NonNetworkBehaviourHasInvalidAttributes(Collection<TypeDefinition> typeDefs)
         {
-            NetworkBehaviourSyncProcessor nbSyncProcessor = base.GetClass<NetworkBehaviourSyncProcessor>();
+            SyncTypeProcessor stProcessor = base.GetClass<SyncTypeProcessor>();
             RpcProcessor rpcProcessor = base.GetClass<RpcProcessor>();
 
             foreach (TypeDefinition typeDef in typeDefs)
@@ -234,7 +234,7 @@ namespace FishNet.CodeGenerating.Processing
                 //Check fields for attribute.
                 foreach (FieldDefinition fd in typeDef.Fields)
                 {
-                    if (nbSyncProcessor.IsSyncType(fd))
+                    if (stProcessor.IsSyncType(fd))
                     {
                         base.LogError($"{typeDef.FullName} implements one or more SyncTypes but does not inherit from NetworkBehaviour.");
                         return true;

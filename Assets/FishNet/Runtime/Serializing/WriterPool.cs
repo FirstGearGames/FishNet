@@ -8,14 +8,10 @@ namespace FishNet.Serializing
     /// <summary>
     /// Writer which is reused to save on garbage collection and performance.
     /// </summary>
-    public sealed class PooledWriter : Writer, IDisposable
+    public sealed class PooledWriter : Writer
     {
         public void Store() => WriterPool.Store(this);
         public void StoreLength() => WriterPool.StoreLength(this);
-        [Obsolete("Use Store().")] //Remove on 2024/01/01.
-        public void Dispose() => this.Store();
-        [Obsolete("Use StoreLength().")] //Remove on 2024/01/01.
-        public void DisposeLength() => this.StoreLength();
     }
 
     /// <summary>
@@ -44,24 +40,12 @@ namespace FishNet.Serializing
         /// <summary>
         /// Gets a writer from the pool.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [Obsolete("Use Retrieve(NetworkManager).")] //Remove on 2024/01/01
-        public static PooledWriter GetWriter(NetworkManager networkManager) => Retrieve(networkManager);
-        /// <summary>
-        /// Gets a writer from the pool.
-        /// </summary>
         public static PooledWriter Retrieve(NetworkManager networkManager)
         {
             PooledWriter result = (_pool.Count > 0) ? _pool.Pop() : new PooledWriter();
             result.Reset(networkManager);
             return result;
         }
-        /// <summary>
-        /// Gets a writer from the pool.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [Obsolete("Use Retrieve().")] //Remove on 2024/01/01
-        public static PooledWriter GetWriter() => Retrieve();
         /// Gets a writer from the pool.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -70,14 +54,6 @@ namespace FishNet.Serializing
             return Retrieve(null);
         }
 
-
-        /// <summary>
-        /// Gets the next writer in the pool of minimum length.
-        /// </summary>
-        /// <param name="length">Minimum length the writer buffer must be.</param>
-        [Obsolete("Use Retrieve(int).")] //Remove on 2024/01/01
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledWriter GetWriter(int length) => Retrieve(length);
         /// <summary>
         /// Gets the next writer in the pool of minimum length.
         /// </summary>
@@ -87,13 +63,6 @@ namespace FishNet.Serializing
         {
             return Retrieve(null, length);
         }
-        /// <summary>
-        /// Gets the next writer in the pool of minimum length.
-        /// </summary>
-        /// <param name="length">Minimum length the writer buffer must be.</param>
-        [Obsolete("Use Retrieve(NetworkManager, int).")] //Remove on 2024/01/01
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PooledWriter GetWriter(NetworkManager networkManager, int length) => Retrieve(networkManager, length);
         /// <summary>
         /// Gets the next writer in the pool of minimum length.
         /// </summary>
@@ -128,14 +97,6 @@ namespace FishNet.Serializing
                 return writer;
             }
         }
-        /// <summary>
-        /// Returns a writer to the appropriate length pool.
-        /// Writers must be a minimum of 1000 bytes in length to be sorted by length.
-        /// Writers which do not meet the minimum will be resized to 1000 bytes.
-        /// </summary>
-        [Obsolete("Use StoreLength(PooledWriter).")] //Remove on 2024/01/01
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RecycleLength(PooledWriter writer) => StoreLength(writer);
 
         /// <summary>
         /// Returns a writer to the appropriate length pool.
@@ -154,14 +115,6 @@ namespace FishNet.Serializing
 
             stack.Push(writer);
         }
-
-
-        /// <summary>
-        /// Returns a writer to the pool.
-        /// </summary>
-        [Obsolete("Use Store(PooledWriter).")] //Remove on 2024/01/01
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Recycle(PooledWriter writer) => Store(writer);
 
         /// <summary>
         /// Returns a writer to the pool.

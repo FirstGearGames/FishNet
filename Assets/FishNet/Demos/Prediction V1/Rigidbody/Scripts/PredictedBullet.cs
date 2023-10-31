@@ -11,10 +11,14 @@ namespace FishNet.Example.Prediction.Rigidbodies
     public class PredictedBullet : NetworkBehaviour
     {
         //SyncVar to set spawn force. This is set by predicted spawner and sent to the server.
-        [SyncVar(OnChange = nameof(_startingForce_OnChange))]
-        private Vector3 _startingForce;
+        private readonly SyncVar<Vector3> _startingForce = new SyncVar<Vector3>();
         //Tick to set rb to kinematic.
         private uint _stopTick = TimeManager.UNSET_TICK;
+
+        private void Awake()
+        {
+            _startingForce.OnChange += _startingForce_OnChange;
+        }
 
         public void SetStartingForce(Vector3 value)
         {
@@ -29,7 +33,7 @@ namespace FishNet.Example.Prediction.Rigidbodies
             if (!base.IsSpawned)
                 SetVelocity(value);
 
-            _startingForce = value;
+            _startingForce.Value = value;
         }
 
         //Simple delay destroy so object does not exist forever.
@@ -45,7 +49,7 @@ namespace FishNet.Example.Prediction.Rigidbodies
             /* If server or predicted spawner then add the kinematic
              * tick onto local. Predicted spawner and server should behave
              * as though no time has elapsed since this spawned. */
-            if (base.IsServer || base.Owner.IsLocalClient)
+            if (base.IsServerStarted || base.Owner.IsLocalClient)
             {
                 _stopTick = base.TimeManager.LocalTick + timeToTicks;
             }

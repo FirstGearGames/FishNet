@@ -1,4 +1,5 @@
-﻿using FishNet.Connection;
+﻿using FishNet.CodeGenerating;
+using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Predicting;
@@ -12,7 +13,7 @@ using FishNet.Transporting;
 using FishNet.Utility.Constant;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -31,7 +32,7 @@ namespace FishNet.Object
         /// True if this Networkbehaviour implements prediction methods.
         /// </summary>
         [APIExclude]
-        [CodegenMakePublic]
+        [MakePublic]
         protected internal bool UsesPrediction;
 #endif
         /// <summary>
@@ -158,7 +159,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="del"></param>
-        [CodegenMakePublic]
+        [MakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterReplicateRpc(uint hash, ReplicateRpcDelegate del)
         {
@@ -170,7 +171,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="del"></param>
-        [CodegenMakePublic]
+        [MakePublic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterReconcileRpc(uint hash, ReconcileRpcDelegate del)
         {
@@ -253,7 +254,7 @@ namespace FishNet.Object
         /// For internal use only.
         /// </summary>
         /// <param name="asServer"></param>
-        [CodegenMakePublic]
+        [MakePublic]
         internal virtual void ClearReplicateCache_Virtual(bool asServer) { }
 #else
         /// <summary>
@@ -269,7 +270,7 @@ namespace FishNet.Object
         /// For internal use only.
         /// </summary>
         /// <param name="asServer"></param>
-        [CodegenMakePublic]
+        [MakePublic]
         [APIExclude]
         protected internal virtual void ClearReplicateCache_Virtual<T>(BasicQueue<T> replicatesQueue, List<T> replicatesHistory) where T : IReplicateData
         {
@@ -402,7 +403,7 @@ namespace FishNet.Object
         /// Internal use.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CodegenMakePublic]
+        [MakePublic]
         [APIExclude]
         protected internal void Server_SendReconcileRpc<T>(uint hash, T reconcileData, Channel channel)
         {
@@ -525,7 +526,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="asServer">True if checking as server.</param>
         /// <returns>Returns true if to exit the replicate early.</returns>
-        [CodegenMakePublic] //internal
+        [MakePublic] //internal
         internal bool Replicate_ExitEarly_A(bool asServer, bool replaying, bool allowServerControl)
         {
             bool isOwner = IsOwner;
@@ -549,7 +550,7 @@ namespace FishNet.Object
             else
             {
                 //Server does not replay; this should never happen.
-                if (replaying && IsServer)
+                if (replaying && IsServerStarted)
                     return true;
                 //Spectators cannot replicate.
                 if (!isOwner)
@@ -650,7 +651,7 @@ namespace FishNet.Object
         /// <summary>
         /// Gets the next replicate in perform when server or non-owning client.
         /// </summary>
-        [CodegenMakePublic] //internal
+        [MakePublic] //internal
         internal void Replicate_NonOwner<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<T> q, T serverControlData, bool allowServerControl, Channel channel) where T : IReplicateData
         {
             //If to allow server control make sure there is no owner.
@@ -705,7 +706,7 @@ namespace FishNet.Object
         /// Gets the next replicate in perform when server or non-owning client.
         /// </summary>
         /// </summary>
-        [CodegenMakePublic]
+        [MakePublic]
         [APIExclude]
         protected internal void Replicate_NonOwner<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<T> replicatesQueue, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
@@ -719,7 +720,7 @@ namespace FishNet.Object
                 count--;
 
                 PredictionManager pm = PredictionManager;
-                bool consumeExcess = (!pm.DropExcessiveReplicates || IsClientOnly);
+                bool consumeExcess = (!pm.DropExcessiveReplicates || IsClientOnlyStarted);
                 const int leaveInBuffer = 1;
                 //Only consume if the queue count is over leaveInBuffer.
                 if (consumeExcess && count > leaveInBuffer)
@@ -795,11 +796,11 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="enqueueData">True to enqueue data for replaying.</param>
         /// <returns>True if data has changed..</returns>
-        [CodegenMakePublic] //internal
+        [MakePublic] //internal
         internal void Replicate_Owner<T>(ReplicateUserLogicDelegate<T> del, uint methodHash, List<T> replicates, T data, Channel channel) where T : IReplicateData
         {
             //Only check to enque/send if not clientHost.
-            if (!IsServer)
+            if (!IsServerStarted)
             {
                 Func<T, bool> isDefaultDel = GeneratedComparer<T>.IsDefault;
                 if (isDefaultDel == null)
@@ -887,11 +888,11 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="enqueueData">True to enqueue data for replaying.</param>
         /// <returns>True if data has changed..</returns>
-        [CodegenMakePublic] //internal
+        [MakePublic] //internal
         [APIExclude]
         protected internal void Replicate_Owner<T>(ReplicateUserLogicDelegate<T> del, uint methodHash, List<T> replicatesHistory, T data, Channel channel) where T : IReplicateData
         {
-            bool ownerlessAndServer = (!Owner.IsValid && IsServer);
+            bool ownerlessAndServer = (!Owner.IsValid && IsServerStarted);
             if (!IsOwner && !ownerlessAndServer)
                 return;
 
@@ -932,7 +933,7 @@ namespace FishNet.Object
 				 *
 				 * Server does not reconcile os it only needs enough for redundancy.
 				 */
-                int maxCount = (IsServer) ? pm.RedundancyCount : pm.MaximumClientReplicates;
+                int maxCount = (IsServerStarted) ? pm.RedundancyCount : pm.MaximumClientReplicates;
                 //Number to remove which is over max count.
                 int removeCount = (replicatesHistoryCount - maxCount);
                 //If there are any to remove.
@@ -948,7 +949,7 @@ namespace FishNet.Object
 
                 /* If not server then send to server.
 				 * If server then send to clients. */
-                bool toServer = !IsServer;
+                bool toServer = !IsServerStarted;
                 SendReplicateRpc(toServer, methodHash, replicatesHistory, channel);
                 _remainingResends--;
             }
@@ -1000,7 +1001,7 @@ namespace FishNet.Object
                 //Exclude owner and if clientHost, also localClient.
                 _networkConnectionCache.Clear();
                 _networkConnectionCache.Add(Owner);
-                if (IsClient)
+                if (IsClientStarted)
                     _networkConnectionCache.Add(ClientManager.Connection);
 
                 NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), Observers, _networkConnectionCache, false);
@@ -1020,7 +1021,7 @@ namespace FishNet.Object
         /// <summary>
         /// Reads a replicate the client.
         /// </summary>
-        [CodegenMakePublic] //Internal.
+        [MakePublic] //Internal.
         internal void Replicate_Reader<T>(PooledReader reader, NetworkConnection sender, T[] arrBuffer, BasicQueue<T> replicates, Channel channel) where T : IReplicateData
         {
             PredictionManager pm = PredictionManager;
@@ -1047,7 +1048,7 @@ namespace FishNet.Object
         /// Reads a replicate the client.
         /// </summary>
         /// <param name="replicateDataOnly">Data from the reader which only applies to the replicate.</param>
-        [CodegenMakePublic] //Internal.
+        [MakePublic] //Internal.
         internal void Replicate_Reader<T>(uint hash, PooledReader reader, NetworkConnection sender, T[] arrBuffer, BasicQueue<T> replicatesQueue, Channel channel) where T : IReplicateData
         {
             bool fromClient = (reader.Source == Reader.DataSource.Client);
@@ -1059,7 +1060,7 @@ namespace FishNet.Object
             int startingPosition = reader.Position;
             int startingQueueCount = replicatesQueue.Count;
 
-            if (!fromClient && IsClient)
+            if (!fromClient && IsClientStarted)
             {
                 lastPacketTick = reader.ReadTickUnpacked();
             }
@@ -1091,7 +1092,7 @@ namespace FishNet.Object
             Replicate_HandleReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicatesQueue, channel);
 
             //Only server needs to send to spectators.
-            if (IsServer)
+            if (IsServerStarted)
             {
                 ArraySegment<byte> replicateDataOnly = new ArraySegment<byte>(reader.GetByteBuffer(), startingPosition, (reader.Position - startingPosition));
                 Replicate_Server_SendToSpectators<T>(hash, startingQueueCount, replicateDataOnly, receivedReplicatesCount);
@@ -1104,7 +1105,7 @@ namespace FishNet.Object
         /// <summary>
         /// Sends data from a reader which only contains the replicate packet.
         /// </summary>
-        [CodegenMakePublic]
+        [MakePublic]
         internal void Replicate_Server_SendToSpectators<T>(uint hash, int startingReplicatesQueueCount, ArraySegment<byte> data, int queueCount) where T : IReplicateData
         {
             //Should not be possible.
@@ -1155,7 +1156,7 @@ namespace FishNet.Object
             //Exclude owner and if clientHost, also localClient.
             _networkConnectionCache.Clear();
             _networkConnectionCache.Add(Owner);
-            if (IsClient)
+            if (IsClientStarted)
                 _networkConnectionCache.Add(ClientManager.Connection);
 
             NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), Observers, _networkConnectionCache, false);
@@ -1190,7 +1191,7 @@ namespace FishNet.Object
                 }
             }
 
-            if (IsServer && Owner.IsValid)
+            if (IsServerInitialized && Owner.IsValid)
                 Owner.AddAverageQueueCount((ushort)replicates.Count, TimeManager.LocalTick);
         }
 #else
@@ -1205,7 +1206,7 @@ namespace FishNet.Object
 
             PredictionManager pm = PredictionManager;
             //Maximum number of replicates allowed to be queued at once.
-            int maximmumReplicates = (IsServer) ? pm.GetMaximumServerReplicates() : pm.MaximumClientReplicates;
+            int maximmumReplicates = (IsServerStarted) ? pm.GetMaximumServerReplicates() : pm.MaximumClientReplicates;
 
             for (int i = 0; i < receivedReplicatesCount; i++)
             {
@@ -1224,7 +1225,7 @@ namespace FishNet.Object
                 }
             }
 
-            if (IsServer && Owner.IsValid)
+            if (IsServerStarted && Owner.IsValid)
                 Owner.AddAverageQueueCount((ushort)replicatesQueue.Count, TimeManager.LocalTick);
         }
 #endif
@@ -1235,7 +1236,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="asServer">True if checking as server.</param>
         /// <returns>Returns true if able to continue.</returns>
-        [CodegenMakePublic] //internal
+        [MakePublic] //internal
         internal bool Reconcile_ExitEarly_A(bool asServer, out Channel channel)
         {
             channel = Channel.Unreliable;
@@ -1259,7 +1260,7 @@ namespace FishNet.Object
 				 * don't actually reconcile. This is done
 				 * because certain user code may
 				 * rely on those events running even as host. */
-                if (IsServer)
+                if (IsServerStarted)
                 {
                     PredictionManager.InvokeOnReconcile(this, true);
                     PredictionManager.InvokeOnReconcile(this, false);
@@ -1277,7 +1278,7 @@ namespace FishNet.Object
         /// Updates lastReconcileTick as though running asServer.
         /// </summary>
         /// <param name="ird">Data to set tick on.</param>
-        [CodegenMakePublic]
+        [MakePublic]
         internal void Reconcile_Server<T>(uint methodHash, T data, Channel channel) where T : IReconcileData
         {
             /* //todo
@@ -1303,7 +1304,7 @@ namespace FishNet.Object
         /// </summary>
         public void Reconcile_Server<T>(uint methodHash, T data, Channel channel) where T : IReconcileData
         {
-            if (!IsServer)
+            if (!IsServerStarted)
                 return;
 
             uint tick = _networkObjectCache.ReplicateTick.RemoteTick;
@@ -1321,7 +1322,7 @@ namespace FishNet.Object
         /// <summary>
         /// Processes a reconcile for client.
         /// </summary>
-        [CodegenMakePublic]
+        [MakePublic]
         internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, ReplicateUserLogicDelegate<T2> replicateULDel, List<T2> replicates, T data, Channel channel) where T : IReconcileData where T2 : IReplicateData
         {
             uint tick = data.GetTick();
@@ -1404,7 +1405,7 @@ namespace FishNet.Object
         /// Processes a reconcile for client.
         /// </summary>
         [APIExclude]
-        [CodegenMakePublic]
+        [MakePublic]
         protected internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, List<T2> replicatesHistory, T data) where T : IReconcileData where T2 : IReplicateData
         {
             if (!ClientHasReconcileData)

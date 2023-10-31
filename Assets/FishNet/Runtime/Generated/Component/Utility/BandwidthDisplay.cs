@@ -142,8 +142,8 @@ namespace FishNet.Component.Utility
             if (_showOutgoing)
                 height += 15f;
 
-            bool isClient = InstanceFinder.IsClient;
-            bool isServer = InstanceFinder.IsServer;
+            bool isClient = InstanceFinder.IsClientStarted;
+            bool isServer = InstanceFinder.IsServerStarted;
             if (!isClient)
                 _clientText = string.Empty;
             if (!isServer)

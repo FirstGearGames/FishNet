@@ -1,6 +1,6 @@
 using FishNet.Managing.Object;
 using FishNet.Object;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -34,21 +34,6 @@ namespace FishNet.Utility.Performance
         /// </summary>
         private int _cacheCount = 0;
         #endregion
-
-        /// <summary>
-        /// Returns an object that has been stored with a collectionId of 0. A new object will be created if no stored objects are available.
-        /// </summary>
-        /// <param name="prefabId">PrefabId of the object to return.</param>
-        /// <param name="asServer">True if being called on the server side.</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] //Remove on 2024/01/01.
-#pragma warning disable CS0672 // Member overrides obsolete member
-        public override NetworkObject RetrieveObject(int prefabId, bool asServer)
-#pragma warning restore CS0672 // Member overrides obsolete member
-        {
-            return RetrieveObject(prefabId, 0, asServer);
-        }
-
 
         /// <summary>
         /// Returns an object that has been stored. A new object will be created if no stored objects are available.

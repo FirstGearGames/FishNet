@@ -241,7 +241,7 @@ namespace FishNet.Managing.Transporting
         {
             /* If to not simulate for host see if this packet
              * should be sent normally. */
-            if (!_simulateHost && _networkManager != null && _networkManager.IsHost)
+            if (!_simulateHost && _networkManager != null && _networkManager.IsHostStarted)
             {
                 /* If going to the server and is host then
                  * it must be sent from clientHost. */

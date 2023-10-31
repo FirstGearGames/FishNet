@@ -1,5 +1,5 @@
 ﻿using FishNet.Object;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 

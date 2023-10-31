@@ -10,11 +10,6 @@ namespace FishNet.Object.Prediction
     public class ReplicateAttribute : Attribute 
     {
         /// <summary>
-        /// How many past datas to resend.
-        /// </summary>
-        [Obsolete("Use PredictionManager.RedundancyCount.")] //Remove on 2023/06/01
-        public byte Resends = 5;
-        /// <summary>
         /// True to allow running input passed in with asServer true when there is no owner.
         /// </summary>
         public bool AllowServerControl = false;
@@ -25,11 +20,6 @@ namespace FishNet.Object.Prediction
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class ReconcileAttribute : Attribute 
     {
-        /// <summary>
-        /// How many times to resend reconcile.
-        /// </summary>
-        [Obsolete("Use PredictionManager.RedundancyCount.")] //Remove on 2023/06/01
-        public byte Resends = 3;
     }
 
 

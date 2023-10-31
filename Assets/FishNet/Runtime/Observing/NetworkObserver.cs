@@ -4,7 +4,7 @@ using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Transporting;
 using FishNet.Utility.Performance;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -227,14 +227,8 @@ namespace FishNet.Observing
 
                         //Condition type.
                         ObserverConditionType oct = ocCopy.GetConditionType();
-
-                        //REMOVE ON 2024/01/01 THIS BLOCK v
-#pragma warning disable CS0618 // Type or member is obsolete
-                        bool timed = ocCopy.Timed() || (oct == ObserverConditionType.Timed);
-#pragma warning restore CS0618 // Type or member is obsolete
-                        if (timed)
+                        if (oct == ObserverConditionType.Timed)
                         {
-                            oct = ObserverConditionType.Timed;
                             sortedConditions.Add(ocCopy);
                         }
                         else
@@ -242,18 +236,6 @@ namespace FishNet.Observing
                             _hasNormalConditions = true;
                             sortedConditions.Insert(nextSortedNormalConditionIndex++, ocCopy);
                         }
-                        //REMOVE ON 2024/01/01 THIS BLOCK ^
-                        //REPLACE WITH THIS BLOCK ..v
-                        //if (oct == ObserverConditionType.Timed)
-                        //{ 
-                        //    oct = ObserverConditionType.Timed;
-                        //    sortedConditions.Add(ocCopy);
-                        //}
-                        //else
-                        //{ 
-                        //    _hasNormalConditions = true;
-                        //    sortedConditions.Insert(nextSortedNormalConditionIndex++, ocCopy);
-                        //}
                         //REPLACE WITH THIS BLOCK ..^
                         if (oct == ObserverConditionType.Timed)
                             _timedConditions.Add(ocCopy);
@@ -320,12 +302,9 @@ namespace FishNet.Observing
             if (notOwner)
             {
                 bool parentVisible = true;
-                //if (_networkObject.ParentNetworkObject != null)
-                //    parentVisible = _networkObject.ParentNetworkObject.Observers.Contains(connection);
-                //if (_networkObject.RuntimeParentNetworkObject != null)
-                //    parentVisible &= _networkObject.RuntimeParentNetworkObject.Observers.Contains(connection);
-                if (_networkObject.CurrentParentNetworkObject != null)
-                    parentVisible = _networkObject.CurrentParentNetworkObject.Observers.Contains(connection);
+                if (_networkObject.CurrentParentNetworkBehaviour != null)
+                    parentVisible = _networkObject.CurrentParentNetworkBehaviour.NetworkObject.Observers.Contains(connection);
+
                 /* If parent is visible but was not previously
                  * then unset timedOnly to make sure all conditions
                  * are checked again. This ensures that the _nonTimedMet

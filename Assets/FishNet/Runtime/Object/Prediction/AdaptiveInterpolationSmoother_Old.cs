@@ -1,4 +1,4 @@
-﻿//using GameKit.Utilities; //Remove on 04/01/01
+﻿//using GameKit.Dependencies.Utilities; //Remove on 04/01/01
 //using FishNet.Transporting;
 //using FishNet.Utility.Extension;
 //using System.Runtime.CompilerServices;

@@ -6,7 +6,7 @@ using FishNet.Object;
 using FishNet.Observing;
 using FishNet.Utility.Extension;
 using FishNet.Utility.Performance;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,14 +35,6 @@ namespace FishNet.Component.Observing
         #endregion
 
         #region Private.
-        [Obsolete("Use GetMatchConnections(NetworkManager).")] //Remove on 2023/06/01
-        public static Dictionary<int, HashSet<NetworkConnection>> MatchConnections => GetMatchConnections();
-        [Obsolete("Use GetConnectionMatches(NetworkManager).")] //Remove on 2024/01/01.
-        public static Dictionary<NetworkConnection, HashSet<int>> ConnectionMatch => GetConnectionMatches();
-        [Obsolete("Use GetMatchObjects(NetworkManager).")] //Remove on 2024/01/01.
-        public static Dictionary<int, HashSet<NetworkObject>> MatchObject => GetMatchObjects();
-        [Obsolete("Use GetObjectMatches(NetworkManager).")] //Remove on 2024/01/01.
-        public static Dictionary<NetworkObject, HashSet<int>> ObjectMatch => GetObjectMatches();
         /// <summary>
         /// Collections for each NetworkManager instance.
         /// </summary>

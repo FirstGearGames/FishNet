@@ -76,12 +76,6 @@ namespace FishNet.Observing
         /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
         public abstract bool ConditionMet(NetworkConnection connection, bool currentlyAdded, out bool notProcessed);
         /// <summary>
-        /// True if the condition requires regular updates.
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete("Use GetConditionType()")] //Remove on 2024/01/01.
-        public virtual bool Timed() => false;
-        /// <summary>
         /// How a condition is handled.
         /// In a later release this will be set abstract.
         /// </summary>

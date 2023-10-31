@@ -61,7 +61,7 @@ namespace FishNet.Example.Scened
         /// <param name="triggeringIdentity"></param>
         private void UnloadScenes(NetworkObject triggeringIdentity)
         {
-            if (!InstanceFinder.NetworkManager.IsServer)
+            if (!InstanceFinder.NetworkManager.IsServerStarted)
                 return;
 
             //NetworkObject isn't necessarily needed but to ensure its the player only run if nob is found.

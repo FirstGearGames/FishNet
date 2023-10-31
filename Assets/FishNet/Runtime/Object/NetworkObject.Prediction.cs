@@ -157,7 +157,7 @@ namespace FishNet.Object
                 return;
 
             _ownerSetInterpolationSmoother.Update();
-            if (IsHost)
+            if (IsHostStarted)
                 _spectatorSetInterpolationSmoother.Update();
             else
                 _spectatorAdaptiveInterpolationSmoother?.Update();
@@ -167,7 +167,7 @@ namespace FishNet.Object
         {
             //Do not need to check use prediction because this method only fires if prediction is on for this object.
             _ownerSetInterpolationSmoother.OnPreTick();
-            if (IsHost)
+            if (IsHostStarted)
                 _spectatorSetInterpolationSmoother.OnPreTick();
             else
                 _spectatorAdaptiveInterpolationSmoother?.OnPreTick();
@@ -176,7 +176,7 @@ namespace FishNet.Object
         {
             //Do not need to check use prediction because this method only fires if prediction is on for this object.
             _ownerSetInterpolationSmoother.OnPostTick();
-            if (IsHost)
+            if (IsHostStarted)
                 _spectatorSetInterpolationSmoother.OnPostTick();
             else
                 _spectatorAdaptiveInterpolationSmoother?.OnPostTick();
@@ -265,7 +265,7 @@ namespace FishNet.Object
             /* Adaptive smoother uses localTick (clientTick) to track graphical datas.
              * There's no need to use serverTick since the only purpose of adaptiveSmoother
              * is to smooth graphic changes, not update the transform itself. */
-            if (!IsHost)
+            if (!IsHostStarted)
                 _spectatorAdaptiveInterpolationSmoother?.OnPreReplicateReplay(clientTick, serverTick);
         }
 
@@ -274,7 +274,7 @@ namespace FishNet.Object
             /* Adaptive smoother uses localTick (clientTick) to track graphical datas.
             * There's no need to use serverTick since the only purpose of adaptiveSmoother
             * is to smooth graphic changes, not update the transform itself. */
-            if (!IsHost)
+            if (!IsHostStarted)
                 _spectatorAdaptiveInterpolationSmoother?.OnPostReplicateReplay(clientTick, serverTick);
         }
 

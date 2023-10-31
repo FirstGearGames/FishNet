@@ -1,4 +1,5 @@
-﻿using FishNet.Connection;
+﻿using FishNet.CodeGenerating;
+using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
@@ -7,7 +8,7 @@ using FishNet.Serializing;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Performance;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -381,7 +382,7 @@ namespace FishNet.Managing.Predicting
         /// Internal use.
         /// </summary>
         [APIExclude]
-        [CodegenMakePublic] //To internal.
+        [MakePublic] //To internal.
         internal void InvokeOnReconcile(NetworkBehaviour nb, bool before)
         {
             nb.IsReconciling = before;
@@ -512,7 +513,7 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         internal void ReconcileToStates()
         {
-            if (!_networkManager.IsClient)
+            if (!_networkManager.IsClientStarted)
                 return;
             //No states.
             if (!_reconcileState.IsValid)
@@ -613,7 +614,7 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         internal void ParseStateUpdate(PooledReader reader)
         {
-            if (_networkManager.IsServer)
+            if (_networkManager.IsServerStarted)
             {
                 /* If the server is receiving a state update it can
                  * simply discard the data since the server will never

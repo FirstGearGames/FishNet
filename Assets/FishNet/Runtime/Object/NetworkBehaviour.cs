@@ -1,4 +1,5 @@
-﻿using FishNet.Documenting;
+﻿using FishNet.CodeGenerating;
+using FishNet.Documenting;
 using FishNet.Managing.Transporting;
 using FishNet.Serializing.Helping;
 using FishNet.Utility.Constant;
@@ -147,7 +148,7 @@ namespace FishNet.Object
         /// <summary>
         /// Long name is to prevent users from potentially creating their own method named the same.
         /// </summary>
-        [CodegenMakePublic]
+        [MakePublic]
         [APIExclude]
         internal virtual void NetworkInitializeIfDisabled() { }
 

@@ -26,7 +26,7 @@ namespace FishNet.Managing.Utility
             PacketId pid = (PacketId)packetId;
             if (channel == Channel.Reliable ||
                 pid == PacketId.Broadcast ||
-                pid == PacketId.SyncVar
+                pid == PacketId.SyncType
                 )
             {
                 return reader.ReadInt32();

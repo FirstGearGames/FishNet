@@ -1,4 +1,5 @@
-﻿using FishNet.Documenting;
+﻿using FishNet.CodeGenerating;
+using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
@@ -85,10 +86,10 @@ namespace FishNet.Example.ComponentStateSync
         /// </summary>
         private void AddOperation(T component, bool prev, bool next)
         {
-            if (!base.IsRegistered)
+            if (!base.IsInitialized)
                 return;
 
-            if (base.NetworkManager != null && !base.NetworkBehaviour.IsServer)
+            if (base.NetworkManager != null && !base.NetworkBehaviour.IsServerStarted)
             {
                 NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
@@ -104,7 +105,7 @@ namespace FishNet.Example.ComponentStateSync
         /// Writes all changed values.
         /// </summary>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        public override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
+        internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
             writer.WriteBoolean(Component.enabled);
@@ -113,7 +114,7 @@ namespace FishNet.Example.ComponentStateSync
         /// <summary>
         /// Writes all values.
         /// </summary>
-        public override void WriteFull(PooledWriter writer)
+        internal protected override void WriteFull(PooledWriter writer)
         {
             /* Always write full for this custom sync type.
              * It would be difficult to know if the
@@ -127,7 +128,7 @@ namespace FishNet.Example.ComponentStateSync
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [APIExclude]
-        public override void Read(PooledReader reader, bool asServer)
+        internal protected override void Read(PooledReader reader, bool asServer)
         {
             bool nextValue = reader.ReadBoolean();
             if (base.NetworkManager == null)
@@ -139,7 +140,7 @@ namespace FishNet.Example.ComponentStateSync
             * This is because changes would have already been made on
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
-            bool asClientAndHost = (!asServer && base.NetworkManager.IsServer);
+            bool asClientAndHost = (!asServer && base.NetworkManager.IsServerStarted);
             if (!asClientAndHost)
                 Component.enabled = nextValue;
 
@@ -150,6 +151,6 @@ namespace FishNet.Example.ComponentStateSync
         /// Return the serialized type.
         /// </summary>
         /// <returns></returns>
-        public object GetSerializedType() => typeof(bool);
+        public object GetSerializedType() => null;
     }
 }

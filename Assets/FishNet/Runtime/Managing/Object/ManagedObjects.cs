@@ -9,7 +9,7 @@ using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -144,7 +144,7 @@ namespace FishNet.Managing.Object
                 //Not as server.
                 else
                 {
-                    bool isServer = NetworkManager.IsServer;
+                    bool isServer = NetworkManager.IsServerStarted;
                     //Only check to destroy if not a scene object.
                     if (!nob.IsSceneObject)
                     {
@@ -182,14 +182,14 @@ namespace FishNet.Managing.Object
                 if (asServer)
                 {
                     //If not clientHost then the object can be disabled.
-                    if (!NetworkManager.IsClient)
+                    if (!NetworkManager.IsClientStarted)
                         nob.gameObject.SetActive(false);
                 }
                 //Not as server.
                 else
                 {
                     //If the server is not active then the object can be disabled.
-                    if (!NetworkManager.IsServer)
+                    if (!NetworkManager.IsServerStarted)
                     {
                         nob.gameObject.SetActive(false);
                     }
@@ -217,7 +217,7 @@ namespace FishNet.Managing.Object
                  * individual despawns for each child. */
                 if (asServer)
                 {
-                    foreach (NetworkObject childNob in nob.ChildNetworkObjects)
+                    foreach (NetworkObject childNob in nob.NestedRootNetworkBehaviours)
                     {
                         if (childNob != null && !childNob.IsDeinitializing)
                             Despawn(childNob, despawnType, asServer);
@@ -236,7 +236,7 @@ namespace FishNet.Managing.Object
         protected void UpdateNetworkBehavioursForSceneObject(NetworkObject nob, bool asServer)
         {
             //Would have already been done on server side.
-            if (!asServer && NetworkManager.IsServer)
+            if (!asServer && NetworkManager.IsServerStarted)
                 return;
 
             InitializePrefab(nob, -1);
@@ -296,7 +296,7 @@ namespace FishNet.Managing.Object
             * asServer and server isn't running. This
             * prevents objects from affecting the server
             * as host when being modified client side. */
-            if (asServer || (!asServer && !NetworkManager.IsServer))
+            if (asServer || (!asServer && !NetworkManager.IsServerStarted))
             {
                 if (removeFromSpawned)
                     RemoveFromSpawned(nob, false, asServer);

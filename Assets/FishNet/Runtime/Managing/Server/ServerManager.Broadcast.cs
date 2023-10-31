@@ -7,11 +7,9 @@ using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
-using FishNet.Utility.Extension;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -21,23 +19,13 @@ namespace FishNet.Managing.Server
     {
         #region Private.
         /// <summary>
-        /// Delegate to read received broadcasts.
+        /// Handler for registered broadcasts.
         /// </summary>
-        /// <param name="connection"></param>
-        /// <param name="reader"></param>
-        private delegate void ClientBroadcastDelegate(NetworkConnection connection, PooledReader reader);
-        /// <summary>
-        /// Delegates for each key.
-        /// </summary>
-        private readonly Dictionary<ushort, HashSet<ClientBroadcastDelegate>> _broadcastHandlers = new Dictionary<ushort, HashSet<ClientBroadcastDelegate>>();
-        /// <summary>
-        /// Delegate targets for each key.
-        /// </summary>
-        private Dictionary<ushort, HashSet<(int, ClientBroadcastDelegate)>> _handlerTargets = new Dictionary<ushort, HashSet<(int, ClientBroadcastDelegate)>>();
+        private readonly Dictionary<ushort, BroadcastHandlerBase> _broadcastHandlers = new Dictionary<ushort, BroadcastHandlerBase>();
         /// <summary>
         /// Connections which can be broadcasted to after having excluded removed.
         /// </summary>
-        private HashSet<NetworkConnection> _connectionsWithoutExclusions = new HashSet<NetworkConnection>();
+        private HashSet<NetworkConnection> _connectionsWithoutExclusionsCache = new HashSet<NetworkConnection>();
         #endregion
 
         /// <summary>
@@ -46,7 +34,7 @@ namespace FishNet.Managing.Server
         /// <typeparam name="T">Type of broadcast being registered.</typeparam>
         /// <param name="handler">Method to call.</param>
         /// <param name="requireAuthentication">True if the client must be authenticated for the method to call.</param>
-        public void RegisterBroadcast<T>(Action<NetworkConnection, T> handler, bool requireAuthentication = true) where T : struct, IBroadcast
+        public void RegisterBroadcast<T>(Action<NetworkConnection, T, Channel> handler, bool requireAuthentication = true) where T : struct, IBroadcast
         {
             if (handler == null)
             {
@@ -55,29 +43,15 @@ namespace FishNet.Managing.Server
             }
 
             ushort key = BroadcastHelper.GetKey<T>();
-
-            /* Create delegate and add for
-             * handler method. */
-            HashSet<ClientBroadcastDelegate> handlers;
-            if (!_broadcastHandlers.TryGetValueIL2CPP(key, out handlers))
+            //Create new IBroadcastHandler if needed.
+            BroadcastHandlerBase bhs;
+            if (!_broadcastHandlers.TryGetValueIL2CPP(key, out bhs))
             {
-                handlers = new HashSet<ClientBroadcastDelegate>();
-                _broadcastHandlers.Add(key, handlers);
+                bhs = new ClientBroadcastHandler<T>(requireAuthentication);
+                _broadcastHandlers.Add(key, bhs);
             }
-            ClientBroadcastDelegate del = CreateBroadcastDelegate(handler, requireAuthentication);
-            handlers.Add(del);
-
-            /* Add hashcode of target for handler.
-             * This is so we can unregister the target later. */
-            int handlerHashCode = handler.GetHashCode();
-            HashSet<(int, ClientBroadcastDelegate)> targetHashCodes;
-            if (!_handlerTargets.TryGetValueIL2CPP(key, out targetHashCodes))
-            {
-                targetHashCodes = new HashSet<(int, ClientBroadcastDelegate)>();
-                _handlerTargets.Add(key, targetHashCodes);
-            }
-
-            targetHashCodes.Add((handlerHashCode, del));
+            //Register handler to IBroadcastHandler.
+            bhs.RegisterHandler(handler);
         }
 
         /// <summary>
@@ -85,65 +59,13 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <typeparam name="T">Type of broadcast being unregistered.</typeparam>
         /// <param name="handler">Method to unregister.</param>
-        public void UnregisterBroadcast<T>(Action<NetworkConnection, T> handler) where T : struct, IBroadcast
+        public void UnregisterBroadcast<T>(Action<NetworkConnection, T, Channel> handler) where T : struct, IBroadcast
         {
             ushort key = BroadcastHelper.GetKey<T>();
-
-            /* If key is found for T then look for
-             * the appropriate handler to remove. */
-            if (_broadcastHandlers.TryGetValueIL2CPP(key, out HashSet<ClientBroadcastDelegate> handlers))
-            {
-                HashSet<(int, ClientBroadcastDelegate)> targetHashCodes;
-                if (_handlerTargets.TryGetValueIL2CPP(key, out targetHashCodes))
-                {
-                    int handlerHashCode = handler.GetHashCode();
-                    ClientBroadcastDelegate result = null;
-                    foreach ((int targetHashCode, ClientBroadcastDelegate del) in targetHashCodes)
-                    {
-                        if (targetHashCode == handlerHashCode)
-                        {
-                            result = del;
-                            targetHashCodes.Remove((targetHashCode, del));
-                            break;
-                        }
-                    }
-                    //If no more in targetHashCodes then remove from handlerTarget.
-                    if (targetHashCodes.Count == 0)
-                        _handlerTargets.Remove(key);
-
-                    if (result != null)
-                        handlers.Remove(result);
-                }
-
-                //If no more in handlers then remove broadcastHandlers.
-                if (handlers.Count == 0)
-                    _broadcastHandlers.Remove(key);
-            }
+            if (_broadcastHandlers.TryGetValueIL2CPP(key, out BroadcastHandlerBase bhs))
+                bhs.UnregisterHandler(handler);
         }
 
-        /// <summary>
-        /// Creates a ClientBroadcastDelegate.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="handler"></param>
-        /// <param name="requireAuthentication"></param>
-        /// <returns></returns>
-        private ClientBroadcastDelegate CreateBroadcastDelegate<T>(Action<NetworkConnection, T> handler, bool requireAuthentication)
-        {
-            void LogicContainer(NetworkConnection connection, PooledReader reader)
-            {
-                //If requires authentication and client isn't authenticated.
-                if (requireAuthentication && !connection.Authenticated)
-                {
-                    connection.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {connection.ClientId} sent broadcast {typeof(T).Name} which requires authentication, but client was not authenticated. Client has been disconnected.");
-                    return;
-                }
-
-                T broadcast = reader.Read<T>();
-                handler?.Invoke(connection, broadcast);
-            }
-            return LogicContainer;
-        }
 
         /// <summary>
         /// Parses a received broadcast.
@@ -154,44 +76,13 @@ namespace FishNet.Managing.Server
             ushort key = reader.ReadUInt16();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.Broadcast, reader, channel);
 
-            //Try to invoke the handler for that message
-            if (_broadcastHandlers.TryGetValueIL2CPP(key, out HashSet<ClientBroadcastDelegate> handlers))
+            // try to invoke the handler for that message
+            if (_broadcastHandlers.TryGetValueIL2CPP(key, out BroadcastHandlerBase bhs))
             {
-                int readerStartPosition = reader.Position;
-                /* //muchlater resetting the position could be better by instead reading once and passing in
-                 * the object to invoke with. */
-                bool rebuildHandlers = false;
-                //True if data is read at least once. Otherwise it's length will have to be purged.
-                bool dataRead = false;
-                foreach (ClientBroadcastDelegate handler in handlers)
-                {
-                    if (handler.Target == null)
-                    {
-                        NetworkManager.LogWarning($"A Broadcast handler target is null. This can occur when a script is destroyed but does not unregister from a Broadcast.");
-                        rebuildHandlers = true;
-                    }
-                    else
-                    {
-                        reader.Position = readerStartPosition;
-                        handler.Invoke(conn, reader);
-                        dataRead = true;
-                    }
-                }
-
-                //If rebuilding handlers...
-                if (rebuildHandlers)
-                {
-                    List<ClientBroadcastDelegate> dels = handlers.ToList();
-                    handlers.Clear();
-                    for (int i = 0; i < dels.Count; i++)
-                    {
-                        if (dels[i].Target != null)
-                            handlers.Add(dels[i]);
-                    }
-                }
-                //Make sure data was read as well.
-                if (!dataRead)
-                    reader.Skip(dataLength);
+                if (bhs.RequireAuthentication && !conn.Authenticated)
+                    conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a broadcast which requires authentication, but client was not authenticated. Client has been disconnected.");
+                else
+                    bhs.InvokeHandlers(conn, reader, channel);
             }
             else
             {
@@ -351,15 +242,15 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            _connectionsWithoutExclusions.Clear();
+            _connectionsWithoutExclusionsCache.Clear();
             /* It will be faster to fill the entire list then
              * remove vs checking if each connection is contained within excluded. */
             foreach (NetworkConnection c in Clients.Values)
-                _connectionsWithoutExclusions.Add(c);
+                _connectionsWithoutExclusionsCache.Add(c);
             //Remove
-            _connectionsWithoutExclusions.Remove(excludedConnection);
+            _connectionsWithoutExclusionsCache.Remove(excludedConnection);
 
-            Broadcast(_connectionsWithoutExclusions, message, requireAuthenticated, channel);
+            Broadcast(_connectionsWithoutExclusionsCache, message, requireAuthenticated, channel);
         }
 
         /// <summary>
@@ -385,16 +276,16 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            _connectionsWithoutExclusions.Clear();
+            _connectionsWithoutExclusionsCache.Clear();
             /* It will be faster to fill the entire list then
              * remove vs checking if each connection is contained within excluded. */
             foreach (NetworkConnection c in Clients.Values)
-                _connectionsWithoutExclusions.Add(c);
+                _connectionsWithoutExclusionsCache.Add(c);
             //Remove
             foreach (NetworkConnection c in excludedConnections)
-                _connectionsWithoutExclusions.Remove(c);
+                _connectionsWithoutExclusionsCache.Remove(c);
 
-            Broadcast(_connectionsWithoutExclusions, message, requireAuthenticated, channel);
+            Broadcast(_connectionsWithoutExclusionsCache, message, requireAuthenticated, channel);
         }
 
         /// <summary>

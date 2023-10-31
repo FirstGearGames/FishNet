@@ -7,7 +7,7 @@ using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -160,7 +160,7 @@ namespace FishNet.Managing.Client
         /// Called when the server sends a connection state change for any client.
         /// </summary>
         /// <param name="args"></param>
-        private void OnClientConnectionBroadcast(ClientConnectionChangeBroadcast args)
+        private void OnClientConnectionBroadcast(ClientConnectionChangeBroadcast args, Channel channel)
         {
             //If connecting invoke after added to clients, otherwise invoke before removed.
             RemoteConnectionStateArgs rcs = new RemoteConnectionStateArgs((args.Connected) ? RemoteConnectionState.Started : RemoteConnectionState.Stopped, args.Id, -1);
@@ -185,7 +185,7 @@ namespace FishNet.Managing.Client
         /// Called when the server sends all currently connected clients.
         /// </summary>
         /// <param name="args"></param>
-        private void OnConnectedClientsBroadcast(ConnectedClientsBroadcast args)
+        private void OnConnectedClientsBroadcast(ConnectedClientsBroadcast args, Channel channel)
         {
             NetworkManager.ClearClientsCollection(Clients);
 
@@ -472,13 +472,9 @@ namespace FishNet.Managing.Client
                     {
                         ParsePingPong(reader);
                     }
-                    else if (packetId == PacketId.SyncVar)
+                    else if (packetId == PacketId.SyncType)
                     {
-                        Objects.ParseSyncType(reader, false, channel);
-                    }
-                    else if (packetId == PacketId.SyncObject)
-                    {
-                        Objects.ParseSyncType(reader, true, channel);
+                        Objects.ParseSyncType(reader, channel);
                     }
                     else if (packetId == PacketId.PredictedSpawnResult)
                     {
@@ -554,7 +550,7 @@ namespace FishNet.Managing.Client
             NetworkManager networkManager = NetworkManager;
             int connectionId = reader.ReadNetworkConnectionId();
             //If only a client then make a new connection.
-            if (!networkManager.IsServer)
+            if (!networkManager.IsServerStarted)
             {
                 Clients.TryGetValueIL2CPP(connectionId, out Connection);
                 /* This is bad and should never happen unless the connection is dropping
@@ -630,7 +626,7 @@ namespace FishNet.Managing.Client
              * for server to drop and client not know about it as host.
              * This would mean a game crash or force close in which
              * the client would be gone as well anyway. */
-            if (!Started || NetworkManager.IsServer)
+            if (!Started || NetworkManager.IsServerStarted)
                 return;
             if (_remoteServerTimeout == RemoteTimeoutType.Disabled)
                 return;

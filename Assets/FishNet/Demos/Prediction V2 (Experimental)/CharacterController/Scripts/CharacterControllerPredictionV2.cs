@@ -89,7 +89,7 @@ namespace FishNet.PredictionV2
                 _yPositions[lastReplicateTick] = transform.position.y;
             /* The base.IsServer check is not required but does save a little
             * performance by not building the reconcileData if not server. */
-            if (base.IsServer)
+            if (base.IsServerStarted)
             {
                 ReconcileData rd = new ReconcileData(transform.position, _verticalVelocity);
                 Reconciliation(rd);

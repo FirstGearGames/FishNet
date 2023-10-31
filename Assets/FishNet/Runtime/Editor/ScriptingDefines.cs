@@ -11,7 +11,6 @@ namespace FishNet
         [InitializeOnLoadMethod]
         public static void AddDefineSymbols()
         {
-#if UNITY_2021_3_OR_NEWER
             // Get data about current target group
             bool standaloneAndServer = false;
             BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
@@ -31,9 +30,6 @@ namespace FishNet
                 namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
 
             string currentDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
-#else
-            string currentDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
-#endif
             /* Convert current defines into a hashset. This is so we can
              * determine if any of our defines were added. Only save playersettings
              * when a define is added. */
@@ -89,11 +85,7 @@ namespace FishNet
             {
                 Debug.Log("Added or removed Fish-Networking defines within player settings.");
                 string changedDefines = string.Join(";", definesHs);
-#if UNITY_2021_3_OR_NEWER
                 PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, changedDefines);
-#else
-                PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, changedDefines);
-#endif
             }
         }
     }

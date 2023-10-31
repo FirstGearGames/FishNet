@@ -77,12 +77,8 @@ namespace FishNet.Editing
             _window = (ReviewReminderEditor)EditorWindow.GetWindow(typeof(ReviewReminderEditor));
             _window.position = new Rect(0f, 0f, 320f, 300f);
             Rect mainPos;
-#if UNITY_2020_1_OR_NEWER
             mainPos = EditorGUIUtility.GetMainWindowPosition();
-#else
-            mainPos = new Rect(Vector2.zero, Vector2.zero);
-#endif
-            var pos = _window.position;
+            Rect pos = _window.position;
             float w = (mainPos.width - pos.width) * 0.5f;
             float h = (mainPos.height - pos.height) * 0.5f;
             pos.x = mainPos.x + w;

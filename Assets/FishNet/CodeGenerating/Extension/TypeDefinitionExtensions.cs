@@ -267,6 +267,15 @@ namespace FishNet.CodeGenerating.Extension
         }
 
 
+        /// <summary>
+        /// Makes a GenericInstanceType.
+        /// </summary>
+        public static GenericInstanceType MakeGenericInstanceType(this TypeDefinition self, CodegenSession session)
+        {
+            TypeReference tr = session.ImportReference(self);
+            return tr.MakeGenericInstanceType();
+        }
+
 
     }
 

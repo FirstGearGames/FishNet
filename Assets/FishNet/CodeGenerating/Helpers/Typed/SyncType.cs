@@ -1,6 +1,5 @@
 ﻿namespace FishNet.CodeGenerating.Helping
 {
-
     public enum SyncType
     {
         Unset,
@@ -8,7 +7,8 @@
         List,
         Dictionary,
         HashSet,
-        Custom
+        Custom,
+        Unhandled,
     }
 
 }

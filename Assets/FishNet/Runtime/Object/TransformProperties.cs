@@ -1,4 +1,4 @@
-﻿using GameKit.Utilities;
+﻿using GameKit.Dependencies.Utilities;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 

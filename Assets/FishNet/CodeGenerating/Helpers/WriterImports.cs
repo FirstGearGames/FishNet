@@ -18,7 +18,6 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference PooledWriter_Dispose_MethodRef;
         public MethodReference Writer_WriteDictionary_MethodRef;
         public MethodReference Writer_WriteList_MethodRef;
-        public MethodReference Writer_WriteListCache_MethodRef;
         public MethodReference Writer_WriteArray_MethodRef;
         public TypeReference AutoPackTypeRef;
 
@@ -53,7 +52,7 @@ namespace FishNet.CodeGenerating.Helping
             base.ImportReference(writerPoolType);
             foreach (var methodInfo in writerPoolType.GetMethods())
             {
-                if (methodInfo.Name == nameof(WriterPool.GetWriter))
+                if (methodInfo.Name == nameof(WriterPool.Retrieve))
                 {
                     //GetWriter().
                     if (methodInfo.GetParameters().Length == 0)
@@ -86,8 +85,6 @@ namespace FishNet.CodeGenerating.Helping
                     Writer_WriteDictionary_MethodRef = base.ImportReference(methodInfo);
                 else if (parameterCount == 1 && methodInfo.Name == nameof(PooledWriter.WriteList))
                     Writer_WriteList_MethodRef = base.ImportReference(methodInfo);
-                else if (parameterCount == 1 && methodInfo.Name == nameof(PooledWriter.WriteListCache))
-                    Writer_WriteListCache_MethodRef = base.ImportReference(methodInfo);
                 else if (parameterCount == 1 && methodInfo.Name == nameof(PooledWriter.WriteArray))
                     Writer_WriteArray_MethodRef = base.ImportReference(methodInfo);
             }

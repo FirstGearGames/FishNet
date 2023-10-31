@@ -1,4 +1,5 @@
-﻿using FishNet.Documenting;
+﻿using FishNet.CodeGenerating;
+using FishNet.Documenting;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System.Collections.Generic;
@@ -65,6 +66,10 @@ namespace FishNet.Object.Synchronizing
         /// Client OnChange events waiting for start callbacks.
         /// </summary>
         private readonly List<ChangeData> _clientOnChanges = new List<ChangeData>();
+        #endregion
+
+        #region Constructors
+        public SyncStopwatch(SyncTypeSetting settings = new SyncTypeSetting()) : base(settings) { }
         #endregion
 
         /// <summary>
@@ -151,10 +156,10 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private void AddOperation(SyncStopwatchOperation operation, float prev)
         {
-            if (!base.IsRegistered)
+            if (!base.IsInitialized)
                 return;
 
-            bool asServerInvoke = (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServer);
+            bool asServerInvoke = (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServerStarted);
 
             if (asServerInvoke)
             {
@@ -172,7 +177,7 @@ namespace FishNet.Object.Synchronizing
         /// Writes all changed values.
         /// </summary>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        public override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
+        internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
             writer.WriteInt32(_changed.Count);
@@ -195,7 +200,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Writes all values.
         /// </summary>
-        public override void WriteFull(PooledWriter writer)
+        internal protected override void WriteFull(PooledWriter writer)
         {
             //Only write full if a Stopwatch is running.
             if (Elapsed < 0f)
@@ -229,7 +234,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [APIExclude]
-        public override void Read(PooledReader reader, bool asServer)
+        internal protected override void Read(PooledReader reader, bool asServer)
         {
             int changes = reader.ReadInt32();
 
@@ -284,7 +289,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private bool CanSetValues(bool asServer)
         {
-            return (asServer || !base.NetworkManager.IsServer);
+            return (asServer || !base.NetworkManager.IsServerStarted);
         }
 
         /// <summary>
@@ -326,7 +331,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        public override void OnStartCallback(bool asServer)
+        internal protected override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
             List<ChangeData> collection = (asServer) ? _serverOnChanges : _clientOnChanges;

@@ -237,7 +237,7 @@ namespace FishNet.Component.Prediction
         {
             if (!IsRigidbodyPrediction)
                 return;
-            if (base.IsServer)
+            if (base.IsServerStarted)
                 return;
 
             bool is2D = (_predictionType == PredictionType.Rigidbody2D);
@@ -793,7 +793,7 @@ namespace FishNet.Component.Prediction
         {
             if (!IsRigidbodyPrediction)
                 return false;
-            if (base.IsServer || IsPredictingOwner())
+            if (base.IsServerStarted || IsPredictingOwner())
                 return false;
             if (_spectatorPaused)
                 return false;

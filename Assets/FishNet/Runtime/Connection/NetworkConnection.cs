@@ -137,8 +137,6 @@ namespace FishNet.Connection
         /// This value is only available on the server.
         /// </summary>
         public EstimatedTick PacketTick;
-        [Obsolete("Use LocalTick instead.")] //Remove on 2023/06/01
-        public uint Tick => LocalTick.Value(NetworkManager.TimeManager);
         /// <summary>
         /// Approximate local tick as it is on this connection.
         /// This also contains the last set value for local and remote.

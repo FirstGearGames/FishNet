@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using System;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 #if UNITY_EDITOR
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;

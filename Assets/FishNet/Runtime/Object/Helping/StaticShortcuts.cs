@@ -27,7 +27,7 @@ namespace FishNet.Object.Helping
             if (nb == null)
                 return false;
 
-            return nb.IsServer;
+            return nb.IsServerStarted;
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace FishNet.Object.Helping
             if (nb == null)
                 return false;
 
-            return nb.IsClient;
+            return nb.IsClientStarted;
         }
 
     }

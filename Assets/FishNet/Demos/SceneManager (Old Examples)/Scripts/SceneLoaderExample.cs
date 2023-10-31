@@ -86,7 +86,7 @@ namespace FishNet.Example.Scened
 
         private void LoadScene(NetworkObject triggeringIdentity)
         {
-            if (!InstanceFinder.NetworkManager.IsServer)
+            if (!InstanceFinder.NetworkManager.IsServerStarted)
                 return;
 
             //NetworkObject isn't necessarily needed but to ensure its the player only run if found.

@@ -22,7 +22,7 @@ using FishNet.Utility.Performance;
 using FishNet.Component.ColliderRollback;
 using FishNet.Managing.Predicting;
 using System.Runtime.CompilerServices;
-using GameKit.Utilities;
+using GameKit.Dependencies.Utilities;
 #if UNITY_EDITOR
 using FishNet.Editing.PrefabCollectionGenerator;
 #endif
@@ -99,30 +99,6 @@ namespace FishNet.Managing
             }
         }  
         /// <summary>
-        /// True if server is started.
-        /// </summary>
-        public bool IsServer => ServerManager.Started;
-        /// <summary>
-        /// True if only the server is started.
-        /// </summary>
-        public bool IsServerOnly => (IsServer && !IsClient);
-        /// <summary>
-        /// True if the client is started and authenticated.
-        /// </summary>
-        public bool IsClient => (ClientManager.Started && ClientManager.Connection.Authenticated);
-        /// <summary>
-        /// True if only the client is started and authenticated.
-        /// </summary>
-        public bool IsClientOnly => (!IsServer && IsClient);
-        /// <summary>
-        /// True if client and server are started.
-        /// </summary>
-        public bool IsHost => (IsServer && IsClient);
-        /// <summary>
-        /// True if client nor server are started.
-        /// </summary>
-        public bool IsOffline => (!IsServer && !IsClient);
-        /// <summary>
         /// PredictionManager for this NetworkManager.
         /// </summary>
         internal PredictionManager PredictionManager { get; private set; }
@@ -150,11 +126,6 @@ namespace FishNet.Managing
         /// ObserverManager for this NetworkManager.
         /// </summary>
         public ObserverManager ObserverManager { get; private set; }
-        /// <summary>
-        /// Authenticator for this NetworkManager. May be null if no Authenticator is used.
-        /// </summary>
-        [Obsolete("Use ServerManager.GetAuthenticator or ServerManager.SetAuthenticator instead.")] //Remove on 2023/06/01
-        public Authenticator Authenticator => ServerManager.Authenticator;
         /// <summary>
         /// DebugManager for this NetworkManager.
         /// </summary>
@@ -526,15 +497,6 @@ namespace FishNet.Managing
         }
         /// <summary>
         /// Returns an instantiated copy of prefab.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [Obsolete("Use GetPooledInstantiated(NetworkObject,bool).")] //Remove on 2024/01/01.
-        public NetworkObject GetPooledInstantiated(NetworkObject prefab, ushort collectionId, bool asServer)
-        {
-            return GetPooledInstantiated(prefab.PrefabId, collectionId, asServer);
-        }
-        /// <summary>
-        /// Returns an instantiated copy of prefab.
         /// </summary>       
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject GetPooledInstantiated(GameObject prefab, bool asServer)
@@ -549,14 +511,6 @@ namespace FishNet.Managing
             {
                 return GetPooledInstantiated(nob.PrefabId, nob.SpawnableCollectionId, asServer);
             }
-        }
-        /// <summary>
-        /// Returns an instantiated copy of prefab.
-        /// </summary>
-        [Obsolete("Use GetPooledInstantiated(GameObject, bool).")] //Remove on 2024/01/01.
-        public NetworkObject GetPooledInstantiated(GameObject prefab, ushort collectionId, bool asServer)
-        {
-            return GetPooledInstantiated(prefab, asServer);
         }
         /// <summary>
         /// Returns an instantiated copy of prefab while setting position and rotation.
@@ -577,15 +531,6 @@ namespace FishNet.Managing
         /// <summary>
         /// Returns an instantiated object that has prefabId.
         /// </summary>
-        [Obsolete("Use GetPooledInstantiated(int, ushort, bool).")] //Remove on 2024/01/01.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NetworkObject GetPooledInstantiated(int prefabId, bool asServer)
-        {
-            return GetPooledInstantiated(prefabId, 0, asServer);
-        }
-        /// <summary>
-        /// Returns an instantiated object that has prefabId.
-        /// </summary>
         public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, bool asServer)
         {
             return _objectPool.RetrieveObject(prefabId, collectionId, asServer);
@@ -596,17 +541,6 @@ namespace FishNet.Managing
         public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, Vector3 position, Quaternion rotation, bool asServer)
         {
             return _objectPool.RetrieveObject(prefabId, collectionId, position, rotation, asServer);
-        }
-        /// <summary>
-        /// Stores an instantiated object.
-        /// </summary>
-        /// <param name="instantiated">Object which was instantiated.</param>
-        /// <param name="prefabId"></param>
-        /// <param name="asServer">True to store for the server.</param>
-        [Obsolete("Use StorePooledInstantiated(NetworkObject, bool)")] //Remove on 2023/06/01.
-        public void StorePooledInstantiated(NetworkObject instantiated, int prefabId, bool asServer)
-        {
-            StorePooledInstantiated(instantiated, asServer);
         }
         /// <summary>
         /// Stores an instantied object.

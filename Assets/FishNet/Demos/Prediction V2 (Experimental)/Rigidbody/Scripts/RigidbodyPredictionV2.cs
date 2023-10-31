@@ -64,11 +64,16 @@ namespace FishNet.PredictionV2
 
         private Rigidbody _rigidbody;
         private bool _jump;
+        private bool _canControl => (base.IsOwner || (!base.Owner.IsValid && base.IsServerStarted));
 
         private void Update()
         {
-            if (base.IsOwner)
+            if (_canControl)
             {
+                //Remove clientHost ownership for testing.
+                if (base.IsOwner && base.IsServerStarted)
+                    base.RemoveOwnership();
+
                 if (Input.GetKeyDown(KeyCode.Space))
                     _jump = true;
             }
@@ -98,7 +103,7 @@ namespace FishNet.PredictionV2
         private MoveData BuildMoveData()
         {
 
-            if (!base.IsOwner)
+            if (!_canControl)
                 return default;
 
             float horizontal = Input.GetAxisRaw("Horizontal");
@@ -153,7 +158,7 @@ namespace FishNet.PredictionV2
         {
             /* The base.IsServer check is not required but does save a little
             * performance by not building the reconcileData if not server. */
-            if (IsServer)
+            if (IsServerStarted)
             {
                 ReconcileData rd = new ReconcileData(transform.position, transform.rotation, _rigidbody.velocity, _rigidbody.angularVelocity);
                 Reconciliation(rd);

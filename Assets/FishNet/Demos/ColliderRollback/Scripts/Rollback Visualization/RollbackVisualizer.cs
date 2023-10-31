@@ -39,7 +39,7 @@ namespace FishNet.Example.ColliderRollbacks
             Instantiate(_rollbackPrefab, rollback, transform.rotation);
 
             float difference = Vector3.Distance(original, rollback);
-            string accuracyText = (base.IsServer) ?
+            string accuracyText = (base.IsServerStarted) ?
                 $"Accuracy will not show properly when as clientHost.{Environment.NewLine}Use a separate client and server for testing."
                 : $"Accuracy is within {difference} units.";
 

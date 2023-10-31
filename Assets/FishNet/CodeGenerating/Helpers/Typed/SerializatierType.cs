@@ -7,7 +7,6 @@
         Enum,
         Array,
         List,
-        ListCache,
         NetworkBehaviour,
         ClassOrStruct,
         Nullable,
