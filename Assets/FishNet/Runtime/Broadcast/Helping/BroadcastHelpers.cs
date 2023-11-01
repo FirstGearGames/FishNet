@@ -88,7 +88,7 @@ namespace FishNet.Broadcast.Helping
         /// </summary>
         public override void RegisterHandler(object obj)
         {
-            Action<NetworkConnection, T> handler = (Action<NetworkConnection, T>)obj;
+            Action<NetworkConnection, T, Channel> handler = (Action<NetworkConnection, T, Channel>)obj;
             _handlers.AddUnique(handler);
         }
 
@@ -162,7 +162,7 @@ namespace FishNet.Broadcast.Helping
         /// </summary>
         public override void RegisterHandler(object obj)
         {
-            Action<T> handler = (Action<T>)obj;
+            Action<T, Channel> handler = (Action<T, Channel>)obj;
             _handlers.AddUnique(handler);
         }
 

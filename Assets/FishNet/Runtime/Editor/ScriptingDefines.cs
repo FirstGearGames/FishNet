@@ -41,7 +41,7 @@ namespace FishNet
 
             string proDefine = "FISHNET_PRO";
             string versionPrefix = "FISHNET_V";
-            string thisVersion = $"{versionPrefix}3";
+            string thisVersion = $"{versionPrefix}4";
             string[] fishNetDefines = new string[]
             {
                 "FISHNET",

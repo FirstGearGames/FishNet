@@ -6,9 +6,9 @@ using System.Runtime.CompilerServices;
 namespace FishNet.CodeGenerating
 {
     /// <summary>
-    /// Allows a SyncType to be muteable.
+    /// Allows a SyncType to be mutable.
     /// </summary>
-    public class AllowMuteableSyncTypeAttribute : Attribute { }
+    public class AllowMutableSyncTypeAttribute : Attribute { }
     /// <summary>
     /// Type will be excluded from creating auto serializer creation.
     /// </summary>

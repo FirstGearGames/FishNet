@@ -1611,36 +1611,7 @@ namespace FishNet.Component.Transforming
                             //If to not send to owner.
                             if (!_sendToOwner && nc == base.Owner)
                                 continue;
-
-                            if (useLod)
-                            {
-                                NetworkConnection.LevelOfDetailData cachedLod;
-                                //LOD not found.
-                                if (!nc.LevelOfDetails.TryGetValue(base.NetworkObject, out cachedLod))
-                                {
-                                    /* If not found do not check skips. This means LOD
-                                     * has not been set. When LOD is not set the client
-                                     * is to receive updates at regular intervals. */
-                                }
-                                //If LOD was found check if lodIndex has been met.
-                                else
-                                {
-                                    /* If neither current nor previous LOD meet
-                                     * the index then skip sending data. When index
-                                     * is current reset previous lod. This ensures that when
-                                     * LODs increase the previous LOD will send until on
-                                     * the increased index. By doing so there will be no unexpected
-                                     * receive delays. When going down in index this is not required
-                                     * because the new index will send faster than the old and the
-                                     * client will receive data before the buffer runs out. */
-                                    if (cachedLod.PreviousLevelOfDetail > lodIndex && cachedLod.CurrentLevelOfDetail > lodIndex)
-                                        continue;
-                                    /* If currentLevelOfDetail is the same as index then a full cycle
-                                     * has been met and previousLod can be updated to current. */
-                                    if (lodIndex >= cachedLod.CurrentLevelOfDetail)
-                                        cachedLod.PreviousLevelOfDetail = cachedLod.CurrentLevelOfDetail;
-                                }
-                            }
+                            
                             //No need for server to send to local client (clientHost).
                             //Still send if development for stat tracking.
 #if !DEVELOPMENT

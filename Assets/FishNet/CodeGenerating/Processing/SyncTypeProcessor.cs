@@ -171,7 +171,7 @@ namespace FishNet.CodeGenerating.Processing
             if (!fieldDef.Attributes.HasFlag(FieldAttributes.InitOnly))
             {
                 bool ignoreRequirement = false;
-                string attributeFullName = typeof(AllowMuteableSyncTypeAttribute).FullName;
+                string attributeFullName = typeof(AllowMutableSyncTypeAttribute).FullName;
                 //Check if has attribute to bypass readonly check.
                 foreach (CustomAttribute item in fieldDef.CustomAttributes)
                 {
@@ -185,7 +185,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (!ignoreRequirement)
                 {
                     if (outputError)
-                        base.LogError($"{fieldDef.Name} SyncType in type {fieldDef.DeclaringType.FullName} must be readonly or decorated with the {nameof(AllowMuteableSyncTypeAttribute)} attribute. If allowing muteable do not ever re-assign the field at runtime.");
+                        base.LogError($"{fieldDef.Name} SyncType in type {fieldDef.DeclaringType.FullName} must be readonly or decorated with the {nameof(AllowMutableSyncTypeAttribute)} attribute. If allowing muteable do not ever re-assign the field at runtime.");
                     return false;
                 }
             }
