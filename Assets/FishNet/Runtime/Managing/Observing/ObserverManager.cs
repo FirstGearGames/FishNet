@@ -234,17 +234,7 @@ namespace FishNet.Managing.Observing
         /// </summary>
         internal void CalculateLevelOfDetail(uint tick)
         {
-            int count = GetLevelOfDetailDistances().Count;
-            for (int i = (count - 1); i > 0; i--)
-            {
-                uint interval = _levelOfDetailIntervals[i];
-                if (tick % interval == 0)
-                {
-                    LevelOfDetailIndex = (byte)i;
-                    return;
-                }
-            }
-
+            
             //If here then index is 0 and interval is every tick.
             LevelOfDetailIndex = 0;
         }

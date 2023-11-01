@@ -39,7 +39,7 @@ namespace FishNet.Example.IntermediateLayers
             return src;
         }
         //Cipher outgoing data.
-        public override ArraySegment<byte> HandleOutoing(ArraySegment<byte> src, bool toServer)
+        public override ArraySegment<byte> HandleOutgoing(ArraySegment<byte> src, bool toServer)
         {
             byte[] arr = src.Array;
             int length = src.Count;
