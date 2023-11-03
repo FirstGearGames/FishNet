@@ -18,7 +18,7 @@
 
 1.2 Exclusions do not apply to parts of Software which are governed by a third-party license, nor to games developed with Software.
 
-2.0 FishNet-Pro License. Fish-Net Pro uses this license.
+2.0 FishNet-Pro License. FishNet-Pro uses this license.
 
 2.1 Distribution: Purchasers may distribute FishNet-Pro to their organization, group, team of 20 or fewer members. Purchasers may distribute FishNet-Pro to their physical classroom environments with no member count restrictions.
 
