@@ -724,7 +724,9 @@ namespace FishNet.Managing.Client
                 }
             }
 
-            prefabId = (ushort)reader.ReadNetworkObjectId();
+            // componentIndex is currently unused
+            _ = reader.ReadNetworkBehaviourId(out var nobId);
+            prefabId = (ushort)nobId;
         }
 
     }
