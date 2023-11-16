@@ -11,6 +11,7 @@ using MonoFN.Cecil.Cil;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Unity.CompilationPipeline.Common.ILPostProcessing;
 
@@ -326,13 +327,15 @@ namespace FishNet.CodeGenerating.ILCore
             List<(SyncType, ProcessedSync)> allProcessedSyncs = new List<(SyncType, ProcessedSync)>();
             HashSet<string> allProcessedCallbacks = new HashSet<string>();
             List<TypeDefinition> processedClasses = new List<TypeDefinition>();
+            //Types which had awake generated/added.
+            List<NetworkBehaviourProcessor.AwakeMethodData> awakeMethodDatas = new List<NetworkBehaviourProcessor.AwakeMethodData>();
 
             foreach (TypeDefinition typeDef in networkBehaviourTypeDefs)
             {
                 session.ImportReference(typeDef);
                 //Synctypes processed for this nb and it's inherited classes.
                 List<(SyncType, ProcessedSync)> processedSyncs = new List<(SyncType, ProcessedSync)>();
-                session.GetClass<NetworkBehaviourProcessor>().ProcessLocal(typeDef, processedSyncs);
+                session.GetClass<NetworkBehaviourProcessor>().ProcessLocal(typeDef, processedSyncs, awakeMethodDatas);
                 //Add to all processed.
                 allProcessedSyncs.AddRange(processedSyncs);
             }

@@ -47,10 +47,6 @@ namespace FishNet.Transporting.Tugboat.Client
         private Queue<Packet> _outgoing = new Queue<Packet>();
         #endregion
         /// <summary>
-        /// Client socket manager.
-        /// </summary>
-        private NetManager _client;
-        /// <summary>
         /// How long in seconds until client times from server.
         /// </summary>
         private int _timeout;
@@ -81,7 +77,7 @@ namespace FishNet.Transporting.Tugboat.Client
         internal void UpdateTimeout(int timeout)
         {
             _timeout = timeout;
-            base.UpdateTimeout(_client, timeout);
+            base.UpdateTimeout(base.NetManager, timeout);
         }
 
         /// <summary>
@@ -90,7 +86,7 @@ namespace FishNet.Transporting.Tugboat.Client
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void PollSocket()
         {
-            base.PollSocket(_client);
+            base.PollSocket(base.NetManager);
         }
 
         /// <summary>
@@ -103,14 +99,14 @@ namespace FishNet.Transporting.Tugboat.Client
             listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
-            _client = new NetManager(listener, _packetLayer);
-            _client.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
+            base.NetManager = new NetManager(listener, _packetLayer);
+            base.NetManager.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
             UpdateTimeout(_timeout);
 
             _localConnectionStates.Enqueue(LocalConnectionState.Starting);
-            _client.Start();
-            _client.Connect(_address, _port, string.Empty);
+            base.NetManager.Start();
+            base.NetManager.Connect(_address, _port, string.Empty);
         }
 
 
@@ -119,15 +115,15 @@ namespace FishNet.Transporting.Tugboat.Client
         /// </summary>
         private void StopSocketOnThread()
         {
-            if (_client == null)
+            if (base.NetManager == null)
                 return;
 
             Task t = Task.Run(() =>
             {
                 lock (_stopLock)
                 {
-                    _client?.Stop();
-                    _client = null;
+                    base.NetManager?.Stop();
+                    base.NetManager = null;
                 }
 
                 //If not stopped yet also enqueue stop.
@@ -217,8 +213,8 @@ namespace FishNet.Transporting.Tugboat.Client
         private void DequeueOutgoing()
         {
             NetPeer peer = null;
-            if (_client != null)
-                peer = _client.FirstPeer;
+            if (base.NetManager != null)
+                peer = base.NetManager.FirstPeer;
             //Server connection hasn't been made.
             if (peer == null)
             {

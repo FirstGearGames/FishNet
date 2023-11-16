@@ -373,6 +373,15 @@ namespace FishNet.Transporting.Tugboat
         /// <param name="port"></param>
         public override ushort GetPort()
         {
+            //Server.
+            ushort? result = _server?.GetPort();
+            if (result.HasValue)
+                return result.Value;
+            //Client.
+            result = _client?.GetPort();
+            if (result.HasValue)
+                return result.Value;
+
             return _port;
         }
         #endregion

@@ -236,10 +236,10 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 2134535186}
   _networkObjectCache: {fileID: 2134535186}
   _scenes:
-  - Assets/FishNet/Demos/Additive Scenes/Scenes/AdditiveScenes_0.unity
-  - Assets/FishNet/Demos/Additive Scenes/Scenes/AdditiveScenes_1.unity
-  - Assets/FishNet/Demos/Additive Scenes/Scenes/AdditiveScenes_2.unity
-  - Assets/FishNet/Demos/Additive Scenes/Scenes/AdditiveScenes_3.unity
+  - Assets/FishNet/Demos/SceneManager/Additive Scenes/Scenes/AdditiveScenes_0.unity
+  - Assets/FishNet/Demos/SceneManager/Additive Scenes/Scenes/AdditiveScenes_1.unity
+  - Assets/FishNet/Demos/SceneManager/Additive Scenes/Scenes/AdditiveScenes_2.unity
+  - Assets/FishNet/Demos/SceneManager/Additive Scenes/Scenes/AdditiveScenes_3.unity
 --- !u!4 &2134535188
 Transform:
   m_ObjectHideFlags: 0

@@ -1,4 +1,4 @@
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Managing.Debugging;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
@@ -27,9 +27,9 @@ namespace FishNet.Managing.Client
         /// </summary>
         public event Action OnAuthenticated;
         /// <summary>
-        /// Called when the connection to the server has timed out.
+        /// Called when the local client connection to the server has timed out.
         /// </summary>
-        public event Action OnConnectionToServerTimedOut;
+        public event Action OnClientTimeOut;
         /// <summary>
         /// Called after the local client connection state changes.
         /// </summary>
@@ -117,11 +117,12 @@ namespace FishNet.Managing.Client
         /// </summary>
         private float _lastPacketTime;
         /// <summary>
-        /// Updates lastPacketTime to Time.unscaledTime.
+        /// Updates information about the last packet received.
         /// </summary>
-        private void UpdateLastPacketTime()
+        private void UpdateLastPacketDatas()
         {
             _lastPacketTime = Time.unscaledTime;
+            LastPacketLocalTick = NetworkManager.TimeManager.LocalTick;
         }
         /// <summary>
         /// Used to read splits.
@@ -303,7 +304,7 @@ namespace FishNet.Managing.Client
             }
             else
             {
-                UpdateLastPacketTime();
+                UpdateLastPacketDatas();
             }
 
             if (NetworkManager.CanLog(LoggingType.Common))
@@ -349,7 +350,7 @@ namespace FishNet.Managing.Client
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _parseLogger.Reset();
 #endif
-            UpdateLastPacketTime();
+            UpdateLastPacketDatas();
 
             ArraySegment<byte> segment = args.Data;
             NetworkManager.StatisticsManager.NetworkTraffic.LocalClientReceivedData((ulong)segment.Count);
@@ -654,7 +655,6 @@ namespace FishNet.Managing.Client
             if (Time.unscaledTime - _lastPacketTime > _remoteServerTimeoutDuration)
             {
                 NetworkManager.Log($"Server has timed out. You can modify this feature on the ClientManager component.");
-                OnConnectionToServerTimedOut?.Invoke();
                 StopConnection();
             }
         }

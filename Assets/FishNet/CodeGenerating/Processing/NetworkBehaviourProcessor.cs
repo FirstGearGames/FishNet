@@ -28,7 +28,7 @@ namespace FishNet.CodeGenerating.Processing
                 CalledFromAwake = false;
             }
         }
-        private class AwakeMethodData
+        public class AwakeMethodData
         {
             public MethodDefinition AwakeMethodDef;
             public MethodDefinition UserLogicMethodDef;
@@ -63,7 +63,13 @@ namespace FishNet.CodeGenerating.Processing
         internal const string NETWORKINITIALIZE_LATE_INTERNAL_NAME = "NetworkInitialize__Late";
         #endregion
 
-        internal bool ProcessLocal(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> allProcessedSyncs)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <param name="processedSyncs">SyncTypes processed for typeDef and inherited.</param>
+        /// <returns></returns>
+        internal bool ProcessLocal(TypeDefinition typeDef, List<(SyncType, ProcessedSync)> processedSyncs, List<AwakeMethodData> awakeMethodDatas)
         {
             bool modified = false;
             TypeDefinition copyTypeDef = typeDef;
@@ -153,14 +159,14 @@ namespace FishNet.CodeGenerating.Processing
                  * each registers to their own delegates this is possible. */
 
                 /* SyncTypes. */
-                modified |= base.GetClass<NetworkBehaviourSyncProcessor>().ProcessLocal(td, allProcessedSyncs);
+                modified |= base.GetClass<NetworkBehaviourSyncProcessor>().ProcessLocal(td, processedSyncs);
                 //70ms
                 _processedClasses.Add(td);
             }
 
-            if (allProcessedSyncs.Count > NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE)
+            if (processedSyncs.Count > NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE)
             {
-                base.LogError($"Found {allProcessedSyncs.Count} SyncTypes within {firstTypeDef.FullName}. The maximum number of allowed SyncTypes within type and inherited types is {NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
+                base.LogError($"Found {processedSyncs.Count} SyncTypes within {firstTypeDef.FullName}. The maximum number of allowed SyncTypes within type and inherited types is {NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
                 return false;
             }
 
@@ -174,22 +180,21 @@ namespace FishNet.CodeGenerating.Processing
             * public and virtual. This is so I can add logic
             * to the firstTypeDef awake and still execute
             * user awake methods. */
-            List<AwakeMethodData> awakeDatas = new List<AwakeMethodData>();
-            if (!CreateOrModifyAwakeMethods(firstTypeDef, ref awakeDatas))
+            if (!CreateOrModifyAwakeMethods(firstTypeDef, awakeMethodDatas))
             {
                 base.LogError($"Was unable to make Awake methods public virtual starting on type {firstTypeDef.FullName}.");
                 return modified;
             }
 
             //NetworkInitializeEarly.
-            CallNetworkInitializeFromAwake(awakeDatas, true);
+            CallNetworkInitializeFromAwake(awakeMethodDatas, true);
             //Call base awake, then call user logic methods.
-            CallBaseAwakeOnCreatedMethods(awakeDatas);
-            CallAwakeUserLogic(awakeDatas);
+            CallBaseAwakeOnCreatedMethods(awakeMethodDatas);
+            CallAwakeUserLogic(awakeMethodDatas);
             //NetworkInitializeLate
-            CallNetworkInitializeFromAwake(awakeDatas, false);
+            CallNetworkInitializeFromAwake(awakeMethodDatas, false);
             //Since awake methods are erased ret has to be added at the end.
-            AddReturnsToAwake(awakeDatas);
+            AddReturnsToAwake(awakeMethodDatas);
 
             return modified;
         }
@@ -573,7 +578,7 @@ namespace FishNet.CodeGenerating.Processing
         /// Creates Awake method for and all parents of typeDef using the parentMostAwakeMethodDef as a template.
         /// </summary>
         /// <returns>True if successful.</returns>
-        private bool CreateOrModifyAwakeMethods(TypeDefinition typeDef, ref List<AwakeMethodData> datas)
+        private bool CreateOrModifyAwakeMethods(TypeDefinition typeDef, List<AwakeMethodData> datas)
         {
             //Now update all scopes/create methods.
             TypeDefinition copyTypeDef = typeDef;
@@ -599,11 +604,26 @@ namespace FishNet.CodeGenerating.Processing
                     processor.Emit(OpCodes.Ret);
                 }
 
-                MethodDefinition logicMd = base.GetClass<GeneralHelper>().CopyIntoNewMethod(awakeMd, $"{NetworkBehaviourHelper.AWAKE_METHOD_NAME}___UserLogic", out _);
-                //Clear original awake.
-                awakeMd.Body.Instructions.Clear();
-                datas.Add(new AwakeMethodData(awakeMd, logicMd, created));
+                bool alreadyProcessed = false;
+                /* First make sure the method has not already been processed.
+                 * This can happen when multiple children are inheriting from
+                 * a class, and the interited class has already been handled. */
+                foreach (AwakeMethodData item in datas)
+                {
+                    if (item.AwakeMethodDef == awakeMd)
+                    {
+                        alreadyProcessed = true;
+                        break;
+                    }
+                }
 
+                if (!alreadyProcessed)
+                {
+                    MethodDefinition logicMd = base.GetClass<GeneralHelper>().CopyIntoNewMethod(awakeMd, $"{NetworkBehaviourHelper.AWAKE_METHOD_NAME}___UserLogic", out _);
+                    //Clear original awake.
+                    awakeMd.Body.Instructions.Clear();
+                    datas.Add(new AwakeMethodData(awakeMd, logicMd, created));
+                }
                 copyTypeDef = TypeDefinitionExtensionsOld.GetNextBaseClassToProcess(copyTypeDef, base.Session);
 
             } while (copyTypeDef != null);
@@ -642,9 +662,11 @@ namespace FishNet.CodeGenerating.Processing
 
             processor = thisAwakeMethodDef.Body.GetILProcessor();
             //Create instructions for base call.
-            List<Instruction> instructions = new List<Instruction>();
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            instructions.Add(processor.Create(OpCodes.Call, networkInitializeMethodRef));
+            List<Instruction> instructions = new List<Instruction>
+            {
+                processor.Create(OpCodes.Ldarg_0), //this.
+                processor.Create(OpCodes.Call, networkInitializeMethodRef)
+            };
 
             /* If awake was created then make a call to the users
              * first awake. There's no reason to do this if awake

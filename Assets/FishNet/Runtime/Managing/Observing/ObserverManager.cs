@@ -235,6 +235,7 @@ namespace FishNet.Managing.Observing
         internal void CalculateLevelOfDetail(uint tick)
         {
             
+
             //If here then index is 0 and interval is every tick.
             LevelOfDetailIndex = 0;
         }

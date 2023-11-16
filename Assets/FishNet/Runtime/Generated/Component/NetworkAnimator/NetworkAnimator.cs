@@ -460,7 +460,6 @@ namespace FishNet.Component.Animating
         {
             InitializeOnce();
         }
-
         private void OnDestroy()
         {
             ChangeTickSubscription(false);
@@ -504,26 +503,6 @@ namespace FishNet.Component.Animating
             ChangeTickSubscription(false);
         }
 
-        /// <summary>
-        /// Tries to subscribe to TimeManager ticks.
-        /// </summary>
-        private void ChangeTickSubscription(bool subscribe)
-        {
-            if (subscribe == _subscribedToTicks || base.NetworkManager == null)
-                return;
-
-            _subscribedToTicks = subscribe;
-            if (subscribe)
-            {
-                base.NetworkManager.TimeManager.OnPreTick += TimeManager_OnPreTick;
-                base.NetworkManager.TimeManager.OnPostTick += TimeManager_OnPostTick;
-            }
-            else
-            {
-                base.NetworkManager.TimeManager.OnPreTick -= TimeManager_OnPreTick;
-                base.NetworkManager.TimeManager.OnPostTick -= TimeManager_OnPostTick;
-            }
-        }
 
         /// <summary>
         /// Called right before a tick occurs, as well before data is read.
@@ -653,6 +632,27 @@ namespace FishNet.Component.Animating
 
                     _parameterDetails.Add(new ParameterDetail(item, (byte)typeIndex));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Tries to subscribe to TimeManager ticks.
+        /// </summary>
+        private void ChangeTickSubscription(bool subscribe)
+        {
+            if (subscribe == _subscribedToTicks || base.NetworkManager == null)
+                return;
+
+            _subscribedToTicks = subscribe;
+            if (subscribe)
+            {
+                base.NetworkManager.TimeManager.OnPreTick += TimeManager_OnPreTick;
+                base.NetworkManager.TimeManager.OnPostTick += TimeManager_OnPostTick;
+            }
+            else
+            {
+                base.NetworkManager.TimeManager.OnPreTick -= TimeManager_OnPreTick;
+                base.NetworkManager.TimeManager.OnPostTick -= TimeManager_OnPostTick;
             }
         }
 
