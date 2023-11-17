@@ -1043,8 +1043,7 @@ namespace FishNet.Object.Synchronizing
                 //False for not full write.
                 writer.WriteBoolean(false);
                 WriteChangeId(writer, false);
-
-                //Only need to write the first 
+                //Number of entries expected.
                 writer.WriteInt32(_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
@@ -1120,7 +1119,7 @@ namespace FishNet.Object.Synchronizing
             if (fullWrite)
                 collection.Clear();
 
-            bool ignoreReadChanges = base.ReadDirtyId(reader);
+            bool ignoreReadChanges = base.ReadChangeId(reader);
             int changes = reader.ReadInt32();
 
             for (int i = 0; i < changes; i++)
@@ -1179,9 +1178,8 @@ namespace FishNet.Object.Synchronizing
                 if (!ignoreReadChanges)
                     InvokeOnChange(operation, index, prev, next, false);
             }
-
-            //If changes were made invoke complete after all have been read.
-            if (changes > 0 && !ignoreReadChanges)
+            
+            if (!ignoreReadChanges)
                 InvokeOnChange(SyncListOperation.Complete, -1, default, default, false);
         }
 

@@ -28,7 +28,7 @@ namespace FishNet.Managing.Transporting
         /// <param name="src">Original data.</param>
         /// <param name="toServer">True if sending to the server, false if to a client.</param>
         /// <returns>Modified data.</returns>
-        public abstract ArraySegment<byte> HandleOutoing(ArraySegment<byte> src, bool toServer);
+        public abstract ArraySegment<byte> HandleOutgoing(ArraySegment<byte> src, bool toServer);
 
         internal void InitializeOnce(TransportManager manager) => TransportManager = manager;
     }

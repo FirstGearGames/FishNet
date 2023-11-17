@@ -389,7 +389,7 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ArraySegment<byte> ProcessIntermediateOutgoing(ArraySegment<byte> src, bool toServer)
         {
-            return _intermediateLayer.HandleOutoing(src, toServer);
+            return _intermediateLayer.HandleOutgoing(src, toServer);
         }
 
         /// <summary>

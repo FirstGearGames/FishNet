@@ -535,7 +535,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Reads the change Id and returns if changes should be ignored.
         /// </summary>
         /// <returns></returns>
-        protected bool ReadDirtyId(PooledReader reader)
+        protected bool ReadChangeId(PooledReader reader)
         {
             bool reset = reader.ReadBoolean();
 
