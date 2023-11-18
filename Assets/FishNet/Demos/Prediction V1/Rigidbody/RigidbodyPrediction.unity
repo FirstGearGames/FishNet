@@ -1220,16 +1220,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 925aa23d31def3d4285128924301132d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
-  _addedNetworkObject: {fileID: 1377211193}
-  _networkObjectCache: {fileID: 1377211193}
-  _frameCount:
-    _value: 3
-  UseOnStartServer: 1
-  UseContinuous: 0
-  UseOnSpawn: 1
-  UseClientSet: 0
-  SendRate: 0.1
 --- !u!1 &1470934487
 GameObject:
   m_ObjectHideFlags: 0
@@ -1397,7 +1387,7 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 1560902880}
   _networkObjectCache: {fileID: 1560902880}
-  _implementsPredictionMethods: 1
+  _implementsPredictionMethods: 0
   _graphicalObject: {fileID: 1256183192}
   _enableTeleport: 0
   _teleportThreshold: 1
