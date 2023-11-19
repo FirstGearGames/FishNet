@@ -5,6 +5,7 @@ using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
+using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
@@ -546,6 +547,10 @@ namespace FishNet.Component.Transforming
         /// Writers for changed data for each level of detail.
         /// </summary>
         private List<PooledWriter> _toClientChangedWriters;
+        /// <summary>
+        /// If not unset a force send will occur on or after this tick.
+        /// </summary>
+        private uint _forceSendTick = TimeManager.UNSET_TICK;
         #endregion
 
         #region Const.
@@ -821,6 +826,13 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void TimeManager_OnPostTick()
         {
+            //If to force send via tick delay do so and reset force send tick.
+            if (_forceSendTick != TimeManager.UNSET_TICK && base.TimeManager.LocalTick > _forceSendTick)
+            {
+                _forceSendTick = TimeManager.UNSET_TICK;
+                ForceSend();
+            }
+
             UpdateParentBehaviour();
 
             /* Intervals remaining is only used when the interval value
@@ -917,6 +929,17 @@ namespace FishNet.Component.Transforming
             _sendToOwner = value;
         }
 
+        /// <summary>
+        /// Resets last sent information to force a resend of current values after a number of ticks.
+        /// </summary>
+        public void ForceSend(uint ticks)
+        {
+            /* If there is a pending delayed force send then queue it
+             * immediately and set a new delay tick. */
+            if (_forceSendTick != TimeManager.UNSET_TICK)
+                ForceSend();
+            _forceSendTick = base.TimeManager.LocalTick + ticks;
+        }
         /// <summary>
         /// Resets last sent information to force a resend of current values.
         /// </summary>

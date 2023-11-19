@@ -28,6 +28,7 @@ namespace FishNet.Managing.Client
         public event Action OnAuthenticated;
         /// <summary>
         /// Called when the local client connection to the server has timed out.
+        /// This is called immediately before disconnecting.
         /// </summary>
         public event Action OnClientTimeOut;
         /// <summary>
@@ -654,6 +655,7 @@ namespace FishNet.Managing.Client
              * since it's simple math. */
             if (Time.unscaledTime - _lastPacketTime > _remoteServerTimeoutDuration)
             {
+                OnClientTimeOut?.Invoke();
                 NetworkManager.Log($"Server has timed out. You can modify this feature on the ClientManager component.");
                 StopConnection();
             }
