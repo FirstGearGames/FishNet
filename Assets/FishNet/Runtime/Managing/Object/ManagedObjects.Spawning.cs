@@ -96,7 +96,7 @@ namespace FishNet.Managing.Object
                  * on the other end. This is problematic because the object which is parent
                  * may not be spawned yet. Clients handle caching potentially not yet spawned
                  * objects via Ids. */
-                headerWriter.WriteNetworkBehaviourId(nob.CurrentParentNetworkBehaviour);
+                headerWriter.WriteNetworkObjectId(nob.CurrentParentNetworkBehaviour.ObjectId);
             }
             /* Writing a scene object. */
             if (sceneObject)
