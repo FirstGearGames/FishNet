@@ -222,7 +222,7 @@ namespace FishNet.Observing
                          * not overwritten when the condition exist more than
                          * once in the scene. Double edged sword of using scriptable
                          * objects for conditions. */
-                        ObserverCondition ocCopy = _observerConditions[i].Clone();
+                        ObserverCondition ocCopy = Instantiate(_observerConditions[i]);
                         _observerConditions[i] = ocCopy;
 
                         //Condition type.

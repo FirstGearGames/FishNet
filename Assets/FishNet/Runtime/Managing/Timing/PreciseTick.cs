@@ -11,14 +11,32 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public uint Tick;
         /// <summary>
-        /// Percentage into the next tick.
+        /// Percentage of the tick returned between 0d and 1d.
         /// </summary>
-        public double Percent;
+        public double PercentAsDouble;
+        /// <summary>
+        /// Percentage of the tick returned between 0 and 100.
+        /// </summary>
+        public byte PercentAsByte;
 
+        /// <summary>
+        /// Creates a precise tick where the percentage is a byte between 0 and 100.
+        /// </summary>
+        public PreciseTick(uint tick, byte percentAsByte)
+        {
+            Tick = tick;
+            PercentAsByte = percentAsByte;
+            PercentAsDouble = (percentAsByte / 100d);
+        }
+
+        /// <summary>
+        /// Creates a precise tick where the percentage is a double between 0d and 1d.
+        /// </summary>
         public PreciseTick(uint tick, double percent)
         {
             Tick = tick;
-            Percent = percent;
+            PercentAsByte = (byte)(percent * 100d);
+            PercentAsDouble = percent;
         }
     }
 
@@ -27,19 +45,14 @@ namespace FishNet.Managing.Timing
         public static void WritePreciseTick(this Writer writer, PreciseTick value)
         {
             writer.WriteTickUnpacked(value.Tick);
-            /* No reason percent should exist beyond these values, but better to be safe.
-             * There is also no double clamp in Unity so... */
-            double percent = Maths.ClampDouble(value.Percent, 0d, 1f);
-            byte percentByte = (byte)(percent * 100);
-            writer.WriteByte(percentByte);
+            writer.WriteByte(value.PercentAsByte);
         }
 
         public static PreciseTick ReadPreciseTick(this Reader reader)
         {
             uint tick = reader.ReadTickUnpacked();
             byte percentByte = reader.ReadByte();
-            double percent = Maths.ClampDouble((percentByte / 100f), 0d, 1d);
-            return new PreciseTick(tick, percent);
+            return new PreciseTick(tick, percentByte);
         }
     }
 }

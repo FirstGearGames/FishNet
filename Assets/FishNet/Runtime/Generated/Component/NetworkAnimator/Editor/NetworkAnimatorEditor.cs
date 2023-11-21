@@ -165,6 +165,7 @@ namespace FishNet.Component.Animating.Editing
                                 else
                                     na.IgnoredParameters.Add(parameterName);
                             }
+                            UnityEditor.EditorUtility.SetDirty(target);
                         }
 
                         z++;

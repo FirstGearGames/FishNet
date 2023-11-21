@@ -80,7 +80,28 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Channel to use for next write. To ensure eventual consistency this eventually changes to reliable when Settings are unreliable.
         /// </summary>
         private Channel _currentChannel;
+        /// <summary>
+        /// Last localTick when full data was written.
+        /// </summary>
+        protected uint _lastWriteFullLocalTick;
+        /// <summary>
+        /// Id of the current change since the last full write.
+        /// This is used to prevent duplicates caused by deltas writing after full writes when clients already received the delta in the full write, such as a spawn message.
+        /// </summary>
+        protected uint _changeId;
+        /// <summary>
+        /// Last changeId read.
+        /// </summary>
+        private long _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
         #endregion
+
+        #region Const.
+        /// <summary>
+        /// Default value for LastReadDirtyId.
+        /// </summary>
+        private const long DEFAULT_LAST_READ_DIRTYID = -1;
+        #endregion
+
 
         #region Constructors
         public SyncBase() : this(new SyncTypeSetting()) { }
@@ -300,9 +321,43 @@ namespace FishNet.Object.Synchronizing.Internal
              * processed. This ensures that data
              * is flushed. */
             bool canDirty = NetworkBehaviour.DirtySyncType();
+            //If first time dirtying increase dirtyId.
+            if (IsDirty != canDirty)
+                _changeId++;
             IsDirty |= canDirty;
 
             return canDirty;
+        }
+
+
+        /// <summary>
+        /// Reads the change Id and returns if changes should be ignored.
+        /// </summary>
+        /// <returns></returns>
+        protected bool ReadChangeId(PooledReader reader)
+        {
+            bool reset = reader.ReadBoolean();
+
+            uint id = reader.ReadUInt32();
+            bool ignoreResults = !reset && (id <= _lastReadDirtyId);
+            _lastReadDirtyId = id;
+            return ignoreResults;
+        }
+
+        /// <summary>
+        /// Writers the current ChangeId, and if it has been reset.
+        /// </summary>
+        protected void WriteChangeId(PooledWriter writer, bool fullWrite)
+        {
+            /* Fullwrites do not reset the Id, only
+             * delta changes do. */
+            bool resetId = (!fullWrite && NetworkManager.TimeManager.LocalTick > _lastWriteFullLocalTick);
+            writer.WriteBoolean(resetId);
+            //If to reset Id then do so.
+            if (resetId)
+                _changeId = 0;
+            //Write Id.
+            writer.WriteUInt32(_changeId);
         }
 
         /// <summary>
@@ -355,11 +410,24 @@ namespace FishNet.Object.Synchronizing.Internal
 
             writer.WriteByte((byte)SyncIndex);
         }
+
         /// <summary>
-        /// Writes full values without delta. This is called when the all data must be sent, such as all items in a list.
+        /// Indicates that a full write has occurred.
+        /// This is called from WriteFull, or can be called manually.
         /// </summary>
+        protected void FullWritten()
+        {
+            _lastWriteFullLocalTick = NetworkManager.TimeManager.LocalTick;
+        }
+        /// <summary>
+        /// Writes all values for the SyncType.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [MakePublic]
-        internal protected virtual void WriteFull(PooledWriter writer) { }
+        internal protected virtual void WriteFull(PooledWriter writer)
+        {
+            FullWritten();
+        }
         /// <summary>
         /// Sets current value as server or client through deserialization.
         /// </summary>
@@ -371,6 +439,9 @@ namespace FishNet.Object.Synchronizing.Internal
         [MakePublic]
         internal protected virtual void ResetState()
         {
+            _lastWriteFullLocalTick = 0;
+            _changeId = 0;
+            _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
             NextSyncTick = 0;
             ResetDirty();
         }

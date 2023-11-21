@@ -423,7 +423,7 @@ namespace FishNet.Managing.Object
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.ServerRpc, reader, channel);
-            if (nb != null)
+            if (nb != null && nb.IsSpawned)
                 nb.OnReplicateRpc(null, reader, conn, channel);
             else
                 SkipDataLength((ushort)PacketId.ServerRpc, reader, dataLength);

@@ -5,9 +5,11 @@ using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.CodeGenerating.Processing;
 using FishNet.CodeGenerating.Processing.Rpc;
 using FishNet.Configuring;
+using FishNet.Editing.Upgrading;
 using FishNet.Serializing.Helping;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -47,7 +49,6 @@ namespace FishNet.CodeGenerating.ILCore
             return referencesFishNet;
         }
         public override ILPostProcessor GetInstance() => this;
-
         public override ILPostProcessResult Process(ICompiledAssembly compiledAssembly)
         {
             AssemblyDefinition assemblyDef = ILCoreHelper.GetAssemblyDefinition(compiledAssembly);
@@ -116,6 +117,8 @@ namespace FishNet.CodeGenerating.ILCore
             }
             else
             {
+                TryLogV3ToV4Helpers(session);
+
                 MemoryStream pe = new MemoryStream();
                 MemoryStream pdb = new MemoryStream();
                 WriterParameters writerParameters = new WriterParameters
@@ -128,6 +131,25 @@ namespace FishNet.CodeGenerating.ILCore
                 return new ILPostProcessResult(new InMemoryAssembly(pe.ToArray(), pdb.ToArray()), session.Diagnostics);
             }
         }
+
+        /// <summary>
+        /// Logs warning if v3 to v4 helpers are enabled.
+        /// </summary>
+        private void TryLogV3ToV4Helpers(CodegenSession session)
+        {
+#if !FISHNET_DISABLE_V3TOV4_HELPERS
+            /* There is no way to check if this has run already once per codegen
+             * so the only option is to print per session, which means
+             * a print will occur every time an assembly compiles. This means
+             * several prints will potentially occur per script change.
+             * 
+             * However, these warnings typically only print when all errors are gone.
+             * When this is true the user may go ahead and disable this warning
+             * as instructed. */
+            session.LogWarning(UpgradeFromV3ToV4Menu.EnabledWarning);
+#endif
+        }
+
 
         /// <summary>
         /// Makees methods public scope which use CodegenMakePublic attribute.
@@ -312,7 +334,7 @@ namespace FishNet.CodeGenerating.ILCore
              * Since processing iterates upward from each child there is no reason
              * to include any inherited NBs. */
             RemoveInheritedTypeDefinitions(networkBehaviourTypeDefs);
-            
+
             foreach (TypeDefinition typeDef in networkBehaviourTypeDefs)
             {
                 session.ImportReference(typeDef);

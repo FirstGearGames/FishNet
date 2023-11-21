@@ -1,6 +1,8 @@
 ﻿using FishNet.Connection;
 using FishNet.Object;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
@@ -39,14 +41,24 @@ namespace FishNet.Example.ColliderRollbacks
             Instantiate(_rollbackPrefab, rollback, transform.rotation);
 
             float difference = Vector3.Distance(original, rollback);
+            if (difference <= 0.00001f)
+                difference = 0f;
+
+            _differences.Add(difference);
+            if (_differences.Count > 20)
+                _differences.RemoveAt(0);
+            float averageDifference = (_differences.Sum() / _differences.Count);
+
             string accuracyText = (base.IsServerStarted) ?
                 $"Accuracy will not show properly when as clientHost.{Environment.NewLine}Use a separate client and server for testing."
-                : $"Accuracy is within {difference} units.";
+                : $"Difference {difference.ToString("0.000")}m. Average difference {averageDifference.ToString("0.000")}m.";
 
             TextCanvas tc = Instantiate(_textCanvasPrefab);
             tc.SetText(accuracyText);
             Debug.Log(accuracyText);
         }
+
+        private List<float> _differences = new List<float>();
 
     }
 

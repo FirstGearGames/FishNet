@@ -104,7 +104,7 @@ NavMeshSettings:
   serializedVersion: 2
   m_ObjectHideFlags: 0
   m_BuildSettings:
-    serializedVersion: 3
+    serializedVersion: 2
     agentTypeID: 0
     agentRadius: 0.5
     agentHeight: 2
@@ -117,7 +117,7 @@ NavMeshSettings:
     cellSize: 0.16666667
     manualTileSize: 0
     tileSize: 256
-    buildHeightMesh: 0
+    accuratePlacement: 0
     maxJobWorkers: 0
     preserveTilesOutsideBounds: 0
     debug:
@@ -146,13 +146,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 860526058}
-  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1565068570
 MonoBehaviour:
@@ -239,10 +239,10 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 2134535186}
   _networkObjectCache: {fileID: 2134535186}
   _scenes:
-  - Assets/FishNet/Demos/Additive Scenes/Scenes/AdditiveScenes_0.unity
-  - Assets/FishNet/Demos/Additive Scenes/Scenes/AdditiveScenes_1.unity
-  - Assets/FishNet/Demos/Additive Scenes/Scenes/AdditiveScenes_2.unity
-  - Assets/FishNet/Demos/Additive Scenes/Scenes/AdditiveScenes_3.unity
+  - Assets/FishNet/Demos/SceneManager/Additive Scenes/Scenes/AdditiveScenes_0.unity
+  - Assets/FishNet/Demos/SceneManager/Additive Scenes/Scenes/AdditiveScenes_1.unity
+  - Assets/FishNet/Demos/SceneManager/Additive Scenes/Scenes/AdditiveScenes_2.unity
+  - Assets/FishNet/Demos/SceneManager/Additive Scenes/Scenes/AdditiveScenes_3.unity
 --- !u!4 &2134535188
 Transform:
   m_ObjectHideFlags: 0
@@ -250,13 +250,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2134535185}
-  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -8.965608, y: -4.7316337, z: 9.317315}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1424052073207433918
 MonoBehaviour:
@@ -391,6 +391,7 @@ RectTransform:
   - {fileID: 4393252311316957351}
   - {fileID: 4393252311836867879}
   m_Father: {fileID: 7443408887457311807}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -414,9 +415,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 0
-  m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
@@ -547,6 +546,7 @@ RectTransform:
   m_Children:
   - {fileID: 7233259200865887911}
   m_Father: {fileID: 4393252311304163330}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -680,6 +680,7 @@ RectTransform:
   m_Children:
   - {fileID: 9139860296387939653}
   m_Father: {fileID: 4393252311304163330}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -771,6 +772,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4393252311316957351}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -810,7 +812,7 @@ MonoBehaviour:
   _objectPool: {fileID: 0}
   _persistence: 0
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: 377276797348dce4b9379d462903941a, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617, type: 2}
 --- !u!1 &7443408887457311805
 GameObject:
   m_ObjectHideFlags: 0
@@ -837,7 +839,6 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7443408887457311805}
-  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -845,6 +846,7 @@ Transform:
   m_Children:
   - {fileID: 4393252311304163330}
   m_Father: {fileID: 0}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!224 &9139860296387939653
 RectTransform:
@@ -859,16 +861,10 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4393252311836867879}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1660057539 &9223372036854775807
-SceneRoots:
-  m_ObjectHideFlags: 0
-  m_Roots:
-  - {fileID: 2134535188}
-  - {fileID: 7443408887457311807}
-  - {fileID: 860526059}

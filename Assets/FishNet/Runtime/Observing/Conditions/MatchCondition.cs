@@ -4,10 +4,7 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Observing;
-using FishNet.Utility.Extension;
-using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -122,8 +119,6 @@ namespace FishNet.Component.Observing
             return cc.ObjectMatches;
         }
         #endregion
-
-        public void ConditionConstructor() { }
 
         #region Add to match NetworkConnection.
         /// <summary>
@@ -697,13 +692,6 @@ namespace FishNet.Component.Observing
                 Dictionary<NetworkConnection, HashSet<int>> connectionMatches = GetConnectionMatches(base.NetworkObject.NetworkManager);
                 //Output owner matches.
                 HashSet<int> ownerMatches;
-                //bool ownerMatchesFound = connectionMatches.TryGetValueIL2CPP(owner, out ownerMatches);
-                ////Connection isn't in a match.
-                //if (!connectionMatches.TryGetValueIL2CPP(connection, out HashSet<int> connMatches))
-                //{
-                //    //If owner is also not in a match then they can see each other.
-                //    return !ownerMatchesFound;
-                //}
                 /* This objects owner is not in a match so treat it like
                  * a networkobject without an owner. Objects not in matches
                  * are visible to everyone. */
@@ -763,7 +751,6 @@ namespace FishNet.Component.Observing
             }
         }
 
-
         /// <summary>
         /// Returns which ServerObjects to rebuild observers on.
         /// </summary>
@@ -779,16 +766,5 @@ namespace FishNet.Component.Observing
         /// </summary>
         /// <returns></returns>
         public override ObserverConditionType GetConditionType() => ObserverConditionType.Normal;
-
-        /// <summary>
-        /// Clones referenced ObserverCondition. This must be populated with your conditions settings.
-        /// </summary>
-        /// <returns></returns>
-        public override ObserverCondition Clone()
-        {
-            MatchCondition copy = ScriptableObject.CreateInstance<MatchCondition>();
-            copy.ConditionConstructor();
-            return copy;
-        }
     }
 }

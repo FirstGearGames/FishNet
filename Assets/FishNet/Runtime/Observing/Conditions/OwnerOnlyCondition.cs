@@ -31,15 +31,5 @@ namespace FishNet.Component.Observing
         /// <returns></returns>
         public override ObserverConditionType GetConditionType() => ObserverConditionType.Normal;
 
-
-        /// <summary>
-        /// Clones referenced ObserverCondition. This must be populated with your conditions settings.
-        /// </summary>
-        /// <returns></returns>
-        public override ObserverCondition Clone()
-        {
-            OwnerOnlyCondition copy = ScriptableObject.CreateInstance<OwnerOnlyCondition>();
-            return copy;
-        }
     }
 }

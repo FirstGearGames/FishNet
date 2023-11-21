@@ -46,11 +46,11 @@ namespace FishNet.CodeGenerating.Processing
         /// Processes SyncVars and Objects.
         /// </summary>
         /// <param name="syncTypeHash">Number of SyncTypes implemented in this typeDef and those inherited of.</param>
-        internal bool ProcessLocal(TypeDefinition typeDef, out uint syncTypeHash)
+        internal bool ProcessLocal(TypeDefinition typeDef, ref uint syncTypeHash)
         {
-            bool modified = false;            
-            //Number of syncTypes found in the parent. This is the starting hash to use.
-            syncTypeHash = GetSyncTypeCountInParents(typeDef);
+            bool modified = false;
+
+            ValidateVersion3ToVersion4SyncVars(typeDef);
 
             FieldDefinition[] fieldDefs = typeDef.Fields.ToArray();
             foreach (FieldDefinition fd in fieldDefs)
@@ -113,20 +113,12 @@ namespace FishNet.CodeGenerating.Processing
         }
 
         /// <summary>
-        /// Gets SyncType count in all of typeDefs parents, excluding typeDef itself.
+        /// Returns if fieldDef is a syncType.
         /// </summary>
-        internal uint GetSyncTypeCountInParents(TypeDefinition typeDef)
+        internal bool IsSyncType(FieldReference fieldRef)
         {
-            uint count = 0;
-            do
-            {
-                typeDef = typeDef.GetNextBaseClassToProcess(base.Session);
-                if (typeDef != null)
-                    count += GetSyncTypeCount(typeDef);
-
-            } while (typeDef != null);
-
-            return count;
+            FieldDefinition fd = fieldRef.CachedResolve(base.Session);
+            return IsSyncType(fd);
         }
 
         /// <summary>
@@ -142,6 +134,88 @@ namespace FishNet.CodeGenerating.Processing
                 return false;
 
             return ftTypeDef.InheritsFrom<SyncBase>(base.Session);
+        }
+
+
+
+        /// <summary>
+        /// Throws an error on any SyncVars which are comparing null on the SyncVar field, or trying to set the field null.
+        /// </summary>
+        private void ValidateVersion3ToVersion4SyncVars(TypeDefinition td)
+        {
+#if !FISHNET_DISABLE_V3TOV4_HELPERS
+            /* In version3 since the user could reference the field directly like a value these actions were allowed. Doing so now however would cause unintended behavior.            
+            * For example...
+            * [SyncVar]
+            * private Player _myPlayer;
+            * 
+            * void SomeMethod()
+            * {
+            *      if (_myPlayer == null) doStuff();
+            * }
+            * The above context would be valid in version 3.
+            * 
+            * But if the user converted without paying close attention, which is reasonable to miss, this would not work as intended.
+            * For example...             
+            * private readonly SyncVar<Player> _myPlayer = new();
+            * 
+            * void SomeMethod()
+            * {
+            *      if (_myPlayer == null) doStuff();
+            * }
+            * The above is not the same behavior as the field _myPlayer would never be null. Instead the code should look like this...
+            * 
+            * void SomeMethod()
+            * {
+            *      if (_myPlayer.Value == null) doStuff();
+            * }
+            * The checks below will catch this scenarios.
+            */
+
+            foreach (MethodDefinition methodDef in td.Methods)
+            {
+                //Ignore constructors.
+                if (methodDef.IsConstructor)
+                    continue;
+
+                for (int i = 0; i < methodDef.Body.Instructions.Count; i++)
+                {
+                    Instruction inst = methodDef.Body.Instructions[i];
+
+                    /* Loading a field. (Getter) */
+                    if ((inst.OpCode == OpCodes.Ldfld || inst.OpCode == OpCodes.Ldflda) && inst.Operand is FieldReference opFieldld)
+                    {
+                        FieldReference resolvedOpField = opFieldld.CachedResolve(base.Session);
+                        if (resolvedOpField == null)
+                            resolvedOpField = opFieldld.DeclaringType.CachedResolve(base.Session).GetFieldReference(opFieldld.Name, base.Session);
+
+                        if (IsSyncType(resolvedOpField))
+                        {
+                            //Check next opcode for a brfalse/true.
+                            //If there are more instructions to check, which there should always be.
+                            if (i < (methodDef.Body.Instructions.Count - 1))
+                            {
+                                Instruction nextInst = methodDef.Body.Instructions[i + 1];
+                                if (nextInst.OpCode == OpCodes.Brfalse || nextInst.OpCode == OpCodes.Brfalse_S ||
+                                    nextInst.OpCode == OpCodes.Brtrue || nextInst.OpCode == OpCodes.Brtrue_S)
+                                    base.LogError($"Method {methodDef.Name} in class {td.Name} is comparing null for the SyncType field {resolvedOpField.Name}. SyncType fields should never be null; did you intend to compare the SyncType.Value instead?");
+                            }
+                        }
+                    }
+                    /* Setting a field. (Setter) */
+                    else if (inst.OpCode == OpCodes.Stfld && inst.Operand is FieldReference opFieldst)
+                    {
+                        FieldReference resolvedOpField = opFieldst.CachedResolve(base.Session);
+                        if (resolvedOpField == null)
+                            resolvedOpField = opFieldst.DeclaringType.CachedResolve(base.Session).GetFieldReference(opFieldst.Name, base.Session);
+
+                        if (IsSyncType(resolvedOpField))
+                            base.LogError($"Method {methodDef.Name} in class {td.Name} is setting value to the SyncType field {resolvedOpField.Name}. This will result in the SyncType not functioning.");
+                    }
+                }
+
+            }
+#endif
         }
 
         /// <summary>

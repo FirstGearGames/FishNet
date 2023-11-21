@@ -307,7 +307,7 @@ namespace FishNet.Managing.Client
         {
             NetworkObject nob = reader.ReadNetworkObject();
             NetworkConnection newOwner = reader.ReadNetworkConnection();
-            if (nob != null)
+            if (nob != null && nob.IsSpawned)
                 nob.GiveOwnership(newOwner, false);
             else
                 NetworkManager.LogWarning($"NetworkBehaviour could not be found when trying to parse OwnershipChange packet.");
@@ -326,7 +326,7 @@ namespace FishNet.Managing.Client
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength(packetId, reader, channel);
 
-            if (nb != null)
+            if (nb != null && nb.IsSpawned)
             {
                 /* Length of data to be read for syncvars.
                  * This is important because syncvars are never
@@ -368,7 +368,7 @@ namespace FishNet.Managing.Client
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.Reconcile, reader, channel);
 
-            if (nb != null)
+            if (nb != null && nb.IsSpawned)
                 nb.OnReconcileRpc(null, reader, channel);
             else
                 SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
@@ -384,7 +384,7 @@ namespace FishNet.Managing.Client
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.ObserversRpc, reader, channel);
 
-            if (nb != null)
+            if (nb != null && nb.IsSpawned)
                 nb.OnObserversRpc(null, reader, channel);
             else
                 SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
@@ -399,7 +399,7 @@ namespace FishNet.Managing.Client
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.TargetRpc, reader, channel);
 
-            if (nb != null)
+            if (nb != null && nb.IsSpawned)
                 nb.OnTargetRpc(null, reader, channel);
             else
                 SkipDataLength((ushort)PacketId.TargetRpc, reader, dataLength);
@@ -724,7 +724,10 @@ namespace FishNet.Managing.Client
                 }
             }
 
-            prefabId = (ushort)reader.ReadNetworkObjectId();
+            //prefabId = (ushort)reader.ReadNetworkObjectId();
+            // componentIndex is currently unused
+            _ = reader.ReadNetworkBehaviourId(out var nobId);
+            prefabId = (ushort)nobId;
         }
 
     }

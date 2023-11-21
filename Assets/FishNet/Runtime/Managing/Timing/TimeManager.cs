@@ -767,30 +767,36 @@ namespace FishNet.Managing.Timing
 
         #region Tick conversions.
         /// <summary>
-        /// Returns the 0 to 1 ratio of how far the TimeManager is into the next tick.
+        /// Returns the percentage of how far the TimeManager is into the next tick as a double.
+        /// Value will return between 0d and 1d.
         /// </summary>
         /// <returns></returns>
-        public double GetTickRatio()
+        public double GetTickPercentAsDouble()
         {
             if (_networkManager == null)
-                return default;
+                return 0d;
 
-            double delta = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
-            double ratio = (_elapsedTickTime / delta);
-            return ratio;
+            double delta = (_networkManager.IsServerStarted) ? TickDelta : _adjustedTickDelta;
+            double percent = (_elapsedTickTime / delta);
+            return percent;
         }
         /// <summary>
         /// Returns the percentage of how far the TimeManager is into the next tick.
+        /// Value will return between 0 and 100.
         /// </summary>
-        /// <returns></returns>
-        public double GetTickPercent()
+        public byte GetTickPercentAsByte()
         {
-            if (_networkManager == null)
-                return default;
+            double result = GetTickPercentAsDouble();
+            return (byte)(result * 100d);
+        }
 
-            double delta = (_networkManager.IsServerStarted) ? TickDelta : _adjustedTickDelta;
-            double percent = (_elapsedTickTime / delta) * 100d;
-            return percent;
+        /// <summary>
+        /// Converts a 0 to 100 byte value to a 0d to 1d percent value.
+        /// This does not check for excessive byte values, such as anything over 100.
+        /// </summary>
+        public static double GetTickPercentAsDouble(byte value)
+        {
+            return (value / 100d);
         }
         /// <summary>
         /// Returns a PreciseTick.
@@ -803,7 +809,7 @@ namespace FishNet.Managing.Timing
                 return default;
 
             double delta = (_networkManager.IsServerStarted) ? TickDelta : _adjustedTickDelta;
-            double percent = (_elapsedTickTime / delta) * 100;
+            double percent = (_elapsedTickTime / delta);
 
             return new PreciseTick(tick, percent);
         }
@@ -873,7 +879,7 @@ namespace FishNet.Managing.Timing
         public double TicksToTime(PreciseTick pt)
         {
             double tickTime = TicksToTime(pt.Tick);
-            double percentTime = (pt.Percent * TickDelta);
+            double percentTime = (pt.PercentAsDouble * TickDelta);
             return (tickTime + percentTime);
         }
 
@@ -924,7 +930,7 @@ namespace FishNet.Managing.Timing
             PreciseTick currentPt = GetPreciseTick(TickType.Tick);
 
             long tickDifference = (currentPt.Tick - preciseTick.Tick);
-            double percentDifference = (currentPt.Percent - preciseTick.Percent);
+            double percentDifference = (currentPt.PercentAsDouble - preciseTick.PercentAsDouble);
 
             /* If tickDifference is less than 0 or tickDifference and percentDifference are 0 or less
              * then the result would be negative. */
@@ -934,8 +940,7 @@ namespace FishNet.Managing.Timing
                 return 0d;
 
             double tickTime = TimePassed(preciseTick.Tick, true);
-            double percent = (percentDifference / 100);
-            double percentTime = (percent * TickDelta);
+            double percentTime = (percentDifference * TickDelta);
 
             return (tickTime + percentTime);
         }

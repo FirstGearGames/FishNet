@@ -271,6 +271,8 @@ namespace FishNet.Object.Synchronizing
                 base.WriteDelta(writer, resetSyncTick);
                 //False for not full write.
                 writer.WriteBoolean(false);
+                WriteChangeId(writer, false);
+                //Number of entries expected.
                 writer.WriteInt32(_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
@@ -310,8 +312,11 @@ namespace FishNet.Object.Synchronizing
             base.WriteHeader(writer, false);
             //True for full write.
             writer.WriteBoolean(true);
-            writer.WriteInt32(Collection.Count);
-            for (int i = 0; i < Collection.Count; i++)
+            WriteChangeId(writer, true);
+
+            int count = Collection.Count;
+            writer.WriteInt32(count);
+            for (int i = 0; i < count; i++)
             {
                 writer.WriteByte((byte)SyncListOperation.Add);
                 writer.Write(Collection[i]);
@@ -342,6 +347,7 @@ namespace FishNet.Object.Synchronizing
             if (fullWrite)
                 collection.Clear();
 
+            bool ignoreReadChanges = base.ReadChangeId(reader);
             int changes = reader.ReadInt32();
 
             for (int i = 0; i < changes; i++)
@@ -355,7 +361,7 @@ namespace FishNet.Object.Synchronizing
                 if (operation == SyncListOperation.Add)
                 {
                     next = reader.Read<T>();
-                    if (!deinitialized)
+                    if (!ignoreReadChanges)
                     {
                         index = collection.Count;
                         collection.Add(next);
@@ -364,7 +370,7 @@ namespace FishNet.Object.Synchronizing
                 //Clear.
                 else if (operation == SyncListOperation.Clear)
                 {
-                    if (!deinitialized)
+                    if (!ignoreReadChanges)
                         collection.Clear();
                 }
                 //Insert.
@@ -372,14 +378,14 @@ namespace FishNet.Object.Synchronizing
                 {
                     index = reader.ReadInt32();
                     next = reader.Read<T>();
-                    if (!deinitialized)
+                    if (!ignoreReadChanges)
                         collection.Insert(index, next);
                 }
                 //RemoveAt.
                 else if (operation == SyncListOperation.RemoveAt)
                 {
                     index = reader.ReadInt32();
-                    if (!deinitialized)
+                    if (!ignoreReadChanges)
                     {
                         prev = collection[index];
                         collection.RemoveAt(index);
@@ -390,14 +396,15 @@ namespace FishNet.Object.Synchronizing
                 {
                     index = reader.ReadInt32();
                     next = reader.Read<T>();
-                    if (!deinitialized)
+                    if (!ignoreReadChanges)
                     {
                         prev = collection[index];
                         collection[index] = next;
                     }
                 }
 
-                InvokeOnChange(operation, index, prev, next, false);
+                if (!ignoreReadChanges)
+                    InvokeOnChange(operation, index, prev, next, false);
             }
 
             //If changes were made invoke complete after all have been read.

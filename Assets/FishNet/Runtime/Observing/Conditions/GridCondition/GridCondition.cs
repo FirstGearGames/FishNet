@@ -1,7 +1,5 @@
 ﻿using FishNet.Connection;
-using FishNet.Object;
 using FishNet.Observing;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -33,16 +31,5 @@ namespace FishNet.Component.Observing
         /// </summary>
         /// <returns></returns>
         public override ObserverConditionType GetConditionType() => ObserverConditionType.Timed;
-
-
-        /// <summary>
-        /// Clones referenced ObserverCondition. This must be populated with your conditions settings.
-        /// </summary>
-        /// <returns></returns>
-        public override ObserverCondition Clone()
-        {
-            GridCondition copy = ScriptableObject.CreateInstance<GridCondition>();
-            return copy;
-        }
     }
 }

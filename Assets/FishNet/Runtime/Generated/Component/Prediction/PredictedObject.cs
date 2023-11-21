@@ -305,7 +305,7 @@ namespace FishNet.Component.Prediction
         }
 
         public override void OnStartNetwork()
-        {           
+        {
             /* If host then initialize owner smoother.
              * Host will use owner smoothing settings for more
              * accurate results. */
@@ -358,7 +358,7 @@ namespace FishNet.Component.Prediction
         }
 
         public override void OnStopNetwork()
-        {          
+        {
             ChangeSubscriptions(false);
             UpdateRigidbodiesCount(false);
             base.TimeManager.OnPostTick -= TimeManager_OnPostTick;
@@ -553,17 +553,25 @@ namespace FishNet.Component.Prediction
             if (!IsRigidbodyPrediction)
                 return;
 
+            bool warn = false;
             _rigidbodyPauser = new RigidbodyPauser();
             if (_predictionType == PredictionType.Rigidbody)
             {
+                if (_rigidbody.isKinematic)
+                    warn = true;
                 _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
                 _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody, true, _graphicalObject);
             }
             else
             {
+                if (_rigidbody2d.isKinematic || !_rigidbody2d.simulated)
+                    warn = true;
                 _rigidbody2d.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
                 _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody2D, true, _graphicalObject);
             }
+
+            if (warn)
+                base.NetworkManager.LogWarning($"When using Kinematic or non-simulated rigidbodies you typically will want to use {nameof(PredictionType.Other)} and synchronize to spectators with a {nameof(NetworkTransform)}.");
         }
 
         /// <summary>
