@@ -767,6 +767,19 @@ namespace FishNet.Managing.Timing
 
         #region Tick conversions.
         /// <summary>
+        /// Returns the 0 to 1 ratio of how far the TimeManager is into the next tick.
+        /// </summary>
+        /// <returns></returns>
+        public double GetTickRatio()
+        {
+            if (_networkManager == null)
+                return default;
+
+            double delta = (_networkManager.IsServer) ? TickDelta : _adjustedTickDelta;
+            double ratio = (_elapsedTickTime / delta);
+            return ratio;
+        }
+        /// <summary>
         /// Returns the percentage of how far the TimeManager is into the next tick.
         /// </summary>
         /// <returns></returns>
