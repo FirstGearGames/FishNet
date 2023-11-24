@@ -41,7 +41,6 @@ namespace FishNet.CodeGenerating.Extension
             if (baseMd == null)
                 return null;
 
-
             MethodReference baseMr;
             TypeReference baseTr = td.BaseType;
             if (baseTr.CachedResolve(session).HasGenericParameters)

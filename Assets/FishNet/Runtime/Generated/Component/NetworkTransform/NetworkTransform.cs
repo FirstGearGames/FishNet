@@ -91,7 +91,7 @@ namespace FishNet.Component.Transforming
             public bool Y;
             public bool Z;
         }
-        private enum ChangedDelta
+        private enum ChangedDelta : uint
         {
             Unset = 0,
             PositionX = 1,
@@ -102,7 +102,8 @@ namespace FishNet.Component.Transforming
             ScaleX = 32,
             ScaleY = 64,
             ScaleZ = 128,
-            Nested = 256
+            Nested = 256,
+            All = ~0u,
         }
         private enum ChangedFull
         {
@@ -551,6 +552,10 @@ namespace FishNet.Component.Transforming
         /// If not unset a force send will occur on or after this tick.
         /// </summary>
         private uint _forceSendTick = TimeManager.UNSET_TICK;
+        /// <summary>
+        /// Returns all properties as changed.
+        /// </summary>
+        private ChangedDelta _fullChanged => ChangedDelta.All;
         #endregion
 
         #region Const.
@@ -600,8 +605,7 @@ namespace FishNet.Component.Transforming
             {
                 //Send latest.
                 PooledWriter writer = WriterPool.Retrieve();
-                ChangedDelta fullTransform = (ChangedDelta.PositionX | ChangedDelta.PositionY | ChangedDelta.PositionZ | ChangedDelta.Extended | ChangedDelta.ScaleX | ChangedDelta.ScaleY | ChangedDelta.ScaleZ | ChangedDelta.Rotation);
-                SerializeChanged(fullTransform, writer, 0);
+                SerializeChanged(_fullChanged, writer, 0);
                 TargetUpdateTransform(connection, writer.GetArraySegment(), Channel.Reliable);
                 writer.Store();
             }
@@ -1041,15 +1045,6 @@ namespace FishNet.Component.Transforming
                     return;
                 td.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, parentBehaviour);
             }
-        }
-
-        /// <summary>
-        /// Stores an object if it has value then sets it to default.
-        /// </summary>
-        private void StoreObject<T>(ref T obj) where T : IResettable
-        {
-            ResettableObjectCaches<T>.Store(obj);
-            obj = default;
         }
 
         /// <summary>
@@ -1759,12 +1754,16 @@ namespace FishNet.Component.Transforming
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ChangedDelta GetChanged(TransformData transformData)
         {
-            /* If parent behaviour exist.
-            * Parent isn't sent as a delta so
-            * if it exist always send regardless
-            * of the previously sent transform
-            * data. */
-            return GetChanged(ref transformData.Position, ref transformData.Rotation, ref transformData.Scale, transformData.ParentBehaviour);
+            //If there is no tick then transformData is likely default, and should not be compared against.
+            if (transformData.Tick == TimeManager.UNSET_TICK)
+                return _fullChanged;
+            else
+                /* If parent behaviour exist.
+                * Parent isn't sent as a delta so
+                * if it exist always send regardless
+                * of the previously sent transform
+                * data. */
+                return GetChanged(ref transformData.Position, ref transformData.Rotation, ref transformData.Scale, transformData.ParentBehaviour);
         }
         /// <summary>
         /// Gets transform values that have changed against specified proprties.
