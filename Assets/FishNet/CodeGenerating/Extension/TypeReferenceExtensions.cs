@@ -33,20 +33,6 @@ namespace FishNet.CodeGenerating.Extension
             return str;
         }
 
-        /// <summary>
-        /// Returns a method in the next base class.
-        /// </summary>
-        public static MethodDefinition GetMethodInBase(this TypeReference tr, CodegenSession session, string methodName)
-        {
-            TypeDefinition td = tr.CachedResolve(session);
-            if (td.BaseType == null)
-                return null;
-
-            td = td.BaseType.CachedResolve(session);
-            return td.GetMethod(methodName);
-        }
-
-
 
         /// <summary>
         /// Makes a GenericInstanceType.

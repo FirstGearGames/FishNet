@@ -221,7 +221,7 @@ namespace FishNet.CodeGenerating.Processing
                 return;
 
             //Base Awake.
-            MethodReference baseAwakeMr = td.GetMethodInBase(base.Session, NetworkBehaviourHelper.AWAKE_METHOD_NAME);
+            MethodReference baseAwakeMr = td.GetMethodReferenceInBase(base.Session, NetworkBehaviourHelper.AWAKE_METHOD_NAME);
             //This Awake.
             MethodDefinition tdAwakeMd = td.GetMethod(NetworkBehaviourHelper.AWAKE_METHOD_NAME);
 

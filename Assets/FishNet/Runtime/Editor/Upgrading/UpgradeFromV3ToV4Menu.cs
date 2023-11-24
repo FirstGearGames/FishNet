@@ -68,5 +68,5 @@ namespace FishNet.Editing.Upgrading
 
 
     }
-#endif
 }
+#endif
