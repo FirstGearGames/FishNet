@@ -602,7 +602,9 @@ namespace FishNet.Managing.Client
              * This still doesn't account for latency but
              * it's the best we can do until the client gets
              * a ping response. */
-            networkManager.TimeManager.Tick = networkManager.TimeManager.LastPacketTick;
+            //Only do this if not also server.
+            if (!networkManager.IsServer)
+                networkManager.TimeManager.Tick = networkManager.TimeManager.LastPacketTick;
 
             //Mark as authenticated.
             Connection.ConnectionAuthenticated();

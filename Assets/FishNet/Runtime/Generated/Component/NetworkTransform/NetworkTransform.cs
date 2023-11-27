@@ -232,13 +232,44 @@ namespace FishNet.Component.Transforming
                 Available = 1,
                 Active = 2
             }
+
+            /// <summary>
+            /// True if default state. This becomes false during an update and true when resetting state.
+            /// </summary>
+            public bool IsDefault { get; private set; } = true;
+            /// <summary>
+            /// Tick this data was received or created.
+            /// </summary>
             public uint Tick;
-            public bool Snapped;
+            /// <summary>
+            /// True if this data has already been checked for snapping.
+            /// Snapping calls may occur multiple times when data is received, depending why or how it came in.
+            /// This check prevents excessive work.
+            /// </summary>
+            public bool SnappingChecked;
+            /// <summary>
+            /// Local position in the data.
+            /// </summary>
             public Vector3 Position;
+            /// <summary>
+            /// Local rotation in the data.
+            /// </summary>
             public Quaternion Rotation;
+            /// <summary>
+            /// Local scale in the data.
+            /// </summary>
             public Vector3 Scale;
+            /// <summary>
+            /// Position to extrapolate towards.
+            /// </summary>
             public Vector3 ExtrapolatedPosition;
+            /// <summary>
+            /// Current state of extrapolation.
+            /// </summary>
             public ExtrapolateState ExtrapolationState;
+            /// <summary>
+            /// NetworkBehaviour which is the parent of this object for Tick.
+            /// </summary>
             public NetworkBehaviour ParentBehaviour;
             public TransformData() { }
 
@@ -248,6 +279,7 @@ namespace FishNet.Component.Transforming
             }
             internal void Update(uint tick, Vector3 position, Quaternion rotation, Vector3 scale, Vector3 extrapolatedPosition, NetworkBehaviour parentBehaviour)
             {
+                IsDefault = false;
                 Tick = tick;
                 Position = position;
                 Rotation = rotation;
@@ -258,8 +290,9 @@ namespace FishNet.Component.Transforming
 
             public void ResetState()
             {
+                IsDefault = true;
                 Tick = 0;
-                Snapped = false;
+                SnappingChecked = false;
                 Position = Vector3.zero;
                 Rotation = Quaternion.identity;
                 Scale = Vector3.zero;
@@ -1755,7 +1788,7 @@ namespace FishNet.Component.Transforming
         private ChangedDelta GetChanged(TransformData transformData)
         {
             //If there is no tick then transformData is likely default, and should not be compared against.
-            if (transformData.Tick == TimeManager.UNSET_TICK)
+            if (transformData.IsDefault)
                 return _fullChanged;
             else
                 /* If parent behaviour exist.
@@ -1816,10 +1849,10 @@ namespace FishNet.Component.Transforming
         private void SnapProperties(TransformData transformData, bool force = false)
         {
             //Already snapped.
-            if (transformData.Snapped)
+            if (transformData.SnappingChecked)
                 return;
 
-            transformData.Snapped = true;
+            transformData.SnappingChecked = true;
             Transform t = transform;
 
             //Position.
