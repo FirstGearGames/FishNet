@@ -46,11 +46,19 @@ namespace FishNet.CodeGenerating.Processing
         /// Processes SyncVars and Objects.
         /// </summary>
         /// <param name="syncTypeHash">Number of SyncTypes implemented in this typeDef and those inherited of.</param>
-        internal bool ProcessLocal(TypeDefinition typeDef, ref uint syncTypeHash)
+        internal bool ProcessLocal(TypeDefinition typeDef)
         {
             bool modified = false;
 
             ValidateVersion3ToVersion4SyncVars(typeDef);
+
+            uint startingHash = GetSyncTypeCountInParents(typeDef);
+            uint totalSyncTypes = (startingHash + GetSyncTypeCount(typeDef));
+            if (totalSyncTypes > NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE)
+            {
+                base.LogError($"Found {totalSyncTypes} SyncTypes within {typeDef.FullName} and inherited classes. The maximum number of allowed SyncTypes within type and inherited types is {NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
+                return false;
+            }
 
             FieldDefinition[] fieldDefs = typeDef.Fields.ToArray();
             foreach (FieldDefinition fd in fieldDefs)
@@ -79,13 +87,13 @@ namespace FishNet.CodeGenerating.Processing
                 bool isGeneric = fd.FieldType.IsGenericInstance;
                 if (isGeneric)
                 {
-                    if (TryCreateGenericSyncType(syncTypeHash, fd, isSyncObject))
-                        syncTypeHash++;
+                    if (TryCreateGenericSyncType(startingHash, fd, isSyncObject))
+                        startingHash++;
                 }
                 else
                 {
-                    if (TryCreateNonGenericSyncType(syncTypeHash, fd, isSyncObject))
-                        syncTypeHash++;
+                    if (TryCreateNonGenericSyncType(startingHash, fd, isSyncObject))
+                        startingHash++;
                 }
 
                 modified = true;
@@ -107,6 +115,24 @@ namespace FishNet.CodeGenerating.Processing
             {
                 if (IsSyncType(fd))
                     count++;
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Gets SyncType count in all of typeDefs parents, excluding typeDef itself.
+        /// </summary>
+        internal uint GetSyncTypeCountInParents(TypeDefinition typeDef)
+        {
+            uint count = 0;
+            while (true)
+            {
+                typeDef = typeDef.GetNextBaseClassToProcess(base.Session);
+                if (typeDef != null)
+                    count += GetSyncTypeCount(typeDef);
+                else
+                    break;
             }
 
             return count;
@@ -177,7 +203,8 @@ namespace FishNet.CodeGenerating.Processing
                 //Ignore constructors.
                 if (methodDef.IsConstructor)
                     continue;
-
+                if (methodDef.IsAbstract)
+                    continue;
                 for (int i = 0; i < methodDef.Body.Instructions.Count; i++)
                 {
                     Instruction inst = methodDef.Body.Instructions[i];

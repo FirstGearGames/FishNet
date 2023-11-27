@@ -82,7 +82,8 @@ namespace FishNet.Object
         /// <param name="index"></param>
         internal void RegisterSyncType(SyncBase sb, uint index)
         {
-            _syncTypes.Add(index, sb);
+            if (!_syncTypes.TryAdd(index, sb))
+                FishNet.Managing.NetworkManager.StaticLogError($"SyncType key {index} has already been added for {GetType().FullName} on {gameObject.name}");
         }
         /// <summary>
         /// Sets a SyncVar as dirty.

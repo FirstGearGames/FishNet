@@ -318,10 +318,9 @@ namespace FishNet.Component.Prediction
                     /* Move only first rigidbody to save
                      * performance. If rb has a parent then unset
                     * parent as child objects cannot be moved. */
-#if !FISHNET_RELEASE_MODE
                     if (rb.transform.parent != null)
                         rb.transform.SetParent(null);
-#endif
+
                     SceneManager.MoveGameObjectToScene(rb.transform.gameObject, kinematicScene);
 
                     return true;
@@ -350,10 +349,8 @@ namespace FishNet.Component.Prediction
                     rbData.Update(rb);
                     _rigidbody2dDatas[index] = rbData;
 
-#if !FISHNET_RELEASE_MODE
                     if (rb.transform.parent != null)
                         rb.transform.SetParent(null);
-#endif
 
                     SceneManager.MoveGameObjectToScene(rb.transform.gameObject, kinematicScene);
                     return true;
@@ -393,7 +390,6 @@ namespace FishNet.Component.Prediction
                         return false;
 
                     SceneManager.MoveGameObjectToScene(rb.transform.gameObject, rbData.SimulatedScene);
-#if !FISHNET_RELEASE_MODE
                     /* If was moved while having a parent
                      * then set back to the same parent. If the parent does
                      * not exist then the object must have been destroyed.
@@ -406,7 +402,6 @@ namespace FishNet.Component.Prediction
                         else
                             MonoBehaviour.Destroy(rb.gameObject);
                     }
-#endif
 
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;
@@ -436,7 +431,6 @@ namespace FishNet.Component.Prediction
                         return false;
 
                     SceneManager.MoveGameObjectToScene(rb.transform.gameObject, rbData.SimulatedScene);
-#if !FISHNET_RELEASE_MODE
                     if (rbData.HasParent)
                     {
                         Transform par = rbData.Parent;
@@ -445,7 +439,6 @@ namespace FishNet.Component.Prediction
                         else
                             MonoBehaviour.Destroy(rb.gameObject);
                     }
-#endif
 
                     rb.velocity = rbData.Velocity;
                     rb.angularVelocity = rbData.AngularVelocity;

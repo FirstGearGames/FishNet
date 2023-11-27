@@ -71,7 +71,6 @@ namespace FishNet.CodeGenerating.Processing
             * as well error if the awake does not exist, such as could not be created. */
             typeDefs.Reverse();
 
-            uint declaredSyncTypes = 0;
             foreach (TypeDefinition td in typeDefs)
             {
                 /* Create NetworkInitialize before-hand so the other procesors
@@ -102,7 +101,7 @@ namespace FishNet.CodeGenerating.Processing
                  * each registers to their own delegates this is possible. */
 
                 /* SyncTypes. */
-                modified |= base.GetClass<SyncTypeProcessor>().ProcessLocal(td, ref declaredSyncTypes);
+                modified |= base.GetClass<SyncTypeProcessor>().ProcessLocal(td);
 
                 //Call base networkinitialize early/late.
                 CallBaseOnNetworkInitializeMethods(td);
@@ -134,12 +133,6 @@ namespace FishNet.CodeGenerating.Processing
 
                 //70ms
                 _processedClasses.Add(td);
-            }
-
-            if (declaredSyncTypes > NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE)
-            {
-                base.LogError($"Found {declaredSyncTypes} SyncTypes within {typeDef.FullName} and inherited classes. The maximum number of allowed SyncTypes within type and inherited types is {NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
-                return false;
             }
 
             /* If here then all inerited classes for firstTypeDef have

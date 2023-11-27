@@ -94,15 +94,10 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterServerRpc(uint hash, ServerRpcDelegate del)
         {
-            if (_serverRpcDelegates.TryGetValueIL2CPP(hash, out ServerRpcDelegate currentDelegate))
-            {
-                FishNet.Managing.NetworkManager.StaticLogError($"ServerRpc hash {hash} registered multiple times. First registration by {currentDelegate.Method.DeclaringType.GetType().FullName}. New registration by {GetType().FullName}.");
-            }
-            else
-            {
-                _serverRpcDelegates[hash] = del;
+            if (_serverRpcDelegates.TryAdd(hash, del))
                 IncreaseRpcMethodCount();
-            }
+            else
+                FishNet.Managing.NetworkManager.StaticLogError($"ServerRpc key {hash} has already been added for {GetType().FullName} on {gameObject.name}");
         }
         /// <summary>
         /// Registers a RPC method.
@@ -114,15 +109,10 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterObserversRpc(uint hash, ClientRpcDelegate del)
         {
-            if (_observersRpcDelegates.TryGetValueIL2CPP(hash, out ClientRpcDelegate currentDelegate))
-            {
-                FishNet.Managing.NetworkManager.StaticLogError($"ObserverRpc hash {hash} registered multiple times. First registration by {currentDelegate.Method.DeclaringType.GetType().FullName}. New registration by {GetType().FullName}.");
-            }
-            else
-            {
-                _observersRpcDelegates[hash] = del;
+            if (_observersRpcDelegates.TryAdd(hash, del))
                 IncreaseRpcMethodCount();
-            }
+            else
+                FishNet.Managing.NetworkManager.StaticLogError($"ObserversRpc key {hash} has already been added for {GetType().FullName} on {gameObject.name}");
         }
         /// <summary>
         /// Registers a RPC method.
@@ -134,15 +124,10 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterTargetRpc(uint hash, ClientRpcDelegate del)
         {
-            if (_targetRpcDelegates.TryGetValueIL2CPP(hash, out ClientRpcDelegate currentDelegate))
-            {
-                FishNet.Managing.NetworkManager.StaticLogError($"TargetRpc hash {hash} registered multiple times. First registration by {currentDelegate.Method.DeclaringType.GetType().FullName}. New registration by {GetType().FullName}.");
-            }
+            if (_targetRpcDelegates.TryAdd(hash, del))
+                    IncreaseRpcMethodCount();
             else
-            {
-                _targetRpcDelegates[hash] = del;
-                IncreaseRpcMethodCount();
-            }
+                FishNet.Managing.NetworkManager.StaticLogError($"TargetRpc key {hash} has already been added for {GetType().FullName} on {gameObject.name}");
         }
 
         /// <summary>
