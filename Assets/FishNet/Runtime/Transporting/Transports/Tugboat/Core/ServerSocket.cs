@@ -34,6 +34,11 @@ namespace FishNet.Transporting.Tugboat.Server
         #region Private.
         #region Configuration.
         /// <summary>
+        /// IPv6 is enabled only on demand, by default LiteNetLib always listens on IPv4 AND IPv6 which causes problems
+        /// if IPv6 is disabled on host. This can be the case in Linux environments
+        /// </summary>
+        private bool _enableIPv6 = false;
+        /// <summary>
         /// Port used by server.
         /// </summary>
         private ushort _port;
@@ -99,11 +104,12 @@ namespace FishNet.Transporting.Tugboat.Server
         /// Initializes this for use.
         /// </summary>
         /// <param name="t"></param>
-        internal void Initialize(Transport t, int unreliableMTU, PacketLayerBase packetLayer)
+        internal void Initialize(Transport t, int unreliableMTU, PacketLayerBase packetLayer, bool enableIPv6)
         {
             base.Transport = t;
             _mtu = unreliableMTU;
             _packetLayer = packetLayer;
+            _enableIPv6 = enableIPv6;
         }
 
         /// <summary>
@@ -142,8 +148,8 @@ namespace FishNet.Transporting.Tugboat.Server
             UpdateTimeout(_timeout);
 
             //Set bind addresses.
-            IPAddress ipv4;
-            IPAddress ipv6;
+            IPAddress ipv4 = null;
+            IPAddress ipv6 = null;
 
             //Set ipv4
             if (!string.IsNullOrEmpty(_ipv4BindAddress))
@@ -167,11 +173,18 @@ namespace FishNet.Transporting.Tugboat.Server
                 IPAddress.TryParse("0.0.0.0", out ipv4);
             }
 
-            //Set ipv6.
-            if (!string.IsNullOrEmpty(_ipv6BindAddress))
+            if (_enableIPv6)
             {
-                if (!IPAddress.TryParse(_ipv6BindAddress, out ipv6))
-                    ipv6 = null;
+                //Set ipv6 if protocol is enabled.
+                if (!string.IsNullOrEmpty(_ipv6BindAddress))
+                {
+                    if (!IPAddress.TryParse(_ipv6BindAddress, out ipv6))
+                        ipv6 = null;
+                }
+                else
+                {
+                    IPAddress.TryParse("0:0:0:0:0:0:0:0", out ipv6);
+                }
             }
             else
             {
@@ -181,7 +194,8 @@ namespace FishNet.Transporting.Tugboat.Server
 
 
             string ipv4FailText = (ipv4 == null) ? $"IPv4 address {_ipv4BindAddress} failed to parse. " : string.Empty;
-            string ipv6FailText = (ipv6 == null) ? $"IPv6 address {_ipv6BindAddress} failed to parse. " : string.Empty;
+            string ipv6FailText = (_enableIPv6 && ipv6 == null) ? $"IPv6 address {_ipv6BindAddress} failed to parse. "
+                : string.Empty;
             if (ipv4FailText != string.Empty || ipv6FailText != string.Empty)
             {
                 base.Transport.NetworkManager.Log($"{ipv4FailText}{ipv6FailText}Clear the bind address field to use any bind address.");
@@ -189,6 +203,10 @@ namespace FishNet.Transporting.Tugboat.Server
                 return;
             }
 
+            if (!_enableIPv6)
+            {
+                base.NetManager.IPv6Mode = IPv6Mode.Disabled;
+            }
             bool startResult = base.NetManager.Start(ipv4, ipv6, _port);
             //If started succcessfully.
             if (startResult)
