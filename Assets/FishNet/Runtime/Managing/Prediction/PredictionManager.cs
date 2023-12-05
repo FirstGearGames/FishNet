@@ -583,8 +583,8 @@ namespace FishNet.Managing.Predicting
                  * Replay up to localtick, excluding localtick. There will
                  * be no input for localtick since reconcile runs before
                  * OnTick. */
-                uint clientReplayTick = StateClientTick + 1;
-                uint serverReplayTick = StateServerTick + 1;
+                uint clientReplayTick = StateClientTick; //+ 1;
+                uint serverReplayTick = StateServerTick;// + 1;
                 while (clientReplayTick < localTick)
                 {
                     OnPreReplicateReplay?.Invoke(clientReplayTick, serverReplayTick);

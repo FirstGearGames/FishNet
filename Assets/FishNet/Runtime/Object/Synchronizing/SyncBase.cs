@@ -193,7 +193,6 @@ namespace FishNet.Object.Synchronizing.Internal
             SyncIndex = syncIndex;
             IsSyncObject = isSyncObject;
 
-            UpdateSettings(WritePermission.ServerOnly, ReadPermission.Observers, Settings.SendRate, Channel.Reliable);
             NetworkBehaviour.RegisterSyncType(this, SyncIndex);
         }
 
