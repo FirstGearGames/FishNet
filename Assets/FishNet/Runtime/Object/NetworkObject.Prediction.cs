@@ -115,45 +115,54 @@ namespace FishNet.Object
                 RigidbodyPauser.UpdateRigidbodies(transform, rbType, true, _graphicalObject);
             }
 
-            //Create SetInterpolation smoother.
-            _ownerSetInterpolationSmoother = new SetInterpolationSmoother();
-            float teleportThreshold = (_enableTeleport) ? _ownerTeleportThreshold : MoveRatesCls.UNSET_VALUE;
-            SetInterpolationSmootherData osd = new SetInterpolationSmootherData()
+            if (_graphicalObject == null)
             {
-                GraphicalObject = _graphicalObject,
-                Interpolation = _ownerInterpolation,
-                SmoothPosition = true,
-                SmoothRotation = true,
-                SmoothScale = true,
-                NetworkObject = this,
-                TeleportThreshold = teleportThreshold,
-            };
-            _ownerSetInterpolationSmoother.InitializeOnce(osd);
-
-            //Spectator.
-            _spectatorSetInterpolationSmoother = new SetInterpolationSmoother();
-            _spectatorSetInterpolationSmoother.InitializeOnce(osd);
-
-            //Create adaptive interpolation smoother if enabled.
-            if (_spectatorAdaptiveInterpolation)
+                Debug.Log($"GraphicalObject is null on {this.ToString()}. This may be intentional, and acceptable, if you are smoothing between ticks yourself. Otherwise consider assigning the GraphicalObject field."); 
+            }
+            else
             {
-                _spectatorAdaptiveInterpolationSmoother = new AdaptiveInterpolationSmoother();
-                //Smoothing values.
-                AdaptiveInterpolationSmoothingData aisd = GetAdaptiveSmoothingData(_adaptiveSmoothingType);
-                //Other details.
-                aisd.GraphicalObject = _graphicalObject;
-                aisd.SmoothPosition = true;
-                aisd.SmoothRotation = true;
-                aisd.SmoothScale = true;
-                aisd.NetworkObject = this;
-                aisd.TeleportThreshold = teleportThreshold;
-                _spectatorAdaptiveInterpolationSmoother.Initialize(aisd);
+                //Create SetInterpolation smoother.
+                _ownerSetInterpolationSmoother = new SetInterpolationSmoother();
+                float teleportThreshold = (_enableTeleport) ? _ownerTeleportThreshold : MoveRatesCls.UNSET_VALUE;
+                SetInterpolationSmootherData osd = new SetInterpolationSmootherData()
+                {
+                    GraphicalObject = _graphicalObject,
+                    Interpolation = _ownerInterpolation,
+                    SmoothPosition = true,
+                    SmoothRotation = true,
+                    SmoothScale = true,
+                    NetworkObject = this,
+                    TeleportThreshold = teleportThreshold,
+                };
+                _ownerSetInterpolationSmoother.InitializeOnce(osd);
+
+                //Spectator.
+                _spectatorSetInterpolationSmoother = new SetInterpolationSmoother();
+                _spectatorSetInterpolationSmoother.InitializeOnce(osd);
+
+                //Create adaptive interpolation smoother if enabled.
+                if (_spectatorAdaptiveInterpolation)
+                {
+                    _spectatorAdaptiveInterpolationSmoother = new AdaptiveInterpolationSmoother();
+                    //Smoothing values.
+                    AdaptiveInterpolationSmoothingData aisd = GetAdaptiveSmoothingData(_adaptiveSmoothingType);
+                    //Other details.
+                    aisd.GraphicalObject = _graphicalObject;
+                    aisd.SmoothPosition = true;
+                    aisd.SmoothRotation = true;
+                    aisd.SmoothScale = true;
+                    aisd.NetworkObject = this;
+                    aisd.TeleportThreshold = teleportThreshold;
+                    _spectatorAdaptiveInterpolationSmoother.Initialize(aisd);
+                }
             }
         }
 
         private void Prediction_Update()
         {
             if (!_enablePrediction)
+                return;
+            if (_graphicalObject == null)
                 return;
 
             _ownerSetInterpolationSmoother.Update();
@@ -165,6 +174,9 @@ namespace FishNet.Object
 
         private void TimeManager_OnPreTick()
         {
+            if (_graphicalObject == null)
+                return;
+
             //Do not need to check use prediction because this method only fires if prediction is on for this object.
             _ownerSetInterpolationSmoother.OnPreTick();
             if (IsHostStarted)
@@ -174,6 +186,9 @@ namespace FishNet.Object
         }
         private void TimeManager_OnPostTick()
         {
+            if (_graphicalObject == null)
+                return;
+
             //Do not need to check use prediction because this method only fires if prediction is on for this object.
             _ownerSetInterpolationSmoother.OnPostTick();
             if (IsHostStarted)
@@ -309,6 +324,9 @@ namespace FishNet.Object
         /// </summary>
         private void CollisionEntered(GameObject go)
         {
+            if (_graphicalObject == null)
+                return;
+
             _collisionStayedTick = TimeManager.LocalTick;
             _localClientCollidedObjects.Add(go);
         }
@@ -318,6 +336,8 @@ namespace FishNet.Object
         /// </summary>
         private void OnCollisionEnter2D(Collision2D collision)
         {
+            if (_graphicalObject == null)
+                return;
             if (!IsClientInitialized)
                 return;
             if (_predictionType != PredictionType.Rigidbody2D)

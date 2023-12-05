@@ -492,7 +492,10 @@ namespace FishNet.Managing.Server
             {
                 Transport t = NetworkManager.TransportManager.GetTransport(args.TransportIndex);
                 string tName = (t == null) ? "Unknown" : t.GetType().Name;
-                Debug.Log($"Local server is {state.ToString().ToLower()} for {tName}.");
+                string socketInformation = string.Empty;
+                if (state == LocalConnectionState.Starting)
+                    socketInformation = $" Listening on port {t.GetPort()}.";
+                Debug.Log($"Local server is {state.ToString().ToLower()} for {tName}.{socketInformation}");
             }
 
             NetworkManager.UpdateFramerate();

@@ -262,6 +262,8 @@ namespace FishNet.Object
         /// </summary>
         public void ClearReplicateCache()
         {
+            _lastReadReconcileTick = TimeManager.UNSET_TICK;
+            _lastReadReplicateTick = TimeManager.UNSET_TICK;
             _networkObjectCache.ResetReplicateTick();
             ClearReplicateCache_Virtual<IReplicateData>(null, null);
         }
@@ -347,6 +349,7 @@ namespace FishNet.Object
             //writer = CreateLinkedRpc(link, methodWriter, Channel.Unreliable);
             //else //todo add support for -> server rpc links.
 
+            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
             writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
             NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), false);
 
@@ -990,6 +993,8 @@ namespace FishNet.Object
                 methodWriter.WriteTickUnpacked(TimeManager.LocalTick);
             }
             methodWriter.WriteReplicate<T>(replicatesHistory, offset);
+
+            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
 
             if (toServer)
@@ -1069,7 +1074,6 @@ namespace FishNet.Object
             //Early exit if old data.
             if (lastPacketTick <= _networkObjectCache.ReplicateTick.RemoteTick)
                 return;
-
             /* Replicate rpc readers relay to this method and
 			 * do not have an owner check in the generated code. 
 			 * Only server needs to check for owners. Clients
@@ -1095,7 +1099,7 @@ namespace FishNet.Object
             if (IsServerStarted)
             {
                 ArraySegment<byte> replicateDataOnly = new ArraySegment<byte>(reader.GetByteBuffer(), startingPosition, (reader.Position - startingPosition));
-                Replicate_Server_SendToSpectators<T>(hash, startingQueueCount, replicateDataOnly, receivedReplicatesCount);
+                Replicate_Server_SendToSpectators<T>(hash, startingQueueCount, replicateDataOnly, receivedReplicatesCount, channel);
             }
         }
 #endif
@@ -1106,7 +1110,7 @@ namespace FishNet.Object
         /// Sends data from a reader which only contains the replicate packet.
         /// </summary>
         [MakePublic]
-        internal void Replicate_Server_SendToSpectators<T>(uint hash, int startingReplicatesQueueCount, ArraySegment<byte> data, int queueCount) where T : IReplicateData
+        internal void Replicate_Server_SendToSpectators<T>(uint hash, int startingReplicatesQueueCount, ArraySegment<byte> data, int queueCount, Channel channel) where T : IReplicateData
         {
             //Should not be possible.
             if (queueCount == 0)
@@ -1150,7 +1154,6 @@ namespace FishNet.Object
 
             //Write history to methodWriter.
             methodWriter.WriteArraySegment(data);
-            Channel channel = Channel.Unreliable;
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
 
             //Exclude owner and if clientHost, also localClient.
@@ -1415,8 +1418,8 @@ namespace FishNet.Object
             {
                 //Remove from replicates up to reconcile.
                 int replicateIndex = GetReplicateHistoryIndex<T2>(data.GetTick(), replicatesHistory);
-                if (replicateIndex >= 0)
-                    replicatesHistory.RemoveRange(0, replicateIndex + 1);
+                if (replicateIndex > 0)
+                    replicatesHistory.RemoveRange(0, replicateIndex);
             }
             //Call reconcile user logic.
             reconcileDel?.Invoke(data, Channel.Reliable);
