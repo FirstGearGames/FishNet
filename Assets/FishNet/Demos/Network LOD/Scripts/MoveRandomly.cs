@@ -6,15 +6,14 @@ namespace FishNet.Demo.NetworkLod
 
     public class MoveRandomly : NetworkBehaviour
     {
-
+        [SerializeField]
+        private float _moveRate = 3f;
         //Colors green for client.
         [SerializeField]
         private Renderer _renderer;
         [SerializeField]
         private bool _updateRotation;
 
-        //Time to move to new position.
-        private const float _moveRate = 3f;
         //Maximum range for new position.
         private const float _range = 10f;
         //Position to move towards.

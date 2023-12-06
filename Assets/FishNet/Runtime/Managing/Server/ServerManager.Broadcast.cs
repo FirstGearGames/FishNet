@@ -2,6 +2,7 @@
 using FishNet.Broadcast.Helping;
 using FishNet.Connection;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Transporting;
 using FishNet.Managing.Utility;
 using FishNet.Object;
 using FishNet.Serializing;
@@ -221,7 +222,7 @@ namespace FishNet.Managing.Server
             }
 
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(writer, message, channel);
+            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
             NetworkManager.TransportManager.SendToClient((byte)channel, segment, connection);
             writer.Store();
@@ -246,7 +247,7 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(writer, message, channel);
+            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             foreach (NetworkConnection conn in connections)
@@ -435,7 +436,7 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(writer, message, channel);
+            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             foreach (NetworkConnection conn in Clients.Values)

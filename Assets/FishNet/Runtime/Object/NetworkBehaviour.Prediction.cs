@@ -346,6 +346,7 @@ namespace FishNet.Object
             //writer = CreateLinkedRpc(link, methodWriter, Channel.Unreliable);
             //else //todo add support for -> server rpc links.
 
+            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
             writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
             NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), false);
 
@@ -989,6 +990,8 @@ namespace FishNet.Object
                 methodWriter.WriteTickUnpacked(TimeManager.LocalTick);
             }
             methodWriter.WriteReplicate<T>(replicatesHistory, offset);
+
+            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
 
             if (toServer)

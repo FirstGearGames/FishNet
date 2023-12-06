@@ -245,6 +245,9 @@ namespace FishNet.Managing.Observing
         /// </summary>
         private void ValidateLevelOfDetails()
         {
+#if !FISHNET_PRO
+            _enableNetworkLod = false;
+#endif
             
         }
 

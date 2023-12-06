@@ -165,7 +165,7 @@ namespace FishNet.Managing.Client
             }
 
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(writer, message, channel);
+            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             NetworkManager.TransportManager.SendToServer((byte)channel, segment);
