@@ -182,7 +182,6 @@ namespace FishNet.Object
              * pushed through when despawn is called. */
             if (!IsSpawned)
             {
-                SyncTypes_ResetState();
                 return true;
             }
 
