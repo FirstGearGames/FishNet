@@ -53,7 +53,7 @@ namespace FishNet.Component.Observing
         {
             _maximumDistance = value;
             _sqrMaximumDistance = (_maximumDistance * _maximumDistance);
-            _sqrHideMaximumDistance = 1f + (_sqrMaximumDistance * _hideDistancePercent);
+            _sqrHideMaximumDistance = _sqrMaximumDistance * (1f + _hideDistancePercent);
         }
 
         /// <summary>
