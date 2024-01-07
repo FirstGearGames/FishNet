@@ -75,6 +75,8 @@ namespace FishNet.Object
         private static ReadPermission[] _readPermissions;
         #endregion
 
+        internal bool SyncTypeDirty => _syncTypeDirty;
+
         /// <summary>
         /// Registers a SyncType.
         /// </summary>
@@ -174,7 +176,7 @@ namespace FishNet.Object
         /// Writers dirty SyncTypes if their write tick has been met.
         /// </summary>
         /// <returns>True if there are no pending dirty sync types.</returns>
-        internal bool WriteDirtySyncTypes(bool ignoreInterval = false)
+        internal bool WriteDirtySyncTypes(bool isDespawn = false)
         {
             /* Can occur when a synctype is queued after
              * the object is marked for destruction. This should not
@@ -206,7 +208,7 @@ namespace FishNet.Object
                     continue;
 
                 dirtyFound = true;
-                if (ignoreInterval || sb.SyncTimeMet(tick))
+                if (isDespawn || sb.SyncTimeMet(tick))
                 {
                     //If writers still need to be reset.
                     if (!writersReset)
@@ -218,8 +220,8 @@ namespace FishNet.Object
                     }
 
                     //Find channel.
-                    byte channel = (byte)sb.Channel;
-                    sb.ResetDirty();
+                    byte channel = (byte)(isDespawn ? Channel.Reliable : sb.Channel);
+                    sb.ResetDirty(forceReset: isDespawn);
                     //If ReadPermission is owner but no owner skip this syncvar write.
                     if (sb.Settings.ReadPermission == ReadPermission.OwnerOnly && !_networkObjectCache.Owner.IsValid)
                         continue;
@@ -248,14 +250,8 @@ namespace FishNet.Object
                 }
             }
 
-            //If no dirty were found.
-            if (!dirtyFound)
-            {
-                _syncTypeDirty = false;
-                return true;
-            }
             //At least one sync type was dirty.
-            else if (dataWritten)
+            if (dataWritten)
             {
                 for (int i = 0; i < _syncTypeWriters.Length; i++)
                 {
@@ -296,7 +292,14 @@ namespace FishNet.Object
                 }
             }
 
-            /* Fall through. If here then sync types are still pending
+            //If no dirty were found or we flushed all dirty values from a despawn
+            if (!dirtyFound || isDespawn)
+            {
+                _syncTypeDirty = false;
+                return true;
+            }
+
+            /* If here then sync types are still pending
              * being written or were just written this frame. */
             return false;
         }

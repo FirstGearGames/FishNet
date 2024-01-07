@@ -35,7 +35,7 @@ namespace FishNet.Object.Synchronizing.Internal
         internal float SendRate => Settings.SendRate;
         /// <summary>
         /// True if this SyncVar needs to send data.
-        /// </summary>        
+        /// </summary>
         public bool IsDirty { get; private set; }
         /// <summary>
         /// NetworkManager this uses.
@@ -362,8 +362,15 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Sets IsDirty to false.
         /// </summary>
-        internal void ResetDirty()
+        internal void ResetDirty(bool forceReset)
         {
+            if (forceReset)
+            {
+                IsDirty = false;
+                _currentChannel = Settings.Channel;
+                return;
+            }
+
             //If not a sync object and using unreliable channel.
             if (!IsSyncObject && Settings.Channel == Channel.Unreliable)
             {
@@ -442,7 +449,7 @@ namespace FishNet.Object.Synchronizing.Internal
             _changeId = 0;
             _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
             NextSyncTick = 0;
-            ResetDirty();
+            ResetDirty(forceReset: true);
         }
     }
 
