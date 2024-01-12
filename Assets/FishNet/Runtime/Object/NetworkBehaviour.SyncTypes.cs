@@ -1,6 +1,7 @@
 ﻿using FishNet.CodeGenerating;
 using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing;
 using FishNet.Managing.Transporting;
 using FishNet.Object.Delegating;
 using FishNet.Object.Synchronizing;
@@ -83,7 +84,7 @@ namespace FishNet.Object
         internal void RegisterSyncType(SyncBase sb, uint index)
         {
             if (!_syncTypes.TryAdd(index, sb))
-                FishNet.Managing.NetworkManager.StaticLogError($"SyncType key {index} has already been added for {GetType().FullName} on {gameObject.name}");
+                NetworkManager.LogError($"SyncType key {index} has already been added for {GetType().FullName} on {gameObject.name}");
         }
         /// <summary>
         /// Sets a SyncVar as dirty.
@@ -98,7 +99,7 @@ namespace FishNet.Object
              * This can happen even if a client is going to see
              * this object because the server side initializes
              * before observers are built. */
-            if (_networkObjectCache.Observers.Count == 0)
+            if (_networkObjectCache.Observers.Count == 0 && !_networkObjectCache.PredictedSpawner.IsValid)
                 return false;
 
             if (!_syncTypeDirty)

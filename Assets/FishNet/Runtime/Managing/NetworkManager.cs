@@ -97,7 +97,7 @@ namespace FishNet.Managing
                 }
                 return _instances;
             }
-        }  
+        }
         /// <summary>
         /// PredictionManager for this NetworkManager.
         /// </summary>
@@ -238,7 +238,7 @@ namespace FishNet.Managing
                 return;
 
             if (TryGetComponent<NetworkObject>(out _))
-                LogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
+                InternalLogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
 
             SpawnablePrefabs.InitializePrefabRange(0);
             SpawnablePrefabs.SetCollectionId(0);
@@ -361,7 +361,7 @@ namespace FishNet.Managing
             //If to destroy the newest.
             if (_persistence == PersistenceType.DestroyNewest)
             {
-                Log($"NetworkManager on object {gameObject.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance already exist on {firstInstance.name}.");
+                InternalLog($"NetworkManager on object {gameObject.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance already exist on {firstInstance.name}.");
                 Destroy(gameObject);
                 //This one is being destroyed because its the newest.
                 return false;
@@ -369,7 +369,7 @@ namespace FishNet.Managing
             //If to destroy the oldest.
             else if (_persistence == PersistenceType.DestroyOldest)
             {
-                Log($"NetworkManager on object {firstInstance.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance has been created on {gameObject.name}.");
+                InternalLog($"NetworkManager on object {firstInstance.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance has been created on {gameObject.name}.");
                 Destroy(firstInstance.gameObject);
                 //This being the new one will persist, allow initialization.
                 return true;
@@ -377,7 +377,7 @@ namespace FishNet.Managing
             //Unhandled.
             else
             {
-                Log($"Persistance type of {_persistence} is unhandled on {gameObject.name}. Initialization will not proceed.");
+                InternalLog($"Persistance type of {_persistence} is unhandled on {gameObject.name}. Initialization will not proceed.");
                 return false;
             }
         }
@@ -504,7 +504,7 @@ namespace FishNet.Managing
             NetworkObject nob;
             if (!prefab.TryGetComponent<NetworkObject>(out nob))
             {
-                LogError($"NetworkObject was not found on {prefab}. An instantiated NetworkObject cannot be returned.");
+                InternalLogError($"NetworkObject was not found on {prefab}. An instantiated NetworkObject cannot be returned.");
                 return null;
             }
             else
@@ -520,7 +520,7 @@ namespace FishNet.Managing
             NetworkObject nob;
             if (!prefab.TryGetComponent<NetworkObject>(out nob))
             {
-                LogError($"NetworkObject was not found on {prefab}. An instantiated NetworkObject cannot be returned.");
+                InternalLogError($"NetworkObject was not found on {prefab}. An instantiated NetworkObject cannot be returned.");
                 return null;
             }
             else

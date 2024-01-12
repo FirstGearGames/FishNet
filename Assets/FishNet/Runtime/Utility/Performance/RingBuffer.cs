@@ -186,7 +186,7 @@ namespace FishNet.Utility
         {
             if (capacity <= 0)
             {
-                NetworkManager.StaticLogError($"Collection length must be larger than 0.");
+                NetworkManagerExtensions.LogError($"Collection length must be larger than 0.");
                 return;
             }
 
@@ -296,7 +296,7 @@ namespace FishNet.Utility
                 return;
             if (length < 0)
             {
-                NetworkManager.StaticLogError($"Negative values cannot be removed.");
+                NetworkManagerExtensions.LogError($"Negative values cannot be removed.");
                 return;
             }
             //Full reset if value is at or more than written.
@@ -328,7 +328,7 @@ namespace FishNet.Utility
         {
             if (!Initialized)
             {
-                NetworkManager.StaticLogError($"RingBuffer has not yet been initialized.");
+                NetworkManagerExtensions.LogError($"RingBuffer has not yet been initialized.");
                 return false;
             }
 

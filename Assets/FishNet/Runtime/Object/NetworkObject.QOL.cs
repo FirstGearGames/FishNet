@@ -84,7 +84,7 @@ namespace FishNet.Object
         /// </summary>
         public bool IsHostStarted => (IsClientStarted && IsServerStarted);
         /// <summary>
-        /// True if this object hsa been initialized on the server and client side.
+        /// True if this object has been initialized on the server and client side.
         /// </summary>
         public bool IsHostInitialized => (IsClientInitialized && IsServerInitialized);
         /// <summary>
@@ -211,11 +211,7 @@ namespace FishNet.Object
                 if (error)
                 {
                     string message = $"ComponentIndex of {componentIndex} is out of bounds on {gameObject.name} [id {ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.";
-                    if (NetworkManager == null)
-                        NetworkManager.StaticLogError(message);
-                    else
-                        NetworkManager.LogError(message);
-
+                    NetworkManager.LogError(message);
                 }
             }
 

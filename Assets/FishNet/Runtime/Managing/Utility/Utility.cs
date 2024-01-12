@@ -42,19 +42,9 @@ namespace FishNet.Managing.Utility
              * for a sanity check. */
             else
             {
-                LogError($"Operation is unhandled for packetId {(PacketId)packetId} on channel {channel}.");
+                reader.NetworkManager.LogError($"Operation is unhandled for packetId {(PacketId)packetId} on channel {channel}.");
                 return (int)MissingObjectPacketLength.PurgeRemaiming;
             }
-
-            //Logs an error message.
-            void LogError(string message)
-            {
-                if (reader.NetworkManager != null)
-                    reader.NetworkManager.LogError(message);
-                else
-                    NetworkManager.StaticLogError(message);
-            }
-
         }
 
     }

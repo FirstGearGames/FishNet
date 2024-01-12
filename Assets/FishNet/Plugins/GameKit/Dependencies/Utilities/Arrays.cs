@@ -19,13 +19,13 @@ namespace GameKit.Dependencies.Utilities
         /// Adds an entry to a list if it does not exist already.
         /// </summary>
         /// <returns>True if being added.</returns>
-        public static bool AddUnique<T>(this List<T> list, object value)
+        public static bool AddUnique<T>(this List<T> list, T value)
         {
             bool contains = list.Contains((T)value);
             if (!contains)
                 list.Add((T)value);
 
-            return contains;
+            return !contains;
         }
 
         /// <summary>

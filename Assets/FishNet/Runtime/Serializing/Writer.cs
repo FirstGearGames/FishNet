@@ -3,6 +3,7 @@ using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Object;
+using FishNet.Object.Prediction;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Constant;
@@ -773,7 +774,7 @@ namespace FishNet.Serializing
                 else
                 {
                     WriteByte(0);
-                    LogError($"GameObject {go.name} cannot be serialized because it does not have a NetworkObject nor NetworkBehaviour.");
+                    NetworkManager.LogError($"GameObject {go.name} cannot be serialized because it does not have a NetworkObject nor NetworkBehaviour.");
                 }
             }
         }
@@ -965,7 +966,7 @@ namespace FishNet.Serializing
         {
             WriteInt16(id);
         }
- 
+
         /// <summary>
         /// Writes a list.
         /// </summary>
@@ -1137,6 +1138,7 @@ namespace FishNet.Serializing
                 WriteList<T>(value, offset, value.Count - offset);
         }
 
+#if !PREDICTION_V2
         /// <summary>
         /// Writes a replication to the server.
         /// </summary>
@@ -1160,7 +1162,7 @@ namespace FishNet.Serializing
             Func<T, bool> isDefaultDel = GeneratedComparer<T>.IsDefault;
             if (compareDel == null || isDefaultDel == null)
             {
-                LogError($"ReplicateComparers not found for type {typeof(T).FullName}");
+                NetworkManager.LogError($"ReplicateComparers not found for type {typeof(T).FullName}");
                 return;
             }
 
@@ -1235,7 +1237,54 @@ namespace FishNet.Serializing
                 }
             }
         }
+#else
+        /// <summary>
+        /// Writes a replication to the server.
+        /// </summary>
+        [NotSerializer]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void WriteReplicate<T>(List<T> values, int offset, uint lastTick = 0) where T : IReplicateData
+        {
+            /* COUNT
+             * 
+             * Each Entry:
+             * 0 if the same as previous.
+             * 1 if default. */
+            int collectionCount = values.Count;
+            //Replicate list will never be null, no need to write null check.
+            //Number of entries being written.
+            byte count = (byte)(collectionCount - offset);
+            WriteByte(count);
 
+            for (int i = offset; i < collectionCount; i++)
+            {
+                T v = values[i];
+                Write<T>(v);
+            }
+
+        }
+
+        internal void WriteReplicate<T>(BasicQueue<T> values, int redundancyCount, uint lastTick = 0) where T : IReplicateData
+        {
+            /* COUNT
+             * 
+             * Each Entry:
+             * 0 if the same as previous.
+             * 1 if default. */
+            int collectionCount = values.Count;
+            //Replicate list will never be null, no need to write null check.
+            //Number of entries being written.
+            byte count = (byte)redundancyCount;
+            WriteByte(count);
+
+            for (int i = (collectionCount - redundancyCount); i < collectionCount; i++)
+            {
+                T v = values[i];
+                Write<T>(v);
+            }
+
+        }
+#endif
         /// <summary>
         /// Writes an array.
         /// </summary>
@@ -1308,7 +1357,7 @@ namespace FishNet.Serializing
             {
                 Action<Writer, T, AutoPackType> del = GenericWriter<T>.WriteAutoPack;
                 if (del == null)
-                    LogError(GetLogMessage());
+                    NetworkManager.LogError(GetLogMessage());
                 else
                     del.Invoke(this, value, packType);
             }
@@ -1316,24 +1365,12 @@ namespace FishNet.Serializing
             {
                 Action<Writer, T> del = GenericWriter<T>.Write;
                 if (del == null)
-                    LogError(GetLogMessage());
+                    NetworkManager.LogError(GetLogMessage());
                 else
                     del.Invoke(this, value);
             }
 
             string GetLogMessage() => $"Write method not found for {type.FullName}. Use a supported type or create a custom serializer.";
-        }
-
-        /// <summary>
-        /// Logs an error.
-        /// </summary>
-        /// <param name="msg"></param>
-        private void LogError(string msg)
-        {
-            if (NetworkManager == null)
-                NetworkManager.StaticLogError(msg);
-            else
-                NetworkManager.LogError(msg);
         }
 
         /// <summary>

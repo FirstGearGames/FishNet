@@ -346,6 +346,7 @@ namespace FishNet.Managing.Scened
                     sld.Params = _globalSceneLoadData.Params;
                     sld.Options = _globalSceneLoadData.Options;
                     sld.ReplaceScenes = _globalSceneLoadData.ReplaceScenes;
+                    sld.PreferredActiveScene = _globalSceneLoadData.PreferredActiveScene;
 
                     LoadQueueData qd = new LoadQueueData(SceneScopeType.Global, Array.Empty<NetworkConnection>(), sld, _globalScenes, false);
                     //Send message to load the networked scenes.
@@ -1208,7 +1209,7 @@ namespace FishNet.Managing.Scened
                 void SetActiveScene_Local()
                 {
                     bool byUser;
-                    Scene preferredActiveScene = GetUserPreferredActiveScene(sceneLoadData.PreferredActiveScene, out byUser);
+                    Scene preferredActiveScene = GetUserPreferredActiveScene(sceneLoadData.PreferredActiveScene, asServer, out byUser);
                     //If preferred still is not set then try to figure it out.
                     if (!preferredActiveScene.IsValid())
                     {
@@ -1519,7 +1520,7 @@ namespace FishNet.Managing.Scened
             yield return null;
 
             bool byUser;
-            Scene preferredActiveScene = GetUserPreferredActiveScene(sceneUnloadData.PreferredActiveScene, out byUser);
+            Scene preferredActiveScene = GetUserPreferredActiveScene(sceneUnloadData.PreferredActiveScene, asServer, out byUser);
             SetActiveScene(preferredActiveScene, byUser);
 
             /* If running as server then make sure server
@@ -1983,10 +1984,7 @@ namespace FishNet.Managing.Scened
                         if (warnIfDuplicates)
                         {
                             string msg = $"Scene name {s.name} is loaded multiple times. The first scene found will be returned. If you wish to unload multiple instances of a scene with the same name create {nameof(SceneLookupData)} using scene handles instead of name.";
-                            if (nm == null)
-                                NetworkManager.StaticLogWarning(msg);
-                            else
-                                nm.LogWarning(msg);
+                            nm.LogWarning(msg);
                             //No need to spam the message, break on first duplicate.
                             break;
                         }
@@ -2229,9 +2227,11 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Returns a preferred active scene to use.
         /// </summary>
-        private Scene GetUserPreferredActiveScene(SceneLookupData sld, out bool byUser)
+        private Scene GetUserPreferredActiveScene(PreferredScene ps, bool asServer, out bool byUser)
         {
             byUser = false;
+            SceneLookupData sld = (asServer) ? ps.Server : ps.Client;
+            //Not specified.
             if (sld == null)
                 return default;
 

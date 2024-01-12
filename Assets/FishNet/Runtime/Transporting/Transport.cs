@@ -155,11 +155,7 @@ namespace FishNet.Transporting
         public virtual int GetMaximumClients()
         {
             string message = $"The current transport does not support this feature.";
-            if (NetworkManager == null)
-                NetworkManager.StaticLogWarning(message);
-            else
-                NetworkManager.LogWarning(message);
-
+            NetworkManager.LogWarning(message);
             return -1;
         }
         /// <summary>
@@ -169,10 +165,7 @@ namespace FishNet.Transporting
         public virtual void SetMaximumClients(int value)
         {
             string message = $"The current transport does not support this feature.";
-            if (NetworkManager == null)
-                NetworkManager.StaticLogWarning(message);
-            else
-                NetworkManager.LogWarning(message);
+            NetworkManager.LogWarning(message);
         }
         /// <summary>
         /// Sets which address the client will connect to.

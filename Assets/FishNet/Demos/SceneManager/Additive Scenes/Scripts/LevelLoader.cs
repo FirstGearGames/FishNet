@@ -35,7 +35,7 @@ namespace FishNet.Demo.AdditiveScenes
                 //Load scenes as additive.
                 ReplaceScenes = ReplaceOption.None,
                 //Set the preferred active scene so the client changes active scenes.
-                PreferredActiveScene = lookupData,
+                PreferredActiveScene = new PreferredScene(lookupData),
             };
 
             base.SceneManager.LoadConnectionScenes(player.Owner, sld);

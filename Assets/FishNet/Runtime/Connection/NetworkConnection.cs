@@ -101,11 +101,7 @@ namespace FishNet.Connection
             if (!Objects.Contains(nob))
             {
                 string errMessage = $"FirstObject for {ClientId} cannot be set to {nob.name} as it's not within Objects for this connection.";
-                if (NetworkManager == null)
-                    NetworkManager.StaticLogError(errMessage);
-                else
-                    NetworkManager.LogError(errMessage);
-
+                NetworkManager.LogError(errMessage);
                 return;
             }
 
@@ -136,12 +132,12 @@ namespace FishNet.Connection
         /// Tick of the last packet received from this connection which was not out of order.
         /// This value is only available on the server.
         /// </summary>
-        public EstimatedTick PacketTick;
+        public EstimatedTick PacketTick { get; private set; } = new EstimatedTick();
         /// <summary>
         /// Approximate local tick as it is on this connection.
         /// This also contains the last set value for local and remote.
         /// </summary>
-        public EstimatedTick LocalTick;
+        public EstimatedTick LocalTick { get; private set; } = new EstimatedTick();
         #endregion
 
         #region Const.
@@ -222,6 +218,8 @@ namespace FishNet.Connection
         private void Initialize(NetworkManager nm, int clientId, int transportIndex, bool asServer)
         {
             NetworkManager = nm;
+            LocalTick.Initialize(nm.TimeManager);
+            PacketTick.Initialize(nm.TimeManager);
             if (asServer)
                 ServerConnectionTick = nm.TimeManager.LocalTick;
             TransportIndex = transportIndex;
@@ -254,6 +252,7 @@ namespace FishNet.Connection
 
             ServerConnectionTick = 0;
             PacketTick.Reset();
+            LocalTick.Reset();
             TransportIndex = -1;
             ClientId = -1;
             ClearObjects();
@@ -291,8 +290,7 @@ namespace FishNet.Connection
         {
             if (!IsValid)
             {
-                //NetworkManager is likely null if invalid.
-                NetworkManager.StaticLogWarning($"Disconnect called on an invalid connection.");
+                NetworkManager.LogWarning($"Disconnect called on an invalid connection.");
                 return;
             }
             if (Disconnecting)
@@ -308,6 +306,18 @@ namespace FishNet.Connection
             //Otherwise mark dirty so server will push out any pending information, and then disconnect.
             else
                 ServerDirty();
+        }
+
+        private float _localTickUpdateTime = float.NegativeInfinity;
+        /// <summary>
+        /// Tries to update the LocalTick for this connection after a number of conditions are checked.
+        /// </summary>
+        internal void TryUpdateLocalTick(uint tick)
+        {
+            bool resetValue = (Time.time - _localTickUpdateTime) > 1f;
+            LocalTick.Update(tick, OldTickOption.Discard, resetValue);
+            if (resetValue)
+                _localTickUpdateTime = Time.time;
         }
 
         /// <summary>

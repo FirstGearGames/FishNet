@@ -26,9 +26,13 @@ namespace FishNet.CodeGenerating.Helping
 #if PREDICTION_V2
         public string Reconcile_Client_Start_MethodName = nameof(NetworkBehaviour.Reconcile_Client_Start);
         public string Replicate_Replay_Start_MethodName = nameof(NetworkBehaviour.Replicate_Replay_Start);
-#endif 
-        public MethodReference Replicate_NonOwner_MethodRef;
+        public MethodReference Replicate_NonAuthoritative_MethodRef;
+        public MethodReference Replicate_Authortative_MethodRef;
+#endif
+#if !PREDICTION_V2
         public MethodReference Replicate_Owner_MethodRef;
+        public MethodReference Replicate_NonOwner_MethodRef;
+#endif
         public MethodReference Replicate_Reader_MethodRef;
 #if !PREDICTION_V2
         public MethodReference Replicate_ExitEarly_A_MethodRef;
@@ -108,37 +112,18 @@ namespace FishNet.CodeGenerating.Helping
                 else if (mi.Name == nameof(NetworkBehaviour.RegisterReconcileRpc))
                     RegisterReconcileRpc_MethodRef = base.ImportReference(mi);
                 //SendRpcs.
-                else if (mi.Name == nameof(NetworkBehaviour.SendServerRpc)) 
+                else if (mi.Name == nameof(NetworkBehaviour.SendServerRpc))
                     SendServerRpc_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.SendObserversRpc))
                     SendObserversRpc_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.SendTargetRpc))
                     SendTargetRpc_MethodRef = base.ImportReference(mi);
-                //Prediction.
-#if !PREDICTION_V2
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_ExitEarly_A))
-                    Replicate_ExitEarly_A_MethodRef = base.ImportReference(mi);
-#endif
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_NonOwner))
-                    Replicate_NonOwner_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Reader))
                     Replicate_Reader_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Reader))
                     Reconcile_Reader_MethodRef = base.ImportReference(mi);
-#if PREDICTION_V2
-                else if (mi.Name == Replicate_Replay_Start_MethodName)
-                    Replicate_Replay_Start_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Replay))
-                    Replicate_Replay_MethodRef = base.ImportReference(mi);
-#endif
-#if !PREDICTION_V2
-                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_ExitEarly_A))
-                    Reconcile_ExitEarly_A_MethodRef = base.ImportReference(mi);
-#endif
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Server))
                     Reconcile_Server_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Owner))
-                    Replicate_Owner_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client))
                     Reconcile_Client_MethodRef = base.ImportReference(mi);
                 //#if PREDICTION_V2
@@ -152,6 +137,26 @@ namespace FishNet.CodeGenerating.Helping
                     DirtySyncType_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.NetworkInitializeIfDisabled))
                     NetworkInitializeIfDisabled_MethodRef = base.ImportReference(mi);
+                //Prediction
+#if !PREDICTION_V2
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_ExitEarly_A))
+                    Replicate_ExitEarly_A_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_ExitEarly_A))
+                    Reconcile_ExitEarly_A_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Owner))
+                    Replicate_Owner_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_NonOwner))
+                    Replicate_NonOwner_MethodRef = base.ImportReference(mi);
+#else
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Authoritative))
+                    Replicate_Authortative_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == Replicate_Replay_Start_MethodName)
+                    Replicate_Replay_Start_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Replay))
+                    Replicate_Replay_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_NonAuthoritative))
+                    Replicate_NonAuthoritative_MethodRef = base.ImportReference(mi);
+#endif
             }
 
             foreach (PropertyInfo pi in networkBehaviourType.GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))

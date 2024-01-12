@@ -13,25 +13,29 @@ namespace FishNet.Object
         /// </summary>
         Invalid = 0,
         /// <summary>
-        /// Data is user made, such if it were created within OnTick.
-        /// This occurs when a replicate is called from user code.
+        /// Data had been received for the current tick.
+        /// This occurs when a replicate is called on owner, or when receiving forwarded inputs.
         /// </summary>
-        UserCreated = 1,
+        CurrentCreated = 1,
         /// <summary>
-        /// No data was made from the user; default data is used with an estimated tick.
-        /// This occurs on non-owned objects or server when a replicate is called from user code, and there are no datas enqeued.
+        /// Data was not received for the current tick.
+        /// Either no data was available to forward or their may be latency concerns resulting in late packets.
         /// </summary>
-        Predicted = 2,
+        CurrentPredicted = 2,
+        ///// <summary>
+        ///// Data is user made, such if it were created within OnTick.
+        ///// This occurs when a replicate is replaying past datas, triggered by a reconcile. 
+        ///// </summary>
+        //ReplayedUserCreated = 3,
         /// <summary>
-        /// Data is user made, such if it were created within OnTick.
-        /// This occurs when a replicate is replaying past datas, triggered by a reconcile. 
-        /// </summary>
-        ReplayedUserCreated = 3,
-        /// <summary>
-        /// No data was made from the user; default data is used with an estimated tick.
+        /// No data was made from the user during a tick; default data is used with an estimated tick.
         /// This occurs when a replicate would be replaying past datas, triggered by a reconcile, but there is no user created data for the tick.
         /// </summary>
-        ReplayedPredicted = 4,
+        Replayed = 4,
+        /// <summary>
+        /// Client has not run the tick locally yet. This can be used to exit replicate early to not process actions, or create actions based on previous datas.
+        /// </summary>
+        Future = 5,
     }
 
     public static class ReplicateStateExtensions
@@ -43,14 +47,14 @@ namespace FishNet.Object
         /// <summary>
         /// Returns if value is replayed.
         /// </summary>
-        public static bool IsReplayed(this ReplicateState value) => (value == ReplicateState.ReplayedPredicted || value == ReplicateState.ReplayedUserCreated);
+        public static bool IsReplayed(this ReplicateState value) => (value == ReplicateState.Replayed || value == ReplicateState.Future);//(value == ReplicateState.Replayed || value == ReplicateState.ReplayedUserCreated || value == ReplicateState.Future);
         /// <summary>
         /// Returns if value is user created.
         /// </summary>
-        public static bool IsUserCreated(this ReplicateState value) => (value == ReplicateState.UserCreated || value == ReplicateState.ReplayedUserCreated);
+        public static bool IsCreated(this ReplicateState value) => (value == ReplicateState.CurrentCreated);//(value == ReplicateState.UserCreated || value == ReplicateState.ReplayedUserCreated);
         /// <summary>
         /// Returns if value is predicted.
         /// </summary>
-        public static bool IsPredicted(this ReplicateState value) => !value.IsUserCreated();
+        public static bool IsPredicted(this ReplicateState value) => (value == ReplicateState.Future || value == ReplicateState.CurrentPredicted); //!value.IsUserCreated();
     }
 }

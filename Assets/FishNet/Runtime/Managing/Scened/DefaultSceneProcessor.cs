@@ -3,6 +3,7 @@ using UnityEngine;
 using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 using UnityScene = UnityEngine.SceneManagement.Scene;
 using System.Collections;
+using System;
 
 namespace FishNet.Managing.Scened
 {
@@ -121,8 +122,17 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public override void ActivateLoadedScenes()
         {
-            foreach (AsyncOperation ao in LoadingAsyncOperations)
-                ao.allowSceneActivation = true;
+            for (int i = 0; i < LoadingAsyncOperations.Count; i++)
+            {
+                try
+                {
+                    LoadingAsyncOperations[i].allowSceneActivation = true;
+                }
+                catch(Exception e)
+                {
+                    base.SceneManager.NetworkManager.LogError($"An error occured while activating scenes. {e.Message}");
+                }
+            }
         }
 
         /// <summary>

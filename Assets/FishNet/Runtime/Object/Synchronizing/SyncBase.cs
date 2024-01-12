@@ -174,11 +174,7 @@ namespace FishNet.Object.Synchronizing.Internal
             {
                 c = Channel.Reliable;
                 string warning = $"Channel cannot be unreliable for SyncObjects. Channel has been changed to reliable.";
-                NetworkManager nm = NetworkBehaviour?.NetworkManager;
-                if (nm != null)
-                    nm.LogWarning(warning);
-                else
-                    NetworkManager.StaticLogWarning(warning);
+                NetworkManager.LogWarning(warning);
             }
         }
 

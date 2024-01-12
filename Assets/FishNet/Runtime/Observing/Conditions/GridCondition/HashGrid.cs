@@ -110,7 +110,7 @@ namespace FishNet.Component.Observing
 
             if (_networkManager == null)
             {
-                NetworkManager.StaticLogError($"NetworkManager not found on object or within parent of {gameObject.name}. The {GetType().Name} must be placed on or beneath a NetworkManager.");
+                _networkManager.LogError($"NetworkManager not found on object or within parent of {gameObject.name}. The {GetType().Name} must be placed on or beneath a NetworkManager.");
                 return;
             }
 

@@ -251,7 +251,7 @@ namespace FishNet.Managing.Scened
             }
 
             if (invalidFound)
-                NetworkManager.StaticLogWarning(INVALID_SCENE);
+                NetworkManagerExtensions.LogWarning(INVALID_SCENE);
 
             return result.ToArray();
         }
@@ -308,7 +308,7 @@ namespace FishNet.Managing.Scened
                     }
 
                     if (failingIndex != -1)
-                        NetworkManager.StaticLogWarning($"Data {item.ToString()} matches {result[failingIndex].ToString()} and has been removed from datas.");
+                        NetworkManagerExtensions.LogWarning($"Data {item.ToString()} matches {result[failingIndex].ToString()} and has been removed from datas.");
                     else
                         result.Add(item);
                 }
@@ -321,7 +321,7 @@ namespace FishNet.Managing.Scened
             SceneLookupData[] returnedValue;
             if (invalidFound)
             {
-                NetworkManager.StaticLogWarning(INVALID_SCENE);
+                NetworkManagerExtensions.LogWarning(INVALID_SCENE);
                 returnedValue = result.ToArray();
             }
             else
@@ -354,7 +354,7 @@ namespace FishNet.Managing.Scened
             }
 
             if (invalidFound)
-                NetworkManager.StaticLogWarning(INVALID_SCENE);
+                NetworkManagerExtensions.LogWarning(INVALID_SCENE);
 
             return result.ToArray();
         }
@@ -385,7 +385,7 @@ namespace FishNet.Managing.Scened
 
             if (Handle == 0 && string.IsNullOrEmpty(NameOnly))
             {
-                NetworkManager.StaticLogWarning("Scene handle and name is unset; scene cannot be returned.");
+                NetworkManagerExtensions.LogWarning("Scene handle and name is unset; scene cannot be returned.");
                 return default;
             }
 

@@ -251,7 +251,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                         continue;
 
                     NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(item);
-                    if (nob != null)
+                    if (CanAddNetworkObject(nob, settings))
                     {
                         changedNobPaths.Add(item);
                         prefabCollection.AddObject(nob, true);
@@ -335,7 +335,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 foreach (string path in GetPrefabFiles("Assets", excludedPaths, true))
                 {
                     NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(path);
-                    if (nob != null)
+                    if (CanAddNetworkObject(nob, settings))
                         foundNobs.Add(nob);
                 }
             }
@@ -354,7 +354,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     foreach (string path in GetPrefabFiles(sf.Path, excludedPaths, sf.Recursive))
                     {
                         NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(path);
-                        if (nob != null)
+                        if (CanAddNetworkObject(nob, settings))
                             foundNobs.Add(nob);
                     }
                 }
@@ -556,7 +556,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 if (totalChanges == 0)
                     return;
 
-                //normalizes path.
+                //Normalizes path.
                 string dpoPath = Path.GetFullPath(settings.DefaultPrefabObjectsPath_Platform);
                 //If total changes is 1 and the only changed file is the default prefab collection then do nothing.
                 if (totalChanges == 1)
@@ -582,7 +582,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
                         NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(imported);
                         //If is a networked object.
-                        if (nob != null)
+                        if (CanAddNetworkObject(nob, settings))
                         {
                             //Already added!
                             if (prefabCollection.Prefabs.Contains(nob))
@@ -644,6 +644,14 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 else
                     GenerateChanged(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths, settings);
             }
+        }
+
+        /// <summary>
+        /// Returns true if a NetworkObject can be added to DefaultPrefabs.
+        /// </summary>
+        private static bool CanAddNetworkObject(NetworkObject networkObject, PrefabGeneratorConfigurations settings)
+        {
+            return networkObject != null && (networkObject.IsSpawnable || !settings.SpawnableOnly);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using FishNet.CodeGenerating;
+﻿using FishNet.Managing;
 using FishNet.Documenting;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
@@ -116,7 +116,7 @@ namespace FishNet.Example.CustomSyncObject
 
             if (base.NetworkManager != null && !base.NetworkBehaviour.IsServerStarted)
             {
-                NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
+                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 

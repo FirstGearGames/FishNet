@@ -1,3 +1,4 @@
+using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
@@ -159,7 +160,7 @@ namespace FishNet.Utility.Performance
                 return;
             if (prefab.PrefabId == NetworkObject.UNSET_PREFABID_VALUE)
             {
-                InstanceFinder.NetworkManager.LogError($"Pefab {prefab.name} has an invalid prefabId and cannot be cached.");
+                NetworkManagerExtensions.LogError($"Pefab {prefab.name} has an invalid prefabId and cannot be cached.");
                 return;
             }
 

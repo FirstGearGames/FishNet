@@ -35,7 +35,7 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference InstanceFinder_NetworkManager_MethodRef;
         public MethodReference NetworkBehaviour_CanLog_MethodRef;
         public MethodReference NetworkBehaviour_NetworkManager_MethodRef;
-        public MethodReference NetworkManager_LogCommon_MethodRef;
+        public MethodReference NetworkManager_Log_MethodRef;
         public MethodReference NetworkManager_LogWarning_MethodRef;
         public MethodReference NetworkManager_LogError_MethodRef;
         public MethodReference Debug_LogCommon_MethodRef;
@@ -131,15 +131,19 @@ namespace FishNet.CodeGenerating.Helping
             InstanceFinder_NetworkManager_MethodRef = base.ImportReference(getNetworkManagerPropertyInfo.GetMethod);
 
             //NetworkManager debug logs. 
-            Type networkManagerType = typeof(NetworkManager);
-            foreach (SR.MethodInfo methodInfo in networkManagerType.GetMethods())
+            Type networkManagerExtensionsType = typeof(NetworkManagerExtensions);
+            foreach (SR.MethodInfo methodInfo in networkManagerExtensionsType.GetMethods())
             {
-                if (methodInfo.Name == nameof(NetworkManager.Log) && methodInfo.GetParameters().Length == 1)
-                    NetworkManager_LogCommon_MethodRef = base.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkManager.LogWarning))
-                    NetworkManager_LogWarning_MethodRef = base.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkManager.LogError))
-                    NetworkManager_LogError_MethodRef = base.ImportReference(methodInfo);
+                //These extension methods will have two parameters: the type extension is for, and value.
+                if (methodInfo.GetParameters().Length == 2)
+                {
+                    if (methodInfo.Name == nameof(NetworkManagerExtensions.Log))
+                        NetworkManager_Log_MethodRef = base.ImportReference(methodInfo);
+                    else if (methodInfo.Name == nameof(NetworkManagerExtensions.LogWarning))
+                        NetworkManager_LogWarning_MethodRef = base.ImportReference(methodInfo);
+                    else if (methodInfo.Name == nameof(NetworkManagerExtensions.LogError))
+                        NetworkManager_LogError_MethodRef = base.ImportReference(methodInfo);
+                }
             }
 
             //ArraySegment<byte>
@@ -757,7 +761,6 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates instructions to log using a NetworkManager or Unity logging.
         /// </summary>
-        /// <param name="preferNetworkManager">NetworkManager will be used to log first. If the NetworkManager is unavailable Unity logging will be used.</param>
         public List<Instruction> LogMessage(MethodDefinition md, string message, LoggingType loggingType)
         {
             ILProcessor processor = md.Body.GetILProcessor();
@@ -778,7 +781,8 @@ namespace FishNet.CodeGenerating.Helping
             //If does not inherit NB then use InstanceFinder.
             if (useStatic)
             {
-                SetNetworkManagerFromInstanceFinder();
+                instructions.Add(processor.Create(OpCodes.Ldnull));
+                instructions.Add(processor.Create(OpCodes.Stloc, networkManagerVd));
             }
             //Inherits NB, load from base.NetworkManager.
             else
@@ -786,61 +790,11 @@ namespace FishNet.CodeGenerating.Helping
                 instructions.Add(processor.Create(OpCodes.Ldarg_0));
                 instructions.Add(processor.Create(OpCodes.Call, NetworkBehaviour_NetworkManager_MethodRef));
                 instructions.Add(processor.Create(OpCodes.Stloc, networkManagerVd));
-
-                //If null from NB then use instancefinder.
-                Instruction skipSetFromInstanceFinderInst = processor.Create(OpCodes.Nop);
-                //if (nmVd == null) nmVd = InstanceFinder.NetworkManager.
-                instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerVd));
-                instructions.Add(processor.Create(OpCodes.Brtrue_S, skipSetFromInstanceFinderInst));
-                SetNetworkManagerFromInstanceFinder();
-                instructions.Add(skipSetFromInstanceFinderInst);
             }
-
-            //Sets NetworkManager variable from instancefinder.
-            void SetNetworkManagerFromInstanceFinder()
-            {
-                instructions.Add(processor.Create(OpCodes.Call, InstanceFinder_NetworkManager_MethodRef));
-                instructions.Add(processor.Create(OpCodes.Stloc, networkManagerVd));
-            }
-
-            VariableDefinition networkManagerIsNullVd = CreateVariable(md, typeof(bool));
-            //bool networkManagerIsNull = (networkManager == null);
-            instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerVd));
-            instructions.Add(processor.Create(OpCodes.Ldnull));
-            instructions.Add(processor.Create(OpCodes.Ceq));
-            instructions.Add(processor.Create(OpCodes.Stloc, networkManagerIsNullVd));
-
-            /* If (networkManagerIsNull)
-             *      networkManager.Log...
-             * else
-             *      UnityEngine.Debug.Log... */
-            Instruction afterNetworkManagerLogInst = processor.Create(OpCodes.Nop);
-            Instruction afterUnityLogInst = processor.Create(OpCodes.Nop);
-            instructions.Add(processor.Create(OpCodes.Ldloc, networkManagerIsNullVd));
-            instructions.Add(processor.Create(OpCodes.Brtrue, afterNetworkManagerLogInst));
-            instructions.AddRange(LogNetworkManagerMessage(md, networkManagerVd, message, loggingType));
-            instructions.Add(processor.Create(OpCodes.Br, afterUnityLogInst));
-            instructions.Add(afterNetworkManagerLogInst);
-            instructions.AddRange(LogUnityDebugMessage(md, message, loggingType));
-            instructions.Add(afterUnityLogInst);
-
-            return instructions;
-        }
-
-        /// <summary>
-        /// Creates instructions to log using NetworkManager without error checking.
-        /// </summary>
-        public List<Instruction> LogNetworkManagerMessage(MethodDefinition md, VariableDefinition networkManagerVd, string message, LoggingType loggingType)
-        {
-            List<Instruction> instructions = new List<Instruction>();
-            if (!CanUseLogging(loggingType))
-                return instructions;
-
-            ILProcessor processor = md.Body.GetILProcessor();
 
             MethodReference methodRef;
             if (loggingType == LoggingType.Common)
-                methodRef = NetworkManager_LogCommon_MethodRef;
+                methodRef = NetworkManager_Log_MethodRef;
             else if (loggingType == LoggingType.Warning)
                 methodRef = NetworkManager_LogWarning_MethodRef;
             else
@@ -850,30 +804,6 @@ namespace FishNet.CodeGenerating.Helping
             instructions.Add(processor.Create(OpCodes.Ldstr, message));
             instructions.Add(processor.Create(OpCodes.Call, methodRef));
 
-            return instructions;
-        }
-
-        /// <summary>
-        /// Creates instructions to log using Unity logging.
-        /// </summary>
-        public List<Instruction> LogUnityDebugMessage(MethodDefinition md, string message, LoggingType loggingType)
-        {
-            List<Instruction> instructions = new List<Instruction>();
-            if (!CanUseLogging(loggingType))
-                return instructions;
-
-            ILProcessor processor = md.Body.GetILProcessor();
-
-            MethodReference methodRef;
-            if (loggingType == LoggingType.Common)
-                methodRef = Debug_LogCommon_MethodRef;
-            else if (loggingType == LoggingType.Warning)
-                methodRef = Debug_LogWarning_MethodRef;
-            else
-                methodRef = Debug_LogError_MethodRef;
-
-            instructions.Add(processor.Create(OpCodes.Ldstr, message));
-            instructions.Add(processor.Create(OpCodes.Call, methodRef));
             return instructions;
         }
 

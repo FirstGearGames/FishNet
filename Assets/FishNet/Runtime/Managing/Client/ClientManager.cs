@@ -118,14 +118,6 @@ namespace FishNet.Managing.Client
         /// </summary>
         private float _lastPacketTime;
         /// <summary>
-        /// Updates information about the last packet received.
-        /// </summary>
-        private void UpdateLastPacketDatas()
-        {
-            _lastPacketTime = Time.unscaledTime;
-            LastPacketLocalTick = NetworkManager.TimeManager.LocalTick;
-        }
-        /// <summary>
         /// Used to read splits.
         /// </summary>
         private SplitReader _splitReader = new SplitReader();
@@ -305,7 +297,7 @@ namespace FishNet.Managing.Client
             }
             else
             {
-                UpdateLastPacketDatas();
+                _lastPacketTime = Time.unscaledTime;
             }
 
             if (NetworkManager.CanLog(LoggingType.Common))
@@ -354,7 +346,7 @@ namespace FishNet.Managing.Client
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _parseLogger.Reset();
 #endif
-            UpdateLastPacketDatas();
+            _lastPacketTime = Time.unscaledTime;
 
             ArraySegment<byte> segment = args.Data;
             NetworkManager.StatisticsManager.NetworkTraffic.LocalClientReceivedData((ulong)segment.Count);
@@ -362,7 +354,8 @@ namespace FishNet.Managing.Client
                 return;
 
             PooledReader reader = ReaderPool.Retrieve(segment, NetworkManager, Reader.DataSource.Server);
-            NetworkManager.TimeManager.SetLastPacketTick(reader.ReadTickUnpacked());
+            TimeManager tm = NetworkManager.TimeManager;
+            tm.LastPacketTick.Update(reader.ReadTickUnpacked(), EstimatedTick.OldTickOption.Discard, false);
             ParseReader(reader, args.Channel);
             ReaderPool.Store(reader);
 
@@ -386,7 +379,7 @@ namespace FishNet.Managing.Client
                 reader.ReadPacketId();
                 int expectedMessages;
                 _splitReader.GetHeader(reader, out expectedMessages);
-                _splitReader.Write(NetworkManager.TimeManager.LastPacketTick, reader, expectedMessages);
+                _splitReader.Write(NetworkManager.TimeManager.LastPacketTick.LastRemoteTick, reader, expectedMessages);
                 /* If fullMessage returns 0 count then the split
                  * has not written fully yet. Otherwise, if there is
                  * data within then reinitialize reader with the
@@ -491,7 +484,7 @@ namespace FishNet.Managing.Client
                     }
                     else if (packetId == PacketId.TimingUpdate)
                     {
-                        NetworkManager.TimeManager.ParseTimingUpdate(reader);
+                        NetworkManager.TimeManager.ParseTimingUpdate();
                     }
                     else if (packetId == PacketId.OwnershipChange)
                     {
@@ -602,7 +595,7 @@ namespace FishNet.Managing.Client
              * it's the best we can do until the client gets
              * a ping response. */
             if (!networkManager.IsServerStarted)
-                networkManager.TimeManager.Tick = networkManager.TimeManager.LastPacketTick;
+                networkManager.TimeManager.Tick = networkManager.TimeManager.LastPacketTick.LastRemoteTick;
 
             //Mark as authenticated.
             Connection.ConnectionAuthenticated();
@@ -646,7 +639,7 @@ namespace FishNet.Managing.Client
                 return;
 #endif
             //Wait two timing intervals to give packets a chance to come through.
-            if (NetworkManager.SceneManager.IsIteratingQueue(TimeManager.TIMING_INTERVAL * 2f))
+            if (NetworkManager.SceneManager.IsIteratingQueue(2f))
                 return;
 
             /* ServerManager version only checks every so often

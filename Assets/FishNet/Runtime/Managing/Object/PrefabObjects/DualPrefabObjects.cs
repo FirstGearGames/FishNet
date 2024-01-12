@@ -36,7 +36,7 @@ namespace FishNet.Managing.Object
         {
             if (id < 0 || id >= _prefabs.Count)
             {
-                NetworkManager.StaticLogError($"PrefabId {id} is out of range.");
+                NetworkManagerExtensions.LogError($"PrefabId {id} is out of range.");
                 return null;
             }
             else
@@ -46,7 +46,7 @@ namespace FishNet.Managing.Object
                 if (nob == null)
                 {
                     string lookupSide = (asServer) ? "server" : "client";
-                    NetworkManager.StaticLogError($"Prefab for {lookupSide} on id {id} is null ");
+                    NetworkManagerExtensions.LogError($"Prefab for {lookupSide} on id {id} is null ");
                 }
 
                 return nob;
@@ -119,17 +119,17 @@ namespace FishNet.Managing.Object
         #region Unused.
         public override void AddObject(NetworkObject networkObject, bool checkForDuplicates = false)
         {
-            NetworkManager.StaticLogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
+            NetworkManagerExtensions.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
         }
 
         public override void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false)
         {
-            NetworkManager.StaticLogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
+            NetworkManagerExtensions.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
         }
 
         public override void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false)
         {
-            NetworkManager.StaticLogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
+            NetworkManagerExtensions.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
         }
         #endregion
     }

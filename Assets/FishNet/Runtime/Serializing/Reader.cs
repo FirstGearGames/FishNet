@@ -841,7 +841,7 @@ namespace FishNet.Serializing
             else
             {
                 result = null;
-                LogError($"Unhandled ReadGameObject type of {writtenType}.");
+                NetworkManager.LogError($"Unhandled ReadGameObject type of {writtenType}.");
             }
 
             return result;
@@ -920,7 +920,7 @@ namespace FishNet.Serializing
                 if (result == null && !isServer)
                 {
                     if (readSpawningObjects == null || !readSpawningObjects.Contains(objectOrPrefabId))
-                        LogWarning($"Spawned NetworkObject was expected to exist but does not for Id {objectOrPrefabId}. This may occur if you sent a NetworkObject reference which does not exist, be it destroyed or if the client does not have visibility.");
+                        NetworkManager.LogWarning($"Spawned NetworkObject was expected to exist but does not for Id {objectOrPrefabId}. This may occur if you sent a NetworkObject reference which does not exist, be it destroyed or if the client does not have visibility.");
                 }
             }
             //Not spawned.
@@ -1249,15 +1249,16 @@ namespace FishNet.Serializing
         #endregion
 
         #region Generators.
+#if !PREDICTION_V2
         /// <summary>
         /// Reads a replicate into collection and returns item count read.
         /// </summary>
         [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal int ReadReplicate<T>(ref T[] collection, uint tick) where T : IReplicateData
+        internal int ReadReplicate<T>(ref T[] collection, uint tick, out int count) where T : IReplicateData
         {
             //Number of entries written.
-            int count = (int)ReadByte();
+            count = (int)ReadByte();
             if (collection == null || collection.Length < count)
                 collection = new T[count];
 
@@ -1270,7 +1271,7 @@ namespace FishNet.Serializing
              * newest as 98, 99, 100. Which is the correct result. In order for this to
              * work properly past replicates cannot skip ticks. This will be ensured
              * in another part of the code. */
-            tick -= (uint)(count - 1);
+            tick -= (uint)(count);// - 1);
 
             int fullPackType = ReadByte();
             //Read once and apply to all entries.
@@ -1329,7 +1330,43 @@ namespace FishNet.Serializing
 
             return count;
         }
+#else
+        /// <summary>
+        /// Reads a replicate into collection and returns item count read.
+        /// </summary>
+        [NotSerializer]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal int ReadReplicate<T>(ref T[] collection, uint tick) where T : IReplicateData
+        {
+            //Number of entries written.
+            int count = (int)ReadByte();
+            if (collection == null || collection.Length < count)
+                collection = new T[count];
 
+            /* Subtract count total minus 1
+             * from starting tick. This sets the tick to what the first entry would be.
+             * EG packet came in as tick 100, so that was passed as tick.
+             * if there are 3 replicates then 2 would be subtracted (count - 1).
+             * The new tick would be 98.
+             * Ticks would be assigned to read values from oldest to 
+             * newest as 98, 99, 100. Which is the correct result. In order for this to
+             * work properly past replicates cannot skip ticks. This will be ensured
+             * in another part of the code. */
+            tick -= (uint)(count - 1);
+
+            for (int i = 0; i < count; i++)
+            {
+                T value = Read<T>();
+                //Apply tick.
+                value.SetTick(tick + (uint)i);
+                //Assign to collection.
+                collection[i] = value;
+            }
+
+
+            return count;
+        }
+#endif
         /// <summary>
         /// Reads a list with allocations.
         /// </summary>
@@ -1438,7 +1475,7 @@ namespace FishNet.Serializing
                 Func<Reader, AutoPackType, T> autopackDel = GenericReader<T>.ReadAutoPack;
                 if (autopackDel == null)
                 {
-                    LogError(GetLogMessage());
+                    NetworkManager.LogError(GetLogMessage());
                     return default;
                 }
                 else
@@ -1451,7 +1488,7 @@ namespace FishNet.Serializing
                 Func<Reader, T> del = GenericReader<T>.Read;
                 if (del == null)
                 {
-                    LogError(GetLogMessage());
+                    NetworkManager.LogError(GetLogMessage());
                     return default;
                 }
                 else
@@ -1463,30 +1500,6 @@ namespace FishNet.Serializing
             string GetLogMessage() => $"Read method not found for {type.FullName}. Use a supported type or create a custom serializer.";
         }
 
-        /// <summary>
-        /// Logs a warning.
-        /// </summary>
-        /// <param name="msg"></param>
-        private void LogWarning(string msg)
-        {
-            if (NetworkManager == null)
-                NetworkManager.StaticLogWarning(msg);
-            else
-                NetworkManager.LogWarning(msg);
-        }
-
-
-        /// <summary>
-        /// Logs an error.
-        /// </summary>
-        /// <param name="msg"></param>
-        private void LogError(string msg)
-        {
-            if (NetworkManager == null)
-                NetworkManager.StaticLogError(msg);
-            else
-                NetworkManager.LogError(msg);
-        }
 
         /// <summary>
         /// Returns if T takes AutoPackType argument.

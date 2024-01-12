@@ -63,81 +63,6 @@ namespace FishNet.Object
         /// </summary>
         [System.NonSerialized]
         internal bool ActiveDuringEdit;
-#if PREDICTION_V2
-        /// <summary>
-        /// True if this object uses prediciton methods.
-        /// </summary>
-        public bool EnablePrediction => _enablePrediction;
-        [Tooltip("True if this object uses prediction methods.")]
-        [SerializeField]
-        private bool _enablePrediction;
-        /// <summary>
-        /// What type of component is being used for prediction? If not using rigidbodies set to other.
-        /// </summary>
-        [Tooltip("What type of component is being used for prediction? If not using rigidbodies set to other.")]
-        [SerializeField]
-        private PredictionType _predictionType = PredictionType.Other;
-        /// <summary>
-        /// Object containing graphics when using prediction. This should be child of the predicted root.
-        /// </summary>
-        [Tooltip("Object containing graphics when using prediction. This should be child of the predicted root.")]
-        [SerializeField]
-        private Transform _graphicalObject;
-        /// <summary>
-        /// True to forward replicate and reconcile states to all clients. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.
-        /// </summary>
-        [Tooltip("True to forward replicate and reconcile states to all clients. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.")]
-        [SerializeField]
-        private bool _enableStateForwarding = true;
-        /// <summary>
-        /// How many ticks to interpolate graphics on objects owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.
-        /// </summary>
-        [Tooltip("How many ticks to interpolate graphics on objects owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.")]
-        [Range(1, byte.MaxValue)]
-        [SerializeField]
-        private byte _ownerInterpolation = 1;
-        /// <summary>
-        /// True to enable teleport threshhold.
-        /// </summary>
-        [Tooltip("True to enable teleport threshhold.")]
-        [SerializeField]
-        private bool _enableTeleport;
-        /// <summary>
-        /// Distance the graphical object must be from root to teleport rather than smooth over time.
-        /// </summary>
-        [Tooltip("Distance the graphical object must be from root to teleport rather than smooth over time.")]
-        [Range(0f, short.MaxValue)]
-        [SerializeField]
-        private float _ownerTeleportThreshold = 1f;
-        /// <summary>
-        /// False to use a flat amount of interpolation for graphics. This is ideal for controllers that will not carry velocity, such as setting velocity directly when there is input.
-        /// True to adapt interpolation based on a variety of factors. This can be beneficial when velocities are affected by forces and may change irratically.
-        /// </summary>
-        internal bool SpectatorAdaptiveInterpolation => _spectatorAdaptiveInterpolation;
-        [Tooltip("True to use a flat amount of interpolation for graphics. This is ideal for controllers that will not carry velocity, such as setting velocity directly when there is input." +
-            "False to adapt interpolation based on a variety of factors. This can be beneficial when velocities are affected by forces and may change irratically.")]
-        [SerializeField]
-        private bool _spectatorAdaptiveInterpolation = true;
-        /// <summary>
-        /// How many ticks to interpolate graphics on objects not owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.
-        /// </summary>
-        [Tooltip("How many ticks to interpolate graphics on objects not owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.")]
-        [Range(1, byte.MaxValue)]
-        [SerializeField]
-        private byte _spectatorInterpolation = 1;
-        /// <summary>
-        /// How to favor smoothing for non-owned objects.
-        /// </summary>
-        [Tooltip("How to favor smoothing for non-owned objects. Accuracy will keep graphics more real-time while gradual will keep them further in the past to handle desynchronizations better at the cost of visuals being behind.")]
-        [SerializeField]
-        private AdaptiveSmoothingType _adaptiveSmoothingType = AdaptiveSmoothingType.Accuracy;
-        /// <summary>
-        /// Custom settings for smoothing data.
-        /// </summary>
-        [Tooltip("Custom settings for smoothing data.")]
-        [SerializeField]
-        private AdaptiveInterpolationSmoothingData _customSmoothingData = _mixedSmoothingData;
-#endif
         /// <summary>
         /// Returns if this object was placed in the scene during edit-time.
         /// </summary>
@@ -244,6 +169,13 @@ namespace FishNet.Object
         [SerializeField]
         private bool _isNetworked = true;
         /// <summary>
+        /// True if the object can be spawned at runtime; this is generally false for scene prefabs you do not spawn.
+        /// </summary>
+        public bool IsSpawnable => _isSpawnable;
+        [Tooltip("True if the object can be spawned at runtime; this is generally false for scene prefabs you do not spawn.")]
+        [SerializeField]
+        private bool _isSpawnable = true;
+        /// <summary>
         /// True to make this object global, and added to the DontDestroyOnLoad scene. This value may only be set for instantiated objects, and can be changed if done immediately after instantiating.
         /// </summary>
         public bool IsGlobal
@@ -259,17 +191,17 @@ namespace FishNet.Object
         {
             if (IsNested && !CurrentParentNetworkBehaviour.NetworkObject.IsGlobal)
             {
-                NetworkManager.StaticLogWarning($"Object {gameObject.name} cannot change IsGlobal because it is nested and the parent NetorkObject is not global.");
+                NetworkManager.LogWarning($"Object {gameObject.name} cannot change IsGlobal because it is nested and the parent NetorkObject is not global.");
                 return;
             }
             if (!IsDeinitializing)
             {
-                NetworkManager.StaticLogWarning($"Object {gameObject.name} cannot change IsGlobal as it's already initialized. IsGlobal may only be changed immediately after instantiating.");
+                NetworkManager.LogWarning($"Object {gameObject.name} cannot change IsGlobal as it's already initialized. IsGlobal may only be changed immediately after instantiating.");
                 return;
             }
             if (IsSceneObject)
             {
-                NetworkManager.StaticLogWarning($"Object {gameObject.name} cannot have be global because it is a scene object. Only instantiated objects may be global.");
+                NetworkManager.LogWarning($"Object {gameObject.name} cannot have be global because it is a scene object. Only instantiated objects may be global.");
                 return;
             }
 
@@ -593,12 +525,17 @@ namespace FishNet.Object
             */
             if (!asServer && !IsServerStarted && !IsOwner)
             {
-                long estimatedTickDelay = (TimeManager.Tick - TimeManager.LastPacketTick);
+                /* This is an estimation as to how long it took to receive the spawn
+                 * message. */
+                uint lastPacketTick = TimeManager.LastPacketTick.LastRemoteTick;
+                long estimatedTickDelay = (TimeManager.Tick - lastPacketTick);
                 if (estimatedTickDelay < 0)
                     estimatedTickDelay = 0;
 
 #if PREDICTION_V2
-                ReplicateTick.Update(TimeManager, TimeManager.LastPacketTick - (uint)estimatedTickDelay);
+                /* Estimate of what the first replicate would have been for this object based on
+                 * spawn delay. //TODO: this may not be needed anymore. */
+                ReplicateTick.Update(TimeManager, lastPacketTick - (uint)estimatedTickDelay);
 #endif
             }
 
@@ -1163,9 +1100,6 @@ namespace FishNet.Object
             SetIsNestedThroughTraversal();
             SceneUpdateNetworkBehaviours();
             ReferenceIds_OnValidate();
-#if PREDICTION_V2
-            Prediction_OnValidate();
-#endif
 
             if (IsGlobal && IsSceneObject)
                 Debug.LogWarning($"Object {gameObject.name} will have it's IsGlobal state ignored because it is a scene object. Instantiated copies will still be global. This warning is informative only.");

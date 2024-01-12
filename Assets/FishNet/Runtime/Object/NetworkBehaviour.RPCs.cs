@@ -1,6 +1,7 @@
 ﻿using FishNet.CodeGenerating;
 using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Object.Delegating;
@@ -22,13 +23,11 @@ namespace FishNet.Object
         private struct BufferedRpc
         {
             public PooledWriter Writer;
-            public Channel Channel;
             public DataOrderType OrderType;
 
-            public BufferedRpc(PooledWriter writer, Channel channel, DataOrderType orderType)
+            public BufferedRpc(PooledWriter writer, DataOrderType orderType)
             {
                 Writer = writer;
-                Channel = channel;
                 OrderType = orderType;
             }
         }
@@ -81,7 +80,7 @@ namespace FishNet.Object
         {
             TransportManager tm = _networkObjectCache.NetworkManager.TransportManager;
             foreach (BufferedRpc bRpc in _bufferedRpcs.Values)
-                tm.SendToClient((byte)bRpc.Channel, bRpc.Writer.GetArraySegment(), conn, true, bRpc.OrderType);
+                tm.SendToClient((byte)Channel.Reliable, bRpc.Writer.GetArraySegment(), conn, true, bRpc.OrderType);
         }
 
         /// <summary>
@@ -97,7 +96,7 @@ namespace FishNet.Object
             if (_serverRpcDelegates.TryAdd(hash, del))
                 IncreaseRpcMethodCount();
             else
-                FishNet.Managing.NetworkManager.StaticLogError($"ServerRpc key {hash} has already been added for {GetType().FullName} on {gameObject.name}");
+                NetworkManager.LogError($"ServerRpc key {hash} has already been added for {GetType().FullName} on {gameObject.name}");
         }
         /// <summary>
         /// Registers a RPC method.
@@ -112,7 +111,7 @@ namespace FishNet.Object
             if (_observersRpcDelegates.TryAdd(hash, del))
                 IncreaseRpcMethodCount();
             else
-                FishNet.Managing.NetworkManager.StaticLogError($"ObserversRpc key {hash} has already been added for {GetType().FullName} on {gameObject.name}");
+                NetworkManager.LogError($"ObserversRpc key {hash} has already been added for {GetType().FullName} on {gameObject.name}");
         }
         /// <summary>
         /// Registers a RPC method.
@@ -127,7 +126,7 @@ namespace FishNet.Object
             if (_targetRpcDelegates.TryAdd(hash, del))
                     IncreaseRpcMethodCount();
             else
-                FishNet.Managing.NetworkManager.StaticLogError($"TargetRpc key {hash} has already been added for {GetType().FullName} on {gameObject.name}");
+                NetworkManager.LogError($"TargetRpc key {hash} has already been added for {GetType().FullName} on {gameObject.name}");
         }
 
         /// <summary>
@@ -270,7 +269,7 @@ namespace FishNet.Object
             {
                 if (_bufferedRpcs.TryGetValueIL2CPP(hash, out BufferedRpc result))
                     result.Writer.StoreLength();
-                _bufferedRpcs[hash] = new BufferedRpc(writer, channel, orderType);
+                _bufferedRpcs[hash] = new BufferedRpc(writer, orderType);
             }
             //If not buffered then dispose immediately.
             else

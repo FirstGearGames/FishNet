@@ -109,11 +109,19 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Lowest MTU of all transports for channels.
         /// </summary>
-        private int[] _lowestMtu;
+        private int[] _lowestMtus;
+        /// <summary>
+        /// Lowest MTU of all transports of all channels.
+        /// </summary>
+        private int _lowestMtu = 0;
         /// <summary>
         /// Used to cache NetworkConnections.
         /// </summary>
         private HashSet<NetworkConnection> _networkConnectionHashSet = new HashSet<NetworkConnection>();
+        /// <summary>
+        /// Custom amount to reserve on the MTU.
+        /// </summary>
+        private int _customMtuReserve = MINIMUM_MTU_RESERVE;
         #endregion
 
         #region Consts.
@@ -145,6 +153,15 @@ namespace FishNet.Managing.Transporting
         /// Number of channels supported.
         /// </summary>
         public const byte CHANNEL_COUNT = 2;
+        /// <summary>
+        /// MTU reserved for internal use.
+        /// Value of 1 is used to specify channel in packets for transports that do not include channel within their packet header.
+        /// </summary>
+        public const int MINIMUM_MTU_RESERVE = 1;
+        /// <summary>
+        /// Value to use when a MTU could not be found.
+        /// </summary>
+        public const int INVALID_MTU = -1;
         #endregion
 
         /// <summary>
@@ -153,17 +170,9 @@ namespace FishNet.Managing.Transporting
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
             _networkManager = manager;
-            /* If transport isn't specified then add default
-             * transport. */
-            if (Transport == null && !gameObject.TryGetComponent<Transport>(out Transport))
-                Transport = gameObject.AddComponent<FishNet.Transporting.Tugboat.Tugboat>();
-
+            TryAddDefaultTransport();
             Transport.Initialize(_networkManager, 0);
-            //Cache lowest Mtus.
-            _lowestMtu = new int[CHANNEL_COUNT];
-            for (byte i = 0; i < CHANNEL_COUNT; i++)
-                _lowestMtu[i] = GetLowestMTU(i);
-
+            SetLowestMTUs();
             InitializeToServerBundles();
             if (_intermediateLayer != null)
                 _intermediateLayer.InitializeOnce(this);
@@ -172,6 +181,53 @@ namespace FishNet.Managing.Transporting
 #endif
         }
 
+        /// <summary>
+        /// Sets the lowest MTU values.
+        /// </summary>
+        private void SetLowestMTUs()
+        {
+            //Already set.
+            if (_lowestMtu != 0)
+                return;
+
+            /* At least one transport is required. 
+             * Try to add default. If a transport is already
+             * specified the add method will just exit early. */
+            TryAddDefaultTransport();
+
+            int allLowest = int.MaxValue;
+            //Cache lowest Mtus.
+            _lowestMtus = new int[CHANNEL_COUNT];
+            for (byte i = 0; i < CHANNEL_COUNT; i++)
+            {
+                int channelLowest = int.MaxValue;
+                if (Transport is Multipass mp)
+                {
+                    foreach (Transport t in mp.Transports)
+                    {
+                        int mtu = t.GetMTU(i);
+                        if (mtu != INVALID_MTU)
+                            channelLowest = Mathf.Min(channelLowest, mtu);
+                    }
+                }
+                else
+                {
+                    channelLowest = Transport.GetMTU(i);
+                }
+
+                _lowestMtus[i] = channelLowest;
+                _lowestMtu = Mathf.Min(allLowest, channelLowest);
+            }
+        }
+
+        /// <summary>
+        /// Adds the default transport if a transport is not yet specified.
+        /// </summary>
+        private void TryAddDefaultTransport()
+        {
+            if (Transport == null && !gameObject.TryGetComponent<Transport>(out Transport))
+                Transport = gameObject.AddComponent<FishNet.Transporting.Tugboat.Tugboat>();
+        }
 
         ///// <summary>
         ///// Gets port for the first transport, or client transport if using Multipass.
@@ -269,9 +325,64 @@ namespace FishNet.Managing.Transporting
         }
 
         #region GetMTU.
-        /* Returned MTUs are always -1 to allow an extra byte
-         * to specify channel where certain transports do
-         * not allow or provide channel information. */
+        /// <summary>
+        /// Returns MTU excluding reserve amount.
+        /// </summary> 
+        private int GetMTUWithReserve(int mtu)
+        {
+            int value = (mtu - MINIMUM_MTU_RESERVE - _customMtuReserve);
+            /* If MTU is extremely low then warn user.
+             * The number choosen has no significant value. */
+            if (value <= 100)
+            {
+                string msg = $"Available MTU of {mtu} is significantly low; an invalid MTU will be returned. Check transport settings, or reduce MTU reserve if you set one using {nameof(TransportManager.SetMTUReserve)}";
+                _networkManager.LogWarning(msg);
+
+                return INVALID_MTU;
+            }
+
+            return value;
+        }
+        /// <summary>
+        /// Sets a custom value to reserve for the internal buffers.
+        /// This value is also deducted from transport MTU when using GetMTU methods.
+        /// </summary>
+        /// <param name="value">Value to use.</param>
+        public void SetMTUReserve(int value)
+        {
+            string errMsg = string.Empty;
+            if (_networkManager != null && _networkManager.IsClientStarted || _networkManager.IsServerStarted)
+            {
+                errMsg = $"A custom MTU reserve cannot be set after the server or client have been started or connected.";
+                _networkManager.LogError(errMsg);
+                return;
+            }
+
+            if (value < MINIMUM_MTU_RESERVE)
+            {
+                _networkManager.Log($"MTU reserve {value} is below minimum value of {MINIMUM_MTU_RESERVE}. Value has been updated to {MINIMUM_MTU_RESERVE}.");
+                value = MINIMUM_MTU_RESERVE;
+            }
+
+            _customMtuReserve = value;
+            InitializeToServerBundles();
+        }
+        /// <summary>
+        /// Returns the current MTU reserve.
+        /// </summary>
+        /// <returns></returns>
+        public int GetMTUReserve() => _customMtuReserve;
+        /// <summary>
+        /// Returns the lowest MTU of all channels. When using multipass this will evaluate all transports within Multipass.
+        /// </summary>
+        /// <param name="channel"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetLowestMTU()
+        {
+            SetLowestMTUs();
+            return GetMTUWithReserve(_lowestMtu);
+        }
         /// <summary>
         /// Returns the lowest MTU for a channel. When using multipass this will evaluate all transports within Multipass.
         /// </summary>
@@ -280,37 +391,8 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetLowestMTU(byte channel)
         {
-            //Use cached if available.
-            if (_lowestMtu[channel] > 0)
-                return _lowestMtu[channel];
-
-            if (Transport is Multipass mp)
-            {
-                int? lowestMtu = null;
-                foreach (Transport t in mp.Transports)
-                {
-                    int thisMtu = t.GetMTU(channel);
-                    if (lowestMtu == null || thisMtu < lowestMtu.Value)
-                        lowestMtu = thisMtu;
-                }
-
-                //If lowest was not changed return unset.
-                if (lowestMtu == null)
-                {
-                    return -1;
-                }
-                else
-                {
-                    int mtu = lowestMtu.Value;
-                    if (mtu >= 0)
-                        mtu -= 1;
-                    return mtu;
-                }
-            }
-            else
-            {
-                return GetMTU(channel);
-            }
+            SetLowestMTUs();
+            return GetMTUWithReserve(_lowestMtus[channel]);
         }
         /// <summary>
         /// Gets MTU on the current transport for channel.
@@ -319,10 +401,12 @@ namespace FishNet.Managing.Transporting
         /// <returns></returns>
         public int GetMTU(byte channel)
         {
+            SetLowestMTUs();
             int mtu = Transport.GetMTU(channel);
-            if (mtu >= 0)
-                mtu -= 1;
-            return mtu;
+            if (mtu == INVALID_MTU)
+                return mtu;
+
+            return GetMTUWithReserve(mtu);
         }
         /// <summary>
         /// Gets MTU on the transportIndex for channel. This requires use of Multipass.
@@ -336,9 +420,10 @@ namespace FishNet.Managing.Transporting
             if (Transport is Multipass mp)
             {
                 int mtu = mp.GetMTU(channel, transportIndex);
-                if (mtu >= 0)
-                    mtu -= 1;
-                return mtu;
+                if (mtu == INVALID_MTU)
+                    return INVALID_MTU;
+
+                return GetMTUWithReserve(mtu);
             }
             //Using first/only transport.
             else if (transportIndex == 0)
@@ -365,13 +450,14 @@ namespace FishNet.Managing.Transporting
             if (transport != null)
             {
                 int mtu = transport.GetMTU(channel);
-                if (mtu >= 0)
-                    mtu -= 1;
-                return mtu;
+                if (mtu == INVALID_MTU)
+                    return mtu;
+
+                return GetMTUWithReserve(mtu);
             }
 
             //Fall through.
-            return -1;
+            return INVALID_MTU;
         }
         #endregion
 

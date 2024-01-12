@@ -29,6 +29,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -4.80351, y: 0.18147132, z: 5.430528}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6952090537135875148}
   m_Father: {fileID: 0}
@@ -49,7 +50,7 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 201277550}
   _networkObjectCache: {fileID: 201277550}
-  _jumpForce: 2.4
+  _jumpForce: 2.5
   _moveRate: 12
 --- !u!114 &201277550
 MonoBehaviour:
@@ -63,47 +64,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 17
-  <SpawnableCollectionId>k__BackingField: 0
-  _scenePathHash: 0
-  <SceneId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 4924818754745463409
   <IsNested>k__BackingField: 0
   _enablePrediction: 1
   _predictionType: 0
   _graphicalObject: {fileID: 6952090537135875148}
   _enableStateForwarding: 1
-  _ownerInterpolation: 1
+  _ownerInterpolation: 2
   _enableTeleport: 0
   _ownerTeleportThreshold: 1
   _spectatorAdaptiveInterpolation: 1
   _spectatorInterpolation: 1
-  _adaptiveSmoothingType: 0
-  _customSmoothingData:
-    InterpolationPercent: 1
-    CollisionInterpolationPercent: 0.1
-    InterpolationDecreaseStep: 1
-    InterpolationIncreaseStep: 3
-  _preconfiguredSmoothingDataPreview:
-    InterpolationPercent: 0.5
-    CollisionInterpolationPercent: 0.05
-    InterpolationDecreaseStep: 1
-    InterpolationIncreaseStep: 2
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   _networkBehaviours:
   - {fileID: -2060332294883903109}
-  <ParentNetworkObject>k__BackingField: {fileID: 0}
-  <ChildNetworkObjects>k__BackingField: []
+  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
+  <NestedRootNetworkBehaviours>k__BackingField: []
   SerializedTransformProperties:
     Position: {x: -4.80351, y: 0.18147132, z: 5.430528}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
     LocalScale: {x: 1, y: 1, z: 1}
   _isNetworked: 1
+  _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
   _defaultDespawnType: 0
+  NetworkObserver: {fileID: 0}
+  <PrefabId>k__BackingField: 3
+  <SpawnableCollectionId>k__BackingField: 0
+  _scenePathHash: 0
+  <SceneId>k__BackingField: 0
+  <AssetPathHash>k__BackingField: 4924818754745463409
 --- !u!143 &4148834954576211901
 CharacterController:
   m_ObjectHideFlags: 0
@@ -151,6 +142,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.01, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 303449598114786577}
   m_RootOrder: 0
@@ -174,10 +166,12 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -202,6 +196,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &4946798872430241371
 CapsuleCollider:
   m_ObjectHideFlags: 0

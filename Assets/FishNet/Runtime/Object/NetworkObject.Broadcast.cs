@@ -19,7 +19,7 @@ namespace FishNet.Object
         {
             if (NetworkManager == null)
             {
-                NetworkManager.StaticLogWarning($"Cannot send broadcast from {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
+                NetworkManager.LogWarning($"Cannot send broadcast from {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
                 return;
             }
 

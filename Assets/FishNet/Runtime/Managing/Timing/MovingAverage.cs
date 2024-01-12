@@ -38,8 +38,8 @@ namespace FishNet.Managing.Timing
         public MovingAverage(int sampleSize)
         {
             if (sampleSize < 2)
-            { 
-                NetworkManager.StaticLogWarning("Using a sampleSize of less than 2 will always return the most recent value as Average.");
+            {
+                NetworkManagerExtensions.LogWarning("Using a sampleSize of less than 2 will always return the most recent value as Average.");
                 sampleSize = 1;
             }
 

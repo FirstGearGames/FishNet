@@ -127,18 +127,29 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Number of inputs to keep in queue should the server miss receiving an input update from the client. " +
-            "Higher values will increase the likeliness of the server always having input from the client while lower values will allow the client input to run on the server faster. " +
+        [Tooltip("Number of inputs to keep in queue for server and clients. " +
+            "Higher values will increase the likeliness of continous user created data to arrive successfully. " +
+            "Lower values will increase processing rate of received replicates. +" +
             "This value cannot be higher than MaximumServerReplicates.")]
-        [Range(1, 15)]
+        [Range(0, 15)]
         [SerializeField]
         private ushort _queuedInputs = 1;
+#if PREDICTION_V2
+        /// <summary>
+        /// Number of inputs to keep in queue for server and clients.
+        /// Higher values will increase the likeliness of continous user created data to arrive successfully.
+        /// Lower values will increase processing rate of received replicates.
+        /// This value cannot be higher than MaximumServerReplicates.
+        /// </summary>
+        public ushort QueuedInputs => _queuedInputs;
+#else
         /// <summary>
         /// Number of inputs to keep in queue should the server miss receiving an input update from the client.
         /// Higher values will increase the likeliness of the server always having input from the client while lower values will allow the client input to run on the server faster.
         /// This value cannot be higher than MaximumServerReplicates.
         /// </summary>
         public ushort QueuedInputs => (ushort)(_queuedInputs + 1);
+#endif
         /// <summary>
         /// 
         /// </summary>
@@ -240,11 +251,16 @@ namespace FishNet.Managing.Predicting
         /// Number of reconciles dropped due to high latency.
         /// This is not necessarily needed but can save performance on machines struggling to keep up with simulations when combined with low frame rate.
         /// </summary>
-        private byte _droppedReconcilesCount = 0;
+        private byte _droppedReconcilesCount;
         /// <summary>
         /// Current reconcile state to use.
         /// </summary>
-        private StatePacket _reconcileState;
+        //private StatePacket _reconcileState;
+        private Queue<StatePacket> _reconcileStates = new Queue<StatePacket>();
+        /// <summary>
+        /// Last ordered tick read for a reconcile state.
+        /// </summary>
+        private uint _lastOrderedReadReconcileTick;
 #endif
         /// <summary>
         /// NetworkManager used with this.
@@ -256,7 +272,7 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// Minimum number of past inputs which can be sent.
         /// </summary>
-        private const byte MINIMUM_PAST_INPUTS = 2;
+        private const byte MINIMUM_PAST_INPUTS = 1;
         /// <summary>
         /// Maximum number of past inputs which can be sent.
         /// </summary>
@@ -428,15 +444,17 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// Amount to reserve for the header of a state update.
         /// 2 PacketId.
-        /// 4 Last packet tick from connection.
+        /// 4 Last replicate tick run for connection.
+        /// 4 Length unpacked.
         /// </summary>
-        internal const int STATE_HEADER_RESERVE_COUNT = 6;
+        internal const int STATE_HEADER_RESERVE_COUNT = 10;
 
         /// <summary>
         /// Clamps queued inputs to a valid value.
         /// </summary>
         private void ClampQueuedInputs()
         {
+            return;
             ushort startingValue = _queuedInputs;
             //Check for setting if dropping.
             if (_dropExcessiveReplicates && _queuedInputs > _maximumServerReplicates)
@@ -446,56 +464,27 @@ namespace FishNet.Managing.Predicting
              * This must be done because if the difference
              * in queued inputs target vs actual exceeds
              * threshold then timing will reset when it
-             * would actually need to speed up or slow down. */
-            if (_networkManager != null && _queuedInputs > _networkManager.TimeManager.RESET_ADJUSTMENT_THRESHOLD)
-                _queuedInputs = _networkManager.TimeManager.RESET_ADJUSTMENT_THRESHOLD;
+            // * would actually need to speed up or slow down. */
+            //if (_networkManager != null && _queuedInputs > _networkManager.TimeManager.RESET_ADJUSTMENT_THRESHOLD)
+            //    _queuedInputs = _networkManager.TimeManager.RESET_ADJUSTMENT_THRESHOLD;
 
             //If changed.
             if (_queuedInputs != startingValue)
                 _networkManager.Log($"QueuedInputs has been set to {_queuedInputs}.");
         }
 
-        /// <summary>
-        /// Sends written states for clients.
-        /// </summary>
-        internal void SendStates()
-        {
-            TransportManager tm = _networkManager.TransportManager;
-            foreach (NetworkConnection nc in _networkManager.ServerManager.Clients.Values)
-            {
-                foreach (PooledWriter writer in nc.PredictionStateWriters)
-                {
-                    /* Packet is sent as follows...
-                     * PacketId.
-                     * Length of packet.
-                     * Data. */
-                    ArraySegment<byte> segment = writer.GetArraySegment();
-                    writer.Position = 0;
-                    writer.WritePacketId(PacketId.StateUpdate);
-                    /* Send the full length of the writer excluding
-                     * the reserve count of the header. The header reserve
-                     * count will always be the same so that can be parsed
-                     * off immediately upon receiving. */
-                    int dataLength = (segment.Count - STATE_HEADER_RESERVE_COUNT);
-                    //Write length.
-                    writer.WriteInt32(dataLength, AutoPackType.Unpacked);
-                    tm.SendToClient((byte)Channel.Reliable, segment, nc, true);
-                }
-
-                nc.StorePredictionStateWriters();
-            }
-        }
-
         public struct StatePacket
         {
             public ArraySegment<byte> Data;
+            public uint ClientTick;
             public uint ServerTick;
             public bool IsValid => (Data.Array != null);
 
-            public StatePacket(ArraySegment<byte> data, uint serverTick)
+            public StatePacket(ArraySegment<byte> data, uint clientTick, uint serverTick)
             {
                 Data = data;
                 ServerTick = serverTick;
+                ClientTick = clientTick;
             }
 
             public void ResetState()
@@ -516,21 +505,35 @@ namespace FishNet.Managing.Predicting
             if (!_networkManager.IsClientStarted)
                 return;
             //No states.
-            if (!_reconcileState.IsValid)
+            if (_reconcileStates.Count == 0)
+                return;
+
+            uint estimatedLastRemoteTick = _networkManager.TimeManager.LastPacketTick.Value();
+            //NOTESSTART
+            /* Don't run a reconcile unless it's possible for ticks queued
+             * that tick to be run already. Otherwise you are not replaying inputs
+             * at all, just snapping to corrections. This means states which arrive late or out of order
+             * will be ignored since they're before the reconcile, which means important actions
+             * could have gone missed.
+             * 
+             * A system which synchronized all current states rather than what's only needed to correct
+             * the inputs would likely solve this. */
+            //NOTESEND
+            if (_reconcileStates.Peek().ClientTick >= (_networkManager.TimeManager.LocalTick - QueuedInputs))
                 return;
 
             uint localTick = _networkManager.TimeManager.LocalTick;
+            StatePacket sp = _reconcileStates.Dequeue();
+            PooledReader reader = ReaderPool.Retrieve(sp.Data, _networkManager, Reader.DataSource.Server);
 
-            PooledReader reader = ReaderPool.Retrieve(_reconcileState.Data, _networkManager, Reader.DataSource.Server);
-
-            uint clientTick = reader.ReadTickUnpacked();
-            uint serverTick = _reconcileState.ServerTick;
+            uint clientTick = sp.ClientTick;
+            uint serverTick = sp.ServerTick;
 
             bool dropReconcile = false;
             double timePassed = _networkManager.TimeManager.TicksToTime(localTick - clientTick);
             /* If client has a massive ping or is suffering from a low frame rate
              * then limit the number of reconciles to prevent further performance loss. */
-            if (timePassed > 0.5d || _networkManager.TimeManager.LowFrameRate)
+            if (timePassed > 1.5d || _networkManager.TimeManager.LowFrameRate)
             {
                 /* Limit 3 drops a second. DropValue will be roughly the same
                  * as every 330ms. */
@@ -556,6 +559,10 @@ namespace FishNet.Managing.Predicting
             if (!dropReconcile)
             {
                 StateClientTick = clientTick;
+                /* This is the tick which the reconcile is for.
+                 * Since reconciles are performed after replicate, if
+                 * the replicate was on tick 100 then this reconcile is the state
+                 * on tick 100, after the replicate is performed. */
                 StateServerTick = serverTick;
 
                 //Have the reader get processed.
@@ -583,9 +590,13 @@ namespace FishNet.Managing.Predicting
                  * Replay up to localtick, excluding localtick. There will
                  * be no input for localtick since reconcile runs before
                  * OnTick. */
-                uint clientReplayTick = StateClientTick; //+ 1;
-                uint serverReplayTick = StateServerTick;// + 1;
-                while (clientReplayTick < localTick)
+                uint clientReplayTick = StateClientTick;
+                uint serverReplayTick = StateServerTick;
+                /* Only replay up to this tick excluding queuedInputs.
+                 * This will prevent the client from replaying into
+                 * it's authorative/owned inputs which have not run
+                 * yet. */
+                while (clientReplayTick < (localTick - QueuedInputs - 1))//(localTick + QueuedInputs))
                 {
                     OnPreReplicateReplay?.Invoke(clientReplayTick, serverReplayTick);
                     OnReplicateReplay?.Invoke(clientReplayTick, serverReplayTick);
@@ -604,29 +615,104 @@ namespace FishNet.Managing.Predicting
 
                 OnPostReconcile?.Invoke(StateClientTick, StateServerTick);
             }
+            //Intentionally left blank.
+            else
+            {
+            }
 
-            _reconcileState.ResetState();
+            sp.ResetState();
             ReaderPool.Store(reader);
         }
+        /// <summary>
+        /// Sends written states for clients.
+        /// </summary>
+        internal void SendStateUpdate()
+        {
+            TransportManager tm = _networkManager.TransportManager;
+            foreach (NetworkConnection nc in _networkManager.ServerManager.Clients.Values)
+            {
+                uint lastReplicateTick;
+                //If client has performed a replicate.
+                if (!nc.ReplicateTick.IsUnset)
+                {
+                    /* If it's been longer than queued inputs since
+                     * server has received a replicate then
+                     * use estimated value. Otherwise use LastRemoteTick. */
+                    if (nc.ReplicateTick.LocalTickDifference(_networkManager.TimeManager) > QueuedInputs)
+                        lastReplicateTick = nc.ReplicateTick.Value();
+                    else
+                        lastReplicateTick = nc.ReplicateTick.LastRemoteTick;
+                }
+                /* If not then use what is estimated to be the clients
+                 * current tick along with desired prediction queue count.
+                 * This should be just about the same as if the client used replicate,
+                 * but even if it's not it doesn't matter because the client
+                 * isn't replicating himself, just reconciling and replaying other objects. */
+                else
+                {
+                    lastReplicateTick = (nc.PacketTick.Value() + QueuedInputs);
+                }
+
+                foreach (PooledWriter writer in nc.PredictionStateWriters)
+                {
+                    /* Packet is sent as follows...
+                     * PacketId.
+                     * LastReplicateTick of receiver.
+                     * Length of packet.
+                     * Data. */
+                    ArraySegment<byte> segment = writer.GetArraySegment();
+                    writer.Position = 0;
+                    writer.WritePacketId(PacketId.StateUpdate);
+                    writer.WriteTickUnpacked(lastReplicateTick);
+                    /* Send the full length of the writer excluding
+                     * the reserve count of the header. The header reserve
+                     * count will always be the same so that can be parsed
+                     * off immediately upon receiving. */
+                    int dataLength = (segment.Count - STATE_HEADER_RESERVE_COUNT);
+                    //Write length.
+                    writer.WriteInt32(dataLength, AutoPackType.Unpacked);
+                    tm.SendToClient((byte)Channel.Unreliable, segment, nc, true);
+                }
+
+                nc.StorePredictionStateWriters();
+            }
+        }
+
 
         /// <summary>
         /// Parses a received state update.
         /// </summary>
         internal void ParseStateUpdate(PooledReader reader)
         {
-            if (_networkManager.IsServerStarted)
+            uint lastRemoteTick = _networkManager.TimeManager.LastPacketTick.LastRemoteTick;
+            //If server or state is older than another received state.
+            if (_networkManager.IsServerStarted || (lastRemoteTick < _lastOrderedReadReconcileTick))
             {
                 /* If the server is receiving a state update it can
                  * simply discard the data since the server will never
                  * need to reset states. This can occur on the clientHost
                  * side. */
+                reader.ReadTickUnpacked();
                 int length = reader.ReadInt32(AutoPackType.Unpacked);
                 reader.Skip(length);
             }
             else
             {
-                //Reset old reconcileState just incase it had values.
-                _reconcileState.ResetState();
+                _lastOrderedReadReconcileTick = lastRemoteTick;
+
+                /* There should never really be more than queuedInputs so set
+                 * a limit a little beyond to prevent reconciles from building up. 
+                 * This is more of a last result if something went terribly
+                 * wrong with the network. */
+                int maxAllowedStates = Mathf.Max(QueuedInputs * 4, 4);
+                while (_reconcileStates.Count > maxAllowedStates)
+                {
+                    StatePacket sp = _reconcileStates.Dequeue();
+                    sp.ResetState();
+                }
+
+                //LocalTick of this client the state is for.
+                uint clientTick = reader.ReadTickUnpacked();
                 //Length of packet.
                 int length = reader.ReadInt32(AutoPackType.Unpacked);
                 //Read data into array.
@@ -634,7 +720,7 @@ namespace FishNet.Managing.Predicting
                 reader.ReadBytes(ref arr, length);
                 //Make segment and store into states.
                 ArraySegment<byte> segment = new ArraySegment<byte>(arr, 0, length);
-                _reconcileState = new StatePacket(segment, _networkManager.TimeManager.LastPacketTick);
+                _reconcileStates.Enqueue(new StatePacket(segment, clientTick, lastRemoteTick));
             }
         }
 

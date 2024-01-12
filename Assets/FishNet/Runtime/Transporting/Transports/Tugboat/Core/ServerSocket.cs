@@ -234,11 +234,9 @@ namespace FishNet.Transporting.Tugboat.Server
         {
             if (GetConnectionState() != LocalConnectionState.Started)
             {
+                NetworkManager nm = (Transport == null) ? null : Transport.NetworkManager;
                 string msg = "Server socket is not started.";
-                if (Transport == null)
-                    NetworkManager.StaticLogWarning(msg);
-                else
-                    Transport.NetworkManager.LogWarning(msg);
+                nm.LogWarning(msg);
                 return string.Empty;
             }
 

@@ -97,7 +97,7 @@ namespace FishNet.Managing
             {
                 if (createIfMissing)
                 {
-                    LogError($"SpawnableCollectionId cannot be 0 when create missing is true.");
+                    InternalLogError($"SpawnableCollectionId cannot be 0 when create missing is true.");
                     return null;
                 }
                 else
@@ -229,7 +229,7 @@ namespace FishNet.Managing
             if (TryGetInstance<T>(out result))
                 return result;
             else
-                LogWarning($"Component {GetInstanceName<T>()} is not registered. To avoid this warning use TryGetInstance(T).");
+                InternalLogWarning($"Component {GetInstanceName<T>()} is not registered. To avoid this warning use TryGetInstance(T).");
 
             return default(T);
         }
@@ -264,7 +264,7 @@ namespace FishNet.Managing
             string tName = GetInstanceName<T>();
             if (_registeredComponents.ContainsKey(tName) && !replace)
             {
-                LogWarning($"Component {tName} is already registered.");
+                InternalLogWarning($"Component {tName} is already registered.");
             }
             else
             {

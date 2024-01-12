@@ -58,7 +58,7 @@ namespace FishNet.Example.Prediction.Rigidbodies
              * amount in the future while subtracting already passed ticks. */
             else
             {
-                uint passed = (uint)Mathf.Max(1, base.TimeManager.Tick - base.TimeManager.LastPacketTick);
+                uint passed = (uint)Mathf.Max(1, base.TimeManager.Tick - base.TimeManager.LastPacketTick.LastRemoteTick);
                 long stopTick = (base.TimeManager.Tick + timeToTicks - passed - 1);
                 if (stopTick > 0)
                     _stopTick = (uint)stopTick;

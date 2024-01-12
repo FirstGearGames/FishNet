@@ -111,7 +111,7 @@ namespace FishNet.Object
         /// </summary>
         public bool IsServerOnlyStarted => _networkObjectCache.IsServerOnlyStarted;
         /// <summary>
-        /// True if this object hsa been initialized on the server and client side.
+        /// True if this object has been initialized on the server and client side.
         /// </summary>
         public bool IsHostInitialized => _networkObjectCache.IsHostInitialized;
         /// <summary>

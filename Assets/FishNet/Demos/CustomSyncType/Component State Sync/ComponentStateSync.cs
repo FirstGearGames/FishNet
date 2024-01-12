@@ -1,11 +1,9 @@
-﻿using FishNet.CodeGenerating;
-using FishNet.Documenting;
-using FishNet.Managing.Logging;
+﻿using FishNet.Documenting;
 using FishNet.Object.Synchronizing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using FishNet.Managing;
 using UnityEngine;
 
 namespace FishNet.Example.ComponentStateSync
@@ -60,7 +58,7 @@ namespace FishNet.Example.ComponentStateSync
                 return;
 
             if (Component == null)
-                NetworkManager.LogError($"State cannot be changed as Initialize has not been called with a valid component.");
+                base.NetworkManager.LogError($"State cannot be changed as Initialize has not been called with a valid component.");
 
             //If hasn't changed then ignore.
             bool prev = GetState();

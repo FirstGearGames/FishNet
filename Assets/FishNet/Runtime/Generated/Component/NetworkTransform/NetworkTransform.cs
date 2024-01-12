@@ -3,6 +3,7 @@
 #endif
 using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Object;
@@ -2166,11 +2167,11 @@ namespace FishNet.Component.Transforming
                 return;
 
             //Not new data.
-            uint lastPacketTick = base.TimeManager.LastPacketTick;
+            uint lastPacketTick = base.TimeManager.LastPacketTick.LastRemoteTick;
             if (lastPacketTick <= _lastObserversRpcTick)
                 return;
-            _lastObserversRpcTick = lastPacketTick;
 
+            _lastObserversRpcTick = lastPacketTick;
             DataReceived(data, channel, false);
         }
 
@@ -2190,7 +2191,7 @@ namespace FishNet.Component.Transforming
             }
 
             //Not new data.
-            uint lastPacketTick = base.TimeManager.LastPacketTick;
+            uint lastPacketTick = base.TimeManager.LastPacketTick.LastRemoteTick;
             if (lastPacketTick <= _lastServerRpcTick)
                 return;
             _lastServerRpcTick = lastPacketTick;
@@ -2360,7 +2361,7 @@ namespace FishNet.Component.Transforming
         private void UpdateTransformData(ArraySegment<byte> packetData, TransformData prevTransformData, TransformData nextTransformData, ref ChangedFull changedFull, out byte lodIndex)
         {
             DeserializePacket(packetData, prevTransformData, nextTransformData, ref changedFull, out lodIndex);
-            nextTransformData.Tick = base.TimeManager.LastPacketTick;
+            nextTransformData.Tick = base.TimeManager.LastPacketTick.LastRemoteTick;
         }
 
         /// <summary>
