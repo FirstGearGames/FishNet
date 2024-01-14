@@ -324,11 +324,13 @@ namespace FishNet.Component.Prediction
                     if (rb == null)
                         return false;
 
-                    rb.velocity = rbData.Velocity;
-                    rb.angularVelocity = rbData.AngularVelocity;
                     rb.isKinematic = rbData.IsKinematic;
                     rb.detectCollisions = rbData.DetectCollisions;
-
+                    if (!rb.isKinematic)
+                    {
+                        rb.velocity = rbData.Velocity;
+                        rb.angularVelocity = rbData.AngularVelocity;
+                    }
                     return true;
                 }
             }
@@ -352,11 +354,13 @@ namespace FishNet.Component.Prediction
                     if (rb == null)
                         return false;
 
-                    rb.velocity = rbData.Velocity;
-                    rb.angularVelocity = rbData.AngularVelocity;
                     rb.isKinematic = rbData.IsKinematic;
                     rb.simulated = rbData.Simulated;
-
+                    if (!rb.isKinematic)
+                    {
+                        rb.velocity = rbData.Velocity;
+                        rb.angularVelocity = rbData.AngularVelocity;
+                    }
                     return true;
                 }
             }
