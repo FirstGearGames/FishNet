@@ -11,32 +11,32 @@ namespace FishNet.Example.Prediction.Rigidbodies
     public class PredictedBullet : NetworkBehaviour
     {
         //SyncVar to set spawn force. This is set by predicted spawner and sent to the server.
-        [SyncVar(OnChange = nameof(_startingForce_OnChange))]
+        [HideInInspector, SyncVar(OnChange = nameof(_startingForce_OnChange))]
         private Vector3 _startingForce;
         //Tick to set rb to kinematic.
         private uint _stopTick = TimeManager.UNSET_TICK;
 
+        /* In this example this method is called by the client
+         * after it Instanties the object locally. This occurs before
+         * the client calls network spawn on it. */
         public void SetStartingForce(Vector3 value)
         {
-            /* If the object is not yet initialized then
-             * this is being set prior to network spawning.
-             * Such a scenario occurs because the client which is
-             * predicted spawning sets the synctype value before network
-             * spawning to ensure the server receives the value.
-             * Just as when the server sets synctypes, if they are set
-             * before the object is spawned it's gauranteed clients will
-             * get the value in the spawn packet; same practice is used here. */
-            if (!base.IsSpawned)
-                SetVelocity(value);
-
+            /* Set the SyncVar so it is sent to the server when this
+             * object is spawned. This will only send to the server if
+             * values are set before network spawning. */
             _startingForce = value;
         }
 
         //Simple delay destroy so object does not exist forever.
         public override void OnStartServer()
         {
-
             StartCoroutine(__DelayDestroy(3f));
+
+            //Set velocity to starting force.
+            SetVelocity(_startingForce);
+            //Server can still override syncvars set by the predicted spawner.
+            Debug.Log("Setting new force.");
+            _startingForce = Vector3.one;
         }
 
         public override void OnStartNetwork()
@@ -93,6 +93,7 @@ namespace FishNet.Example.Prediction.Rigidbodies
         /// </summary>
         public void SetVelocity(Vector3 value)
         {
+            Debug.Log($"Setting velocity on {gameObject.name} to {value}");
             Rigidbody rb = GetComponent<Rigidbody>();
             rb.velocity = value;
         }

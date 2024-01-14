@@ -346,6 +346,7 @@ namespace FishNet.Managing.Scened
                     sld.Params = _globalSceneLoadData.Params;
                     sld.Options = _globalSceneLoadData.Options;
                     sld.ReplaceScenes = _globalSceneLoadData.ReplaceScenes;
+                    sld.PreferredActiveScene = _globalSceneLoadData.PreferredActiveScene;
 
                     LoadQueueData qd = new LoadQueueData(SceneScopeType.Global, Array.Empty<NetworkConnection>(), sld, _globalScenes, false);
                     //Send message to load the networked scenes.

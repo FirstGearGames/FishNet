@@ -150,7 +150,7 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 201277550}
   _jumpForce: 15
   _moveRate: 15
-  BulletPrefab: {fileID: 0}
+  BulletPrefab: {fileID: 3624261834906416601, guid: 4e1673ccc2acac543871855a0e8bed71, type: 3}
 --- !u!114 &201277550
 MonoBehaviour:
   m_ObjectHideFlags: 0

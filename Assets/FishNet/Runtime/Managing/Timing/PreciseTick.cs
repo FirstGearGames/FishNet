@@ -20,6 +20,12 @@ namespace FishNet.Managing.Timing
             Tick = tick;
             Percent = percent;
         }
+
+        /// <summary>
+        /// Prints PreciseTick information as a string.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() => $"Tick {Tick}, Percent {Percent.ToString("000")}";
     }
 
     public static class PreciseTickSerializer

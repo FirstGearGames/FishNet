@@ -139,11 +139,7 @@ namespace FishNet.Object
         internal void OnOwnershipServer_Internal(NetworkConnection prevOwner)
         {
             //When switching ownership always clear replicate cache on server.
-#if !PREDICTION_V2
             ClearReplicateCache(true);
-#else
-            ClearReplicateCache();
-#endif
             OnOwnershipServer(prevOwner);
         }
         /// <summary>
@@ -197,11 +193,7 @@ namespace FishNet.Object
             //If losing or gaining ownership then clear replicate cache.
             if (IsOwner || prevOwner == LocalConnection)
             {
-#if !PREDICTION_V2
                 ClearReplicateCache(false);
-#else
-                ClearReplicateCache();
-#endif
             }
             OnOwnershipClient(prevOwner);
         }

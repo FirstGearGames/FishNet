@@ -36,8 +36,8 @@ namespace FishNet.Utility.Extension
         {
             if (target == null)
                 return;
-            pos = (t.position - target.position);
-            rot = (t.rotation * Quaternion.Inverse(target.rotation));
+            pos = (target.position - t.position);
+            rot = (target.rotation * Quaternion.Inverse(t.rotation));
         }
 
         /// <summary>
@@ -45,15 +45,15 @@ namespace FishNet.Utility.Extension
         /// </summary>
         /// <param name="pos">Position offset result.</param>
         /// <param name="rot">Rotation offset result.</param>
-        internal static TransformProperties GetTransformOffsets(this Transform t, Transform target)
+        public static TransformProperties GetTransformOffsets(this Transform t, Transform target)
         {
             if (target == null)
                 return default;
 
             return new TransformProperties(
-                (t.position - target.position),
-                (t.rotation * Quaternion.Inverse(target.rotation)),
-                (t.localScale - target.localScale)
+                (target.position - t.position),
+                (target.rotation * Quaternion.Inverse(t.rotation)),
+                (target.localScale - t.localScale)
                 );
         }
 

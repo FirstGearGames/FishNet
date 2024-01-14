@@ -11,7 +11,6 @@ namespace FishNet.Component.Prediction
     [CanEditMultipleObjects]
     public class PredictedObjectEditor : Editor
     {
-#if !PREDICTION_V2
 
         private SerializedProperty _implementsPredictionMethods;
         private SerializedProperty _graphicalObject;
@@ -147,7 +146,6 @@ namespace FishNet.Component.Prediction
             EditorGUILayout.Space();
             serializedObject.ApplyModifiedProperties();
         }
-#endif
     }
 
 }

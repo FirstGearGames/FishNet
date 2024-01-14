@@ -1173,7 +1173,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: b1b4d193fc9b1bb41a92600a22b3d34e, type: 2}
   _refreshDefaultPrefabs: 1
   _runInBackground: 1
   _dontDestroyOnLoad: 1
@@ -1197,7 +1197,6 @@ MonoBehaviour:
   _maximumFrameTicks: 2
   _tickRate: 30
   _pingInterval: 1
-  _timingInterval: 2
   _physicsMode: 0
 --- !u!114 &7443408887680269501
 MonoBehaviour:
@@ -1246,7 +1245,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d331f979d46e8e4a9fc90070c596d44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _useNetworkLod: 0
+  _enableNetworkLod: 0
   _levelOfDetailDistances: []
   _updateHostVisibility: 1
   _defaultConditions: []

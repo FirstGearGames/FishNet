@@ -7,7 +7,6 @@ namespace FishNet.Component.Prediction
 {
     internal class PredictedObjectOwnerSmoother
     {
-#if !PREDICTION_V2
 
         #region Serialized.
         /// <summary>
@@ -294,7 +293,6 @@ namespace FishNet.Component.Prediction
                 _graphicalObject.rotation = GetGraphicalGoalRotation();
         }
 
-#endif
     }
 
 

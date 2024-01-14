@@ -120,7 +120,7 @@ namespace FishNet.Object
              * This can happen even if a client is going to see
              * this object because the server side initializes
              * before observers are built. */
-            if (_networkObjectCache.Observers.Count == 0)
+            if (_networkObjectCache.Observers.Count == 0 && !_networkObjectCache.PredictedSpawner.IsValid)
                 return false;
 
             bool alreadyDirtied = (isSyncObject) ? _syncObjectDirty : _syncVarDirty;

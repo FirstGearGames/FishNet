@@ -13,13 +13,14 @@ namespace GameKit.Utilities
         /// <summary>
         /// Adds an entry to a list if it does not exist already.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name=""></param>
-        /// <param name="value"></param>
-        public static void AddUnique<T>(this List<T> list, object value)
+        /// <returns>True if the entry was added.</returns>
+        public static bool AddUnique<T>(this List<T> list, T value)
         {
-            if (!list.Contains((T)value))
+            bool contains = list.Contains((T)value);
+            if (!contains)
                 list.Add((T)value);
+
+            return !contains;
         }
 
         /// <summary>

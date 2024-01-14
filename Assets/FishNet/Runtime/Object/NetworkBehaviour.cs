@@ -76,8 +76,6 @@ namespace FishNet.Object
         }
 
 
-
-#if !PREDICTION_V2
         /// <summary>
         /// Preinitializes this script for the network.
         /// </summary>
@@ -96,30 +94,7 @@ namespace FishNet.Object
                 _initializedOnceClient = true;
             }
         }
-#else
-        /// <summary>
-        /// Preinitializes this script for the network.
-        /// </summary>
-        internal void Preinitialize_Internal(NetworkObject nob, bool asServer)
-        {
-            _transportManagerCache = nob.TransportManager;
-            
-            InitializeOnceSyncTypes(asServer);
-            if (asServer)
-            {
-                InitializeRpcLinks();
-                _initializedOnceServer = true;
-            }
-            else
-            {
-                if (!_initializedOnceClient && nob.EnablePrediction)
-                    nob.RegisterPredictionBehaviourOnce(this);
 
-                _initializedOnceClient = true;
-            }
-        }
-
-#endif
         internal void Deinitialize(bool asServer)
         {
 

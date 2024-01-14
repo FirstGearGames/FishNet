@@ -1,5 +1,4 @@
-﻿#if !PREDICTION_V2
-using FishNet.Documenting;
+﻿using FishNet.Documenting;
 using FishNet.Managing;
 using System.Collections;
 using System.Collections.Generic;
@@ -338,4 +337,3 @@ namespace FishNet.Utility
     }
 
 }
-#endif

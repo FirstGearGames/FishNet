@@ -26,7 +26,6 @@ namespace FishNet.Editing
     {
         #region const.
         private const string RELEASE_DEFINE = "FISHNET_RELEASE_MODE";
-        private const string PREDICTIONV2_DEFINE = "PREDICTION_V2";
         private const string QOL_ATTRIBUTES_DEFINE = "DISABLE_QOL_ATTRIBUTES";
         private const string DEVELOPER_ONLY_WARNING = "If you are not a developer or were not instructed to do this by a developer things are likely to break. You have been warned.";
         #endregion
@@ -51,27 +50,7 @@ namespace FishNet.Editing
         }
 #endif
         #endregion
-
-        #region PredictionV2.
-#if !PREDICTION_V2
-        [MenuItem("Fish-Networking/Experimental/PredictionV2/Enable", false, -999)]
-        private static void EnablePredictionV2()
-        {
-            bool result = RemoveOrAddDefine(PREDICTIONV2_DEFINE, false);
-            if (result)
-                Debug.LogWarning($"PredictionV2 has been enabled. {DEVELOPER_ONLY_WARNING}");
-        }
-#else
-        [MenuItem("Fish-Networking/Experimental/PredictionV2/Disable", false, -998)]
-        private static void DisablePredictionV2()
-        {
-            bool result = RemoveOrAddDefine(PREDICTIONV2_DEFINE, true);
-            if (result)
-                Debug.Log("PredictionV2 has been disabled.");
-        }
-#endif
-        #endregion
-
+ 
         #region QOL Attributes
 #if DISABLE_QOL_ATTRIBUTES
         [MenuItem("Fish-Networking/Experimental/Quality of Life Attributes/Enable", false, -999)]

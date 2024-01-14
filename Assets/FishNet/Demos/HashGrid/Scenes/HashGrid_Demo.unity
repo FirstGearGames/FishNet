@@ -220,7 +220,6 @@ MonoBehaviour:
   _maximumFrameTicks: 2
   _tickRate: 30
   _pingInterval: 15
-  _timingInterval: 15
   _physicsMode: 0
 --- !u!1 &442045874
 GameObject:
@@ -274,8 +273,6 @@ MonoBehaviour:
   _scenePathHash: 1046374546
   <SceneId>k__BackingField: 4494144455973923660
   <AssetPathHash>k__BackingField: 0
-  _sceneNetworkObjects:
-  - {fileID: 442045876}
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
@@ -283,6 +280,10 @@ MonoBehaviour:
   - {fileID: 442045877}
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
+  SerializedTransformProperties:
+    Position: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0, w: 0}
+    LocalScale: {x: 0, y: 0, z: 0}
   _isNetworked: 1
   _isGlobal: 0
   _initializeOrder: 0
@@ -409,7 +410,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d331f979d46e8e4a9fc90070c596d44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _useNetworkLod: 0
+  _enableNetworkLod: 0
   _levelOfDetailDistances:
   - 5
   - 10
@@ -974,7 +975,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: 3a54436bdb916194f99da0d17231e617, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: 2863463f6933f3f439a639f883f642f6, type: 2}
   _refreshDefaultPrefabs: 1
   _runInBackground: 1
   _dontDestroyOnLoad: 1

@@ -5,7 +5,7 @@ namespace FishNet.Object
     public partial class NetworkObject : MonoBehaviour
     {
         /// <summary>
-        /// Writers dirty SyncTypes for all Networkbehaviours if their write tick has been met.
+        /// Writes dirty SyncTypes for all Networkbehaviours if their write tick has been met.
         /// </summary>
         internal void WriteDirtySyncTypes()
         {

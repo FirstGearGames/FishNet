@@ -15,7 +15,6 @@ namespace FishNet.Example.Prediction.Rigidbodies
 
     public class RigidbodyPrediction : NetworkBehaviour
     {
-#if !PREDICTION_V2
         #region Types.
         public struct MoveData : IReplicateData
         {
@@ -232,7 +231,11 @@ namespace FishNet.Example.Prediction.Rigidbodies
 
                 //Set force to 100f at current forward.
                 PredictedBullet bt = nob.GetComponent<PredictedBullet>();
-                bt.SetStartingForce(transform.forward * 20f);
+                Vector3 force = (transform.forward * 20f);
+                //Set the syncVar 'startingForce'. You could expose the syncvar and set it directly.
+                bt.SetStartingForce(force);
+                //Also apply velocity
+                bt.SetVelocity(force);
                 //Spawn client side, which will send the predicted spawn to server.
                 base.Spawn(nob, base.Owner);
             }
@@ -277,7 +280,6 @@ namespace FishNet.Example.Prediction.Rigidbodies
             _rigidbody.angularVelocity = rd.AngularVelocity;
         }
 
-#endif
     }
 
 }
