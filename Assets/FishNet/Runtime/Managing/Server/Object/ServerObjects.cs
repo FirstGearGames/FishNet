@@ -839,7 +839,17 @@ namespace FishNet.Managing.Server
         {
             if (nob != null && nob.ObjectId != NetworkObject.UNSET_OBJECTID_VALUE)
             {
-                nob.WriteDirtySyncTypes();
+                // Write out any pending sync types and be sure to clear from the dirty list
+                // to avoid trying to write out a despawned object later on.
+                for (int i = 0, count = nob.NetworkBehaviours.Length; i < count; ++i)
+                {
+                    NetworkBehaviour nb = nob.NetworkBehaviours[i];
+                    if (nb.SyncTypeDirty && nb.WriteDirtySyncTypes(isDespawn: true))
+                    {
+                        _dirtySyncTypeBehaviours.Remove(nb);
+                    }
+                }
+
                 WriteDespawnAndSend(nob, despawnType);
                 CacheObjectId(nob);
             }
