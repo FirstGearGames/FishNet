@@ -1127,6 +1127,8 @@ namespace FishNet.Managing.Timing
             else if (Mathf.Abs(tickDifference) > 5)
             {
                 _adjustedTickDelta = TickDelta;
+                uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
+                Tick = lastPacketTick + rttTicks;
             }
             //Otherwise adjust the delta marginally.
             else
