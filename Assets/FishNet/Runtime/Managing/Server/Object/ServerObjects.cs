@@ -855,6 +855,23 @@ namespace FishNet.Managing.Server
             if (nob != null && nob.ObjectId != NetworkObject.UNSET_OBJECTID_VALUE)
             {
                 nob.WriteDirtySyncTypes();
+
+                List<NetworkBehaviour> dirtiedSyncObjects = _dirtySyncObjectBehaviours;
+                List<NetworkBehaviour> dirtiedSyncVars = _dirtySyncVarBehaviours;
+                /* This is a brute force way of removing dirtyNbs from
+                 * their collections without checking if they were
+                 * dirtied. This is not nearly as efficient as
+                 * the technique in FishNet V4 but a rework would be required to gain
+                 * the efficiencies to properly implement this fix and that's not
+                 * something V3 is going to get due to it's LTS state. */
+                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                {
+                    if (nb.SyncObjectDirty)
+                        dirtiedSyncObjects.Remove(nb);
+                    if (nb.SyncVarDirty)
+                        dirtiedSyncVars.Remove(nb);
+                }
+
                 WriteDespawnAndSend(nob, despawnType);
                 CacheObjectId(nob);
             }

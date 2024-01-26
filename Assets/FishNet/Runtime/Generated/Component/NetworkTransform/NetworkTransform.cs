@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEngine.Serialization;
 
 namespace FishNet.Component.Transforming
@@ -271,6 +272,8 @@ namespace FishNet.Component.Transforming
             /// NetworkBehaviour which is the parent of this object for Tick.
             /// </summary>
             public NetworkBehaviour ParentBehaviour;
+
+            [Preserve]
             public TransformData() { }
 
             internal void Update(TransformData copy)

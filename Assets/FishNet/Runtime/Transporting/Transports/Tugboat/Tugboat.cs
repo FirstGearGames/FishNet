@@ -34,12 +34,6 @@ namespace FishNet.Transporting.Tugboat
         [SerializeField]
         private string _ipv4BindAddress;
         /// <summary>
-        /// Enable IPv6 only on demand to avoid problems in Linux environments where it may have been disabled on host
-        /// </summary>
-        [Tooltip("Enable IPv6, Server listens on IPv4 and IPv6 address")]
-        [SerializeField]
-        private bool _enableIpv6 = true;
-        /// <summary>
         /// IPv6 address to bind server to.
         /// </summary>
         [Tooltip("IPv6 Address to bind server to.")]
@@ -289,7 +283,7 @@ namespace FishNet.Transporting.Tugboat
             if (GetConnectionState(false) != LocalConnectionState.Stopped)
                 base.NetworkManager.LogWarning("PacketLayer is set but will not be applied until the client stops.");
 
-            _server.Initialize(this, _unreliableMTU, _packetLayer,_enableIpv6);
+            _server.Initialize(this, _unreliableMTU, _packetLayer);
             _client.Initialize(this, _unreliableMTU, _packetLayer);
         }
         /// <summary>
@@ -445,7 +439,7 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         private bool StartServer()
         {
-            _server.Initialize(this, _unreliableMTU, _packetLayer,_enableIpv6);
+            _server.Initialize(this, _unreliableMTU, _packetLayer);
             UpdateTimeout();
             return _server.StartConnection(_port, _maximumClients, _ipv4BindAddress, _ipv6BindAddress);
         }

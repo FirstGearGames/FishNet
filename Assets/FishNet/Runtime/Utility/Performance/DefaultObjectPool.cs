@@ -1,3 +1,4 @@
+using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Object;
 using GameKit.Utilities;
@@ -33,7 +34,19 @@ namespace FishNet.Utility.Performance
         /// Current count of the cache collection.
         /// </summary>
         private int _cacheCount = 0;
+        /// <summary>
+        /// When a NetworkObject is stored it's parent is set to this object.
+        /// </summary>
+        private Transform _objectParent;
         #endregion
+
+        public override void InitializeOnce(NetworkManager nm)
+        {
+            base.InitializeOnce(nm);
+            _objectParent = new GameObject().transform;
+            _objectParent.name = "DefaultObjectPool Parent";
+            _objectParent.transform.SetParent(nm.transform);
+        }
 
         /// <summary>
         /// Returns an object that has been stored with a collectionId of 0. A new object will be created if no stored objects are available.
@@ -146,7 +159,7 @@ namespace FishNet.Utility.Performance
         public override void StoreObject(NetworkObject instantiated, bool asServer)
         {
             //Pooling is not enabled.
-            if (!_enabled)
+            if (!_enabled || _objectParent == null)
             {
                 Destroy(instantiated.gameObject);
                 return;
@@ -154,6 +167,7 @@ namespace FishNet.Utility.Performance
 
             instantiated.gameObject.SetActive(false);
             instantiated.ResetState();
+            instantiated.transform.SetParent(_objectParent);
             Stack<NetworkObject> cache = GetOrCreateCache(instantiated.SpawnableCollectionId, instantiated.PrefabId);
             cache.Push(instantiated);
         }

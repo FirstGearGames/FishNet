@@ -143,16 +143,11 @@ namespace FishNet.Managing.Predicting
         [Tooltip("Maximum number of past inputs which may send.")]
         [Range(MINIMUM_PAST_INPUTS, MAXIMUM_PAST_INPUTS)]
         [SerializeField]
-        private byte _redundancyCount = 3;
+        private byte _redundancyCount = 2;
         /// <summary>
         /// Maximum number of past inputs which may send and resend redundancy.
         /// </summary>
-#if UNITY_WEBGL
-//WebGL uses reliable so no reason to use redundancy.
-        internal byte RedundancyCount => 1;
-#else
         internal byte RedundancyCount => _redundancyCount;
-#endif
         /// <summary>
         /// True to allow clients to use predicted spawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.
         /// </summary>

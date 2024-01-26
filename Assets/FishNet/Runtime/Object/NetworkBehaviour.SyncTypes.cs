@@ -67,7 +67,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if at least one syncVar is dirty.
         /// </summary>
-        private bool _syncVarDirty;
+        internal bool SyncVarDirty;
         /// <summary>
         /// SyncVars within this NetworkBehaviour.
         /// </summary>
@@ -75,7 +75,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if at least one syncObject is dirty.
         /// </summary>
-        private bool _syncObjectDirty;
+        internal bool SyncObjectDirty;
         /// <summary>
         /// All ReadPermission values.
         /// </summary>
@@ -123,11 +123,11 @@ namespace FishNet.Object
             if (_networkObjectCache.Observers.Count == 0 && !_networkObjectCache.PredictedSpawner.IsValid)
                 return false;
 
-            bool alreadyDirtied = (isSyncObject) ? _syncObjectDirty : _syncVarDirty;
+            bool alreadyDirtied = (isSyncObject) ? SyncObjectDirty : SyncVarDirty;
             if (isSyncObject)
-                _syncObjectDirty = true;
+                SyncObjectDirty = true;
             else
-                _syncVarDirty = true;
+                SyncVarDirty = true;
 
             if (!alreadyDirtied)
                 _networkObjectCache.NetworkManager.ServerManager.Objects.SetDirtySyncType(this, isSyncObject);
@@ -237,9 +237,9 @@ namespace FishNet.Object
 
             /* If there is nothing dirty then return true, indicating no more
              * pending dirty checks. */
-            if (isSyncObject && (!_syncObjectDirty || _syncObjects.Count == 0))
+            if (isSyncObject && (!SyncObjectDirty || _syncObjects.Count == 0))
                 return true;
-            else if (!isSyncObject && (!_syncVarDirty || _syncVars.Count == 0))
+            else if (!isSyncObject && (!SyncVarDirty || _syncVars.Count == 0))
                 return true;
 
             /* True if writers have been reset for this check.
@@ -305,9 +305,9 @@ namespace FishNet.Object
             if (!dirtyFound)
             {
                 if (isSyncObject)
-                    _syncObjectDirty = false;
+                    SyncObjectDirty = false;
                 else
-                    _syncVarDirty = false;
+                    SyncVarDirty = false;
                 return true;
             }
             //At least one sync type was dirty.
@@ -390,8 +390,8 @@ namespace FishNet.Object
                     _syncVarReadDelegates[syncIndex]?.Invoke(null, syncIndex, true);
             }
 
-            _syncObjectDirty = false;
-            _syncVarDirty = false;
+            SyncObjectDirty = false;
+            SyncVarDirty = false;
         }
 
         /// <summary>

@@ -9,6 +9,7 @@ namespace FishNet.Example.Prediction.Transforms
 {
     public class TransformPrediction : NetworkBehaviour
     {
+#if !PREDICTION_V2
         /// <summary>
         /// Data on how to move.
         /// This is processed locally as well sent to the server for processing.
@@ -215,7 +216,7 @@ namespace FishNet.Example.Prediction.Transforms
             transform.rotation = rd.Rotation;
         }
 
-
+#endif
     }
 
 
