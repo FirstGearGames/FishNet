@@ -17,22 +17,43 @@ namespace FishNet.Transporting.Tugboat
         }
 
         #region Serialized.
-        [Header("Channels")]
+        /* Settings / Misc. */
+        /// <summary>
+        /// How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.
+        /// </summary>
+        [Tooltip("How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.")]
+        [Range(0, MAX_TIMEOUT_SECONDS)]
+        [SerializeField]
+        private ushort _timeout = 15;
+        /// <summary>
+        /// While true, forces sockets to send data directly to interface without routing.
+        /// </summary>
+        [Tooltip("While true, forces sockets to send data directly to interface without routing.")]
+        [SerializeField]
+        private bool _dontRoute;
+
+        /* Channels. */
         /// <summary>
         /// Maximum transmission unit for the unreliable channel.
         /// </summary>
         [Tooltip("Maximum transmission unit for the unreliable channel.")]
         [Range(MINIMUM_UDP_MTU, MAXIMUM_UDP_MTU)]
         [SerializeField]
-        private int _unreliableMTU = 1023;
+        private int _unreliableMtu = 1023;
 
-        [Header("Server")]
+        /* Server. */
         /// <summary>
         /// IPv4 address to bind server to.
         /// </summary>
         [Tooltip("IPv4 Address to bind server to.")]
         [SerializeField]
         private string _ipv4BindAddress;
+        /// <summary>
+        /// Enable IPv6 only on demand to avoid problems in Linux environments where it may have been disabled on host
+        /// </summary>
+        [Tooltip("Enable IPv6, Server listens on IPv4 and IPv6 address")]
+        [SerializeField]
+        private bool _enableIpv6 = true;
         /// <summary>
         /// IPv6 address to bind server to.
         /// </summary>
@@ -53,23 +74,13 @@ namespace FishNet.Transporting.Tugboat
         [SerializeField]
         private int _maximumClients = 4095;
 
-
-        [Header("Client")]
+        /* Client. */
         /// <summary>
         /// Address to connect.
         /// </summary>
         [Tooltip("Address to connect.")]
         [SerializeField]
         private string _clientAddress = "localhost";
-
-        [Header("Misc")]
-        /// <summary>
-        /// How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.
-        /// </summary>
-        [Tooltip("How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.")]
-        [Range(0, MAX_TIMEOUT_SECONDS)]
-        [SerializeField]
-        private ushort _timeout = 15;
         #endregion
 
         #region Private.
@@ -283,8 +294,8 @@ namespace FishNet.Transporting.Tugboat
             if (GetConnectionState(false) != LocalConnectionState.Stopped)
                 base.NetworkManager.LogWarning("PacketLayer is set but will not be applied until the client stops.");
 
-            _server.Initialize(this, _unreliableMTU, _packetLayer);
-            _client.Initialize(this, _unreliableMTU, _packetLayer);
+            _server.Initialize(this, _unreliableMtu, _packetLayer, _enableIpv6, _dontRoute);
+            _client.Initialize(this, _unreliableMtu, _packetLayer, _dontRoute);
         }
         /// <summary>
         /// How long in seconds until either the server or client socket must go without data before being timed out.
@@ -439,7 +450,7 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         private bool StartServer()
         {
-            _server.Initialize(this, _unreliableMTU, _packetLayer);
+            _server.Initialize(this, _unreliableMtu, _packetLayer, _enableIpv6, _dontRoute);
             UpdateTimeout();
             return _server.StartConnection(_port, _maximumClients, _ipv4BindAddress, _ipv6BindAddress);
         }
@@ -461,7 +472,7 @@ namespace FishNet.Transporting.Tugboat
         /// <param name="address"></param>
         private bool StartClient(string address)
         {
-            _client.Initialize(this, _unreliableMTU, _packetLayer);
+            _client.Initialize(this, _unreliableMtu, _packetLayer, _dontRoute);
             UpdateTimeout();
             return _client.StartConnection(address, _port);
         }
@@ -511,7 +522,7 @@ namespace FishNet.Transporting.Tugboat
         /// <returns></returns>
         public override int GetMTU(byte channel)
         {
-            return _unreliableMTU;
+            return _unreliableMtu;
         }
         #endregion
 
@@ -519,10 +530,10 @@ namespace FishNet.Transporting.Tugboat
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (_unreliableMTU < 0)
-                _unreliableMTU = MINIMUM_UDP_MTU;
-            else if (_unreliableMTU > MAXIMUM_UDP_MTU)
-                _unreliableMTU = MAXIMUM_UDP_MTU;
+            if (_unreliableMtu < 0)
+                _unreliableMtu = MINIMUM_UDP_MTU;
+            else if (_unreliableMtu > MAXIMUM_UDP_MTU)
+                _unreliableMtu = MAXIMUM_UDP_MTU;
         }
 #endif
         #endregion

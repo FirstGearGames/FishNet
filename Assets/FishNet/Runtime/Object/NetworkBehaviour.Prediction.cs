@@ -11,7 +11,7 @@ using FishNet.Object.Prediction.Delegating;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
-using FishNet.Utility.Constant;
+using FishNet.Utility;
 using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
 using System;
@@ -211,7 +211,7 @@ namespace FishNet.Object
         }
 #endif
         /// <summary>
-        /// True if this object is reconciling.
+        /// True if this object is reconciling. Value will be false if there is no data to reconcile to, even if the PredictionManager IsReconciling.
         /// </summary>
         public bool IsReconciling { get; internal set; }
         #endregion
@@ -898,12 +898,12 @@ namespace FishNet.Object
 
                     PredictionManager pm = PredictionManager;
                     bool consumeExcess = (!pm.DropExcessiveReplicates || IsClientOnlyStarted);
-                    //Allow 2 over expected before consuming.
-                    int leaveInBuffer = (2 + _networkObjectCache.PredictionManager.QueuedInputs);
+                    //Allow 1 over expected before consuming.
+                    int leaveInBuffer = (1 + _networkObjectCache.PredictionManager.QueuedInputs);
                     //Only consume if the queue count is over leaveInBuffer.
                     if (consumeExcess && count > leaveInBuffer)
                     {
-                        byte maximumAllowedConsumes = pm.MaximumReplicateConsumeCount;
+                        byte maximumAllowedConsumes = 1;
                         int maximumPossibleConsumes = (count - leaveInBuffer);
                         int consumeAmount = Mathf.Min(maximumAllowedConsumes, maximumPossibleConsumes);
 
@@ -951,7 +951,7 @@ namespace FishNet.Object
             //Only check to enque/send if not clientHost.
             if (!IsServerStarted)
             {
-                Func<T, bool> isDefaultDel = GeneratedComparer<T>.IsDefault;
+                Func<T, bool> isDefaultDel = PublicPropertyComparer<T>.IsDefault;
                 if (isDefaultDel == null)
                 {
                     NetworkManager.LogError($"ReplicateComparers not found for type {typeof(T).FullName}");
@@ -1045,7 +1045,7 @@ namespace FishNet.Object
             if (!IsOwner && !ownerlessAndServer)
                 return;
 
-            Func<T, bool> isDefaultDel = GeneratedComparer<T>.IsDefault;
+            Func<T, bool> isDefaultDel = PublicPropertyComparer<T>.IsDefault;
             if (isDefaultDel == null)
             {
                 NetworkManager.LogError($"ReplicateComparers not found for type {typeof(T).FullName}");
@@ -1111,7 +1111,7 @@ namespace FishNet.Object
                 _networkObjectCache.SetReplicateTick(qData.GetTick(), true);
                 //Owner always replicates with new data.
                 del.Invoke(qData, ReplicateState.CurrentCreated, channel);
-                data.Dispose();
+                qData.Dispose();
             }
         }
 #endif
@@ -1613,6 +1613,8 @@ namespace FishNet.Object
             if (!ClientHasReconcileData)
                 return;
 
+            IsReconciling = true;
+
             if (replicatesHistory.Count > 0)
             {
                 /* Remove replicates up to reconcile. Since the reconcile
@@ -1657,6 +1659,7 @@ namespace FishNet.Object
         internal void Reconcile_Client_End()
         {
             ClientHasReconcileData = false;
+            IsReconciling = false;
         }
 #endif
 
@@ -1688,8 +1691,7 @@ namespace FishNet.Object
         public void Reconcile_Reader<T>(PooledReader reader, ref T data, Channel channel) where T : IReconcileData
         {
             T newData = reader.Read<T>();
-            //This might broken. Check it out.
-            uint tick = (IsOwner) ? PredictionManager.StateClientTick : PredictionManager.StateServerTick;
+            uint tick = (IsOwner) ? PredictionManager.ClientStateTick : PredictionManager.ServerStateTick;
             //Do not process if an old state.
             if (tick < _lastReadReconcileTick)
                 return;

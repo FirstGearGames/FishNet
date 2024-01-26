@@ -754,13 +754,6 @@ namespace FishNet.Managing.Timing
                 {
                     Tick++;
                     LocalTick++;
-#if PREDICTION_V2
-                    if (isClient)
-                    {
-                        NetworkManager.PredictionManager.StateClientTick = 0;
-                        NetworkManager.PredictionManager.StateServerTick = 0;
-                    }
-#endif
                     NetworkManager.ObserverManager.CalculateLevelOfDetail(LocalTick);
                 }
             } while (_elapsedTickTime >= timePerSimulation);
@@ -1127,6 +1120,8 @@ namespace FishNet.Managing.Timing
             else if (Mathf.Abs(tickDifference) > 5)
             {
                 _adjustedTickDelta = TickDelta;
+                uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
+                Tick = lastPacketTick + rttTicks;
             }
             //Otherwise adjust the delta marginally.
             else

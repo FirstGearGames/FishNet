@@ -136,6 +136,16 @@ namespace FishNet.Managing.Server
         [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
+        /// Sets the maximum frame rate the client may run at. Calling this method will enable ChangeFrameRate.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetFrameRate(ushort value)
+        {
+            _frameRate = (ushort)Mathf.Clamp(value, 0, NetworkManager.MAXIMUM_FRAMERATE);
+            _changeFrameRate = true;
+            if (NetworkManager != null)
+                NetworkManager.UpdateFramerate();
+        }
         /// <summary>
         /// True to share the Ids of clients and the objects they own with other clients. No sensitive information is shared.
         /// </summary>
@@ -155,13 +165,6 @@ namespace FishNet.Managing.Server
         [Tooltip("True to automatically start the server connection when running as headless.")]
         [SerializeField]
         private bool _startOnHeadless = true;
-        /// <summary>
-        /// True to kick clients which send data larger than the MTU.
-        /// </summary>
-        internal bool LimitClientMTU => _limitClientMTU;
-        [Tooltip("True to kick clients which send data larger than the MTU.")]
-        [SerializeField]
-        private bool _limitClientMTU = true;
         #endregion
 
         #region Private.
@@ -610,7 +613,13 @@ namespace FishNet.Managing.Server
             //Not from a valid connection.
             if (args.ConnectionId < 0)
                 return;
-            ArraySegment<byte> segment = args.Data;
+
+            ArraySegment<byte> segment;
+            if (NetworkManager.TransportManager.HasIntermediateLayer)
+                segment = NetworkManager.TransportManager.ProcessIntermediateIncoming(args.Data, false);
+            else
+                segment = args.Data;
+
             NetworkManager.StatisticsManager.NetworkTraffic.LocalServerReceivedData((ulong)segment.Count);
             if (segment.Count <= TransportManager.TICK_BYTES)
                 return;
@@ -665,22 +674,7 @@ namespace FishNet.Managing.Server
                  * unrelated data added afterwards. We're going to cut
                  * the client some slack in this situation for the sake
                  * of keeping things simple. */
-
-                //Initialize reader with full message.
-                if (hasIntermediateLayer)
-                    reader.Initialize(NetworkManager.TransportManager.ProcessIntermediateIncoming(fullMessage, false), NetworkManager, dataSource);
-                else
-                    reader.Initialize(fullMessage, NetworkManager, dataSource);
-            }
-            //Not Split.
-            else
-            {
-                //Override values with intermediate layer changes.
-                if (hasIntermediateLayer)
-                {
-                    ArraySegment<byte> modified = NetworkManager.TransportManager.ProcessIntermediateIncoming(reader.GetRemainingData(), false);
-                    reader.Initialize(modified, NetworkManager, dataSource);
-                }
+                reader.Initialize(fullMessage, NetworkManager, dataSource);
             }
 
             //Parse reader.

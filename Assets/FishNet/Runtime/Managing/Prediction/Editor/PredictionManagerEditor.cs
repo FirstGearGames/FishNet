@@ -38,26 +38,11 @@ namespace FishNet.Managing.Predicting.Editing
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((PredictionManager)target), typeof(PredictionManager), false);
             GUI.enabled = true;
 
-            EditorGUILayout.LabelField("Server", EditorStyles.boldLabel);
+
+            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_queuedInputs);
-            EditorGUILayout.PropertyField(_dropExcessiveReplicates);
-            EditorGUI.indentLevel++;
-            if (_dropExcessiveReplicates.boolValue == true)
-            {
-                EditorGUILayout.PropertyField(_maximumServerReplicates);
-            }
-            else
-            {
-                EditorGUILayout.PropertyField(_maximumConsumeCount);
-            }
-            EditorGUI.indentLevel--;
-            EditorGUI.indentLevel--;
-
-            EditorGUILayout.LabelField("Client", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_redundancyCount);
-            EditorGUI.indentLevel--;
 
             EditorGUILayout.PropertyField(_allowPredictedSpawning);
             if (_allowPredictedSpawning.boolValue == true)
@@ -66,8 +51,26 @@ namespace FishNet.Managing.Predicting.Editing
                 EditorGUILayout.PropertyField(_reservedObjectIds);
                 EditorGUI.indentLevel--;
             }
-
+            EditorGUI.indentLevel--;
             EditorGUILayout.Space();
+
+            EditorGUILayout.LabelField("Server", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_dropExcessiveReplicates);
+            EditorGUI.indentLevel++;
+            if (_dropExcessiveReplicates.boolValue == true)
+            {
+                EditorGUILayout.PropertyField(_maximumServerReplicates);
+            }
+            else
+            {
+#if !PREDICTION_V2
+                EditorGUILayout.PropertyField(_maximumConsumeCount);
+#endif
+            }
+            EditorGUI.indentLevel--;
+            EditorGUI.indentLevel--;
+
 
             serializedObject.ApplyModifiedProperties();
         }

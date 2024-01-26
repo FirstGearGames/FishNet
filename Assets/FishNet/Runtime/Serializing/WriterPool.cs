@@ -124,6 +124,17 @@ namespace FishNet.Serializing
             _pool.Push(writer);
         }
 
+        /// <summary>
+        /// Puts writer back into pool if not null, and nullifies source reference.
+        /// </summary>
+        public static void StoreAndDefault(ref PooledWriter writer)
+        {
+            if (writer != null)
+            {
+                _pool.Push(writer);
+                writer = null;
+            }
+        }
         #region Dictionary indexes.
         /// <summary>
         /// Gets which index to use for length when retrieving a writer.

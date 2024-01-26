@@ -6,7 +6,7 @@ using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
-using FishNet.Utility.Constant;
+using FishNet.Utility;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
@@ -1158,8 +1158,8 @@ namespace FishNet.Serializing
             WriteByte(count);
 
             //Get comparer.
-            Func<T, T, bool> compareDel = GeneratedComparer<T>.Compare;
-            Func<T, bool> isDefaultDel = GeneratedComparer<T>.IsDefault;
+            Func<T, T, bool> compareDel = PublicPropertyComparer<T>.Compare;
+            Func<T, bool> isDefaultDel = PublicPropertyComparer<T>.IsDefault;
             if (compareDel == null || isDefaultDel == null)
             {
                 NetworkManager.LogError($"ReplicateComparers not found for type {typeof(T).FullName}");

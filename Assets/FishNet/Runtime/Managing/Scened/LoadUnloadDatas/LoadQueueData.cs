@@ -1,5 +1,5 @@
 ﻿using FishNet.Connection;
-using FishNet.Utility.Constant;
+using FishNet.Utility;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]

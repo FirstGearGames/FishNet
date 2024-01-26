@@ -6,7 +6,7 @@ using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
-using FishNet.Utility.Constant;
+using FishNet.Utility;
 using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
 using System;

@@ -335,6 +335,8 @@ namespace FishNet.Managing
             * in awake. Rather than try to fix or care why Unity
             * does this just set it in LateUpdate(or Update). */
             SetRunInBackground();
+            //Let's object pooler do regular work.
+            _objectPool.LateUpdate();
         }
 
 
@@ -477,91 +479,6 @@ namespace FishNet.Managing
 
             CollectionCaches<int>.Store(cache);
         }
-
-        #region Object pool.
-        /// <summary>
-        /// Returns an instantiated copy of prefab.
-        /// </summary>        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NetworkObject GetPooledInstantiated(NetworkObject prefab, bool asServer)
-        {
-            return GetPooledInstantiated(prefab, prefab.transform.position, prefab.transform.rotation, asServer);
-        }
-        /// <summary>
-        /// Returns an instantiated copy of prefab.
-        /// </summary>        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NetworkObject GetPooledInstantiated(NetworkObject prefab, Vector3 position, Quaternion rotation, bool asServer)
-        {
-            return GetPooledInstantiated(prefab.PrefabId, prefab.SpawnableCollectionId, position, rotation, asServer);
-        }
-        /// <summary>
-        /// Returns an instantiated copy of prefab.
-        /// </summary>       
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NetworkObject GetPooledInstantiated(GameObject prefab, bool asServer)
-        {
-            NetworkObject nob;
-            if (!prefab.TryGetComponent<NetworkObject>(out nob))
-            {
-                InternalLogError($"NetworkObject was not found on {prefab}. An instantiated NetworkObject cannot be returned.");
-                return null;
-            }
-            else
-            {
-                return GetPooledInstantiated(nob.PrefabId, nob.SpawnableCollectionId, asServer);
-            }
-        }
-        /// <summary>
-        /// Returns an instantiated copy of prefab while setting position and rotation.
-        /// </summary>
-        public NetworkObject GetPooledInstantiated(GameObject prefab, Vector3 position, Quaternion rotation, bool asServer)
-        {
-            NetworkObject nob;
-            if (!prefab.TryGetComponent<NetworkObject>(out nob))
-            {
-                InternalLogError($"NetworkObject was not found on {prefab}. An instantiated NetworkObject cannot be returned.");
-                return null;
-            }
-            else
-            {
-                return GetPooledInstantiated(nob.PrefabId, nob.SpawnableCollectionId, position, rotation, asServer);
-            }
-        }
-        /// <summary>
-        /// Returns an instantiated object that has prefabId.
-        /// </summary>
-        public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, bool asServer)
-        {
-            return _objectPool.RetrieveObject(prefabId, collectionId, asServer);
-        }
-        /// <summary>
-        /// Returns an instantiated object that has prefabId while setting position and rotation.
-        /// </summary>
-        public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, Vector3 position, Quaternion rotation, bool asServer)
-        {
-            return _objectPool.RetrieveObject(prefabId, collectionId, position, rotation, asServer);
-        }
-        /// <summary>
-        /// Stores an instantied object.
-        /// </summary>
-        /// <param name="instantiated">Object which was instantiated.</param>
-        /// <param name="asServer">True to store for the server.</param>
-        public void StorePooledInstantiated(NetworkObject instantiated, bool asServer)
-        {
-            _objectPool.StoreObject(instantiated, asServer);
-        }
-        /// <summary>
-        /// Instantiates a number of objects and adds them to the pool.
-        /// </summary>
-        /// <param name="prefab">Prefab to cache.</param>
-        /// <param name="count">Quantity to spawn.</param>
-        /// <param name="asServer">True if storing prefabs for the server collection. This is only applicable when using DualPrefabObjects.</param>
-        public void CacheObjects(NetworkObject prefab, int count, bool asServer)
-        {
-            _objectPool.CacheObjects(prefab, count, asServer);
-        }
-        #endregion
 
         #region Editor.
 #if UNITY_EDITOR

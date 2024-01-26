@@ -1,5 +1,5 @@
 ﻿#if UNITY_EDITOR
-using FishNet.Utility.Constant;
+using FishNet.Utility;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;

@@ -113,7 +113,7 @@ namespace FishNet.PredictionV2
         }
 
 
-        [ReplicateV2]
+        [Replicate]
         private void Move(MoveData md, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
         {
             if (state == ReplicateState.Future)
@@ -134,7 +134,7 @@ namespace FishNet.PredictionV2
 
         }
 
-        [ReconcileV2]
+        [Reconcile]
         private void Reconciliation(ReconcileData rd, Channel channel = Channel.Unreliable)
         {
             transform.position = rd.Position;

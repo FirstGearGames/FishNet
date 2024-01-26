@@ -31,8 +31,8 @@ namespace FishNet.CodeGenerating.Helping
             ReplicateAttribute_FullName = typeof(ReplicateAttribute).FullName;
             ReconcileAttribute_FullName = typeof(ReconcileAttribute).FullName;
 #else
-            ReplicateAttribute_FullName = typeof(ReplicateV2Attribute).FullName;
-            ReconcileAttribute_FullName = typeof(ReconcileV2Attribute).FullName;
+            ReplicateAttribute_FullName = typeof(ReplicateAttribute).FullName;
+            ReconcileAttribute_FullName = typeof(ReconcileAttribute).FullName;
 #endif
             return true;
         }

@@ -81,7 +81,7 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors
-        public SyncTimer(SyncTypeSetting settings = new SyncTypeSetting()) : base(settings) { }
+        public SyncTimer(SyncTypeSettings settings = new SyncTypeSettings()) : base(settings) { }
         #endregion
 
         /// <summary>

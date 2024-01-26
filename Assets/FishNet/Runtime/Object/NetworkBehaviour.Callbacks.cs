@@ -1,6 +1,7 @@
 ﻿using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Object.Synchronizing.Internal;
+using FishNet.Serializing;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -32,6 +33,18 @@ namespace FishNet.Object
         /// </summary>
         private bool _onStopNetworkCalled;
         #endregion
+
+        /* Payloads are written and read immediatley after the header containing the target NetworkObject/Behaviour. */
+        /// <summary>
+        /// Called when writing a spawn. This may be used to deliver information for predicted spawning, or simply have values set before initialization without depending on SyncTypes.
+        /// </summary>
+        /// <param name="connection">Connection receiving the payload. When sending to the server connection.IsValid will return false.</param>
+        public virtual void WritePayload(NetworkConnection connection, Writer writer) { }
+        /// <summary>
+        /// Called before network start callbacks, but after the object is initialized with network values. This may be used to read information from predicted spawning, or simply have values set before initialization without depending on SyncTypes.
+        /// </summary>
+        /// <param name="connection">Connection sending the payload. When coming from the server connection.IsValid will return false.</param>
+        public virtual void ReadPayload(NetworkConnection connection, Reader reader) { }
 
         /// <summary>
         /// Invokes OnStartXXXX for synctypes, letting them know the NetworkBehaviour start cycle has been completed.
@@ -191,7 +204,6 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="prevOwner">Previous owner of this object.</param>
         public virtual void OnOwnershipClient(NetworkConnection prevOwner) { }
-
 
         /// <summary>
         /// Calls ClearReplicateCache for prediction v1 or v2.

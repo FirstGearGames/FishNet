@@ -1,0 +1,91 @@
+﻿#if UNITY_EDITOR
+using FishNet.Object;
+using UnityEditor;
+using UnityEngine;
+
+namespace FishNet.Transporting.Tugboat.Editing
+{
+
+    [CustomEditor(typeof(Tugboat), true)]
+    [CanEditMultipleObjects]
+    public class TugboatEditor : Editor
+    {
+        private SerializedProperty _unreliableMtu;
+        private SerializedProperty _dontRoute;
+
+        private SerializedProperty _ipv4BindAddress;
+        private SerializedProperty _enableIpv6;
+        private SerializedProperty _ipv6BindAddress;
+        private SerializedProperty _port;
+        private SerializedProperty _maximumClients;
+
+        private SerializedProperty _clientAddress;
+        private SerializedProperty _timeout;
+
+
+        protected virtual void OnEnable()
+        {
+            _timeout = serializedObject.FindProperty(nameof(_timeout));
+            _dontRoute = serializedObject.FindProperty(nameof(_dontRoute));
+            _unreliableMtu = serializedObject.FindProperty(nameof(_unreliableMtu));
+            _ipv4BindAddress = serializedObject.FindProperty(nameof(_ipv4BindAddress));
+            _enableIpv6 = serializedObject.FindProperty(nameof(_enableIpv6));
+            _ipv6BindAddress = serializedObject.FindProperty(nameof(_ipv6BindAddress));
+            _port = serializedObject.FindProperty(nameof(_port));
+            _maximumClients = serializedObject.FindProperty(nameof(_maximumClients));
+            _clientAddress = serializedObject.FindProperty(nameof(_clientAddress));            
+        }
+
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+            Tugboat tb = (Tugboat)target;
+
+            GUI.enabled = false;
+            EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(tb), typeof(Tugboat), false);
+            GUI.enabled = true;
+
+            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_timeout);
+            EditorGUILayout.PropertyField(_dontRoute);
+            EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
+
+            EditorGUILayout.LabelField("Channels", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_unreliableMtu);
+            EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
+
+            EditorGUILayout.LabelField("Server", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_ipv4BindAddress);
+            EditorGUILayout.PropertyField(_enableIpv6);
+            if (_enableIpv6.boolValue == true)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_ipv6BindAddress);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.PropertyField(_port);
+            EditorGUILayout.PropertyField(_maximumClients);
+            EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
+
+            EditorGUILayout.LabelField("Client", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_clientAddress);
+            EditorGUI.indentLevel--;
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+
+
+    }
+
+}
+
+
+#endif

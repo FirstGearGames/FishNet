@@ -59,11 +59,22 @@ namespace FishNet.Serializing
 
         /// <summary>
         /// Puts reader back into pool
-        /// <para>When pool is full, the extra reader is left for the GC</para>
         /// </summary>
         public static void Store(PooledReader reader)
         {
             _pool.Push(reader);
+        }
+
+        /// <summary>
+        /// Puts reader back into pool if not null, and nullifies source reference.
+        /// </summary>
+        public static void StoreAndDefault(ref PooledReader reader)
+        {
+            if (reader != null)
+            {
+                _pool.Push(reader);
+                reader = null;
+            }
         }
     }
 }

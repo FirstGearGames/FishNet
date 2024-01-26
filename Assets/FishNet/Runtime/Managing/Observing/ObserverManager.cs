@@ -2,7 +2,7 @@
 using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Observing;
-using FishNet.Utility.Constant;
+using FishNet.Utility;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;

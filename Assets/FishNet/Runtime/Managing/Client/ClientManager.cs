@@ -100,16 +100,22 @@ namespace FishNet.Managing.Client
         [SerializeField]
         private bool _changeFrameRate = true;
         /// <summary>
-        /// 
+        /// Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.
         /// </summary>
-        [Tooltip("Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.")]
+        internal ushort FrameRate => (_changeFrameRate) ? _frameRate : (ushort)0; [Tooltip("Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.")]
         [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
-        /// <summary>
-        /// Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.
+        /// Sets the maximum frame rate the client may run at. Calling this method will enable ChangeFrameRate.
         /// </summary>
-        internal ushort FrameRate => (_changeFrameRate) ? _frameRate : (ushort)0;
+        /// <param name="value">New value.</param>
+        public void SetFrameRate(ushort value)
+        {
+            _frameRate = (ushort)Mathf.Clamp(value, 0, NetworkManager.MAXIMUM_FRAMERATE);
+            _changeFrameRate = true;
+            if (NetworkManager != null)
+                NetworkManager.UpdateFramerate();
+        }
         #endregion
 
         #region Private.
@@ -348,7 +354,12 @@ namespace FishNet.Managing.Client
 #endif
             _lastPacketTime = Time.unscaledTime;
 
-            ArraySegment<byte> segment = args.Data;
+            ArraySegment<byte> segment;
+            if (NetworkManager.TransportManager.HasIntermediateLayer)
+                segment = NetworkManager.TransportManager.ProcessIntermediateIncoming(args.Data, true);
+            else
+                segment = args.Data;
+
             NetworkManager.StatisticsManager.NetworkTraffic.LocalClientReceivedData((ulong)segment.Count);
             if (segment.Count <= TransportManager.TICK_BYTES)
                 return;
@@ -363,7 +374,6 @@ namespace FishNet.Managing.Client
 
         internal void ParseReader(PooledReader reader, Channel channel, bool print = false)
         {
-            bool hasIntermediateLayer = NetworkManager.TransportManager.HasIntermediateLayer;
             PacketId packetId = PacketId.Unset;
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
@@ -388,21 +398,7 @@ namespace FishNet.Managing.Client
                 if (fullMessage.Count == 0)
                     return;
 
-                //Initialize reader with full message.
-                if (hasIntermediateLayer)
-                    reader.Initialize(NetworkManager.TransportManager.ProcessIntermediateIncoming(fullMessage, true), NetworkManager, dataSource);
-                else
-                    reader.Initialize(fullMessage, NetworkManager, dataSource);
-            }
-            //Not split.
-            else
-            {
-                //Override values with intermediate layer changes.
-                if (hasIntermediateLayer)
-                {
-                    ArraySegment<byte> modified = NetworkManager.TransportManager.ProcessIntermediateIncoming(reader.GetRemainingData(), false);
-                    reader.Initialize(modified, NetworkManager, dataSource);
-                }
+                reader.Initialize(fullMessage, NetworkManager, dataSource);
             }
 
             while (reader.Remaining > 0)

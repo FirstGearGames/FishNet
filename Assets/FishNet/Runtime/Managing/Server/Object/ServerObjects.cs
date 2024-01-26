@@ -26,6 +26,23 @@ namespace FishNet.Managing.Server
     /// </summary>
     public partial class ServerObjects : ManagedObjects
     {
+        #region Types.
+        /// <summary>
+        /// Information about a predicted spawner when receiving a spawn from clients.
+        /// </summary>
+        private struct PredictedSpawnData
+        {
+            public PooledReader PayloadReader;
+            public NetworkConnection PredictedSpawner;
+
+            public PredictedSpawnData(PooledReader payloadReader, NetworkConnection predictedSpawner)
+            {
+                PayloadReader = payloadReader;
+                PredictedSpawner = predictedSpawner;
+            }
+        }
+        #endregion
+
         #region Public.
         /// <summary>
         /// Called right before client objects are destroyed when a client disconnects.
@@ -400,13 +417,16 @@ namespace FishNet.Managing.Server
         /// Performs setup on a NetworkObject without synchronizing the actions to clients.
         /// </summary>
         /// <param name="objectId">Override ObjectId to use.</param>
-        private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null, int? objectId = null)
+        private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null, int? objectId = null, PredictedSpawnData? predictedSpawnData = null)
         {
             if (nob.IsNetworked)
             {
                 if (objectId == null)
                     objectId = GetNextNetworkObjectId();
                 nob.Preinitialize_Internal(NetworkManager, objectId.Value, ownerConnection, true);
+                if (predictedSpawnData.HasValue)
+                    base.ReadPayload(predictedSpawnData.Value.PredictedSpawner, nob, predictedSpawnData.Value.PayloadReader);
+                
                 base.AddToSpawned(nob, true);
                 nob.gameObject.SetActive(true);
                 nob.Initialize(true, true);
@@ -493,7 +513,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Spawns networkObject without any checks.
         /// </summary>
-        private void SpawnWithoutChecks(NetworkObject networkObject, NetworkConnection ownerConnection = null, int? objectId = null)
+        private void SpawnWithoutChecks(NetworkObject networkObject, NetworkConnection ownerConnection = null, int? objectId = null, PredictedSpawnData? predictedSpawnData = null)
         {
             /* Setup locally without sending to clients.
             * When observers are built for the network object
@@ -501,14 +521,14 @@ namespace FishNet.Managing.Server
             * be sent. */
             networkObject.SetIsNetworked(true);
             _spawnCache.Add(networkObject);
-            SetupWithoutSynchronization(networkObject, ownerConnection, objectId);
+            SetupWithoutSynchronization(networkObject, ownerConnection, objectId, predictedSpawnData);
 
             foreach (NetworkObject item in networkObject.NestedRootNetworkBehaviours)
             {
                 /* Only spawn recursively if the nob state is unset.
                  * Unset indicates that the nob has not been */
                 if (item.gameObject.activeInHierarchy || item.State == NetworkObjectState.Spawned)
-                    SpawnWithoutChecks(item, ownerConnection);
+                    SpawnWithoutChecks(item, ownerConnection, null, predictedSpawnData);
             }
 
             /* Copy to a new cache then reset _spawnCache
@@ -543,6 +563,14 @@ namespace FishNet.Managing.Server
         /// </summary>
         internal void ReadPredictedSpawn(PooledReader reader, NetworkConnection conn)
         {
+            /* 
+             * //TODO this is crucial. Length must be sent with the predicted spawn
+             * to skip past it if some reason we cannot continue.
+             * For example, if the sceneId is not found there may be content in the reader
+             * we cannot process, such as reading initial payload or syncvars.
+             * When this does happen just skip the remaining amount
+             * on the reader according to the length here. (not yet written/read) */
+
             sbyte initializeOrder;
             ushort collectionId;
             int prefabId;
@@ -559,12 +587,8 @@ namespace FishNet.Managing.Server
             SpawnType st = (SpawnType)reader.ReadByte();
             //Not used at the moment.
             byte componentIndex = reader.ReadByte();
-
             //Read transform values which differ from serialized values.
-            Vector3? localPosition;
-            Quaternion? localRotation;
-            Vector3? localScale;
-            base.ReadTransformProperties(reader, out localPosition, out localRotation, out localScale);
+            base.ReadTransformProperties(reader, out Vector3? nullableLocalPosition, out Quaternion? nullableLocalRotation, out Vector3? nullableLocalScale);
 
             NetworkObject nob;
             bool isGlobal = false;
@@ -579,8 +603,19 @@ namespace FishNet.Managing.Server
 #else
                 nob = base.GetSceneNetworkObject(sceneId);
 #endif
-                if (!base.CanPredictedSpawn(nob, conn, owner, true))
+                if (nob != null)
+                {
+                    //TODO skip remaining here if cannot predicted spawn.
+                    if (!base.CanPredictedSpawn(nob, conn, owner, true))
+                        return;
+
+                    nob.transform.SetLocalPositionRotationAndScale(nullableLocalPosition, nullableLocalRotation, nullableLocalScale);
+                }
+                else
+                {
+                    //TODO skip remaining here if cannot predicted spawn.
                     return;
+                }
             }
             else
             {
@@ -608,37 +643,19 @@ namespace FishNet.Managing.Server
                 if (!base.CanPredictedSpawn(nPrefab, conn, owner, true))
                     return;
 
-                nob = NetworkManager.GetPooledInstantiated(prefabId, collectionId, false);
+                nob = NetworkManager.GetPooledInstantiated(prefabId, collectionId, parent: null, nullableLocalPosition, nullableLocalRotation, nullableLocalScale, makeActive: true, asServer: true);
                 isGlobal = SpawnTypeEnum.Contains(st, SpawnType.InstantiatedGlobal);
             }
 
-            Transform t = nob.transform;
-            //Parenting predicted spawns is not supported yet.
-            t.SetParent(null, true);
-            base.GetTransformProperties(localPosition, localRotation, localScale, t, out Vector3 pos, out Quaternion rot, out Vector3 scale);
-            t.SetLocalPositionRotationAndScale(pos, rot, scale);
             nob.SetIsGlobal(isGlobal);
-
             //Initialize for prediction.
             nob.InitializePredictedObject_Server(base.NetworkManager, conn);
+            //Read payload.
 
-            /* Only read sync types if allowed for the object.
-             * If the client did happen to send synctypes while not allowed
-             * this will create a parse error on the server,
-             * resulting in the client being kicked. */
-            if (nob.AllowPredictedSyncTypes)
-            {
-                ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
-                PooledReader syncTypeReader = ReaderPool.Retrieve(syncValues, base.NetworkManager);
-                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                {
-                    int length = syncTypeReader.ReadInt32();
-                    nb.OnSyncType(syncTypeReader, length, true);
-                }
-                syncTypeReader.Store();
-            }
-
-            SpawnWithoutChecks(nob, owner, objectId);
+            PooledReader payloadReader = ReaderPool.Retrieve(reader.ReadArraySegmentAndSize(), base.NetworkManager, Reader.DataSource.Client);
+            PredictedSpawnData predictedSpawnData = new PredictedSpawnData(payloadReader, conn);
+            SpawnWithoutChecks(nob, owner, objectId, predictedSpawnData);
+            payloadReader.Store();
 
             //Send the spawner a new reservedId.
             WriteResponse(true);
@@ -837,9 +854,18 @@ namespace FishNet.Managing.Server
         /// <param name="nob"></param>
         private void FinalizeDespawn(NetworkObject nob, DespawnType despawnType)
         {
+            List<NetworkBehaviour> dirtiedNbs = _dirtySyncTypeBehaviours;
             if (nob != null && nob.ObjectId != NetworkObject.UNSET_OBJECTID_VALUE)
             {
-                nob.WriteDirtySyncTypes();
+                // Write out any pending sync types and be sure to clear from the dirty list
+                // to avoid trying to write out a despawned object later on.
+                for (int i = 0, count = nob.NetworkBehaviours.Length; i < count; ++i)
+                {
+                    NetworkBehaviour nb = nob.NetworkBehaviours[i];
+                    if (nb.SyncTypeDirty && nb.WriteDirtySyncTypes(true, true))
+                        _dirtySyncTypeBehaviours.Remove(nb);
+                }
+
                 WriteDespawnAndSend(nob, despawnType);
                 CacheObjectId(nob);
             }

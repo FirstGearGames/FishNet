@@ -2,6 +2,7 @@
 using FishNet.Managing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
+using GameKit.Dependencies.Utilities;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -65,11 +66,11 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Collection of objects.
         /// </summary>
-        public readonly ISet<T> Collection;
+        public HashSet<T> Collection;
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
-        public readonly ISet<T> ClientHostCollection = new HashSet<T>();
+        public HashSet<T> ClientHostCollection;
         /// <summary>
         /// Number of objects in the collection.
         /// </summary>
@@ -84,23 +85,24 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Values upon initialization.
         /// </summary>
-        private ISet<T> _initialValues = new HashSet<T>();
-        /// <summary>
-        /// Comparer to see if entries change when calling public methods.
-        /// </summary>
-        private readonly IEqualityComparer<T> _comparer;
+        private HashSet<T> _initialValues;
         /// <summary>
         /// Changed data which will be sent next tick.
         /// </summary>
-        private readonly List<ChangeData> _changed = new List<ChangeData>();
+        private List<ChangeData> _changed;
         /// <summary>
         /// Server OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<CachedOnChange> _serverOnChanges = new List<CachedOnChange>();
+        private List<CachedOnChange> _serverOnChanges;
         /// <summary>
         /// Client OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<CachedOnChange> _clientOnChanges = new List<CachedOnChange>();
+        private List<CachedOnChange> _clientOnChanges;
+        /// <summary>
+        /// Comparer to see if entries change when calling public methods.
+        /// //Not used right now.
+        /// </summary>
+        private readonly IEqualityComparer<T> _comparer;
         /// <summary>
         /// True if values have changed since initialization.
         /// The only reasonable way to reset this during a Reset call is by duplicating the original list and setting all values to it on reset.
@@ -113,15 +115,34 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors.
-        public SyncHashSet(SyncTypeSetting settings = new SyncTypeSetting()) : this(new HashSet<T>(), EqualityComparer<T>.Default, settings) { }
-        public SyncHashSet(IEqualityComparer<T> comparer, SyncTypeSetting settings = new SyncTypeSetting()) : this(new HashSet<T>(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
-        public SyncHashSet(ISet<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSetting settings = new SyncTypeSetting()) : base(settings)
+        public SyncHashSet(SyncTypeSettings settings = new SyncTypeSettings()) : this(CollectionCaches<T>.RetrieveHashSet(), EqualityComparer<T>.Default, settings) { }
+        public SyncHashSet(IEqualityComparer<T> comparer, SyncTypeSettings settings = new SyncTypeSettings()) : this(CollectionCaches<T>.RetrieveHashSet(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
+        public SyncHashSet(HashSet<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new SyncTypeSettings()) : base(settings)
         {
-            this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
-            this.Collection = collection;
+            _comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
+            Collection = collection;
+            ClientHostCollection = CollectionCaches<T>.RetrieveHashSet();
+
+            _initialValues = CollectionCaches<T>.RetrieveHashSet();
+            _changed = CollectionCaches<ChangeData>.RetrieveList();
+            _serverOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
+            _clientOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
+
             //Add each in collection to clienthostcollection.
             foreach (T item in collection)
                 ClientHostCollection.Add(item);
+        }
+        #endregion
+
+        #region Deconstructor.
+        ~SyncHashSet()
+        {
+            CollectionCaches<T>.StoreAndDefault(ref Collection);
+            CollectionCaches<T>.StoreAndDefault(ref ClientHostCollection);
+            CollectionCaches<T>.StoreAndDefault(ref _initialValues);
+            CollectionCaches<ChangeData>.StoreAndDefault(ref _changed);
+            CollectionCaches<CachedOnChange>.StoreAndDefault(ref _serverOnChanges);
+            CollectionCaches<CachedOnChange>.StoreAndDefault(ref _clientOnChanges);
         }
         #endregion
 

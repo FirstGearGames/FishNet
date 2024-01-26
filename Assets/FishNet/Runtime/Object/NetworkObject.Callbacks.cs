@@ -104,9 +104,28 @@ namespace FishNet.Object
                     NetworkBehaviours[i].OnStopClient_Internal();
             }
 
-            /* Invoke OnStopNetwork if server is calling
-            * or if client and not as server. */
-            if (asServer || (!asServer && !IsServerStarted))
+            /* Several conditions determine if OnStopNetwork can
+             * be called.
+             * 
+             * - If asServer and pending destroy from clientHost.
+             * - If !asServer and not ServerInitialized. */
+            bool callStopNetwork;
+            if (asServer)
+            {
+                if (!IsClientStarted)
+                    callStopNetwork = true;
+                else
+                    callStopNetwork = (ServerManager.Objects.GetFromPending(ObjectId) == null);
+            }
+            else
+            {
+                /* When not as server only perform OnStopNetwork if
+                 * not initialized for the server. The object could be
+                 * server initialized if it were spawned, despawned, then spawned again
+                 * before client ran this method. */
+                callStopNetwork = !IsServerInitialized;
+            }
+            if (callStopNetwork)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].InvokeOnNetwork(false);

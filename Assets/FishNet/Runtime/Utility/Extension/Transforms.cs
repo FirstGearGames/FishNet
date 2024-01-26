@@ -83,6 +83,9 @@ namespace FishNet.Utility.Extension
                 );
         }
 
+        /// <summary>
+        /// Sets a transform to local properties.
+        /// </summary>
         public static void SetLocalProperties(this Transform t, TransformPropertiesCls tp)
         {
             t.localPosition = tp.Position;
@@ -90,6 +93,9 @@ namespace FishNet.Utility.Extension
             t.localScale = tp.LocalScale;
         }
 
+        /// <summary>
+        /// Sets a transform to local properties.
+        /// </summary>
         public static void SetLocalProperties(this Transform t, TransformProperties tp)
         {
             t.localPosition = tp.Position;
@@ -97,13 +103,18 @@ namespace FishNet.Utility.Extension
             t.localScale = tp.LocalScale;
         }
 
+        /// <summary>
+        /// Sets a transform to world properties.
+        /// </summary>
         public static void SetWorldProperties(this Transform t, TransformPropertiesCls tp)
         {
             t.position = tp.Position;
             t.rotation = tp.Rotation;
             t.localScale = tp.LocalScale;
         }
-
+        /// <summary>
+        /// Sets a transform to world properties.
+        /// </summary>
         public static void SetWorldProperties(this Transform t, TransformProperties tp)
         {
             t.position = tp.Position;
@@ -128,7 +139,28 @@ namespace FishNet.Utility.Extension
             t.localRotation = rot;
             t.localScale = scale;
         }
+        /// <summary>
+        /// Sets local position, rotation, and scale using nullables for a transform. If a value is null then that property is skipped.
+        /// </summary>
+        public static void SetLocalPositionRotationAndScale(this Transform t, Vector3? nullablePos, Quaternion? nullableRot, Vector3? nullableScale)
+        {
+            if (nullablePos.HasValue)
+                t.localPosition = nullablePos.Value;
+            if (nullableRot.HasValue)
+                t.localRotation = nullableRot.Value;
+            if (nullableScale.HasValue)
+                t.localScale = nullableScale.Value;
+        }
 
+        /// <summary>
+        /// Oututs properties to use for a transform. When a nullable property has value that value is used, otherwise the transforms current property is used.
+        /// </summary>
+        internal static void OutLocalPropertyValues(this Transform t, Vector3? nullablePos, Quaternion? nullableRot, Vector3? nullableScale, out Vector3 pos, out Quaternion rot, out Vector3 scale)
+        {
+            pos = (nullablePos == null) ? t.localPosition : nullablePos.Value;
+            rot = (nullableRot == null) ? t.localRotation : nullableRot.Value;
+            scale = (nullableScale == null) ? t.localScale : nullableScale.Value;
+        }
     }
 
 }

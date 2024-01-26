@@ -102,8 +102,8 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors.
-        public SyncVar(SyncTypeSetting settings = new SyncTypeSetting()) : this(default(T), settings) { }
-        public SyncVar(T initialValue, SyncTypeSetting settings = new SyncTypeSetting()) : base(settings) => SetInitialValues(initialValue);
+        public SyncVar(SyncTypeSettings settings = new SyncTypeSettings()) : this(default(T), settings) { }
+        public SyncVar(T initialValue, SyncTypeSettings settings = new SyncTypeSettings()) : base(settings) => SetInitialValues(initialValue);
         #endregion
 
         /// <summary>
@@ -116,13 +116,14 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
-        /// Sets initial values to next.
+        /// Sets initial values.
+        /// Initial values are not automatically synchronized, as it is assumed clients and server already have them set to the specified value.
+        /// When a SyncVar is reset, such as when the object despawns, current values are set to initial values.
         /// </summary>
-        /// <param name="next"></param>
-        private void SetInitialValues(T next)
+        public void SetInitialValues(T value)
         {
-            _initialValue = next;
-            UpdateValues(next);
+            _initialValue = value;
+            UpdateValues(value);
         }
         /// <summary>
         /// Sets current and previous values.

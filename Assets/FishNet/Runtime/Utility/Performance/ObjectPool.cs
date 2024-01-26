@@ -1,6 +1,6 @@
 ﻿using FishNet.Managing;
+using FishNet.Managing.Object;
 using FishNet.Object;
-using System;
 using UnityEngine;
 
 namespace FishNet.Utility.Performance
@@ -11,8 +11,12 @@ namespace FishNet.Utility.Performance
         /// <summary>
         /// NetworkManager this ObjectPool belongs to.
         /// </summary>
-        protected NetworkManager NetworkManager {get; private set;}
+        protected NetworkManager NetworkManager { get; private set; }
 
+        /// <summary>
+        /// Called at the end of every frame. This can be used to perform routine tasks.
+        /// </summary>
+        public virtual void LateUpdate() { }
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
@@ -24,16 +28,22 @@ namespace FishNet.Utility.Performance
         /// Returns an object that has been stored. A new object will be created if no stored objects are available.
         /// </summary>
         /// <param name="prefabId">PrefabId of the object to return.</param>
+        /// <param name="collectionId">CollectionId of the object to return.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
-        public virtual NetworkObject RetrieveObject(int prefabId, ushort collectionId, bool asServer) => null;
+        public virtual NetworkObject RetrieveObject(int prefabId, ushort collectionId, Transform parent = null, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool makeActive = true, bool asServer = true) => null;
         /// <summary>
-        /// Returns an object that has been stored. A new object will be created if no stored objects are available.
+        /// Returns a prefab using specified values.
         /// </summary>
         /// <param name="prefabId">PrefabId of the object to return.</param>
+        /// <param name="collectionId">CollectionId of the object to return.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
-        public virtual NetworkObject RetrieveObject(int prefabId, ushort collectionId, Vector3 position, Quaternion rotation, bool asServer) => null;
+        public virtual NetworkObject GetPrefab(int prefabId, ushort collectionId, bool asServer)
+        {
+            PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
+            return po.GetObject(asServer, prefabId);
+        }
         /// <summary>
         /// Stores an object into the pool.
         /// </summary>

@@ -1,14 +1,12 @@
-﻿using FishNet.CodeGenerating;
-using FishNet.Documenting;
+﻿using FishNet.Documenting;
 using FishNet.Managing;
-using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
@@ -51,37 +49,6 @@ namespace FishNet.Object.Synchronizing
                 Item = item;
             }
         }
-
-        /// <summary>
-        /// Custom enumerator to prevent garbage collection.
-        /// </summary>
-        [APIExclude]
-        public struct Enumerator : IEnumerator<T>
-        {
-            public T Current { get; private set; }
-            private readonly SyncList<T> _list;
-            private int _index;
-
-            public Enumerator(SyncList<T> list)
-            {
-                this._list = list;
-                _index = -1;
-                Current = default;
-            }
-
-            public bool MoveNext()
-            {
-                _index++;
-                if (_index >= _list.Count)
-                    return false;
-                Current = _list[_index];
-                return true;
-            }
-
-            public void Reset() => _index = -1;
-            object IEnumerator.Current => Current;
-            public void Dispose() { }
-        }
         #endregion
 
         #region Public.
@@ -106,11 +73,11 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Collection of objects.
         /// </summary>
-        public readonly IList<T> Collection;
+        public List<T> Collection;
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
-        public readonly IList<T> ClientHostCollection = new List<T>();
+        public List<T> ClientHostCollection;
         /// <summary>
         /// Number of objects in the collection.
         /// </summary>
@@ -121,7 +88,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Values upon initialization.
         /// </summary>
-        private IList<T> _initialValues = new List<T>();
+        private List<T> _initialValues;
         /// <summary>
         /// Comparer to see if entries change when calling public methods.
         /// </summary>
@@ -129,15 +96,15 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Changed data which will be sent next tick.
         /// </summary>
-        private readonly List<ChangeData> _changed = new List<ChangeData>();
+        private List<ChangeData> _changed;
         /// <summary>
         /// Server OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<CachedOnChange> _serverOnChanges = new List<CachedOnChange>();
+        private List<CachedOnChange> _serverOnChanges;
         /// <summary>
         /// Client OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<CachedOnChange> _clientOnChanges = new List<CachedOnChange>();
+        private List<CachedOnChange> _clientOnChanges;
         /// <summary>
         /// True if values have changed since initialization.
         /// The only reasonable way to reset this during a Reset call is by duplicating the original list and setting all values to it on reset.
@@ -150,15 +117,34 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors.
-        public SyncList(SyncTypeSetting settings = new SyncTypeSetting()) : this(new List<T>(), EqualityComparer<T>.Default, settings) { }
-        public SyncList(IEqualityComparer<T> comparer, SyncTypeSetting settings = new SyncTypeSetting()) : this(new List<T>(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
-        public SyncList(IList<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSetting settings = new SyncTypeSetting()) : base(settings)
+        public SyncList(SyncTypeSettings settings = new SyncTypeSettings()) : this(CollectionCaches<T>.RetrieveList(), EqualityComparer<T>.Default, settings) { }
+        public SyncList(IEqualityComparer<T> comparer, SyncTypeSettings settings = new SyncTypeSettings()) : this(new List<T>(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
+        public SyncList(List<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new SyncTypeSettings()) : base(settings)
         {
-            this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
-            this.Collection = collection;
+            _comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
+            Collection = collection;
+            ClientHostCollection = CollectionCaches<T>.RetrieveList();
+
+            _initialValues = CollectionCaches<T>.RetrieveList();
+            _changed = CollectionCaches<ChangeData>.RetrieveList();
+            _serverOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
+            _clientOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
+
             //Add each in collection to clienthostcollection.
             foreach (T item in collection)
-                this.ClientHostCollection.Add(item);
+                ClientHostCollection.Add(item);
+        }
+        #endregion
+
+        #region Deconstructor.
+        ~SyncList()
+        {
+            CollectionCaches<T>.StoreAndDefault(ref Collection);
+            CollectionCaches<T>.StoreAndDefault(ref ClientHostCollection);
+            CollectionCaches<T>.StoreAndDefault(ref _initialValues);
+            CollectionCaches<ChangeData>.StoreAndDefault(ref _changed);
+            CollectionCaches<CachedOnChange>.StoreAndDefault(ref _serverOnChanges);
+            CollectionCaches<CachedOnChange>.StoreAndDefault(ref _clientOnChanges);
         }
         #endregion
 
@@ -180,7 +166,7 @@ namespace FishNet.Object.Synchronizing
         public List<T> GetCollection(bool asServer)
         {
             bool asClientAndHost = (!asServer && base.NetworkManager.IsServerStarted);
-            IList<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
+            List<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
             return (collection as List<T>);
         }
 
@@ -341,7 +327,7 @@ namespace FishNet.Object.Synchronizing
             if (deinitialized)
                 base.NetworkManager.LogWarning($"SyncType {GetType().Name} received a Read but was deinitialized on the server. Client callback values may be incorrect. This is a ClientHost limitation.");
 
-            IList<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
+            List<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
 
             //Clear collection since it's a full write.
             bool fullWrite = reader.ReadBoolean();
@@ -762,11 +748,11 @@ namespace FishNet.Object.Synchronizing
         /// Returns Enumerator for collection.
         /// </summary>
         /// <returns></returns>
-        public Enumerator GetEnumerator() => new Enumerator(this);
+        public IEnumerator GetEnumerator() => Collection.GetEnumerator();
         [APIExclude]
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => Collection.GetEnumerator();
         [APIExclude]
-        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
+        IEnumerator IEnumerable.GetEnumerator() => Collection.GetEnumerator();
 
     }
 }

@@ -19,7 +19,6 @@ namespace FishNet.Managing.Server.Editing
         private SerializedProperty _frameRate;
         private SerializedProperty _shareIds;
         private SerializedProperty _startOnHeadless;
-        private SerializedProperty _limitClientMTU;
 
         protected virtual void OnEnable()
         {
@@ -32,7 +31,6 @@ namespace FishNet.Managing.Server.Editing
             _frameRate = serializedObject.FindProperty(nameof(_frameRate));
             _shareIds = serializedObject.FindProperty(nameof(_shareIds));
             _startOnHeadless = serializedObject.FindProperty(nameof(_startOnHeadless));
-            _limitClientMTU = serializedObject.FindProperty(nameof(_limitClientMTU));
         }
 
         public override void OnInspectorGUI()
@@ -42,6 +40,9 @@ namespace FishNet.Managing.Server.Editing
             GUI.enabled = false;
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((ServerManager)target), typeof(ServerManager), false);
             GUI.enabled = true;
+
+            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
 
             EditorGUILayout.PropertyField(_authenticator);
             EditorGUILayout.PropertyField(_remoteClientTimeout);
@@ -62,9 +63,9 @@ namespace FishNet.Managing.Server.Editing
             }
             EditorGUILayout.PropertyField(_shareIds);
             EditorGUILayout.PropertyField(_startOnHeadless);
-            EditorGUILayout.PropertyField(_limitClientMTU);
 
-            EditorGUILayout.Space();
+            EditorGUI.indentLevel--;
+
 
             serializedObject.ApplyModifiedProperties();
         }

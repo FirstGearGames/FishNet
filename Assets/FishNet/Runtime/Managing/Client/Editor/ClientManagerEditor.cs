@@ -31,6 +31,9 @@ namespace FishNet.Managing.Client.Editing
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((ClientManager)target), typeof(ClientManager), false);
             GUI.enabled = true;
 
+            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+
             EditorGUILayout.PropertyField(_remoteServerTimeout);
             if ((RemoteTimeoutType)_remoteServerTimeout.intValue != RemoteTimeoutType.Disabled)
             {
@@ -47,7 +50,7 @@ namespace FishNet.Managing.Client.Editing
                 EditorGUI.indentLevel--;
             }
 
-            EditorGUILayout.Space();
+            EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();
         }

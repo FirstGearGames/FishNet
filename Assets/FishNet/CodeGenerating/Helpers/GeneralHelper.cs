@@ -52,8 +52,8 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference FunctionT2ConstructorMethodRef;
         public MethodReference FunctionT3ConstructorMethodRef;
         //GeneratedComparer
-        public MethodReference GeneratedComparer_Compare_Set_MethodRef;
-        public MethodReference GeneratedComparer_IsDefault_Set_MethodRef;
+        public MethodReference PublicPropertyComparer_Compare_Set_MethodRef;
+        public MethodReference PublicPropertyComparer_IsDefault_Set_MethodRef;
         public TypeReference GeneratedComparer_TypeRef;
         public TypeDefinition GeneratedComparer_ClassTypeDef;
         public MethodDefinition GeneratedComparer_OnLoadMethodDef;
@@ -209,13 +209,13 @@ namespace FishNet.CodeGenerating.Helping
                     GeneratedComparer_OnLoadMethodDef.Body.GetILProcessor().Emit(OpCodes.Ret);
                 }
 
-                System.Type repComparerType = typeof(GeneratedComparer<>);
-                GeneratedComparer_TypeRef = base.ImportReference(repComparerType);
+                System.Type ppComparerType = typeof(PublicPropertyComparer<>);
+                GeneratedComparer_TypeRef = base.ImportReference(ppComparerType);
                 System.Reflection.PropertyInfo pi;
-                pi = repComparerType.GetProperty(nameof(GeneratedComparer<int>.Compare));
-                GeneratedComparer_Compare_Set_MethodRef = base.ImportReference(pi.GetSetMethod());
-                pi = repComparerType.GetProperty(nameof(GeneratedComparer<int>.IsDefault));
-                GeneratedComparer_IsDefault_Set_MethodRef = base.ImportReference(pi.GetSetMethod());
+                pi = ppComparerType.GetProperty(nameof(PublicPropertyComparer<int>.Compare));
+                PublicPropertyComparer_Compare_Set_MethodRef = base.ImportReference(pi.GetSetMethod());
+                pi = ppComparerType.GetProperty(nameof(PublicPropertyComparer<int>.IsDefault));
+                PublicPropertyComparer_IsDefault_Set_MethodRef = base.ImportReference(pi.GetSetMethod());
 
                 System.Type iEquatableType = typeof(IEquatable<>);
                 IEquatable_TypeRef = base.ImportReference(iEquatableType);
@@ -1252,7 +1252,7 @@ namespace FishNet.CodeGenerating.Helping
 
             //Call delegate to ReplicateComparer.Compare(T, T);
             git = GeneratedComparer_TypeRef.MakeGenericInstanceType(dataTr);
-            MethodReference comparerMr = GeneratedComparer_Compare_Set_MethodRef.MakeHostInstanceGeneric(base.Session, git);
+            MethodReference comparerMr = PublicPropertyComparer_Compare_Set_MethodRef.MakeHostInstanceGeneric(base.Session, git);
             insts.Add(processor.Create(OpCodes.Call, comparerMr));
             processor.InsertFirst(insts);
         }
@@ -1342,7 +1342,7 @@ namespace FishNet.CodeGenerating.Helping
 
                 //Call delegate to ReplicateComparer.IsDefault(T).
                 git = GeneratedComparer_TypeRef.MakeGenericInstanceType(dataTr);
-                MethodReference isDefaultMr = GeneratedComparer_IsDefault_Set_MethodRef.MakeHostInstanceGeneric(base.Session, git);
+                MethodReference isDefaultMr = PublicPropertyComparer_IsDefault_Set_MethodRef.MakeHostInstanceGeneric(base.Session, git);
                 insts.Add(processor.Create(OpCodes.Call, isDefaultMr));
                 processor.InsertFirst(insts);
             }

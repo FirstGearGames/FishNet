@@ -10,7 +10,6 @@ namespace FishNet.Object
 #if PREDICTION_V2
     public partial class NetworkObject : MonoBehaviour
     {
-
         #region Types.
 #if PREDICTION_V2
         /// <summary>
@@ -98,7 +97,7 @@ namespace FishNet.Object
         /// <summary>
         /// Graphical smoother to use when using set for owner.
         /// </summary>
-        private BasicTickSmoother _tickSmoother;
+        private PredictionTickSmoother _tickSmoother;
         /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
@@ -112,36 +111,6 @@ namespace FishNet.Object
         ///// </summary>
         //private HashSet<GameObject> _localClientCollidedObjects = new HashSet<GameObject>();
         #endregion
-
-        #region Consts.
-        /// <summary>
-        /// Value used when teleport is disabled for graphical objects.
-        /// </summary>
-        internal const float TELEPORT_DISABLED_DISTANCE_THRESHOLD = 0f;
-        #endregion
-
-        private void InitializeSmoothers()
-        {
-            bool usesRb = (_predictionType == PredictionType.Rigidbody);
-            bool usesRb2d = (_predictionType == PredictionType.Rigidbody2D);
-            if (usesRb || usesRb2d)
-            {
-                RigidbodyPauser = new RigidbodyPauser();
-                RigidbodyType rbType = (usesRb) ? RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
-                RigidbodyPauser.UpdateRigidbodies(transform, rbType, true, _graphicalObject);
-            }
-
-            if (_graphicalObject == null)
-            {
-                Debug.Log($"GraphicalObject is null on {this.ToString()}. This may be intentional, and acceptable, if you are smoothing between ticks yourself. Otherwise consider assigning the GraphicalObject field."); 
-            }
-            else
-            {
-                _tickSmoother = new BasicTickSmoother();
-                float teleportT = (_enableTeleport) ? _teleportThreshold : TELEPORT_DISABLED_DISTANCE_THRESHOLD;
-                _tickSmoother.InitializeOnce(_graphicalObject, teleportT, this);
-            }
-        }
 
         private void Prediction_Update()
         {
@@ -187,6 +156,7 @@ namespace FishNet.Object
             if (!_enablePrediction)
                 return;
 
+            DeinitializeSmoothers();
             /* Only the client needs to unsubscribe from these but
              * asServer may not invoke as false if the client is suddenly
              * dropping their connection. */
@@ -198,6 +168,41 @@ namespace FishNet.Object
                 NetworkManager.TimeManager.OnPreTick -= TimeManager_OnPreTick;
                 NetworkManager.TimeManager.OnPostTick -= TimeManager_OnPostTick;
             }
+        }
+
+
+        /// <summary>
+        /// Initializes tick smoothing.
+        /// </summary>
+        private void InitializeSmoothers()
+        {
+            bool usesRb = (_predictionType == PredictionType.Rigidbody);
+            bool usesRb2d = (_predictionType == PredictionType.Rigidbody2D);
+            if (usesRb || usesRb2d)
+            {
+                RigidbodyPauser = new RigidbodyPauser();
+                RigidbodyType rbType = (usesRb) ? RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
+                RigidbodyPauser.UpdateRigidbodies(transform, rbType, true);
+            }
+
+            if (_graphicalObject == null)
+            {
+                Debug.Log($"GraphicalObject is null on {this.ToString()}. This may be intentional, and acceptable, if you are smoothing between ticks yourself. Otherwise consider assigning the GraphicalObject field.");
+            }
+            else
+            {
+                _tickSmoother = new PredictionTickSmoother();
+                float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRatesCls.UNSET_VALUE;
+                _tickSmoother.InitializeOnce(_graphicalObject, teleportT, this);
+            }
+        }
+
+        /// <summary>
+        /// Initializes tick smoothing.
+        /// </summary>
+        private void DeinitializeSmoothers()
+        {
+            _tickSmoother?.Deinitialize();
         }
 
         private void PredictionManager_OnPreReconcile(uint clientReconcileTick, uint serverReconcileTick)

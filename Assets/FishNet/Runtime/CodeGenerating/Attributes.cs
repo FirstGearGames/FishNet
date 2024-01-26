@@ -1,4 +1,4 @@
-﻿using FishNet.Utility.Constant;
+﻿using FishNet.Utility;
 using System;
 using System.Runtime.CompilerServices;
 

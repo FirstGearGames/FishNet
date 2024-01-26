@@ -59,17 +59,22 @@ namespace FishNet.Transporting.Tugboat.Client
         /// Locks the NetManager to stop it.
         /// </summary>
         private readonly object _stopLock = new object();
+        /// <summary>
+        /// While true, forces sockets to send data directly to interface without routing.
+        /// </summary>
+        private bool _dontRoute;
         #endregion
 
         /// <summary>
         /// Initializes this for use.
         /// </summary>
         /// <param name="t"></param>
-        internal void Initialize(Transport t, int unreliableMTU, PacketLayerBase packetLayer)
+        internal void Initialize(Transport t, int unreliableMTU, PacketLayerBase packetLayer, bool dontRoute)
         {
             base.Transport = t;
             _mtu = unreliableMTU;
             _packetLayer = packetLayer;
+            _dontRoute = dontRoute;
         }
 
         /// <summary>
@@ -101,6 +106,7 @@ namespace FishNet.Transporting.Tugboat.Client
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
             base.NetManager = new NetManager(listener, _packetLayer);
+            base.NetManager.DontRoute = _dontRoute;
             base.NetManager.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
             UpdateTimeout(_timeout);

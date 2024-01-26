@@ -88,6 +88,15 @@ namespace FishNet.Transporting.Tugboat.Server
         /// Locks the NetManager to stop it.
         /// </summary>
         private readonly object _stopLock = new object();
+        /// <summary>
+        /// IPv6 is enabled only on demand, by default LiteNetLib always listens on IPv4 AND IPv6 which causes problems
+        /// if IPv6 is disabled on host. This can be the case in Linux environments
+        /// </summary>
+        private bool _enableIPv6;
+        /// <summary>
+        /// While true, forces sockets to send data directly to interface without routing.
+        /// </summary>
+        private bool _dontRoute;
         #endregion
 
         ~ServerSocket()
@@ -99,11 +108,13 @@ namespace FishNet.Transporting.Tugboat.Server
         /// Initializes this for use.
         /// </summary>
         /// <param name="t"></param>
-        internal void Initialize(Transport t, int unreliableMTU, PacketLayerBase packetLayer)
+        internal void Initialize(Transport t, int unreliableMTU, PacketLayerBase packetLayer, bool enableIPv6, bool dontRoute)
         {
             base.Transport = t;
             _mtu = unreliableMTU;
             _packetLayer = packetLayer;
+            _enableIPv6 = enableIPv6;
+            _dontRoute = dontRoute;
         }
 
         /// <summary>
@@ -137,13 +148,14 @@ namespace FishNet.Transporting.Tugboat.Server
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
             base.NetManager = new NetManager(listener, _packetLayer);
+            base.NetManager.DontRoute = _dontRoute;
             base.NetManager.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
             UpdateTimeout(_timeout);
 
             //Set bind addresses.
-            IPAddress ipv4;
-            IPAddress ipv6;
+            IPAddress ipv4 = null;
+            IPAddress ipv6 = null;
 
             //Set ipv4
             if (!string.IsNullOrEmpty(_ipv4BindAddress))
@@ -167,9 +179,9 @@ namespace FishNet.Transporting.Tugboat.Server
                 IPAddress.TryParse("0.0.0.0", out ipv4);
             }
 
-            //Set ipv6.
-            if (!string.IsNullOrEmpty(_ipv6BindAddress))
+            if (_enableIPv6 && !string.IsNullOrEmpty(_ipv6BindAddress))
             {
+                //Set ipv6 if protocol is enabled.
                 if (!IPAddress.TryParse(_ipv6BindAddress, out ipv6))
                     ipv6 = null;
             }
@@ -179,14 +191,18 @@ namespace FishNet.Transporting.Tugboat.Server
             }
 
 
-
             string ipv4FailText = (ipv4 == null) ? $"IPv4 address {_ipv4BindAddress} failed to parse. " : string.Empty;
-            string ipv6FailText = (ipv6 == null) ? $"IPv6 address {_ipv6BindAddress} failed to parse. " : string.Empty;
+            string ipv6FailText = (_enableIPv6 && ipv6 == null) ? $"IPv6 address {_ipv6BindAddress} failed to parse. "
+                : string.Empty;
             if (ipv4FailText != string.Empty || ipv6FailText != string.Empty)
             {
                 base.Transport.NetworkManager.Log($"{ipv4FailText}{ipv6FailText}Clear the bind address field to use any bind address.");
                 StopConnection();
                 return;
+            }
+            if (!_enableIPv6)
+            {
+                base.NetManager.IPv6Mode = IPv6Mode.Disabled;
             }
 
             bool startResult = base.NetManager.Start(ipv4, ipv6, _port);
@@ -242,7 +258,7 @@ namespace FishNet.Transporting.Tugboat.Server
 
             NetPeer peer = GetNetPeer(connectionId, false);
             if (peer == null)
-            { 
+            {
                 Transport.NetworkManager.LogWarning($"Connection Id {connectionId} returned a null NetPeer.");
                 return string.Empty;
             }

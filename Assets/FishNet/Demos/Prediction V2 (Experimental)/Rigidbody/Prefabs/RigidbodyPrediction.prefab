@@ -135,7 +135,8 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 201277550}
   _networkObjectCache: {fileID: 201277550}
   _jumpForce: 15
-  _moveRate: 12
+  _moveRate: 25
+  LastMdTick: 0
 --- !u!135 &303449598114786578
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -162,15 +163,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
-  _enablePrediction: 1
-  _predictionType: 1
-  _graphicalObject: {fileID: 303449599178274091}
-  _enableStateForwarding: 1
-  _ownerInterpolation: 2
-  _enableTeleport: 0
-  _ownerTeleportThreshold: 1
-  _spectatorAdaptiveInterpolation: 1
-  _spectatorInterpolation: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   _networkBehaviours:
@@ -187,7 +179,14 @@ MonoBehaviour:
   _initializeOrder: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 13
+  _enablePrediction: 1
+  _predictionType: 1
+  _graphicalObject: {fileID: 303449599178274091}
+  _enableStateForwarding: 1
+  _ownerInterpolation: 2
+  _enableTeleport: 0
+  _teleportThreshold: 1
+  <PrefabId>k__BackingField: 18
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
@@ -206,7 +205,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 8
+  m_Constraints: 112
   m_CollisionDetection: 1
 --- !u!1 &303449598207636365
 GameObject:

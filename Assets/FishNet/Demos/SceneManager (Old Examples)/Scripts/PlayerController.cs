@@ -15,6 +15,10 @@ namespace FishNet.Example.Scened
         [SerializeField]
         private bool _clientAuth = true;
 
+        private void Awake()
+        {
+            Debug.Log(transform.position);
+        }
         public override void OnStartClient()
         {
             if (base.IsOwner)

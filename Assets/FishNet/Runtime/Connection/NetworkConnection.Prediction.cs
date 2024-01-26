@@ -42,8 +42,8 @@ namespace FishNet.Connection
         /// <summary>
         /// Writes a prediction state.
         /// </summary>
-        /// <param name="writer"></param>
-        internal void WriteState(PooledWriter writer)
+        /// <param name="data"></param>
+        internal void WriteState(PooledWriter data)
         {
 #if !DEVELOPMENT_BUILD && !UNITY_EDITOR
             //Do not send states to clientHost.
@@ -58,10 +58,13 @@ namespace FishNet.Connection
             if (ticksBehind > (tm.TickRate * 5))
                 return;
 
-            int mtu = NetworkManager.TransportManager.GetMTU((byte)Channel.Unreliable);
+            int mtu = NetworkManager.TransportManager.GetLowestMTU((byte)Channel.Unreliable);
             PooledWriter stateWriter;
             int writerCount = PredictionStateWriters.Count;
-            if (writerCount == 0 || (writer.Length + PredictionManager.STATE_HEADER_RESERVE_COUNT) > mtu)
+            /* Conditions to create a new writer are:
+             * - writer does not exist yet.
+             * - data length + currentWriter length > mtu */
+            if (writerCount == 0 || (data.Length + PredictionStateWriters[writerCount-1].Length) > mtu)
             {
                 stateWriter = WriterPool.Retrieve(mtu);
                 PredictionStateWriters.Add(stateWriter);
@@ -72,7 +75,7 @@ namespace FishNet.Connection
                 stateWriter = PredictionStateWriters[writerCount - 1];
             }
 
-            stateWriter.WriteArraySegment(writer.GetArraySegment());
+            stateWriter.WriteArraySegment(data.GetArraySegment());
         }
 
         /// <summary>

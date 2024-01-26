@@ -211,20 +211,16 @@ namespace FishNet.Managing.Client
                 headerWriter.WriteNetworkObjectId(nob.PrefabId);
             }
 
-            writer.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
+            writer.WriteArraySegment(headerWriter.GetArraySegment());
 
-            //If allowed to write synctypes.
-            if (nob.AllowPredictedSyncTypes)
-            {
-                PooledWriter tempWriter = WriterPool.Retrieve();
-                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                    nb.WriteSyncTypesForSpawn(tempWriter, null);
-                writer.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
-                tempWriter.Store();
-            }
+            PooledWriter tempWriter = WriterPool.Retrieve();
+            //Payload.
+            base.WritePayload(NetworkManager.EmptyConnection, nob, tempWriter);
+            writer.WriteArraySegmentAndSize(tempWriter.GetArraySegment());
 
             //Dispose of writers created in this method.
             headerWriter.Store();
+            tempWriter.Store();
         }
 
 
@@ -446,6 +442,8 @@ namespace FishNet.Managing.Client
             {
                 ReadSpawnedObject(reader, out parentObjectId, out parentComponentIndex, out prefabId);
             }
+
+            ArraySegment<byte> payload = reader.ReadArraySegmentAndSize();
             ArraySegment<byte> rpcLinks = reader.ReadArraySegmentAndSize();
             ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
 
@@ -473,7 +471,7 @@ namespace FishNet.Managing.Client
                 return;
             }
 
-            _objectCache.AddSpawn(base.NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, componentIndex, rootObjectId, parentObjectId, parentComponentIndex, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, rpcLinks, syncValues);
+            _objectCache.AddSpawn(base.NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, componentIndex, rootObjectId, parentObjectId, parentComponentIndex, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncValues);
         }
         /// <summary>
         /// Caches a received despawn to be processed after all spawns and despawns are received for the tick.
@@ -642,9 +640,9 @@ namespace FishNet.Managing.Client
                     }
                 }
 
-                result = networkManager.GetPooledInstantiated(prefabId, collectionId, false);
-                Transform t = result.transform;
-                t.SetParent(parentTransform, true);
+                result = networkManager.GetPooledInstantiated(prefabId, collectionId, parentTransform, cnob.LocalPosition
+                    , cnob.LocalRotation, cnob.LocalScale, makeActive: true, asServer: false);
+
                 //Only need to set IsGlobal also if not host.
                 bool isGlobal = SpawnTypeEnum.Contains(cnob.SpawnType, SpawnType.InstantiatedGlobal);
                 result.SetIsGlobal(isGlobal);

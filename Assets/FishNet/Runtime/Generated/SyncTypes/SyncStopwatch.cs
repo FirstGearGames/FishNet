@@ -69,7 +69,7 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors
-        public SyncStopwatch(SyncTypeSetting settings = new SyncTypeSetting()) : base(settings) { }
+        public SyncStopwatch(SyncTypeSettings settings = new SyncTypeSettings()) : base(settings) { }
         #endregion
 
         /// <summary>

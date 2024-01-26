@@ -33,7 +33,10 @@ namespace FishNet.Component.ColliderRollback
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(nob), typeof(ColliderRollback), false);
             GUI.enabled = true;
 
-            EditorGUILayout.PropertyField(_boundingBox, new GUIContent("Bounding Box (experimental)"));
+            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+
+            EditorGUILayout.PropertyField(_boundingBox);
             if ((BoundingBoxType)_boundingBox.intValue != BoundingBoxType.Disabled)
             {
                 EditorGUI.indentLevel++;
@@ -42,6 +45,8 @@ namespace FishNet.Component.ColliderRollback
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.PropertyField(_colliderParents);
+
+            EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();
         }

@@ -5,7 +5,7 @@ namespace FishNet.Object.Synchronizing
     /// <summary>
     /// Settings which can be passed into SyncTypes.
     /// </summary>
-    public struct SyncTypeSetting
+    public struct SyncTypeSettings
     {
         public WritePermission WritePermission;
         public ReadPermission ReadPermission;
@@ -13,7 +13,7 @@ namespace FishNet.Object.Synchronizing
         public Channel Channel;
 
         //Work around for C# parameterless struct limitation.
-        public SyncTypeSetting(float sendRate = 0.1f)
+        public SyncTypeSettings(float sendRate = 0.1f)
         {
             WritePermission = WritePermission.ServerOnly;
             ReadPermission = ReadPermission.Observers;
@@ -21,7 +21,7 @@ namespace FishNet.Object.Synchronizing
             Channel = Channel.Reliable;
         }
 
-        public SyncTypeSetting(float sendRate, Channel channel)
+        public SyncTypeSettings(float sendRate, Channel channel)
         {
             WritePermission = WritePermission.ServerOnly;
             ReadPermission = ReadPermission.Observers;
@@ -29,7 +29,7 @@ namespace FishNet.Object.Synchronizing
             Channel = channel;
         }
 
-        public SyncTypeSetting(Channel channel)
+        public SyncTypeSettings(Channel channel)
         {
             WritePermission = WritePermission.ServerOnly;
             ReadPermission = ReadPermission.Observers;
@@ -37,7 +37,7 @@ namespace FishNet.Object.Synchronizing
             Channel = channel;
         }
 
-        public SyncTypeSetting(WritePermission writePermissions)
+        public SyncTypeSettings(WritePermission writePermissions)
         {
 
             WritePermission = writePermissions;
@@ -46,7 +46,7 @@ namespace FishNet.Object.Synchronizing
             Channel = Channel.Reliable;
         }
 
-        public SyncTypeSetting(ReadPermission readPermissions)
+        public SyncTypeSettings(ReadPermission readPermissions)
         {
             WritePermission = WritePermission.ServerOnly;
             ReadPermission = readPermissions;
@@ -54,7 +54,7 @@ namespace FishNet.Object.Synchronizing
             Channel = Channel.Reliable;
         }
 
-        public SyncTypeSetting(WritePermission writePermissions, ReadPermission readPermissions)
+        public SyncTypeSettings(WritePermission writePermissions, ReadPermission readPermissions)
         {
 
             WritePermission = writePermissions;
@@ -63,7 +63,7 @@ namespace FishNet.Object.Synchronizing
             Channel = Channel.Reliable;
         }
 
-        public SyncTypeSetting(WritePermission writePermissions, ReadPermission readPermissions, float sendRate, Channel channel)
+        public SyncTypeSettings(WritePermission writePermissions, ReadPermission readPermissions, float sendRate, Channel channel)
         {
                 
             WritePermission = writePermissions;

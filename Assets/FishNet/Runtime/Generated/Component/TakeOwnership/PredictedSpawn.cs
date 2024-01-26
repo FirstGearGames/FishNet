@@ -34,21 +34,6 @@ namespace FishNet.Component.Ownership
         [Tooltip("True to allow clients to predicted despawn this object.")]
         [SerializeField]
         private bool _allowDespawning = true;
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("True to allow clients to predicted set syncTypes prior to spawning the item. Set values will be applied on the server and sent to other clients.")]
-        [SerializeField]
-        private bool _allowSyncTypes = true;
-        /// <summary>
-        /// True to allow clients to predicted set syncTypes prior to spawning the item. Set values will be applied on the server and sent to other clients.
-        /// </summary>
-        public bool GetAllowSyncTypes() => _allowSyncTypes;
-        /// <summary>
-        /// Sets to allow syncTypes. This must be set on client and server.
-        /// </summary>
-        /// <param name="value">New value.</param>
-        public void SetAllowSyncTypes(bool value) => _allowSyncTypes = value;
         #endregion
 
         /// <summary>

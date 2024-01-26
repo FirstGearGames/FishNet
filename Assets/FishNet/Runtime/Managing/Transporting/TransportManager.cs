@@ -147,15 +147,15 @@ namespace FishNet.Managing.Transporting
         private const byte SPLIT_COUNT_BYTES = 4;
         /// <summary>
         /// Number of bytes required for split data. 
-        /// </summary>
-        public const byte SPLIT_INDICATOR_SIZE = (PACKET_ID_BYTES + SPLIT_COUNT_BYTES);
+        /// </summary> //todo: This shouldn't have to include TickBytes but there is a parse error if it's not included. Figure out why.
+        public const byte SPLIT_INDICATOR_SIZE = (TICK_BYTES + PACKET_ID_BYTES + SPLIT_COUNT_BYTES);
         /// <summary>
         /// Number of channels supported.
         /// </summary>
         public const byte CHANNEL_COUNT = 2;
         /// <summary>
         /// MTU reserved for internal use.
-        /// Value of 1 is used to specify channel in packets for transports that do not include channel within their packet header.
+        /// 1 byte is used to specify channel in packets for transports that do not include channel within their packet header. This is transport dependent.
         /// </summary>
         public const int MINIMUM_MTU_RESERVE = 1;
         /// <summary>
@@ -350,11 +350,9 @@ namespace FishNet.Managing.Transporting
         /// <param name="value">Value to use.</param>
         public void SetMTUReserve(int value)
         {
-            string errMsg = string.Empty;
             if (_networkManager != null && _networkManager.IsClientStarted || _networkManager.IsServerStarted)
             {
-                errMsg = $"A custom MTU reserve cannot be set after the server or client have been started or connected.";
-                _networkManager.LogError(errMsg);
+                _networkManager.LogError($"A custom MTU reserve cannot be set after the server or client have been started or connected.");
                 return;
             }
 
@@ -488,10 +486,8 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClient(byte channelId, ArraySegment<byte> segment, NetworkConnection connection, bool splitLargeMessages = true, DataOrderType orderType = DataOrderType.Default)
         {
-            if (HasIntermediateLayer)
-                segment = ProcessIntermediateOutgoing(segment, false);
-            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
-            SendToClient(channelId, segment, connection, requiredSplitMessages, maxSplitMessageSize, orderType);
+            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredMessages, out int maxSplitMessageSize);
+            SendToClient(channelId, segment, connection, requiredMessages, maxSplitMessageSize, orderType);
         }
 
         private void SendToClient(byte channelId, ArraySegment<byte> segment, NetworkConnection connection, int requiredSplitMessages, int maxSplitMessageSize, DataOrderType orderType = DataOrderType.Default)
@@ -521,10 +517,8 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, HashSet<NetworkConnection> excludedConnections = null, bool splitLargeMessages = true, DataOrderType orderType = DataOrderType.Default)
         {
-            if (HasIntermediateLayer)
-                segment = ProcessIntermediateOutgoing(segment, false);
-            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
-            SendToClients(channelId, segment, observers, excludedConnections, requiredSplitMessages, maxSplitMessageSize, orderType);
+            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredMessages, out int maxSplitMessageSize);
+            SendToClients(channelId, segment, observers, excludedConnections, requiredMessages, maxSplitMessageSize, orderType);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, HashSet<NetworkConnection> excludedConnections, int requiredSplitMessages, int maxSplitMessageSize, DataOrderType orderType = DataOrderType.Default)
@@ -554,10 +548,8 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClients(byte channelId, ArraySegment<byte> segment, bool splitLargeMessages = true)
         {
-            if (HasIntermediateLayer)
-                segment = ProcessIntermediateOutgoing(segment, false);
-            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
-            SendToClients_Internal(channelId, segment, requiredSplitMessages, maxSplitMessageSize);
+            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredMessages, out int maxSplitMessageSize);
+            SendToClients_Internal(channelId, segment, requiredMessages, maxSplitMessageSize);
         }
         private void SendToClients_Internal(byte channelId, ArraySegment<byte> segment, int requiredSplitMessages, int maxSplitMessageSize)
         {
@@ -578,19 +570,17 @@ namespace FishNet.Managing.Transporting
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToServer(byte channelId, ArraySegment<byte> segment, bool splitLargeMessages = true, DataOrderType orderType = DataOrderType.Default)
         {
-            if (HasIntermediateLayer)
-                segment = ProcessIntermediateOutgoing(segment, true);
-            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredSplitMessages, out int maxSplitMessageSize);
-            SendToServer(channelId, segment, requiredSplitMessages, maxSplitMessageSize, orderType);
+            SetSplitValues(channelId, segment, splitLargeMessages, out int requiredMessages, out int maxSplitMessageSize);
+            SendToServer(channelId, segment, requiredMessages, maxSplitMessageSize, orderType);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SendToServer(byte channelId, ArraySegment<byte> segment, int requiredSplitMessages, int maxSplitMessageSize, DataOrderType orderType)
+        private void SendToServer(byte channelId, ArraySegment<byte> segment, int requiredMessages, int maxSplitMessageSize, DataOrderType orderType)
         {
             if (channelId >= _toServerBundles.Count)
                 channelId = (byte)Channel.Reliable;
 
-            if (requiredSplitMessages > 1)
-                SendSplitData(null, ref segment, requiredSplitMessages, maxSplitMessageSize, orderType);
+            if (requiredMessages > 1)
+                SendSplitData(null, ref segment, requiredMessages, maxSplitMessageSize, orderType);
             else
                 _toServerBundles[channelId].Write(segment, false, orderType);
         }
@@ -599,16 +589,16 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Checks if a message can be split and outputs split information if so.
         /// </summary>
-        private void SetSplitValues(byte channelId, ArraySegment<byte> segment, bool split, out int requiredSplitMessages, out int maxSplitMessageSize)
+        private void SetSplitValues(byte channelId, ArraySegment<byte> segment, bool split, out int requiredMessages, out int maxSplitMessageSize)
         {
             if (!split)
             {
-                requiredSplitMessages = 0;
+                requiredMessages = 0;
                 maxSplitMessageSize = 0;
             }
             else
             {
-                SplitRequired(channelId, segment.Count, out requiredSplitMessages, out maxSplitMessageSize);
+                SplitRequired(channelId, segment.Count, out requiredMessages, out maxSplitMessageSize);
             }
         }
 
@@ -631,7 +621,7 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         private int GetRequiredMessageCount(byte channelId, int segmentSize, out int maxMessageSize)
         {
-            maxMessageSize = GetLowestMTU(channelId) - (TransportManager.TICK_BYTES + SPLIT_INDICATOR_SIZE);
+            maxMessageSize = GetLowestMTU(channelId) - SPLIT_INDICATOR_SIZE;
             return Mathf.CeilToInt((float)segmentSize / maxMessageSize);
         }
 
@@ -764,6 +754,8 @@ namespace FishNet.Managing.Transporting
                                     if (ppb.GetBuffer(i, out ByteBuffer bb))
                                     {
                                         ArraySegment<byte> segment = new ArraySegment<byte>(bb.Data, 0, bb.Length);
+                                        if (HasIntermediateLayer)
+                                            segment = ProcessIntermediateOutgoing(segment, false);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                         if (latencySimulatorEnabled)
                                             _latencySimulator.AddOutgoing(channel, segment, false, conn.ClientId);
@@ -835,6 +827,8 @@ namespace FishNet.Managing.Transporting
                                 if (ppb.GetBuffer(i, out ByteBuffer bb))
                                 {
                                     ArraySegment<byte> segment = new ArraySegment<byte>(bb.Data, 0, bb.Length);
+                                    if (HasIntermediateLayer)
+                                        segment = ProcessIntermediateOutgoing(segment, true);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                                     if (latencySimulatorEnabled)
                                         _latencySimulator.AddOutgoing(channel, segment);

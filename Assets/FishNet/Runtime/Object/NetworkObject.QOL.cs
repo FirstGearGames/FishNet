@@ -38,10 +38,6 @@ namespace FishNet.Object
         /// </summary>
         internal bool AllowPredictedDespawning => (PredictedSpawn == null) ? false : PredictedSpawn.GetAllowDespawning();
         /// <summary>
-        /// True to allow clients to predicted set syncTypes prior to spawning the item. Set values will be applied on the server and sent to other clients.
-        /// </summary>
-        internal bool AllowPredictedSyncTypes => (PredictedSpawn == null) ? false : PredictedSpawn.GetAllowSyncTypes();
-        /// <summary>
         /// True if this object has been initialized on the client side.
         /// This is set true right before client start callbacks and after stop callbacks.
         /// </summary>

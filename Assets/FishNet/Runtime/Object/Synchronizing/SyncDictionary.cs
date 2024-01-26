@@ -1,21 +1,17 @@
-﻿using FishNet.CodeGenerating;
-using FishNet.Documenting;
+﻿using FishNet.Documenting;
 using FishNet.Managing;
-using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using GameKit.Dependencies.Utilities;
-using JetBrains.Annotations;
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
 
-    public class SyncIDictionary<TKey, TValue> : SyncBase, IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
+    public class SyncDictionary<TKey, TValue> : SyncBase, IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
     {
 
         #region Types.
@@ -76,11 +72,11 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Collection of objects.
         /// </summary>
-        public readonly IDictionary<TKey, TValue> Collection;
+        public Dictionary<TKey, TValue> Collection;
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
-        public readonly IDictionary<TKey, TValue> ClientHostCollection = new Dictionary<TKey, TValue>();
+        public Dictionary<TKey, TValue> ClientHostCollection;
         /// <summary>
         /// Number of objects in the collection.
         /// </summary>
@@ -103,19 +99,19 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Initial values for the dictionary.
         /// </summary>
-        private IDictionary<TKey, TValue> _initialValues = new Dictionary<TKey, TValue>();
+        private Dictionary<TKey, TValue> _initialValues = new Dictionary<TKey, TValue>();
         /// <summary>
         /// Changed data which will be sent next tick.
         /// </summary>
-        private readonly List<ChangeData> _changed = new List<ChangeData>();
+        private List<ChangeData> _changed = new List<ChangeData>();
         /// <summary>
         /// Server OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<CachedOnChange> _serverOnChanges = new List<CachedOnChange>();
+        private List<CachedOnChange> _serverOnChanges = new List<CachedOnChange>();
         /// <summary>
         /// Client OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<CachedOnChange> _clientOnChanges = new List<CachedOnChange>();
+        private List<CachedOnChange> _clientOnChanges = new List<CachedOnChange>();
         /// <summary>
         /// True if values have changed since initialization.
         /// The only reasonable way to reset this during a Reset call is by duplicating the original list and setting all values to it on reset.
@@ -128,15 +124,33 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors.
-        public SyncIDictionary(IDictionary<TKey, TValue> objects, SyncTypeSetting settings = new SyncTypeSetting()) : base(settings)
+        public SyncDictionary(SyncTypeSettings settings = new SyncTypeSettings()) : this(CollectionCaches<TKey, TValue>.RetrieveDictionary(), settings) { }
+        public SyncDictionary(Dictionary<TKey, TValue> objects, SyncTypeSettings settings = new SyncTypeSettings()) : base(settings)
         {
-            this.Collection = objects;
+            Collection = objects;
+            ClientHostCollection = CollectionCaches<TKey, TValue>.RetrieveDictionary();
+
+            _initialValues = CollectionCaches<TKey, TValue>.RetrieveDictionary();
+            _changed = CollectionCaches<ChangeData>.RetrieveList();
+            _serverOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
+            _clientOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
             //Add to clienthostcollection.
             foreach (KeyValuePair<TKey, TValue> item in objects)
-                this.ClientHostCollection[item.Key] = item.Value;
+                ClientHostCollection[item.Key] = item.Value;
         }
         #endregion
 
+        #region Deconstructor.
+        ~SyncDictionary()
+        {
+            CollectionCaches<TKey, TValue>.StoreAndDefault(ref Collection);
+            CollectionCaches<TKey, TValue>.StoreAndDefault(ref ClientHostCollection);
+            CollectionCaches<TKey, TValue>.StoreAndDefault(ref _initialValues);
+            CollectionCaches<ChangeData>.StoreAndDefault(ref _changed);
+            CollectionCaches<CachedOnChange>.StoreAndDefault(ref _serverOnChanges);
+            CollectionCaches<CachedOnChange>.StoreAndDefault(ref _clientOnChanges);
+        }
+        #endregion
         /// <summary>
         /// Gets the collection being used within this SyncList.
         /// </summary>
@@ -618,22 +632,6 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <returns></returns>
         IEnumerator IEnumerable.GetEnumerator() => Collection.GetEnumerator();
-
-    }
-
-    [APIExclude]
-    public class SyncDictionary<TKey, TValue> : SyncIDictionary<TKey, TValue>
-    {
-        [APIExclude]
-        public SyncDictionary() : base(new Dictionary<TKey, TValue>()) { }
-        [APIExclude]
-        public SyncDictionary(IEqualityComparer<TKey> eq) : base(new Dictionary<TKey, TValue>(eq)) { }
-        [APIExclude]
-        public new Dictionary<TKey, TValue>.ValueCollection Values => ((Dictionary<TKey, TValue>)Collection).Values;
-        [APIExclude]
-        public new Dictionary<TKey, TValue>.KeyCollection Keys => ((Dictionary<TKey, TValue>)Collection).Keys;
-        [APIExclude]
-        public new Dictionary<TKey, TValue>.Enumerator GetEnumerator() => ((Dictionary<TKey, TValue>)Collection).GetEnumerator();
 
     }
 }

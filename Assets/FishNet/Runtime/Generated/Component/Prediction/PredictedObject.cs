@@ -560,14 +560,14 @@ namespace FishNet.Component.Prediction
                 if (_rigidbody.isKinematic)
                     warn = true;
                 _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
-                _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody, true, _graphicalObject);
+                _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody, true);
             }
             else
             {
                 if (_rigidbody2d.isKinematic || !_rigidbody2d.simulated)
                     warn = true;
                 _rigidbody2d.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-                _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody2D, true, _graphicalObject);
+                _rigidbodyPauser.UpdateRigidbodies(transform, RigidbodyType.Rigidbody2D, true);
             }
 
             if (warn)

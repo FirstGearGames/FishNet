@@ -181,21 +181,26 @@ namespace FishNet.Managing.Object
             }
 
             //Write headers first.
-            writer.WriteBytes(headerWriter.GetBuffer(), 0, headerWriter.Length);
+            writer.WriteArraySegment(headerWriter.GetArraySegment());
+
+            PooledWriter tempWriter = WriterPool.Retrieve();
+            //Payload.
+            WritePayload(connection, nob, tempWriter);
+            writer.WriteArraySegmentAndSize(tempWriter.GetArraySegment());
 
             /* Used to write latest data which must be sent to
              * clients, such as SyncTypes and RpcLinks. */
-            PooledWriter tempWriter = WriterPool.Retrieve();
+            tempWriter.Reset();
             //Send RpcLinks first.
             foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
                 nb.WriteRpcLinks(tempWriter);
             //Send links to everyone.
-            writer.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
+            writer.WriteArraySegmentAndSize(tempWriter.GetArraySegment());
 
             tempWriter.Reset();
             foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
                 nb.WriteSyncTypesForSpawn(tempWriter, connection);
-            writer.WriteBytesAndSize(tempWriter.GetBuffer(), 0, tempWriter.Length);
+            writer.WriteArraySegmentAndSize(tempWriter.GetArraySegment());
 
             //Dispose of writers created in this method.
             headerWriter.Store();
@@ -243,16 +248,6 @@ namespace FishNet.Managing.Object
         {
             everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
             everyoneWriter.WriteNetworkObjectForDespawn(nob, despawnType);
-        }
-
-        /// <summary>
-        /// Gets transform properties by applying passed in values if they are not null, otherwise using transforms defaults.
-        /// </summary>
-        internal void GetTransformProperties(Vector3? readPos, Quaternion? readRot, Vector3? readScale, Transform defaultTransform, out Vector3 pos, out Quaternion rot, out Vector3 scale)
-        {
-            pos = (readPos == null) ? defaultTransform.localPosition : readPos.Value;
-            rot = (readRot == null) ? defaultTransform.localRotation : readRot.Value;
-            scale = (readScale == null) ? defaultTransform.localScale : readScale.Value;
         }
 
         /// <summary>
@@ -385,8 +380,35 @@ namespace FishNet.Managing.Object
         }
 
 
+        /// <summary>
+        /// Reads a payload for a NetworkObject.
+        /// </summary>
+        internal void ReadPayload(NetworkConnection conn, NetworkObject nob, PooledReader reader)
+        {
+            while (reader.Remaining > 0)
+            {
+                byte componentIndex = reader.ReadByte();
+                nob.NetworkBehaviours[componentIndex].ReadPayload(conn, reader);
+            }
+        }
 
-
+        /// <summary>
+        /// Writes a payload for a NetworkObject.
+        /// </summary>
+        internal void WritePayload(NetworkConnection conn, NetworkObject nob, PooledWriter writer)
+        {
+            PooledWriter nbWriter = WriterPool.Retrieve();
+            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+            {
+                nbWriter.Reset();
+                nb.WritePayload(conn, nbWriter);
+                if (nbWriter.Length > 0)
+                {
+                    writer.WriteByte(nb.ComponentIndex);
+                    writer.WriteArraySegment(nbWriter.GetArraySegment());
+                }
+            }
+        }
 
     }
 }

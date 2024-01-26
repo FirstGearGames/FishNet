@@ -27,7 +27,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// The settings for this SyncVar.
         /// </summary>
         [MakePublic]
-        internal SyncTypeSetting Settings;
+        internal SyncTypeSettings Settings;
         /// <summary>
         /// How often updates may send.
         /// </summary>
@@ -69,6 +69,11 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Channel to send on.
         /// </summary>
         internal Channel Channel => _currentChannel;
+        /// <summary>
+        /// Sets a new currentChannel.
+        /// </summary>
+        /// <param name="channel"></param>
+        internal void SetCurrentChannel(Channel channel) => _currentChannel = channel;
         #endregion
 
         #region Private.
@@ -104,8 +109,8 @@ namespace FishNet.Object.Synchronizing.Internal
 
 
         #region Constructors
-        public SyncBase() : this(new SyncTypeSetting()) { }
-        public SyncBase(SyncTypeSetting settings)
+        public SyncBase() : this(new SyncTypeSettings()) { }
+        public SyncBase(SyncTypeSettings settings)
         {
             Settings = settings;
         }
@@ -114,7 +119,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Updates settings with new values.
         /// </summary>
-        public void UpdateSettings(SyncTypeSetting settings)
+        public void UpdateSettings(SyncTypeSettings settings)
         {
             Settings = settings;
             SetTimeToTicks();
@@ -160,7 +165,7 @@ namespace FishNet.Object.Synchronizing.Internal
         {
             CheckChannel(ref channel);
             _currentChannel = channel;
-            Settings = new SyncTypeSetting(writePermissions, readPermissions, sendRate, channel);
+            Settings = new SyncTypeSettings(writePermissions, readPermissions, sendRate, channel);
             SetTimeToTicks();
         }
 
@@ -277,9 +282,6 @@ namespace FishNet.Object.Synchronizing.Internal
                 return true;
             //If server is active then values can be set no matter what.
             if (NetworkBehaviour.IsServerStarted)
-                return true;
-            //Predicted spawning is enabled.
-            if (NetworkManager != null && NetworkManager.PredictionManager.GetAllowPredictedSpawning() && NetworkBehaviour.NetworkObject.AllowPredictedSpawning)
                 return true;
             /* If here then server is not active and additional
              * checks must be performed. */
@@ -438,7 +440,8 @@ namespace FishNet.Object.Synchronizing.Internal
             _changeId = 0;
             _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
             NextSyncTick = 0;
-            ResetDirty();
+            SetCurrentChannel(Settings.Channel);
+            IsDirty = false;
         }
     }
 

@@ -269,6 +269,13 @@ namespace LiteNetLib
         public bool ReuseAddress = false;
 
         /// <summary>
+        /// UDP Only Option. Enables socket option "DontRoute" for specific purposes.
+        /// Normally IP sockets send packets of data through routers and gateways until they reach the final destination.
+        /// If the DontRoute flag is set to True, then data will be delivered on the local subnet only.
+        /// </summary>
+        public bool DontRoute = false;
+
+        /// <summary>
         /// Statistics of all connections
         /// </summary>
         public readonly NetStatistics Statistics = new NetStatistics();

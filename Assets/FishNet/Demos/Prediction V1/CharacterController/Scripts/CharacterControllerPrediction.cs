@@ -15,6 +15,7 @@ namespace FishNet.Example.Prediction.CharacterControllers
 
     public class CharacterControllerPrediction : NetworkBehaviour
     {
+#if !PREDICTION_V2
         #region Types.
         public struct MoveData : IReplicateData
         {
@@ -119,7 +120,7 @@ namespace FishNet.Example.Prediction.CharacterControllers
             transform.rotation = rd.Rotation;
         }
 
-
+#endif
     }
 
 

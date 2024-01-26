@@ -1,7 +1,6 @@
 ﻿using FishNet.Managing;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace FishNet.Component.Prediction
 {
@@ -116,10 +115,6 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private List<Rigidbody2DData> _rigidbody2dDatas = new List<Rigidbody2DData>();
         /// <summary>
-        /// GraphicalObject to unparent when pausing.
-        /// </summary>
-        private Transform _graphicalObject;
-        /// <summary>
         /// True to get rigidbodies in children of transform.
         /// </summary>
         private bool _getInChildren;
@@ -148,14 +143,14 @@ namespace FishNet.Component.Prediction
                 return;
             }
 
-            UpdateRigidbodies(_transform, _rigidbodyType, _getInChildren, _graphicalObject);
+            UpdateRigidbodies(_transform, _rigidbodyType, _getInChildren);
         }
 
         /// <summary>
         /// Assigns rigidbodies.
         /// </summary>
         /// <param name="rbs">Rigidbodies2D to use.</param>
-        public void UpdateRigidbodies(Transform t, RigidbodyType rbType, bool getInChildren, Transform graphicalObject)
+        public void UpdateRigidbodies(Transform t, RigidbodyType rbType, bool getInChildren)
         {
             _rigidbodyType = rbType;
             _getInChildren = getInChildren;
@@ -177,16 +172,6 @@ namespace FishNet.Component.Prediction
                     if (rb != null)
                         _rigidbodyDatas.Add(new RigidbodyData(rb));
                 }
-
-                //Make sure all added datas are not the graphical object.
-                for (int i = 0; i < _rigidbodyDatas.Count; i++)
-                {
-                    if (_rigidbodyDatas[i].Rigidbody.transform == graphicalObject)
-                    {
-                        NetworkManagerExtensions.LogError($"GameObject {t.name} has it's GraphicalObject as a child or on the same object as a Rigidbody object. The GraphicalObject must be a child of root, and not sit beneath or on any rigidbodies.");
-                        graphicalObject = null;
-                    }
-                }
             }
             //2D.
             else
@@ -203,20 +188,8 @@ namespace FishNet.Component.Prediction
                     if (rb != null)
                         _rigidbody2dDatas.Add(new Rigidbody2DData(rb));
                 }
-
-                //Make sure all added datas are not the graphical object.
-                for (int i = 0; i < _rigidbody2dDatas.Count; i++)
-                {
-                    if (_rigidbody2dDatas[i].Rigidbody2d.transform == graphicalObject)
-                    {
-                        NetworkManagerExtensions.LogError($"GameObject {t.name} has it's GraphicalObject as a child or on the same object as a Rigidbody object. The GraphicalObject must be a child of root, and not sit beneath or on any rigidbodies.");
-                        graphicalObject = null;
-                    }
-                }
             }
 
-            if (graphicalObject != null)
-                _graphicalObject = graphicalObject;
             _initialized = true;
         }
 
