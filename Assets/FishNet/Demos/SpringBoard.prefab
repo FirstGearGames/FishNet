@@ -133,7 +133,6 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 0}
   _networkObjectCache: {fileID: 0}
-  Force: 20
 --- !u!65 &4811354048062409396
 BoxCollider:
   m_ObjectHideFlags: 0

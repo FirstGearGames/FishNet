@@ -20,12 +20,10 @@ namespace FishNet.Transporting.Tugboat.Editing
         private SerializedProperty _maximumClients;
 
         private SerializedProperty _clientAddress;
-        private SerializedProperty _timeout;
 
 
         protected virtual void OnEnable()
         {
-            _timeout = serializedObject.FindProperty(nameof(_timeout));
             _dontRoute = serializedObject.FindProperty(nameof(_dontRoute));
             _unreliableMtu = serializedObject.FindProperty(nameof(_unreliableMtu));
             _ipv4BindAddress = serializedObject.FindProperty(nameof(_ipv4BindAddress));
@@ -47,7 +45,6 @@ namespace FishNet.Transporting.Tugboat.Editing
 
             EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_timeout);
             EditorGUILayout.PropertyField(_dontRoute);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();

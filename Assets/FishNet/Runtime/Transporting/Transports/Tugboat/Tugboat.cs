@@ -19,13 +19,6 @@ namespace FishNet.Transporting.Tugboat
         #region Serialized.
         /* Settings / Misc. */
         /// <summary>
-        /// How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.
-        /// </summary>
-        [Tooltip("How long in seconds until either the server or client socket must go without data before being timed out. Use 0f to disable timing out.")]
-        [Range(0, MAX_TIMEOUT_SECONDS)]
-        [SerializeField]
-        private ushort _timeout = 15;
-        /// <summary>
         /// While true, forces sockets to send data directly to interface without routing.
         /// </summary>
         [Tooltip("While true, forces sockets to send data directly to interface without routing.")]
@@ -99,6 +92,9 @@ namespace FishNet.Transporting.Tugboat
         #endregion
 
         #region Const.
+        /// <summary>
+        /// Maximum timeout value to use.
+        /// </summary>
         private const ushort MAX_TIMEOUT_SECONDS = 1800;
         /// <summary>
         /// Minimum UDP packet size allowed.
@@ -305,16 +301,13 @@ namespace FishNet.Transporting.Tugboat
         public override float GetTimeout(bool asServer)
         {
             //Server and client uses the same timeout.
-            return (float)_timeout;
+            return (float)MAX_TIMEOUT_SECONDS;
         }
         /// <summary>
         /// Sets how long in seconds until either the server or client socket must go without data before being timed out.
         /// </summary>
         /// <param name="asServer">True to set the timeout for the server socket, false for the client socket.</param>
-        public override void SetTimeout(float value, bool asServer)
-        {
-            _timeout = (ushort)value;
-        }
+        public override void SetTimeout(float value, bool asServer) { }
         /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
         /// </summary>
@@ -482,9 +475,7 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         private void UpdateTimeout()
         {
-            //If server is running set timeout to max. This is for host only.
-            //int timeout = (GetConnectionState(true) != LocalConnectionState.Stopped) ? MAX_TIMEOUT_SECONDS : _timeout;
-            int timeout = (Application.isEditor) ? MAX_TIMEOUT_SECONDS : _timeout;
+            int timeout = MAX_TIMEOUT_SECONDS;
             _client.UpdateTimeout(timeout);
             _server.UpdateTimeout(timeout);
         }

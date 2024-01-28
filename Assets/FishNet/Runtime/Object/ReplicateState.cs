@@ -22,16 +22,16 @@ namespace FishNet.Object
         /// Either no data was available to forward or their may be latency concerns resulting in late packets.
         /// </summary>
         CurrentPredicted = 2,
-        ///// <summary>
-        ///// Data is user made, such if it were created within OnTick.
-        ///// This occurs when a replicate is replaying past datas, triggered by a reconcile. 
-        ///// </summary>
-        //ReplayedUserCreated = 3,
         /// <summary>
-        /// No data was made from the user during a tick; default data is used with an estimated tick.
+        /// Data was not received for the replayed tick.
         /// This occurs when a replicate would be replaying past datas, triggered by a reconcile, but there is no user created data for the tick.
         /// </summary>
-        Replayed = 4,
+        ReplayedPredicted = 3,
+        /// <summary>
+        /// Data was received for the replayed tick.
+        /// This occurs when a replicate would be replaying past datas, triggered by a reconcile, and there is user created data for the tick.
+        /// </summary>
+        ReplayeCreated = 4,
         /// <summary>
         /// Client has not run the tick locally yet. This can be used to exit replicate early to not process actions, or create actions based on previous datas.
         /// </summary>
@@ -47,14 +47,14 @@ namespace FishNet.Object
         /// <summary>
         /// Returns if value is replayed.
         /// </summary>
-        public static bool IsReplayed(this ReplicateState value) => (value == ReplicateState.Replayed || value == ReplicateState.Future);//(value == ReplicateState.Replayed || value == ReplicateState.ReplayedUserCreated || value == ReplicateState.Future);
+        public static bool IsReplayed(this ReplicateState value) => (value == ReplicateState.ReplayedPredicted || value == ReplicateState.ReplayeCreated || value == ReplicateState.Future);
         /// <summary>
         /// Returns if value is user created.
         /// </summary>
-        public static bool IsCreated(this ReplicateState value) => (value == ReplicateState.CurrentCreated);//(value == ReplicateState.UserCreated || value == ReplicateState.ReplayedUserCreated);
+        public static bool IsCreated(this ReplicateState value) => (value == ReplicateState.CurrentCreated || value == ReplicateState.ReplayeCreated);
         /// <summary>
         /// Returns if value is predicted.
         /// </summary>
-        public static bool IsPredicted(this ReplicateState value) => (value == ReplicateState.Future || value == ReplicateState.CurrentPredicted); //!value.IsUserCreated();
+        public static bool IsPredicted(this ReplicateState value) => (value == ReplicateState.Future || value == ReplicateState.CurrentPredicted || value == ReplicateState.ReplayedPredicted);
     }
 }

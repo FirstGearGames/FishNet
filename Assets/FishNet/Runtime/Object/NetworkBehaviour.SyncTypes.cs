@@ -301,7 +301,10 @@ namespace FishNet.Object
 
                 /* If the number written is the same as those which were dirty
                  * then no dirty rename. Return true if no dirty remain. */
-                return (writtenCount == dirtyCount);
+                bool wroteAllDirty = (writtenCount == dirtyCount);
+                if (wroteAllDirty)
+                    SyncTypeDirty = false;
+                return wroteAllDirty;
             }
             //If here then at least one was dirty but none were written. This means some still need to write.
             else
