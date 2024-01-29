@@ -765,7 +765,7 @@ namespace FishNet.Object
             if (findResult == ReplicateTickFinder.DataPlacementResult.Exact)
             {
                 data = replicatesHistory[replicateIndex];
-                state = ReplicateState.Replayed;
+                state = ReplicateState.ReplayedCreated;
 
                 del.Invoke(data, state, channel);
                 _networkObjectCache.LastUnorderedReplicateTick = data.GetTick();
@@ -785,7 +785,7 @@ namespace FishNet.Object
             if (findResult == ReplicateTickFinder.DataPlacementResult.Exact)
             {
                 data = replicatesHistory[replicateIndex];
-                state = ReplicateState.Replayed;
+                state = ReplicateState.ReplayedCreated;
             }
             //If not not found then it's being run as predicted.
             else
@@ -795,7 +795,7 @@ namespace FishNet.Object
                 if (replicatesHistory.Count == 0 || replicatesHistory[replicatesHistory.Count - 1].GetTick() < replayTick)
                     state = ReplicateState.Future;
                 else
-                    state = ReplicateState.Replayed;
+                    state = ReplicateState.ReplayedCreated;
             }
 
             del.Invoke(data, state, channel);

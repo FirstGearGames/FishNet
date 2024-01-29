@@ -506,16 +506,7 @@ namespace FishNet.Managing.Predicting
                 return;
 
             uint estimatedLastRemoteTick = _networkManager.TimeManager.LastPacketTick.Value();
-            //NOTESSTART
-            /* Don't run a reconcile unless it's possible for ticks queued
-             * that tick to be run already. Otherwise you are not replaying inputs
-             * at all, just snapping to corrections. This means states which arrive late or out of order
-             * will be ignored since they're before the reconcile, which means important actions
-             * could have gone missed.
-             * 
-             * A system which synchronized all current states rather than what's only needed to correct
-             * the inputs would likely solve this. */
-            //NOTESEND
+            
             if (_reconcileStates.Peek().ClientTick >= (_networkManager.TimeManager.LocalTick - QueuedInputs - 2))
                 return;
 
