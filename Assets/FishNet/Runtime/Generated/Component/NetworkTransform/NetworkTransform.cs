@@ -144,6 +144,7 @@ namespace FishNet.Component.Transforming
             public RateData Rates = new RateData();
             public TransformData Transforms = new TransformData();
 
+            [Preserve]
             public GoalData() { }
 
             public void ResetState()
@@ -188,6 +189,7 @@ namespace FishNet.Component.Transforming
             /// </summary>
             internal float TimeRemaining;
 
+            [Preserve]
             public RateData() { }
 
 
@@ -424,7 +426,6 @@ namespace FishNet.Component.Transforming
         /// True to use Network Level of Detail when the feature is enabled.
         /// </summary>
         [Tooltip("True to use Network Level of Detail when the feature is enabled.")]
-        [FormerlySerializedAs("_useNetworkLod")]//Remove on 2024/01/01
         [SerializeField]
         private bool _enableNetworkLod = true;
         /// <summary>

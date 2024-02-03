@@ -11,6 +11,15 @@ using UnityEngine;
 
 namespace FishNet.PredictionV2
 {
+    /* THIS CLASS IS CURRENTLY USED FOR TESTING AND IS NOT CONSIDERED
+     * AN EXAMPLE TO FOLLOW. */
+    /* THIS CLASS IS CURRENTLY USED FOR TESTING AND IS NOT CONSIDERED
+     * AN EXAMPLE TO FOLLOW. */
+    /* THIS CLASS IS CURRENTLY USED FOR TESTING AND IS NOT CONSIDERED
+     * AN EXAMPLE TO FOLLOW. */
+    /* THIS CLASS IS CURRENTLY USED FOR TESTING AND IS NOT CONSIDERED
+     * AN EXAMPLE TO FOLLOW. */
+
     public class RigidbodyPredictionV2 : NetworkBehaviour
     {
 #if PREDICTION_V2
@@ -57,8 +66,8 @@ namespace FishNet.PredictionV2
             public void SetTick(uint value) => _tick = value;
         }
 
-        [SerializeField]
-        private float _jumpForce = 15f;
+        //[SerializeField]
+        //private float _jumpForce = 15f;
         [SerializeField]
         private float _moveRate = 15f;
 
@@ -77,7 +86,6 @@ namespace FishNet.PredictionV2
         public override void OnStartNetwork()
         {
             Rigidbody = GetComponent<Rigidbody>();
-            PRB = new PredictionRigidbody(Rigidbody);
             base.TimeManager.OnTick += TimeManager_OnTick;
             base.TimeManager.OnPostTick += TimeManager_OnPostTick;
         }
@@ -143,10 +151,10 @@ namespace FishNet.PredictionV2
             Vector3 forces = new Vector3(md.Horizontal, 0f, md.Vertical) * _moveRate;
             //PRB.AddForce(forces);
             forces += Physics.gravity * 3f;
-            if (md.Jump)
-                PRB.AddForce(new Vector3(0f, _jumpForce, 0f), ForceMode.Impulse);
-            //Add gravity to make the object fall faster.
-            PRB.AddForce(forces);
+            //if (md.Jump)
+            //    PRB.AddForce(new Vector3(0f, _jumpForce, 0f), ForceMode.Impulse);
+            ////Add gravity to make the object fall faster.
+            //PRB.AddForce(forces);
 
 
             //if (IsOwner)
@@ -195,7 +203,6 @@ namespace FishNet.PredictionV2
 
         }
 
-        public PredictionRigidbody PRB;
         private bool PrintForClient() => ((!base.IsServerStarted && base.IsOwner) || (base.IsServerStarted && !base.IsOwner));
 
 #endif

@@ -159,13 +159,13 @@ namespace FishNet.Object.Prediction
         /// Moves transform to target values.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void MoveToTarget(Transform movingTransform, TransformProperties goalProperties, float delta)
+        public void MoveLocalToTarget(Transform movingTransform, TransformProperties goalProperties, float delta)
         {
             //No rates are set.
             if (!AnySet)
                 return;
 
-            MoveRatesCls.MoveToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.LocalScale, Scale, delta);
+            MoveRatesCls.MoveLocalToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.LocalScale, Scale, delta);
         }
     }
 
@@ -289,20 +289,20 @@ namespace FishNet.Object.Prediction
         /// Moves transform to target values.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void MoveToTarget(Transform movingTransform, TransformPropertiesCls goalProperties, float delta)
+        public void MoveLocalToTarget(Transform movingTransform, TransformPropertiesCls goalProperties, float delta)
         {
             //No rates are set.
             if (!AnySet)
                 return;
 
-            MoveRatesCls.MoveToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.LocalScale, Scale, delta);
+            MoveRatesCls.MoveLocalToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.LocalScale, Scale, delta);
         }
 
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void MoveToTarget(Transform movingTransform, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
+        public static void MoveLocalToTarget(Transform movingTransform, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
         {
             Transform t = movingTransform;
             float rate;

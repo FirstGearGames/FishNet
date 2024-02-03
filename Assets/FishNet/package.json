@@ -1,6 +1,6 @@
 {
   "name": "com.firstgeargames.fishnet",
-  "version": "4.0.10",
+  "version": "4.1.0",
   "displayName": "FishNet: Networking Evolved",
   "description": "A feature-rich Unity networking solution aimed towards reliability, ease of use, efficiency, and flexibility.",
   "unity": "2021.3",
@@ -23,5 +23,8 @@
   "author": {
     "name": "FirstGearGames",
     "url": "http://www.firstgeargames.com"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
   }
 }

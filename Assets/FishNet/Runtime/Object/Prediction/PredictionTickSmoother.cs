@@ -42,22 +42,27 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private TransformProperties _gfxPreSimulateWorldValues;
         /// <summary>
-        /// Duration to move over.
+        /// TickDelta on the TimeManager.
         /// </summary>
         private float _tickDelta;
+        /// <summary>
+        /// How many ticks to interpolate over.
+        /// </summary>
+        private byte _interpolation;
         #endregion
 
         /// <summary>
         /// Initializes this smoother; should only be completed once.
         /// </summary>
-        internal void InitializeOnce(Transform graphicalObject, float teleportDistance, NetworkObject nob)
+        internal void InitializeOnce(Transform graphicalObject, float teleportDistance, NetworkObject nob, byte interpolation)
         {
             _gfxInitializedLocalValues = graphicalObject.GetLocalProperties();
             _nobPreSimulateWorldValues = nob.transform.GetWorldProperties();
             _tickDelta = (float)nob.TimeManager.TickDelta;
             _graphicalObject = graphicalObject;
-            _teleportThreshold = teleportDistance;
+            _teleportThreshold = (teleportDistance * (float)interpolation);
             _networkObject = nob;
+            _interpolation = interpolation;
         }
 
         /// <summary>
@@ -90,6 +95,7 @@ namespace FishNet.Object.Prediction
                 return;
 
             _preTicked = true;
+
             _nobPreSimulateWorldValues = _networkObject.transform.GetWorldProperties();
             _gfxPreSimulateWorldValues = _graphicalObject.GetWorldProperties();
         }
@@ -105,8 +111,8 @@ namespace FishNet.Object.Prediction
             //If preticked then previous transform values are known.
             if (_preTicked)
             {
-                SetMoveRates(_nobPreSimulateWorldValues, _networkObject.transform);
                 _graphicalObject.SetWorldProperties(_gfxPreSimulateWorldValues);
+                SetMoveRates(_gfxInitializedLocalValues, _graphicalObject);
             }
             //If did not pretick then the only thing we can do is snap to instantiated values.
             else
@@ -134,9 +140,15 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private void SetMoveRates(TransformProperties prevValues, Transform t)
         {
-            float duration = _tickDelta;
+            float duration = (_tickDelta * (float)_interpolation);
+            /* If interpolation is 1 then add on a tiny amount
+             * of more time to compensate for frame time, so that
+             * the smoothing does not complete before the next tick,
+             * as this would result in jitter. */
+            if (_interpolation == 1)
+                duration += (1f / 50f);
             float teleportT = _teleportThreshold;
-            _moveRates = MoveRates.GetWorldMoveRates(prevValues, t, duration, teleportT);
+            _moveRates = MoveRates.GetLocalMoveRates(prevValues, t, duration, teleportT);
         }
 
 
@@ -146,7 +158,7 @@ namespace FishNet.Object.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void MoveToTarget()
         {
-            _moveRates.MoveToTarget(_graphicalObject, _gfxInitializedLocalValues, Time.deltaTime);
+            _moveRates.MoveLocalToTarget(_graphicalObject, _gfxInitializedLocalValues, Time.deltaTime);
         }
 
 #endif

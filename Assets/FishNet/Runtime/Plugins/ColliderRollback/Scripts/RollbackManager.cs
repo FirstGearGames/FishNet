@@ -14,16 +14,6 @@ namespace FishNet.Component.ColliderRollback
 {
     public class RollbackManager : MonoBehaviour
     {
-        #region Types.
-        [System.Serializable, System.Flags] //Remove on 2024/01/01, replace with PhysicsType that is not part of RollbackManager.
-        public enum PhysicsType : byte
-        {
-            TwoDimensional = 1,
-            ThreeDimensional = 2,
-            Both = 4
-        }
-        #endregion
-
         #region Internal.
         /// <summary>
         /// Cached value for bounding box layermask.

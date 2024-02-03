@@ -31,7 +31,6 @@ namespace FishNet.Managing.Observing
         /// 
         /// </summary>
         [Tooltip("True to use the NetworkLOD system.")]
-        [FormerlySerializedAs("_useNetworkLod")]//Remove on 2024/01/01
         [SerializeField]
         private bool _enableNetworkLod;
         /// <summary>
@@ -54,7 +53,6 @@ namespace FishNet.Managing.Observing
         /// 
         /// </summary>
         [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")]
-        [FormerlySerializedAs("_setHostVisibility")]//Remove on 2024/01/01
         [SerializeField]
         private bool _updateHostVisibility = true;
         /// <summary>

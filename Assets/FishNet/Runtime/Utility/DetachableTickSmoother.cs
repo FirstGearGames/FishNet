@@ -136,7 +136,7 @@ namespace FishNet.Utility
             if (!_moveRates.AnySet)
                 return;
 
-            _moveRates.MoveToTarget(transform, _targetProperties.Value, Time.deltaTime);
+            _moveRates.MoveLocalToTarget(transform, _targetProperties.Value, Time.deltaTime);
             /* If no longer spawned and to rechild this
              * then do so once at goal. */
             if (!base.IsSpawned && _attachOnStop)

@@ -39,7 +39,6 @@ namespace FishNet.Component.Spawning
         /// Areas in which players may spawn.
         /// </summary>
         [Tooltip("Areas in which players may spawn.")]
-        [FormerlySerializedAs("_spawns")]//Remove on 2024/01/01
         public Transform[] Spawns = new Transform[0];
         #endregion
 

@@ -193,7 +193,7 @@ namespace FishNet.Object
             {
                 _tickSmoother = new PredictionTickSmoother();
                 float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRatesCls.UNSET_VALUE;
-                _tickSmoother.InitializeOnce(_graphicalObject, teleportT, this);
+                _tickSmoother.InitializeOnce(_graphicalObject, teleportT, this, _ownerInterpolation);
             }
         }
 

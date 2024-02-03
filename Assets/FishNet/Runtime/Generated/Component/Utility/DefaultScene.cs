@@ -24,7 +24,6 @@ namespace FishNet.Component.Scenes
 
         #region Serialized.
         [Tooltip("True to load the online scene as global, false to load it as connection.")]
-        [FormerlySerializedAs("_useGlobalScenes")]//Remove on 2024/01/01
         [SerializeField]
         private bool _enableGlobalScenes = true;
         /// <summary>

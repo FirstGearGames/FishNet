@@ -186,7 +186,7 @@ MonoBehaviour:
   _ownerInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 18
+  <PrefabId>k__BackingField: 21
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0

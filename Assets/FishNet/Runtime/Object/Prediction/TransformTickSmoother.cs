@@ -113,7 +113,7 @@ namespace FishNet.Object.Prediction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void MoveToTarget(TransformProperties tp)
         {
-            _moveRates.MoveToTarget(_transform, tp, Time.deltaTime);
+            _moveRates.MoveLocalToTarget(_transform, tp, Time.deltaTime);
         }
 
         /// <summary>

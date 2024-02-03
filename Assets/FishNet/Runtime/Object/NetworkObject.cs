@@ -400,13 +400,6 @@ namespace FishNet.Object
             }
         }
 
-#if PREDICTION_V2
-        private void Update()
-        {
-            Prediction_Update();
-        }
-#endif
-
         /// <summary>
         /// Initializes NetworkBehaviours if they are disabled.
         /// </summary>
@@ -562,6 +555,13 @@ namespace FishNet.Object
             //Add to connections objects. Collection is a hashset so this can be called twice for clientHost.
             owner?.AddObject(this);
         }
+
+#if PREDICTION_V2
+        private void Update()
+        {
+            Prediction_Update();
+        }
+#endif
 
         /// <summary>
         /// Sets this NetworkObject as a child of another at runtime.
@@ -741,7 +741,7 @@ namespace FishNet.Object
                 else
                     SerializedRootNetworkBehaviour = parentNob.NetworkBehaviours[0];
             }
-             
+
             //Transforms which can be searched for networkbehaviours.
             List<Transform> transformCache = CollectionCaches<Transform>.RetrieveList();
             NestedRootNetworkBehaviours.Clear();
