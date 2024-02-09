@@ -141,9 +141,16 @@ namespace FishNet.Editing
             }
 #endif
             int generatedCount = 0;
+            int sceneCount = 0;
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 Scene s = SceneManager.GetSceneAt(i);
+
+                if (!s.isLoaded)
+                {
+                    Debug.Log("Skipped scene " + s.name + " because it is not loaded.");
+                    continue;
+                }
 
                 List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
                 Scenes.GetSceneNetworkObjects(s, false, ref nobs);
@@ -159,7 +166,7 @@ namespace FishNet.Editing
                 CollectionCaches<NetworkObject>.Store(nobs);
             }
 
-            Debug.Log($"Generated sceneIds for {generatedCount} objects over {SceneManager.sceneCount} scenes. Please save your open scenes.");
+            Debug.Log($"Generated sceneIds for {generatedCount} objects over {sceneCount} scenes. Please save your open scenes.");
         }
 
 
