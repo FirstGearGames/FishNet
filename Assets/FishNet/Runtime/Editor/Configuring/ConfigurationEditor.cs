@@ -162,6 +162,7 @@ namespace FishNet.Editing
                     EditorUtility.SetDirty(nob);
                 }
                 generatedCount += nobCount;
+                sceneCount++;
 
                 CollectionCaches<NetworkObject>.Store(nobs);
             }
