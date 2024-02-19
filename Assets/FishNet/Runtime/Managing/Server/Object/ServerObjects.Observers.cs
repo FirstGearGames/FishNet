@@ -117,7 +117,7 @@ namespace FishNet.Managing.Server
             List<NetworkConnection> cache = CollectionCaches<NetworkConnection>.RetrieveList();
             foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)
             {
-                if (item.Authenticated)
+                if (item.IsAuthenticated)
                     cache.Add(item);
             }
 
@@ -348,7 +348,6 @@ namespace FishNet.Managing.Server
             int connsCount = conns.Count;
             for (int i = 0; i < connsCount; i++)
             {
-                _writer.Reset();
                 nobCache.Clear();
 
                 nc = conns[i];
@@ -361,6 +360,7 @@ namespace FishNet.Managing.Server
                 {
                     NetworkManager.TransportManager.SendToClient(
                         (byte)Channel.Reliable, _writer.GetArraySegment(), nc);
+                    _writer.Reset();
 
                     foreach (NetworkObject n in nobCache)
                         n.OnSpawnServer(nc);
@@ -434,8 +434,6 @@ namespace FishNet.Managing.Server
 
             /* When not using a timed rebuild such as this connections must have
              * hashgrid data rebuilt immediately. */
-            //if (!timedOnly)
-            //conn.UpdateHashGridPositions(true);
             conn.UpdateHashGridPositions(!timedOnly);
 
             //If observer state changed then write changes.

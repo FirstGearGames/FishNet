@@ -13,6 +13,21 @@ using static FishNet.Managing.Timing.EstimatedTick;
 namespace FishNet.Connection
 {
 
+    public static class NetworkConnectionExtensions
+    {
+
+        /// <summary>
+        /// True if this connection is valid. An invalid connection indicates no client is set for this reference.
+        /// Null references can be used with this method.
+        /// </summary>
+        public static bool IsValid(this NetworkConnection c)
+        {
+            if (c == null)
+                return false;
+            else
+                return c.IsValid;
+        }
+    }
     /// <summary>
     /// A container for a connected client used to perform actions on and gather information for the declared client.
     /// </summary>
@@ -70,7 +85,13 @@ namespace FishNet.Connection
         /// <summary>
         /// True if this connection is authenticated. Only available to server.
         /// </summary>
-        public bool Authenticated { get; private set; }
+        public bool IsAuthenticated { get; private set; }
+        [Obsolete("Use IsAuthenticated.")] //Remove in V5
+        public bool Authenticated
+        {
+            get => IsAuthenticated;
+            set => IsAuthenticated = value;
+        }
         /// <summary>
         /// True if this connection IsValid and not Disconnecting.
         /// </summary>
@@ -256,7 +277,7 @@ namespace FishNet.Connection
             TransportIndex = -1;
             ClientId = -1;
             ClearObjects();
-            Authenticated = false;
+            IsAuthenticated = false;
             NetworkManager = null;
             _loadedStartScenesAsClient = false;
             _loadedStartScenesAsServer = false;
@@ -344,7 +365,7 @@ namespace FishNet.Connection
         /// </summary>
         internal void ConnectionAuthenticated()
         {
-            Authenticated = true;
+            IsAuthenticated = true;
         }
 
         /// <summary>

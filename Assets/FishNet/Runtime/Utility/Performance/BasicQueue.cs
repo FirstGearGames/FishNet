@@ -125,7 +125,6 @@ namespace FishNet.Utility.Performance
         /// <summary>
         /// Clears the queue.
         /// </summary>
-        /// <param name="makeDefault">True to make buffer entries default.</param>
         public void Clear()
         {
             _read = 0;
@@ -182,20 +181,50 @@ namespace FishNet.Utility.Performance
         {
             get
             {
-                int offset = (Capacity - _written) + simulatedIndex + WriteIndex;
-                if (offset >= Capacity)
-                    offset -= Capacity;
+                int offset = GetRealIndex(simulatedIndex);
                 return Collection[offset];
             }
             set
             {
-                int offset = (Capacity - _written) + simulatedIndex + WriteIndex;
-                if (offset >= Capacity)
-                    offset -= Capacity;
+                int offset = GetRealIndex(simulatedIndex);
                 Collection[offset] = value;
             }
         }
 
+
+
+        /// <summary>
+        /// Returns the real index of the collection using a simulated index.
+        /// </summary>
+        /// <param name="allowUnusedBuffer">True to allow an index be returned from an unused portion of the buffer so long as it is within bounds.</param>
+        private int GetRealIndex(int simulatedIndex, bool allowUnusedBuffer = false)
+        {
+            if (simulatedIndex >= Capacity)
+            {
+                return ReturnError();
+            }
+            else
+            {
+                int written = _written;
+                //May be out of bounds if allowUnusedBuffer is false.
+                if (simulatedIndex >= written)
+                {
+                    if (!allowUnusedBuffer)
+                        return ReturnError();
+                }
+                int offset = (Capacity - written) + simulatedIndex + WriteIndex;
+                if (offset >= Capacity)
+                    offset -= Capacity;
+
+                return offset;
+            }
+
+            int ReturnError()
+            {
+                UnityEngine.Debug.LogError($"Index {simulatedIndex} is out of range. Collection count is {_written}, Capacity is {Capacity}");
+                return -1;
+            }
+        }
 
     }
 

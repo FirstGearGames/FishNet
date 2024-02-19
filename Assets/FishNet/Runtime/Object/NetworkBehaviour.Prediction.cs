@@ -397,34 +397,33 @@ namespace FishNet.Object
         internal virtual void ClearReplicateCache_Virtual(bool asServer) { }
 #else
         /// <summary>
-        /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
+        /// Resets cached ticks used by prediction, such as last read and replicate tick.
+        /// This is generally used when the ticks will be different then what was previously used; eg: when ownership changes.
         /// </summary>
-        public void ClearReplicateCache()
+        internal void ResetPredictionTicks()
         {
+            _lastReplicateReadRemoteTick = TimeManager.UNSET_TICK;
             _lastReadReconcileTick = TimeManager.UNSET_TICK;
             _lastReadReplicateTick = TimeManager.UNSET_TICK;
-            _networkObjectCache.ResetReplicateTick();
-            ClearReplicateCache_Virtual<IReplicateData>(null, null);
         }
         /// <summary>
-        /// Clears cached replicates.
-        /// For internal use only.
+        /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
         /// </summary>
-        /// <param name="asServer"></param>
+        public virtual void ClearReplicateCache() { }
+
+        /// <summary>
+        /// Clears cached replicates and histories.
+        /// </summary>
         [MakePublic]
         [APIExclude]
-        protected internal virtual void ClearReplicateCache_Virtual<T>(BasicQueue<T> replicatesQueue, List<T> replicatesHistory) where T : IReplicateData
+        protected internal void ClearReplicateCache_Internal<T>(BasicQueue<T> replicatesQueue, List<T> replicatesHistory) where T : IReplicateData
         {
-            if (replicatesHistory == null)
-                return;
-
             while (replicatesQueue.Count > 0)
             {
                 T data = replicatesQueue.Dequeue();
                 data.Dispose();
             }
 
-            //History.
             for (int i = 0; i < replicatesHistory.Count; i++)
                 replicatesHistory[i].Dispose();
             replicatesHistory.Clear();
@@ -858,11 +857,9 @@ namespace FishNet.Object
             }
         }
 #else
-        private float _recvTime;
         /// <summary>
-        /// Number of times a replicate was run as predicted in a row.
+        /// Tick when replicates should begun to run. This is set and used when inputs are just received and need to queue to create a buffer.
         /// </summary>
-        private uint _predictedReplicateCount;
         private uint _replicateStartTick = TimeManager.UNSET_TICK;
         /// <summary>
         /// Gets the next replicate in perform when server or non-owning client.
@@ -925,7 +922,6 @@ namespace FishNet.Object
             void ReplicateData(T data, bool predicted)
             {
                 _lastReplicatedTick = data.GetTick();
-
                 uint dataTick = data.GetTick();
                 if (!predicted)
                     _networkObjectCache.SetReplicateTick(dataTick, true);
@@ -1251,7 +1247,6 @@ namespace FishNet.Object
             //Early exit if old data.
             if (TimeManager.LastPacketTick.LastRemoteTick < _lastReplicateReadRemoteTick)
                 return;
-
             _lastReplicateReadRemoteTick = TimeManager.LastPacketTick.LastRemoteTick;
 
             //If from a client that is not clientHost do some safety checks.
@@ -1266,7 +1261,6 @@ namespace FishNet.Object
 
             Replicate_EnqueueReceivedReplicate<T>(startingQueueCount, receivedReplicatesCount, arrBuffer, replicatesQueue, replicatesHistory, channel);
             Replicate_SendQueuedToSpectators<T>(hash, replicatesQueue, startingQueueCount, channel);
-            _recvTime = Time.time;
         }
 #endif
 

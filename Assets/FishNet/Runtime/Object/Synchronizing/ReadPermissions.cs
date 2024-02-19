@@ -8,14 +8,14 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// All observers will receive updates.
         /// </summary>
-        Observers,
+        Observers = 1,
         /// <summary>
         /// Only owner will receive updates.
         /// </summary>
-        OwnerOnly,
+        OwnerOnly = 2,
         /// <summary>
         /// Send to all observers except owner.
         /// </summary>
-        ExcludeOwner
+        ExcludeOwner = 3,
     }
 }

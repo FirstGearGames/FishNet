@@ -40,7 +40,7 @@ namespace FishNet.Demo.HashGrid
                 transform.position -= new Vector3(0f, 0f, 1f);
                 Camera c = Camera.main;
                 c.transform.SetParent(transform);
-                c.transform.localPosition = transform.position - new Vector3(0f, 0f, 5f);
+                c.transform.localPosition = new Vector3(0f, 0f, -5f);
             }
             else
             {
@@ -54,7 +54,7 @@ namespace FishNet.Demo.HashGrid
         public override void OnStopNetwork()
         {
             Camera c = Camera.main;
-            if (c != null)
+            if (c != null && base.Owner.IsLocalClient)
                 c.transform.SetParent(null);
         }
 

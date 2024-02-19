@@ -11,39 +11,68 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Creates a debug log for text without any conditions.
         /// </summary>
-        public static void DebugLog(this ILProcessor processor, CodegenSession session, string txt)
+        public static List<Instruction> DebugLog(this ILProcessor processor, CodegenSession session, string txt)
         {
-            processor.Emit(OpCodes.Ldstr, txt);
-            processor.Emit(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef);
+            List<Instruction> insts = new List<Instruction>();
+            insts.Add(processor.Create(OpCodes.Ldstr, txt));
+            insts.Add(processor.Create(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef));
+            return insts;
         }
         /// <summary>
         /// Creates a debug log for vd without any conditions.
         /// </summary>
-        public static void DebugLog(this ILProcessor processor, CodegenSession session, VariableDefinition vd)
+        public static List<Instruction> DebugLog(this ILProcessor processor, CodegenSession session, VariableDefinition vd)
         {
-            processor.Emit(OpCodes.Ldloc, vd);
-            processor.Emit(OpCodes.Box, vd.VariableType);
-            processor.Emit(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef);
+            List<Instruction> insts = new List<Instruction>();
+            insts.Add(processor.Create(OpCodes.Ldloc, vd));
+            insts.Add(processor.Create(OpCodes.Box, vd.VariableType));
+            insts.Add(processor.Create(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef));
+            return insts;
         }
         /// <summary>
         /// Creates a debug log for vd without any conditions.
         /// </summary>
-        public static void DebugLog(this ILProcessor processor, CodegenSession session, FieldDefinition fd, bool loadArg0)
+        public static List<Instruction> DebugLog(this ILProcessor processor, CodegenSession session, FieldDefinition fd, bool loadArg0)
         {
+            List<Instruction> insts = new List<Instruction>();
             if (loadArg0)
-                processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldfld, fd);
-            processor.Emit(OpCodes.Box, fd.FieldType);
-            processor.Emit(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef);
+                insts.Add(processor.Create(OpCodes.Ldarg_0));
+            insts.Add(processor.Create(OpCodes.Ldfld, fd));
+            insts.Add(processor.Create(OpCodes.Box, fd.FieldType));
+            insts.Add(processor.Create(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef));
+            return insts;
         }
         /// <summary>
         /// Creates a debug log for pd without any conditions.
         /// </summary>
-        public static void DebugLog(this ILProcessor processor, CodegenSession session, ParameterDefinition pd)
+        public static List<Instruction> DebugLog(this ILProcessor processor, CodegenSession session, ParameterDefinition pd)
         {
-            processor.Emit(OpCodes.Ldloc, pd);
-            processor.Emit(OpCodes.Box, pd.ParameterType);
-            processor.Emit(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef);
+            List<Instruction> insts = new List<Instruction>();
+            insts.Add(processor.Create(OpCodes.Ldloc, pd));
+            insts.Add(processor.Create(OpCodes.Box, pd.ParameterType));
+            insts.Add(processor.Create(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef));
+            return insts;
+        }
+
+        /// <summary>
+        /// Removes Ret if the last instruction.
+        /// </summary>
+        /// <returns>True if ret was removed.</returns>
+        public static bool RemoveEndRet(this ILProcessor processor)
+        {
+            int instCount = processor.Body.Instructions.Count;
+            if (instCount == 0)
+                return false;
+
+            if (processor.Body.Instructions[instCount-1].OpCode == OpCodes.Ret)
+            {
+                processor.Body.Instructions.RemoveAt(instCount - 1);
+                return true;
+            }    
+            else
+            {
+                return false;
+            }
         }
 
         ///// <summary>

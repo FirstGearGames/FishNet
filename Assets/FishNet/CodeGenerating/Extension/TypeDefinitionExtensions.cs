@@ -1,5 +1,8 @@
 ﻿using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Object.Prediction;
+using FishNet.Utility.Performance;
 using MonoFN.Cecil;
+using System.Collections.Generic;
 
 namespace FishNet.CodeGenerating.Extension
 {
@@ -161,11 +164,17 @@ namespace FishNet.CodeGenerating.Extension
                 if (copyParameters)
                 {
                     foreach (ParameterDefinition pd in methodTemplate.Parameters)
+                    {
+                        session.ImportReference(pd.ParameterType.CachedResolve(session));
                         md.Parameters.Add(pd);
+                    }
                 }
 
-                foreach (var item in methodTemplate.GenericParameters)
+                foreach (GenericParameter item in methodTemplate.GenericParameters)
+                {
+                    session.ImportReference(item);
                     md.GenericParameters.Add(item);
+                }
 
                 td.Methods.Add(md);
                 created = true;
@@ -201,6 +210,29 @@ namespace FishNet.CodeGenerating.Extension
                 {
                     return null;
                 }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns a TypeDefintiion found in typeDef or up it's hierarchy.
+        /// </summary>
+        /// <param name="checkTypeDef">True to check if typeDef equals fullName.</param>
+        /// <returns></returns>
+        public static TypeDefinition GetTypeDefinitionInBase(this TypeDefinition typeDef, CodegenSession session, string targetFullName, bool checkTypeDef)
+        {
+            if (typeDef == null)
+                return null;
+            if (!checkTypeDef)
+                typeDef = typeDef.GetNextBaseTypeDefinition(session);
+
+            while (typeDef != null)
+            {
+                if (typeDef.FullName == targetFullName)
+                    return typeDef;
+
+                typeDef = typeDef.GetNextBaseTypeDefinition(session);
             }
 
             return null;

@@ -8,6 +8,7 @@ using FishNet.Object.Prediction;
 using FishNet.Object.Prediction.Delegating;
 using FishNet.Serializing;
 using FishNet.Transporting;
+using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
@@ -164,6 +165,7 @@ namespace FishNet.CodeGenerating.Processing
             System.Type locType;
             SR.MethodInfo locMi;
 
+            base.ImportReference(typeof(BasicQueue<>));
             ReplicateULDelegate_TypeRef = base.ImportReference(typeof(ReplicateUserLogicDelegate<>));
             ReconcileULDelegate_TypeRef = base.ImportReference(typeof(ReconcileUserLogicDelegate<>));
 
@@ -304,8 +306,6 @@ namespace FishNet.CodeGenerating.Processing
 
         internal bool Process(TypeDefinition typeDef)
         {
-            //List<PredictionAttributedMethods> predictionAttributedMethods = GetPredictionAttributedMethods(typeDef);
-
             //Set prediction count in parents here. Increase count after each predictionAttributeMethods iteration.
             //Do a for each loop on predictionAttributedMethods.
             /* NOTES: for predictionv2 get all prediction attributed methods up front and store them inside predictionAttributedMethods.
@@ -535,6 +535,7 @@ namespace FishNet.CodeGenerating.Processing
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
                 insts.Add(processor.Create(OpCodes.Newobj, ctorMr));
                 insts.Add(processor.Create(OpCodes.Stfld, fr));
+
                 processor.InsertFirst(insts);
             }
         }
@@ -976,7 +977,7 @@ namespace FishNet.CodeGenerating.Processing
                     return false;
                 }
                 reconcileStartMd = new MethodDefinition(nbh.Reconcile_Client_Start_MethodName
-                    , (MethodAttributes.Public | MethodAttributes.Virtual), base.Module.TypeSystem.Void);
+                    , MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES, base.Module.TypeSystem.Void);
                 typeDef.Methods.Add(reconcileStartMd);
 
                 ILProcessor processor = reconcileStartMd.Body.GetILProcessor();
@@ -1006,7 +1007,7 @@ namespace FishNet.CodeGenerating.Processing
                     return false;
                 }
                 replicateStartMd = new MethodDefinition(nbh.Replicate_Replay_Start_MethodName
-                    , (MethodAttributes.Public | MethodAttributes.Virtual), base.Module.TypeSystem.Void);
+                    , MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES, base.Module.TypeSystem.Void);
                 //Add parameters.
                 replicateStartMd.CreateParameters(base.Session, nbh.Replicate_Replay_Start_MethodRef.CachedResolve(base.Session));
                 typeDef.Methods.Add(replicateStartMd);
@@ -1101,29 +1102,36 @@ namespace FishNet.CodeGenerating.Processing
         private void CreateClearReplicateCacheMethod(TypeDefinition typeDef, TypeReference dataTr, CreatedPredictionFields predictionFields)
         {
             GeneralHelper gh = base.GetClass<GeneralHelper>();
-            string clearDatasName = base.GetClass<NetworkBehaviourHelper>().ClearReplicateCache_MethodName;
+            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
 
-            //Parent clear method info.
-            TypeDefinition nbTd = typeDef.GetClassInInheritance(base.Session, typeof(NetworkBehaviour).FullName);
-            MethodDefinition nbClearMd = nbTd.GetMethod(clearDatasName);
-            MethodReference nbClearMr = nbClearMd.GetMethodReference(base.Session, predictionFields.ReplicateDataTypeRef);
-
-            MethodDefinition clearMd = typeDef.GetOrCreateMethodDefinition(base.Session, clearDatasName, (MethodAttributes.Public | MethodAttributes.Virtual), base.Module.TypeSystem.Void, out bool created);
-            //Already exist when it shouldn't.
-            if (!created)
+            string methodName = nameof(NetworkBehaviour.ClearReplicateCache);
+            MethodDefinition baseClearMd = typeDef.GetMethodDefinitionInAnyBase(base.Session, methodName);
+            MethodDefinition clearMd = typeDef.GetOrCreateMethodDefinition(base.Session, methodName, baseClearMd,true, out bool created);
+            clearMd.Attributes = MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES;
+            //This class already has the method created when it should not.
+            if (baseClearMd.DeclaringType == typeDef)
             {
-                base.LogError($"{typeDef.Name} overrides method {clearMd.Name} when it should not.");
+                base.LogError($"{typeDef.Name} overrides method {methodName} when it should not.");
                 return;
             }
 
             ILProcessor processor = clearMd.Body.GetILProcessor();
+            //Call the base class first.
+            processor.Emit(OpCodes.Ldarg_0);
+            MethodReference baseClearMr = base.ImportReference(baseClearMd);
+            processor.Emit(OpCodes.Call, baseClearMr);
+
+            //Call the actual clear method.
+            TypeDefinition nbTypeDef = typeDef.GetTypeDefinitionInBase(base.Session, typeof(NetworkBehaviour).FullName, false);
+            MethodReference internalClearMr = base.Session.ImportReference(nbTypeDef.GetMethod(nameof(NetworkBehaviour.ClearReplicateCache_Internal)));
+            GenericInstanceMethod internalClearGim = internalClearMr.MakeGenericMethod(new TypeReference[] { dataTr });
 
             processor.Emit(OpCodes.Ldarg_0); //Base.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasQueue);
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasHistory);
-            processor.Emit(nbClearMr.GetCallOpCode(base.Session), nbClearMr);
+            processor.Emit(OpCodes.Call, internalClearGim);
             processor.Emit(OpCodes.Ret);
         }
 #endif

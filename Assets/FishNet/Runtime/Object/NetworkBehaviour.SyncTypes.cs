@@ -175,7 +175,7 @@ namespace FishNet.Object
         /// Writers dirty SyncTypes if their write tick has been met.
         /// </summary>
         /// <returns>True if there are no pending dirty sync types.</returns>
-        internal bool WriteDirtySyncTypes(bool ignoreInterval = false, bool forceReliable = false)
+        internal bool WriteDirtySyncTypes(bool ignoreInterval = false, bool forceReliable = false, bool writeOnlyOwner = false)
         {
             /* Can occur when a synctype is queued after
              * the object is marked for destruction. This should not
@@ -189,7 +189,7 @@ namespace FishNet.Object
 
             /* If there is nothing dirty then return true, indicating no more
              * pending dirty checks. */
-            if (!SyncTypeDirty || _syncTypes.Count == 0)
+            if ((!writeOnlyOwner && !SyncTypeDirty) || _syncTypes.Count == 0)
                 return true;
 
             //Number of syncTypes which are/were dirty.
@@ -204,7 +204,11 @@ namespace FishNet.Object
 
             foreach (SyncBase sb in _syncTypes.Values)
             {
-                if (!sb.IsDirty)
+                bool isForceOwnerWrite = (writeOnlyOwner && sb.Settings.ReadPermission == ReadPermission.OwnerOnly);
+                /* If not forceOwnerOnly and is not OwnerOnly, or if not
+                 * Dirty then continue. */
+                //If forceOnlyOwner and is owner, or is dirty then proceed.
+                if (!isForceOwnerWrite && !sb.IsDirty)
                     continue;
 
                 dirtyCount++;
@@ -246,9 +250,16 @@ namespace FishNet.Object
                     }
 
                     if (writer == null)
+                    {
                         NetworkManager.LogError($"Writer couldn't be found for permissions {sb.Settings.ReadPermission} on channel {channel}.");
+                    }
                     else
-                        sb.WriteDelta(writer);
+                    {
+                        if (isForceOwnerWrite)
+                            sb.WriteFull(writer);
+                        else
+                            sb.WriteDelta(writer);
+                    }
                 }
             }
 
@@ -333,7 +344,7 @@ namespace FishNet.Object
         internal virtual void ResetSyncVarFields() { }
 
         /// <summary>
-        /// Writers syncVars for a spawn message.
+        /// Writes syncVars for a spawn message.
         /// </summary>
         /// <param name="conn">Connection SyncTypes are being written for.</param>
         internal void WriteSyncTypesForSpawn(PooledWriter writer, NetworkConnection conn)

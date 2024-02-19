@@ -79,7 +79,7 @@ namespace FishNet.Managing.Server
             // try to invoke the handler for that message
             if (_broadcastHandlers.TryGetValueIL2CPP(key, out BroadcastHandlerBase bhs))
             {
-                if (bhs.RequireAuthentication && !conn.Authenticated)
+                if (bhs.RequireAuthentication && !conn.IsAuthenticated)
                     conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a broadcast which requires authentication, but client was not authenticated. Client has been disconnected.");
                 else
                     bhs.InvokeHandlers(conn, reader, channel);
@@ -105,7 +105,7 @@ namespace FishNet.Managing.Server
                 NetworkManager.LogWarning($"Cannot send broadcast to client because server is not active.");
                 return;
             }
-            if (requireAuthenticated && !connection.Authenticated)
+            if (requireAuthenticated && !connection.IsAuthenticated)
             {
                 NetworkManager.LogWarning($"Cannot send broadcast to client because they are not authenticated.");
                 return;
@@ -142,7 +142,7 @@ namespace FishNet.Managing.Server
 
             foreach (NetworkConnection conn in connections)
             {
-                if (requireAuthenticated && !conn.Authenticated)
+                if (requireAuthenticated && !conn.IsAuthenticated)
                     failedAuthentication = true;
                 else
                     NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);
@@ -332,7 +332,7 @@ namespace FishNet.Managing.Server
             foreach (NetworkConnection conn in Clients.Values)
             {
                 //
-                if (requireAuthenticated && !conn.Authenticated)
+                if (requireAuthenticated && !conn.IsAuthenticated)
                     failedAuthentication = true;
                 else
                     NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);

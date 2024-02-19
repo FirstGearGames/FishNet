@@ -176,9 +176,12 @@ namespace FishNet.Object
         /// <summary>
         /// Resets this NetworkBehaviour so that it may be added to an object pool.
         /// </summary>
-        internal void ResetState()
+        public virtual void ResetState()
         {
             SyncTypes_ResetState();
+#if PREDICTION_V2
+            ResetPredictionTicks();
+#endif
             ClearReplicateCache();
             ClearBuffedRpcs();
         }
@@ -251,7 +254,7 @@ namespace FishNet.Object
 #endif
         }
 
-        #endregion
+#endregion
     }
 
 

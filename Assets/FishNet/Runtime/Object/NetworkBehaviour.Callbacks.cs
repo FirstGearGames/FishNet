@@ -144,6 +144,9 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnOwnershipServer_Internal(NetworkConnection prevOwner)
         {
+#if PREDICTION_V2
+            ResetPredictionTicks();
+#endif
             CallClearReplicateCache(true);
             OnOwnershipServer(prevOwner);
         }

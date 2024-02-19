@@ -8,6 +8,7 @@ using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility;
 using FishNet.Utility.Performance;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -943,6 +944,15 @@ namespace FishNet.Serializing
         public void WriteChannel(Channel channel)
         {
             WriteByte((byte)channel);
+        }
+
+        /// <summary>
+        /// Writers a LayerMask.
+        /// </summary>
+        /// <param name="value"></param>
+        public void WriteLayerMask(LayerMask value)
+        {
+            WriteInt32(value.value);
         }
 
         /// <summary>

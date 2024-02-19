@@ -10,10 +10,18 @@ namespace FishNet.Component.Prediction
 {
     /// <summary>
     /// Smoothes an object between ticks.
-    /// Uses the first TimeManager loaded to get tick states. SetTimeManager can be used to use a specific TimeManager.
     /// </summary>
     public class MonoTickSmoother : MonoBehaviour
     {
+        #region Serialized.
+        /// <summary>
+        /// True to use InstanceFinder to locate the TimeManager. When false specify which TimeManager to use by calling SetTimeManager.
+        /// </summary>
+        [Tooltip("True to use InstanceFinder to locate the TimeManager. When false specify which TimeManager to use by calling SetTimeManager.")]
+        [SerializeField]
+        private bool _useInstanceFinder = true;
+        #endregion
+
         #region Private.
         /// <summary>
         /// TimeManager subscribed to.
@@ -29,7 +37,6 @@ namespace FishNet.Component.Prediction
         {
             InitializeOnce();
         }
-
 
         private void OnDestroy()
         {
@@ -49,8 +56,11 @@ namespace FishNet.Component.Prediction
         private void InitializeOnce()
         {
             _tickSmoother = ObjectCaches<TransformTickSmoother>.Retrieve();
-            _timeManager = InstanceFinder.TimeManager;
-            ChangeSubscription(true);
+            if (_useInstanceFinder)
+            {
+                _timeManager = InstanceFinder.TimeManager;
+                ChangeSubscription(true);
+            }
         }
 
         /// <summary>

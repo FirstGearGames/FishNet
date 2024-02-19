@@ -96,6 +96,16 @@ namespace FishNet.CodeGenerating.Extension
         }
 
         /// <summary>
+        /// Adds a parameter and returns added parameters.
+        /// </summary>
+        public static ParameterDefinition CreateParameter(this MethodDefinition thisMr, CodegenSession session, ParameterAttributes attr, System.Type type)
+        {
+            TypeReference parameterTypeRef = session.ImportReference(type);
+            ParameterDefinition pd = new ParameterDefinition($"p{thisMr.Parameters.Count}", attr, parameterTypeRef);
+            thisMr.Parameters.Add(pd);
+            return pd;
+        }
+        /// <summary>
         /// Adds otherMd parameters to thisMR and returns added parameters.
         /// </summary>
         public static List<ParameterDefinition> CreateParameters(this MethodReference thisMr, CodegenSession session, MethodDefinition otherMd)

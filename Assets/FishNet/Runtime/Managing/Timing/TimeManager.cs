@@ -649,7 +649,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void SendPong(NetworkConnection conn, uint clientTick)
         {
-            if (!conn.IsActive || !conn.Authenticated)
+            if (!conn.IsActive || !conn.IsAuthenticated)
                 return;
 
             PooledWriter writer = WriterPool.Retrieve();
@@ -1073,6 +1073,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void SendTimingAdjustment()
         {
+            return;
             //Send every second.
             if (LocalTick % _tickRate == 0)
             {
@@ -1081,7 +1082,7 @@ namespace FishNet.Managing.Timing
                 writer.WritePacketId(PacketId.TimingUpdate);
                 foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)
                 {
-                    if (!item.Authenticated)
+                    if (!item.IsAuthenticated)
                         continue;
                     item.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
                 }
@@ -1112,16 +1113,18 @@ namespace FishNet.Managing.Timing
             if (!_timing.GetTickDifference(lastPacketTick, LocalTick, out long tickDifference))
                 return;
 
-            //double firstDelta = _adjustedTickDelta;
+            //Maximum difference allowed before resetting values.
+            const int maximumDifference = 4;
+
+            TryRecalculateTick();
+
             //Pefect!
             if (tickDifference == 0)
             { }
             //Difference is extreme, reset to default timings. Client probably had an issue.
-            else if (Mathf.Abs(tickDifference) > 5)
+            else if (Mathf.Abs(tickDifference) > maximumDifference)
             {
                 _adjustedTickDelta = TickDelta;
-                uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
-                Tick = lastPacketTick + rttTicks;
             }
             //Otherwise adjust the delta marginally.
             else
@@ -1134,7 +1137,15 @@ namespace FishNet.Managing.Timing
                 _adjustedTickDelta -= adjustment;
             }
 
-            //Debug.Log($"Difference {tickDifference}. NewDelta {_adjustedTickDelta.ToString("0.000000")}. OldDelta {firstDelta.ToString("0.000000")}. TargetDelta {TickDelta.ToString("0.000000")}");
+            //Recalculates Tick value if it exceeds maximum difference.
+            void TryRecalculateTick()
+            {
+                uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
+                uint newValue = lastPacketTick + rttTicks;
+                long difference = (long)Mathf.Abs((long)Tick - (long)newValue);
+                if (difference > maximumDifference)
+                    Tick = newValue;
+            }
         }
         #endregion
 

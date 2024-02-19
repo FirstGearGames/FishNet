@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using static FishNet.Managing.Predicting.PredictionManager;
 using UnityScene = UnityEngine.SceneManagement.Scene;
 
 
@@ -59,6 +60,19 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         public event Action<uint, PhysicsScene, PhysicsScene2D> OnPostReplicateReplay;
 #else
+        /// <summary>
+        /// Called before Physics SyncTransforms are run after a reconcile.
+        /// This will only invoke if physics are set to TimeManager, within the TimeManager inspector.
+        /// </summary>
+        public event PrePhysicsSyncTransformDel OnPrePhysicsTransformSync;
+        public delegate void PrePhysicsSyncTransformDel(uint clientTick, uint serverTick);
+        /// <summary>
+        /// Called after Physics SyncTransforms are run after a reconcile.
+        /// This will only invoke if physics are set to TimeManager, within the TimeManager inspector.
+        /// </summary>
+        public event PostPhysicsSyncTransformDel OnPostPhysicsTransformSync;
+        public delegate void PostPhysicsSyncTransformDel(uint clientTick, uint serverTick);
+
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
         /// </summary>
@@ -236,9 +250,9 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         /// <returns></returns>
         internal byte GetReservedObjectIds() => _reservedObjectIds;
-#endregion
+        #endregion
 
-#region Private.
+        #region Private.
 #if !PREDICTION_V2
         /// <summary>
         /// Number of active predicted rigidbodies.
@@ -274,9 +288,9 @@ namespace FishNet.Managing.Predicting
         /// NetworkManager used with this.
         /// </summary>
         private NetworkManager _networkManager;
-#endregion
+        #endregion
 
-#region Const.
+        #region Const.
         /// <summary>
         /// Minimum number of past inputs which can be sent.
         /// </summary>
@@ -293,7 +307,7 @@ namespace FishNet.Managing.Predicting
         /// Maxmimum amount of replicate queue size.
         /// </summary>
         private const byte MAXIMUM_REPLICATE_QUEUE_SIZE = byte.MaxValue;
-#endregion
+        #endregion
 
 #if !PREDICTION_V2
         private void OnEnable()
@@ -506,7 +520,16 @@ namespace FishNet.Managing.Predicting
                 return;
 
             uint estimatedLastRemoteTick = _networkManager.TimeManager.LastPacketTick.Value();
-            
+            //NOTESSTART
+            /* Don't run a reconcile unless it's possible for ticks queued
+             * that tick to be run already. Otherwise you are not replaying inputs
+             * at all, just snapping to corrections. This means states which arrive late or out of order
+             * will be ignored since they're before the reconcile, which means important actions
+             * could have gone missed.
+             * 
+             * A system which synchronized all current states rather than what's only needed to correct
+             * the inputs would likely solve this. */
+            //NOTESEND
             if (_reconcileStates.Peek().ClientTick >= (_networkManager.TimeManager.LocalTick - QueuedInputs - 2))
                 return;
 
@@ -566,8 +589,10 @@ namespace FishNet.Managing.Predicting
 
                 if (timeManagerPhysics)
                 {
+                    OnPrePhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
                     Physics.SyncTransforms();
                     Physics2D.SyncTransforms();
+                    OnPostPhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
                 }
                 int replays = 0;
                 //Replays.
@@ -591,7 +616,7 @@ namespace FishNet.Managing.Predicting
                  * client from running 1 local tick into the future
                  * since the OnTick has not run yet. */
                 while (ClientReplayTick < (localTick - QueuedInputs - 1))
-                {          
+                {
                     OnPreReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
                     OnReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
                     if (timeManagerPhysics)
@@ -649,7 +674,7 @@ namespace FishNet.Managing.Predicting
                 else
                 {
                     lastReplicateTick = (nc.PacketTick.Value() + QueuedInputs);
-                }
+                }                
 
                 foreach (PooledWriter writer in nc.PredictionStateWriters)
                 {

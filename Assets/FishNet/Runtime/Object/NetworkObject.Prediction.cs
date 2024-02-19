@@ -116,7 +116,7 @@ namespace FishNet.Object
         {
             if (!_enablePrediction)
                 return;
-            
+
             _tickSmoother?.Update();
         }
 
@@ -228,7 +228,7 @@ namespace FishNet.Object
         {
             uint replayTick = (IsOwner) ? clientTick : serverTick;
             for (int i = 0; i < _predictionBehaviours.Count; i++)
-                _predictionBehaviours[i].Replicate_Replay_Start(replayTick+1);
+                _predictionBehaviours[i].Replicate_Replay_Start(replayTick + 1);
         }
 
         ///// <summary>
@@ -376,7 +376,8 @@ namespace FishNet.Object
                 LastUnorderedReplicateTick = value;
 
             ReplicateTick.Update(NetworkManager.TimeManager, value, EstimatedTick.OldTickOption.Discard);
-            Owner.ReplicateTick.Update(NetworkManager.TimeManager, value, EstimatedTick.OldTickOption.Discard);
+            if (Owner.IsValid)
+                Owner.ReplicateTick.Update(NetworkManager.TimeManager, value, EstimatedTick.OldTickOption.Discard);
         }
 
 

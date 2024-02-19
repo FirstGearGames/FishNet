@@ -727,6 +727,7 @@ namespace FishNet.Managing.Scened
         /// <param name="sceneLoadData">Data about which scenes to load.</param>
         public void LoadConnectionScenes(NetworkConnection conn, SceneLoadData sceneLoadData)
         {
+            //This cannot use cache because the array will persist for many frames after this method completion.
             LoadConnectionScenes(new NetworkConnection[] { conn }, sceneLoadData);
         }
         /// <summary>
@@ -1271,16 +1272,17 @@ namespace FishNet.Managing.Scened
                     if (data.ScopeType == SceneScopeType.Global)
                     {
                         NetworkConnection[] conns = _serverManager.Clients.Values.ToArray();
-                        AddPendingLoad(conns);
+                        AddPendingLoad(conns, conns.Length);
                         _serverManager.Broadcast(msg, true);
                     }
                     //If connections scope then only send to connections.
                     else if (data.ScopeType == SceneScopeType.Connections)
                     {
-                        AddPendingLoad(data.Connections);
+                        AddPendingLoad(data.Connections, data.Connections.Length);
                         for (int i = 0; i < data.Connections.Length; i++)
                         {
-                            if (data.Connections[i].Authenticated)
+                            NetworkConnection c = data.Connections[i];
+                            if (c.IsValid() && c.IsAuthenticated)
                                 data.Connections[i].Broadcast(msg, true);
                         }
                     }
@@ -1367,6 +1369,7 @@ namespace FishNet.Managing.Scened
         /// <param name="sceneUnloadData">Data about which scenes to unload.</param>
         public void UnloadConnectionScenes(NetworkConnection connection, SceneUnloadData sceneUnloadData)
         {
+            //This cannot use cache because the array will persist for many frames after this method completion.
             UnloadConnectionScenes(new NetworkConnection[] { connection }, sceneUnloadData);
         }
         /// <summary>
@@ -1545,7 +1548,9 @@ namespace FishNet.Managing.Scened
                     {
                         for (int i = 0; i < data.Connections.Length; i++)
                         {
-                            if (data.Connections[i] != null)
+                            NetworkConnection conn = data.Connections[i];
+                            //Would not be null from internals, but users might incorrectly pass null in.
+                            if (conn.IsValid())
                                 data.Connections[i].Broadcast(msg, true);
                         }
                     }
@@ -1693,6 +1698,9 @@ namespace FishNet.Managing.Scened
         /// <param name="scene">Scene to add the connection to.</param>
         public void AddConnectionToScene(NetworkConnection conn, Scene scene)
         {
+            if (!conn.IsValid())
+                return;
+
             HashSet<NetworkConnection> hs;
             //Scene doesn't have any connections yet.
             bool inSceneConnections = SceneConnections.TryGetValueIL2CPP(scene, out hs);
@@ -1742,6 +1750,9 @@ namespace FishNet.Managing.Scened
                 //Remove every connection from the scene.
                 foreach (NetworkConnection c in conns)
                 {
+                    if (!c.IsValid())
+                        continue;
+
                     bool removed = hs.Remove(c);
                     if (removed)
                     {
@@ -1790,6 +1801,9 @@ namespace FishNet.Managing.Scened
             //Remove every connection from the scene.
             foreach (NetworkConnection c in conns)
             {
+                if (!c.IsValid())
+                    continue;
+
                 bool removed = hs.Remove(c);
                 if (removed)
                 {
@@ -2124,12 +2138,18 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private void AddPendingLoad(NetworkConnection conn)
         {
-            AddPendingLoad(new NetworkConnection[] { conn });
+            NetworkConnection[] conns = CollectionCaches<NetworkConnection>.RetrieveArray();
+            if (conns.Length == 0)
+                conns = new NetworkConnection[1];
+            conns[0] = conn;
+
+            AddPendingLoad(conns, 1);
+            CollectionCaches<NetworkConnection>.Store(conns, 1);
         }
         /// <summary>
         /// Adds a pending load for a connection.
         /// </summary>
-        private void AddPendingLoad(NetworkConnection[] conns)
+        private void AddPendingLoad(NetworkConnection[] conns, int count)
         {
             foreach (NetworkConnection c in conns)
             {
@@ -2137,7 +2157,7 @@ namespace FishNet.Managing.Scened
                  * but perhaps disconnect happened as scene was loading on server
                 * therefor it cannot be sent to the client. 
                 * Also only authenticated clients can load scenes. */
-                if (!c.IsActive || !c.Authenticated)
+                if (!c.IsActive || !c.IsAuthenticated)
                     continue;
 
                 if (_pendingClientSceneChanges.TryGetValue(c, out int result))

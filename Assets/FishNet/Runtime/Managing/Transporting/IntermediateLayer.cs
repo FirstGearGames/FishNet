@@ -30,7 +30,10 @@ namespace FishNet.Managing.Transporting
         /// <returns>Modified data.</returns>
         public abstract ArraySegment<byte> HandleOutgoing(ArraySegment<byte> src, bool toServer);
 
-        internal void InitializeOnce(TransportManager manager) => TransportManager = manager;
+        /// <summary>
+        /// Initializes this IntermediateLayer for use.
+        /// </summary>
+        public virtual void InitializeOnce(TransportManager manager) => TransportManager = manager;
     }
 
 }

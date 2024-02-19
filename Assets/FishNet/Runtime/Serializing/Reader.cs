@@ -1085,7 +1085,17 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
-        /// Writes a NetworkConnection.
+        /// Reads a LayerMask.
+        /// </summary>
+        /// <returns></returns>
+        public LayerMask ReadLayerMask()
+        {
+            int layerValue = ReadInt32();
+            return (LayerMask)layerValue;
+        }
+
+        /// <summary>
+        /// Reads a NetworkConnection.
         /// </summary>
         /// <param name="conn"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1173,7 +1183,7 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
-        /// Writes a state update packet.
+        /// Reads a state update packet.
         /// </summary>
         /// <param name="tick"></param>
         [NotSerializer]

@@ -133,15 +133,24 @@ namespace FishNet.Object
         }
 
         /// <summary>
-        /// Invokes OnOwnership callbacks.
+        /// Invokes OnOwnership callbacks when ownership changes.
+        /// This is not to be called when assigning ownership during a spawn message.
         /// </summary>
-        /// <param name="prevOwner"></param>
-        private void InvokeOwnership(NetworkConnection prevOwner, bool asServer)
+        private void InvokeOwnershipChange(NetworkConnection prevOwner, bool asServer)
         {
             if (asServer)
             {
+#if PREDICTION_V2
+                ResetReplicateTick();
+#endif
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnOwnershipServer_Internal(prevOwner);
+                //Also write owner syncTypes if there is an owner.
+                if (Owner.IsValid)
+                {
+                    for (int i = 0; i < NetworkBehaviours.Length; i++)
+                        NetworkBehaviours[i].WriteDirtySyncTypes(true, true, true);
+                }
             }
             else
             {

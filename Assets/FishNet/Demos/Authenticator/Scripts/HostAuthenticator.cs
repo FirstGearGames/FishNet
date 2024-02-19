@@ -80,7 +80,7 @@ namespace FishNet.Authenticating
             /* If client is already authenticated this could be an attack. Connections
              * are removed when a client disconnects so there is no reason they should
              * already be considered authenticated. */
-            if (conn.Authenticated)
+            if (conn.IsAuthenticated)
             {
                 conn.Disconnect(true);
                 return;

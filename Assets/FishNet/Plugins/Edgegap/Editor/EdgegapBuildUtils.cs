@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -101,7 +102,7 @@ namespace Edgegap
                     onStatusUpdate(msg);
                 });
 
-            if(realErrorMessage != null)
+            if (realErrorMessage != null)
             {
                 throw new Exception(realErrorMessage);
             }
@@ -296,3 +297,4 @@ ENTRYPOINT [ ""/root/build/ServerBuild"", ""-batchmode"", ""-nographics""]
 
     }
 }
+#endif

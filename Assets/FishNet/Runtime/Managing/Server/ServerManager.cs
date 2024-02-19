@@ -699,7 +699,7 @@ namespace FishNet.Managing.Server
                  * then disconnect client. If a broadcast then process
                  * normally; client may still become disconnected if the broadcast
                  * does not allow to be called while not authenticated. */
-                if (!conn.Authenticated && packetId != PacketId.Broadcast)
+                if (!conn.IsAuthenticated && packetId != PacketId.Broadcast)
                 {
                     conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a Broadcast without being authenticated. Connection will be kicked immediately.");
                     return;
@@ -843,7 +843,7 @@ namespace FishNet.Managing.Server
                 };
                 foreach (NetworkConnection c in Clients.Values)
                 {
-                    if (c.Authenticated)
+                    if (c.IsAuthenticated)
                         Broadcast(c, changeMsg);
                 }
 

@@ -945,8 +945,8 @@ namespace FishNet.Object
             }
 
             //After changing owners invoke callbacks.
-            InvokeOwnership(prevOwner, asServer);
-
+            InvokeOwnershipChange(prevOwner, asServer);
+             
             //If asServer send updates to clients as needed.
             if (asServer)
             {

@@ -31,7 +31,7 @@ namespace FishNet.PredictionV2
             public float Vertical;
             public Vector3 OtherImpulseForces;
             public MoveData(bool jump, float horizontal, float vertical, Vector3 otherImpulseForces)
-            {
+            { 
                 Jump = jump;
                 Horizontal = horizontal;
                 Vertical = vertical;
