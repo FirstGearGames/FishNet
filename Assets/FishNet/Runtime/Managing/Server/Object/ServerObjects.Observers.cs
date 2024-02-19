@@ -352,7 +352,6 @@ namespace FishNet.Managing.Server
 
             foreach (NetworkConnection nc in conns)
             {
-                _writer.Reset();
                 nobCache.Clear();
 
                 foreach (NetworkObject nob in nobs)
@@ -363,6 +362,7 @@ namespace FishNet.Managing.Server
                 {
                     NetworkManager.TransportManager.SendToClient(
                         (byte)Channel.Reliable, _writer.GetArraySegment(), nc);
+                    _writer.Reset();
 
                     foreach (NetworkObject n in nobCache)
                         n.OnSpawnServer(nc);
@@ -436,7 +436,6 @@ namespace FishNet.Managing.Server
             int connsCount = conns.Count;
             for (int i = 0; i < connsCount; i++)
             {
-                _writer.Reset();
                 nobCache.Clear();
 
                 nc = conns[i];
@@ -449,6 +448,7 @@ namespace FishNet.Managing.Server
                 {
                     NetworkManager.TransportManager.SendToClient(
                         (byte)Channel.Reliable, _writer.GetArraySegment(), nc);
+                    _writer.Reset();
 
                     foreach (NetworkObject n in nobCache)
                         n.OnSpawnServer(nc);

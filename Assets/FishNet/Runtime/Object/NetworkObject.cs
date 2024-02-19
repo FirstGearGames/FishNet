@@ -804,6 +804,19 @@ namespace FishNet.Object
         /// </summary>
         public void ResetState()
         {
+            //Was not deinitialized. ResetState should never call before deinitialization.
+            if (!IsDeinitializing)
+            {
+                string err = $"NetworkObject {this.ToString()} is being reset prior to calling deinitialize. To prevent future errors this object will be destroyed.";
+                if (NetworkManager == null)
+                    Debug.LogError(err);
+                else
+                    NetworkManager.LogError(err);
+
+                Destroy(gameObject);
+                return;
+            }
+
             int count = NetworkBehaviours.Length;
             for (int i = 0; i < count; i++)
                 NetworkBehaviours[i].ResetState();

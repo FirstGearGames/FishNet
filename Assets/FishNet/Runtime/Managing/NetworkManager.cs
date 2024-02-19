@@ -615,6 +615,23 @@ namespace FishNet.Managing
         /// <param name="asServer">True to store for the server.</param>
         public void StorePooledInstantiated(NetworkObject instantiated, bool asServer)
         {
+            /* Should not be pooling an object which
+             * has not been despawned yet. */
+            if (instantiated.IsSpawned)
+            {
+                LogWarning($"NetworkObject {instantiated.ToString()} cannot be stored because it is still spawned. The object will be destroyed instead.");
+                Destroy(instantiated);
+                return;
+            }
+            /* Nested networkObjects cannot be stored
+             * because they are a part of their parent nob.
+             * The parent must be stored instead. */
+            else if (instantiated.IsNested)
+            {
+                Log($"NetworkObject {instantiated.ToString()} cannot be stored because it is a nested prefab.");
+                return;
+            }
+
             _objectPool.StoreObject(instantiated, asServer);
         }
         /// <summary>
