@@ -3,17 +3,47 @@ using System;
 
 #if UNITY_EDITOR
 using UnityEditor;
-  
+
 namespace Newtonsoft.Json
-{ 
+{
     public static class FallbackDisplayer
     {
+        private const string WARN_TIME_NAME = "EdgegapWarnTime";
+
+        internal static void ResetWarnTime()
+        {
+            EditorPrefs.SetString(WARN_TIME_NAME, DateTime.Now.ToBinary().ToString());
+        }
 
 
         [InitializeOnLoadMethod]
         private static void Initialize()
-        {
-                UnityEngine.Debug.LogWarning($"Edgegap requires Json.NET to be imported to function. To import Json.NET navigate to Window -> Package Manager -> Click the + symbol and choose 'Add package by name' -> com.unity.nuget.newtonsoft-json -> Leave version blank and click Add.");
+        {            
+            string dtStr = EditorPrefs.GetString(WARN_TIME_NAME, string.Empty);
+            //Somehow got cleared. Reset.
+            if (string.IsNullOrWhiteSpace(dtStr))
+            {
+                ResetWarnTime();
+            }
+            else
+            {
+                long binary;
+                //Failed to parse.
+                if (!long.TryParse(dtStr, out binary))
+                {
+                    ResetWarnTime();
+                }
+                else
+                {
+                    //Not enough time passed.
+                    DateTime dt = DateTime.FromBinary(binary);
+                    if ((DateTime.Now - dt).TotalMinutes < 30)
+                        return;
+                }
+
+            }
+
+            UnityEngine.Debug.LogWarning($"Edgegap requires Json.NET to be imported to function. To import Json.NET navigate to Window -> Package Manager -> Click the + symbol and choose 'Add package by name' -> com.unity.nuget.newtonsoft-json -> Leave version blank and click Add. If you are not currently using Edgegap you may ignore this message.");
         }
     }
 }

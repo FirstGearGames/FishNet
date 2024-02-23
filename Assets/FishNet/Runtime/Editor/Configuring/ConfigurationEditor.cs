@@ -140,6 +140,12 @@ namespace FishNet.Editing
                 return;
             }
 #endif
+            if (ApplicationState.IsPlaying())
+            {
+                Debug.Log($"SceneIds cannot be rebuilt while in play mode.");
+                return;
+            }
+
             int generatedCount = 0;
             int processedScenes = 0;
             for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -153,7 +159,7 @@ namespace FishNet.Editing
 
                 processedScenes++;
                 List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-                Scenes.GetSceneNetworkObjects(s, false, ref nobs);
+                Scenes.GetSceneNetworkObjects(s, false, false, ref nobs);
                 int nobCount = nobs.Count;
                 for (int z = 0; z < nobCount; z++)
                 {
@@ -225,7 +231,7 @@ namespace FishNet.Editing
                 Scene s = SceneManager.GetSceneAt(i);
 
                 List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-                Scenes.GetSceneNetworkObjects(s, false, ref nobs);
+                Scenes.GetSceneNetworkObjects(s, false, false, ref nobs);
                 int nobsCount = nobs.Count;
                 for (int z = 0; z < nobsCount; z++)
                 {

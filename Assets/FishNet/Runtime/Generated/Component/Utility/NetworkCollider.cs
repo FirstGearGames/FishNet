@@ -408,8 +408,8 @@ public abstract class NetworkCollider : NetworkBehaviour
     /// <returns>Number of colliders hit.</returns>
     private int GetSphereColliderHits(SphereCollider sphereCollider, int layerMask)
     {
-        float scaledRadius = (sphereCollider.radius * transform.lossyScale.magnitude);
-        return Physics.OverlapSphereNonAlloc(sphereCollider.bounds.center, scaledRadius, _hits, layerMask);
+        sphereCollider.GetSphereCastParams(out Vector3 center, out float radius);
+        return Physics.OverlapSphereNonAlloc(center, radius, _hits, layerMask);
     }
 
     /// <summary>
@@ -441,10 +441,8 @@ public abstract class NetworkCollider : NetworkBehaviour
             return 0;
         }
 
-        Vector3 start = (center + offset);
-        Vector3 end = (center - offset);
-        float scaledRadius = (capsuleCollider.radius * transform.lossyScale.magnitude);
-        return Physics.OverlapCapsuleNonAlloc(start, end, scaledRadius, _hits, layerMask);
+        capsuleCollider.GetCapsuleCastParams(out Vector3 start, out Vector3 end, out float radius);
+        return Physics.OverlapCapsuleNonAlloc(start, end, radius, _hits, layerMask);
     }
 
     /// <summary>
@@ -453,8 +451,8 @@ public abstract class NetworkCollider : NetworkBehaviour
     /// <returns>Number of colliders hit.</returns>
     private int GetBoxColliderHits(BoxCollider boxCollider, Quaternion rotation, int layerMask)
     {
-        Bounds bounds = boxCollider.bounds;
-        return Physics.OverlapBoxNonAlloc(bounds.center, bounds.extents, _hits, rotation, layerMask);
+        boxCollider.GetBoxCastParams(out Vector3 center, out Vector3 halfExtents);
+        return Physics.OverlapBoxNonAlloc(center, halfExtents, _hits, rotation, layerMask);
     }
 
     /// <summary>

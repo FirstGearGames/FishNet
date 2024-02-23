@@ -1073,7 +1073,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void SendTimingAdjustment()
         {
-            return;
             //Send every second.
             if (LocalTick % _tickRate == 0)
             {

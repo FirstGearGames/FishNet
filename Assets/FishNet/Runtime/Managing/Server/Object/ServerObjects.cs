@@ -373,7 +373,7 @@ namespace FishNet.Managing.Server
                 return;
 
             List<NetworkObject> sceneNobs = CollectionCaches<NetworkObject>.RetrieveList();
-            Scenes.GetSceneNetworkObjects(s, false, ref sceneNobs);
+            Scenes.GetSceneNetworkObjects(s, false, true, ref sceneNobs);
 
             //Sort the nobs based on initialization order.
             bool initializationOrderChanged = false;

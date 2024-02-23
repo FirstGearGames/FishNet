@@ -2,20 +2,20 @@ namespace FishNet.Object.Synchronizing
 {
     /// <summary>
     /// Which clients may receive synchronization updates.
-    /// </summary>
+    /// </summary> //Remove on V5. Just rename file to ReadPermission.cs, do not remove.
     public enum ReadPermission : byte
     {
         /// <summary>
         /// All observers will receive updates.
         /// </summary>
-        Observers = 1,
+        Observers = 0,
         /// <summary>
         /// Only owner will receive updates.
         /// </summary>
-        OwnerOnly = 2,
+        OwnerOnly = 1,
         /// <summary>
         /// Send to all observers except owner.
         /// </summary>
-        ExcludeOwner = 3,
+        ExcludeOwner = 2,
     }
 }
