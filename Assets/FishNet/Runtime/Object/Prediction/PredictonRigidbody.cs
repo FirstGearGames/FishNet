@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Object.Prediction
-
-#if PREDICTION_V2
 {
+#if PREDICTION_V2
+
     public static class PredictionRigidbodySerializers
     {
         //public static void WritePredictionRigidbody(this Writer w, PredictionRigidbody pr)
