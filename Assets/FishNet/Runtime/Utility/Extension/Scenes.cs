@@ -1,4 +1,5 @@
-﻿using FishNet.Object;
+﻿using FishNet.Managing;
+using FishNet.Object;
 using GameKit.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,7 +9,7 @@ namespace FishNet.Utility.Extension
 {
 
     public static class Scenes
-    {        
+    {
         /// <summary>
         /// Gets all NetworkObjects in a scene.
         /// </summary>
@@ -16,11 +17,13 @@ namespace FishNet.Utility.Extension
         /// <param name="firstOnly">True to only return the first NetworkObject within an object chain. False will return nested NetworkObjects.</param>
         /// <param name="cache">ListCache of found NetworkObjects.</param>
         /// <returns></returns>
-        public static void GetSceneNetworkObjects(Scene s, bool firstOnly, ref List<NetworkObject> result)
+        public static void GetSceneNetworkObjects(Scene s, bool firstOnly, bool errorOnDuplicates, ref List<NetworkObject> result)
         {
             List<NetworkObject> nobCacheA = CollectionCaches<NetworkObject>.RetrieveList();
             List<NetworkObject> nobCacheB = CollectionCaches<NetworkObject>.RetrieveList();
             List<GameObject> gameObjectCache = CollectionCaches<GameObject>.RetrieveList();
+            Dictionary<ulong, NetworkObject> sceneIds = CollectionCaches<ulong, NetworkObject>.RetrieveDictionary();
+
             //Iterate all root objects for the scene.
             s.GetRootGameObjects(gameObjectCache);
             foreach (GameObject go in gameObjectCache)
@@ -42,20 +45,48 @@ namespace FishNet.Utility.Extension
                         {
                             nob.GetComponentsInParent<NetworkObject>(true, nobCacheB);
                             //No extra nobs, only this one.
-                            if (nobCacheB.Count == 1)
+                            if (nobCacheB.Count == 1 && !TryDisplayDuplicateError(nob))
                                 result.Add(nob);
                         }
                     }
                     //Not first only, add them all.
                     else
                     {
-                        result.AddRange(nobCacheA);
+                        foreach (NetworkObject item in nobCacheA)
+                        {
+                            if (!TryDisplayDuplicateError(item))
+                                result.Add(item);
+                        }
                     }
 
                 }
             }
-        }
 
+            CollectionCaches<ulong, NetworkObject>.Store(sceneIds);
+
+            bool TryDisplayDuplicateError(NetworkObject nob)
+            {
+                if (!errorOnDuplicates)
+                    return false;
+                if (!nob.IsSceneObject)
+                    return false;
+
+                ulong id = nob.SceneId;
+                //There is a duplicate.
+                if (sceneIds.TryGetValue(id, out NetworkObject originalNob))
+                {
+                    string err = $"Object {nob.name} and {originalNob.name} in scene {nob.gameObject.scene.name} have the same sceneId of {id}. This will result in spawning errors. Exit play mode and use the Fish-Networking menu to rebuild sceneIds for scene {nob.gameObject.scene.name}.";
+                    NetworkManager.StaticLogError(err);
+                    return true;
+                }
+                else
+                {
+                    sceneIds[id] = nob;
+                    return false;
+                }
+            }
+
+        }
     }
 
 }

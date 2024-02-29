@@ -131,12 +131,12 @@ namespace FishNet.Editing
 
                 processedScenes++;
                 List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-                Scenes.GetSceneNetworkObjects(s, false, ref nobs);
+                Scenes.GetSceneNetworkObjects(s, false, false, ref nobs);
                 int nobCount = nobs.Count;
                 for (int z = 0; z < nobCount; z++)
                 {
                     NetworkObject nob = nobs[z];
-                    nob.TryCreateSceneID();
+                    nob.TryCreateSceneID(nobs);
                     EditorUtility.SetDirty(nob);
                 }
                 generatedCount += nobCount;
@@ -203,12 +203,12 @@ namespace FishNet.Editing
                 Scene s = SceneManager.GetSceneAt(i);
 
                 List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-                Scenes.GetSceneNetworkObjects(s, false, ref nobs);
+                Scenes.GetSceneNetworkObjects(s, false, false, ref nobs);
                 int nobsCount = nobs.Count;
                 for (int z = 0; z < nobsCount; z++)
                 {
                     NetworkObject nob = nobs[z];
-                    nob.TryCreateSceneID();
+                    nob.TryCreateSceneID(nobs);
                     EditorUtility.SetDirty(nob);
                 }
                 for (int z = 0; z < nobsCount; z++)

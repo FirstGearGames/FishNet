@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System;
 using GameKit.Utilities;
+using System.Collections.Generic;
+using FishNet.Utility.Extension;
 #if UNITY_EDITOR
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -66,7 +68,7 @@ namespace FishNet.Object
         /// <summary>
         /// Tries to generate a SceneId.
         /// </summary>
-        internal void TryCreateSceneID()
+        internal void TryCreateSceneID(List<NetworkObject> sceneNobs)
         {
             if (Application.isPlaying)
                 return;
@@ -100,7 +102,7 @@ namespace FishNet.Object
                 scenePathHash = gameObject.scene.path.ToLower().GetStableHashU32();
                 sceneId = SceneId;
                 //Not a valid sceneId or is a duplicate. 
-                if (scenePathHash != _scenePathHash || SceneId == 0 || IsDuplicateSceneId(SceneId))
+                if (scenePathHash != _scenePathHash || SceneId == 0 || IsDuplicateSceneId(SceneId, sceneNobs))
                 {
                     /* If a scene has not been opened since an id has been
                      * generated then it will not be serialized in editor. The id
@@ -113,7 +115,7 @@ namespace FishNet.Object
 
                     ulong shiftedHash = (ulong)scenePathHash << 32;
                     ulong randomId = 0;
-                    while (randomId == 0 || IsDuplicateSceneId(randomId))
+                    while (randomId == 0 || IsDuplicateSceneId(randomId, sceneNobs))
                     {
                         uint next = (uint)(rnd.Next(int.MinValue, int.MaxValue) + int.MaxValue);
                         /* Since the collection is lost when a scene loads the it's possible to
@@ -174,25 +176,32 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        private bool IsDuplicateSceneId(ulong id)
+        private bool IsDuplicateSceneId(ulong id, List<NetworkObject> sceneNobs)
         {
-            NetworkObject[] nobs = GameObject.FindObjectsOfType<NetworkObject>();
-            foreach (NetworkObject n in nobs)
+            if (sceneNobs == null)
+            {
+                //This is not a runtime operation so allocations are fine.
+                sceneNobs = new List<NetworkObject>();
+                Scenes.GetSceneNetworkObjects(gameObject.scene, false, false, ref sceneNobs);
+            }
+
+            foreach (NetworkObject n in sceneNobs)
             {
                 if (n != null && n != this && n.SceneId == id)
                     return true;
             }
+
             //If here all checks pass.
             return false;
         }
 
         private void ReferenceIds_OnValidate()
         {
-            TryCreateSceneID();
+            TryCreateSceneID(null);
         }
         private void ReferenceIds_Reset()
         {
-            TryCreateSceneID();
+            TryCreateSceneID(null);
         }
 #endif
     }
