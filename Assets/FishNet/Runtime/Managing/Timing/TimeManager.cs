@@ -190,7 +190,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public float ClientUptime { get; private set; }
         #endregion
-
+         
         #region Serialized.
         /// <summary>
         /// When to invoke OnUpdate and other Unity callbacks relayed by the TimeManager.
@@ -717,7 +717,7 @@ namespace FishNet.Managing.Timing
                     //Tell predicted objecs to reconcile before OnTick.
                     NetworkManager.PredictionManager.ReconcileToStates();
 #endif
-                    OnTick?.Invoke();
+                    OnTick?.Invoke(); 
 
                     if (PhysicsMode == PhysicsMode.TimeManager)
                     {

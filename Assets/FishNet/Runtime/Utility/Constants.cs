@@ -7,6 +7,9 @@
         public const string DEMOS_ASSEMBLY_NAME = "FishNet.Demos";
         public const string TEST_ASSEMBLY_NAME = "FishNet.Test";
         public const string RUNTIME_ASSEMBLY_NAME = "FishNet.Runtime";
+
+        public const string GENERATED_WRITER_PREFIX = "GWrite___";
+        public const string GENERATED_READER_PREFIX = "GRead___";
     }
 
 }

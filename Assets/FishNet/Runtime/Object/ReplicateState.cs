@@ -13,41 +13,55 @@ namespace FishNet.Object
         /// </summary>
         Invalid = 0,
         /// <summary>
-        /// Data had been received for the current tick.
-        /// This occurs when a replicate is called on owner, or when receiving forwarded inputs.
+        /// Value is seen on server, and clients when they own the object.
+        /// Data has been received on the object for the tick.
         /// </summary>
         CurrentCreated = 1,
         /// <summary>
-        /// Data was not received for the current tick.
-        /// Either no data was available to forward or their may be latency concerns resulting in late packets.
+        /// Value is only seen on server when they do not own the object.
+        /// Server does not have data on this non-owned object for the tick but expected to, such as a state should have arrived but did not.
         /// </summary>
+        [System.Obsolete("This is currently not used but may be in a later release. Please read summary for value.")]
         CurrentPredicted = 2,
         /// <summary>
-        /// Data was not received for the replayed tick.
-        /// This occurs when a replicate would be replaying past datas, triggered by a reconcile, but there is no user created data for the tick.
+        /// Value is only seen on clients when they do not own the object.
+        /// Client does not have data for the tick but expected to, such as a state should have arrived but did not.
+        /// Client is currently reconciling.
         /// </summary>
+        [System.Obsolete("This is currently not used but may be in a later release. Please read summary for value.")]
         ReplayedPredicted = 3,
         /// <summary>
-        /// Data was received for the replayed tick.
-        /// This occurs when a replicate would be replaying past datas, triggered by a reconcile, and there is user created data for the tick.
+        /// Value is only seen on clients.
+        /// Client has data on the object for the tick.
+        /// Client is currently reconciling.
         /// </summary>
         ReplayedCreated = 4,
         /// <summary>
-        /// Client has not run the tick locally yet. This can be used to exit replicate early to not process actions, or create actions based on previous datas.
+        /// Value is only seen on clients when they do not own the object.
+        /// Tick is in the future and data cannot yet be known.
+        /// This can be used to exit replicate early to not process actions, or create actions based on previous datas.
         /// </summary>
-        Future = 5,
+        CurrentFuture = 5,
+        /// <summary>
+        /// Value is only seen on clients when they do not own the object.
+        /// Tick is in the future and data cannot yet be known.
+        /// Client is currently reconciling.
+        /// This can be used to exit replicate early to not process actions, or create actions based on previous datas.
+        /// </summary>
+        ReplayedFuture = 6,
     }
 
     public static class ReplicateStateExtensions
     {
         /// <summary>
         /// Returns if value is valid.
+        /// This should never be false.
         /// </summary>
         public static bool IsValid(this ReplicateState value) => (value != ReplicateState.Invalid);
         /// <summary>
         /// Returns if value is replayed.
         /// </summary>
-        public static bool IsReplayed(this ReplicateState value) => (value == ReplicateState.ReplayedPredicted || value == ReplicateState.ReplayedCreated || value == ReplicateState.Future);
+        public static bool IsReplayed(this ReplicateState value) => (value == ReplicateState.ReplayedPredicted || value == ReplicateState.ReplayedCreated || value == ReplicateState.ReplayedFuture);
         /// <summary>
         /// Returns if value is user created.
         /// </summary>
@@ -55,6 +69,10 @@ namespace FishNet.Object
         /// <summary>
         /// Returns if value is predicted.
         /// </summary>
-        public static bool IsPredicted(this ReplicateState value) => (value == ReplicateState.Future || value == ReplicateState.CurrentPredicted || value == ReplicateState.ReplayedPredicted);
+        public static bool IsPredicted(this ReplicateState value) => (value == ReplicateState.ReplayedPredicted);
+        /// <summary>
+        /// Returns if value is in the future.
+        /// </summary>
+        public static bool IsFuture(this ReplicateState value) => (value == ReplicateState.CurrentFuture || value == ReplicateState.ReplayedFuture);
     }
 }

@@ -3,10 +3,9 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities
 {
-
-    public static class ColliderExtensions
+     public static class ColliderExtensions
     {
-        public static void GetBoxCastParams(this BoxCollider boxCollider, out Vector3 center, out Vector3 halfExtents)
+        public static void GetBoxOverlapParams(this BoxCollider boxCollider, out Vector3 center, out Vector3 halfExtents)
         {
             Transform cachedTransform = boxCollider.transform;
 
@@ -98,7 +97,7 @@ namespace GameKit.Dependencies.Utilities
             point2 = new Vector3(x2, y2, z2);
         }
 
-        public static void GetSphereCastParams(this SphereCollider sphereCollider, out Vector3 center, out float radius)
+        public static void GetSphereOverlapParams(this SphereCollider sphereCollider, out Vector3 center, out float radius)
         {
             Transform cachedTransform = sphereCollider.transform;
 
@@ -115,6 +114,48 @@ namespace GameKit.Dependencies.Utilities
             // Two calls of Math.Max are faster than a single Mathf.Max call because Math.Max doesn't allocate memory and doesn't use loops.
 
             radius = sphereCollider.radius * Math.Max(Math.Max(x, y), z);
+        }
+    }
+
+
+    public static class Collider2DExtensions
+    {
+        public static void GetBox2DOverlapParams(this BoxCollider2D boxCollider, out Vector3 center, out Vector3 halfExtents)
+        {
+            Transform cachedTransform = boxCollider.transform;
+
+            // DO NOT USE UNITY'S VECTOR OPERATIONS IN HOT PATHS, UNITY DOESN'T OPTIMISE THEM
+
+            center = cachedTransform.TransformPoint(boxCollider.offset);
+
+            Vector3 lossyScale = cachedTransform.lossyScale;
+
+            Vector3 size = boxCollider.size;
+
+            float x = size.x * 0.5f * lossyScale.x;
+            float y = size.y * 0.5f * lossyScale.y;
+            float z = size.z * 0.5f * lossyScale.z;
+
+            halfExtents = new Vector3(x, y, z);
+        }
+
+        public static void GetCircleOverlapParams(this CircleCollider2D circleCollider, out Vector3 center, out float radius)
+        {
+            Transform cachedTransform = circleCollider.transform;
+            Vector3 offset = new Vector3(circleCollider.offset.x, circleCollider.offset.y, circleCollider.transform.position.z);
+            center = cachedTransform.TransformPoint(offset);
+
+            Vector3 lossyScale = cachedTransform.lossyScale;
+
+            // Use System.Math instead of UnityEngine.Mathf because it's much faster.
+
+            float x = Math.Abs(lossyScale.x);
+            float y = Math.Abs(lossyScale.y);
+            float z = Math.Abs(lossyScale.z);
+
+            // Two calls of Math.Max are faster than a single Mathf.Max call because Math.Max doesn't allocate memory and doesn't use loops.
+
+            radius = circleCollider.radius * Math.Max(Math.Max(x, y), z);
         }
     }
 

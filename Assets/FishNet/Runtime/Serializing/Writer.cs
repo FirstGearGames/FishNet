@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using System.Reflection;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
@@ -25,8 +26,29 @@ namespace FishNet.Serializing
     [APIExclude]
     public static class GenericWriter<T>
     {
-        public static Action<Writer, T> Write { get; set; }
-        public static Action<Writer, T, AutoPackType> WriteAutoPack { get; set; }
+        public static Action<Writer, T> Write { get; private set; }
+        public static Action<Writer, T, AutoPackType> WriteAutoPack { get; private set; }
+        /// <summary>
+        /// True if this type has a custom writer.
+        /// </summary>
+        private static bool _hasCustomSerializer;
+
+        public static void SetWriteUnpacked(Action<Writer, T> value)
+        {
+            /* If a custom serializer has already been set then exit method
+             * to not overwrite serializer. */
+            if (_hasCustomSerializer)
+                return;
+
+            //Set has custom serializer if value being used is not a generated method.
+            _hasCustomSerializer = !(value.Method.Name.StartsWith(UtilityConstants.GENERATED_WRITER_PREFIX));
+            Write = value;
+        }
+
+        public static void SetWriteAutoPacked(Action<Writer, T, AutoPackType> value)
+        {
+            WriteAutoPack = value;
+        }
     }
 
     /// <summary>
@@ -1354,12 +1376,11 @@ namespace FishNet.Serializing
 
 
         /// <summary>
-        /// Writers any supported type.
+        /// Writes any supported type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="value"></param>
         [NotSerializer]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write<T>(T value)
         {
             System.Type type = typeof(T);
@@ -1382,6 +1403,25 @@ namespace FishNet.Serializing
 
             string GetLogMessage() => $"Write method not found for {type.FullName}. Use a supported type or create a custom serializer.";
         }
+
+        /// <summary>
+        /// Writes any supported type assuming there is no AutoPackType.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        [NotSerializer]
+        [MakePublic]
+        internal void WriteUnpacked<T>(T value)
+        {
+            Action<Writer, T> del = GenericWriter<T>.Write;
+            if (del == null)
+                NetworkManager.LogError(GetLogMessage());
+            else
+                del.Invoke(this, value);
+
+            string GetLogMessage() => $"Write method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.";
+        }
+
 
         /// <summary>
         /// Returns if T takes AutoPackType argument.

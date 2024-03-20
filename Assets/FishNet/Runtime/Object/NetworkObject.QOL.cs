@@ -87,6 +87,12 @@ namespace FishNet.Object
         /// True if client nor server are started.
         /// </summary>
         public bool IsOffline => (!IsClientStarted && !IsServerStarted);
+#if PREDICTION_V2
+        /// <summary>
+        /// True if a reconcile is occuring on the PredictionManager. Note the difference between this and IsBehaviourReconciling.
+        /// </summary>
+        public bool IsManagerReconciling => PredictionManager.IsReconciling;
+#endif
         /// <summary>
         /// True if the local client is the owner of this object.
         /// This will only return true if IsClientInitialized is also true. You may check ownership status regardless of client initialized state by using Owner.IsLocalClient.

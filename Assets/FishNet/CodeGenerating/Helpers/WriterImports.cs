@@ -1,4 +1,6 @@
-﻿using FishNet.Object;
+﻿using FishNet.CodeGenerating.Extension;
+using FishNet.CodeGenerating.Helping.Extension;
+using FishNet.Object;
 using FishNet.Serializing;
 using MonoFN.Cecil;
 using System;
@@ -21,10 +23,10 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference Writer_WriteArray_MethodRef;
         public TypeReference AutoPackTypeRef;
 
-        public TypeReference GenericWriterTypeRef;
-        public TypeReference WriterTypeRef;
-        public MethodReference WriteGetSetMethodRef;
-        public MethodReference WriteAutoPackGetSetMethodRef;
+        public TypeReference GenericWriter_TypeRef;
+        public MethodReference GenericWriter_WriteUnpacked_MethodRef;
+        public MethodReference GenericWriter_WriteAutoPacked_MethodRef;
+        public MethodReference Writer_WriteUnpacked_MethodRef;
         #endregion
 
         /// <summary>
@@ -37,15 +39,13 @@ namespace FishNet.CodeGenerating.Helping
             PooledWriter_TypeRef = base.ImportReference(typeof(PooledWriter));
             Writer_TypeRef = base.ImportReference(typeof(Writer));
             AutoPackTypeRef = base.ImportReference(typeof(AutoPackType));
+            GenericWriter_TypeRef = base.ImportReference(typeof(GenericWriter<>));
+            Writer_WriteUnpacked_MethodRef = Writer_TypeRef.CachedResolve(base.Session).GetMethodReference(base.Session, nameof(Writer.WriteUnpacked));
 
-            GenericWriterTypeRef = base.ImportReference(typeof(GenericWriter<>));
-            WriterTypeRef = base.ImportReference(typeof(Writer));
 
-            PropertyInfo writePropertyInfo;
-            writePropertyInfo = typeof(GenericWriter<>).GetProperty(nameof(GenericWriter<int>.Write));
-            WriteGetSetMethodRef = base.ImportReference(writePropertyInfo.GetSetMethod());
-            writePropertyInfo = typeof(GenericWriter<>).GetProperty(nameof(GenericWriter<int>.WriteAutoPack));
-            WriteAutoPackGetSetMethodRef = base.ImportReference(writePropertyInfo.GetSetMethod());
+            TypeDefinition genericWriterTd = GenericWriter_TypeRef.CachedResolve(base.Session);
+            GenericWriter_WriteUnpacked_MethodRef = base.ImportReference(genericWriterTd.GetMethod(nameof(GenericWriter<int>.SetWriteUnpacked)));
+            GenericWriter_WriteAutoPacked_MethodRef = base.ImportReference(genericWriterTd.GetMethod(nameof(GenericWriter<int>.SetWriteAutoPacked)));
 
             //WriterPool.GetWriter
             Type writerPoolType = typeof(WriterPool);

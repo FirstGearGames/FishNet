@@ -1,12 +1,11 @@
 ﻿using FishNet.Managing.Logging;
-using FishNet.Managing.Predicting;
 using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
 
-namespace FishNet.Component.Prediction
+namespace FishNet.Component.Utility
 {
     /// <summary>
     /// Smoothes an object between ticks.

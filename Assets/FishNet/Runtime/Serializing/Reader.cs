@@ -28,8 +28,29 @@ namespace FishNet.Serializing
     [APIExclude]
     public static class GenericReader<T>
     {
-        public static Func<Reader, T> Read { internal get; set; }
-        public static Func<Reader, AutoPackType, T> ReadAutoPack { internal get; set; }
+        public static Func<Reader, T> Read {  get; set; }
+        public static Func<Reader, AutoPackType, T> ReadAutoPack { get; set; }
+        /// <summary>
+        /// True if this type has a custom writer.
+        /// </summary>
+        private static bool _hasCustomSerializer;
+
+        public static void SetReadUnpacked(Func<Reader, T> value)
+        {
+            /* If a custom serializer has already been set then exit method
+             * to not overwrite serializer. */
+            if (_hasCustomSerializer)
+                return;
+
+            //Set has custom serializer if value being used is not a generated method.
+            _hasCustomSerializer = !(value.Method.Name.StartsWith(UtilityConstants.GENERATED_READER_PREFIX));
+            Read = value;
+        }
+   
+        public static void SetReadAutoPacked(Func<Reader, AutoPackType, T> value)
+        {
+            ReadAutoPack = value;
+        }
     }
 
     /// <summary>
@@ -1508,6 +1529,27 @@ namespace FishNet.Serializing
             }
 
             string GetLogMessage() => $"Read method not found for {type.FullName}. Use a supported type or create a custom serializer.";
+        }
+
+        /// <summary>
+        /// Reads any supported type assuming there is no AutoPackType.
+        /// </summary>
+        [NotSerializer]
+        [MakePublic]
+        internal T ReadUnpacked<T>()
+        {
+            Func<Reader, T> del = GenericReader<T>.Read;
+            if (del == null)
+            {
+                NetworkManager.LogError(GetLogMessage());
+                return default;
+            }
+            else
+            {
+                return del.Invoke(this);
+            }
+
+            string GetLogMessage() => $"Read method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.";
         }
 
 

@@ -116,7 +116,7 @@ namespace FishNet.PredictionV2
         [Replicate]
         private void Move(MoveData md, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
         {
-            if (state == ReplicateState.Future)
+            if (state == ReplicateState.CurrentFuture)
                 return;
 
             if (md.Jump)

@@ -225,6 +225,12 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private void CreateReaderOrWriter(ExtensionType extensionType, MethodDefinition methodDef, ref int instructionIndex, TypeReference parameterType)
         {
+            ReaderProcessor rp = base.GetClass<ReaderProcessor>();
+            WriterProcessor wp = base.GetClass<WriterProcessor>();
+            ////If parameterType has user declared do nothing.
+            //if (wp.IsGlobalSerializer(parameterType))
+            //    return;
+
             if (!parameterType.IsGenericParameter && parameterType.CanBeResolved(base.Session))
             {
                 TypeDefinition typeDefinition = parameterType.CachedResolve(base.Session);
@@ -244,8 +250,8 @@ namespace FishNet.CodeGenerating.Processing
 
                 //Find already existing read or write method.
                 MethodReference createdMethodRef = (extensionType == ExtensionType.Write) ?
-                    base.GetClass<WriterProcessor>().GetWriteMethodReference(parameterType) :
-                    base.GetClass<ReaderProcessor>().GetReadMethodReference(parameterType);
+                    wp.GetWriteMethodReference(parameterType) :
+                    rp.GetReadMethodReference(parameterType);
 
                 //If a created method already exist nothing further is required.
                 if (createdMethodRef != null)
@@ -253,14 +259,14 @@ namespace FishNet.CodeGenerating.Processing
                     TryInsertAutoPack(ref instructionIndex);
                     //Replace call to generic with already made serializer.
                     Instruction newInstruction = processor.Create(OpCodes.Call, createdMethodRef);
-                    methodDef.Body.Instructions[instructionIndex] = newInstruction;                    
+                    methodDef.Body.Instructions[instructionIndex] = newInstruction;
                     return;
                 }
                 else
                 {
                     createdMethodRef = (extensionType == ExtensionType.Write) ?
-                        base.GetClass<WriterProcessor>().CreateWriter(parameterType) :
-                        base.GetClass<ReaderProcessor>().CreateReader(parameterType);
+                        wp.CreateWriter(parameterType) :
+                        rp.CreateReader(parameterType);
                 }
 
                 //If method was created.
@@ -327,7 +333,7 @@ namespace FishNet.CodeGenerating.Processing
 #endif
 
 
-            string prefix = (write) ? WriterProcessor.WRITE_PREFIX : ReaderProcessor.READ_PREFIX;
+            string prefix = (write) ? WriterProcessor.CUSTOM_WRITER_PREFIX : ReaderProcessor.CUSTOM_READER_PREFIX;
 
             //Does not contain prefix.
             if (methodDef.Name.Length < prefix.Length || methodDef.Name.Substring(0, prefix.Length) != prefix)

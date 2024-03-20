@@ -11,11 +11,11 @@ using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 namespace FishNet.Component.Prediction
 {
 
-    public abstract class NetworkCollider : NetworkBehaviour
+    public abstract class NetworkCollider2D : NetworkBehaviour
     {
 #if PREDICTION_V2
         #region Types.
-        private struct ColliderData : IResettable
+        private struct Collider2DData : IResettable
         {
             /// <summary>
             /// Tick which the collisions happened.
@@ -24,9 +24,9 @@ namespace FishNet.Component.Prediction
             /// <summary>
             /// Hits for Tick.
             /// </summary>
-            public HashSet<Collider> Hits;
+            public HashSet<Collider2D> Hits;
 
-            public ColliderData(uint tick, HashSet<Collider> hits)
+            public Collider2DData(uint tick, HashSet<Collider2D> hits)
             {
                 Tick = tick;
                 Hits = hits;
@@ -36,7 +36,7 @@ namespace FishNet.Component.Prediction
             public void ResetState()
             {
                 Tick = TimeManagerCls.UNSET_TICK;
-                CollectionCaches<Collider>.StoreAndDefault(ref Hits);
+                CollectionCaches<Collider2D>.StoreAndDefault(ref Hits);
             }
         }
         #endregion
@@ -44,15 +44,15 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Called when another collider enters this collider.
         /// </summary>
-        public event Action<Collider> OnEnter;
+        public event Action<Collider2D> OnEnter;
         /// <summary>
         /// Called when another collider stays in this collider.
         /// </summary>
-        public event Action<Collider> OnStay;
+        public event Action<Collider2D> OnStay;
         /// <summary>
         /// Called when another collider exits this collider.
         /// </summary>
-        public event Action<Collider> OnExit;
+        public event Action<Collider2D> OnExit;
         /// <summary>
         /// True to run collisions for colliders which are triggers, false to run collisions for colliders which are not triggers.
         /// </summary>
@@ -73,15 +73,15 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// The colliders on this object.
         /// </summary>
-        private Collider[] _colliders;
+        private Collider2D[] _colliders;
         /// <summary>
         /// The hits from the last check.
         /// </summary>
-        private Collider[] _hits;
+        private Collider2D[] _hits;
         /// <summary>
         /// The history of collider data.
         /// </summary>
-        private ResettableRingBuffer<ColliderData> _colliderDataHistory;
+        private ResettableRingBuffer<Collider2DData> _colliderDataHistory;
         /// <summary>
         /// True if colliders have been searched for at least once.
         /// We cannot check the null state on _colliders because Unity has a habit of initializing collections on it's own.
@@ -102,16 +102,16 @@ namespace FishNet.Component.Prediction
 
         protected virtual void Awake()
         {
-            _colliderDataHistory = ResettableCollectionCaches<ColliderData>.RetrieveRingBuffer();
-            _hits = CollectionCaches<Collider>.RetrieveArray();
+            _colliderDataHistory = ResettableCollectionCaches<Collider2DData>.RetrieveRingBuffer();
+            _hits = CollectionCaches<Collider2D>.RetrieveArray();
             if (_hits.Length < _maximumSimultaneousHits)
-                _hits = new Collider[_maximumSimultaneousHits];
+                _hits = new Collider2D[_maximumSimultaneousHits];
         }
 
         private void OnDestroy()
         {
-            ResettableCollectionCaches<ColliderData>.StoreAndDefault(ref _colliderDataHistory);
-            CollectionCaches<Collider>.StoreAndDefault(ref _hits, -_hits.Length);
+            ResettableCollectionCaches<Collider2DData>.StoreAndDefault(ref _colliderDataHistory);
+            CollectionCaches<Collider2D>.StoreAndDefault(ref _hits, -_hits.Length);
         }
 
         public override void OnStartNetwork()
@@ -129,12 +129,14 @@ namespace FishNet.Component.Prediction
         public override void OnStartClient()
         {
             //Events only needed by the client.
+            PredictionManager.OnPostPhysicsTransformSync += PredictionManager_OnPostPhysicsTransformSync;
             PredictionManager.OnPostReplicateReplay += PredictionManager_OnPostReplicateReplay;
         }
 
         public override void OnStopClient()
         {
             //Events only needed by the client.
+            PredictionManager.OnPostPhysicsTransformSync -= PredictionManager_OnPostPhysicsTransformSync;
             PredictionManager.OnPostReplicateReplay -= PredictionManager_OnPostReplicateReplay;
 
         }
@@ -144,6 +146,19 @@ namespace FishNet.Component.Prediction
             TimeManager.OnPostPhysicsSimulation -= TimeManager_OnPostPhysicsSimulation;
         }
 
+        /// <summary>
+        /// Called after Physics SyncTransforms are run after a reconcile.
+        /// This will only invoke if physics are set to TimeManager, within the TimeManager inspector.
+        /// </summary>
+        private void PredictionManager_OnPostPhysicsTransformSync(uint clientTick, uint serverTick)
+        {
+            /* This callback will only occur when client only.
+             * SInce this is the case remove histories prior
+             * to clientTick. */
+            if (clientTick > 0)
+                CleanHistory(clientTick - 1);
+            CheckColliders(clientTick, true);
+        }
 
         /// <summary>
         /// When using TimeManager for physics timing, this is called immediately after the physics simulation has occured for the tick.
@@ -208,8 +223,8 @@ namespace FishNet.Component.Prediction
 
             const int INVALID_HISTORY_VALUE = -1;
 
-            HashSet<Collider> current = CollectionCaches<Collider>.RetrieveHashSet();
-            HashSet<Collider> previous = null;
+            HashSet<Collider2D> current = CollectionCaches<Collider2D>.RetrieveHashSet();
+            HashSet<Collider2D> previous = null;
 
             int previousHitsIndex = INVALID_HISTORY_VALUE;
             /* Server only keeps 1 history so
@@ -233,7 +248,7 @@ namespace FishNet.Component.Prediction
                 {
                     if (_colliderDataHistory.Count > 0)
                     {
-                        ColliderData cd = _colliderDataHistory[_colliderDataHistory.Count - 1];
+                        Collider2DData cd = _colliderDataHistory[_colliderDataHistory.Count - 1];
                         /* If the hit tick one before current then it can be used, otherwise
                         * use a new collection for previous. */
                         if (cd.Tick == (tick - 1))
@@ -261,7 +276,7 @@ namespace FishNet.Component.Prediction
             }
 
             // Check each collider for triggers.
-            foreach (Collider col in _colliders)
+            foreach (Collider2D col in _colliders)
             {
                 if (!col.enabled)
                     continue;
@@ -270,19 +285,17 @@ namespace FishNet.Component.Prediction
 
                 //Number of hits from the checks.
                 int hits;
-                if (col is SphereCollider sphereCollider)
-                    hits = GetSphereColliderHits(sphereCollider, _interactableLayers);
-                else if (col is CapsuleCollider capsuleCollider)
-                    hits = GetCapsuleColliderHits(capsuleCollider, _interactableLayers);
-                else if (col is BoxCollider boxCollider)
-                    hits = GetBoxColliderHits(boxCollider, rotation, _interactableLayers);
+                if (col is CircleCollider2D circleCollider)
+                    hits = GetCircleCollider2DHits(circleCollider, _interactableLayers);
+                else if (col is BoxCollider2D boxCollider)
+                    hits = GetBoxCollider2DHits(boxCollider, rotation, _interactableLayers);
                 else
                     hits = 0;
 
                 // Check the hits for triggers.
                 for (int i = 0; i < hits; i++)
                 {
-                    Collider hit = _hits[i];
+                    Collider2D hit = _hits[i];
                     if (hit == null || hit == col)
                         continue;
 
@@ -300,7 +313,7 @@ namespace FishNet.Component.Prediction
             if (previous != null)
             {
                 //Check for stays and exits.
-                foreach (Collider col in previous)
+                foreach (Collider2D col in previous)
                 {
                     //If it was in previous but not current, it has exited.
                     if (!current.Contains(col))
@@ -353,7 +366,7 @@ namespace FishNet.Component.Prediction
                      * correct location. */
                     void AddDataToIndex(int index)
                     {
-                        ColliderData colliderData = new ColliderData(tick, current);
+                        Collider2DData colliderData = new Collider2DData(tick, current);
                         /* If insertIndex is the same tick then replace, otherwise
                          * put in front of. */
                         //Replace.
@@ -372,7 +385,7 @@ namespace FishNet.Component.Prediction
 
                 void AddToEnd()
                 {
-                    ColliderData colliderData = new ColliderData(tick, current);
+                    Collider2DData colliderData = new Collider2DData(tick, current);
                     _colliderDataHistory.Add(colliderData);
                 }
 
@@ -380,7 +393,7 @@ namespace FishNet.Component.Prediction
             /* If not using caching then store results from this run. */
             else
             {
-                CollectionCaches<Collider>.Store(current);
+                CollectionCaches<Collider2D>.Store(current);
             }
 
             //Returns history index for a tick.
@@ -410,36 +423,25 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
-        /// Checks for Sphere collisions.
+        /// Checks for circle collisions.
         /// </summary>
         /// <returns>Number of colliders hit.</returns>
-        private int GetSphereColliderHits(SphereCollider sphereCollider, int layerMask)
+        private int GetCircleCollider2DHits(CircleCollider2D circleCollider, int layerMask)
         {
-            sphereCollider.GetSphereOverlapParams(out Vector3 center, out float radius);
+            circleCollider.GetCircleOverlapParams(out Vector3 center, out float radius);
             radius *= GetSizeMultiplier();
-            return Physics.OverlapSphereNonAlloc(center, radius, _hits, layerMask);
-        }
-
-        /// <summary>
-        /// Checks for Capsule collisions.
-        /// </summary>
-        /// <returns>Number of colliders hit.</returns>
-        private int GetCapsuleColliderHits(CapsuleCollider capsuleCollider, int layerMask)
-        {
-            capsuleCollider.GetCapsuleCastParams(out Vector3 start, out Vector3 end, out float radius);
-            radius *= GetSizeMultiplier();
-            return Physics.OverlapCapsuleNonAlloc(start, end, radius, _hits, layerMask);
+            return Physics2D.OverlapCircleNonAlloc(center, radius, _hits, layerMask);
         }
 
         /// <summary>
         /// Checks for Box collisions.
         /// </summary>
         /// <returns>Number of colliders hit.</returns>
-        private int GetBoxColliderHits(BoxCollider boxCollider, Quaternion rotation, int layerMask)
+        private int GetBoxCollider2DHits(BoxCollider2D boxCollider, Quaternion rotation, int layerMask)
         {
-            boxCollider.GetBoxOverlapParams(out Vector3 center, out Vector3 halfExtents);
+            boxCollider.GetBox2DOverlapParams(out Vector3 center, out Vector3 halfExtents);
             halfExtents *= GetSizeMultiplier();
-            return Physics.OverlapBoxNonAlloc(center, halfExtents, _hits, rotation, layerMask);
+            return Physics2D.OverlapBoxNonAlloc(center, halfExtents, rotation.z, _hits, layerMask);
         }
 
         /// <summary>
@@ -452,7 +454,7 @@ namespace FishNet.Component.Prediction
                 return;
             _collidersFound = true;
 
-            _colliders = GetComponents<Collider>();
+            _colliders = GetComponents<Collider2D>();
         }
 
         /// <summary>
@@ -470,7 +472,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void ClearColliderDataHistory()
         {
-            foreach (ColliderData cd in _colliderDataHistory)
+            foreach (Collider2DData cd in _colliderDataHistory)
                 cd.ResetState();
             _colliderDataHistory.Clear();
         }

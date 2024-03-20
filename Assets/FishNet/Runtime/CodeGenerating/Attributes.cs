@@ -25,4 +25,9 @@ namespace FishNet.CodeGenerating
     /// Method is a comparer for a value type.
     /// </summary>
     public class CustomComparerAttribute : Attribute { }
+    /// <summary>
+    /// Used on a type when you want a custom serializer to be global across all assemblies.
+    /// </summary>
+    [AttributeUsage((AttributeTargets.Class | AttributeTargets.Struct), Inherited = true, AllowMultiple = false)]
+    public class UseGlobalCustomSerializerAttribute : Attribute { }
 }

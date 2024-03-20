@@ -10,27 +10,45 @@ namespace FishNet.Object.Prediction
 
     public static class PredictionRigidbodySerializers
     {
-        //public static void WritePredictionRigidbody(this Writer w, PredictionRigidbody pr)
-        //{
-        //    Debug.Log("Writing ");
-        //    w.WriteList<PredictionRigidbody.ForceData>(pr.PendingForces);
-        //}
+        public static void WriteForceData(this Writer w, PredictionRigidbody.ForceData value)
+        {
+            w.WriteVector3(value.Force);
+            w.Write(value.Mode);
+            w.WriteBoolean(value.IsVelocity);
+        }
 
-        //public static PredictionRigidbody ReadPredictionRigidbody(this Reader r)
-        //{
-        //    List<PredictionRigidbody.ForceData> lst = CollectionCaches<PredictionRigidbody.ForceData>.RetrieveList();
-        //    r.ReadList(ref lst);
-        //    PredictionRigidbody pr = ResettableObjectCaches<PredictionRigidbody>.Retrieve();
-        //    pr.PendingForces = lst;
-        //    Debug.Log($"{lst == null}, {pr.PendingForces == null}");
-        //    return pr;
-        //}
+        public static PredictionRigidbody.ForceData ReadForceData(this Reader r)
+        {
+            PredictionRigidbody.ForceData fd = new PredictionRigidbody.ForceData();
+            fd.Force = r.ReadVector3();
+            fd.Mode = r.Read<ForceMode>();
+            fd.IsVelocity = r.ReadBoolean();
+            return fd;
+        }
+
+        public static void WritePredictionRigidbody(this Writer w, PredictionRigidbody pr)
+        {
+            w.WriteList<PredictionRigidbody.ForceData>(pr.GetPendingForces());
+        }
+
+        public static PredictionRigidbody ReadPredictionRigidbody(this Reader r)
+        {
+            List<PredictionRigidbody.ForceData> lst = CollectionCaches<PredictionRigidbody.ForceData>.RetrieveList();
+            r.ReadList<PredictionRigidbody.ForceData>(ref lst);
+            PredictionRigidbody pr = ResettableObjectCaches<PredictionRigidbody>.Retrieve();
+
+            pr.SetPendingForces(lst);
+            return pr;
+        }
+
     }
 
+    [UseGlobalCustomSerializer]
     public class PredictionRigidbody : IResettable
     {
         #region Types.
-        internal struct ForceData
+        [UseGlobalCustomSerializer]
+        public struct ForceData
         {
             public Vector3 Force;
             public ForceMode Mode;
@@ -58,18 +76,18 @@ namespace FishNet.Object.Prediction
         public Rigidbody Rigidbody { get; private set; }
         #endregion
 
-        #region Internal.
+        #region Private
         /// <summary>
         /// Forces waiting to be applied.
         /// </summary>
         [ExcludeSerialization]
-        internal List<ForceData> PendingForces;
+        private List<ForceData> _pendingForces;
         #endregion
 
         ~PredictionRigidbody()
         {
-            if (PendingForces != null)
-                CollectionCaches<ForceData>.StoreAndDefault(ref PendingForces);
+            if (_pendingForces != null)
+                CollectionCaches<ForceData>.StoreAndDefault(ref _pendingForces);
             Rigidbody = null;
         }
 
@@ -79,25 +97,26 @@ namespace FishNet.Object.Prediction
         /// <param name="rb"></param>
         public void Initialize(Rigidbody rb)
         {
-            Debug.LogError($"This utility is a work in progress. Please do not use it at this time.");
             Rigidbody = rb;
-            if (PendingForces == null)
-                PendingForces = CollectionCaches<ForceData>.RetrieveList();
+            if (_pendingForces == null)
+                _pendingForces = CollectionCaches<ForceData>.RetrieveList();
             else
-                PendingForces.Clear();
+                _pendingForces.Clear();
         }
 
         /// <summary>
         /// Adds Velocity force to the Rigidbody.
         /// </summary>
-        public void AddForce(Vector3 force, ForceMode mode =  ForceMode.Force)
+        public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force)
         {
-            PendingForces.Add(new ForceData(force, mode, true));
+            _pendingForces.Add(new ForceData(force, mode, true));
+            if (_pendingForces.Count > 2)
+                Debug.LogError($"Count {_pendingForces.Count}");
         }
 
         public void AddAngularForce(Vector3 force, ForceMode mode = ForceMode.Force)
         {
-            PendingForces.Add(new ForceData(force, mode, false));
+            _pendingForces.Add(new ForceData(force, mode, false));
         }
 
         /// <summary>
@@ -125,14 +144,14 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public void Simulate()
         {
-            foreach (ForceData item in PendingForces)
+            foreach (ForceData item in _pendingForces)
             {
                 if (item.IsVelocity)
                     Rigidbody.AddForce(item.Force, item.Mode);
                 else
                     Rigidbody.AddTorque(item.Force, item.Mode);
             }
-            PendingForces.Clear();
+            _pendingForces.Clear();
         }
 
         /// <summary>
@@ -148,7 +167,7 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public void ClearPendingForces()
         {
-            PendingForces.Clear();
+            _pendingForces.Clear();
         }
 
         /// <summary>
@@ -156,9 +175,12 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public void Reconcile(PredictionRigidbody pr)
         {
-            PendingForces.Clear();
-            foreach (ForceData item in pr.PendingForces)
-                PendingForces.Add(new ForceData(item));
+            _pendingForces.Clear();
+            if (pr._pendingForces != null)
+            {
+                foreach (ForceData item in pr._pendingForces)
+                    _pendingForces.Add(new ForceData(item));
+            }
 
             ResettableObjectCaches<PredictionRigidbody>.Store(pr);
         }
@@ -169,28 +191,31 @@ namespace FishNet.Object.Prediction
         /// <param name="velocity">True to remove if velocity.</param>
         private void RemoveForces(bool velocity)
         {
-            if (PendingForces.Count > 0)
+            if (_pendingForces.Count > 0)
             {
                 List<ForceData> newDatas = CollectionCaches<ForceData>.RetrieveList();
-                foreach (ForceData item in PendingForces)
+                foreach (ForceData item in _pendingForces)
                 {
                     if (item.IsVelocity != velocity)
                         newDatas.Add(item);
                 }
                 //Add back to _pendingForces if changed.
-                if (newDatas.Count != PendingForces.Count)
+                if (newDatas.Count != _pendingForces.Count)
                 {
-                    PendingForces.Clear();
+                    _pendingForces.Clear();
                     foreach (ForceData item in newDatas)
-                        PendingForces.Add(item);
+                        _pendingForces.Add(item);
                 }
                 CollectionCaches<ForceData>.Store(newDatas);
             }
         }
 
+        internal List<ForceData> GetPendingForces() => _pendingForces;
+        internal void SetPendingForces(List<ForceData> lst) => _pendingForces = lst;
+
         public void ResetState()
         {
-            CollectionCaches<ForceData>.StoreAndDefault(ref PendingForces);
+            CollectionCaches<ForceData>.StoreAndDefault(ref _pendingForces);
             Rigidbody = null;
         }
 

@@ -26,6 +26,12 @@ namespace FishNet.Object
         #endregion
 
         #region Public.
+#if PREDICTION_V2
+        /// <summary>
+        /// True if a reconcile is occuring on any NetworkBehaviour that is on or nested of this NetworkObject. Runtime NetworkBehaviours are not included, such as if you child a NetworkObject to another at runtime.
+        /// </summary>
+        public bool IsObjectReconciling { get; private set; }
+#endif
         /// <summary>
         /// Last tick this object replicated.
         /// </summary>
@@ -207,8 +213,13 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPreReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
+            bool hasData = false;
             for (int i = 0; i < _predictionBehaviours.Count; i++)
+            {
+                hasData |= _predictionBehaviours[i].ClientHasReconcileData;
                 _predictionBehaviours[i].Reconcile_Client_Start();
+            }
+            IsObjectReconciling = hasData;
         }
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
@@ -221,6 +232,7 @@ namespace FishNet.Object
              * the entire object is out of the replay cycle so there's
              * no reason to try and unpause per NB. */
             RigidbodyPauser?.Unpause();
+            IsObjectReconciling = false;
         }
 
 
@@ -230,124 +242,6 @@ namespace FishNet.Object
             for (int i = 0; i < _predictionBehaviours.Count; i++)
                 _predictionBehaviours[i].Replicate_Replay_Start(replayTick + 1);
         }
-
-        ///// <summary>
-        ///// Returns if this object is colliding with any local client objects.
-        ///// </summary>
-        ///// <returns></returns>
-        //internal bool CollidingWithLocalClient()
-        //{
-        //    /* If it's been more than 1 tick since collision stayed
-        //     * then do not consider as collided. */
-        //    return (TimeManager.LocalTick - _collisionStayedTick) <= 1;
-        //}
-
-        ///// <summary>
-        ///// Called when colliding with another object.
-        ///// </summary>
-        //private void OnCollisionEnter(Collision collision)
-        //{
-        //    if (!IsClientInitialized)
-        //        return;
-        //    if (_predictionType != PredictionType.Rigidbody)
-        //        return;
-
-        //    GameObject go = collision.gameObject;
-        //    if (CollisionEnteredLocalClientObject(go))
-        //        CollisionEntered(go);
-        //}
-
-        ///// <summary>
-        ///// Called when collision has entered a local clients object.
-        ///// </summary>
-        //private void CollisionEntered(GameObject go)
-        //{
-        //    if (_graphicalObject == null)
-        //        return;
-
-        //    _collisionStayedTick = TimeManager.LocalTick;
-        //    _localClientCollidedObjects.Add(go);
-        //}
-
-        ///// <summary>
-        ///// Called when colliding with another object.
-        ///// </summary>
-        //private void OnCollisionEnter2D(Collision2D collision)
-        //{
-        //    if (_graphicalObject == null)
-        //        return;
-        //    if (!IsClientInitialized)
-        //        return;
-        //    if (_predictionType != PredictionType.Rigidbody2D)
-        //        return;
-
-        //    GameObject go = collision.gameObject;
-        //    if (CollisionEnteredLocalClientObject(go))
-        //        CollisionEntered(go);
-        //}
-
-
-        ///// <summary>
-        ///// Called when staying in collision with another object.
-        ///// </summary>
-        //private void OnCollisionStay(Collision collision)
-        //{
-        //    if (!IsClientInitialized)
-        //        return;
-        //    if (_predictionType != PredictionType.Rigidbody)
-        //        return;
-
-        //    if (_localClientCollidedObjects.Contains(collision.gameObject))
-        //        _collisionStayedTick = TimeManager.LocalTick;
-        //}
-        ///// <summary>
-        ///// Called when staying in collision with another object.
-        ///// </summary>
-        //private void OnCollisionStay2D(Collision2D collision)
-        //{
-        //    if (!IsClientInitialized)
-        //        return;
-        //    if (_predictionType != PredictionType.Rigidbody2D)
-        //        return;
-
-        //    if (_localClientCollidedObjects.Contains(collision.gameObject))
-        //        _collisionStayedTick = TimeManager.LocalTick;
-        //}
-
-        ///// <summary>
-        ///// Called when a collision occurs and the smoothing type must perform operations.
-        ///// </summary>
-        //private bool CollisionEnteredLocalClientObject(GameObject go)
-        //{
-        //    if (go.TryGetComponent<NetworkObject>(out NetworkObject nob))
-        //        return nob.Owner.IsLocalClient;
-
-        //    //Fall through.
-        //    return false;
-        //}
-
-
-        ///// <summary>
-        ///// Called when collision has exited a local clients object.
-        ///// </summary>
-        //private void TrySetCollisionExited()
-        //{
-        //    /* If this object is no longer
-        //     * colliding with local client objects
-        //     * then unset collision.
-        //     * This is done here instead of using
-        //     * OnCollisionExit because often collisionexit
-        //     * will be missed due to ignored ticks. 
-        //     * While not ignoring ticks is always an option
-        //     * its not ideal because ignoring ticks helps
-        //    * prevent over predicting. */
-        //    TimeManager tm = TimeManager;
-        //    if (tm == null || (_collisionStayedTick != 0 && (tm.LocalTick != _collisionStayedTick)))
-        //    {
-        //        _localClientCollidedObjects.Clear();
-        //        _collisionStayedTick = 0;
-        //    }
-        //}
 
         /// <summary>
         /// Registers a NetworkBehaviour that uses prediction with the NetworkObject.

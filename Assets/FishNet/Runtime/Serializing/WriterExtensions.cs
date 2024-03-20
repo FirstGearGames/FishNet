@@ -30,6 +30,7 @@ namespace FishNet.Serializing
             DefaultPackedTypes.Add(typeof(long));
             DefaultPackedTypes.Add(typeof(ulong));
             DefaultPackedTypes.Add(typeof(Color));
+            DefaultPackedTypes.Add(typeof(Quaternion));
             DefaultPackedTypes.Add(typeof(Vector2Int));
             DefaultPackedTypes.Add(typeof(Vector3Int));
             DefaultPackedTypes.Add(typeof(Quaternion));

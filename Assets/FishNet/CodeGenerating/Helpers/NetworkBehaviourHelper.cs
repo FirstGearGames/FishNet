@@ -41,7 +41,7 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference Reconcile_ExitEarly_A_MethodRef;
 #endif
         public MethodReference Reconcile_Server_MethodRef;
-        public FieldReference UsesPrediction_FieldRef;
+        //public FieldReference UsesPrediction_FieldRef;
         public MethodReference Replicate_Replay_Start_MethodRef;
         public MethodReference Reconcile_Client_MethodRef;
         public MethodReference Replicate_Replay_MethodRef;
@@ -184,16 +184,16 @@ namespace FishNet.CodeGenerating.Helping
                     TimeManager_MethodRef = base.ImportReference(pi.GetMethod);
             }
 
-#if PREDICTION_V2
-            foreach (FieldInfo fi in networkBehaviourType.GetFields((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
-            {
-                if (fi.Name == nameof(NetworkBehaviour.UsesPrediction))
-                {
-                    UsesPrediction_FieldRef = base.ImportReference(fi);
-                    break;
-                }
-            }
-#endif
+//#if PREDICTION_V2
+//            foreach (FieldInfo fi in networkBehaviourType.GetFields((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
+//            {
+//                if (fi.Name == nameof(NetworkBehaviour.UsesPrediction))
+//                {
+//                    UsesPrediction_FieldRef = base.ImportReference(fi);
+//                    break;
+//                }
+//            }
+//#endif
 
             return true;
         }

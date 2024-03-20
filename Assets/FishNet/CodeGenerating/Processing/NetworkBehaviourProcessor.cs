@@ -344,26 +344,26 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private void SetUsesPrediction(List<TypeDefinition> typeDefs)
         {
-#if PREDICTION_V2
-            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
+//#if PREDICTION_V2
+//            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
 
-            foreach (TypeDefinition td in typeDefs)
-            {
-                MethodDefinition md = td.GetMethod(NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
-                ILProcessor processor = md.Body.GetILProcessor();
+//            foreach (TypeDefinition td in typeDefs)
+//            {
+//                MethodDefinition md = td.GetMethod(NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
+//                ILProcessor processor = md.Body.GetILProcessor();
 
-                int lastInstructionIndex = (md.Body.Instructions.Count - 1);
-                //Remove opcode if present. It will be added back on after.
-                if (lastInstructionIndex >= 0 && md.Body.Instructions[lastInstructionIndex].OpCode == OpCodes.Ret)
-                    md.Body.Instructions.RemoveAt(lastInstructionIndex);
+//                int lastInstructionIndex = (md.Body.Instructions.Count - 1);
+//                //Remove opcode if present. It will be added back on after.
+//                if (lastInstructionIndex >= 0 && md.Body.Instructions[lastInstructionIndex].OpCode == OpCodes.Ret)
+//                    md.Body.Instructions.RemoveAt(lastInstructionIndex);
 
-                //Set field.
-                processor.Emit(OpCodes.Ldarg_0); //base.
-                processor.Emit(OpCodes.Ldc_I4_1); //true.
-                processor.Emit(OpCodes.Stfld, nbh.UsesPrediction_FieldRef);
-                processor.Emit(OpCodes.Ret);
-            }
-#endif
+//                //Set field.
+//                processor.Emit(OpCodes.Ldarg_0); //base.
+//                processor.Emit(OpCodes.Ldc_I4_1); //true.
+//                processor.Emit(OpCodes.Stfld, nbh.UsesPrediction_FieldRef);
+//                processor.Emit(OpCodes.Ret);
+//            }
+//#endif
         }
 
         /// <summary>

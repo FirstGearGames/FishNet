@@ -56,12 +56,19 @@ namespace FishNet.Object.Editing
             GUI.enabled = false;
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(nob), typeof(NetworkObject), false);
             GUI.enabled = true;
+
+            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_isNetworked);
             EditorGUILayout.PropertyField(_isSpawnable);
             EditorGUILayout.PropertyField(_isGlobal);
             EditorGUILayout.PropertyField(_initializeOrder);
             EditorGUILayout.PropertyField(_defaultDespawnType);
+            EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
 
+            EditorGUILayout.LabelField("Prediction", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_enablePrediction);
             if (_enablePrediction.boolValue == true)
             {
@@ -85,7 +92,7 @@ namespace FishNet.Object.Editing
                 EditorGUI.indentLevel--;
                 EditorGUI.indentLevel--;
             }
-            EditorGUILayout.Space();
+            EditorGUI.indentLevel--;
 
 
             serializedObject.ApplyModifiedProperties();

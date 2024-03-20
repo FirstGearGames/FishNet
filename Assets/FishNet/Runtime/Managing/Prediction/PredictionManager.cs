@@ -166,7 +166,8 @@ namespace FishNet.Managing.Predicting
         /// Lower values will increase processing rate of received replicates.
         /// This value cannot be higher than MaximumServerReplicates.
         /// </summary>
-        public byte QueuedInputs => _queuedInputs;
+        //TODO: this is 0 until the rework on it is completed. 
+        public byte QueuedInputs => 0;// _queuedInputs;
 #else
         /// <summary>
         /// Number of inputs to keep in queue should the server miss receiving an input update from the client.
@@ -530,7 +531,7 @@ namespace FishNet.Managing.Predicting
              * A system which synchronized all current states rather than what's only needed to correct
              * the inputs would likely solve this. */
             //NOTESEND
-            if (_reconcileStates.Peek().ClientTick >= (_networkManager.TimeManager.LocalTick - QueuedInputs - 2))
+            if (_reconcileStates.Peek().ClientTick >= (_networkManager.TimeManager.LocalTick - QueuedInputs))
                 return;
 
             uint localTick = _networkManager.TimeManager.LocalTick;
@@ -594,8 +595,6 @@ namespace FishNet.Managing.Predicting
                     Physics2D.SyncTransforms();
                     OnPostPhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
                 }
-                int replays = 0;
-                //Replays.
                 /* Set first replicate to be the 1 tick
                  * after reconcile. This is because reconcile calcs
                  * should be performed after replicate has run. 
@@ -607,6 +606,7 @@ namespace FishNet.Managing.Predicting
                  * OnTick. */
                 ClientReplayTick = ClientStateTick;
                 ServerReplayTick = ServerStateTick;
+
                 /* Only replay up to this tick excluding queuedInputs.
                  * This will prevent the client from replaying into
                  * it's authorative/owned inputs which have not run
@@ -615,7 +615,7 @@ namespace FishNet.Managing.Predicting
                  * An additional value is subtracted to prevent
                  * client from running 1 local tick into the future
                  * since the OnTick has not run yet. */
-                while (ClientReplayTick < (localTick - QueuedInputs - 1))
+                while (ClientReplayTick < localTick - 1)
                 {
                     OnPreReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
                     OnReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
@@ -625,7 +625,6 @@ namespace FishNet.Managing.Predicting
                         Physics2D.Simulate(tickDelta);
                     }
                     OnPostReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
-                    replays++;
                     ClientReplayTick++;
                     ServerReplayTick++;
                 }
@@ -674,7 +673,7 @@ namespace FishNet.Managing.Predicting
                 else
                 {
                     lastReplicateTick = (nc.PacketTick.Value() + QueuedInputs);
-                }                
+                }
 
                 foreach (PooledWriter writer in nc.PredictionStateWriters)
                 {

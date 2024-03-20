@@ -191,6 +191,23 @@ namespace FishNet.CodeGenerating.Extension
             return methodRef.GetMethodReference(session, typeReference);
         }
 
+        /// <summary>
+        /// Removes ret if it exist at the end of the method. Returns if ret was removed.
+        /// </summary>
+        internal static bool RemoveEndRet(this MethodDefinition md, CodegenSession session)
+        {
+            int count = md.Body.Instructions.Count;
+            if (count > 0 && md.Body.Instructions[count - 1].OpCode == OpCodes.Ret)
+            {
+                md.Body.Instructions.RemoveAt(count - 1);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
 
         /// <summary>
         /// Returns a method reference for a generic method.

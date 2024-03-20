@@ -83,7 +83,7 @@ namespace FishNet.CodeGenerating.ILCore
             modified |= CreateQOLAttributes(session);
 #endif
             modified |= CreateNetworkBehaviours(session);
-            modified |= CreateGenericReadWriteDelegates(session);
+            modified |= CreateSerializerInitializeDelegates(session);
 
             if (fnAssembly)
             {
@@ -183,14 +183,13 @@ namespace FishNet.CodeGenerating.ILCore
         {
             bool modified = false;
 
-            TypeAttributes readWriteExtensionTypeAttr = (TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Abstract);
             List<TypeDefinition> allTypeDefs = session.Module.Types.ToList();
             foreach (TypeDefinition td in allTypeDefs)
             {
                 if (session.GetClass<GeneralHelper>().HasExcludeSerializationAttribute(td))
                     continue;
 
-                if (td.Attributes.HasFlag(readWriteExtensionTypeAttr))
+                if (td.Attributes.HasFlag(WriterProcessor.CUSTOM_SERIALIZER_TYPEDEF_ATTRIBUTES))
                     modified |= session.GetClass<CustomSerializerProcessor>().CreateSerializerDelegates(td, true);
             }
 
@@ -204,14 +203,13 @@ namespace FishNet.CodeGenerating.ILCore
         {
             bool modified = false;
 
-            TypeAttributes readWriteExtensionTypeAttr = (TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Abstract);
             List<TypeDefinition> allTypeDefs = session.Module.Types.ToList();
             foreach (TypeDefinition td in allTypeDefs)
             {
                 if (session.GetClass<GeneralHelper>().HasExcludeSerializationAttribute(td))
                     continue;
 
-                if (td.Attributes.HasFlag(readWriteExtensionTypeAttr))
+                if (td.Attributes.HasFlag(WriterProcessor.CUSTOM_SERIALIZER_TYPEDEF_ATTRIBUTES))
                     modified |= session.GetClass<CustomSerializerProcessor>().CreateSerializers(td);
             }
 
@@ -387,10 +385,10 @@ namespace FishNet.CodeGenerating.ILCore
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <param name="diagnostics"></param>
-        private bool CreateGenericReadWriteDelegates(CodegenSession session)
+        private bool CreateSerializerInitializeDelegates(CodegenSession session)
         {
-            session.GetClass<WriterProcessor>().CreateStaticMethodDelegates();
-            session.GetClass<ReaderProcessor>().CreateStaticMethodDelegates();
+            session.GetClass<WriterProcessor>().CreateInitializeDelegates();
+            session.GetClass<ReaderProcessor>().CreateInitializeDelegates();
 
             return true;
         }
