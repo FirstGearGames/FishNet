@@ -5,14 +5,10 @@ namespace FishNet.Component.Prediction
     public sealed class NetworkCollision : NetworkCollider
     {
 #if PREDICTION_V2
-
-        /// <summary>
-        /// Percentage larger than each collider for each overlap test. This is used to prevent missed overlaps when colliders do not intersect enough.
-        /// </summary>
-        [Tooltip("Percentage larger than each collider for each overlap test. This is used to prevent missed overlaps when colliders do not intersect enough.")]
-        [Range(0f, 0.2f)]
+        [Tooltip("Units to extend collision traces by. This is used to prevent missed overlaps when colliders do not intersect enough.")]
+        [Range(0f, 100f)]
         [SerializeField]
-        private float _sizeMultiplier = 0.01f;
+        private float _additionalSize = 0.1f;
 
         protected override void Awake()
         {
@@ -20,7 +16,10 @@ namespace FishNet.Component.Prediction
             base.Awake();
         }
 
-        protected override float GetSizeMultiplier() => (1f + _sizeMultiplier);
+        /// <summary>
+        /// Units to extend collision traces by. This is used to prevent missed overlaps when colliders do not intersect enough.
+        /// </summary>
+        public override float GetAdditionalSize() => _additionalSize;
 #endif
 
     }

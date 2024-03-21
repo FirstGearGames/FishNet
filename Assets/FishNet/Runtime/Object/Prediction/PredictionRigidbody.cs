@@ -110,8 +110,6 @@ namespace FishNet.Object.Prediction
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force)
         {
             _pendingForces.Add(new ForceData(force, mode, true));
-            if (_pendingForces.Count > 2)
-                Debug.LogError($"Count {_pendingForces.Count}");
         }
 
         public void AddAngularForce(Vector3 force, ForceMode mode = ForceMode.Force)

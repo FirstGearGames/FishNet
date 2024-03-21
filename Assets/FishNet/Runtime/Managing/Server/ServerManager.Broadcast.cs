@@ -42,7 +42,7 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            ushort key = BroadcastHelper.GetKey<T>();
+            ushort key = BroadcastExtensions.GetKey<T>();
             //Create new IBroadcastHandler if needed.
             BroadcastHandlerBase bhs;
             if (!_broadcastHandlers.TryGetValueIL2CPP(key, out bhs))
@@ -61,7 +61,7 @@ namespace FishNet.Managing.Server
         /// <param name="handler">Method to unregister.</param>
         public void UnregisterBroadcast<T>(Action<NetworkConnection, T, Channel> handler) where T : struct, IBroadcast
         {
-            ushort key = BroadcastHelper.GetKey<T>();
+            ushort key = BroadcastExtensions.GetKey<T>();
             if (_broadcastHandlers.TryGetValueIL2CPP(key, out BroadcastHandlerBase bhs))
                 bhs.UnregisterHandler(handler);
         }
@@ -112,7 +112,7 @@ namespace FishNet.Managing.Server
             }
 
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
             NetworkManager.TransportManager.SendToClient((byte)channel, segment, connection);
             writer.Store();
@@ -137,7 +137,7 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             foreach (NetworkConnection conn in connections)
@@ -326,7 +326,7 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             foreach (NetworkConnection conn in Clients.Values)

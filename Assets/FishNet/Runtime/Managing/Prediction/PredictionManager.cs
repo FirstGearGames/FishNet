@@ -420,10 +420,10 @@ namespace FishNet.Managing.Predicting
         /// Internal use.
         /// </summary>
         [APIExclude]
-        [MakePublic] //To internal.
+        [MakePublic]
         internal void InvokeOnReconcile(NetworkBehaviour nb, bool before)
         {
-            nb.IsReconciling = before;
+            nb.IsBehaviourReconciling = before;
             if (before)
                 OnPreReconcile?.Invoke(nb);
             else

@@ -191,10 +191,9 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
-        /// Returns the size multiplier.
+        /// Units to extend collision traces by. This is used to prevent missed overlaps when colliders do not intersect enough.
         /// </summary>
-        /// <returns></returns>
-        protected virtual float GetSizeMultiplier() => 1f;
+        public virtual float GetAdditionalSize() => 0f;
 
         /// <summary>
         /// Checks for any trigger changes;
@@ -416,7 +415,7 @@ namespace FishNet.Component.Prediction
         private int GetSphereColliderHits(SphereCollider sphereCollider, int layerMask)
         {
             sphereCollider.GetSphereOverlapParams(out Vector3 center, out float radius);
-            radius *= GetSizeMultiplier();
+            radius += GetAdditionalSize();
             return Physics.OverlapSphereNonAlloc(center, radius, _hits, layerMask);
         }
 
@@ -427,7 +426,7 @@ namespace FishNet.Component.Prediction
         private int GetCapsuleColliderHits(CapsuleCollider capsuleCollider, int layerMask)
         {
             capsuleCollider.GetCapsuleCastParams(out Vector3 start, out Vector3 end, out float radius);
-            radius *= GetSizeMultiplier();
+            radius += GetAdditionalSize();
             return Physics.OverlapCapsuleNonAlloc(start, end, radius, _hits, layerMask);
         }
 
@@ -437,8 +436,10 @@ namespace FishNet.Component.Prediction
         /// <returns>Number of colliders hit.</returns>
         private int GetBoxColliderHits(BoxCollider boxCollider, Quaternion rotation, int layerMask)
         {
+
             boxCollider.GetBoxOverlapParams(out Vector3 center, out Vector3 halfExtents);
-            halfExtents *= GetSizeMultiplier();
+            Vector3 additional = (Vector3.one * GetAdditionalSize());
+            halfExtents += additional;
             return Physics.OverlapBoxNonAlloc(center, halfExtents, _hits, rotation, layerMask);
         }
 

@@ -34,7 +34,7 @@ namespace FishNet.Managing.Client
                 return;
             }
 
-            ushort key = BroadcastHelper.GetKey<T>();
+            ushort key = BroadcastExtensions.GetKey<T>();
             //Create new IBroadcastHandler if needed.
             BroadcastHandlerBase bhs;
             if (!_broadcastHandlers.TryGetValueIL2CPP(key, out bhs))
@@ -53,7 +53,7 @@ namespace FishNet.Managing.Client
         /// <param name="handler">Method to unregister.</param>
         public void UnregisterBroadcast<T>(Action<T, Channel> handler) where T : struct, IBroadcast
         {
-            ushort key = BroadcastHelper.GetKey<T>();            
+            ushort key = BroadcastExtensions.GetKey<T>();
             if (_broadcastHandlers.TryGetValueIL2CPP(key, out BroadcastHandlerBase bhs))
                 bhs.UnregisterHandler(handler);
         }
@@ -90,7 +90,7 @@ namespace FishNet.Managing.Client
             }
 
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             NetworkManager.TransportManager.SendToServer((byte)channel, segment);
