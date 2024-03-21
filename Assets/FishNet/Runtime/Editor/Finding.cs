@@ -25,7 +25,7 @@ namespace FishNet.Editing
         /// Sets FishNet assembly paths.
         /// </summary>
         /// <param name="error"></param>
-        private static void SetPaths(bool error)
+        private static void UpdateFishNetPaths()
         {
             if (_fishNetGeneratedPath != string.Empty && _fishNetRuntimePath != string.Empty)
                 return;
@@ -51,25 +51,6 @@ namespace FishNet.Editing
                     return;
             }
         }
-        /// <summary>
-        /// Gets path for where the FishNet.Runtime assembly is.
-        /// </summary>
-        /// <returns></returns>
-        public static string GetFishNetRuntimePath(bool error)
-        {
-            SetPaths(error);
-            return _fishNetRuntimePath;
-        }
-        /// <summary>
-        /// Gets path for where the FishNet.Generated assembly is.
-        /// </summary>
-        /// <param name="error"></param>
-        /// <returns></returns>
-        public static string GetFishNetGeneratedPath(bool error)
-        {
-            SetPaths(error);
-            return _fishNetGeneratedPath;
-        }
 
         /// <summary>
         /// Gets all GameObjects in Assets and optionally scenes.
@@ -82,6 +63,8 @@ namespace FishNet.Editing
 
             string[] guids;
             string[] objectPaths;
+
+            UpdateFishNetPaths();
 
             guids = AssetDatabase.FindAssets("t:GameObject", null);
             objectPaths = new string[guids.Length];
