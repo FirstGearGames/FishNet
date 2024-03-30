@@ -746,16 +746,7 @@ namespace FishNet.Object
         {
             //Reconcile data was not received so cannot replay.
             if (!ClientHasReconcileData)
-            {
-                /* If rbPauser exists then pause. This is done here
-				 * instead of in the OnPreReconcile event for NetworkObject
-				 * because each NB can have different replicate logic
-				 * and have different states. Ideally everything would
-				 * get its data together at the same time but things
-				 * don't always work out that way. */
-                _networkObjectCache.RigidbodyPauser?.Pause();
                 return;
-            }
 
             if (_networkObjectCache.IsOwner)
                 Replicate_Replay_Authoritative<T>(replayTick, del, replicatesHistory, channel);

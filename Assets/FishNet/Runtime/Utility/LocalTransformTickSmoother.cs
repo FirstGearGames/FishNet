@@ -55,15 +55,6 @@ namespace FishNet.Object.Prediction
         }
 
         /// <summary>
-        /// Keeps initialized values but unsets runtime values.
-        /// </summary>
-        internal void Deinitialize()
-        {
-            _graphicalObject.SetLocalProperties(_gfxInitializedLocalValues);
-            _preTicked = false;
-        }
-
-        /// <summary>
         /// Called every frame.
         /// </summary>
         internal void Update()
@@ -148,7 +139,11 @@ namespace FishNet.Object.Prediction
 
         public void ResetState()
         {
-            _graphicalObject = null;
+            if (_graphicalObject != null)
+            {
+                _graphicalObject.SetLocalProperties(_gfxInitializedLocalValues);
+                _graphicalObject = null;
+            }
             _teleportThreshold = default;
             _moveRates = default;
             _preTicked = default;

@@ -1,4 +1,5 @@
 ﻿using FishNet.Managing;
+using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,7 +8,7 @@ namespace FishNet.Component.Prediction
     /// <summary>
     /// Pauses and unpauses rigidbodies. While paused rigidbodies cannot be interacted with or simulated.
     /// </summary>
-    public class RigidbodyPauser
+    public class RigidbodyPauser : IResettable
     {
         #region Types.
         /// <summary>
@@ -355,7 +356,18 @@ namespace FishNet.Component.Prediction
             }
         }
 
+        public void ResetState()
+        {
+            _rigidbodyDatas.Clear();
+            _rigidbody2dDatas.Clear();
+            _getInChildren = default;
+            _transform = default;
+            _rigidbodyType = default;
+            _initialized = default;
+            Paused = default;
+        }
 
+        public void InitializeState() { }
     }
 
 

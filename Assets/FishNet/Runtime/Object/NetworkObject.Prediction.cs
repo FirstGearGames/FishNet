@@ -46,9 +46,10 @@ namespace FishNet.Object
 
         #region Internal.
         /// <summary>
-        /// Pauses rigidbodies for prediction.
+        /// Pauses and unpauses rigidbodies when they do not have data to reconcile to.
         /// </summary>
-        public RigidbodyPauser RigidbodyPauser { get; private set; }
+        public RigidbodyPauser RigidbodyPauser => _rigidbodyPauser;
+        private RigidbodyPauser _rigidbodyPauser;
         #endregion
 
         #region Serialized.
@@ -116,7 +117,7 @@ namespace FishNet.Object
         /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
-        private List<NetworkBehaviour> _predictionBehaviours = new List<NetworkBehaviour>();       
+        private List<NetworkBehaviour> _predictionBehaviours = new List<NetworkBehaviour>();
         #endregion
 
         private void Prediction_Update()
@@ -134,7 +135,6 @@ namespace FishNet.Object
         private void TimeManager_OnPostTick()
         {
             _tickSmoother?.OnPostTick();
-            //TrySetCollisionExited();
         }
 
         private void Prediction_Preinitialize(NetworkManager manager, bool asServer)
@@ -190,9 +190,9 @@ namespace FishNet.Object
             bool usesRb2d = (_predictionType == PredictionType.Rigidbody2D);
             if (usesRb || usesRb2d)
             {
-                RigidbodyPauser = new RigidbodyPauser();
+                _rigidbodyPauser = ResettableObjectCaches<RigidbodyPauser>.Retrieve();
                 RigidbodyType rbType = (usesRb) ? RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
-                RigidbodyPauser.UpdateRigidbodies(transform, rbType, true);
+                _rigidbodyPauser.UpdateRigidbodies(transform, rbType, true);
             }
 
             if (_graphicalObject == null)
@@ -215,15 +215,15 @@ namespace FishNet.Object
         {
             if (_tickSmoother != null)
             {
-                _tickSmoother.Deinitialize();
                 ResettableObjectCaches<LocalTransformTickSmoother>.StoreAndDefault(ref _tickSmoother);
+                ResettableObjectCaches<RigidbodyPauser>.StoreAndDefault(ref _rigidbodyPauser);
             }
         }
 
         private void PredictionManager_OnReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
             bool hasData = false;
-           
+
             for (int i = 0; i < _predictionBehaviours.Count; i++)
             {
                 if (_predictionBehaviours[i].ClientHasReconcileData)
@@ -231,9 +231,9 @@ namespace FishNet.Object
                     hasData = true;
                     _predictionBehaviours[i].Reconcile_Client_Start();
                 }
-                else
+                else if (_rigidbodyPauser != null)
                 {
-                    RigidbodyPauser.Pause();
+                    _rigidbodyPauser.Pause();
                 }
 
             }
@@ -249,7 +249,8 @@ namespace FishNet.Object
              * than per NB, where the pausing occurs, because once here
              * the entire object is out of the replay cycle so there's
              * no reason to try and unpause per NB. */
-            RigidbodyPauser?.Unpause();
+            if (_rigidbodyPauser != null)
+                _rigidbodyPauser.Unpause();
             IsObjectReconciling = false;
         }
 
