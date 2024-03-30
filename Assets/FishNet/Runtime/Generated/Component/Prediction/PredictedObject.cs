@@ -551,7 +551,7 @@ namespace FishNet.Component.Prediction
         private void ConfigureNetworkTransform()
         {
             if (!IsRigidbodyPrediction)
-                _networkTransform?.ConfigureForCSP();
+                _networkTransform?.ConfigureForPrediction();
         }
 
 

@@ -222,11 +222,14 @@ namespace GameKit.Dependencies.Utilities.Types
         /// </summary>
         public void Clear()
         {
-            for (int i = 0; i < Capacity; i++)
+            if (Collection != null)
             {
-                if (i < _written)
-                    Collection[i].ResetState();
-                Collection[i] = default;
+                for (int i = 0; i < Capacity; i++)
+                {
+                    if (i < _written)
+                        Collection[i].ResetState();
+                    Collection[i] = default;
+                }
             }
 
             _written = 0;

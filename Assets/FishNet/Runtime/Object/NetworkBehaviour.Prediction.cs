@@ -162,14 +162,14 @@ namespace FishNet.Object
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Public.
-//#if PREDICTION_V2
-//        /// <summary>
-//        /// True if this Networkbehaviour implements prediction methods.
-//        /// </summary>
-//        [APIExclude]
-//        [MakePublic]
-//        protected internal bool UsesPrediction;
-//#endif
+        //#if PREDICTION_V2
+        //        /// <summary>
+        //        /// True if this Networkbehaviour implements prediction methods.
+        //        /// </summary>
+        //        [APIExclude]
+        //        [MakePublic]
+        //        protected internal bool UsesPrediction;
+        //#endif
         /// <summary>
         /// True if the client has cached reconcile 
         /// </summary>
@@ -558,6 +558,11 @@ namespace FishNet.Object
             if (!IsSpawned)
                 return;
 
+            //No owner and no state forwarding, nothing to do.
+            bool stateForwarding = _networkObjectCache.EnableStateForwarding;
+            if (!Owner.IsValid && !stateForwarding)
+                return;
+
             PooledWriter methodWriter = WriterPool.Retrieve();
             /* Tick does not need to be written because it will always
             * be the localTick of the server. For the clients, this will
@@ -577,9 +582,17 @@ namespace FishNet.Object
             else
                 writer = CreateRpc(hash, methodWriter, PacketId.Reconcile, channel);
 
-            foreach (NetworkConnection nc in Observers)
-                nc.WriteState(writer);
-
+            //If state forwarding is not enabled then only send to owner.
+            if (!stateForwarding)
+            {
+                Owner.WriteState(writer);
+            }
+            //State forwarding, send to all.
+            else
+            {
+                foreach (NetworkConnection nc in Observers)
+                    nc.WriteState(writer);
+            }
             methodWriter.Store();
             writer.Store();
         }
@@ -1132,7 +1145,11 @@ namespace FishNet.Object
         /// </summary>
         private void Replicate_SendAuthoritative<T>(bool toServer, uint hash, int pastInputs, List<T> replicatesHistory, uint queuedTick, Channel channel) where T : IReplicateData
         {
-            if (!IsSpawnedWithWarning())
+            /* Do not use IsSpawnedWithWarning because the server
+             * will still call this a tick or two as clientHost when
+             * an owner disconnects. This comes from calling Replicate(default)
+             * for the server-side processing in NetworkBehaviours. */
+            if (!IsSpawned)
                 return;
 
             int historyCount = replicatesHistory.Count;
@@ -1170,13 +1187,18 @@ namespace FishNet.Object
             }
             else
             {
-                //Exclude owner and if clientHost, also localClient.
-                _networkConnectionCache.Clear();
-                _networkConnectionCache.Add(Owner);
-                if (IsClientStarted)
-                    _networkConnectionCache.Add(ClientManager.Connection);
+                /* If going to clients from server, then only send
+                 * if state forwarding is enabled. */
+                if (_networkObjectCache.EnableStateForwarding)
+                {
+                    //Exclude owner and if clientHost, also localClient.
+                    _networkConnectionCache.Clear();
+                    _networkConnectionCache.Add(Owner);
+                    if (IsClientStarted)
+                        _networkConnectionCache.Add(ClientManager.Connection);
 
-                NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), Observers, _networkConnectionCache, false);
+                    NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), Observers, _networkConnectionCache, false);
+                }
             }
 
             /* If sending as reliable there is no reason
@@ -1289,6 +1311,9 @@ namespace FishNet.Object
         {
             if (!IsServerStarted)
                 return;
+            if (!_networkObjectCache.EnableStateForwarding)
+                return;
+
             int queueCount = replicatesQueue.Count;
             //Limit history count to max of queued amount, or queued inputs, whichever is lesser.
             int historyCount = (int)Mathf.Min(_networkObjectCache.PredictionManager.RedundancyCount, queueCount);
@@ -1633,9 +1658,6 @@ namespace FishNet.Object
         [MakePublic]
         protected internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, List<T2> replicatesHistory, T data) where T : IReconcileData where T2 : IReplicateData
         {
-            if (!ClientHasReconcileData)
-                return;
-
             IsBehaviourReconciling = true;
             if (replicatesHistory.Count > 0)
             {

@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Serialization;
+using static FishNet.Object.NetworkObject;
 
 namespace FishNet.Component.Transforming
 {
@@ -2368,14 +2369,38 @@ namespace FishNet.Component.Transforming
             nextTransformData.Tick = base.TimeManager.LastPacketTick.LastRemoteTick;
         }
 
+#if PREDICTION_V2
         /// <summary>
         /// Configures this NetworkTransform for CSP.
         /// </summary>
-        internal void ConfigureForCSP()
+        internal void ConfigureForPrediction(PredictionType predictionType)
         {
             _clientAuthoritative = false;
-            if (base.IsServerInitialized)
-                _sendToOwner = false;
+            _sendToOwner = false;
+
+            //Do not try to change component configuration if its already specified.
+            if (_componentConfiguration != ComponentConfigurationType.Disabled)
+            {
+                if (predictionType == PredictionType.Rigidbody)
+                    _componentConfiguration = ComponentConfigurationType.Rigidbody;
+                else if (predictionType == PredictionType.Rigidbody2D)
+                    _componentConfiguration = ComponentConfigurationType.Rigidbody2D;
+                else if (predictionType == PredictionType.Other)
+                    /* If other or CC then needs to be configured.
+                     * When CC it will be configured properly, if there
+                     * is no CC then no action will be taken. */
+                    _componentConfiguration = ComponentConfigurationType.CharacterController;
+            }
+            ConfigureComponents();
+        }
+#else
+        /// <summary>
+        /// Configures this NetworkTransform for CSP.
+        /// </summary>
+        internal void ConfigureForPrediction()
+        {
+            _clientAuthoritative = false;
+            _sendToOwner = false;
 
             /* If other or CC then needs to be configured.
              * When CC it will be configured properly, if there
@@ -2383,7 +2408,7 @@ namespace FishNet.Component.Transforming
             _componentConfiguration = ComponentConfigurationType.CharacterController;
             ConfigureComponents();
         }
-
+#endif
         /// <summary>
         /// Updates which properties are synchronized.
         /// </summary>

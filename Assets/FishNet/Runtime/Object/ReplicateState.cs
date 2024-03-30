@@ -61,7 +61,9 @@ namespace FishNet.Object
         /// <summary>
         /// Returns if value is replayed.
         /// </summary>
+#pragma warning disable CS0618 // Type or member is obsolete
         public static bool IsReplayed(this ReplicateState value) => (value == ReplicateState.ReplayedPredicted || value == ReplicateState.ReplayedCreated || value == ReplicateState.ReplayedFuture);
+#pragma warning restore CS0618 // Type or member is obsolete
         /// <summary>
         /// Returns if value is user created.
         /// </summary>
@@ -69,7 +71,9 @@ namespace FishNet.Object
         /// <summary>
         /// Returns if value is predicted.
         /// </summary>
+#pragma warning disable CS0618 // Type or member is obsolete
         public static bool IsPredicted(this ReplicateState value) => (value == ReplicateState.ReplayedPredicted);
+#pragma warning restore CS0618 // Type or member is obsolete
         /// <summary>
         /// Returns if value is in the future.
         /// </summary>

@@ -147,6 +147,15 @@ namespace FishNet.Object
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Start", "")]
         public bool IsOwner => _networkObjectCache.IsOwner;
         /// <summary>
+        /// True if IsOwner, or if IsServerInitialized with no Owner.
+        /// </summary>
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartServer", "")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartNetwork", " Use (base.Owner.IsLocalClient || (base.IsServerInitialized && !Owner.Isvalid) instead.")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Start", "")]
+        public bool IsOwnerOrServer => (_networkObjectCache.IsOwner || (_networkObjectCache.IsServerInitialized && !_networkObjectCache.Owner.IsValid));
+
+        /// <summary>
         /// Owner of this object.
         /// </summary>
         public NetworkConnection Owner

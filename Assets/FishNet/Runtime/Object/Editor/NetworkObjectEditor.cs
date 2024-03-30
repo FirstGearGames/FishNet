@@ -1,11 +1,6 @@
 ﻿#if UNITY_EDITOR
 #if PREDICTION_V2
-using FishNet.Editing;
-using FishNet.Object;
-using FishNet.Object.Prediction;
-using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.Animations;
 using UnityEngine;
 
 namespace FishNet.Object.Editing
@@ -22,12 +17,14 @@ namespace FishNet.Object.Editing
         private SerializedProperty _defaultDespawnType;
 
         private SerializedProperty _enablePrediction;
+        private SerializedProperty _enableStateForwarding;
+        private SerializedProperty _networkTransform;
         private SerializedProperty _predictionType;
         private SerializedProperty _graphicalObject;
         private SerializedProperty _ownerInterpolation;
         private SerializedProperty _enableTeleport;
         private SerializedProperty _teleportThreshold;
-        private SerializedProperty _enableStateForwarding;      
+        
         
 
         protected virtual void OnEnable()
@@ -39,11 +36,13 @@ namespace FishNet.Object.Editing
             _defaultDespawnType = serializedObject.FindProperty(nameof(_defaultDespawnType));
 
             _enablePrediction = serializedObject.FindProperty(nameof(_enablePrediction));
+            _enableStateForwarding = serializedObject.FindProperty(nameof(_enableStateForwarding));
+            _networkTransform = serializedObject.FindProperty(nameof(_networkTransform));
             _predictionType = serializedObject.FindProperty(nameof(_predictionType));
             _graphicalObject = serializedObject.FindProperty(nameof(_graphicalObject));
             _enableTeleport = serializedObject.FindProperty(nameof(_enableTeleport));
             _teleportThreshold = serializedObject.FindProperty(nameof(_teleportThreshold));
-            _enableStateForwarding = serializedObject.FindProperty(nameof(_enableStateForwarding));
+            
 
             _ownerInterpolation = serializedObject.FindProperty(nameof(_ownerInterpolation));
         }
@@ -74,11 +73,14 @@ namespace FishNet.Object.Editing
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_predictionType);
-                GUI.enabled = false;
                 EditorGUILayout.PropertyField(_enableStateForwarding);
-                GUI.enabled = true;
-                //EditorGUILayout.LabelField("Owner", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(_graphicalObject);
+                if (_enableStateForwarding.boolValue == false)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(_networkTransform);
+                    EditorGUI.indentLevel--;
+                }
+                    EditorGUILayout.PropertyField(_graphicalObject);
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_ownerInterpolation, new GUIContent("Interpolation"));
                 EditorGUILayout.PropertyField(_enableTeleport);

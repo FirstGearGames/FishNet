@@ -1,7 +1,9 @@
 ﻿using FishNet.Component.Prediction;
+using FishNet.Component.Transforming;
 using FishNet.Managing;
 using FishNet.Managing.Timing;
 using FishNet.Object.Prediction;
+using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -73,9 +75,16 @@ namespace FishNet.Object
         /// <summary>
         /// True to forward replicate and reconcile states to all clients. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.
         /// </summary>
+        public bool EnableStateForwarding => (_enablePrediction && _enableStateForwarding);
         [Tooltip("True to forward replicate and reconcile states to all clients. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.")]
         [SerializeField]
         private bool _enableStateForwarding = true;
+        /// <summary>
+        /// NetworkTransform to configure for prediction. Specifying this is optional.
+        /// </summary>
+        [Tooltip("NetworkTransform to configure for prediction. Specifying this is optional.")]
+        [SerializeField]
+        private NetworkTransform _networkTransform;
         /// <summary>
         /// How many ticks to interpolate graphics on objects owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.
         /// </summary>
@@ -103,19 +112,11 @@ namespace FishNet.Object
         /// <summary>
         /// Graphical smoother to use when using set for owner.
         /// </summary>
-        private PredictionTickSmoother _tickSmoother;
+        private LocalTransformTickSmoother _tickSmoother;
         /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
-        private List<NetworkBehaviour> _predictionBehaviours = new List<NetworkBehaviour>();
-        ///// <summary>
-        ///// Tick when CollionStayed last called. This only has value if using prediction.
-        ///// </summary>
-        //private uint _collisionStayedTick;
-        ///// <summary>
-        ///// Local client objects this object is currently colliding with.
-        ///// </summary>
-        //private HashSet<GameObject> _localClientCollidedObjects = new HashSet<GameObject>();
+        private List<NetworkBehaviour> _predictionBehaviours = new List<NetworkBehaviour>();       
         #endregion
 
         private void Prediction_Update()
@@ -141,6 +142,9 @@ namespace FishNet.Object
             if (!_enablePrediction)
                 return;
 
+            if (!_enableStateForwarding && _networkTransform != null)
+                _networkTransform.ConfigureForPrediction(_predictionType);
+
             ReplicateTick.Initialize(manager.TimeManager);
             InitializeSmoothers();
 
@@ -149,7 +153,7 @@ namespace FishNet.Object
 
             if (_predictionBehaviours.Count > 0)
             {
-                manager.PredictionManager.OnPreReconcile += PredictionManager_OnPreReconcile;
+                manager.PredictionManager.OnReconcile += PredictionManager_OnReconcile;
                 manager.PredictionManager.OnReplicateReplay += PredictionManager_OnReplicateReplay;
                 manager.PredictionManager.OnPostReconcile += PredictionManager_OnPostReconcile;
                 manager.TimeManager.OnPreTick += TimeManager_OnPreTick;
@@ -168,7 +172,7 @@ namespace FishNet.Object
              * dropping their connection. */
             if (_predictionBehaviours.Count > 0 && NetworkManager != null)
             {
-                NetworkManager.PredictionManager.OnPreReconcile -= PredictionManager_OnPreReconcile;
+                NetworkManager.PredictionManager.OnReconcile -= PredictionManager_OnReconcile;
                 NetworkManager.PredictionManager.OnReplicateReplay -= PredictionManager_OnReplicateReplay;
                 NetworkManager.PredictionManager.OnPostReconcile -= PredictionManager_OnPostReconcile;
                 NetworkManager.TimeManager.OnPreTick -= TimeManager_OnPreTick;
@@ -193,13 +197,14 @@ namespace FishNet.Object
 
             if (_graphicalObject == null)
             {
-                Debug.Log($"GraphicalObject is null on {this.ToString()}. This may be intentional, and acceptable, if you are smoothing between ticks yourself. Otherwise consider assigning the GraphicalObject field.");
+                NetworkManagerExtensions.Log($"GraphicalObject is null on {gameObject.name}. This may be intentional, and acceptable, if you are smoothing between ticks yourself. Otherwise consider assigning the GraphicalObject field.");
             }
             else
             {
-                _tickSmoother = new PredictionTickSmoother();
+                if (_tickSmoother == null)
+                    _tickSmoother = ResettableObjectCaches<LocalTransformTickSmoother>.Retrieve();
                 float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRatesCls.UNSET_VALUE;
-                _tickSmoother.InitializeOnce(_graphicalObject, teleportT, this, _ownerInterpolation);
+                _tickSmoother.InitializeOnce(_graphicalObject, teleportT, (float)TimeManager.TickDelta, _ownerInterpolation);
             }
         }
 
@@ -208,16 +213,29 @@ namespace FishNet.Object
         /// </summary>
         private void DeinitializeSmoothers()
         {
-            _tickSmoother?.Deinitialize();
+            if (_tickSmoother != null)
+            {
+                _tickSmoother.Deinitialize();
+                ResettableObjectCaches<LocalTransformTickSmoother>.StoreAndDefault(ref _tickSmoother);
+            }
         }
 
-        private void PredictionManager_OnPreReconcile(uint clientReconcileTick, uint serverReconcileTick)
+        private void PredictionManager_OnReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
             bool hasData = false;
+           
             for (int i = 0; i < _predictionBehaviours.Count; i++)
             {
-                hasData |= _predictionBehaviours[i].ClientHasReconcileData;
-                _predictionBehaviours[i].Reconcile_Client_Start();
+                if (_predictionBehaviours[i].ClientHasReconcileData)
+                {
+                    hasData = true;
+                    _predictionBehaviours[i].Reconcile_Client_Start();
+                }
+                else
+                {
+                    RigidbodyPauser.Pause();
+                }
+
             }
             IsObjectReconciling = hasData;
         }

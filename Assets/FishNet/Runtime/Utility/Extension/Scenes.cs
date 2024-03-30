@@ -42,6 +42,9 @@ namespace FishNet.Utility.Extension
                          * for effort and readability. */
                         foreach (NetworkObject nob in nobCacheA)
                         {
+                            if (!nob.IsSceneObject)
+                                continue;
+
                             nob.GetComponentsInParent<NetworkObject>(true, nobCacheB);
                             //No extra nobs, only this one.
                             if (nobCacheB.Count == 1 && !TryDisplayDuplicateError(nob))
@@ -53,6 +56,8 @@ namespace FishNet.Utility.Extension
                     {
                         foreach (NetworkObject item in nobCacheA)
                         {
+                            if (!item.IsSceneObject)
+                                continue;
                             if (!TryDisplayDuplicateError(item))
                                 result.Add(item);
                         }
