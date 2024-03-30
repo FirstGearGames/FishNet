@@ -233,7 +233,7 @@ namespace FishNet.Object
                 }
                 else
                 {
-                    RigidbodyPauser.Pause();
+                    RigidbodyPauser?.Pause();
                 }
 
             }
