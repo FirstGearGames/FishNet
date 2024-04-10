@@ -277,7 +277,7 @@ namespace FishNet.Object
             _isStatic = gameObject.isStatic;
             RuntimeChildNetworkBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveList();
             SetChildDespawnedState();
-#if PREDICTION_V2
+#if !PREDICTION_1
             //Prediction_Awake();
 #endif
         }
@@ -394,7 +394,7 @@ namespace FishNet.Object
 
             void DeinitializePrediction_V2(bool asServer)
             {
-#if PREDICTION_V2
+#if !PREDICTION_1
                 Prediction_Deinitialize(asServer);
 #endif
             }
@@ -525,7 +525,7 @@ namespace FishNet.Object
                 if (estimatedTickDelay < 0)
                     estimatedTickDelay = 0;
 
-#if PREDICTION_V2
+#if !PREDICTION_1
                 /* Estimate of what the first replicate would have been for this object based on
                  * spawn delay. //TODO: this may not be needed anymore. */
                 ReplicateTick.Update(TimeManager, lastPacketTick - (uint)estimatedTickDelay);
@@ -549,14 +549,14 @@ namespace FishNet.Object
             }
             _networkObserverInitiliazed = true;
 
-#if PREDICTION_V2
+#if !PREDICTION_1
             Prediction_Preinitialize(networkManager, asServer);
 #endif
             //Add to connections objects. Collection is a hashset so this can be called twice for clientHost.
             owner?.AddObject(this);
         }
 
-#if PREDICTION_V2
+#if !PREDICTION_1
         private void Update()
         {
             Prediction_Update();
@@ -825,7 +825,7 @@ namespace FishNet.Object
         /// </summary>
         internal void Deinitialize(bool asServer)
         {
-#if PREDICTION_V2
+#if !PREDICTION_1
             Prediction_Deinitialize(asServer);
 #endif
             InvokeStopCallbacks(asServer);
@@ -860,11 +860,11 @@ namespace FishNet.Object
         /// Resets the state of this NetworkObject.
         /// This is used internally and typically with custom object pooling.
         /// </summary>
-        public void ResetState()
+        public void ResetState(bool asServer)
         {
             int count = NetworkBehaviours.Length;
             for (int i = 0; i < count; i++)
-                NetworkBehaviours[i].ResetState();
+                NetworkBehaviours[i].ResetState(asServer);
 
             State = NetworkObjectState.Unset;
             SetOwner(NetworkManager.EmptyConnection);

@@ -662,6 +662,8 @@ namespace FishNet.Component.Transforming
             _intervalsRemaining = 0;
             //Reset last tick since each client sends their own ticks.
             _lastServerRpcTick = 0;
+
+            TryClearGoalDatas_OwnershipChange(prevOwner, true);
         }
 
         public override void OnOwnershipClient(NetworkConnection prevOwner)
@@ -688,17 +690,46 @@ namespace FishNet.Component.Transforming
                 if (!base.IsServerInitialized)
                     ChangeTickSubscription(false);
             }
+
+            TryClearGoalDatas_OwnershipChange(prevOwner, false);
+        }
+
+        /// <summary>
+        /// Tries to clear the GoalDatas queue during an ownership change.
+        /// </summary>
+        private void TryClearGoalDatas_OwnershipChange(NetworkConnection prevOwner, bool asServer)
+        {
+            if (_clientAuthoritative)
+            {
+                //If not server
+                if (!asServer)
+                {
+                    //If owner now then clear as the owner controls the object now and shouldnt use past datas.
+                    if (base.IsOwner)
+                        _goalDataQueue.Clear();
+                }
+                //as Server.
+                else
+                {
+                    //If new owner is valid then clear to allow new owner datas.
+                    if (base.Owner.IsValid)
+                        _goalDataQueue.Clear();
+                }
+            }
+            /* Server authoritative never clears because the
+             * clients do not control this object thus should always
+             * follow the queue. */
         }
 
         public override void OnStopNetwork()
         {
-            ResetState(false);
+            ResetState();
         }
 
         /// <summary>
         /// Deinitializes this component.
         /// </summary>
-        private void ResetState(bool destroyed)
+        private void ResetState()
         {
             ChangeTickSubscription(false);
             /* Reset server and client side since this is called from
@@ -2369,7 +2400,7 @@ namespace FishNet.Component.Transforming
             nextTransformData.Tick = base.TimeManager.LastPacketTick.LastRemoteTick;
         }
 
-#if PREDICTION_V2
+#if !PREDICTION_1
         /// <summary>
         /// Configures this NetworkTransform for CSP.
         /// </summary>

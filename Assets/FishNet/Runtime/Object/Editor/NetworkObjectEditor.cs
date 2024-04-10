@@ -1,5 +1,5 @@
 ﻿#if UNITY_EDITOR
-#if PREDICTION_V2
+#if !PREDICTION_1
 using UnityEditor;
 using UnityEngine;
 

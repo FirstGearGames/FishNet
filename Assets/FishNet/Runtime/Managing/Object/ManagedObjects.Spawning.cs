@@ -69,7 +69,7 @@ namespace FishNet.Managing.Object
             if (NetworkManager.ServerManager.ShareIds || connection == nob.Owner)
                 headerWriter.WriteNetworkConnection(nob.Owner);
             else
-                headerWriter.WriteInt16(-1);
+                headerWriter.WriteNetworkConnectionId(NetworkConnection.UNSET_CLIENTID_VALUE);
 
             bool nested = (nob.CurrentParentNetworkBehaviour != null);
             bool sceneObject = nob.IsSceneObject;

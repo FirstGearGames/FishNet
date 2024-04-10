@@ -140,7 +140,7 @@ namespace FishNet.Object
         {
             if (asServer)
             {
-#if PREDICTION_V2
+#if !PREDICTION_1
                 ResetReplicateTick();
 #endif
                 for (int i = 0; i < NetworkBehaviours.Length; i++)

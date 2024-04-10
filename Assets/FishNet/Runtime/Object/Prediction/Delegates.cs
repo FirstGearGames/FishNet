@@ -13,7 +13,7 @@ namespace FishNet.Object.Prediction.Delegating
     [APIExclude]
     public delegate void ReconcileRpcDelegate(PooledReader reader, Channel channel);
 
-#if !PREDICTION_V2
+#if PREDICTION_1
     [APIExclude]
     public delegate void ReplicateUserLogicDelegate<T>(T data, bool asServer, Channel channel, bool replaying);
     [APIExclude]

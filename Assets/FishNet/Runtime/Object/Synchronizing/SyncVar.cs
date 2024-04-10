@@ -99,6 +99,10 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         [SerializeField]
         private T _value;
+        /// <summary>
+        /// True if T IsValueType.
+        /// </summary>
+        private bool _isValueType;
         #endregion
 
         #region Constructors.
@@ -112,6 +116,7 @@ namespace FishNet.Object.Synchronizing
         protected override void Initialized()
         {
             base.Initialized();
+            _isValueType = typeof(T).IsValueType;
             _initialValue = _value;
         }
 
@@ -298,8 +303,17 @@ namespace FishNet.Object.Synchronizing
         [MakePublic]
         internal protected override void WriteFull(PooledWriter obj0)
         {
-            if (Comparers.EqualityCompare<T>(_initialValue, _value))
-                return;
+            /* If a class then skip comparer check.
+             * InitialValue and Value will be the same reference.
+             * 
+             * If a struct then compare field changes, since the references
+             * will not be the same. Otherwise comparer normally. */
+            //Compare if a value type.
+            if (_isValueType)
+            {
+                if (Comparers.EqualityCompare<T>(_initialValue, _value))
+                    return;
+            }
             /* SyncVars only hold latest value, so just
              * write current delta. */
             WriteDelta(obj0, false);
@@ -318,9 +332,9 @@ namespace FishNet.Object.Synchronizing
         /// Resets to initialized values.
         /// </summary>
         [MakePublic]
-        internal protected override void ResetState()
+        internal protected override void ResetState(bool asServer)
         {
-            base.ResetState();
+            base.ResetState(asServer);
             _value = _initialValue;
             _previousClientValue = _initialValue;
         }

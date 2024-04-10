@@ -17,7 +17,7 @@ namespace FishNet.Connection
     {
         internal void Prediction_Initialize(NetworkManager manager, bool asServer) { }
 
-#if !PREDICTION_V2
+#if PREDICTION_1
         /// <summary>
         /// Local tick when the connection last replicated.
         /// </summary>
@@ -64,7 +64,18 @@ namespace FishNet.Connection
             /* Conditions to create a new writer are:
              * - writer does not exist yet.
              * - data length + currentWriter length > mtu */
-            if (writerCount == 0 || (data.Length + PredictionStateWriters[writerCount-1].Length) > mtu)
+            Channel channel = Channel.Unreliable;
+            if (writerCount > 0)
+                NetworkManager.TransportManager.CheckSetReliableChannel((data.Length + PredictionStateWriters[writerCount - 1].Length), ref channel);
+            /* If no writers or if channel would be forced reliable.
+             * 
+             * By checking if channel would be reliable this is
+             * essentially asking if (current written + new data) would
+             * exceed mtu. When it would get a new writer to try
+             * and favor unreliable. Emphasis on try, because if some
+             * really unlikely chance the data was really large it would
+             * still send on reliable down the line. */
+            if (writerCount == 0 || channel == Channel.Reliable)
             {
                 stateWriter = WriterPool.Retrieve(mtu);
                 PredictionStateWriters.Add(stateWriter);

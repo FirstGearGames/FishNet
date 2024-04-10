@@ -1,4 +1,5 @@
-﻿using FishNet.CodeGenerating;
+﻿#if !PREDICTION_1
+using FishNet.CodeGenerating;
 using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing;
@@ -18,13 +19,11 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityScene = UnityEngine.SceneManagement.Scene;
 
 [assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
 namespace FishNet.Object
 {
 
-#if PREDICTION_V2
     /* This class is placed in this file while it is in development. 
      * When everything is locked in the class will be integrated properly. */
     internal static class ReplicateTickFinder
@@ -157,59 +156,16 @@ namespace FishNet.Object
         }
 
     }
-#endif
 
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Public.
-        //#if PREDICTION_V2
         //        /// <summary>
         //        /// True if this Networkbehaviour implements prediction methods.
         //        /// </summary>
         //        [APIExclude]
         //        [MakePublic]
         //        protected internal bool UsesPrediction;
-        //#endif
-        /// <summary>
-        /// True if the client has cached reconcile 
-        /// </summary>
-        internal bool ClientHasReconcileData;
-#if !PREDICTION_V2
-        /// <summary>
-        /// Gets the last tick this NetworkBehaviour reconciled with.
-        /// </summary>
-        public uint GetLastReconcileTick() => _lastReconcileTick;
-        /// <summary>
-        /// Sets the last tick this NetworkBehaviour reconciled with.
-        /// </summary>
-        internal void SetLastReconcileTick(uint value, bool updateGlobals = true)
-        {
-            _lastReconcileTick = value;
-            if (updateGlobals)
-                PredictionManager.LastReconcileTick = value;
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        private uint _lastReplicateTick;
-        /// <summary>
-        /// Gets the last tick this NetworkBehaviour replicated with.
-        /// </summary>
-        public uint GetLastReplicateTick() => _lastReplicateTick;
-        /// <summary>
-        /// Sets the last tick this NetworkBehaviour replicated with.
-        /// For internal use only.
-        /// </summary>
-        private void SetLastReplicateTick(uint value, bool updateGlobals = true)
-        {
-            _lastReplicateTick = value;
-            if (updateGlobals)
-            {
-                Owner.LocalReplicateTick = TimeManager.LocalTick;
-                PredictionManager.LastReplicateTick = value;
-            }
-        }
-#endif
         /// <summary>
         /// True if this NetworkBehaviour is reconciling.
         /// If this NetworkBehaviour does not implemnent prediction methods this value will always be false.
@@ -229,30 +185,6 @@ namespace FishNet.Object
         /// </summary>
         private readonly Dictionary<uint, ReconcileRpcDelegate> _reconcileRpcDelegates = new Dictionary<uint, ReconcileRpcDelegate>();
         /// <summary>
-        /// True if initialized compnents for prediction.
-        /// </summary>
-        private bool _predictionInitialized;
-        /// <summary>
-        /// Rigidbody found on this object. This is used for prediction.
-        /// </summary>
-        private Rigidbody _predictionRigidbody;
-        /// <summary>
-        /// Rigidbody2D found on this object. This is used for prediction.
-        /// </summary>
-        private Rigidbody2D _predictionRigidbody2d;
-        /// <summary>
-        /// Last position for TransformMayChange.
-        /// </summary>
-        private Vector3 _lastMayChangePosition;
-        /// <summary>
-        /// Last rotation for TransformMayChange.
-        /// </summary>
-        private Quaternion _lastMayChangeRotation;
-        /// <summary>
-        /// Last scale for TransformMayChange.
-        /// </summary>
-        private Vector3 _lastMayChangeScale;
-        /// <summary>
         /// Number of resends which may occur. This could be for client resending replicates to the server or the server resending reconciles to the client.
         /// </summary>
         private int _remainingResends;
@@ -260,20 +192,6 @@ namespace FishNet.Object
         /// Last replicate tick read from remote. This can be the server reading a client or the other way around.
         /// </summary>
         private uint _lastReplicateReadRemoteTick;
-#if !PREDICTION_V2
-        /// <summary>
-        /// Last sent replicate by owning client or server to non-owners.
-        /// </summary>
-        private uint _lastSentReplicateTick;
-        /// <summary>
-        /// Last enqueued replicate tick on the server.
-        /// </summary> 
-        private uint _lastReceivedReplicateTick;
-        /// <summary>
-        /// Last tick of a reconcile received from the server.
-        /// </summary>
-        private uint _lastReceivedReconcileTick;
-#else
         /// <summary>
         /// Tick when replicates should begun to run. This is set and used when inputs are just received and need to queue to create a buffer.
         /// </summary>
@@ -290,13 +208,6 @@ namespace FishNet.Object
         /// Last tick read for a replicate.
         /// </summary>
         private uint _lastReadReplicateTick;
-#endif
-#if !PREDICTION_V2
-        /// <summary>
-        /// Last tick a reconcile occured.
-        /// </summary>
-        private uint _lastReconcileTick;
-#endif
         #endregion
 
         /// <summary>
@@ -324,28 +235,6 @@ namespace FishNet.Object
             _reconcileRpcDelegates[hash] = del;
         }
 
-#if !PREDICTION_V2
-        /// <summary>
-        /// Called when a replicate is received.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void OnReplicateRpc(uint? methodHash, PooledReader reader, NetworkConnection sendingClient, Channel channel)
-        {
-            if (methodHash == null)
-                methodHash = ReadRpcHash(reader);
-
-            if (sendingClient == null)
-            {
-                _networkObjectCache.NetworkManager.LogError($"NetworkConnection is null. Replicate {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name} will not complete. Remainder of packet may become corrupt.");
-                return;
-            }
-
-            if (_replicateRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReplicateRpcDelegate del))
-                del.Invoke(reader, sendingClient, channel);
-            else
-                _networkObjectCache.NetworkManager.LogWarning($"Replicate not found for hash {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
-        }
-#else
         /// <summary>
         /// Called when a replicate is received.
         /// </summary>
@@ -360,7 +249,6 @@ namespace FishNet.Object
             else
                 _networkObjectCache.NetworkManager.LogWarning($"Replicate not found for hash {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
         }
-#endif
         /// <summary>
         /// Called when a reconcile is received.
         /// </summary>
@@ -376,33 +264,6 @@ namespace FishNet.Object
                 _networkObjectCache.NetworkManager.LogWarning($"Reconcile not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
         }
 
-#if !PREDICTION_V2
-        /// <summary>
-        /// Clears cached replicates. This can be useful to call on server and client after teleporting.
-        /// </summary>
-        /// <param name="asServer">True to reset values for server, false to reset values for client.</param>
-        public void ClearReplicateCache(bool asServer)
-        {
-            ResetLastPredictionTicks();
-            ClearReplicateCache_Virtual(asServer);
-        }
-        /// <summary>
-        /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
-        /// </summary>
-        public void ClearReplicateCache()
-        {
-            ResetLastPredictionTicks();
-            ClearReplicateCache_Virtual(true);
-            ClearReplicateCache_Virtual(false);
-        }
-        /// <summary>
-        /// Clears cached replicates.
-        /// For internal use only.
-        /// </summary>
-        /// <param name="asServer"></param>
-        [MakePublic]
-        internal virtual void ClearReplicateCache_Virtual(bool asServer) { }
-#else
         /// <summary>
         /// Resets cached ticks used by prediction, such as last read and replicate tick.
         /// This is generally used when the ticks will be different then what was previously used; eg: when ownership changes.
@@ -435,117 +296,7 @@ namespace FishNet.Object
                 replicatesHistory[i].Dispose();
             replicatesHistory.Clear();
         }
-#endif
-#if !PREDICTION_V2
-        /// <summary>
-        /// Resets last predirection tick values.
-        /// </summary>
-        private void ResetLastPredictionTicks()
-        {
-            _lastSentReplicateTick = 0;
-            _lastReceivedReplicateTick = 0;
-            _lastReceivedReconcileTick = 0;
-            SetLastReconcileTick(0, false);
-            SetLastReplicateTick(0, false);
-        }
-#endif
 
-#if !PREDICTION_V2
-        /// <summary>
-        /// Writes number of past inputs from buffer to writer and sends it to the server.
-        /// Internal use. 
-        /// </summary>
-        private void Owner_SendReplicateRpc<T>(uint hash, List<T> replicates, Channel channel) where T : IReplicateData
-        {
-            if (!IsSpawnedWithWarning())
-                return;
-
-            int bufferCount = replicates.Count;
-            int lastBufferIndex = (bufferCount - 1);
-            //Nothing to send; should never be possible.
-            if (lastBufferIndex < 0)
-                return;
-
-            //Number of past inputs to send.
-            int pastInputs = Mathf.Min(PredictionManager.RedundancyCount, bufferCount);
-            /* Where to start writing from. When passed
-			 * into the writer values from this offset
-			 * and forward will be written. */
-            int offset = bufferCount - pastInputs;
-            if (offset < 0)
-                offset = 0;
-
-            uint lastReplicateTick = _lastSentReplicateTick;
-            if (lastReplicateTick > 0)
-            {
-                uint diff = TimeManager.LocalTick - GetLastReplicateTick();
-                offset += (int)diff - 1;
-                if (offset >= replicates.Count)
-                    return;
-            }
-
-            _lastSentReplicateTick = TimeManager.LocalTick;
-
-            //Write history to methodWriter.
-            PooledWriter methodWriter = WriterPool.Retrieve(WriterPool.LENGTH_BRACKET);
-            methodWriter.WriteReplicate<T>(replicates, offset);
-            PooledWriter writer;
-            //if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
-            //writer = CreateLinkedRpc(link, methodWriter, Channel.Unreliable);
-            //else //todo add support for -> server rpc links.
-
-            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
-            writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
-            NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), false);
-
-            /* If being sent as reliable then clear buffer
-			 * since we know it will get there. 
-			 * Also reset remaining resends. */
-            if (channel == Channel.Reliable)
-            {
-                replicates.Clear();
-                _remainingResends = 0;
-            }
-
-            methodWriter.StoreLength();
-            writer.StoreLength();
-        }
-#endif
-
-
-#if !PREDICTION_V2
-        /// <summary>
-        /// Sends a RPC to target.
-        /// Internal use.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Server_SendReconcileRpc<T>(uint hash, T reconcileData, Channel channel)
-        {
-            if (!IsSpawned)
-                return;
-            if (!Owner.IsActive)
-                return;
-
-            PooledWriter methodWriter = WriterPool.Retrieve();
-            methodWriter.WriteUInt32(GetLastReplicateTick());
-            methodWriter.Write(reconcileData);
-
-            PooledWriter writer;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (NetworkManager.DebugManager.ReconcileRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
-#else
-			if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
-#endif
-                writer = CreateLinkedRpc(link, methodWriter, channel);
-            else
-                writer = CreateRpc(hash, methodWriter, PacketId.Reconcile, channel);
-
-            _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), Owner);
-
-            methodWriter.Store();
-            writer.Store();
-        }
-#else
         /// <summary>
         /// Sends a RPC to target.
         /// Internal use.
@@ -596,144 +347,52 @@ namespace FishNet.Object
             methodWriter.Store();
             writer.Store();
         }
-#endif
-#if !PREDICTION_V2
-        /// <summary> 
-        /// Returns if there is a chance the transform may change after the tick.
-        /// </summary>
-        /// <returns></returns>
-        protected internal bool PredictedTransformMayChange()
-        {
-            if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
-                return false;
 
-            if (!_predictionInitialized)
-            {
-                _predictionInitialized = true;
-                _predictionRigidbody = GetComponentInParent<Rigidbody>();
-                _predictionRigidbody2d = GetComponentInParent<Rigidbody2D>();
-            }
+    //    /// <summary> 
+    //    /// Returns if there is a chance the transform may change after the tick.
+    //    /// </summary>
+    //    /// <returns></returns>
+    //    protected internal bool PredictedTransformMayChange()
+    //    {
+    //        if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
+    //            return false;
 
-            /* Use distance when checking if changed because rigidbodies can twitch
-			 * or move an extremely small amount. These small moves are not worth
-			 * resending over because they often fix themselves each frame. */
-            float changeDistance = 0.000004f;
+    //        if (!_predictionInitialized)
+    //        {
+    //            _predictionInitialized = true;
+    //            _predictionRigidbody = GetComponentInParent<Rigidbody>();
+    //            _predictionRigidbody2d = GetComponentInParent<Rigidbody2D>();
+    //        }
 
-            bool positionChanged = (transform.position - _lastMayChangePosition).sqrMagnitude > changeDistance;
-            bool rotationChanged = (transform.rotation.eulerAngles - _lastMayChangeRotation.eulerAngles).sqrMagnitude > changeDistance;
-            bool scaleChanged = (transform.localScale - _lastMayChangeScale).sqrMagnitude > changeDistance;
-            bool transformChanged = (positionChanged || rotationChanged || scaleChanged);
-            /* Returns true if transform.hasChanged, or if either
-			 * of the rigidbodies have velocity. */
-            bool changed = (
-                transformChanged ||
-                (_predictionRigidbody != null && (_predictionRigidbody.velocity != Vector3.zero || _predictionRigidbody.angularVelocity != Vector3.zero)) ||
-                (_predictionRigidbody2d != null && (_predictionRigidbody2d.velocity != Vector2.zero || _predictionRigidbody2d.angularVelocity != 0f))
-                );
+    //        /* Use distance when checking if changed because rigidbodies can twitch
+			 //* or move an extremely small amount. These small moves are not worth
+			 //* resending over because they often fix themselves each frame. */
+    //        float changeDistance = 0.000004f;
 
-            //If transform changed update last values.
-            if (transformChanged)
-            {
-                _lastMayChangePosition = transform.position;
-                _lastMayChangeRotation = transform.rotation;
-                _lastMayChangeScale = transform.localScale;
-            }
+    //        bool positionChanged = (transform.position - _lastMayChangePosition).sqrMagnitude > changeDistance;
+    //        bool rotationChanged = (transform.rotation.eulerAngles - _lastMayChangeRotation.eulerAngles).sqrMagnitude > changeDistance;
+    //        bool scaleChanged = (transform.localScale - _lastMayChangeScale).sqrMagnitude > changeDistance;
+    //        bool transformChanged = (positionChanged || rotationChanged || scaleChanged);
+    //        /* Returns true if transform.hasChanged, or if either
+			 //* of the rigidbodies have velocity. */
+    //        bool changed = (
+    //            transformChanged ||
+    //            (_predictionRigidbody != null && (_predictionRigidbody.velocity != Vector3.zero || _predictionRigidbody.angularVelocity != Vector3.zero)) ||
+    //            (_predictionRigidbody2d != null && (_predictionRigidbody2d.velocity != Vector2.zero || _predictionRigidbody2d.angularVelocity != 0f))
+    //            );
 
-            return changed;
-        }
-#else
-        /// <summary> 
-        /// Returns if there is a chance the transform may change after the tick.
-        /// </summary>
-        /// <returns></returns>
-        protected internal bool PredictedTransformMayChange()
-        {
-            if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
-                return false;
+    //        //If transform changed update last values.
+    //        if (transformChanged)
+    //        {
+    //            _lastMayChangePosition = transform.position;
+    //            _lastMayChangeRotation = transform.rotation;
+    //            _lastMayChangeScale = transform.localScale;
+    //        }
 
-            if (!_predictionInitialized)
-            {
-                _predictionInitialized = true;
-                _predictionRigidbody = GetComponentInParent<Rigidbody>();
-                _predictionRigidbody2d = GetComponentInParent<Rigidbody2D>();
-            }
-
-            /* Use distance when checking if changed because rigidbodies can twitch
-			 * or move an extremely small amount. These small moves are not worth
-			 * resending over because they often fix themselves each frame. */
-            float changeDistance = 0.000004f;
-
-            bool positionChanged = (transform.position - _lastMayChangePosition).sqrMagnitude > changeDistance;
-            bool rotationChanged = (transform.rotation.eulerAngles - _lastMayChangeRotation.eulerAngles).sqrMagnitude > changeDistance;
-            bool scaleChanged = (transform.localScale - _lastMayChangeScale).sqrMagnitude > changeDistance;
-            bool transformChanged = (positionChanged || rotationChanged || scaleChanged);
-            /* Returns true if transform.hasChanged, or if either
-			 * of the rigidbodies have velocity. */
-            bool changed = (
-                transformChanged ||
-                (_predictionRigidbody != null && (_predictionRigidbody.velocity != Vector3.zero || _predictionRigidbody.angularVelocity != Vector3.zero)) ||
-                (_predictionRigidbody2d != null && (_predictionRigidbody2d.velocity != Vector2.zero || _predictionRigidbody2d.angularVelocity != 0f))
-                );
-
-            //If transform changed update last values.
-            if (transformChanged)
-            {
-                _lastMayChangePosition = transform.position;
-                _lastMayChangeRotation = transform.rotation;
-                _lastMayChangeScale = transform.localScale;
-            }
-
-            return changed;
-        }
-#endif
-
-#if !PREDICTION_V2
-        /// <summary>
-        /// Checks conditions for a replicate.
-        /// </summary>
-        /// <param name="asServer">True if checking as server.</param>
-        /// <returns>Returns true if to exit the replicate early.</returns>
-        [MakePublic] //internal
-        internal bool Replicate_ExitEarly_A(bool asServer, bool replaying, bool allowServerControl)
-        {
-            bool isOwner = IsOwner;
-            //Server.
-            if (asServer)
-            {
-                //No owner, do not try to replicate 'owner' input.
-                if (!Owner.IsActive && !allowServerControl)
-                {
-                    ClearReplicateCache(true);
-                    return true;
-                }
-                //Is client host, no need to use CSP; trust client.
-                if (isOwner)
-                {
-                    ClearReplicateCache();
-                    return true;
-                }
-            }
-            //Client.
-            else
-            {
-                //Server does not replay; this should never happen.
-                if (replaying && IsServerStarted)
-                    return true;
-                //Spectators cannot replicate.
-                if (!isOwner)
-                {
-                    ClearReplicateCache(false);
-                    return true;
-                }
-            }
-
-            //Checks pass.
-            return false;
-        }
-#endif
+    //        return changed;
+    //    }
 
 
-#if PREDICTION_V2   
         /// <summary>
         /// Called internally when an input from localTick should be replayed.
         /// </summary>
@@ -745,7 +404,7 @@ namespace FishNet.Object
         protected internal void Replicate_Replay<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
             //Reconcile data was not received so cannot replay.
-            if (!ClientHasReconcileData)
+            if (!IsBehaviourReconciling)
                 return;
 
             if (_networkObjectCache.IsOwner)
@@ -806,63 +465,7 @@ namespace FishNet.Object
                 _lastReplicatedTick = data.GetTick();
             _networkObjectCache.LastUnorderedReplicateTick = data.GetTick();
         }
-#endif
 
-#if !PREDICTION_V2
-        /// <summary>
-        /// Gets the next replicate in perform when server or non-owning client.
-        /// </summary>
-        [MakePublic] //internal
-        internal void Replicate_NonOwner<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<T> q, T serverControlData, bool allowServerControl, Channel channel) where T : IReplicateData
-        {
-            //If to allow server control make sure there is no owner.
-            if (allowServerControl && !Owner.IsValid)
-            {
-                uint tick = TimeManager.LocalTick;
-                serverControlData.SetTick(tick);
-                SetLastReplicateTick(tick);
-                del.Invoke(serverControlData, true, channel, false);
-            }
-            //Using client inputs.
-            else
-            {
-                int count = q.Count;
-                if (count > 0)
-                {
-                    ReplicateData(q.Dequeue());
-                    count--;
-
-                    PredictionManager pm = PredictionManager;
-                    bool consumeExcess = !pm.DropExcessiveReplicates;
-                    //Number of entries to leave in buffer when consuming.
-                    int leaveInBuffer = (int)pm.QueuedInputs;
-                    //Only consume if the queue count is over leaveInBuffer.
-                    if (consumeExcess && count > leaveInBuffer)
-                    {
-                        byte maximumAllowedConsumes = pm.MaximumReplicateConsumeCount;
-                        int maximumPossibleConsumes = (count - leaveInBuffer);
-                        int consumeAmount = Mathf.Min(maximumAllowedConsumes, maximumPossibleConsumes);
-
-                        for (int i = 0; i < consumeAmount; i++)
-                            ReplicateData(q.Dequeue());
-                    }
-
-                    void ReplicateData(T data)
-                    {
-                        uint tick = data.GetTick();
-                        SetLastReplicateTick(tick);
-                        del.Invoke(data, true, channel, false);
-                    }
-
-                    _remainingResends = pm.RedundancyCount;
-                }
-                else
-                {
-                    del.Invoke(default, true, channel, false);
-                }
-            }
-        }
-#else
         /// <summary>
         /// Gets the next replicate in perform when server or non-owning client.
         /// </summary>
@@ -954,101 +557,7 @@ namespace FishNet.Object
             }
 
         }
-#endif
 
-#if !PREDICTION_V2
-        /// <summary>
-        /// Returns if a replicates data changed and updates resends as well data tick.
-        /// </summary>
-        /// <param name="enqueueData">True to enqueue data for replaying.</param>
-        /// <returns>True if data has changed..</returns>
-        [MakePublic] //internal
-        internal void Replicate_Owner<T>(ReplicateUserLogicDelegate<T> del, uint methodHash, List<T> replicates, T data, Channel channel) where T : IReplicateData
-        {
-            //Only check to enque/send if not clientHost.
-            if (!IsServerStarted)
-            {
-                Func<T, bool> isDefaultDel = PublicPropertyComparer<T>.IsDefault;
-                if (isDefaultDel == null)
-                {
-                    NetworkManager.LogError($"ReplicateComparers not found for type {typeof(T).FullName}");
-                    return;
-                }
-
-                //If there's no datas then reset last replicate send tick.
-                if (replicates.Count == 0)
-                    _lastSentReplicateTick = 0;
-
-                PredictionManager pm = NetworkManager.PredictionManager;
-
-                bool isDefault = isDefaultDel.Invoke(data);
-                bool mayChange = PredictedTransformMayChange();
-                bool resetResends = (pm.UsingRigidbodies || mayChange || !isDefault);
-                /* If there is going to be a resend then enqueue data no matter what.
-				 * Then ensures there are no data gaps for ticks. EG, input may
-				 * look like this...
-				 * Move - tick 0.
-				 * Idle - tick 1.
-				 * Move - tick 2.
-				 * 
-				 * If there were no 'using rigidbodies' then resetResends may be false.
-				 * As result the queue would be filled like this...
-				 * Move - tick 0.
-				 * Move - tick 2.
-				 * 
-				 * The ticks are not sent per data, just once and incremented once per data.
-				 * Due to this the results would actually be...
-				 * Move - tick 0.
-				 * Move - tick 1 (should be tick 2!).
-				 * 
-				 * But by including data if there will be resends the defaults will become added. */
-                if (resetResends)
-                    _remainingResends = pm.RedundancyCount;
-
-                bool enqueueData = (_remainingResends > 0);
-                if (enqueueData)
-                {
-                    /* Replicates will be limited to 1 second
-					 * worth on the client. That means the client
-					 * will only lose replays if they do not receive
-					 * a response back from the server for over a second.
-					 * When a client drops a replay it does not necessarily mean
-					 * they will be out of synchronization, but rather they
-					 * will not be able to reconcile that tick. */
-                    /* Even though limit is 1 second only remove entries if over 2 seconds
-					 * to prevent constant remove calls to the collection. */
-                    int maximumReplicates = (TimeManager.TickRate * 2);
-                    //If over then remove half the replicates.
-                    if (replicates.Count >= maximumReplicates)
-                    {
-                        int removeCount = (maximumReplicates / 2);
-                        //Dispose first.
-                        for (int i = 0; i < removeCount; i++)
-                            replicates[i].Dispose();
-                        //Then remove.
-                        replicates.RemoveRange(0, removeCount);
-                    }
-
-                    uint localTick = TimeManager.LocalTick;
-                    //Update tick on the data to current.
-                    data.SetTick(localTick);
-                    //Add to collection.
-                    replicates.Add(data);
-                }
-
-                //If theres resends left.
-                if (_remainingResends > 0)
-                {
-                    _remainingResends--;
-                    Owner_SendReplicateRpc<T>(methodHash, replicates, channel);
-                    //Update last replicate tick.
-                    SetLastReplicateTick(TimeManager.LocalTick);
-                }
-            }
-
-            del.Invoke(data, false, channel, false);
-        }
-#else
         /// <summary>
         /// Returns if a replicates data changed and updates resends as well data tick.
         /// </summary>
@@ -1128,9 +637,7 @@ namespace FishNet.Object
             del.Invoke(data, ReplicateState.CurrentCreated, channel);
             //TODO: dispose replicate datas from history on replays.            
         }
-#endif
 
-#if PREDICTION_V2
         /// <summary>
         /// Sends a Replicate to server or clients.
         /// </summary>
@@ -1200,35 +707,7 @@ namespace FishNet.Object
             methodWriter.StoreLength();
             writer.StoreLength();
         }
-#endif
 
-#if !PREDICTION_V2
-        /// <summary>
-        /// Reads a replicate the client.
-        /// </summary>
-        [MakePublic] //Internal.
-        internal void Replicate_Reader<T>(PooledReader reader, NetworkConnection sender, T[] arrBuffer, BasicQueue<T> replicates, Channel channel) where T : IReplicateData
-        {
-            PredictionManager pm = PredictionManager;
-
-            /* Data can be read even if owner is not valid because user
-			 * may switch ownership on an object and recv a replicate from
-			 * the previous owner. */
-            int receivedReplicatesCount = reader.ReadReplicate<T>(ref arrBuffer, TimeManager.LastPacketTick.LastRemoteTick, out _);
-            /* Replicate rpc readers relay to this method and
-			 * do not have an owner check in the generated code. */
-            if (!OwnerMatches(sender))
-                return;
-
-            if (receivedReplicatesCount > pm.RedundancyCount)
-            {
-                sender.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection {sender.ToString()} sent too many past replicates. Connection will be kicked immediately.");
-                return;
-            }
-
-            Replicate_HandleReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicates, channel);
-        }
-#else        
         /// <summary>
         /// Reads a replicate the client.
         /// </summary>
@@ -1288,10 +767,6 @@ namespace FishNet.Object
             Replicate_EnqueueReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicatesQueue, replicatesHistory, channel);
             Replicate_SendNonAuthoritative<T>(hash, replicatesQueue, channel);
         }
-#endif
-
-#if PREDICTION_V2
-
 
         /// <summary>
         /// Sends data from a reader which only contains the replicate packet.
@@ -1350,34 +825,7 @@ namespace FishNet.Object
             methodWriter.StoreLength();
             writer.StoreLength();
         }
-#endif
 
-
-#if !PREDICTION_V2
-        private void Replicate_HandleReceivedReplicate<T>(int receivedReplicatesCount, T[] arrBuffer, BasicQueue<T> replicates, Channel channel) where T : IReplicateData
-        {
-            PredictionManager pm = PredictionManager;
-            bool consumeExcess = !pm.DropExcessiveReplicates;
-            //Maximum number of replicates allowed to be queued at once.
-            int replicatesCountLimit = (consumeExcess) ? (TimeManager.TickRate * 2) : pm.GetMaximumServerReplicates();
-            for (int i = 0; i < receivedReplicatesCount; i++)
-            {
-                uint tick = arrBuffer[i].GetTick();
-                if (tick > _lastReceivedReplicateTick)
-                {
-                    //Cannot queue anymore, discard oldest.
-                    if (replicates.Count >= replicatesCountLimit)
-                    {
-                        T data = replicates.Dequeue();
-                        data.Dispose();
-                    }
-
-                    replicates.Enqueue(arrBuffer[i]);
-                    _lastReceivedReplicateTick = tick;
-                }
-            }
-        }
-#else
         /// <summary>
         /// Handles a received replicate packet.
         /// </summary>
@@ -1472,9 +920,722 @@ namespace FishNet.Object
                 _replicateStartTick = (_networkObjectCache.TimeManager.LocalTick + pm.QueuedInputs);
         }
 
-#endif
 
-#if !PREDICTION_V2
+        /// <summary>
+        /// Override this method to create your reconcile data, and call your reconcile method.
+        /// </summary>
+        public virtual void CreateReconcile() { }
+
+        /// <summary>
+        /// Sends a reconcile to clients.
+        /// </summary>
+        public void Reconcile_Server<T>(uint methodHash, T data, Channel channel) where T : IReconcileData
+        {
+            if (!IsServerStarted)
+                return;
+
+            //Tick does not need to be set for reconciles since they come in as state updates, which have the tick included globally.
+            Server_SendReconcileRpc(methodHash, data, channel);
+        }
+
+        /// <summary>
+        /// This is called when the networkbehaviour should perform a reconcile.
+        /// Codegen overrides this calling Reconcile_Client with the needed data.
+        /// </summary>
+        internal virtual void Reconcile_Client_Start() { }
+        /// <summary>
+        /// Processes a reconcile for client.
+        /// </summary>
+        [APIExclude]
+        [MakePublic]
+        protected internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, List<T2> replicatesHistory, T data) where T : IReconcileData where T2 : IReplicateData
+        {
+            //No data to reconcile to.
+            if (!IsBehaviourReconciling)
+                return;
+
+            if (replicatesHistory.Count > 0)
+            {
+                /* Remove replicates up to reconcile. Since the reconcile
+                 * is the state after a replicate for it's tick we no longer
+                 * need any replicates prior. */
+                //Find the closest entry which can be removed.
+                int removalCount = 0;
+                uint dataTick = data.GetTick();
+                //A few quick tests.
+                if (replicatesHistory.Count > 0)
+                {
+                    /* If the last entry in history is less or equal
+                     * to datatick then all histories need to be removed
+                     * as reconcile is beyond them. */
+                    if (replicatesHistory[^1].GetTick() <= dataTick)
+                    {
+                        removalCount = replicatesHistory.Count;
+                    }
+                    //Somewhere in between. Find what to remove up to.
+                    else
+                    {
+                        for (int i = 0; i < replicatesHistory.Count; i++)
+                        {
+                            uint entryTick = replicatesHistory[i].GetTick();
+                            /* Soon as an entry beyond dataTick is
+                             * found remove up to that entry. */
+                            if (entryTick > dataTick)
+                            {
+                                removalCount = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                for (int i = 0; i < removalCount; i++)
+                    replicatesHistory[i].Dispose();
+                replicatesHistory.RemoveRange(0, removalCount);
+            }
+            //Call reconcile user logic.
+            reconcileDel?.Invoke(data, Channel.Reliable);
+        }
+
+        internal void Reconcile_Client_End()
+        {
+            IsBehaviourReconciling = false;
+        }
+
+        /// <summary>
+        /// Reads a reconcile for the client.
+        /// </summary>
+        public void Reconcile_Reader<T>(PooledReader reader, ref T data, Channel channel) where T : IReconcileData
+        {
+            T newData = reader.Read<T>();
+            uint tick = (IsOwner) ? PredictionManager.ClientStateTick : PredictionManager.ServerStateTick;
+            //Do not process if an old state.
+            if (tick < _lastReadReconcileTick)
+                return;
+
+            data = newData;
+            data.SetTick(tick);
+
+            IsBehaviourReconciling = true;
+            //Also set on NetworkObject since at least one behaviour is reconciling.
+            _networkObjectCache.IsObjectReconciling = true;
+            _lastReadReconcileTick = tick;
+        }
+
+    }
+}
+
+#else
+
+using FishNet.CodeGenerating;
+using FishNet.Connection;
+using FishNet.Managing;
+using FishNet.Managing.Logging;
+using FishNet.Managing.Predicting;
+using FishNet.Managing.Server;
+using FishNet.Managing.Timing;
+using FishNet.Object.Prediction;
+using FishNet.Object.Prediction.Delegating;
+using FishNet.Serializing;
+using FishNet.Serializing.Helping;
+using FishNet.Transporting;
+using FishNet.Utility;
+using FishNet.Utility.Performance;
+using GameKit.Dependencies.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using UnityEngine;
+using UnityScene = UnityEngine.SceneManagement.Scene;
+
+[assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
+namespace FishNet.Object
+{
+
+    public abstract partial class NetworkBehaviour : MonoBehaviour
+    {
+#region Public.
+        /// <summary>
+        /// Gets the last tick this NetworkBehaviour reconciled with.
+        /// </summary>
+        public uint GetLastReconcileTick() => _lastReconcileTick;
+        /// <summary>
+        /// Sets the last tick this NetworkBehaviour reconciled with.
+        /// </summary>
+        internal void SetLastReconcileTick(uint value, bool updateGlobals = true)
+        {
+            _lastReconcileTick = value;
+            if (updateGlobals)
+                PredictionManager.LastReconcileTick = value;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        private uint _lastReplicateTick;
+        /// <summary>
+        /// Gets the last tick this NetworkBehaviour replicated with.
+        /// </summary>
+        public uint GetLastReplicateTick() => _lastReplicateTick;
+        /// <summary>
+        /// Sets the last tick this NetworkBehaviour replicated with.
+        /// For internal use only.
+        /// </summary>
+        private void SetLastReplicateTick(uint value, bool updateGlobals = true)
+        {
+            _lastReplicateTick = value;
+            if (updateGlobals)
+            {
+                Owner.LocalReplicateTick = TimeManager.LocalTick;
+                PredictionManager.LastReplicateTick = value;
+            }
+        }
+        /// <summary>
+        /// True if this NetworkBehaviour has reconcile data.
+        /// </summary>
+        public bool ClientHasReconcileData { get; internal set; }
+        /// <summary>
+        /// True if this NetworkBehaviour is currently reconciling.
+        /// </summary>
+        public bool IsBehaviourReconciling { get; internal set; }
+#endregion
+
+#region Private.
+        /// <summary>
+        /// Registered Replicate methods.
+        /// </summary>
+        private readonly Dictionary<uint, ReplicateRpcDelegate> _replicateRpcDelegates = new Dictionary<uint, ReplicateRpcDelegate>();
+        /// <summary>
+        /// Registered Reconcile methods.
+        /// </summary>
+        private readonly Dictionary<uint, ReconcileRpcDelegate> _reconcileRpcDelegates = new Dictionary<uint, ReconcileRpcDelegate>();
+        /// <summary>
+        /// True if initialized compnents for prediction.
+        /// </summary>
+        private bool _predictionInitialized;
+        /// <summary>
+        /// Rigidbody found on this object. This is used for prediction.
+        /// </summary>
+        private Rigidbody _predictionRigidbody;
+        /// <summary>
+        /// Rigidbody2D found on this object. This is used for prediction.
+        /// </summary>
+        private Rigidbody2D _predictionRigidbody2d;
+        /// <summary>
+        /// Last position for TransformMayChange.
+        /// </summary>
+        private Vector3 _lastMayChangePosition;
+        /// <summary>
+        /// Last rotation for TransformMayChange.
+        /// </summary>
+        private Quaternion _lastMayChangeRotation;
+        /// <summary>
+        /// Last scale for TransformMayChange.
+        /// </summary>
+        private Vector3 _lastMayChangeScale;
+        /// <summary>
+        /// Number of resends which may occur. This could be for client resending replicates to the server or the server resending reconciles to the client.
+        /// </summary>
+        private int _remainingResends;
+        /// <summary>
+        /// Last replicate tick read from remote. This can be the server reading a client or the other way around.
+        /// </summary>
+        private uint _lastReplicateReadRemoteTick;
+        /// <summary>
+        /// Last sent replicate by owning client or server to non-owners.
+        /// </summary>
+        private uint _lastSentReplicateTick;
+        /// <summary>
+        /// Last enqueued replicate tick on the server.
+        /// </summary> 
+        private uint _lastReceivedReplicateTick;
+        /// <summary>
+        /// Last tick of a reconcile received from the server.
+        /// </summary>
+        private uint _lastReceivedReconcileTick;
+        /// <summary>
+        /// Last tick a reconcile occured.
+        /// </summary>
+        private uint _lastReconcileTick;
+#endregion
+
+        /// <summary>
+        /// Registers a RPC method.
+        /// Internal use.
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="del"></param>
+        [MakePublic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void RegisterReplicateRpc(uint hash, ReplicateRpcDelegate del)
+        {
+            _replicateRpcDelegates[hash] = del;
+        }
+        /// <summary>
+        /// Registers a RPC method.
+        /// Internal use.
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="del"></param>
+        [MakePublic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void RegisterReconcileRpc(uint hash, ReconcileRpcDelegate del)
+        {
+            _reconcileRpcDelegates[hash] = del;
+        }
+
+        /// <summary>
+        /// Called when a replicate is received.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnReplicateRpc(uint? methodHash, PooledReader reader, NetworkConnection sendingClient, Channel channel)
+        {
+            if (methodHash == null)
+                methodHash = ReadRpcHash(reader);
+
+            if (sendingClient == null)
+            {
+                _networkObjectCache.NetworkManager.LogError($"NetworkConnection is null. Replicate {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name} will not complete. Remainder of packet may become corrupt.");
+                return;
+            }
+
+            if (_replicateRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReplicateRpcDelegate del))
+                del.Invoke(reader, sendingClient, channel);
+            else
+                _networkObjectCache.NetworkManager.LogWarning($"Replicate not found for hash {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
+        }
+
+        /// <summary>
+        /// Called when a reconcile is received.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnReconcileRpc(uint? methodHash, PooledReader reader, Channel channel)
+        {
+            if (methodHash == null)
+                methodHash = ReadRpcHash(reader);
+
+            if (_reconcileRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReconcileRpcDelegate del))
+                del.Invoke(reader, channel);
+            else
+                _networkObjectCache.NetworkManager.LogWarning($"Reconcile not found for hash {methodHash.Value}. Remainder of packet may become corrupt.");
+        }
+
+        /// <summary>
+        /// Clears cached replicates. This can be useful to call on server and client after teleporting.
+        /// </summary>
+        /// <param name="asServer">True to reset values for server, false to reset values for client.</param>
+        public void ClearReplicateCache(bool asServer)
+        {
+            ResetLastPredictionTicks();
+            ClearReplicateCache_Virtual(asServer);
+        }
+        /// <summary>
+        /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
+        /// </summary>
+        public void ClearReplicateCache()
+        {
+            ResetLastPredictionTicks();
+            ClearReplicateCache_Virtual(true);
+            ClearReplicateCache_Virtual(false);
+        }
+        /// <summary>
+        /// Clears cached replicates.
+        /// For internal use only.
+        /// </summary>
+        /// <param name="asServer"></param>
+        [MakePublic]
+        internal virtual void ClearReplicateCache_Virtual(bool asServer) { }
+
+        /// <summary>
+        /// Resets last predirection tick values.
+        /// </summary>
+        private void ResetLastPredictionTicks()
+        {
+            _lastSentReplicateTick = 0;
+            _lastReceivedReplicateTick = 0;
+            _lastReceivedReconcileTick = 0;
+            SetLastReconcileTick(0, false);
+            SetLastReplicateTick(0, false);
+        }
+
+
+        /// <summary>
+        /// Writes number of past inputs from buffer to writer and sends it to the server.
+        /// Internal use. 
+        /// </summary>
+        private void Owner_SendReplicateRpc<T>(uint hash, List<T> replicates, Channel channel) where T : IReplicateData
+        {
+            if (!IsSpawnedWithWarning())
+                return;
+
+            int bufferCount = replicates.Count;
+            int lastBufferIndex = (bufferCount - 1);
+            //Nothing to send; should never be possible.
+            if (lastBufferIndex < 0)
+                return;
+
+            //Number of past inputs to send.
+            int pastInputs = Mathf.Min(PredictionManager.RedundancyCount, bufferCount);
+            /* Where to start writing from. When passed
+			 * into the writer values from this offset
+			 * and forward will be written. */
+            int offset = bufferCount - pastInputs;
+            if (offset < 0)
+                offset = 0;
+
+            uint lastReplicateTick = _lastSentReplicateTick;
+            if (lastReplicateTick > 0)
+            {
+                uint diff = TimeManager.LocalTick - GetLastReplicateTick();
+                offset += (int)diff - 1;
+                if (offset >= replicates.Count)
+                    return;
+            }
+
+            _lastSentReplicateTick = TimeManager.LocalTick;
+
+            //Write history to methodWriter.
+            PooledWriter methodWriter = WriterPool.Retrieve(WriterPool.LENGTH_BRACKET);
+            methodWriter.WriteReplicate<T>(replicates, offset);
+            PooledWriter writer;
+            //if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
+            //writer = CreateLinkedRpc(link, methodWriter, Channel.Unreliable);
+            //else //todo add support for -> server rpc links.
+
+            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
+            writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
+            NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), false);
+
+            /* If being sent as reliable then clear buffer
+			 * since we know it will get there. 
+			 * Also reset remaining resends. */
+            if (channel == Channel.Reliable)
+            {
+                replicates.Clear();
+                _remainingResends = 0;
+            }
+
+            methodWriter.StoreLength();
+            writer.StoreLength();
+        }
+
+
+        /// <summary>
+        /// Sends a RPC to target.
+        /// Internal use.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Server_SendReconcileRpc<T>(uint hash, T reconcileData, Channel channel)
+        {
+            if (!IsSpawned)
+                return;
+            if (!Owner.IsActive)
+                return;
+
+            PooledWriter methodWriter = WriterPool.Retrieve();
+            methodWriter.WriteUInt32(GetLastReplicateTick());
+            methodWriter.Write(reconcileData);
+
+            PooledWriter writer;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (NetworkManager.DebugManager.ReconcileRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
+#else
+			if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
+#endif
+                writer = CreateLinkedRpc(link, methodWriter, channel);
+            else
+                writer = CreateRpc(hash, methodWriter, PacketId.Reconcile, channel);
+
+            _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), Owner);
+
+            methodWriter.Store();
+            writer.Store();
+        }
+
+
+        /// <summary> 
+        /// Returns if there is a chance the transform may change after the tick.
+        /// </summary>
+        /// <returns></returns>
+        protected internal bool PredictedTransformMayChange()
+        {
+            if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
+                return false;
+
+            if (!_predictionInitialized)
+            {
+                _predictionInitialized = true;
+                _predictionRigidbody = GetComponentInParent<Rigidbody>();
+                _predictionRigidbody2d = GetComponentInParent<Rigidbody2D>();
+            }
+
+            /* Use distance when checking if changed because rigidbodies can twitch
+			 * or move an extremely small amount. These small moves are not worth
+			 * resending over because they often fix themselves each frame. */
+            float changeDistance = 0.000004f;
+
+            bool positionChanged = (transform.position - _lastMayChangePosition).sqrMagnitude > changeDistance;
+            bool rotationChanged = (transform.rotation.eulerAngles - _lastMayChangeRotation.eulerAngles).sqrMagnitude > changeDistance;
+            bool scaleChanged = (transform.localScale - _lastMayChangeScale).sqrMagnitude > changeDistance;
+            bool transformChanged = (positionChanged || rotationChanged || scaleChanged);
+            /* Returns true if transform.hasChanged, or if either
+			 * of the rigidbodies have velocity. */
+            bool changed = (
+                transformChanged ||
+                (_predictionRigidbody != null && (_predictionRigidbody.velocity != Vector3.zero || _predictionRigidbody.angularVelocity != Vector3.zero)) ||
+                (_predictionRigidbody2d != null && (_predictionRigidbody2d.velocity != Vector2.zero || _predictionRigidbody2d.angularVelocity != 0f))
+                );
+
+            //If transform changed update last values.
+            if (transformChanged)
+            {
+                _lastMayChangePosition = transform.position;
+                _lastMayChangeRotation = transform.rotation;
+                _lastMayChangeScale = transform.localScale;
+            }
+
+            return changed;
+        }
+
+        /// <summary>
+        /// Checks conditions for a replicate.
+        /// </summary>
+        /// <param name="asServer">True if checking as server.</param>
+        /// <returns>Returns true if to exit the replicate early.</returns>
+        [MakePublic] //internal
+        internal bool Replicate_ExitEarly_A(bool asServer, bool replaying, bool allowServerControl)
+        {
+            bool isOwner = IsOwner;
+            //Server.
+            if (asServer)
+            {
+                //No owner, do not try to replicate 'owner' input.
+                if (!Owner.IsActive && !allowServerControl)
+                {
+                    ClearReplicateCache(true);
+                    return true;
+                }
+                //Is client host, no need to use CSP; trust client.
+                if (isOwner)
+                {
+                    ClearReplicateCache();
+                    return true;
+                }
+            }
+            //Client.
+            else
+            {
+                //Server does not replay; this should never happen.
+                if (replaying && IsServerStarted)
+                    return true;
+                //Spectators cannot replicate.
+                if (!isOwner)
+                {
+                    ClearReplicateCache(false);
+                    return true;
+                }
+            }
+
+            //Checks pass.
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the next replicate in perform when server or non-owning client.
+        /// </summary>
+        [MakePublic] //internal
+        internal void Replicate_NonOwner<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<T> q, T serverControlData, bool allowServerControl, Channel channel) where T : IReplicateData
+        {
+            //If to allow server control make sure there is no owner.
+            if (allowServerControl && !Owner.IsValid)
+            {
+                uint tick = TimeManager.LocalTick;
+                serverControlData.SetTick(tick);
+                SetLastReplicateTick(tick);
+                del.Invoke(serverControlData, true, channel, false);
+            }
+            //Using client inputs.
+            else
+            {
+                int count = q.Count;
+                if (count > 0)
+                {
+                    ReplicateData(q.Dequeue());
+                    count--;
+
+                    PredictionManager pm = PredictionManager;
+                    bool consumeExcess = !pm.DropExcessiveReplicates;
+                    //Number of entries to leave in buffer when consuming.
+                    int leaveInBuffer = (int)pm.QueuedInputs;
+                    //Only consume if the queue count is over leaveInBuffer.
+                    if (consumeExcess && count > leaveInBuffer)
+                    {
+                        byte maximumAllowedConsumes = pm.MaximumReplicateConsumeCount;
+                        int maximumPossibleConsumes = (count - leaveInBuffer);
+                        int consumeAmount = Mathf.Min(maximumAllowedConsumes, maximumPossibleConsumes);
+
+                        for (int i = 0; i < consumeAmount; i++)
+                            ReplicateData(q.Dequeue());
+                    }
+
+                    void ReplicateData(T data)
+                    {
+                        uint tick = data.GetTick();
+                        SetLastReplicateTick(tick);
+                        del.Invoke(data, true, channel, false);
+                    }
+
+                    _remainingResends = pm.RedundancyCount;
+                }
+                else
+                {
+                    del.Invoke(default, true, channel, false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns if a replicates data changed and updates resends as well data tick.
+        /// </summary>
+        /// <param name="enqueueData">True to enqueue data for replaying.</param>
+        /// <returns>True if data has changed..</returns>
+        [MakePublic] //internal
+        internal void Replicate_Owner<T>(ReplicateUserLogicDelegate<T> del, uint methodHash, List<T> replicates, T data, Channel channel) where T : IReplicateData
+        {
+            //Only check to enque/send if not clientHost.
+            if (!IsServerStarted)
+            {
+                Func<T, bool> isDefaultDel = PublicPropertyComparer<T>.IsDefault;
+                if (isDefaultDel == null)
+                {
+                    NetworkManager.LogError($"ReplicateComparers not found for type {typeof(T).FullName}");
+                    return;
+                }
+
+                //If there's no datas then reset last replicate send tick.
+                if (replicates.Count == 0)
+                    _lastSentReplicateTick = 0;
+
+                PredictionManager pm = NetworkManager.PredictionManager;
+
+                bool isDefault = isDefaultDel.Invoke(data);
+                bool mayChange = PredictedTransformMayChange();
+                bool resetResends = (pm.UsingRigidbodies || mayChange || !isDefault);
+                /* If there is going to be a resend then enqueue data no matter what.
+				 * Then ensures there are no data gaps for ticks. EG, input may
+				 * look like this...
+				 * Move - tick 0.
+				 * Idle - tick 1.
+				 * Move - tick 2.
+				 * 
+				 * If there were no 'using rigidbodies' then resetResends may be false.
+				 * As result the queue would be filled like this...
+				 * Move - tick 0.
+				 * Move - tick 2.
+				 * 
+				 * The ticks are not sent per data, just once and incremented once per data.
+				 * Due to this the results would actually be...
+				 * Move - tick 0.
+				 * Move - tick 1 (should be tick 2!).
+				 * 
+				 * But by including data if there will be resends the defaults will become added. */
+                if (resetResends)
+                    _remainingResends = pm.RedundancyCount;
+
+                bool enqueueData = (_remainingResends > 0);
+                if (enqueueData)
+                {
+                    /* Replicates will be limited to 1 second
+					 * worth on the client. That means the client
+					 * will only lose replays if they do not receive
+					 * a response back from the server for over a second.
+					 * When a client drops a replay it does not necessarily mean
+					 * they will be out of synchronization, but rather they
+					 * will not be able to reconcile that tick. */
+                    /* Even though limit is 1 second only remove entries if over 2 seconds
+					 * to prevent constant remove calls to the collection. */
+                    int maximumReplicates = (TimeManager.TickRate * 2);
+                    //If over then remove half the replicates.
+                    if (replicates.Count >= maximumReplicates)
+                    {
+                        int removeCount = (maximumReplicates / 2);
+                        //Dispose first.
+                        for (int i = 0; i < removeCount; i++)
+                            replicates[i].Dispose();
+                        //Then remove.
+                        replicates.RemoveRange(0, removeCount);
+                    }
+
+                    uint localTick = TimeManager.LocalTick;
+                    //Update tick on the data to current.
+                    data.SetTick(localTick);
+                    //Add to collection.
+                    replicates.Add(data);
+                }
+
+                //If theres resends left.
+                if (_remainingResends > 0)
+                {
+                    _remainingResends--;
+                    Owner_SendReplicateRpc<T>(methodHash, replicates, channel);
+                    //Update last replicate tick.
+                    SetLastReplicateTick(TimeManager.LocalTick);
+                }
+            }
+
+            del.Invoke(data, false, channel, false);
+        }
+
+
+        /// <summary>
+        /// Reads a replicate the client.
+        /// </summary>
+        [MakePublic] //Internal.
+        internal void Replicate_Reader<T>(PooledReader reader, NetworkConnection sender, T[] arrBuffer, BasicQueue<T> replicates, Channel channel) where T : IReplicateData
+        {
+            PredictionManager pm = PredictionManager;
+
+            /* Data can be read even if owner is not valid because user
+			 * may switch ownership on an object and recv a replicate from
+			 * the previous owner. */
+            int receivedReplicatesCount = reader.ReadReplicate<T>(ref arrBuffer, TimeManager.LastPacketTick.LastRemoteTick, out _);
+            /* Replicate rpc readers relay to this method and
+			 * do not have an owner check in the generated code. */
+            if (!OwnerMatches(sender))
+                return;
+
+            if (receivedReplicatesCount > pm.RedundancyCount)
+            {
+                sender.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection {sender.ToString()} sent too many past replicates. Connection will be kicked immediately.");
+                return;
+            }
+
+            Replicate_HandleReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicates, channel);
+        }
+
+        private void Replicate_HandleReceivedReplicate<T>(int receivedReplicatesCount, T[] arrBuffer, BasicQueue<T> replicates, Channel channel) where T : IReplicateData
+        {
+            PredictionManager pm = PredictionManager;
+            bool consumeExcess = !pm.DropExcessiveReplicates;
+            //Maximum number of replicates allowed to be queued at once.
+            int replicatesCountLimit = (consumeExcess) ? (TimeManager.TickRate * 2) : pm.GetMaximumServerReplicates();
+            for (int i = 0; i < receivedReplicatesCount; i++)
+            {
+                uint tick = arrBuffer[i].GetTick();
+                if (tick > _lastReceivedReplicateTick)
+                {
+                    //Cannot queue anymore, discard oldest.
+                    if (replicates.Count >= replicatesCountLimit)
+                    {
+                        T data = replicates.Dequeue();
+                        data.Dispose();
+                    }
+
+                    replicates.Enqueue(arrBuffer[i]);
+                    _lastReceivedReplicateTick = tick;
+                }
+            }
+        }
+
         /// <summary>
         /// Checks conditions for a reconcile.
         /// </summary>
@@ -1515,9 +1676,7 @@ namespace FishNet.Object
             //Checks pass.
             return false;
         }
-#endif
 
-#if !PREDICTION_V2
         /// <summary>
         /// Updates lastReconcileTick as though running asServer.
         /// </summary>
@@ -1542,25 +1701,7 @@ namespace FishNet.Object
             PredictionManager.InvokeServerReconcile(this, false);
 
         }
-#else
-        /// <summary>
-        /// Sends a reconcile to clients.
-        /// </summary>
-        public void Reconcile_Server<T>(uint methodHash, T data, Channel channel) where T : IReconcileData
-        {
-            if (!IsServerStarted)
-                return;
 
-            //Tick does not need to be set for reconciles since they come in as state updates, which have the tick included globally.
-            //Use reliable during development.
-            channel = Channel.Reliable;
-            PredictionManager.InvokeServerReconcile(this, true);
-            Server_SendReconcileRpc(methodHash, data, channel);
-            PredictionManager.InvokeServerReconcile(this, false);
-        }
-#endif
-
-#if !PREDICTION_V2
         /// <summary>
         /// Processes a reconcile for client.
         /// </summary>
@@ -1636,73 +1777,7 @@ namespace FishNet.Object
             //Reconcile ended.
             PredictionManager.InvokeOnReconcile(this, false);
         }
-#else
-        /// <summary>
-        /// This is called when the networkbehaviour should perform a reconcile.
-        /// Codegen overrides this calling Reconcile_Client with the needed data.
-        /// </summary>
-        internal virtual void Reconcile_Client_Start() { }
-        /// <summary>
-        /// Processes a reconcile for client.
-        /// </summary>
-        [APIExclude]
-        [MakePublic]
-        protected internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, List<T2> replicatesHistory, T data) where T : IReconcileData where T2 : IReplicateData
-        {
-            IsBehaviourReconciling = true;
-            if (replicatesHistory.Count > 0)
-            {
-                /* Remove replicates up to reconcile. Since the reconcile
-                 * is the state after a replicate for it's tick we no longer
-                 * need any replicates prior. */
-                //Find the closest entry which can be removed.
-                int removalCount = 0;
-                uint dataTick = data.GetTick();
-                //A few quick tests.
-                if (replicatesHistory.Count > 0)
-                {
-                    /* If the last entry in history is less or equal
-                     * to datatick then all histories need to be removed
-                     * as reconcile is beyond them. */
-                    if (replicatesHistory[^1].GetTick() <= dataTick)
-                    {
-                        removalCount = replicatesHistory.Count;
-                    }
-                    //Somewhere in between. Find what to remove up to.
-                    else
-                    {
-                        for (int i = 0; i < replicatesHistory.Count; i++)
-                        {
-                            uint entryTick = replicatesHistory[i].GetTick();
-                            /* Soon as an entry beyond dataTick is
-                             * found remove up to that entry. */
-                            if (entryTick > dataTick)
-                            {
-                                removalCount = i;
-                                break;
-                            }
-                        }
-                    }
-                }
 
-                for (int i = 0; i < removalCount; i++)
-                    replicatesHistory[i].Dispose();
-                replicatesHistory.RemoveRange(0, removalCount);
-            }
-            //Call reconcile user logic.
-            reconcileDel?.Invoke(data, Channel.Reliable);
-        }
-#endif
-
-#if PREDICTION_V2
-        internal void Reconcile_Client_End()
-        {
-            ClientHasReconcileData = false;
-            IsBehaviourReconciling = false;
-        }
-#endif
-
-#if !PREDICTION_V2
         /// <summary>
         /// Reads a reconcile the client.
         /// </summary>
@@ -1723,25 +1798,9 @@ namespace FishNet.Object
             ClientHasReconcileData = true;
             _lastReceivedReconcileTick = tick;
         }
-#else
-        /// <summary>
-        /// Reads a reconcile for the client.
-        /// </summary>
-        public void Reconcile_Reader<T>(PooledReader reader, ref T data, Channel channel) where T : IReconcileData
-        {
-            T newData = reader.Read<T>();
-            uint tick = (IsOwner) ? PredictionManager.ClientStateTick : PredictionManager.ServerStateTick;
-            //Do not process if an old state.
-            if (tick < _lastReadReconcileTick)
-                return;
-
-            data = newData;
-            data.SetTick(tick);
-
-            ClientHasReconcileData = true;
-            _lastReadReconcileTick = tick;
-        }
-#endif
 
     }
 }
+
+
+#endif

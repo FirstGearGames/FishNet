@@ -1,4 +1,4 @@
-﻿#if !PREDICTION_V2
+﻿#if PREDICTION_1
 using FishNet.Documenting;
 using FishNet.Managing;
 using System.Collections;

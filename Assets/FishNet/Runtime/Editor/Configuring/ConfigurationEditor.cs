@@ -26,7 +26,7 @@ namespace FishNet.Editing
     {
         #region const.
         private const string STABLE_DEFINE = "FISHNET_STABLE_MODE";
-        private const string PREDICTIONV2_DEFINE = "PREDICTION_V2";
+        private const string PREDICTION_1_DEFINE = "PREDICTION_1";
         private const string QOL_ATTRIBUTES_DEFINE = "DISABLE_QOL_ATTRIBUTES";
         private const string DEVELOPER_ONLY_WARNING = "If you are not a developer or were not instructed to do this by a developer things are likely to break. You have been warned.";
         #endregion
@@ -54,28 +54,31 @@ namespace FishNet.Editing
         #endregion
 
         #region PredictionV2.
-#if !PREDICTION_V2
-        [MenuItem("Fish-Networking/Experimental/PredictionV2/Enable", false, -999)]
+#if PREDICTION_1
+        [MenuItem("Fish-Networking/Utility/Prediction/Switch To Prediction 2", false, -998)]
         private static void EnablePredictionV2()
         {
-            bool result = RemoveOrAddDefine(PREDICTIONV2_DEFINE, false);
+            bool result = RemoveOrAddDefine(PREDICTION_1_DEFINE, true);
             if (result)
-                Debug.LogWarning($"PredictionV2 has been enabled. {DEVELOPER_ONLY_WARNING}");
+                Debug.Log("Prediction 2 has been enabled.");
         }
 #else
-        [MenuItem("Fish-Networking/Experimental/PredictionV2/Disable", false, -998)]
+        [MenuItem("Fish-Networking/Utility/Prediction/Switch To Prediction 1", false, -998)]
         private static void DisablePredictionV2()
         {
-            bool result = RemoveOrAddDefine(PREDICTIONV2_DEFINE, true);
+            bool result = RemoveOrAddDefine(PREDICTION_1_DEFINE, false);
             if (result)
-                Debug.Log("PredictionV2 has been disabled.");
+            {
+                Debug.Log("Prediction 1 has been enabled.");
+                Debug.LogWarning($"Please note that Prediction 1 is no longer supported and will be removed in FishNet 5.");
+            }
         }
 #endif
         #endregion
 
         #region QOL Attributes
 #if DISABLE_QOL_ATTRIBUTES
-        [MenuItem("Fish-Networking/Experimental/Quality of Life Attributes/Enable", false, -999)]
+        [MenuItem("Fish-Networking/Utility/Quality of Life Attributes/Enable", false, -999)]
         private static void EnableQOLAttributes()
         {
             bool result = RemoveOrAddDefine(QOL_ATTRIBUTES_DEFINE, true);
@@ -83,7 +86,7 @@ namespace FishNet.Editing
                 Debug.LogWarning($"Quality of Life Attributes have been enabled.");
         }
 #else
-        [MenuItem("Fish-Networking/Experimental/Quality of Life Attributes/Disable", false, -998)]
+        [MenuItem("Fish-Networking/Utility/Quality of Life Attributes/Disable", false, -998)]
         private static void DisableQOLAttributes()
         {
             bool result = RemoveOrAddDefine(QOL_ATTRIBUTES_DEFINE, false);

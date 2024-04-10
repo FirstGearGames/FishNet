@@ -64,7 +64,7 @@ namespace FishNet.Managing.Predicting.Editing
             }
             else
             {
-#if !PREDICTION_V2
+#if PREDICTION_1
                 EditorGUILayout.PropertyField(_maximumConsumeCount);
 #endif
             }

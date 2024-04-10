@@ -128,7 +128,7 @@ namespace FishNet.Object
         /// To check if server or client has been initialized on this object use IsXYZInitialized.
         /// </summary>
         public bool IsNetworked => _networkObjectCache.IsNetworked;
-#if PREDICTION_V2
+#if !PREDICTION_1
         /// <summary>
         /// True if a reconcile is occuring on the PredictionManager. Note the difference between this and IsBehaviourReconciling.
         /// </summary>
@@ -153,8 +153,9 @@ namespace FishNet.Object
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartNetwork", " Use (base.Owner.IsLocalClient || (base.IsServerInitialized && !Owner.Isvalid) instead.")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Start", "")]
-        public bool IsOwnerOrServer => (_networkObjectCache.IsOwner || (_networkObjectCache.IsServerInitialized && !_networkObjectCache.Owner.IsValid));
-
+        public bool HasAuthority => (_networkObjectCache.IsOwner || (_networkObjectCache.IsServerInitialized && !_networkObjectCache.Owner.IsValid));
+        [Obsolete("Use HasAuthority")]
+        public bool IsOwnerOrServer => HasAuthority;
         /// <summary>
         /// Owner of this object.
         /// </summary>

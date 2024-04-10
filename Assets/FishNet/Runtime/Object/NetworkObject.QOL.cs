@@ -88,7 +88,7 @@ namespace FishNet.Object
         /// True if client nor server are started.
         /// </summary>
         public bool IsOffline => (!IsClientStarted && !IsServerStarted);
-#if PREDICTION_V2
+#if !PREDICTION_1
         /// <summary>
         /// True if a reconcile is occuring on the PredictionManager. Note the difference between this and IsBehaviourReconciling.
         /// </summary>

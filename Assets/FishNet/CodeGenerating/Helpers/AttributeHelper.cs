@@ -27,7 +27,7 @@ namespace FishNet.CodeGenerating.Helping
             ServerRpcAttribute_FullName = typeof(ServerRpcAttribute).FullName;
             ObserversRpcAttribute_FullName = typeof(ObserversRpcAttribute).FullName;
             TargetRpcAttribute_FullName = typeof(TargetRpcAttribute).FullName;
-#if !PREDICTION_V2
+#if PREDICTION_1
             ReplicateAttribute_FullName = typeof(ReplicateAttribute).FullName;
             ReconcileAttribute_FullName = typeof(ReconcileAttribute).FullName;
 #else

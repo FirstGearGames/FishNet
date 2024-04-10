@@ -12,7 +12,7 @@ namespace FishNet.Component.Prediction
 {
     public partial class PredictedObject : NetworkBehaviour
     {
-#if !PREDICTION_V2
+#if PREDICTION_1
         #region Types.
         [System.Serializable]
         public struct SmoothingData

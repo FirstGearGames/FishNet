@@ -346,7 +346,7 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
-        /// Removes delta from Remaining for server and client.
+        /// Adds delta from Remaining for server and client.
         /// </summary>
         /// <param name="delta">Value to remove from Remaining.</param>
         public void Update(float delta)

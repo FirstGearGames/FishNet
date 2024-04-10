@@ -50,12 +50,6 @@ namespace FishNet.Managing.Observing
         /// </summary>
         private List<float> _singleLevelOfDetailDistances = new List<float>() { float.MaxValue };
         /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")]
-        [SerializeField]
-        private bool _updateHostVisibility = true;
-        /// <summary>
         /// True to update visibility for clientHost based on if they are an observer or not.
         /// </summary>
         public bool UpdateHostVisibility
@@ -63,6 +57,26 @@ namespace FishNet.Managing.Observing
             get => _updateHostVisibility;
             private set => _updateHostVisibility = value;
         }
+        [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")]
+        [SerializeField]
+        private bool _updateHostVisibility = true;
+        /// <summary>
+        /// Maximum duration the server will take to update timed observer conditions as server load increases. Lower values will result in timed conditions being checked quicker at the cost of performance..
+        /// </summary>
+        public float MaximumTimedObserversDuration
+        {
+            get => _maximumTimedObserversDuration;
+            private set => _maximumTimedObserversDuration = value;
+        }
+        [Tooltip("Maximum duration the server will take to update timed observer conditions as server load increases. Lower values will result in timed conditions being checked quicker at the cost of performance.")]
+        [SerializeField]
+        [Range(0f, 20f)]
+        private float _maximumTimedObserversDuration = 10f;
+        /// <summary>
+        /// Sets the MaximumTimedObserversDuration value.
+        /// </summary>
+        /// <param name="value">New maximum duration to update timed observers over.</param>
+        public void SetMaximumTimedObserversDuration(float value) => MaximumTimedObserversDuration = value;
         /// <summary>
         /// 
         /// </summary>

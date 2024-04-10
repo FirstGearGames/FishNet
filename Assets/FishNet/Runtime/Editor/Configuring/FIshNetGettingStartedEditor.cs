@@ -140,10 +140,10 @@ namespace FishNet.Editing
                 Application.OpenURL("https://www.firstgeargames.com/");
             }
 
-            if (GUILayout.Button("Examples", GUILayout.Width(this.position.width * 0.485f)))
-            {
-                Application.OpenURL("https://fish-networking.gitbook.io/docs/manual/tutorials/example-projects");
-            }
+            //if (GUILayout.Button("Examples", GUILayout.Width(this.position.width * 0.485f)))
+            //{
+            //    Application.OpenURL("https://fish-networking.gitbook.io/docs/manual/tutorials/example-projects");
+            //}
             EditorGUILayout.EndHorizontal();
 
             //GUILayout.Space(20);

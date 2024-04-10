@@ -1,7 +1,7 @@
 namespace FishNet.Component.Prediction
 {
 
-    public sealed class NetworkTrigger2D : NetworkCollider2D
+    public sealed class NetworkTrigger : NetworkCollider
     {
 #if !PREDICTION_1
         protected override void Awake()

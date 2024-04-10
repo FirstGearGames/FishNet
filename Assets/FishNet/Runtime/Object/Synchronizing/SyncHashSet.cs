@@ -6,10 +6,11 @@ using GameKit.Dependencies.Utilities;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
-
+    [System.Serializable]
     public class SyncHashSet<T> : SyncBase, ISet<T>
     {
         #region Types.
@@ -70,6 +71,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
+        [HideInInspector]
         public HashSet<T> ClientHostCollection;
         /// <summary>
         /// Number of objects in the collection.
@@ -359,9 +361,9 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
-        internal protected override void ResetState()
+        internal protected override void ResetState(bool asServer)
         {
-            base.ResetState();
+            base.ResetState(asServer);
             _sendAll = false;
             _changed.Clear();
             Collection.Clear();

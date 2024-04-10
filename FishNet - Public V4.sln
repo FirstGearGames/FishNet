@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FishNet.Demos", "FishNet.De
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{0E40974E-0169-B2E4-61CA-C2B7083738E0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "asset-store-tools-editor", "asset-store-tools-editor.csproj", "{C1E7CDD7-1B47-43C8-4CBD-8C809A39F5D5}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FishNet.Codegen.Cecil", "FishNet.Codegen.Cecil.csproj", "{EBFF2BF3-FDFB-74B7-267E-E93BE467AF42}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.FishNet.Codegen", "Unity.FishNet.Codegen.csproj", "{EEA7BBF3-8B09-E8AF-82AA-7D137AA0C340}"
@@ -41,6 +43,10 @@ Global
 		{0E40974E-0169-B2E4-61CA-C2B7083738E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E40974E-0169-B2E4-61CA-C2B7083738E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E40974E-0169-B2E4-61CA-C2B7083738E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1E7CDD7-1B47-43C8-4CBD-8C809A39F5D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1E7CDD7-1B47-43C8-4CBD-8C809A39F5D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1E7CDD7-1B47-43C8-4CBD-8C809A39F5D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1E7CDD7-1B47-43C8-4CBD-8C809A39F5D5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EBFF2BF3-FDFB-74B7-267E-E93BE467AF42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EBFF2BF3-FDFB-74B7-267E-E93BE467AF42}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBFF2BF3-FDFB-74B7-267E-E93BE467AF42}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -719,7 +719,7 @@ namespace FishNet.Managing.Timing
 
                 if (frameTicked)
                 {
-#if PREDICTION_V2
+#if !PREDICTION_1
                     //Tell predicted objecs to reconcile before OnTick.
                     NetworkManager.PredictionManager.ReconcileToStates();
 #endif
@@ -735,7 +735,7 @@ namespace FishNet.Managing.Timing
                     }
 
                     OnPostTick?.Invoke();
-#if PREDICTION_V2
+#if !PREDICTION_1
                     //After post tick send states.
                     NetworkManager.PredictionManager.SendStateUpdate();
 #endif

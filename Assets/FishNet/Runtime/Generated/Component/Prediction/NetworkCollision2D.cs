@@ -4,7 +4,7 @@ namespace FishNet.Component.Prediction
 {
     public sealed class NetworkCollision2D : NetworkCollider2D
     {
-#if PREDICTION_V2
+#if !PREDICTION_1
 
         /// <summary>
         /// Percentage larger than each collider for each overlap test. This is used to prevent missed overlaps when colliders do not intersect enough.

@@ -413,7 +413,9 @@ namespace FishNet.CodeGenerating.Processing
             if (!CanSerialize(originalFieldDef, typeRefs))
                 return false;
 
-            InitializeSyncType(hash, originalFieldDef, typeRefs, isSyncObject);
+            if (!InitializeSyncType(hash, originalFieldDef, typeRefs, isSyncObject))
+                return false;
+
             return true;
         }
 

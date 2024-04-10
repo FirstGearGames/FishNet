@@ -64,13 +64,14 @@ namespace FishNet.Managing.Server
 
             /* Try to iterate all timed observers every half a second.
             * This value will increase as there's more observers or timed conditions. */
-            double timeMultiplier = 1d + (float)((base.NetworkManager.ServerManager.Clients.Count * 0.005d) + (_timedNetworkObservers.Count * 0.0005d));
-            double completionTime = (0.5d * timeMultiplier);
+            float timeMultiplier = 1f + (float)((base.NetworkManager.ServerManager.Clients.Count * 0.005f) + (_timedNetworkObservers.Count * 0.0005f));
+            //Check cap this way for readability.
+            float completionTime = Mathf.Min((0.5f * timeMultiplier), base.NetworkManager.ObserverManager.MaximumTimedObserversDuration);
             uint completionTicks = base.NetworkManager.TimeManager.TimeToTicks(completionTime, TickRounding.RoundUp);
             /* Iterations will be the number of objects
              * to iterate to be have completed all objects by
              * the end of completionTicks. */
-            int iterations = Mathf.CeilToInt((float)networkObserversCount / (float)completionTicks);
+            int iterations = Mathf.CeilToInt((float)networkObserversCount / completionTicks);
             if (iterations > _timedNetworkObservers.Count)
                 iterations = _timedNetworkObservers.Count;
 

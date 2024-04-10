@@ -440,10 +440,10 @@ namespace FishNet.Managing.Client
                     {
                         Objects.ParseRpcLink(reader, (ushort)packetId, channel);
                     }
-#if PREDICTION_V2
+#if !PREDICTION_1
                     else if (packetId == PacketId.StateUpdate)
                     {
-                        NetworkManager.PredictionManager.ParseStateUpdate(reader);
+                        NetworkManager.PredictionManager.ParseStateUpdate(reader, channel);
                     }
 #endif
                     else if (packetId == PacketId.Replicate)

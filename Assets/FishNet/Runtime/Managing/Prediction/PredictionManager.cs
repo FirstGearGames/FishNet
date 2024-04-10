@@ -1,20 +1,14 @@
-﻿using FishNet.CodeGenerating;
+﻿#if !PREDICTION_1
 using FishNet.Connection;
-using FishNet.Documenting;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
-using FishNet.Object;
 using FishNet.Serializing;
-using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
-using static FishNet.Managing.Predicting.PredictionManager;
-using UnityScene = UnityEngine.SceneManagement.Scene;
 
 
 namespace FishNet.Managing.Predicting
@@ -28,16 +22,6 @@ namespace FishNet.Managing.Predicting
     public sealed class PredictionManager : MonoBehaviour
     {
         #region Public.
-#if !PREDICTION_V2
-        /// <summary>
-        /// Called before performing a reconcile on NetworkBehaviour.
-        /// </summary>
-        public event Action<NetworkBehaviour> OnPreReconcile;
-        /// <summary>
-        /// Called after performing a reconcile on a NetworkBehaviour.
-        /// </summary>
-        public event Action<NetworkBehaviour> OnPostReconcile;
-#else
         /// <summary>
         /// Called before performing a reconcile. Contains the client and server tick the reconcile is for.
         /// </summary>
@@ -55,20 +39,6 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         public event PostReconcileDel OnPostReconcile;
         public delegate void PostReconcileDel(uint clientTick, uint serverTick);
-        
-#endif
-#if !PREDICTION_V2
-        /// <summary>
-        /// Called before physics is simulated when replaying a replicate method.
-        /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
-        /// </summary>
-        public event Action<uint, PhysicsScene, PhysicsScene2D> OnPreReplicateReplay;
-        /// <summary>
-        /// Called after physics is simulated when replaying a replicate method.
-        /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
-        /// </summary>
-        public event Action<uint, PhysicsScene, PhysicsScene2D> OnPostReplicateReplay;
-#else
         /// <summary>
         /// Called before Physics SyncTransforms are run after a reconcile.
         /// This will only invoke if physics are set to TimeManager, within the TimeManager inspector.
@@ -99,39 +69,6 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         public event PostReplicateReplayDel OnPostReplicateReplay;
         public delegate void PostReplicateReplayDel(uint clientTick, uint serverTick);
-#endif
-#if !PREDICTION_V2
-        /// <summary>
-        /// Called before the server sends a reconcile.
-        /// </summary>
-        public event Action<NetworkBehaviour> OnPreServerReconcile;
-        /// <summary>
-        /// Called after the server sends a reconcile.
-        /// </summary>
-        public event Action<NetworkBehaviour> OnPostServerReconcile;
-        /// <summary>
-        /// Last tick any object reconciled.
-        /// </summary>
-        public uint LastReconcileTick { get; internal set; }
-        /// <summary>
-        /// Last tick any object replicated.
-        /// </summary>
-        public uint LastReplicateTick { get; internal set; }
-        /// <summary>
-        /// True if rigidbodies are being predicted.
-        /// </summary>
-        internal bool UsingRigidbodies => (_rigidbodies.Count > 0);
-        /// <summary>
-        /// True if prediction is replaying.
-        /// </summary>
-        public bool IsReplaying() => (_replayingScenes.Count > 0); 
-        /// <summary>
-        /// Returns if scene is replaying.
-        /// </summary>
-        /// <param name="scene"></param>
-        /// <returns></returns>
-        public bool IsReplaying(UnityScene scene) => _replayingScenes.Contains(scene);
-#else
         /// <summary>
         /// True if client timing needs to be reduced. This is fine-tuning of the prediction system.
         /// </summary>
@@ -156,10 +93,6 @@ namespace FishNet.Managing.Predicting
         /// Server tick on the most recent performed reconcile.
         /// </summary>
         public uint ServerStateTick { get; private set; } = TimeManager.UNSET_TICK;
-#endif
-#if !PREDICTION_V2
-
-#endif
         #endregion
 
         #region Serialized.
@@ -173,7 +106,6 @@ namespace FishNet.Managing.Predicting
         [Range(0, 15)]
         [SerializeField]
         private byte _queuedInputs = 1;
-#if PREDICTION_V2
         /// <summary>
         /// Number of inputs to keep in queue for server and clients.
         /// Higher values will increase the likeliness of continous user created data to arrive successfully.
@@ -182,14 +114,6 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         //TODO: this is 0 until the rework on it is completed. 
         public byte QueuedInputs => 0;// _queuedInputs;
-#else
-        /// <summary>
-        /// Number of inputs to keep in queue should the server miss receiving an input update from the client.
-        /// Higher values will increase the likeliness of the server always having input from the client while lower values will allow the client input to run on the server faster.
-        /// This value cannot be higher than MaximumServerReplicates.
-        /// </summary>
-        public ushort QueuedInputs => (ushort)(_queuedInputs + 1);
-#endif
         /// <summary>
         /// 
         /// </summary>
@@ -219,18 +143,6 @@ namespace FishNet.Managing.Predicting
         {
             _maximumServerReplicates = (byte)Mathf.Clamp(value, MINIMUM_REPLICATE_QUEUE_SIZE, MAXIMUM_REPLICATE_QUEUE_SIZE);
         }
-#if !PREDICTION_V2
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("Maximum number of excessive replicates which can be consumed per tick. Consumption count will scale up to this value automatically.")]
-        [SerializeField]
-        private byte _maximumConsumeCount = 4;
-        /// <summary>
-        /// Maximum number of excessive replicates which can be consumed per tick. Consumption count will scale up to this value automatically.
-        /// </summary>
-        internal byte MaximumReplicateConsumeCount => _maximumConsumeCount;
-#endif
         /// <summary>
         /// Clients should store no more than 2 seconds worth of replicates.
         /// </summary>
@@ -268,22 +180,6 @@ namespace FishNet.Managing.Predicting
         #endregion
 
         #region Private.
-#if !PREDICTION_V2
-        /// <summary>
-        /// Number of active predicted rigidbodies.
-        /// </summary>
-        [System.NonSerialized]
-        private HashSet<UnityEngine.Component> _rigidbodies = new HashSet<UnityEngine.Component>();
-        /// <summary>
-        /// Cache to remove null entries from _rigidbodies.
-        /// </summary>
-        [System.NonSerialized]
-        private HashSet<UnityEngine.Component> _componentCache = new HashSet<UnityEngine.Component>();
-        /// <summary>
-        /// Scenes which are currently replaying prediction.
-        /// </summary>
-        private HashSet<UnityScene> _replayingScenes = new HashSet<UnityScene>(new SceneHandleEqualityComparer());
-#else
         /// <summary>
         /// Number of reconciles dropped due to high latency.
         /// This is not necessarily needed but can save performance on machines struggling to keep up with simulations when combined with low frame rate.
@@ -295,10 +191,15 @@ namespace FishNet.Managing.Predicting
         //private StatePacket _reconcileState;
         private Queue<StatePacket> _reconcileStates = new Queue<StatePacket>();
         /// <summary>
+        /// Look up to find states by their tick.
+        /// Key: client LocalTick on the state.
+        /// Value: StatePacket stored.
+        /// </summary>
+        private Dictionary<uint, StatePacket> _stateLookups = new Dictionary<uint, StatePacket>();
+        /// <summary>
         /// Last ordered tick read for a reconcile state.
         /// </summary>
         private uint _lastOrderedReadReconcileTick;
-#endif
         /// <summary>
         /// NetworkManager used with this.
         /// </summary>
@@ -324,43 +225,13 @@ namespace FishNet.Managing.Predicting
         private const byte MAXIMUM_REPLICATE_QUEUE_SIZE = byte.MaxValue;
         #endregion
 
-#if !PREDICTION_V2
-        private void OnEnable()
-        {
-            UnityEngine.SceneManagement.SceneManager.sceneUnloaded += SceneManager_sceneUnloaded;
-        }
-
-        private void OnDisable()
-        {
-            UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= SceneManager_sceneUnloaded;
-        }
-
-        internal void InitializeOnce(NetworkManager manager)
-        {
-            _networkManager = manager;
-            _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
-        }
-#endif
-
-#if PREDICTION_V2
         internal void InitializeOnce(NetworkManager manager)
         {
             _networkManager = manager;
             ClampQueuedInputs();
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
         }
-#endif
 
-#if !PREDICTION_V2
-        /// <summary>
-        /// Called after the local client connection state changes.
-        /// </summary>
-        private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
-        {
-            if (obj.ConnectionState != LocalConnectionState.Started)
-                _replayingScenes.Clear();
-        }
-#else
         /// <summary>
         /// Called after the local client connection state changes.
         /// </summary>
@@ -369,113 +240,7 @@ namespace FishNet.Managing.Predicting
             _droppedReconcilesCount = 0;
 
         }
-#endif
 
-
-        /// <summary>
-        /// Called before and after server sends a reconcile.
-        /// </summary>
-        /// <param name="before">True if before the reconcile is sent.</param>
-        internal void InvokeServerReconcile(NetworkBehaviour caller, bool before)
-        {
-#if !PREDICTION_V2
-            if (before)
-                OnPreServerReconcile?.Invoke(caller);
-            else
-                OnPostServerReconcile?.Invoke(caller);
-#endif
-        }
-
-#if !PREDICTION_V2
-        /// <summary>
-        /// Increases Rigidbodies count by 1.
-        /// </summary>
-        [APIExclude]
-        public void AddRigidbodyCount(UnityEngine.Component c)
-        {
-            _rigidbodies.Add(c);
-        }
-
-        /// <summary>
-        /// Dencreases Rigidbodies count by 1.
-        /// </summary>
-        [APIExclude]
-        public void RemoveRigidbodyCount(UnityEngine.Component c)
-        {
-            bool removed = _rigidbodies.Remove(c);
-            /* If remove failed the rigidbodies may need to be rebuild.
-             * This might happen when an object is destroyed as
-             * the referenced is passed. Could be any number of things
-             * but it seems to occur frequently enough in Unity,
-             * especially when testing in editor.
-             * 
-             * This operation is not ideal in the hot path but
-             * the odds of it happening are pretty slim and
-             * it ensures stability against user error. */
-            if (!removed)
-            {
-                //Cannt remove null entries from a hashset so have to rebuild.
-                _componentCache.Clear();
-                foreach (UnityEngine.Component item in _rigidbodies)
-                {
-                    if (item != null)
-                        _componentCache.Add(item);
-                }
-
-                //Apply to rigidbodies.
-                _rigidbodies.Clear();
-                foreach (UnityEngine.Component item in _componentCache)
-                    _rigidbodies.Add(item);
-            }
-        }
-
-        /// <summary>
-        /// Invokes OnPre/PostReconcile events.
-        /// Internal use.
-        /// </summary>
-        [APIExclude]
-        [MakePublic]
-        internal void InvokeOnReconcile(NetworkBehaviour nb, bool before)
-        {
-            nb.IsBehaviourReconciling = before;
-            if (before)
-                OnPreReconcile?.Invoke(nb);
-            else
-                OnPostReconcile?.Invoke(nb);
-        }
-#endif
-
-#if !PREDICTION_V2
-        /// <summary>
-        /// Invokes OnReplicateReplay.
-        /// Internal use.
-        /// </summary>
-        [APIExclude]
-        internal void InvokeOnReplicateReplay(UnityScene scene, uint tick, PhysicsScene ps, PhysicsScene2D ps2d, bool before)
-        {
-            if (before)
-            {
-                _replayingScenes.Add(scene);
-                OnPreReplicateReplay?.Invoke(tick, ps, ps2d);
-            }
-            else
-            {
-                _replayingScenes.Remove(scene);
-                OnPostReplicateReplay?.Invoke(tick, ps, ps2d);
-            }
-        }
-
-        /// <summary>
-        /// Called when a scene unloads.
-        /// </summary>
-        /// <param name="arg0"></param>
-        private void SceneManager_sceneUnloaded(UnityScene s)
-        {
-            _replayingScenes.Remove(s);
-        }
-#endif
-
-#if PREDICTION_V2
         /// <summary>
         /// Amount to reserve for the header of a state update.
         /// 2 PacketId.
@@ -499,32 +264,49 @@ namespace FishNet.Managing.Predicting
                 _networkManager.Log($"QueuedInputs has been set to {_queuedInputs}.");
         }
 
-        public struct StatePacket
+        internal class StatePacket : IResettable
         {
-            public ArraySegment<byte> Data;
+            public struct IncomingData
+            {
+                public ArraySegment<byte> Data;
+                public Channel Channel;
+
+                public IncomingData(ArraySegment<byte> data, Channel channel)
+                {
+                    Data = data;
+                    Channel = channel;
+                }
+            }
+            public List<IncomingData> Datas;
             public uint ClientTick;
             public uint ServerTick;
-            public bool IsValid => (Data.Array != null);
 
-            public StatePacket(ArraySegment<byte> data, uint clientTick, uint serverTick)
+            public void Update(ArraySegment<byte> data, uint clientTick, uint serverTick, Channel channel)
             {
-                Data = data;
+                AddData(data, channel);
                 ServerTick = serverTick;
                 ClientTick = clientTick;
             }
 
+            public void AddData(ArraySegment<byte> data, Channel channel)
+            {
+                Datas.Add(new IncomingData(data, channel));
+            }
+
             public void ResetState()
             {
-                if (!IsValid)
-                    return;
+                for (int i = 0; i < Datas.Count; i++)
+                    ByteArrayPool.Store(Datas[i].Data.Array);
 
-                ByteArrayPool.Store(Data.Array);
-                Data = default;
+                CollectionCaches<IncomingData>.StoreAndDefault(ref Datas);
+            }
+
+            public void InitializeState()
+            {
+                Datas = CollectionCaches<IncomingData>.RetrieveList();
             }
         }
 
-        internal float SlowDownTime;
-        private int _timesOver = 0;
         /// <summary>
         /// Reconciles to received states.
         /// </summary>
@@ -552,7 +334,7 @@ namespace FishNet.Managing.Predicting
 
             /* Only use the latest reconcile which passes the conditions to run.
              * This will drop any excessive reconciles which built up from latency. */
-            StatePacket sp = default;
+            StatePacket sp = null;
             /* If here then 'peeked' has met conditions.
              * Check if the next state also meets, if so then
              * skip ahead to the next state. */
@@ -562,8 +344,8 @@ namespace FishNet.Managing.Predicting
                 if (ConditionsMet(_reconcileStates.Peek()))
                 {
                     //Since this is being replaced, reset state first.
-                    if (sp.IsValid)
-                        sp.ResetState();
+                    if (sp != null)
+                        DisposeOfStatePacket(sp);
                     sp = _reconcileStates.Dequeue();
                     break;
                 }
@@ -578,69 +360,55 @@ namespace FishNet.Managing.Predicting
                 //Returns if a state has it's conditions met.
                 bool ConditionsMet(StatePacket spChecked)
                 {
-                    return (spChecked.ServerTick <= (estimatedLastRemoteTick - QueuedInputs - RedundancyCount - 1) && spChecked.ClientTick < (localTick - QueuedInputs));
+                    return ((spChecked != null) && (spChecked.ServerTick <= (estimatedLastRemoteTick - QueuedInputs - RedundancyCount - 1)) && spChecked.ClientTick < (localTick - QueuedInputs));
                 }
             }
             //If state is not valid then it was never set, thus condition is not met.
-            if (!sp.IsValid)
+            if (sp == null)
                 return;
 
             //StatePacket sp = _reconcileStates.Dequeue();
-            PooledReader reader = ReaderPool.Retrieve(sp.Data, _networkManager, Reader.DataSource.Server);
-
             bool dropReconcile = false;
 
             uint clientTick = sp.ClientTick;
             uint serverTick = sp.ServerTick;
-            uint ticksDifference = (localTick - clientTick);
-            //Target ticks are based on QueuedInputs, redundancy count, and latency. An extra bit is added as a buffer for variance.
-            uint varianceAllowance = tm.TimeToTicks(0.2f, TickRounding.RoundUp);
-            uint targetTicks = (varianceAllowance + (uint)QueuedInputs + (uint)RedundancyCount + tm.TimeToTicks((double)((double)tm.RoundTripTime / 1000d), TickRounding.RoundDown));
-            long ticksOverTarget = (long)ticksDifference - (long)targetTicks;
-            //ReduceClientTiming = (ticksOverTarget > 0);
-            /* If the reconcile is behind more ticks than hoped then slow
-             * down the client simulation so it ticks very slightly
-             * slower allowing fewer replays. This typically is only required after
-             * the player encounters a sudden ping drop, such as a spike in latency,
-             * then ping returns to norrmal.  */
-            if (ticksOverTarget > 0)
+            //uint ticksDifference = (localTick - clientTick);
+            ////Target ticks are based on QueuedInputs, redundancy count, and latency. An extra bit is added as a buffer for variance.
+            //uint varianceAllowance = tm.TimeToTicks(0.2f, TickRounding.RoundUp);
+            //uint targetTicks = (varianceAllowance + (uint)QueuedInputs + (uint)RedundancyCount + tm.TimeToTicks((double)((double)tm.RoundTripTime / 1000d), TickRounding.RoundDown));
+            //long ticksOverTarget = (long)ticksDifference - (long)targetTicks;
+            ////ReduceClientTiming = (ticksOverTarget > 0);
+            ///* If the reconcile is behind more ticks than hoped then slow
+            // * down the client simulation so it ticks very slightly
+            // * slower allowing fewer replays. This typically is only required after
+            // * the player encounters a sudden ping drop, such as a spike in latency,
+            // * then ping returns to norrmal.  */
+            //if (ticksOverTarget > 0)
+            //{
+
+            /* If client has a low frame rate
+             * then limit the number of reconciles to prevent further performance loss. */
+            if (_networkManager.TimeManager.LowFrameRate)
             {
-                _timesOver++;
-                if (_timesOver >= tm.TimeToTicks(0.5d))
+                /* Limit 3 drops a second. DropValue will be roughly the same
+                 * as every 330ms. */
+                int reconcileValue = Mathf.Max(1, (_networkManager.TimeManager.TickRate / 3));
+                //If cannot drop then reset dropcount.
+                if (_droppedReconcilesCount >= reconcileValue)
                 {
-                    SlowDownTime = Time.unscaledTime;
-                    ReduceClientTiming = true;
-                    _timesOver = 3;
+                    _droppedReconcilesCount = 0;
                 }
-                /* If client has a low frame rate
-                 * then limit the number of reconciles to prevent further performance loss. */
-                if (_networkManager.TimeManager.LowFrameRate)
+                //If can drop...
+                else
                 {
-                    /* Limit 3 drops a second. DropValue will be roughly the same
-                     * as every 330ms. */
-                    int reconcileValue = Mathf.Max(1, (_networkManager.TimeManager.TickRate / 3));
-                    //If cannot drop then reset dropcount.
-                    if (_droppedReconcilesCount >= reconcileValue)
-                    {
-                        _droppedReconcilesCount = 0;
-                    }
-                    //If can drop...
-                    else
-                    {
-                        dropReconcile = true;
-                        _droppedReconcilesCount++;
-                    }
+                    dropReconcile = true;
+                    _droppedReconcilesCount++;
                 }
             }
+            //}
             //No reason to believe client is struggling, allow reconcile.
             else
             {
-                _timesOver--;
-                if (_timesOver < 0)
-                {
-                    ReduceClientTiming = false;
-                    _timesOver = 0;
-                }
                 _droppedReconcilesCount = 0;
             }
 
@@ -656,7 +424,12 @@ namespace FishNet.Managing.Predicting
                 ServerStateTick = serverTick;
 
                 //Have the reader get processed.
-                _networkManager.ClientManager.ParseReader(reader, Channel.Reliable);
+                foreach (StatePacket.IncomingData item in sp.Datas)
+                {
+                    PooledReader reader = ReaderPool.Retrieve(item.Data, _networkManager, Reader.DataSource.Server);
+                    _networkManager.ClientManager.ParseReader(reader, item.Channel);
+                    ReaderPool.Store(reader);
+                }
 
                 bool timeManagerPhysics = (tm.PhysicsMode == PhysicsMode.TimeManager);
                 float tickDelta = (float)tm.TickDelta;
@@ -715,9 +488,8 @@ namespace FishNet.Managing.Predicting
                 ServerReplayTick = TimeManager.UNSET_TICK;
                 IsReconciling = false;
             }
-
-            sp.ResetState();
-            ReaderPool.Store(reader);
+            
+            DisposeOfStatePacket(sp);
         }
         /// <summary>
         /// Sends written states for clients.
@@ -782,7 +554,7 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// Parses a received state update.
         /// </summary>
-        internal void ParseStateUpdate(PooledReader reader)
+        internal void ParseStateUpdate(PooledReader reader, Channel channel)
         {
             uint lastRemoteTick = _networkManager.TimeManager.LastPacketTick.LastRemoteTick;
             //If server or state is older than another received state.
@@ -807,8 +579,8 @@ namespace FishNet.Managing.Predicting
                 int maxAllowedStates = Mathf.Max(QueuedInputs * 4, 4);
                 while (_reconcileStates.Count > maxAllowedStates)
                 {
-                    StatePacket sp = _reconcileStates.Dequeue();
-                    sp.ResetState();
+                    StatePacket oldSp = _reconcileStates.Dequeue();
+                    DisposeOfStatePacket(oldSp);
                 }
 
                 //LocalTick of this client the state is for.
@@ -820,20 +592,374 @@ namespace FishNet.Managing.Predicting
                 reader.ReadBytes(ref arr, length);
                 //Make segment and store into states.
                 ArraySegment<byte> segment = new ArraySegment<byte>(arr, 0, length);
-                _reconcileStates.Enqueue(new StatePacket(segment, clientTick, lastRemoteTick));
+
+                /* See if an entry was already added for the clientTick. If so then
+                 * add onto the datas. Otherwise add a new state packet. */
+                if (_stateLookups.TryGetValue(clientTick, out StatePacket sp1))
+                {
+                    sp1.AddData(segment, channel);
+                }
+                else
+                {
+                    StatePacket sp2 = ResettableObjectCaches<StatePacket>.Retrieve();
+                    sp2.Update(segment, clientTick, lastRemoteTick, channel);
+                    _stateLookups[clientTick] = sp2;
+                    _reconcileStates.Enqueue(sp2);
+                }
             }
         }
 
-#endif
+        /// <summary>
+        /// Disposes of and cleans up everything related to a StatePacket.
+        /// </summary>
+        private void DisposeOfStatePacket(StatePacket sp)
+        {
+            uint clientTick = sp.ClientTick;
+            _stateLookups.Remove(clientTick);
+            ResettableObjectCaches<StatePacket>.Store(sp);
+        }
 
-#if PREDICTION_V2
 #if UNITY_EDITOR
         private void OnValidate()
         {
             ClampQueuedInputs();
         }
-#endif
+
 #endif
     }
 
 }
+
+#else
+
+using FishNet.CodeGenerating;
+using FishNet.Documenting;
+using FishNet.Object;
+using FishNet.Serializing.Helping;
+using FishNet.Transporting;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityScene = UnityEngine.SceneManagement.Scene;
+
+
+namespace FishNet.Managing.Predicting
+{
+
+    /// <summary>
+    /// Additional options for managing the observer system.
+    /// </summary>
+    [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Manager/PredictionManager")]
+    public sealed class PredictionManager : MonoBehaviour
+    {
+#region Public.
+        /// <summary>
+        /// Called before performing a reconcile on NetworkBehaviour.
+        /// </summary>
+        public event Action<NetworkBehaviour> OnPreReconcile;
+        /// <summary>
+        /// Called after performing a reconcile on a NetworkBehaviour.
+        /// </summary>
+        public event Action<NetworkBehaviour> OnPostReconcile;
+        /// <summary>
+        /// Called before physics is simulated when replaying a replicate method.
+        /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
+        /// </summary>
+        public event Action<uint, PhysicsScene, PhysicsScene2D> OnPreReplicateReplay;
+        /// <summary>
+        /// Called after physics is simulated when replaying a replicate method.
+        /// Contains the PhysicsScene and PhysicsScene2D which was simulated.
+        /// </summary>
+        public event Action<uint, PhysicsScene, PhysicsScene2D> OnPostReplicateReplay;
+        /// <summary>
+        /// Called before the server sends a reconcile.
+        /// </summary>
+        public event Action<NetworkBehaviour> OnPreServerReconcile;
+        /// <summary>
+        /// Called after the server sends a reconcile.
+        /// </summary>
+        public event Action<NetworkBehaviour> OnPostServerReconcile;
+        /// <summary>
+        /// Last tick any object reconciled.
+        /// </summary>
+        public uint LastReconcileTick { get; internal set; }
+        /// <summary>
+        /// Last tick any object replicated.
+        /// </summary>
+        public uint LastReplicateTick { get; internal set; }
+        /// <summary>
+        /// True if rigidbodies are being predicted.
+        /// </summary>
+        internal bool UsingRigidbodies => (_rigidbodies.Count > 0);
+        /// <summary>
+        /// True if prediction is replaying.
+        /// </summary>
+        public bool IsReplaying() => (_replayingScenes.Count > 0); 
+        /// <summary>
+        /// Returns if scene is replaying.
+        /// </summary>
+        /// <param name="scene"></param>
+        /// <returns></returns>
+        public bool IsReplaying(UnityScene scene) => _replayingScenes.Contains(scene);
+#endregion
+
+#region Serialized.
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Number of inputs to keep in queue for server and clients. " +
+            "Higher values will increase the likeliness of continous user created data to arrive successfully. " +
+            "Lower values will increase processing rate of received replicates. +" +
+            "This value cannot be higher than MaximumServerReplicates.")]
+        [Range(0, 15)]
+        [SerializeField]
+        private byte _queuedInputs = 1;
+        /// <summary>
+        /// Number of inputs to keep in queue should the server miss receiving an input update from the client.
+        /// Higher values will increase the likeliness of the server always having input from the client while lower values will allow the client input to run on the server faster.
+        /// This value cannot be higher than MaximumServerReplicates.
+        /// </summary>
+        public ushort QueuedInputs => (ushort)(_queuedInputs + 1);
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("True to drop replicates from clients which are being received excessively. This can help with attacks but may cause client to temporarily desynchronize during connectivity issues. When false the server will hold at most up to 3 seconds worth of replicates, consuming multiple per tick to clear out the buffer quicker. This is good to ensure all inputs are executed but potentially could allow speed hacking.")]
+        [SerializeField]
+        private bool _dropExcessiveReplicates = true;
+        /// <summary>
+        /// True to drop replicates from clients which are being received excessively. This can help with attacks but may cause client to temporarily desynchronize during connectivity issues.
+        /// When false the server will hold at most up to 3 seconds worth of replicates, consuming multiple per tick to clear out the buffer quicker. This is good to ensure all inputs are executed but potentially could allow speed hacking.
+        /// </summary>
+        internal bool DropExcessiveReplicates => _dropExcessiveReplicates;
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Maximum number of replicates a server can queue per object. Higher values will put more load on the server and add replicate latency for the client.")]
+        [SerializeField]
+        private byte _maximumServerReplicates = 15;
+        /// <summary>
+        /// Maximum number of replicates a server can queue per object. Higher values will put more load on the server and add replicate latency for the client.
+        /// </summary>
+        public byte GetMaximumServerReplicates() => _maximumServerReplicates;
+        /// <summary>
+        /// Sets the maximum number of replicates a server can queue per object.
+        /// </summary>
+        /// <param name="value"></param>
+        public void SetMaximumServerReplicates(byte value)
+        {
+            _maximumServerReplicates = (byte)Mathf.Clamp(value, MINIMUM_REPLICATE_QUEUE_SIZE, MAXIMUM_REPLICATE_QUEUE_SIZE);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Maximum number of excessive replicates which can be consumed per tick. Consumption count will scale up to this value automatically.")]
+        [SerializeField]
+        private byte _maximumConsumeCount = 4;
+        /// <summary>
+        /// Maximum number of excessive replicates which can be consumed per tick. Consumption count will scale up to this value automatically.
+        /// </summary>
+        internal byte MaximumReplicateConsumeCount => _maximumConsumeCount;
+        /// <summary>
+        /// Clients should store no more than 2 seconds worth of replicates.
+        /// </summary>
+        internal ushort MaximumClientReplicates => (ushort)(_networkManager.TimeManager.TickRate * 5);
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Maximum number of past inputs which may send.")]
+        [Range(MINIMUM_PAST_INPUTS, MAXIMUM_PAST_INPUTS)]
+        [SerializeField]
+        private byte _redundancyCount = 2;
+        /// <summary>
+        /// Maximum number of past inputs which may send and resend redundancy.
+        /// </summary>
+        internal byte RedundancyCount => _redundancyCount;
+        /// <summary>
+        /// True to allow clients to use predicted spawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.
+        /// </summary>
+        internal bool GetAllowPredictedSpawning() => _allowPredictedSpawning;
+        [Tooltip("True to allow clients to use predicted spawning and despawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.")]
+        [SerializeField]
+        private bool _allowPredictedSpawning = false;
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.")]
+        [Range(1, 100)]
+        [SerializeField]
+        private byte _reservedObjectIds = 15;
+        /// <summary>
+        /// Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.
+        /// </summary>
+        /// <returns></returns>
+        internal byte GetReservedObjectIds() => _reservedObjectIds;
+#endregion
+
+#region Private.
+        /// <summary>
+        /// Number of active predicted rigidbodies.
+        /// </summary>
+        [System.NonSerialized]
+        private HashSet<UnityEngine.Component> _rigidbodies = new HashSet<UnityEngine.Component>();
+        /// <summary>
+        /// Cache to remove null entries from _rigidbodies.
+        /// </summary>
+        [System.NonSerialized]
+        private HashSet<UnityEngine.Component> _componentCache = new HashSet<UnityEngine.Component>();
+        /// <summary>
+        /// Scenes which are currently replaying prediction.
+        /// </summary>
+        private HashSet<UnityScene> _replayingScenes = new HashSet<UnityScene>(new SceneHandleEqualityComparer());
+        /// <summary>
+        /// NetworkManager used with this.
+        /// </summary>
+        private NetworkManager _networkManager;
+#endregion
+
+#region Const.
+        /// <summary>
+        /// Minimum number of past inputs which can be sent.
+        /// </summary>
+        private const byte MINIMUM_PAST_INPUTS = 1;
+        /// <summary>
+        /// Maximum number of past inputs which can be sent.
+        /// </summary>
+        internal const byte MAXIMUM_PAST_INPUTS = 5;
+        /// <summary>
+        /// Minimum amount of replicate queue size.
+        /// </summary>
+        private const byte MINIMUM_REPLICATE_QUEUE_SIZE = (MINIMUM_PAST_INPUTS + 1);
+        /// <summary>
+        /// Maxmimum amount of replicate queue size.
+        /// </summary>
+        private const byte MAXIMUM_REPLICATE_QUEUE_SIZE = byte.MaxValue;
+#endregion
+
+        private void OnEnable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneUnloaded += SceneManager_sceneUnloaded;
+        }
+
+        private void OnDisable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= SceneManager_sceneUnloaded;
+        }
+
+        internal void InitializeOnce(NetworkManager manager)
+        {
+            _networkManager = manager;
+            _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
+        }
+
+        /// <summary>
+        /// Called after the local client connection state changes.
+        /// </summary>
+        private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
+        {
+            if (obj.ConnectionState != LocalConnectionState.Started)
+                _replayingScenes.Clear();
+        }
+
+        /// <summary>
+        /// Called before and after server sends a reconcile.
+        /// </summary>
+        /// <param name="before">True if before the reconcile is sent.</param>
+        internal void InvokeServerReconcile(NetworkBehaviour caller, bool before)
+        {
+            if (before)
+                OnPreServerReconcile?.Invoke(caller);
+            else
+                OnPostServerReconcile?.Invoke(caller);
+        }
+
+        /// <summary>
+        /// Increases Rigidbodies count by 1.
+        /// </summary>
+        [APIExclude]
+        public void AddRigidbodyCount(UnityEngine.Component c)
+        {
+            _rigidbodies.Add(c);
+        }
+
+        /// <summary>
+        /// Dencreases Rigidbodies count by 1.
+        /// </summary>
+        [APIExclude]
+        public void RemoveRigidbodyCount(UnityEngine.Component c)
+        {
+            bool removed = _rigidbodies.Remove(c);
+            /* If remove failed the rigidbodies may need to be rebuild.
+             * This might happen when an object is destroyed as
+             * the referenced is passed. Could be any number of things
+             * but it seems to occur frequently enough in Unity,
+             * especially when testing in editor.
+             * 
+             * This operation is not ideal in the hot path but
+             * the odds of it happening are pretty slim and
+             * it ensures stability against user error. */
+            if (!removed)
+            {
+                //Cannt remove null entries from a hashset so have to rebuild.
+                _componentCache.Clear();
+                foreach (UnityEngine.Component item in _rigidbodies)
+                {
+                    if (item != null)
+                        _componentCache.Add(item);
+                }
+
+                //Apply to rigidbodies.
+                _rigidbodies.Clear();
+                foreach (UnityEngine.Component item in _componentCache)
+                    _rigidbodies.Add(item);
+            }
+        }
+
+        /// <summary>
+        /// Invokes OnPre/PostReconcile events.
+        /// Internal use.
+        /// </summary>
+        [APIExclude]
+        [MakePublic]
+        internal void InvokeOnReconcile(NetworkBehaviour nb, bool before)
+        {
+            nb.IsBehaviourReconciling = before;
+            if (before)
+                OnPreReconcile?.Invoke(nb);
+            else
+                OnPostReconcile?.Invoke(nb);
+        }
+
+        /// <summary>
+        /// Invokes OnReplicateReplay.
+        /// Internal use.
+        /// </summary>
+        [APIExclude]
+        internal void InvokeOnReplicateReplay(UnityScene scene, uint tick, PhysicsScene ps, PhysicsScene2D ps2d, bool before)
+        {
+            if (before)
+            {
+                _replayingScenes.Add(scene);
+                OnPreReplicateReplay?.Invoke(tick, ps, ps2d);
+            }
+            else
+            {
+                _replayingScenes.Remove(scene);
+                OnPostReplicateReplay?.Invoke(tick, ps, ps2d);
+            }
+        }
+
+        /// <summary>
+        /// Called when a scene unloads.
+        /// </summary>
+        /// <param name="arg0"></param>
+        private void SceneManager_sceneUnloaded(UnityScene s)
+        {
+            _replayingScenes.Remove(s);
+        }
+
+    }
+
+}
+
+#endif

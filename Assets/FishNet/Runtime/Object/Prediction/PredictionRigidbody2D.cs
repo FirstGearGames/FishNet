@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace FishNet.Object.Prediction
 {
-#if PREDICTION_V2
+#if !PREDICTION_1
 
     public static class PredictionRigidbody2D2DSerializers
     {
@@ -198,10 +198,10 @@ namespace FishNet.Object.Prediction
             _pendingForces.Add(fd);
 
         }
-        public void AddTorque(Vector3 force, ForceMode2D mode = ForceMode2D.Force)
+        public void AddTorque(float force, ForceMode2D mode = ForceMode2D.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddTorque,
-                new ForceData(force, mode));
+                new TorqueData(force, mode));
             _pendingForces.Add(fd);
         }
         public void AddForceAtPosition(Vector3 force, Vector3 position, ForceMode2D mode = ForceMode2D.Force)

@@ -14,6 +14,7 @@ namespace FishNet.Managing.Observing.Editing
         private SerializedProperty _enableNetworkLod;
         private SerializedProperty _levelOfDetailDistances;
         private SerializedProperty _updateHostVisibility;
+        private SerializedProperty _maximumTimedObserversDuration;
         private SerializedProperty _defaultConditions;
 
         protected virtual void OnEnable()
@@ -21,6 +22,7 @@ namespace FishNet.Managing.Observing.Editing
             _enableNetworkLod = serializedObject.FindProperty(nameof(_enableNetworkLod));
             _levelOfDetailDistances = serializedObject.FindProperty(nameof(_levelOfDetailDistances));
             _updateHostVisibility = serializedObject.FindProperty(nameof(_updateHostVisibility));
+            _maximumTimedObserversDuration = serializedObject.FindProperty(nameof(_maximumTimedObserversDuration));
             _defaultConditions = serializedObject.FindProperty(nameof(_defaultConditions));
         }
 
@@ -46,6 +48,9 @@ namespace FishNet.Managing.Observing.Editing
             GameKitEditing.EnableGUIIfPlaying();
 
             EditorGUILayout.PropertyField(_updateHostVisibility);
+            if (_maximumTimedObserversDuration.floatValue < 1d)
+                EditorGUILayout.HelpBox("Using low values may reduce server performance while under load.", MessageType.Warning);
+            EditorGUILayout.PropertyField(_maximumTimedObserversDuration);
             EditorGUILayout.PropertyField(_defaultConditions);
 
             EditorGUI.indentLevel--;

@@ -985,7 +985,7 @@ namespace FishNet.Serializing
         public void WriteNetworkConnection(NetworkConnection connection)
         {
             int value = (connection == null) ? NetworkConnection.UNSET_CLIENTID_VALUE : connection.ClientId;
-            WriteInt16((short)value);
+            WriteNetworkConnectionId(value);
         }
 
         /// <summary>
@@ -994,9 +994,9 @@ namespace FishNet.Serializing
         /// <returns></returns>
         [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteNetworkConnectionId(short id)
+        public void WriteNetworkConnectionId(int id)
         {
-            WriteInt16(id);
+            WriteInt32(id);
         }
 
         /// <summary>
@@ -1170,7 +1170,7 @@ namespace FishNet.Serializing
                 WriteList<T>(value, offset, value.Count - offset);
         }
 
-#if !PREDICTION_V2
+#if PREDICTION_1
         /// <summary>
         /// Writes a replication to the server.
         /// </summary>

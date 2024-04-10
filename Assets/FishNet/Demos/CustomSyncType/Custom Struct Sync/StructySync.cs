@@ -240,9 +240,9 @@ namespace FishNet.Example.CustomSyncObject
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
-        internal protected override void ResetState()
+        internal protected override void ResetState(bool asServer)
         {
-            base.ResetState();
+            base.ResetState(asServer);
             _changed.Clear();
             Value = _initialValue;
             _valuesChanged = false;

@@ -1102,7 +1102,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int ReadNetworkConnectionId()
         {
-            return ReadInt16();
+            return ReadInt32();
         }
 
         /// <summary>
@@ -1280,7 +1280,7 @@ namespace FishNet.Serializing
         #endregion
 
         #region Generators.
-#if !PREDICTION_V2
+#if PREDICTION_1
         /// <summary>
         /// Reads a replicate into collection and returns item count read.
         /// </summary>

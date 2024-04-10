@@ -7,7 +7,7 @@ namespace FishNet.Component.Prediction
 {
     internal class PredictedObjectOwnerSmoother
     {
-#if !PREDICTION_V2
+#if PREDICTION_1
 
         #region Serialized.
         /// <summary>

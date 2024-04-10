@@ -113,7 +113,7 @@ namespace FishNet.Utility.Performance
             }
 
             instantiated.gameObject.SetActive(false);
-            instantiated.ResetState();
+            instantiated.ResetState(asServer);
             Stack<NetworkObject> cache = GetOrCreateCache(instantiated.SpawnableCollectionId, instantiated.PrefabId);
             cache.Push(instantiated);
         }

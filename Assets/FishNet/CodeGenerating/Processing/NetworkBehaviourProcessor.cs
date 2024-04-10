@@ -344,7 +344,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private void SetUsesPrediction(List<TypeDefinition> typeDefs)
         {
-//#if PREDICTION_V2
+//#if !PREDICTION_1
 //            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
 
 //            foreach (TypeDefinition td in typeDefs)

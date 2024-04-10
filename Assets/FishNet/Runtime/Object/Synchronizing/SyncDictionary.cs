@@ -7,10 +7,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
-
+    [System.Serializable]
     public class SyncDictionary<TKey, TValue> : SyncBase, IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
     {
 
@@ -76,6 +77,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
+        [HideInInspector]
         public Dictionary<TKey, TValue> ClientHostCollection;
         /// <summary>
         /// Number of objects in the collection.
@@ -287,7 +289,10 @@ namespace FishNet.Object.Synchronizing
         internal protected override void WriteFull(PooledWriter writer)
         {
             if (!_valuesChanged)
+            {
+                UnityEngine.Debug.Log($"Values did not change.");
                 return;
+            }
 
             base.WriteHeader(writer, false);
             //True for full write.
@@ -393,9 +398,9 @@ namespace FishNet.Object.Synchronizing
         /// Resets to initialized values.
         /// </summary>
         [APIExclude]
-        internal protected override void ResetState()
+        internal protected override void ResetState(bool asServer)
         {
-            base.ResetState();
+            base.ResetState(asServer);
             _sendAll = false;
             _changed.Clear();
             Collection.Clear();

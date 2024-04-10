@@ -11,7 +11,7 @@ namespace FishNet.Component.Prediction
     [CanEditMultipleObjects]
     public class PredictedObjectEditor : Editor
     {
-#if !PREDICTION_V2
+#if PREDICTION_1
 
         private SerializedProperty _implementsPredictionMethods;
         private SerializedProperty _graphicalObject;

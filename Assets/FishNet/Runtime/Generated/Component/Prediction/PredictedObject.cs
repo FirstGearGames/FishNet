@@ -11,7 +11,7 @@ namespace FishNet.Component.Prediction
     [AddComponentMenu("FishNet/Component/PredictedObject")]
     public partial class PredictedObject : NetworkBehaviour
     {
-#if !PREDICTION_V2
+#if PREDICTION_1
         #region Types.
         /// <summary>
         /// How to favor smoothing for predicted objects.

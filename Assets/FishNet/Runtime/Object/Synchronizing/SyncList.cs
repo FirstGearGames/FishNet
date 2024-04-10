@@ -7,10 +7,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
-
+    [System.Serializable]
     public class SyncList<T> : SyncBase, IList<T>, IReadOnlyList<T>
     {
         #region Types.
@@ -77,6 +78,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
+        [HideInInspector]
         public List<T> ClientHostCollection;
         /// <summary>
         /// Number of objects in the collection.
@@ -423,9 +425,9 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
-        internal protected override void ResetState()
+        internal protected override void ResetState(bool asServer)
         {
-            base.ResetState();
+            base.ResetState(asServer);
             _sendAll = false;
             _changed.Clear();
             ClientHostCollection.Clear();
@@ -519,8 +521,10 @@ namespace FishNet.Object.Synchronizing
         public int IndexOf(T item)
         {
             for (int i = 0; i < Collection.Count; ++i)
+            {
                 if (_comparer.Equals(item, Collection[i]))
                     return i;
+            }
             return -1;
         }
 
@@ -532,8 +536,10 @@ namespace FishNet.Object.Synchronizing
         public int FindIndex(Predicate<T> match)
         {
             for (int i = 0; i < Collection.Count; ++i)
+            {
                 if (match(Collection[i]))
                     return i;
+            }
             return -1;
         }
 
@@ -557,8 +563,10 @@ namespace FishNet.Object.Synchronizing
         {
             List<T> results = new List<T>();
             for (int i = 0; i < Collection.Count; ++i)
+            {
                 if (match(Collection[i]))
                     results.Add(Collection[i]);
+            }
             return results;
         }
 
@@ -647,9 +655,11 @@ namespace FishNet.Object.Synchronizing
         {
             List<T> toRemove = new List<T>();
             for (int i = 0; i < Collection.Count; ++i)
+            { 
                 if (match(Collection[i]))
                     toRemove.Add(Collection[i]);
-
+            }
+            
             foreach (T entry in toRemove)
                 Remove(entry);
 

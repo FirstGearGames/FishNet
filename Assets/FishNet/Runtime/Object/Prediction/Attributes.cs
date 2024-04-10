@@ -2,7 +2,7 @@
 
 namespace FishNet.Object.Prediction
 {
-#if !PREDICTION_V2
+#if PREDICTION_1
     /// <summary>
     /// Replicated methods are to be called from clients and will run the same data and logic on the server.
     /// Only data used as method arguments will be serialized.

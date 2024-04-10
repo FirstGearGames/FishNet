@@ -9,7 +9,7 @@ namespace FishNet.Component.Prediction
 {
     internal class PredictedObjectSpectatorSmoother
     {
-#if !PREDICTION_V2
+#if PREDICTION_1
         #region Types.
         /// <summary>
         /// Data on a goal to move towards.

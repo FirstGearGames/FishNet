@@ -22,7 +22,7 @@ namespace FishNet.Upgrading.Mirror.Editing
         /// <summary>
         /// Replaces all components.
         /// </summary>
-        [MenuItem("Fish-Networking/Upgrading/From Mirror/Replace Components", false, 2)]
+        [MenuItem("Fish-Networking/Utility/Upgrading/From Mirror/Replace Components", false, 1)]
         private static void ReplaceComponents()
         {
 #if MIRROR
@@ -40,7 +40,7 @@ namespace FishNet.Upgrading.Mirror.Editing
 #endif
         }
 
-        [MenuItem("Fish-Networking/Upgrading/From Mirror/Remove Defines", false, 2)]
+        [MenuItem("Fish-Networking/Utility/Upgrading/From Mirror/Remove Defines", false, 2)]
         private static void RemoveDefines()
         {
             string currentDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);

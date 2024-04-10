@@ -9,11 +9,11 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-#if PREDICTION_V2
+#if !PREDICTION_1
     public partial class NetworkObject : MonoBehaviour
     {
         #region Types.
-#if PREDICTION_V2
+#if !PREDICTION_1
         /// <summary>
         /// Type of prediction movement being used.
         /// </summary>
@@ -28,11 +28,11 @@ namespace FishNet.Object
         #endregion
 
         #region Public.
-#if PREDICTION_V2
+#if !PREDICTION_1
         /// <summary>
         /// True if a reconcile is occuring on any NetworkBehaviour that is on or nested of this NetworkObject. Runtime NetworkBehaviours are not included, such as if you child a NetworkObject to another at runtime.
         /// </summary>
-        public bool IsObjectReconciling { get; private set; }
+        public bool IsObjectReconciling { get; internal set; }
 #endif
         /// <summary>
         /// Last tick this object replicated.
@@ -53,7 +53,7 @@ namespace FishNet.Object
         #endregion
 
         #region Serialized.
-#if PREDICTION_V2
+#if !PREDICTION_1
         /// <summary>
         /// True if this object uses prediciton methods.
         /// </summary>
@@ -222,22 +222,16 @@ namespace FishNet.Object
 
         private void PredictionManager_OnReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
-            bool hasData = false;
-
-            for (int i = 0; i < _predictionBehaviours.Count; i++)
+            if (!IsObjectReconciling)
             {
-                if (_predictionBehaviours[i].ClientHasReconcileData)
-                {
-                    hasData = true;
-                    _predictionBehaviours[i].Reconcile_Client_Start();
-                }
-                else if (_rigidbodyPauser != null)
-                {
+                if (_rigidbodyPauser != null)
                     _rigidbodyPauser.Pause();
-                }
-
             }
-            IsObjectReconciling = hasData;
+            else
+            {
+                for (int i = 0; i < _predictionBehaviours.Count; i++)
+                    _predictionBehaviours[i].Reconcile_Client_Start();
+            }
         }
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)

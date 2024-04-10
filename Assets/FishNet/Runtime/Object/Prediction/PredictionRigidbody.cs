@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace FishNet.Object.Prediction
 {
-#if PREDICTION_V2
+#if !PREDICTION_1
 
     public static class PredictionRigidbodySerializers
     {

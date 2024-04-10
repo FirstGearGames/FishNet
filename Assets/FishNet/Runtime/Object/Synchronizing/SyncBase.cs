@@ -334,9 +334,9 @@ namespace FishNet.Object.Synchronizing.Internal
         protected bool ReadChangeId(PooledReader reader)
         {
             bool reset = reader.ReadBoolean();
-
             uint id = reader.ReadUInt32();
             bool ignoreResults = !reset && (id <= _lastReadDirtyId);
+
             _lastReadDirtyId = id;
             return ignoreResults;
         }
@@ -431,19 +431,34 @@ namespace FishNet.Object.Synchronizing.Internal
         [MakePublic]
         internal protected virtual void Read(PooledReader reader, bool asServer) { }
         /// <summary>
-        /// Resets initialized values.
+        /// Resets initialized values for server and client.
         /// </summary>
-        [MakePublic]
         internal protected virtual void ResetState()
         {
-            _lastWriteFullLocalTick = 0;
-            _changeId = 0;
-            _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
-            NextSyncTick = 0;
-            SetCurrentChannel(Settings.Channel);
-            IsDirty = false;
+            ResetState(true);
+            ResetState(false);
         }
+
+        /// <summary>
+        /// Resets initialized values for server or client.
+        /// </summary>
+        [MakePublic]
+        internal protected virtual void ResetState(bool asServer)
+        {
+            if (asServer)
+            {
+                _lastWriteFullLocalTick = 0;
+                _changeId = 0;
+                NextSyncTick = 0;
+                SetCurrentChannel(Settings.Channel);
+                IsDirty = false;
+            }
+            else
+            {
+                _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
+            }
+        }
+
+
     }
-
-
 }
