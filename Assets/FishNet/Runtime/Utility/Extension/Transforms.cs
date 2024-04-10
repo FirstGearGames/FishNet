@@ -153,7 +153,7 @@ namespace FishNet.Utility.Extension
         }
 
         /// <summary>
-        /// Oututs properties to use for a transform. When a nullable property has value that value is used, otherwise the transforms current property is used.
+        /// Outputs properties to use for a transform. When a nullable property has value that value is used, otherwise the transforms current property is used.
         /// </summary>
         public static void OutLocalPropertyValues(this Transform t, Vector3? nullablePos, Quaternion? nullableRot, Vector3? nullableScale, out Vector3 pos, out Quaternion rot, out Vector3 scale)
         {
