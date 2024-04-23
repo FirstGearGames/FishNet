@@ -302,7 +302,7 @@ namespace FishNet.CodeGenerating.Processing
                         {
                             if (inst.Operand is MethodReference mr)
                             {
-                                if (mr.FullName == reconcileMd.FullName)
+                                if (mr.Name == reconcileMd.Name)
                                     return true;
                             }    
                         }
