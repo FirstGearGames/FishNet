@@ -289,10 +289,7 @@ namespace FishNet.Object.Synchronizing
         internal protected override void WriteFull(PooledWriter writer)
         {
             if (!_valuesChanged)
-            {
-                UnityEngine.Debug.Log($"Values did not change.");
                 return;
-            }
 
             base.WriteHeader(writer, false);
             //True for full write.

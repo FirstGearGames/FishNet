@@ -146,18 +146,15 @@ namespace FishNet.Object.Synchronizing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SetValue(T nextValue, bool calledByUser, bool sendRpc = false)
         {
-            /* If not registered then that means Awake
-             * has not completed on the owning class. This would be true
-             * when setting values within awake on the owning class. Registered
-             * is called at the end of awake, so it would be unset until awake completed.
-             * 
-             * Registered however will be true when setting from another script,
-             * even if the owning class of this was just spawned. This is because
-             * the unity cycle will fire awake on the object soon as it's spawned, 
-             * completing awake, and the user would set the value after. */
+            /* IsInitialized is only set after the script containing this SyncVar
+             * has executed our codegen in the beginning of awake, and after awake
+             * user logic. When not set update the initial values */
             if (!base.IsInitialized)
+            {
+                SetInitialValues(nextValue);
                 return;
-
+            }
+            
             /* If not client or server then set skipChecks
              * as true. When neither is true it's likely user is changing
              * value before object is initialized. This is allowed

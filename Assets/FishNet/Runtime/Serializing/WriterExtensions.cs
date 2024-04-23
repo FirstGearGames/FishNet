@@ -25,6 +25,8 @@ namespace FishNet.Serializing
 
         static WriterExtensions()
         {
+            DefaultPackedTypes.Add(typeof(short));
+            DefaultPackedTypes.Add(typeof(ushort));
             DefaultPackedTypes.Add(typeof(int));
             DefaultPackedTypes.Add(typeof(uint));
             DefaultPackedTypes.Add(typeof(long));

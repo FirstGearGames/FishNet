@@ -23,7 +23,9 @@ namespace Edgegap
 
         public static BuildReport BuildServer()
         {
-            IEnumerable<string> scenes = EditorBuildSettings.scenes.Select(s=>s.path);
+            IEnumerable<string> scenes = EditorBuildSettings.scenes
+                .Where(s => s.enabled)
+                .Select(s => s.path);
             BuildPlayerOptions options = new BuildPlayerOptions
             {
                 scenes = scenes.ToArray(),
@@ -102,7 +104,7 @@ namespace Edgegap
                     onStatusUpdate(msg);
                 });
 
-            if (realErrorMessage != null)
+            if(realErrorMessage != null)
             {
                 throw new Exception(realErrorMessage);
             }

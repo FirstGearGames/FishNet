@@ -2,9 +2,6 @@
 
 namespace FishNet.Serializing.Helping
 {
-
-
-    // -- helpers for float conversion without allocations --
     [StructLayout(LayoutKind.Explicit)]
     internal struct UIntFloat
     {

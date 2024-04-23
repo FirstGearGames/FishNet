@@ -18,7 +18,7 @@ namespace Newtonsoft.Json
 
         [InitializeOnLoadMethod]
         private static void Initialize()
-        {            
+        {
             string dtStr = EditorPrefs.GetString(WARN_TIME_NAME, string.Empty);
             //Somehow got cleared. Reset.
             if (string.IsNullOrWhiteSpace(dtStr))
@@ -43,12 +43,13 @@ namespace Newtonsoft.Json
 
             }
 
+            ResetWarnTime();
             UnityEngine.Debug.LogWarning($"Edgegap requires Json.NET to be imported to function. To import Json.NET navigate to Window -> Package Manager -> Click the + symbol and choose 'Add package by name' -> com.unity.nuget.newtonsoft-json -> Leave version blank and click Add. If you are not currently using Edgegap you may ignore this message.");
         }
     }
 }
 #endif
-
+ 
 namespace Newtonsoft.Json
 {
 

@@ -10,22 +10,22 @@ namespace FishNet.Managing.Predicting.Editing
     [CanEditMultipleObjects]
     public class PredictionManagerEditor : Editor
     {
-        private SerializedProperty _queuedInputs;
+       // private SerializedProperty _queuedInputs;
         private SerializedProperty _dropExcessiveReplicates;
         private SerializedProperty _maximumServerReplicates;
         private SerializedProperty _maximumConsumeCount;
-        private SerializedProperty _redundancyCount;
+        private SerializedProperty _interpolation;
         private SerializedProperty _allowPredictedSpawning;
         private SerializedProperty _reservedObjectIds;
 
 
         protected virtual void OnEnable()
         {
-            _queuedInputs = serializedObject.FindProperty(nameof(_queuedInputs));
+            //_queuedInputs = serializedObject.FindProperty(nameof(_queuedInputs));
             _dropExcessiveReplicates = serializedObject.FindProperty(nameof(_dropExcessiveReplicates));
             _maximumServerReplicates = serializedObject.FindProperty(nameof(_maximumServerReplicates));
             _maximumConsumeCount = serializedObject.FindProperty(nameof(_maximumConsumeCount));
-            _redundancyCount = serializedObject.FindProperty(nameof(_redundancyCount));
+            _interpolation = serializedObject.FindProperty(nameof(_interpolation));
             _allowPredictedSpawning = serializedObject.FindProperty(nameof(_allowPredictedSpawning));
             _reservedObjectIds = serializedObject.FindProperty(nameof(_reservedObjectIds));
         }
@@ -41,8 +41,8 @@ namespace FishNet.Managing.Predicting.Editing
 
             EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_queuedInputs);
-            EditorGUILayout.PropertyField(_redundancyCount);
+            //EditorGUILayout.PropertyField(_queuedInputs);
+            EditorGUILayout.PropertyField(_interpolation);
 
             EditorGUILayout.PropertyField(_allowPredictedSpawning);
             if (_allowPredictedSpawning.boolValue == true)

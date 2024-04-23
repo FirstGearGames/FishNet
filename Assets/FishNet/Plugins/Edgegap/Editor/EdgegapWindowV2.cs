@@ -44,7 +44,6 @@ namespace Edgegap.Editor
         private string _deploymentRequestId;
         private string _userExternalIp;
         private bool _isAwaitingDeploymentReadyStatus;
-        private bool _registered;
         #endregion // Vars
 
 
@@ -151,7 +150,6 @@ namespace Edgegap.Editor
             unregisterClickEvents();
             unregisterFieldCallbacks();
             SyncObjectWithForm();
-            _registered = false;
         }
         #endregion // Unity Funcs
 
@@ -163,7 +161,6 @@ namespace Edgegap.Editor
         /// </summary>
         private void InitUIElements()
         {
-            _registered = true;
             setVisualElementsToFields();
             assertVisualElementKeys();
             closeDisableGroups();
@@ -380,9 +377,6 @@ namespace Edgegap.Editor
         /// </summary>
         private void unregisterFieldCallbacks()
         {
-            if (!_registered)
-                return;
-
             _apiTokenInput.UnregisterValueChangedCallback(onApiTokenInputChanged);
             _apiTokenInput.UnregisterCallback<FocusOutEvent>(onApiTokenInputFocusOut);
 
@@ -419,8 +413,6 @@ namespace Edgegap.Editor
         /// </summary>
         private void unregisterClickEvents()
         {
-            if (!_registered)
-                return;
             _debugBtn.clickable.clicked -= onDebugBtnClick;
 
             _apiTokenVerifyBtn.clickable.clicked -= onApiTokenVerifyBtnClick;
@@ -612,8 +604,6 @@ namespace Edgegap.Editor
         /// </summary>
         private void SyncObjectWithForm()
         {
-            if (_appIconSpriteObjInput == null)
-                return; 
             _appIconSpriteObj = _appIconSpriteObjInput.value as Sprite;
         }
 

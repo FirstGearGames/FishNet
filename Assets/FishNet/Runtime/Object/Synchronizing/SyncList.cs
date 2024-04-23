@@ -13,7 +13,7 @@ namespace FishNet.Object.Synchronizing
 {
     [System.Serializable]
     public class SyncList<T> : SyncBase, IList<T>, IReadOnlyList<T>
-    {
+    { 
         #region Types.
         /// <summary>
         /// Information needed to invoke a callback.

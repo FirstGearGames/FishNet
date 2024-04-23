@@ -348,49 +348,49 @@ namespace FishNet.Object
             writer.Store();
         }
 
-    //    /// <summary> 
-    //    /// Returns if there is a chance the transform may change after the tick.
-    //    /// </summary>
-    //    /// <returns></returns>
-    //    protected internal bool PredictedTransformMayChange()
-    //    {
-    //        if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
-    //            return false;
+        //    /// <summary> 
+        //    /// Returns if there is a chance the transform may change after the tick.
+        //    /// </summary>
+        //    /// <returns></returns>
+        //    protected internal bool PredictedTransformMayChange()
+        //    {
+        //        if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
+        //            return false;
 
-    //        if (!_predictionInitialized)
-    //        {
-    //            _predictionInitialized = true;
-    //            _predictionRigidbody = GetComponentInParent<Rigidbody>();
-    //            _predictionRigidbody2d = GetComponentInParent<Rigidbody2D>();
-    //        }
+        //        if (!_predictionInitialized)
+        //        {
+        //            _predictionInitialized = true;
+        //            _predictionRigidbody = GetComponentInParent<Rigidbody>();
+        //            _predictionRigidbody2d = GetComponentInParent<Rigidbody2D>();
+        //        }
 
-    //        /* Use distance when checking if changed because rigidbodies can twitch
-			 //* or move an extremely small amount. These small moves are not worth
-			 //* resending over because they often fix themselves each frame. */
-    //        float changeDistance = 0.000004f;
+        //        /* Use distance when checking if changed because rigidbodies can twitch
+        //* or move an extremely small amount. These small moves are not worth
+        //* resending over because they often fix themselves each frame. */
+        //        float changeDistance = 0.000004f;
 
-    //        bool positionChanged = (transform.position - _lastMayChangePosition).sqrMagnitude > changeDistance;
-    //        bool rotationChanged = (transform.rotation.eulerAngles - _lastMayChangeRotation.eulerAngles).sqrMagnitude > changeDistance;
-    //        bool scaleChanged = (transform.localScale - _lastMayChangeScale).sqrMagnitude > changeDistance;
-    //        bool transformChanged = (positionChanged || rotationChanged || scaleChanged);
-    //        /* Returns true if transform.hasChanged, or if either
-			 //* of the rigidbodies have velocity. */
-    //        bool changed = (
-    //            transformChanged ||
-    //            (_predictionRigidbody != null && (_predictionRigidbody.velocity != Vector3.zero || _predictionRigidbody.angularVelocity != Vector3.zero)) ||
-    //            (_predictionRigidbody2d != null && (_predictionRigidbody2d.velocity != Vector2.zero || _predictionRigidbody2d.angularVelocity != 0f))
-    //            );
+        //        bool positionChanged = (transform.position - _lastMayChangePosition).sqrMagnitude > changeDistance;
+        //        bool rotationChanged = (transform.rotation.eulerAngles - _lastMayChangeRotation.eulerAngles).sqrMagnitude > changeDistance;
+        //        bool scaleChanged = (transform.localScale - _lastMayChangeScale).sqrMagnitude > changeDistance;
+        //        bool transformChanged = (positionChanged || rotationChanged || scaleChanged);
+        //        /* Returns true if transform.hasChanged, or if either
+        //* of the rigidbodies have velocity. */
+        //        bool changed = (
+        //            transformChanged ||
+        //            (_predictionRigidbody != null && (_predictionRigidbody.velocity != Vector3.zero || _predictionRigidbody.angularVelocity != Vector3.zero)) ||
+        //            (_predictionRigidbody2d != null && (_predictionRigidbody2d.velocity != Vector2.zero || _predictionRigidbody2d.angularVelocity != 0f))
+        //            );
 
-    //        //If transform changed update last values.
-    //        if (transformChanged)
-    //        {
-    //            _lastMayChangePosition = transform.position;
-    //            _lastMayChangeRotation = transform.rotation;
-    //            _lastMayChangeScale = transform.localScale;
-    //        }
+        //        //If transform changed update last values.
+        //        if (transformChanged)
+        //        {
+        //            _lastMayChangePosition = transform.position;
+        //            _lastMayChangeRotation = transform.rotation;
+        //            _lastMayChangeScale = transform.localScale;
+        //        }
 
-    //        return changed;
-    //    }
+        //        return changed;
+        //    }
 
 
         /// <summary>
@@ -438,26 +438,41 @@ namespace FishNet.Object
         /// </summary>
         protected internal void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
-            ReplicateTickFinder.DataPlacementResult findResult;
-            int replicateIndex = ReplicateTickFinder.GetReplicateHistoryIndex<T>(replayTick, replicatesHistory, out findResult);
-
+            //NOTESSTART
+            /* Only replay the first available data after a reconcile then run the rest
+             * as default future. This is so there is a consistency of which inputs are run
+             * as created and which are future, using the ones that were not run as a buffer. */
+            //NOTESEND             
             T data;
             ReplicateState state;
-            //If found then the replicate has been received by the server.
-            if (findResult == ReplicateTickFinder.DataPlacementResult.Exact)
+            //If the first replay.
+            if (replayTick == (_networkObjectCache.PredictionManager.ServerStateTick + 1))
             {
-                data = replicatesHistory[replicateIndex];
-                state = ReplicateState.ReplayedCreated;
+                ReplicateTickFinder.DataPlacementResult findResult;
+                int replicateIndex = ReplicateTickFinder.GetReplicateHistoryIndex<T>(replayTick, replicatesHistory, out findResult);
+                //If not found then something went wrong.
+                if (findResult == ReplicateTickFinder.DataPlacementResult.Exact)
+                {
+                    data = replicatesHistory[replicateIndex];
+                    state = ReplicateState.ReplayedCreated;
+                }
+                else
+                {
+                    SetDataToDefault();
+                }
             }
-            //If not not found then it's being run as predicted.
+            //Not the first replay tick.
             else
+            {
+                SetDataToDefault();
+            }
+
+
+            void SetDataToDefault()
             {
                 data = default;
                 data.SetTick(replayTick);
-                if (replicatesHistory.Count == 0 || replicatesHistory[^1].GetTick() < replayTick)
-                    state = ReplicateState.ReplayedFuture;
-                else
-                    state = ReplicateState.ReplayedCreated;
+                state = ReplicateState.ReplayedFuture;
             }
 
             del.Invoke(data, state, channel);
@@ -590,10 +605,10 @@ namespace FishNet.Object
             /* If remaining resends is more than 0 then that means
              * redundancy is still in effect. When redundancy is not
              * in effect then histories to send can be 1 for this iteration. */
-            int pastInputs = (_remainingResends > 0) ? PredictionManager.RedundancyCount : 1;
+            int pastInputs = (_remainingResends > 0) ? PredictionManager.Interpolation : 1;
             //pastInputs = PredictionManager.RedundancyCount;
             if (resetResends)
-                _remainingResends = pm.RedundancyCount;
+                _remainingResends = pm.Interpolation;
 
             bool sendData = (_remainingResends > 0);
             if (sendData)
@@ -610,7 +625,7 @@ namespace FishNet.Object
 				 *
 				 * Server does not reconcile os it only needs enough for redundancy.
 				 */
-                int maxCount = (IsServerStarted) ? pm.RedundancyCount : pm.MaximumClientReplicates;
+                int maxCount = (IsServerStarted) ? pm.Interpolation : pm.MaximumClientReplicates;
                 //Number to remove which is over max count.
                 int removeCount = (replicatesHistoryCount - maxCount);
                 //If there are any to remove.
@@ -757,7 +772,7 @@ namespace FishNet.Object
             //If from a client that is not clientHost do some safety checks.
             if (!fromServer && !Owner.IsLocalClient)
             {
-                if (receivedReplicatesCount > pm.RedundancyCount)
+                if (receivedReplicatesCount > pm.Interpolation)
                 {
                     sender.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection {sender.ToString()} sent too many past replicates. Connection will be kicked immediately.");
                     return;
@@ -782,7 +797,7 @@ namespace FishNet.Object
 
             int queueCount = replicatesQueue.Count;
             //Limit history count to max of queued amount, or queued inputs, whichever is lesser.
-            int historyCount = (int)Mathf.Min(_networkObjectCache.PredictionManager.RedundancyCount, queueCount);
+            int historyCount = (int)Mathf.Min(_networkObjectCache.PredictionManager.Interpolation, queueCount);
             //None to send.
             if (historyCount == 0)
                 return;

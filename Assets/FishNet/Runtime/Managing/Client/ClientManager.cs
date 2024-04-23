@@ -361,7 +361,7 @@ namespace FishNet.Managing.Client
                 segment = args.Data;
 
             NetworkManager.StatisticsManager.NetworkTraffic.LocalClientReceivedData((ulong)segment.Count);
-            if (segment.Count <= TransportManager.TICK_BYTES)
+            if (segment.Count <= TransportManager.UNPACKED_TICK_LENGTH)
                 return;
 
             PooledReader reader = ReaderPool.Retrieve(segment, NetworkManager, Reader.DataSource.Server);
@@ -480,7 +480,7 @@ namespace FishNet.Managing.Client
                     }
                     else if (packetId == PacketId.TimingUpdate)
                     {
-                        NetworkManager.TimeManager.ParseTimingUpdate();
+                        NetworkManager.TimeManager.ParseTimingUpdate(reader);
                     }
                     else if (packetId == PacketId.OwnershipChange)
                     {

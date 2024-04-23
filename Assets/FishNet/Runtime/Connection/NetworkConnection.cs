@@ -177,7 +177,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Number of bytes to reserve for a connectionId if writing the value uncompressed.
         /// </summary>
-        public const int CLIENTID_UNCOMPRESSED_RESERVE_BYTES = 4;
+        public const int CLIENTID_UNCOMPRESSED_RESERVE_LENGTH = 4;
         #endregion
 
         #region Comparers.

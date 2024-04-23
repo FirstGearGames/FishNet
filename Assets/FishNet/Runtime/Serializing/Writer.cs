@@ -20,41 +20,9 @@ namespace FishNet.Serializing
 {
 
     /// <summary>
-    /// Used for write references to generic types.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    [APIExclude]
-    public static class GenericWriter<T>
-    {
-        public static Action<Writer, T> Write { get; private set; }
-        public static Action<Writer, T, AutoPackType> WriteAutoPack { get; private set; }
-        /// <summary>
-        /// True if this type has a custom writer.
-        /// </summary>
-        private static bool _hasCustomSerializer;
-
-        public static void SetWriteUnpacked(Action<Writer, T> value)
-        {
-            /* If a custom serializer has already been set then exit method
-             * to not overwrite serializer. */
-            if (_hasCustomSerializer)
-                return;
-
-            //Set has custom serializer if value being used is not a generated method.
-            _hasCustomSerializer = !(value.Method.Name.StartsWith(UtilityConstants.GENERATED_WRITER_PREFIX));
-            Write = value;
-        }
-
-        public static void SetWriteAutoPacked(Action<Writer, T, AutoPackType> value)
-        {
-            WriteAutoPack = value;
-        }
-    }
-
-    /// <summary>
     /// Writes data to a buffer.
     /// </summary>
-    public class Writer
+    public partial class Writer
     {
         #region Public.
         /// <summary>
@@ -226,7 +194,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void WritePacketId(PacketId pid)
         {
-            WriteUInt16((ushort)pid);
+            WriteUInt16((ushort)pid, AutoPackType.Unpacked);
         }
 
         /// <summary>
@@ -346,12 +314,22 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteUInt16(ushort value)
+        public void WriteUInt16(ushort value, AutoPackType packType = AutoPackType.Packed)
         {
-            EnsureBufferLength(2);
-            _buffer[Position++] = (byte)value;
-            _buffer[Position++] = (byte)(value >> 8);
-            Length = Math.Max(Length, Position);
+            //todo Packing for this type appears to be broken. Fix then remove this line.
+            packType = AutoPackType.Unpacked;
+
+            if (packType == AutoPackType.Unpacked)
+            {
+                EnsureBufferLength(2);
+                _buffer[Position++] = (byte)value;
+                _buffer[Position++] = (byte)(value >> 8);
+                Length = Math.Max(Length, Position);
+            }
+            else
+            {
+                WritePackedWhole(value);
+            }
         }
 
         /// <summary>
@@ -359,13 +337,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt16(short value)
-        {
-            EnsureBufferLength(2);
-            _buffer[Position++] = (byte)value;
-            _buffer[Position++] = (byte)(value >> 8);
-            Length = Math.Max(Length, Position);
-        }
+        public void WriteInt16(short value, AutoPackType packType = AutoPackType.Packed) => WriteUInt16((ushort)value, packType);
 
         /// <summary>
         /// Writes a int32.
@@ -536,11 +508,8 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteVector2(Vector2 value)
         {
-            UIntFloat converter;
-            converter = new UIntFloat { FloatValue = value.x };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.y };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
+            WriteSingle(value.x, AutoPackType.Unpacked);
+            WriteSingle(value.y, AutoPackType.Unpacked);
         }
 
         /// <summary>
@@ -550,13 +519,9 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteVector3(Vector3 value)
         {
-            UIntFloat converter;
-            converter = new UIntFloat { FloatValue = value.x };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.y };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.z };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
+            WriteSingle(value.x, AutoPackType.Unpacked);
+            WriteSingle(value.y, AutoPackType.Unpacked);
+            WriteSingle(value.z, AutoPackType.Unpacked);
         }
 
         /// <summary>
@@ -566,15 +531,10 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteVector4(Vector4 value)
         {
-            UIntFloat converter;
-            converter = new UIntFloat { FloatValue = value.x };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.y };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.z };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.w };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
+            WriteSingle(value.x, AutoPackType.Unpacked);
+            WriteSingle(value.y, AutoPackType.Unpacked);
+            WriteSingle(value.z, AutoPackType.Unpacked);
+            WriteSingle(value.w, AutoPackType.Unpacked);
         }
 
         /// <summary>

@@ -9,6 +9,7 @@ using FishNet.Utility;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
@@ -210,14 +211,14 @@ namespace FishNet.Managing.Timing
         /// </summary>
         [Tooltip("While true clients may drop local ticks if their devices are unable to maintain the tick rate. This could result in a temporary desynchronization but will prevent the client falling further behind on ticks by repeatedly running the logic cycle multiple times per frame.")]
         [SerializeField]
-        private bool _allowTickDropping;
+        private bool _allowTickDropping = true;
         /// <summary>
         /// Maximum number of ticks which may occur in a single frame before remainder are dropped for the frame.
         /// </summary>
         [Tooltip("Maximum number of ticks which may occur in a single frame before remainder are dropped for the frame.")]
         [Range(1, 25)]
         [SerializeField]
-        private byte _maximumFrameTicks = 2;
+        private byte _maximumFrameTicks = 3;
         /// <summary>
         /// 
         /// </summary>
@@ -538,8 +539,8 @@ namespace FishNet.Managing.Timing
                 //Preserve user tick rate.
                 PlayerPrefs.SetFloat(SAVED_FIXED_TIME_TEXT, Time.fixedDeltaTime);
                 //Let the player know.
-                if (Time.fixedDeltaTime != (float)TickDelta)
-                    Debug.LogWarning("Time.fixedDeltaTime is being overriden with TimeManager.TickDelta");
+                //if (Time.fixedDeltaTime != (float)TickDelta)
+                //    Debug.LogWarning("Time.fixedDeltaTime is being overriden with TimeManager.TickDelta");
 #endif
                 Time.fixedDeltaTime = (float)TickDelta;
                 /* Only check this if network manager
@@ -668,8 +669,7 @@ namespace FishNet.Managing.Timing
             bool isClient = NetworkManager.IsClientStarted;
             bool isServer = NetworkManager.IsServerStarted;
 
-            double tickDelta = TickDelta;
-            double timePerSimulation = (isServer) ? tickDelta : _adjustedTickDelta;
+            double timePerSimulation = (isServer) ? TickDelta : _adjustedTickDelta;
             if (timePerSimulation == 0d)
             {
                 Debug.LogWarning($"Simulation delta cannot be 0. Network timing will not continue.");
@@ -692,7 +692,7 @@ namespace FishNet.Managing.Timing
             if (ticksCount > 1)
                 _lastMultipleTicksTime = Time.unscaledDeltaTime;
 
-            if (_allowTickDropping && !NetworkManager.IsServerStarted)
+            if (_allowTickDropping)
             {
                 //If ticks require dropping. Set exactly to maximum ticks.
                 if (ticksCount > _maximumFrameTicks)
@@ -1097,12 +1097,16 @@ namespace FishNet.Managing.Timing
             {
                 //Now send using a packetId.
                 PooledWriter writer = WriterPool.Retrieve();
-                writer.WritePacketId(PacketId.TimingUpdate);
                 foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)
                 {
                     if (!item.IsAuthenticated)
                         continue;
+
+                    writer.WritePacketId(PacketId.TimingUpdate);
+                    writer.WriteTickUnpacked(item.PacketTick.Value());
                     item.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
+                    writer.Reset();
+
                 }
 
                 writer.Store();
@@ -1113,12 +1117,17 @@ namespace FishNet.Managing.Timing
         /// Called on client when server sends a timing update.
         /// </summary>
         /// <param name="ta"></param>
-        internal void ParseTimingUpdate()
+        internal void ParseTimingUpdate(Reader reader)
         {
+            uint clientTick = reader.ReadTickUnpacked();
             //Don't adjust timing on server.
             if (NetworkManager.IsServerStarted)
                 return;
-
+            /* This should never be possible since the server is sending a tick back
+             * that the client previously sent. In other words, the value returned should
+             * always be in the past. */
+            if (LocalTick < clientTick)
+                return;
             /* Use the last ordered remote tick rather than
              * lastPacketTick. This will help with out of order
              * packets where the timing update sent before
@@ -1127,42 +1136,26 @@ namespace FishNet.Managing.Timing
              * ticks really passed rather than the difference
              * between the out of order/late packet. */
             uint lastPacketTick = LastPacketTick.RemoteTick;
-            //If difference could not be updated then something went wrong. Most likely an old timing update.
-            if (!_timing.GetTickDifference(lastPacketTick, LocalTick, out long tickDifference))
-                return;
-
+            //Set Tick based on difference between localTick and clientTick, added onto lastPacketTick.
+            uint prevTick = Tick;
+            uint nextTick = (LocalTick - clientTick) + lastPacketTick;
+            long difference = ((long)nextTick - (long)prevTick);
+            Tick = nextTick;
+            
             //Maximum difference allowed before resetting values.
             const int maximumDifference = 4;
-
-            TryRecalculateTick();
-
-            ////Do not change timing if client is slowing down due to latency issues.
-            //if (Time.unscaledTime - NetworkManager.PredictionManager.SlowDownTime > 3f)
-            //{
-                //Pefect!
-                if (tickDifference == 0) { }
-                //Difference is extreme, reset to default timings. Client probably had an issue.
-                else if (Mathf.Abs(tickDifference) > maximumDifference)
-                {
-                    _adjustedTickDelta = TickDelta;
-                }
-                //Otherwise adjust the delta marginally.
-                else
-                {
-                    /* A negative tickDifference indicates the client is
-                     * moving too fast, while positive indicates too slow. */
-                    bool speedUp = (tickDifference > 0);
-                    ChangeAdjustedTickDelta(speedUp);
-                }
-          //  }
-            //Recalculates Tick value if it exceeds maximum difference.
-            void TryRecalculateTick()
+            //Difference is extreme, reset to default timings. Client probably had an issue.
+            if (Mathf.Abs(difference) > maximumDifference)
             {
-                uint rttTicks = TimeToTicks((RoundTripTime / 2) / 1000f);
-                uint newValue = lastPacketTick + rttTicks;
-                long difference = (long)Mathf.Abs((long)Tick - (long)newValue);
-                if (difference > maximumDifference)
-                    Tick = newValue;
+                _adjustedTickDelta = TickDelta;
+            }
+            //Otherwise adjust the delta marginally.
+            else if (difference != 0)
+            {
+                /* A negative tickDifference indicates the client is
+                 * moving too fast, while positive indicates too slow. */
+                bool speedUp = (difference > 0);
+                ChangeAdjustedTickDelta(speedUp);
             }
         }
         #endregion

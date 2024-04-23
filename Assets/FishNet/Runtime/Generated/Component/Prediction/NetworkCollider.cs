@@ -59,16 +59,25 @@ namespace FishNet.Component.Prediction
         [HideInInspector]
         protected bool IsTrigger;
         /// <summary>
-        /// The maximum number of simultaneous hits to check for.
+        /// Maximum number of simultaneous hits to check for. Larger values decrease performance but allow detection to work for more overlapping colliders. Typically the default value of 16 is more than sufficient.
         /// </summary>
+        [Tooltip("Maximum number of simultaneous hits to check for. Larger values decrease performance but allow detection to work for more overlapping colliders. Typically the default value of 16 is more than sufficient.")]
         [SerializeField]
         private ushort _maximumSimultaneousHits = 16;
-
         /// <summary>
-        /// The duration of the history.
+        /// How long of collision history to keep. Lower values will result in marginally better memory usage at the cost of collision histories desynchronizing on clients with excessive latency.
         /// </summary>
+        [Tooltip("How long of collision history to keep. Lower values will result in marginally better memory usage at the cost of collision histories desynchronizing on clients with excessive latency.")]
+        [Range(0.1f, 2f)]
         [SerializeField]
         private float _historyDuration = 0.5f;
+        /// <summary>
+        /// Units to extend collision traces by. This is used to prevent missed overlaps when colliders do not intersect enough.
+        /// </summary>
+        [Tooltip("Units to extend collision traces by. This is used to prevent missed overlaps when colliders do not intersect enough.")]
+        [Range(0f, 100f)]
+        [SerializeField]
+        private float _additionalSize = 0.1f;
 
         /// <summary>
         /// The colliders on this object.
@@ -193,7 +202,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Units to extend collision traces by. This is used to prevent missed overlaps when colliders do not intersect enough.
         /// </summary>
-        public virtual float GetAdditionalSize() => 0f;
+        public virtual float GetAdditionalSize() => _additionalSize;
 
         /// <summary>
         /// Checks for any trigger changes;

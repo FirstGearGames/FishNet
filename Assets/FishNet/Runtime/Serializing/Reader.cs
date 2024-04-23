@@ -21,42 +21,11 @@ using UnityEngine;
 [assembly: InternalsVisibleTo(UtilityConstants.TEST_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
 {
-    /// <summary>
-    /// Used for read references to generic types.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    [APIExclude]
-    public static class GenericReader<T>
-    {
-        public static Func<Reader, T> Read {  get; set; }
-        public static Func<Reader, AutoPackType, T> ReadAutoPack { get; set; }
-        /// <summary>
-        /// True if this type has a custom writer.
-        /// </summary>
-        private static bool _hasCustomSerializer;
-
-        public static void SetReadUnpacked(Func<Reader, T> value)
-        {
-            /* If a custom serializer has already been set then exit method
-             * to not overwrite serializer. */
-            if (_hasCustomSerializer)
-                return;
-
-            //Set has custom serializer if value being used is not a generated method.
-            _hasCustomSerializer = !(value.Method.Name.StartsWith(UtilityConstants.GENERATED_READER_PREFIX));
-            Read = value;
-        }
-   
-        public static void SetReadAutoPacked(Func<Reader, AutoPackType, T> value)
-        {
-            ReadAutoPack = value;
-        }
-    }
-
+ 
     /// <summary>
     /// Reads data from a buffer.
     /// </summary>
-    public class Reader
+    public partial class Reader
     {
         #region Types.
         public enum DataSource
@@ -252,7 +221,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal PacketId ReadPacketId()
         {
-            return (PacketId)ReadUInt16();
+            return (PacketId)ReadUInt16(AutoPackType.Unpacked);
         }
 
         /// <summary>
@@ -416,11 +385,21 @@ namespace FishNet.Serializing
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ushort ReadUInt16()
+        public ushort ReadUInt16(AutoPackType packType = AutoPackType.Unpacked)
         {
+            //todo Packing for this type appears to be broken. Fix then remove this line.
+            packType = AutoPackType.Unpacked;
+
             ushort result = 0;
-            result |= _buffer[Position++];
-            result |= (ushort)(_buffer[Position++] << 8);
+            if (packType == AutoPackType.Unpacked)
+            {
+                result |= _buffer[Position++];
+                result |= (ushort)(_buffer[Position++] << 8);
+            }
+            else
+            {
+                result = (ushort)ReadPackedWhole();
+            }
 
             return result;
         }
@@ -430,7 +409,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public short ReadInt16() => (short)ReadUInt16();
+        public short ReadInt16(AutoPackType packType = AutoPackType.Packed) => (short)ReadUInt16(packType);
 
         /// <summary>
         /// Reads an int32.

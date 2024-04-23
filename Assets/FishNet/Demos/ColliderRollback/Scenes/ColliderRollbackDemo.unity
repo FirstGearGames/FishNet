@@ -309,6 +309,7 @@ MonoBehaviour:
   _predictionType: 0
   _graphicalObject: {fileID: 0}
   _enableStateForwarding: 1
+  _networkTransform: {fileID: 0}
   _ownerInterpolation: 1
   _enableTeleport: 0
   _teleportThreshold: 1
@@ -833,6 +834,7 @@ MonoBehaviour:
   _predictionType: 0
   _graphicalObject: {fileID: 0}
   _enableStateForwarding: 1
+  _networkTransform: {fileID: 0}
   _ownerInterpolation: 1
   _enableTeleport: 0
   _teleportThreshold: 1
@@ -1817,6 +1819,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -2099,13 +2102,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f48f002b825cbd45a19bd96d90f9edb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _unreliableMTU: 1023
+  _dontRoute: 0
+  _unreliableMtu: 1023
   _ipv4BindAddress: 
+  _enableIpv6: 1
   _ipv6BindAddress: 
   _port: 7770
   _maximumClients: 4095
   _clientAddress: localhost
-  _timeout: 15
 --- !u!114 &1016939666208092867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2699,6 +2703,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -2797,7 +2802,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d3606bfdac5a4743890fc1a5ecd8f24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _autoStartType: 0
+  _autoStartType: 2
   _stoppedColor: {r: 0.25490198, g: 0.25490198, b: 0.25490198, a: 1}
   _changingColor: {r: 0.78431374, g: 0.6862745, b: 0, a: 1}
   _startedColor: {r: 0, g: 0.5882353, b: 0.64705884, a: 1}

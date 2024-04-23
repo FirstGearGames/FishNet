@@ -20,13 +20,13 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Returns how fast an object must move over duration to reach goal.
         /// </summary>
-        /// <param name="goal">Vector3 to measure distance against.</param>
+        /// <param name="b">Vector3 to measure distance against.</param>
         /// <param name="duration">How long it should take to move to goal.</param>
         /// <param name="interval">A multiplier applied towards interval. Typically this is used for ticks passed.</param>
         /// <returns></returns>
-        public static float GetRate(this Vector3 a, Vector3 goal, float duration, out float distance, uint interval = 1)
+        public static float GetRate(this Vector3 a, Vector3 b, float duration, out float distance, uint interval = 1)
         {
-            distance = Vector3.Distance(a, goal);
+            distance = Vector3.Distance(a, b);
             return distance / (duration * interval);
         }
         /// <summary>

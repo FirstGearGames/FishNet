@@ -147,7 +147,7 @@ namespace FishNet.Connection
              * Modify reserve after making sendLast bundle
              * so that the wrong reserve is not passed into
              * the sendLast bundle. */
-            reserve += TransportManager.TICK_BYTES;
+            reserve += TransportManager.UNPACKED_TICK_LENGTH;
             _reserve = reserve;
             //Add buffer requires the right reserve so call after setting.
             AddBuffer();

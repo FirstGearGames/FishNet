@@ -185,7 +185,7 @@ namespace FishNet.Utility.Performance
         /// </summary>
         /// <param name="prefabId"></param>
         /// <returns></returns>
-        private Stack<NetworkObject> GetOrCreateCache(int collectionId, int prefabId)
+        public Stack<NetworkObject> GetOrCreateCache(int collectionId, int prefabId)
         {
             if (collectionId >= _cacheCount)
             {

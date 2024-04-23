@@ -621,7 +621,7 @@ namespace FishNet.Managing.Server
                 segment = args.Data;
 
             NetworkManager.StatisticsManager.NetworkTraffic.LocalServerReceivedData((ulong)segment.Count);
-            if (segment.Count <= TransportManager.TICK_BYTES)
+            if (segment.Count <= TransportManager.UNPACKED_TICK_LENGTH)
                 return;
 
             //FishNet internally splits packets so nothing should ever arrive over MTU.
