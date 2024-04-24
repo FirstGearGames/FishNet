@@ -11,7 +11,7 @@ namespace FishNet.Object.Prediction
 
     internal class AdaptiveLocalTransformTickSmoother : IResettable
     {
-#region Types.
+        #region Types.
         private struct TickTransformProperties
         {
             public uint Tick;
@@ -28,9 +28,9 @@ namespace FishNet.Object.Prediction
                 Properties = new TransformProperties(t.localPosition, t.localRotation, localScale);
             }
         }
-#endregion
+        #endregion
 
-#region Private.
+        #region Private.
         /// <summary>
         /// Object to smooth.
         /// </summary>
@@ -79,14 +79,14 @@ namespace FishNet.Object.Prediction
         /// TransformProperties to move towards.
         /// </summary>
         private BasicQueue<TickTransformProperties> _transformProperties = new();
-#endregion
+        #endregion
 
-#region Const.
+        #region Const.
         /// <summary>
         /// Maximum allowed entries to be queued over the interpolation amount.
         /// </summary>
         private int MAXIMUM_QUEUED_OVER_INTERPOLATION = 3;
-#endregion
+        #endregion
 
         /// <summary>
         /// Initializes this smoother; should only be completed once.
@@ -234,7 +234,7 @@ namespace FishNet.Object.Prediction
             uint tick = clientTick;
             /*Ticks will always be added incremental by 1 so it's safe to jump ahead the difference
             * of tick and firstTick. */
-                int index = (int)(tick - firstTick);
+            int index = (int)(tick - firstTick);
             //Replace with new data.
             if (index < _transformProperties.Count)
             {

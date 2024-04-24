@@ -96,24 +96,24 @@ namespace FishNet.Managing.Predicting
         #endregion
 
         #region Serialized.
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("Number of inputs to keep in queue for server and clients. " +
-            "Higher values will increase the likeliness of continous user created data to arrive successfully. " +
-            "Lower values will increase processing rate of received replicates. +" +
-            "This value cannot be higher than MaximumServerReplicates.")]
-        [Range(0, 15)]
-        [SerializeField]
-        private byte _queuedInputs = 1;
-        /// <summary>
-        /// Number of inputs to keep in queue for server and clients.
-        /// Higher values will increase the likeliness of continous user created data to arrive successfully.
-        /// Lower values will increase processing rate of received replicates.
-        /// This value cannot be higher than MaximumServerReplicates.
-        /// </summary>
-        //TODO: this is 0 until the rework on it is completed. 
-        public byte QueuedInputs => 0;// _queuedInputs;
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //[Tooltip("Number of inputs to keep in queue for server and clients. " +
+        //    "Higher values will increase the likeliness of continous user created data to arrive successfully. " +
+        //    "Lower values will increase processing rate of received replicates. +" +
+        //    "This value cannot be higher than MaximumServerReplicates.")]
+        //[Range(0, 15)]
+        //[SerializeField]
+        //private byte _queuedInputs = 1;
+        ///// <summary>
+        ///// Number of inputs to keep in queue for server and clients.
+        ///// Higher values will increase the likeliness of continous user created data to arrive successfully.
+        ///// Lower values will increase processing rate of received replicates.
+        ///// This value cannot be higher than MaximumServerReplicates.
+        ///// </summary>
+        ////TODO: this is 0 until the rework on it is completed. 
+        //public byte QueuedInputs => 0;// _queuedInputs;
         /// <summary>
         /// 
         /// </summary>
@@ -229,7 +229,7 @@ namespace FishNet.Managing.Predicting
         internal void InitializeOnce(NetworkManager manager)
         {
             _networkManager = manager;
-            ClampQueuedInputs();
+            ClampInterpolation();
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
         }
 
@@ -250,16 +250,16 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// Clamps queued inputs to a valid value.
         /// </summary>
-        private void ClampQueuedInputs()
+        private void ClampInterpolation()
         {
-            ushort startingValue = _queuedInputs;
+            ushort startingValue = _interpolation;
             //Check for setting if dropping.
-            if (_dropExcessiveReplicates && _queuedInputs > _maximumServerReplicates)
-                _queuedInputs = (byte)(_maximumServerReplicates - 1);
+            if (_dropExcessiveReplicates && _interpolation > _maximumServerReplicates)
+                _interpolation = (byte)(_maximumServerReplicates - 1);
 
             //If changed.
-            if (_queuedInputs != startingValue)
-                _networkManager.Log($"QueuedInputs has been set to {_queuedInputs}.");
+            if (_interpolation != startingValue)
+                _networkManager.Log($"Interpolation has been set to {_interpolation}.");
         }
 
         internal class StatePacket : IResettable
@@ -490,7 +490,8 @@ namespace FishNet.Managing.Predicting
                  * isn't replicating himself, just reconciling and replaying other objects. */
                 else
                 {
-                    lastReplicateTick = (nc.PacketTick.Value() + QueuedInputs - 1);
+                    //lastReplicateTick = (nc.PacketTick.Value() + Interpolation - 1);
+                    lastReplicateTick = (nc.PacketTick.Value() - 1);
                 }
 
                 foreach (PooledWriter writer in nc.PredictionStateWriters)
@@ -548,7 +549,7 @@ namespace FishNet.Managing.Predicting
                  * a limit a little beyond to prevent reconciles from building up. 
                  * This is more of a last result if something went terribly
                  * wrong with the network. */
-                int maxAllowedStates = Mathf.Max(QueuedInputs * 4, 4);
+                int maxAllowedStates = Mathf.Max(Interpolation * 4, 4);
                 while (_reconcileStates.Count > maxAllowedStates)
                 {
                     StatePacket oldSp = _reconcileStates.Dequeue();
@@ -593,7 +594,7 @@ namespace FishNet.Managing.Predicting
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            ClampQueuedInputs();
+            ClampInterpolation();
         }
 
 #endif

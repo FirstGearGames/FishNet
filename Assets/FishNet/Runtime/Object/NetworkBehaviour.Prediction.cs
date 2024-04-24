@@ -932,7 +932,8 @@ namespace FishNet.Object
              * by holding reconcile x ticks rather than not running received
              * x ticks. */
             if (_networkObjectCache.IsServerInitialized && startQueueCount == 0 && replicatesQueue.Count > 0)
-                _replicateStartTick = (_networkObjectCache.TimeManager.LocalTick + pm.QueuedInputs);
+                //_replicateStartTick = (_networkObjectCache.TimeManager.LocalTick + pm.Interpolation);
+                _replicateStartTick = (_networkObjectCache.TimeManager.LocalTick);
         }
 
 
