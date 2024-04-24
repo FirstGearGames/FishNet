@@ -1,3 +1,4 @@
+using FishNet.Connection;
 using FishNet.Managing;
 using GameKit.Dependencies.Utilities;
 using System;
@@ -118,13 +119,10 @@ namespace FishNet.Transporting.Multipass
         /// Ids available to new connections.
         /// </summary>
         private Queue<int> _availableMultipassIds = new Queue<int>();
-        #endregion
-
-        #region Const.
         /// <summary>
-        /// Id to use for client when acting as host.
+        /// Last Id added to availableMultipassIds.
         /// </summary>
-        internal const int CLIENT_HOST_ID = short.MaxValue;
+        private int _lastAvailableMultipassId = 0;
         #endregion
 
         public override void Initialize(NetworkManager networkManager, int transportIndex)
@@ -173,7 +171,6 @@ namespace FishNet.Transporting.Multipass
             ResetLookupCollections();
         }
 
-
         #region ClientIds.
         /// <summary>
         /// Resets lookup collections and caches potential garbage.
@@ -203,7 +200,7 @@ namespace FishNet.Transporting.Multipass
             }
 
             ResetLookupCollections();
-            CreateAvailableIds();
+            CreateAvailableIds(true);
         }
 
         /// <summary>
@@ -357,7 +354,7 @@ namespace FishNet.Transporting.Multipass
              * transportConnectionId. */
 
             int transportIndex = connectionStateArgs.TransportIndex;
-            int transportId = connectionStateArgs.ConnectionId;
+            int transportConnectionId = connectionStateArgs.ConnectionId;
             /* MultipassId is set to a new value when connecting
              * or discovered value when disconnecting. */
             int multipassId;
@@ -366,12 +363,22 @@ namespace FishNet.Transporting.Multipass
             //Started.
             if (connectionStateArgs.ConnectionState == RemoteConnectionState.Started)
             {
+                if (_availableMultipassIds.Count == 0)
+                {
+                    bool addedIds = CreateAvailableIds(false);
+                    if (!addedIds)
+                    {
+                        base.NetworkManager.Log($"There are no more available connectionIds to use. Connection {transportConnectionId} has been kicked.");
+                        _transports[transportIndex].StopConnection(transportConnectionId, true);
+                        return;
+                    }
+                }
                 //Get a multipassId for new connections.
                 multipassId = _availableMultipassIds.Dequeue();
                 //Get and update a clienttransportdata.
-                ClientTransportData ctd = new ClientTransportData(transportIndex, transportId, multipassId);
+                ClientTransportData ctd = new ClientTransportData(transportIndex, transportConnectionId, multipassId);
                 //Assign the lookup for transportId/index.
-                transportToMultipass[transportId] = ctd;
+                transportToMultipass[transportConnectionId] = ctd;
                 //Assign the lookup for multipassId.
                 _multpassIdLookup[multipassId] = ctd;
 
@@ -383,7 +390,7 @@ namespace FishNet.Transporting.Multipass
             //Stopped.
             else
             {
-                ClientTransportData ctd = GetDataFromTransportId(transportIndex, transportId);
+                ClientTransportData ctd = GetDataFromTransportId(transportIndex, transportConnectionId);
                 /* If CTD could not be found then the connection
                  * is not stored/known. Nothing further can be done; the event cannot
                  * invoke either since Id is unknown. */
@@ -392,7 +399,7 @@ namespace FishNet.Transporting.Multipass
 
                 //Add the multipassId back to the queue.
                 _availableMultipassIds.Enqueue(ctd.MultipassId);
-                transportToMultipass.Remove(transportId);
+                transportToMultipass.Remove(transportConnectionId);
                 _multpassIdLookup.Remove(ctd.MultipassId);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 //Remove packets held for connection from latency simulator.
@@ -527,12 +534,25 @@ namespace FishNet.Transporting.Multipass
         /// <summary>
         /// Populates the availableIds collection.
         /// </summary>
-        private void CreateAvailableIds()
+        /// <returns>True if at least 1 Id was added.</returns>
+        private bool CreateAvailableIds(bool reset)
         {
-            _availableMultipassIds.Clear();
-            //Reserve maxValue - 1 since some local transports use that.
-            for (int i = 0; i < (short.MaxValue - 1); i++)
-                _availableMultipassIds.Enqueue(i);
+            if (reset)
+            {
+                _lastAvailableMultipassId = 0;
+                _availableMultipassIds.Clear();
+            }
+            //Add in blocks of 1000.
+            int added = 0;
+            while ((_lastAvailableMultipassId <= NetworkConnection.MAXIMUM_CLIENTID_WITHOUT_SIMULATED_VALUE)
+                && (added < 1000))
+            {
+                added++;
+                _availableMultipassIds.Enqueue(_lastAvailableMultipassId);
+                _lastAvailableMultipassId++;                
+            }
+
+            return (added > 0);
         }
 
         /// <summary>
@@ -650,7 +670,6 @@ namespace FishNet.Transporting.Multipass
         public override int GetMaximumClients()
         {
             base.NetworkManager.LogError($"This method is not supported. Use GetMaximumClients(transportIndex) instead.");
-
             return -1;
         }
         /// <summary>

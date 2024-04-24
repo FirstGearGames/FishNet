@@ -8,9 +8,10 @@ using UnityEngine;
 
 namespace FishNet.Object.Prediction
 {
+
     internal class AdaptiveLocalTransformTickSmoother : IResettable
     {
-        #region Types.
+#region Types.
         private struct TickTransformProperties
         {
             public uint Tick;
@@ -21,10 +22,15 @@ namespace FishNet.Object.Prediction
                 Tick = tick;
                 Properties = new TransformProperties(t.localPosition, t.localRotation, t.localScale);
             }
+            public TickTransformProperties(uint tick, Transform t, Vector3 localScale)
+            {
+                Tick = tick;
+                Properties = new TransformProperties(t.localPosition, t.localRotation, localScale);
+            }
         }
-        #endregion
+#endregion
 
-        #region Private.
+#region Private.
         /// <summary>
         /// Object to smooth.
         /// </summary>
@@ -73,14 +79,14 @@ namespace FishNet.Object.Prediction
         /// TransformProperties to move towards.
         /// </summary>
         private BasicQueue<TickTransformProperties> _transformProperties = new();
-        #endregion
+#endregion
 
-        #region Const.
+#region Const.
         /// <summary>
         /// Maximum allowed entries to be queued over the interpolation amount.
         /// </summary>
         private int MAXIMUM_QUEUED_OVER_INTERPOLATION = 3;
-        #endregion
+#endregion
 
         /// <summary>
         /// Initializes this smoother; should only be completed once.
@@ -212,7 +218,7 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private void AddTransformProperties(uint tick)
         {
-            TickTransformProperties tpp = new TickTransformProperties(tick, _networkObject.transform);
+            TickTransformProperties tpp = new TickTransformProperties(tick, _networkObject.transform, _graphicalObject.localScale);
             _transformProperties.Enqueue(tpp);
             //If first entry then set move rates.
             if (_transformProperties.Count == 1)
@@ -232,7 +238,7 @@ namespace FishNet.Object.Prediction
             //Replace with new data.
             if (index < _transformProperties.Count)
             {
-                _transformProperties[index] = new TickTransformProperties(tick, _networkObject.transform);
+                _transformProperties[index] = new TickTransformProperties(tick, _networkObject.transform, _graphicalObject.localScale);
             }
             else
             {
@@ -352,7 +358,6 @@ namespace FishNet.Object.Prediction
 
         public void InitializeState() { }
     }
-
 
 }
 #endif

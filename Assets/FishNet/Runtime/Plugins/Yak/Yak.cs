@@ -183,7 +183,7 @@ namespace FishNet.Transporting.Yak
         /// <returns></returns>
         public override int GetMaximumClients()
         {
-            return NetworkConnection.MAXIMUM_CLIENTID_VALUE;
+            return NetworkConnection.MAXIMUM_CLIENTID_WITHOUT_SIMULATED_VALUE;
         }
         /// <summary>
         /// Sets maximum number of clients allowed to connect to the server. If applied at runtime and clients exceed this value existing clients will stay connected but new clients may not connect.

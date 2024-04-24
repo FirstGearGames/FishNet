@@ -356,13 +356,24 @@ namespace FishNet.Component.Animating
         /// </summary>
         private List<byte[]> _toClientsBuffer = new List<byte[]>();
         /// <summary>
-        /// Returns if the animator is exist and is active.
+        /// Returns if the animator is exist and is enabled.
         /// </summary>
         private bool _isAnimatorEnabled
         {
             get
             {
-                bool failedChecks = (_animator == null || !_animator.enabled || _animator.runtimeAnimatorController == null);
+                bool failedChecks = (!_isAnimatorValid || !_animator.enabled);
+                return !failedChecks;
+            }
+        }
+        /// <summary>
+        /// True if the animator is valid but not enabled.
+        /// </summary>
+        private bool _isAnimatorValid
+        {
+            get
+            {
+                bool failedChecks = (_animator == null || _animator.runtimeAnimatorController == null);
                 return !failedChecks;
             }
         }

@@ -540,7 +540,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <returns></returns>
         internal int GetMaximumClients()
         {
-            return _maximumClients;
+            return Math.Min(_maximumClients, NetworkConnection.MAXIMUM_CLIENTID_WITHOUT_SIMULATED_VALUE);
         }
 
         /// <summary>

@@ -512,10 +512,9 @@ namespace FishNet.Managing.Server
         {
             //Sanity check to make sure transports are following proper types/ranges.
             int id = args.ConnectionId;
-            int maxIdValue = short.MaxValue;
-            if (id < 0 || id > maxIdValue)
+            if (id < 0 || id > NetworkConnection.MAXIMUM_CLIENTID_VALUE)
             {
-                Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"The transport you are using supplied an invalid connection Id of {id}. Connection Id values must range between 0 and {maxIdValue}. The client has been disconnected.");
+                Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"The transport you are using supplied an invalid connection Id of {id}. Connection Id values must range between 0 and {NetworkConnection.MAXIMUM_CLIENTID_VALUE}. The client has been disconnected.");
                 return;
             }
             //Valid Id.
