@@ -1,4 +1,3 @@
-using FishNet.Managing;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
 using GameKit.Dependencies.Utilities.Types;
@@ -10,7 +9,6 @@ using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
 namespace FishNet.Component.Prediction
 {
-
     public abstract class NetworkCollider : NetworkBehaviour
     {
 #if !PREDICTION_1
@@ -37,14 +35,14 @@ namespace FishNet.Component.Prediction
             {
                 Tick = TimeManagerCls.UNSET_TICK;
                 CollectionCaches<Collider>.StoreAndDefault(ref Hits);
-            }
+			}
         }
         #endregion
 
         /// <summary>
         /// Called when another collider enters this collider.
         /// </summary>
-        public event Action<Collider> OnEnter;
+        public event Func<Collider, bool> OnEnter;
         /// <summary>
         /// Called when another collider stays in this collider.
         /// </summary>
@@ -92,6 +90,10 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private ResettableRingBuffer<ColliderData> _colliderDataHistory;
         /// <summary>
+        /// The colliders that currently reside inside of the collider.
+        /// </summary>
+        private HashSet<Collider> _currentlyEntered;
+        /// <summary>
         /// True if colliders have been searched for at least once.
         /// We cannot check the null state on _colliders because Unity has a habit of initializing collections on it's own.
         /// </summary>
@@ -101,13 +103,18 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private bool _useCache => (OnEnter != null || OnExit != null);
         /// <summary>
-        /// Last layer of the gameObject.
-        /// </summary>
-        private int _lastGameObjectLayer = -1;
-        /// <summary>
         /// Interactable layers for the layer of this gameObject.
         /// </summary>
-        private int _interactableLayers;
+        [SerializeField]
+        private LayerMask _interactableLayers;
+        /// <summary>
+        /// The current physics scene for this gameObject.
+        /// </summary>
+        private PhysicsScene _physicsScene;
+        /// <summary>
+        /// The current query trigger interaction settings.
+        /// </summary>
+        private QueryTriggerInteraction _queryTriggerInteraction;
 
         protected virtual void Awake()
         {
@@ -115,18 +122,26 @@ namespace FishNet.Component.Prediction
             _hits = CollectionCaches<Collider>.RetrieveArray();
             if (_hits.Length < _maximumSimultaneousHits)
                 _hits = new Collider[_maximumSimultaneousHits];
-        }
+			_currentlyEntered = CollectionCaches<Collider>.RetrieveHashSet();
+			_physicsScene = gameObject.scene.GetPhysicsScene();
 
-        private void OnDestroy()
+			FindColliders();
+		}
+
+		protected void Start()
+		{
+            _queryTriggerInteraction = IsTrigger ? QueryTriggerInteraction.Collide : QueryTriggerInteraction.Ignore;
+		}
+
+		private void OnDestroy()
         {
             ResettableCollectionCaches<ColliderData>.StoreAndDefault(ref _colliderDataHistory);
             CollectionCaches<Collider>.StoreAndDefault(ref _hits, -_hits.Length);
+            CollectionCaches<Collider>.StoreAndDefault(ref _currentlyEntered);
         }
 
         public override void OnStartNetwork()
         {
-            FindColliders();
-
             //Initialize the ringbuffer. Server only needs 1 tick worth of history.
             uint historyTicks = (base.IsServerStarted) ? 1 : TimeManager.TimeToTicks(_historyDuration);
             _colliderDataHistory.Initialize((int)historyTicks);
@@ -217,7 +232,7 @@ namespace FishNet.Component.Prediction
             const int INVALID_HISTORY_VALUE = -1;
 
             HashSet<Collider> current = CollectionCaches<Collider>.RetrieveHashSet();
-            HashSet<Collider> previous = null;
+            HashSet<Collider> previouslyHit = null;
 
             int previousHitsIndex = INVALID_HISTORY_VALUE;
             /* Server only keeps 1 history so
@@ -234,7 +249,10 @@ namespace FishNet.Component.Prediction
                 {
                     previousHitsIndex = GetHistoryIndex(tick - 1, false);
                     if (previousHitsIndex != -1)
-                        previous = _colliderDataHistory[previousHitsIndex].Hits;
+                    {
+                        ColliderData previous = _colliderDataHistory[previousHitsIndex];
+						previouslyHit = previous.Hits;
+					}
                 }
                 //Not replaying.
                 else
@@ -245,7 +263,9 @@ namespace FishNet.Component.Prediction
                         /* If the hit tick one before current then it can be used, otherwise
                         * use a new collection for previous. */
                         if (cd.Tick == (tick - 1))
-                            previous = cd.Hits;
+                        {
+							previouslyHit = cd.Hits;
+                        }
                     }
                 }
             }
@@ -261,29 +281,22 @@ namespace FishNet.Component.Prediction
             // The rotation of the object for box colliders.
             Quaternion rotation = transform.rotation;
 
-            //If layer changed then get new interactableLayers.
-            if (_lastGameObjectLayer != gameObject.layer)
-            {
-                _lastGameObjectLayer = gameObject.layer;
-                _interactableLayers = Layers.GetInteractableLayersValue(_lastGameObjectLayer);
-            }
-
             // Check each collider for triggers.
             foreach (Collider col in _colliders)
             {
                 if (!col.enabled)
                     continue;
-                if (IsTrigger != col.isTrigger)
-                    continue;
+                //if (IsTrigger != col.isTrigger) // this is handled by the query trigger interaction
+                //    continue;
 
                 //Number of hits from the checks.
                 int hits;
                 if (col is SphereCollider sphereCollider)
-                    hits = GetSphereColliderHits(sphereCollider, _interactableLayers);
+                    hits = GetSphereColliderHits(sphereCollider);
                 else if (col is CapsuleCollider capsuleCollider)
-                    hits = GetCapsuleColliderHits(capsuleCollider, _interactableLayers);
+                    hits = GetCapsuleColliderHits(capsuleCollider);
                 else if (col is BoxCollider boxCollider)
-                    hits = GetBoxColliderHits(boxCollider, rotation, _interactableLayers);
+                    hits = GetBoxColliderHits(boxCollider, rotation);
                 else
                     hits = 0;
 
@@ -294,29 +307,50 @@ namespace FishNet.Component.Prediction
                     if (hit == null || hit == col)
                         continue;
 
-                    /* If not in previous then add and
-                     * invoke enter. */
-                    if (previous == null || !previous.Contains(hit))
-                        OnEnter?.Invoke(hit);
+					current.Add(hit);
 
-                    //Also add to current hits.
-                    current.Add(hit);
-                    OnStay?.Invoke(hit);
-                }
+                    // Did we previously hit this collider?
+                    if (previouslyHit == null || !previouslyHit.Contains(hit))
+                    {
+						// If not, try to enter collider.
+						if (OnEnter != null && OnEnter.Invoke(hit))
+						{
+							_currentlyEntered.Add(hit);
+						}
+					}
+					// Did we fail to previously enter successfully?
+					else if (!_currentlyEntered.Contains(hit))
+                    {
+						// If not, try to enter collider.
+						if (OnEnter != null && OnEnter.Invoke(hit))
+						{
+							_currentlyEntered.Add(hit);
+						}
+					}
+
+					// If the hit collider is currently inside this collider.
+					if (_currentlyEntered.Contains(hit))
+					{
+						OnStay?.Invoke(hit);
+					}
+				}
             }
 
-            if (previous != null)
+            if (previouslyHit != null)
             {
                 //Check for stays and exits.
-                foreach (Collider col in previous)
+                foreach (Collider col in previouslyHit)
                 {
-                    //If it was in previous but not current, it has exited.
+                    //If it was in previously but not currently it has exited.
                     if (!current.Contains(col))
+                    {
                         OnExit?.Invoke(col);
+                        _currentlyEntered.Remove(col);
+                    }
                 }
             }
 
-            //If not using the cache then clean up collections.
+            //If using the cache then clean up collections.
             if (_useCache)
             {
                 //If not replaying add onto the end. */
@@ -421,35 +455,35 @@ namespace FishNet.Component.Prediction
         /// Checks for Sphere collisions.
         /// </summary>
         /// <returns>Number of colliders hit.</returns>
-        private int GetSphereColliderHits(SphereCollider sphereCollider, int layerMask)
+        private int GetSphereColliderHits(SphereCollider sphereCollider)
         {
             sphereCollider.GetSphereOverlapParams(out Vector3 center, out float radius);
             radius += GetAdditionalSize();
-            return Physics.OverlapSphereNonAlloc(center, radius, _hits, layerMask);
+            return _physicsScene.OverlapSphere(center, radius, _hits, _interactableLayers, _queryTriggerInteraction);
         }
 
         /// <summary>
         /// Checks for Capsule collisions.
         /// </summary>
         /// <returns>Number of colliders hit.</returns>
-        private int GetCapsuleColliderHits(CapsuleCollider capsuleCollider, int layerMask)
+        private int GetCapsuleColliderHits(CapsuleCollider capsuleCollider)
         {
             capsuleCollider.GetCapsuleCastParams(out Vector3 start, out Vector3 end, out float radius);
             radius += GetAdditionalSize();
-            return Physics.OverlapCapsuleNonAlloc(start, end, radius, _hits, layerMask);
+            return _physicsScene.OverlapCapsule(start, end, radius, _hits, _interactableLayers, _queryTriggerInteraction);
         }
 
         /// <summary>
         /// Checks for Box collisions.
         /// </summary>
         /// <returns>Number of colliders hit.</returns>
-        private int GetBoxColliderHits(BoxCollider boxCollider, Quaternion rotation, int layerMask)
+        private int GetBoxColliderHits(BoxCollider boxCollider, Quaternion rotation)
         {
 
             boxCollider.GetBoxOverlapParams(out Vector3 center, out Vector3 halfExtents);
             Vector3 additional = (Vector3.one * GetAdditionalSize());
             halfExtents += additional;
-            return Physics.OverlapBoxNonAlloc(center, halfExtents, _hits, rotation, layerMask);
+            return _physicsScene.OverlapBox(center, halfExtents, _hits, rotation, _interactableLayers, _queryTriggerInteraction);
         }
 
         /// <summary>
@@ -473,6 +507,7 @@ namespace FishNet.Component.Prediction
         {
             base.ResetState(asServer);
             ClearColliderDataHistory();
+            _currentlyEntered.Clear();
         }
 
         /// <summary>
@@ -486,6 +521,4 @@ namespace FishNet.Component.Prediction
         }
 #endif
     }
-
-
 }
