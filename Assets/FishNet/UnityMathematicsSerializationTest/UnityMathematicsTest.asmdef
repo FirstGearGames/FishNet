@@ -1,24 +1,18 @@
 {
-    "name": "FishNet.Runtime",
+    "name": "UnityMathematicsTest",
     "rootNamespace": "",
     "references": [
-        "GUID:894a6cc6ed5cd2645bb542978cbed6a9",
-        "GUID:1d82bdf40e2465b44b34adf79595e74c",
+        "GUID:7c88a4a7926ee5145ad2dfa06f454c67",
         "GUID:d8b63aba1907145bea998dd612889d6b"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
-    "allowUnsafeCode": true,
+    "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [
-        {
-            "name": "com.veriorpies.parrelsync",
-            "expression": "1.2",
-            "define": "PARRELSYNC"
-        },
         {
             "name": "com.unity.mathematics",
             "expression": "1.2.6",
@@ -27,12 +21,12 @@
         {
             "name": "com.unity.mathematics",
             "expression": "1.3.1",
-            "define": "UNITYMATHEMATICS131"
+            "define": "UNITYMATHEMATICS_131"
         },
         {
             "name": "com.unity.mathematics",
             "expression": "1.3.2",
-            "define": "UNITYMATHEMATICS132"
+            "define": "UNITYMATHEMATICS_132"
         }
     ],
     "noEngineReferences": false
