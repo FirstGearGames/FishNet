@@ -9,7 +9,7 @@ using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
 namespace FishNet.Component.Prediction
 {
-    public abstract class NetworkCollider : NetworkBehaviour
+    public sealed class NetworkCollider : NetworkBehaviour
     {
 #if !PREDICTION_1
         #region Types.
@@ -55,11 +55,6 @@ namespace FishNet.Component.Prediction
         /// Called when another collider exits this collider.
         /// </summary>
         public event Action<Collider> OnExit;
-        /// <summary>
-        /// True to run collisions for colliders which are triggers, false to run collisions for colliders which are not triggers.
-        /// </summary>
-        [HideInInspector]
-        protected bool IsTrigger;
         /// <summary>
         /// Maximum number of simultaneous hits to check for. Larger values decrease performance but allow detection to work for more overlapping colliders. Typically the default value of 16 is more than sufficient.
         /// </summary>
@@ -125,7 +120,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private QueryTriggerInteraction _queryTriggerInteraction;
 
-        protected virtual void Awake()
+        void Awake()
         {
             _colliderDataHistory = ResettableCollectionCaches<ColliderData>.RetrieveRingBuffer();
             _hits = CollectionCaches<Collider>.RetrieveArray();
@@ -135,11 +130,6 @@ namespace FishNet.Component.Prediction
             _physicsScene = gameObject.scene.GetPhysicsScene();
 
             FindColliders();
-        }
-
-        protected void Start()
-        {
-            _queryTriggerInteraction = IsTrigger ? QueryTriggerInteraction.Collide : QueryTriggerInteraction.Ignore;
         }
 
         private void OnDestroy()
@@ -226,7 +216,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Units to extend collision traces by. This is used to prevent missed overlaps when colliders do not intersect enough.
         /// </summary>
-        public virtual float GetAdditionalSize() => _additionalSize;
+        public float GetAdditionalSize() => _additionalSize;
 
         /// <summary>
         /// Checks for any trigger changes;
@@ -302,6 +292,8 @@ namespace FishNet.Component.Prediction
             {
                 if (!col.enabled)
                     continue;
+
+                _queryTriggerInteraction = col.isTrigger ? QueryTriggerInteraction.Collide : QueryTriggerInteraction.UseGlobal;
                 //if (IsTrigger != col.isTrigger) // this is handled by the query trigger interaction
                 //    continue;
 
