@@ -605,7 +605,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     _ranOnce = true;
                     fullRebuild = true;
                 }
-                else
+                else if (!fullRebuild)
                 {
                     CheckForVersionFile(importedAssets);
                     CheckForVersionFile(deletedAssets);
@@ -619,19 +619,10 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 * safe than sorry. */
                 void CheckForVersionFile(string[] arr)
                 {
-                    string targetText = "VERSION.txt".ToLower();
-                    int targetLength = targetText.Length;
-
                     for (int i = 0; i < arr.Length; i++)
                     {
                         string item = arr[i];
-                        int itemLength = item.Length;
-                        if (itemLength < targetLength)
-                            continue;
-
-                        item = item.ToLower();
-                        int startIndex = (itemLength - targetLength);
-                        if (item.Substring(startIndex, targetLength) == targetText)
+                        if (item.EndsWith("VERSION.txt", System.StringComparison.OrdinalIgnoreCase))
                         {
                             fullRebuild = true;
                             return;
