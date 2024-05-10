@@ -40,7 +40,7 @@ namespace FishNet.Component.Prediction
         #endregion
 
         /// <summary>
-        /// Called once when another collider enters. Return true for success. False will result in another attempt to invoke in the next collision iteration.
+        /// Called once when another collider enters. Return true for success. False will result in another attempt to invoke on the collider in the next collision iteration.
         /// </summary>
         public event Func<Collider, bool> OnEnterOnce;
         /// <summary>
@@ -100,7 +100,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// True to cache collision histories for comparing start and exits.
         /// </summary>
-        private bool _useCache => (OnEnter != null || OnExit != null);
+        private bool _useCache => (OnEnter != null || OnEnterOnce != null || OnExit != null);
         /// <summary>
         /// Last layer of the gameObject.
         /// Interactable layers for the layer of this gameObject.
@@ -108,7 +108,6 @@ namespace FishNet.Component.Prediction
         private int _lastGameObjectLayer = -1;
         /// <summary>
         /// Interactable layers for the layer of this gameObject.
-        /// The current physics scene for this gameObject.
         /// </summary>
         private int _interactableLayers;
         /// <summary>
@@ -320,9 +319,10 @@ namespace FishNet.Component.Prediction
                     // Did we previously hit this collider?
                     if (previouslyHit == null || !previouslyHit.Contains(hit))
                     {
-                        // If not in previous then invoke enter and OnEnterOnce.
+                        // If not in previous then invoke enter.
                         OnEnter?.Invoke(hit);
 
+                        // Try to invoke enter once.
                         if (OnEnterOnce != null && OnEnterOnce.Invoke(hit))
                         {
                             _currentlyEntered.Add(hit);
