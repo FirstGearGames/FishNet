@@ -10,7 +10,12 @@ namespace FishNet.CodeGenerating
     /// </summary>
     public class AllowMutableSyncTypeAttribute : Attribute { }
     /// <summary>
-    /// Type will be excluded from creating auto serializer creation.
+    /// Type will be included in auto serializer creation.
+    /// </summary>
+    [AttributeUsage((AttributeTargets.Class | AttributeTargets.Struct), Inherited = true, AllowMultiple = false)]
+    public class IncludeSerializationAttribute : Attribute { }
+    /// <summary>
+    /// Type will be excluded from auto serializer creation.
     /// </summary>
     public class ExcludeSerializationAttribute : Attribute { }
     /// <summary>
@@ -30,4 +35,10 @@ namespace FishNet.CodeGenerating
     /// </summary>
     [AttributeUsage((AttributeTargets.Class | AttributeTargets.Struct), Inherited = true, AllowMultiple = false)]
     public class UseGlobalCustomSerializerAttribute : Attribute { }
+    /// <summary>
+    /// Uses built-in caches to retrieve read classes rather than initializing a new instance.
+    /// This attribute is primarily for internal use and may change at anytime without notice.
+    /// </summary>
+    [AttributeUsage((AttributeTargets.Class), Inherited = true, AllowMultiple = false)]
+    public class ReadUnallocated : Attribute { }
 }

@@ -80,7 +80,8 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         public static readonly string[] EXCLUDED_ASSEMBLY_PREFIXES = new string[]
         {
-            "UnityEngine."
+            "UnityEngine.",
+            "Unity.Mathmatics",
         };
         #endregion
 

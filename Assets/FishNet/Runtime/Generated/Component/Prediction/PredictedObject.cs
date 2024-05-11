@@ -280,7 +280,7 @@ namespace FishNet.Component.Prediction
             /* If host then initialize owner smoother.
              * Host will use owner smoothing settings for more
              * accurate results. */
-            if (base.IsHostInitialized)
+            if (base.IsHostStarted)
                 InitializeSmoother(true);
 
             UpdateRigidbodiesCount(true);

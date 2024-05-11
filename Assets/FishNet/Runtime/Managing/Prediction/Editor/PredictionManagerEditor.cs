@@ -1,4 +1,5 @@
-﻿#if UNITY_EDITOR
+﻿#if !PREDICTION_1
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 
@@ -14,20 +15,82 @@ namespace FishNet.Managing.Predicting.Editing
         private SerializedProperty _dropExcessiveReplicates;
         private SerializedProperty _maximumServerReplicates;
         private SerializedProperty _maximumConsumeCount;
-        private SerializedProperty _interpolation;
-        private SerializedProperty _allowPredictedSpawning;
-        private SerializedProperty _reservedObjectIds;
-
+        private SerializedProperty _clientInterpolation;
+        private SerializedProperty _serverInterpolation;
 
         protected virtual void OnEnable()
         {
-            //_queuedInputs = serializedObject.FindProperty(nameof(_queuedInputs));
             _dropExcessiveReplicates = serializedObject.FindProperty(nameof(_dropExcessiveReplicates));
             _maximumServerReplicates = serializedObject.FindProperty(nameof(_maximumServerReplicates));
             _maximumConsumeCount = serializedObject.FindProperty(nameof(_maximumConsumeCount));
-            _interpolation = serializedObject.FindProperty(nameof(_interpolation));
-            _allowPredictedSpawning = serializedObject.FindProperty(nameof(_allowPredictedSpawning));
-            _reservedObjectIds = serializedObject.FindProperty(nameof(_reservedObjectIds));
+            _clientInterpolation = serializedObject.FindProperty(nameof(_clientInterpolation));
+            _serverInterpolation = serializedObject.FindProperty(nameof(_serverInterpolation));
+        }
+
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+
+            GUI.enabled = false;
+            EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((PredictionManager)target), typeof(PredictionManager), false);
+            GUI.enabled = true;
+
+
+            EditorGUILayout.LabelField("Client", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_clientInterpolation);
+            EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
+
+            EditorGUILayout.LabelField("Server", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_serverInterpolation);
+            EditorGUILayout.PropertyField(_dropExcessiveReplicates);
+            EditorGUI.indentLevel++;
+            if (_dropExcessiveReplicates.boolValue == true)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_maximumServerReplicates);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUI.indentLevel--;
+
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+    }
+}
+#endif
+
+
+#else
+
+
+
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+
+namespace FishNet.Managing.Predicting.Editing
+{
+
+
+    [CustomEditor(typeof(PredictionManager), true)]
+    [CanEditMultipleObjects]
+    public class PredictionManagerEditor : Editor
+    {
+        private SerializedProperty _queuedInputs;
+        private SerializedProperty _dropExcessiveReplicates;
+        private SerializedProperty _maximumServerReplicates;
+        private SerializedProperty _redundancyCount;
+
+        protected virtual void OnEnable()
+        {
+            _queuedInputs = serializedObject.FindProperty(nameof(_queuedInputs));
+            _dropExcessiveReplicates = serializedObject.FindProperty(nameof(_dropExcessiveReplicates));
+            _maximumServerReplicates = serializedObject.FindProperty(nameof(_maximumServerReplicates));
+            _redundancyCount = serializedObject.FindProperty(nameof(_redundancyCount));
         }
 
         public override void OnInspectorGUI()
@@ -41,16 +104,8 @@ namespace FishNet.Managing.Predicting.Editing
 
             EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            //EditorGUILayout.PropertyField(_queuedInputs);
-            EditorGUILayout.PropertyField(_interpolation);
-
-            EditorGUILayout.PropertyField(_allowPredictedSpawning);
-            if (_allowPredictedSpawning.boolValue == true)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_reservedObjectIds);
-                EditorGUI.indentLevel--;
-            }
+            EditorGUILayout.PropertyField(_redundancyCount);
+            EditorGUILayout.PropertyField(_queuedInputs);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
@@ -59,16 +114,7 @@ namespace FishNet.Managing.Predicting.Editing
             EditorGUILayout.PropertyField(_dropExcessiveReplicates);
             EditorGUI.indentLevel++;
             if (_dropExcessiveReplicates.boolValue == true)
-            {
                 EditorGUILayout.PropertyField(_maximumServerReplicates);
-            }
-            else
-            {
-#if PREDICTION_1
-                EditorGUILayout.PropertyField(_maximumConsumeCount);
-#endif
-            }
-            EditorGUI.indentLevel--;
             EditorGUI.indentLevel--;
 
 
@@ -77,4 +123,7 @@ namespace FishNet.Managing.Predicting.Editing
 
     }
 }
+#endif
+
+
 #endif

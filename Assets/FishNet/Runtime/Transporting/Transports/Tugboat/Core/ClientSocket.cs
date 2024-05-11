@@ -105,7 +105,7 @@ namespace FishNet.Transporting.Tugboat.Client
             listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
-            base.NetManager = new NetManager(listener, _packetLayer);
+            base.NetManager = new NetManager(listener, _packetLayer, false);
             base.NetManager.DontRoute = _dontRoute;
             base.NetManager.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 

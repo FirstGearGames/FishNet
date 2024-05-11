@@ -1,4 +1,7 @@
-﻿using FishNet.Managing;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Managing;
 using FishNet.Managing.Predicting;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
@@ -46,7 +49,7 @@ namespace FishNet.Connection
         /// <param name="data"></param>
         internal void WriteState(PooledWriter data)
         {
-#if !DEVELOPMENT_BUILD && !UNITY_EDITOR
+#if !DEVELOPMENT
             //Do not send states to clientHost.
             if (IsLocalClient)
                 return;

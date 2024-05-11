@@ -6,11 +6,22 @@ namespace FishNet.Object
 {
     public partial class NetworkObject : MonoBehaviour
     {
+        #region Private.
+        /// <summary>
+        /// True if OnStartServer was called.
+        /// </summary>
+        private bool _onStartServerCalled;
+        /// <summary>
+        /// True if OnStartClient was called.
+        /// </summary>
+        private bool _onStartClientCalled;
+        #endregion
+
         /// <summary>
         /// Called after all data is synchronized with this NetworkObject.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void InitializeCallbacks(bool asServer, bool invokeSyncTypeCallbacks)
+        private void InvokeStartCallbacks(bool asServer, bool invokeSyncTypeCallbacks)
         {
             /* Note: When invoking OnOwnership here previous owner will
              * always be an empty connection, since the object is just
@@ -25,6 +36,7 @@ namespace FishNet.Object
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnStartServer_Internal();
+                _onStartServerCalled = true;
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnOwnershipServer_Internal(FishNet.Managing.NetworkManager.EmptyConnection);
             }
@@ -33,12 +45,17 @@ namespace FishNet.Object
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnStartClient_Internal();
+                _onStartClientCalled = true;
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnOwnershipClient_Internal(FishNet.Managing.NetworkManager.EmptyConnection);
             }
 
             if (invokeSyncTypeCallbacks)
                 InvokeOnStartSyncTypeCallbacks(true);
+
+#if !PREDICTION_1
+            InvokeStartCallbacks_Prediction(asServer);
+#endif
         }
 
 
@@ -88,48 +105,35 @@ namespace FishNet.Object
         /// Invokes OnStop callbacks.
         /// </summary>
         /// <param name="asServer"></param>
-        internal void InvokeStopCallbacks(bool asServer)
+        internal void InvokeStopCallbacks(bool asServer, bool invokeSyncTypeCallbacks)
         {
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
-                NetworkBehaviours[i].InvokeSyncTypeOnStopCallbacks(asServer);
+#if !PREDICTION_1
+            InvokeStopCallbacks_Prediction(asServer);
+#endif
+            if (invokeSyncTypeCallbacks)
+                InvokeOnStopSyncTypeCallbacks(asServer);
 
-            if (asServer)
+            bool invokeOnNetwork = (!asServer || (asServer && !_onStartClientCalled));
+            if (asServer && _onStartServerCalled)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnStopServer_Internal();
+                _onStartServerCalled = false;
             }
-            else
+            else if (!asServer && _onStartClientCalled)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnStopClient_Internal();
+                _onStartClientCalled = false;
             }
 
-            /* Several conditions determine if OnStopNetwork can
-             * be called.
-             * 
-             * - If asServer and pending destroy from clientHost.
-             * - If !asServer and not ServerInitialized. */
-            bool callStopNetwork;
-            if (asServer)
-            {
-                if (!IsClientStarted)
-                    callStopNetwork = true;
-                else
-                    callStopNetwork = (ServerManager.Objects.GetFromPending(ObjectId) == null);
-            }
-            else
-            {
-                /* When not as server only perform OnStopNetwork if
-                 * not initialized for the server. The object could be
-                 * server initialized if it were spawned, despawned, then spawned again
-                 * before client ran this method. */
-                callStopNetwork = !IsServerInitialized;
-            }
-            if (callStopNetwork)
+            if (invokeOnNetwork)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].InvokeOnNetwork(false);
             }
+
+
         }
 
         /// <summary>

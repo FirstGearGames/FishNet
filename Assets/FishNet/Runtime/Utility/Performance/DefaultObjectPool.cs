@@ -79,9 +79,16 @@ namespace FishNet.Utility.Performance
                 }
                 else
                 {
-                    prefab.transform.OutLocalPropertyValues(nullableLocalPosition, nullableLocalRotation, nullableLocalScale, out Vector3 pos, out Quaternion rot, out Vector3 scale);
+                    prefab.transform.OutLocalPropertyValues(nullableLocalPosition, nullableLocalRotation, nullableLocalScale, out Vector3 pos, out Quaternion rot, out Vector3 scale);                    
+                    if (parent != null)
+                    {
+                        //Convert pos and rot to world values for the instantiate.
+                        pos = parent.TransformPoint(pos);
+                        rot = (parent.rotation * rot);
+                    }
                     NetworkObject result = Instantiate(prefab, pos, rot, parent);
                     result.transform.localScale = scale;
+
                     if (makeActive)
                         result.gameObject.SetActive(true);
                     return result;

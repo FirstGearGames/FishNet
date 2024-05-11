@@ -1,4 +1,7 @@
 ﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+#if DEVELOPMENT
 using FishNet.Managing.Logging;
 using FishNet.Object;
 using FishNet.Serializing;

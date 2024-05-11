@@ -8,11 +8,13 @@ using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
 using FishNet.Utility.Performance;
+using GameKit.Dependencies.Utilities;
 using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.ComTypes;
 using UnityEngine;
 using SR = System.Reflection;
 
@@ -63,6 +65,7 @@ namespace FishNet.CodeGenerating.Helping
         public TypeReference ActionT3_TypeRef;
         public MethodReference ActionT2Constructor_MethodRef;
         public MethodReference ActionT3Constructor_MethodRef;
+        public TypeReference ObjectCaches_TypeRef;
 
         private Dictionary<Type, TypeReference> _importedTypeReferences = new Dictionary<Type, TypeReference>();
         private Dictionary<FieldDefinition, FieldReference> _importedFieldReferences = new Dictionary<FieldDefinition, FieldReference>();
@@ -70,6 +73,7 @@ namespace FishNet.CodeGenerating.Helping
         private Dictionary<TypeReference, TypeDefinition> _typeReferenceResolves = new Dictionary<TypeReference, TypeDefinition>();
         private Dictionary<FieldReference, FieldDefinition> _fieldReferenceResolves = new Dictionary<FieldReference, FieldDefinition>();
         private Dictionary<string, MethodDefinition> _comparerDelegates = new Dictionary<string, MethodDefinition>();
+        private MethodReference _objectCaches_Retrieve_MethodRef;
         #endregion
 
         #region Const.
@@ -92,6 +96,9 @@ namespace FishNet.CodeGenerating.Helping
 
             ExcludeSerializationAttribute_FullName = typeof(ExcludeSerializationAttribute).FullName;
             NotSerializerAttribute_FullName = typeof(NotSerializerAttribute).FullName;
+
+            TypeReference _objectCaches_TypeRef = base.ImportReference(typeof(ObjectCaches<>));
+            _objectCaches_Retrieve_MethodRef = _objectCaches_TypeRef.CachedResolve(base.Session).GetMethodReference(base.Session, nameof(ObjectCaches<int>.Retrieve));
 
             tmpType = typeof(BasicQueue<>);
             base.ImportReference(tmpType);
@@ -904,7 +911,23 @@ namespace FishNet.CodeGenerating.Helping
 
         #region SetVariableDef.
         /// <summary>
-        /// Initializes variableDef as a new object or collection of typeDef.
+        /// Initializes variableDef as an object or collection of typeDef using cachces.
+        /// </summary>
+        /// <param name="processor"></param>
+        /// <param name="variableDef"></param>
+        /// <param name="typeDef"></param>
+        public void SetVariableDefinitionFromCaches(ILProcessor processor, VariableDefinition variableDef, TypeDefinition typeDef)
+        {
+            TypeReference dataTr = variableDef.VariableType;
+            GenericInstanceType git = ObjectCaches_TypeRef.MakeGenericInstanceType(new TypeReference[] { dataTr });
+
+            MethodReference genericInstanceMethod = _objectCaches_Retrieve_MethodRef.MakeHostInstanceGeneric(base.Session, git);
+            processor.Emit(OpCodes.Call, genericInstanceMethod);
+            processor.Emit(OpCodes.Stloc, variableDef);
+        }
+
+        /// <summary>
+        /// Initializes variableDef as a new object or collection of typeDef using instantiation.
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="variableDef"></param>

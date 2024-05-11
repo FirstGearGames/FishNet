@@ -29,6 +29,7 @@ namespace FishNet.Transporting
         TimingUpdate = 18,
         NetworkLODUpdate = 19,
         StateUpdate = 20,
+        Version = 21,
     }
 
 }

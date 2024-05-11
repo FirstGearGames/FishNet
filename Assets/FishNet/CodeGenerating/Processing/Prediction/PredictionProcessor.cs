@@ -372,6 +372,8 @@ namespace FishNet.CodeGenerating.Processing
                     {
                         if (!MethodIsPrivate(methodDef) || AlreadyFound(reconcileMd))
                             error = true;
+                        else
+                            reconcileMd = methodDef;
                     }
                     if (error)
                         break;

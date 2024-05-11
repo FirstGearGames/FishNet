@@ -578,7 +578,7 @@ namespace FishNet.Managing.Client
         public Quaternion? LocalRotation;
         public Vector3? LocalScale;
         public ulong SceneId;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
         public string SceneName = string.Empty;
         public string ObjectName = string.Empty;
 #endif
@@ -626,7 +626,7 @@ namespace FishNet.Managing.Client
             LocalRotation = localRotation;
             LocalScale = localScale;
             SceneId = sceneId;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             SceneName = sceneName;
             ObjectName = objectName;
 #endif

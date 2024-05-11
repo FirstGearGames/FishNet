@@ -11,6 +11,7 @@ using FishNet.CodeGenerating.Extension;
 using FishNet.Utility.Performance;
 using FishNet.Object;
 using FishNet.Utility;
+using GameKit.Dependencies.Utilities;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -220,7 +221,7 @@ namespace FishNet.CodeGenerating.Helping
                 return;
 
             GeneratedReader_OnLoad_MethodDef.RemoveEndRet(base.Session);
-            
+
             //Check if already exist.
             ILProcessor processor = GeneratedReader_OnLoad_MethodDef.Body.GetILProcessor();
             TypeReference dataTypeRef = readMr.ReturnType;
@@ -365,7 +366,7 @@ namespace FishNet.CodeGenerating.Helping
                     TypeReference genericTr = base.ImportReference(readTypeRef);
                     readMr = _readUnpackedMethodRef.GetMethodReference(base.Session, genericTr);
                 }
-                
+
                 insts.Add(processor.Create(OpCodes.Call, readMr));
                 //Store into local variable.
                 insts.Add(processor.Create(OpCodes.Stloc, createdVariableDef));
@@ -1045,8 +1046,18 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             /* If here then not null. */
-            //Make a new instance of object type and set to objectVariableDef.
-            base.GetClass<GeneralHelper>().SetVariableDefinitionFromObject(processor, objectVariableDef, objectTypeDef);
+            //See if to use non-alloc reads.
+            if (objectTr.CachedResolve(base.Session).HasCustomAttribute<ReadUnallocated>())
+            {
+                //Make a new instance of object type and set to objectVariableDef.
+                base.GetClass<GeneralHelper>().SetVariableDefinitionFromCaches(processor, objectVariableDef, objectTypeDef);
+            }
+            else
+            {
+                //Make a new instance of object type and set to objectVariableDef.
+                base.GetClass<GeneralHelper>().SetVariableDefinitionFromObject(processor, objectVariableDef, objectTypeDef);
+            }
+
             if (!ReadFieldsAndProperties(createdReaderMd, readerParameterDef, objectVariableDef, objectTr))
                 return null;
             /* //codegen scriptableobjects seem to climb too high up to UnityEngine.Object when

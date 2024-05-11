@@ -23,8 +23,10 @@ using FishNet.Component.ColliderRollback;
 using FishNet.Managing.Predicting;
 using System.Runtime.CompilerServices;
 using GameKit.Dependencies.Utilities;
+
 #if UNITY_EDITOR
 using FishNet.Editing.PrefabCollectionGenerator;
+using UnityEditor;
 #endif
 
 namespace FishNet.Managing
@@ -190,6 +192,10 @@ namespace FishNet.Managing
         #endregion
 
         #region Const.
+        /// <summary>
+        /// Version of this release.
+        /// </summary>
+        public const string FISHNET_VERSION = "4.3.0";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
@@ -393,6 +399,19 @@ namespace FishNet.Managing
             //If null and object is in a scene.
             if (SpawnablePrefabs == null && !string.IsNullOrEmpty(gameObject.scene.name))
             {
+                //First try to fetch the file, only if editor and not in play mode.
+#if UNITY_EDITOR
+                if (!ApplicationState.IsPlaying())
+                {
+                    SpawnablePrefabs = Generator.GetDefaultPrefabObjects();
+                    if (SpawnablePrefabs != null)
+                    {
+                        Debug.Log($"SpawnablePrefabs was set to DefaultPrefabObjects automatically on object {gameObject.name} in scene {gameObject.scene.name}.");
+                        EditorUtility.SetDirty(this);
+                        return true;
+                    }
+                }
+#endif
                 //Always throw an error as this would cause failure.
                 if (print)
                     Debug.LogError($"SpawnablePrefabs is null on {gameObject.name}. Select the NetworkManager in scene {gameObject.scene.name} and choose a prefabs file. Choosing DefaultPrefabObjects will automatically populate prefabs for you.");
@@ -455,13 +474,13 @@ namespace FishNet.Managing
                     if (value.TransportIndex == transportIndex)
                     {
                         cache.Add(kvp.Key);
-                        value.Dispose();
+                        value.ResetState();
                     }
                 }
                 //Not using transport index, no check required.
                 else
                 {
-                    value.Dispose();
+                    value.ResetState();
                 }
             }
 

@@ -245,7 +245,7 @@ namespace FishNet.Component.Prediction
                     _rigidbodyDatas[index] = rbData;
                     rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
                     rb.isKinematic = true;
-                    rb.detectCollisions = false;
+                    //rb.detectCollisions = false;
 
                     return true;
                 }
@@ -313,7 +313,7 @@ namespace FishNet.Component.Prediction
                         return false;
 
                     rb.isKinematic = rbData.IsKinematic;
-                    rb.detectCollisions = rbData.DetectCollisions;
+                    //rb.detectCollisions = rbData.DetectCollisions;
                     rb.collisionDetectionMode = rbData.CollisionDetectionMode;
                     if (!rb.isKinematic)
                     {

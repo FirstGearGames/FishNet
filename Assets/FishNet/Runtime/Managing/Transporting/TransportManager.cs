@@ -1,4 +1,7 @@
-﻿using FishNet.Connection;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Connection;
 using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Serializing;
@@ -180,7 +183,7 @@ namespace FishNet.Managing.Transporting
             InitializeToServerBundles();
             if (_intermediateLayer != null)
                 _intermediateLayer.InitializeOnce(this);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             _latencySimulator.Initialize(manager, Transport);
 #endif
         }
@@ -722,7 +725,7 @@ namespace FishNet.Managing.Transporting
             OnIterateOutgoingStart?.Invoke();
             int channelCount = CHANNEL_COUNT;
             ulong sentBytes = 0;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             bool latencySimulatorEnabled = LatencySimulator.CanSimulate;
 #endif
             /* If sending to the client. */
@@ -760,7 +763,7 @@ namespace FishNet.Managing.Transporting
                                         ArraySegment<byte> segment = new ArraySegment<byte>(bb.Data, 0, bb.Length);
                                         if (HasIntermediateLayer)
                                             segment = ProcessIntermediateOutgoing(segment, false);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
                                         if (latencySimulatorEnabled)
                                             _latencySimulator.AddOutgoing(channel, segment, false, conn.ClientId);
                                         else
@@ -833,7 +836,7 @@ namespace FishNet.Managing.Transporting
                                     ArraySegment<byte> segment = new ArraySegment<byte>(bb.Data, 0, bb.Length);
                                     if (HasIntermediateLayer)
                                         segment = ProcessIntermediateOutgoing(segment, true);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
                                     if (latencySimulatorEnabled)
                                         _latencySimulator.AddOutgoing(channel, segment);
                                     else
@@ -851,7 +854,7 @@ namespace FishNet.Managing.Transporting
                 _networkManager.StatisticsManager.NetworkTraffic.LocalClientSentData(sentBytes);
             }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             if (latencySimulatorEnabled)
                 _latencySimulator.IterateOutgoing(toServer);
 #endif

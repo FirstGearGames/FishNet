@@ -1,5 +1,6 @@
 ﻿#if UNITY_EDITOR
 using FishNet.Configuring;
+using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Object;
 using System.Collections.Generic;
@@ -437,7 +438,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// <summary>
         /// Returns the DefaultPrefabObjects file.
         /// </summary>
-        private static DefaultPrefabObjects GetDefaultPrefabObjects(PrefabGeneratorConfigurations settings = null)
+        internal static DefaultPrefabObjects GetDefaultPrefabObjects(PrefabGeneratorConfigurations settings = null)
         {
             if (settings == null)
                 settings = Configuration.Configurations.PrefabGenerator;
@@ -605,28 +606,15 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     _ranOnce = true;
                     fullRebuild = true;
                 }
+                //Other conditions which a full rebuild may be required.
                 else if (!fullRebuild)
                 {
-                    CheckForVersionFile(importedAssets);
-                    CheckForVersionFile(deletedAssets);
-                    CheckForVersionFile(movedAssets);
-                    CheckForVersionFile(movedFromAssetPaths);
-                }
-
-                /* See if any of the changed files are the version file.
-                * A new version file suggests an update. Granted, this could occur if
-                * other assets imported a new version file as well but better
-                * safe than sorry. */
-                void CheckForVersionFile(string[] arr)
-                {
-                    for (int i = 0; i < arr.Length; i++)
+                    const string fishnetVersionSave = "fishnet_version";
+                    string savedVersion = EditorPrefs.GetString(fishnetVersionSave, string.Empty);
+                    if (savedVersion != NetworkManager.FISHNET_VERSION)
                     {
-                        string item = arr[i];
-                        if (item.EndsWith("VERSION.txt", System.StringComparison.OrdinalIgnoreCase))
-                        {
-                            fullRebuild = true;
-                            return;
-                        }
+                        fullRebuild = true;
+                        EditorPrefs.SetString(fishnetVersionSave, NetworkManager.FISHNET_VERSION);
                     }
                 }
 

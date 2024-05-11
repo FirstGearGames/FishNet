@@ -399,6 +399,10 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         private readonly static Stack<Queue<T>> _queueCache = new Stack<Queue<T>>();
         /// <summary>
+        /// Cache for queues.
+        /// </summary>
+        private readonly static Stack<BasicQueue<T>> _basicQueueCache = new Stack<BasicQueue<T>>();
+        /// <summary>
         /// Cache for hashset.
         /// </summary>
         private readonly static Stack<HashSet<T>> _hashsetCache = new Stack<HashSet<T>>();
@@ -435,6 +439,17 @@ namespace GameKit.Dependencies.Utilities
                 return new Queue<T>();
             else
                 return _queueCache.Pop();
+        }
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        /// <returns></returns>
+        public static BasicQueue<T> RetrieveBasicQueue()
+        {
+            if (_basicQueueCache.Count == 0)
+                return new BasicQueue<T>();
+            else
+                return _basicQueueCache.Pop();
         }
         /// <summary>
         /// Retrieves a collection adding one entry.
@@ -567,6 +582,28 @@ namespace GameKit.Dependencies.Utilities
             _queueCache.Push(value);
         }
 
+        /// <summary>
+        /// Stores a collection and sets the original reference to default.
+        /// Method will not execute if value is null.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void StoreAndDefault(ref BasicQueue<T> value)
+        {
+            if (value == null)
+                return;
+            Store(value);
+            value = default;
+        }
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        public static void Store(BasicQueue<T> value)
+        {
+            value.Clear();
+            _basicQueueCache.Push(value);
+        }
         /// <summary>
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
