@@ -323,7 +323,7 @@ namespace FishNet.Component.Prediction
                         OnEnter?.Invoke(hit);
 
                         // Try to invoke enter once.
-                        if (OnEnterOnce != null && OnEnterOnce.Invoke(hit))
+                        if (!_currentlyEntered.Contains(hit) && OnEnterOnce != null && OnEnterOnce.Invoke(hit))
                         {
                             _currentlyEntered.Add(hit);
                         }
