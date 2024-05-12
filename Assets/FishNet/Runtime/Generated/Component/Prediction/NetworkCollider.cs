@@ -134,7 +134,6 @@ namespace FishNet.Component.Prediction
 
         private void OnDestroy()
         {
-
             ResettableCollectionCaches<ColliderData>.StoreAndDefault(ref _colliderDataHistory);
             CollectionCaches<Collider>.StoreAndDefault(ref _hits, -_hits.Length);
             CollectionCaches<Collider>.StoreAndDefault(ref _currentlyEntered);
