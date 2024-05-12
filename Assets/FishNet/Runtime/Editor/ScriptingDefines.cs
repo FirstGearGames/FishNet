@@ -53,6 +53,8 @@ namespace FishNet
             foreach (string item in fishNetDefines)
                 modified |= definesHs.Add(item);
 
+            //Remove old prediction defines.
+            modified |= definesHs.Remove("PREDICTION_V2");
             /* Remove pro define if not on pro. This might look a little
              * funny because the code below varies depending on if pro or not. */
             

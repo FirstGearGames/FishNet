@@ -1,4 +1,7 @@
-﻿using FishNet.Connection;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Connection;
 using FishNet.Managing.Debugging;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
@@ -22,6 +25,11 @@ namespace FishNet.Managing.Client
     public sealed partial class ClientManager : MonoBehaviour
     {
         #region Public.
+        /// <summary>
+        /// This is set true if the server has notified the client it is using a development build.
+        /// Value is set before authentication.
+        /// </summary>
+        public bool IsServerDevelopment { get; private set; }
         /// <summary>
         /// Called after local client has authenticated.
         /// </summary>
@@ -127,7 +135,7 @@ namespace FishNet.Managing.Client
         /// Used to read splits.
         /// </summary>
         private SplitReader _splitReader = new SplitReader();
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
         /// <summary>
         /// Logs data about parser to help debug.
         /// </summary>
@@ -179,7 +187,7 @@ namespace FishNet.Managing.Client
                 OnRemoteConnectionState?.Invoke(rcs);
                 if (Clients.TryGetValue(args.Id, out NetworkConnection c))
                 {
-                    c.Dispose();
+                    c.ResetState();
                     Clients.Remove(args.Id);
                 }
             }
@@ -304,6 +312,12 @@ namespace FishNet.Managing.Client
             else
             {
                 _lastPacketTime = Time.unscaledTime;
+                //Send version.
+                PooledWriter writer = WriterPool.Retrieve();
+                writer.WritePacketId(PacketId.Version);
+                writer.WriteString(NetworkManager.FISHNET_VERSION);
+                NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
+                WriterPool.Store(writer);
             }
 
             if (NetworkManager.CanLog(LoggingType.Common))
@@ -349,7 +363,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         private void ParseReceived(ClientReceivedDataArgs args)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             _parseLogger.Reset();
 #endif
             _lastPacketTime = Time.unscaledTime;
@@ -375,7 +389,7 @@ namespace FishNet.Managing.Client
         internal void ParseReader(PooledReader reader, Channel channel, bool print = false)
         {
             PacketId packetId = PacketId.Unset;
-#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+#if !DEVELOPMENT
             try
             {
 #endif
@@ -404,7 +418,7 @@ namespace FishNet.Managing.Client
             while (reader.Remaining > 0)
             {
                 packetId = reader.ReadPacketId();
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
                 if (print)
                     Debug.Log($"PacketId {packetId} - Remaining {reader.Remaining}.");
                 _parseLogger.AddPacket(packetId);
@@ -495,18 +509,22 @@ namespace FishNet.Managing.Client
                         reader.Clear();
                         StopConnection();
                     }
+                    else if (packetId == PacketId.Version)
+                    {
+                        ParseVersion(reader);
+                    }
                     else
                     {
 
                         NetworkManager.LogError($"Client received an unhandled PacketId of {(ushort)packetId} on channel {channel}. Remaining data has been purged.");
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
                         _parseLogger.Print(NetworkManager);
 #endif
                         return;
                     }
                 }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
                 if (print)
                     Debug.Log($"Reader remaining {reader.Remaining}");
 #endif
@@ -519,7 +537,7 @@ namespace FishNet.Managing.Client
             * in doing this check multiple times as there's
             * an exit early check. */
             Objects.IterateObjectCache();
-#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+#if !DEVELOPMENT
             }
             catch (Exception e)
             {
@@ -538,6 +556,17 @@ namespace FishNet.Managing.Client
             uint clientTick = reader.ReadTickUnpacked();
             NetworkManager.TimeManager.ModifyPing(clientTick);
         }
+
+
+        /// <summary>
+        /// Parses a Version packet.
+        /// </summary>
+        /// <param name="reader"></param>
+        private void ParseVersion(PooledReader reader)
+        {
+            IsServerDevelopment = reader.ReadBoolean();
+        }
+
 
         /// <summary>
         /// Parses a received connectionId. This is received before client receives connection state change.
@@ -578,7 +607,7 @@ namespace FishNet.Managing.Client
             }
 
             //If predicted spawning is enabled also get reserved Ids.
-            if (NetworkManager.PredictionManager.GetAllowPredictedSpawning())
+            if (NetworkManager.ServerManager.GetAllowPredictedSpawning())
             {
                 byte count = reader.ReadByte();
                 Queue<int> q = Connection.PredictedObjectIds;
@@ -629,7 +658,7 @@ namespace FishNet.Managing.Client
                 return;
             if (_remoteServerTimeout == RemoteTimeoutType.Disabled)
                 return;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             //If development but not set to development return.
             else if (_remoteServerTimeout != RemoteTimeoutType.Development)
                 return;

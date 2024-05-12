@@ -1,4 +1,5 @@
 ﻿using FishNet.CodeGenerating;
+using FishNet.Component.Prediction;
 using FishNet.Managing;
 using FishNet.Serializing;
 using GameKit.Dependencies.Utilities;
@@ -11,23 +12,32 @@ namespace FishNet.Object.Prediction
 
     public static class PredictionRigidbodySerializers
     {
-        public static void WriteForceData(this Writer w, PredictionRigidbody.EntryData value)
+        public static void WriteEntryData(this Writer w, PredictionRigidbody.EntryData value)
         {
             PredictionRigidbody.ForceApplicationType appType = value.Type;
             w.WriteByte((byte)appType);
+            PredictionRigidbody.AllForceData data = value.Data;
+
             switch (appType)
             {
                 case PredictionRigidbody.ForceApplicationType.AddTorque:
                 case PredictionRigidbody.ForceApplicationType.AddForce:
                 case PredictionRigidbody.ForceApplicationType.AddRelativeTorque:
                 case PredictionRigidbody.ForceApplicationType.AddRelativeForce:
-                    w.Write((PredictionRigidbody.ForceAndTorqueData)value.Data);
+                    w.WriteVector3(data.Vector3Force);
+                    w.WriteInt32((byte)data.Mode);
                     break;
                 case PredictionRigidbody.ForceApplicationType.AddExplosiveForce:
-                    w.Write((PredictionRigidbody.ExplosiveForceData)value.Data);
+                    w.WriteSingle(data.FloatForce);
+                    w.WriteVector3(data.Position);
+                    w.WriteSingle(data.Radius);
+                    w.WriteSingle(data.UpwardsModifier);
+                    w.WriteInt32((byte)data.Mode);
                     break;
                 case PredictionRigidbody.ForceApplicationType.AddForceAtPosition:
-                    w.Write((PredictionRigidbody.PositionForceData)value.Data);
+                    w.WriteVector3(data.Vector3Force);
+                    w.WriteVector3(data.Position);
+                    w.WriteInt32((byte)data.Mode);
                     break;
                 default:
                     NetworkManagerExtensions.LogError($"ForceApplicationType of {appType} is not supported.");
@@ -35,48 +45,61 @@ namespace FishNet.Object.Prediction
             }
         }
 
-        public static PredictionRigidbody.EntryData ReadForceData(this Reader r)
+        public static PredictionRigidbody.EntryData ReadEntryData(this Reader r)
         {
             PredictionRigidbody.EntryData fd = new PredictionRigidbody.EntryData();
 
             PredictionRigidbody.ForceApplicationType appType = (PredictionRigidbody.ForceApplicationType)r.ReadByte();
             fd.Type = appType;
 
+            PredictionRigidbody.AllForceData data = new();
+            
             switch (appType)
             {
                 case PredictionRigidbody.ForceApplicationType.AddTorque:
                 case PredictionRigidbody.ForceApplicationType.AddForce:
                 case PredictionRigidbody.ForceApplicationType.AddRelativeTorque:
                 case PredictionRigidbody.ForceApplicationType.AddRelativeForce:
-                    fd.Data = r.Read<PredictionRigidbody.ForceAndTorqueData>();
-                    return fd;
+                    data.Vector3Force = r.ReadVector3();
+                    data.Mode = (ForceMode)r.ReadInt32();
+                    break;
                 case PredictionRigidbody.ForceApplicationType.AddExplosiveForce:
-                    fd.Data = r.Read<PredictionRigidbody.ExplosiveForceData>();
-                    return fd;
+                    data.FloatForce = r.ReadSingle();
+                    data.Position = r.ReadVector3();
+                    data.Radius = r.ReadSingle();
+                    data.UpwardsModifier = r.ReadSingle();
+                    data.Mode = (ForceMode)r.ReadInt32();
+                    break;
                 case PredictionRigidbody.ForceApplicationType.AddForceAtPosition:
-                    fd.Data = r.Read<PredictionRigidbody.PositionForceData>();
-                    return fd;
+                    data.Vector3Force = r.ReadVector3();
+                    data.Position = r.ReadVector3();
+                    data.Mode = (ForceMode)r.ReadInt32();
+                    break;
                 default:
                     NetworkManagerExtensions.LogError($"ForceApplicationType of {appType} is not supported.");
-                    return fd;
+                    break;
             }
 
-
-
+            fd.Data = data;
+            return fd;
         }
 
         public static void WritePredictionRigidbody(this Writer w, PredictionRigidbody pr)
         {
-            w.WriteList<PredictionRigidbody.EntryData>(pr.GetPendingForces());
+            w.Write(pr.Rigidbody.GetState());
+            w.WriteList(pr.GetPendingForces());
         }
 
         public static PredictionRigidbody ReadPredictionRigidbody(this Reader r)
         {
+
             List<PredictionRigidbody.EntryData> lst = CollectionCaches<PredictionRigidbody.EntryData>.RetrieveList();
-            r.ReadList<PredictionRigidbody.EntryData>(ref lst);
+
+            RigidbodyState rs = r.Read<RigidbodyState>();
+            r.ReadList(ref lst);
             PredictionRigidbody pr = ResettableObjectCaches<PredictionRigidbody>.Retrieve();
 
-            pr.SetPendingForces(lst);
+            pr.SetReconcileData(rs, lst);
             return pr;
         }
 
@@ -86,6 +109,51 @@ namespace FishNet.Object.Prediction
     public class PredictionRigidbody : IResettable
     {
         #region Types.
+        public struct AllForceData
+        {
+            public ForceMode Mode;
+            public Vector3 Vector3Force;
+            public Vector3 Position;
+            public float FloatForce;
+            public float Radius;
+            public float UpwardsModifier;
+
+            /// <summary>
+            /// Used for Force and Torque.
+            /// </summary>
+            public AllForceData(Vector3 force, ForceMode mode) : this()
+            {
+                Vector3Force = force;
+                Mode = mode;
+            }
+
+            /// <summary>
+            /// Used for Position.
+            /// </summary>
+            public AllForceData(Vector3 force, Vector3 position, ForceMode mode) : this()
+            {
+                Vector3Force = force;
+                Position = position;
+                Mode = mode;
+            }
+
+            /// <summary>
+            /// Used for Explosive.
+            /// </summary>
+            /// <param name="force"></param>
+            /// <param name="position"></param>
+            /// <param name="radius"></param>
+            /// <param name="upwardsModifier"></param>
+            /// <param name="mode"></param>
+            public AllForceData(float force, Vector3 position, float radius, float upwardsModifier, ForceMode mode) : this()
+            {
+                FloatForce = force;
+                Position = position;
+                Radius = radius;
+                UpwardsModifier = upwardsModifier;
+                Mode = mode;
+            }
+        }
         public interface IForceData { }
         //How the force was applied.
         [System.Flags]
@@ -98,55 +166,14 @@ namespace FishNet.Object.Prediction
             AddTorque = 16,
             AddRelativeTorque = 32,
         }
-        public struct ForceAndTorqueData : IForceData
-        {
-            public Vector3 Force;
-            public ForceMode Mode;
-
-            public ForceAndTorqueData(Vector3 force, ForceMode mode)
-            {
-                Force = force;
-                Mode = mode;
-            }
-        }
-        public struct PositionForceData : IForceData
-        {
-            public Vector3 Force;
-            public Vector3 Position;
-            public ForceMode Mode;
-
-            public PositionForceData(Vector3 force, Vector3 position, ForceMode mode)
-            {
-                Force = force;
-                Position = position;
-                Mode = mode;
-            }
-        }
-        public struct ExplosiveForceData : IForceData
-        {
-            public float Force;
-            public Vector3 Position;
-            public float Radius;
-            public float UpwardsModifier;
-            public ForceMode Mode;
-
-            public ExplosiveForceData(float force, Vector3 position, float radius, float upwardsModifier, ForceMode mode)
-            {
-                Force = force;
-                Position = position;
-                Radius = radius;
-                UpwardsModifier = upwardsModifier;
-                Mode = mode;
-            }
-        }
 
         [UseGlobalCustomSerializer]
         public struct EntryData
         {
             public ForceApplicationType Type;
-            public IForceData Data;
+            public AllForceData Data;
 
-            public EntryData(ForceApplicationType type, IForceData data)
+            public EntryData(ForceApplicationType type, AllForceData data)
             {
                 Type = type;
                 Data = data;
@@ -164,6 +191,14 @@ namespace FishNet.Object.Prediction
         /// Rigidbody which force is applied.
         /// </summary>
         public Rigidbody Rigidbody { get; private set; }
+        #endregion
+
+        #region Internal.
+        /// <summary>
+        /// RigidbodyState set only as reconcile data.
+        /// </summary>
+        [System.NonSerialized]
+        internal RigidbodyState RigidbodyState;
         #endregion
 
         #region Private
@@ -200,38 +235,38 @@ namespace FishNet.Object.Prediction
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddForce,
-                new ForceAndTorqueData(force, mode));
+                new AllForceData(force, mode));
             _pendingForces.Add(fd);
         }
         public void AddRelativeForce(Vector3 force, ForceMode mode = ForceMode.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddRelativeForce,
-                new ForceAndTorqueData(force, mode));
+                new AllForceData(force, mode));
             _pendingForces.Add(fd);
 
         }
         public void AddTorque(Vector3 force, ForceMode mode = ForceMode.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddTorque,
-                new ForceAndTorqueData(force, mode));
+                new AllForceData(force, mode));
             _pendingForces.Add(fd);
         }
         public void AddRelativeTorque(Vector3 force, ForceMode mode = ForceMode.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddRelativeTorque,
-                new ForceAndTorqueData(force, mode));
+                new AllForceData(force, mode));
             _pendingForces.Add(fd);
         }
-        public void AddExplosiveForce(float force, Vector3 position, float radius, float upwardsModifier = 0f,  ForceMode mode = ForceMode.Force)
+        public void AddExplosiveForce(float force, Vector3 position, float radius, float upwardsModifier = 0f, ForceMode mode = ForceMode.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddExplosiveForce,
-                new ExplosiveForceData(force, position, radius, upwardsModifier, mode));
+                new AllForceData(force, position, radius, upwardsModifier, mode));
             _pendingForces.Add(fd);
         }
         public void AddForceAtPosition(Vector3 force, Vector3 position, ForceMode mode = ForceMode.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddForceAtPosition,
-                new PositionForceData(force, position, mode));
+                new AllForceData(force, position, mode));
             _pendingForces.Add(fd);
         }
 
@@ -262,31 +297,26 @@ namespace FishNet.Object.Prediction
         {
             foreach (EntryData item in _pendingForces)
             {
+                AllForceData data = item.Data;
                 switch (item.Type)
                 {
                     case ForceApplicationType.AddTorque:
-                        ForceAndTorqueData e0 = (ForceAndTorqueData)item.Data;
-                        Rigidbody.AddTorque(e0.Force, e0.Mode);
+                        Rigidbody.AddTorque(data.Vector3Force, data.Mode);
                         break;
                     case ForceApplicationType.AddForce:
-                        ForceAndTorqueData e1 = (ForceAndTorqueData)item.Data;
-                        Rigidbody.AddForce(e1.Force, e1.Mode);
+                        Rigidbody.AddForce(data.Vector3Force, data.Mode);
                         break;
-                    case ForceApplicationType.AddRelativeTorque:
-                        ForceAndTorqueData e2 = (ForceAndTorqueData)item.Data;
-                        Rigidbody.AddRelativeTorque(e2.Force, e2.Mode);
+                    case ForceApplicationType.AddRelativeTorque:                        
+                        Rigidbody.AddRelativeTorque(data.Vector3Force, data.Mode);
                         break;
                     case ForceApplicationType.AddRelativeForce:
-                        ForceAndTorqueData e3 = (ForceAndTorqueData)item.Data;
-                        Rigidbody.AddRelativeForce(e3.Force, e3.Mode);
+                        Rigidbody.AddRelativeForce(data.Vector3Force, data.Mode);
                         break;
                     case ForceApplicationType.AddExplosiveForce:
-                        ExplosiveForceData e4 = (ExplosiveForceData)item.Data;
-                        Rigidbody.AddExplosionForce(e4.Force, e4.Position, e4.Radius, e4.UpwardsModifier, e4.Mode);
+                        Rigidbody.AddExplosionForce(data.FloatForce, data.Position, data.Radius, data.UpwardsModifier, data.Mode);
                         break;
                     case ForceApplicationType.AddForceAtPosition:
-                        PositionForceData e5 = (PositionForceData)item.Data;
-                        Rigidbody.AddForceAtPosition(e5.Force, e5.Position, e5.Mode);
+                        Rigidbody.AddForceAtPosition(data.Vector3Force, data.Position, data.Mode);
                         break;
                 }
             }
@@ -320,6 +350,8 @@ namespace FishNet.Object.Prediction
                 foreach (EntryData item in pr._pendingForces)
                     _pendingForces.Add(new EntryData(item));
             }
+            //Set state.
+            Rigidbody.SetState(pr.RigidbodyState);
 
             ResettableObjectCaches<PredictionRigidbody>.Store(pr);
         }
@@ -332,7 +364,6 @@ namespace FishNet.Object.Prediction
         {
             if (_pendingForces.Count > 0)
             {
-                bool shouldExist = velocity;
                 ForceApplicationType velocityApplicationTypes = (ForceApplicationType.AddRelativeForce | ForceApplicationType.AddForce | ForceApplicationType.AddExplosiveForce);
 
                 List<EntryData> newDatas = CollectionCaches<EntryData>.RetrieveList();
@@ -360,7 +391,11 @@ namespace FishNet.Object.Prediction
         }
 
         internal List<EntryData> GetPendingForces() => _pendingForces;
-        internal void SetPendingForces(List<EntryData> lst) => _pendingForces = lst;
+        internal void SetReconcileData(RigidbodyState rs, List<EntryData> lst)
+        {
+            RigidbodyState = rs;
+            _pendingForces = lst;
+        }
 
         public void ResetState()
         {

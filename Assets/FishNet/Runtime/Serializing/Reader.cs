@@ -1,3 +1,6 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
 using FishNet.CodeGenerating;
 using FishNet.Connection;
 using FishNet.Documenting;
@@ -73,7 +76,7 @@ namespace FishNet.Serializing
         /// Value may not always be set.
         /// </summary>
         public NetworkConnection NetworkConnection { get; private set; }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
         /// <summary>
         /// Last NetworkObject parsed.
         /// </summary>
@@ -879,7 +882,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetworkObject ReadNetworkObject(out int objectOrPrefabId, HashSet<int> readSpawningObjects = null)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             LastNetworkBehaviour = null;
 #endif
             objectOrPrefabId = ReadNetworkObjectId();
@@ -932,7 +935,7 @@ namespace FishNet.Serializing
                 result = NetworkManager.GetPrefab(objectOrPrefabId, asServer);
             }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             LastNetworkObject = result;
 #endif
             return result;
@@ -1035,7 +1038,7 @@ namespace FishNet.Serializing
                 }
             }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             LastNetworkBehaviour = result;
 #endif
             return result;
@@ -1281,7 +1284,7 @@ namespace FishNet.Serializing
              * newest as 98, 99, 100. Which is the correct result. In order for this to
              * work properly past replicates cannot skip ticks. This will be ensured
              * in another part of the code. */
-            tick -= (uint)(count);// - 1);
+            tick -= (uint)(count) - 1);
 
             int fullPackType = ReadByte();
             //Read once and apply to all entries.

@@ -19,6 +19,8 @@ namespace FishNet.Managing.Server.Editing
         private SerializedProperty _frameRate;
         private SerializedProperty _shareIds;
         private SerializedProperty _startOnHeadless;
+        private SerializedProperty _allowPredictedSpawning;
+        private SerializedProperty _reservedObjectIds;
 
         protected virtual void OnEnable()
         {
@@ -31,6 +33,9 @@ namespace FishNet.Managing.Server.Editing
             _frameRate = serializedObject.FindProperty(nameof(_frameRate));
             _shareIds = serializedObject.FindProperty(nameof(_shareIds));
             _startOnHeadless = serializedObject.FindProperty(nameof(_startOnHeadless));
+            _allowPredictedSpawning = serializedObject.FindProperty(nameof(_allowPredictedSpawning));
+            _reservedObjectIds = serializedObject.FindProperty(nameof(_reservedObjectIds));
+
         }
 
         public override void OnInspectorGUI()
@@ -43,15 +48,6 @@ namespace FishNet.Managing.Server.Editing
 
             EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-
-            EditorGUILayout.PropertyField(_authenticator);
-            EditorGUILayout.PropertyField(_remoteClientTimeout);
-            if ((RemoteTimeoutType)_remoteClientTimeout.intValue != RemoteTimeoutType.Disabled)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_remoteClientTimeoutDuration,new GUIContent("Timeout"));
-                EditorGUI.indentLevel--;
-            }
             EditorGUILayout.PropertyField(_syncTypeRate);
             EditorGUILayout.PropertyField(SpawnPacking);
             EditorGUILayout.PropertyField(_changeFrameRate);
@@ -61,11 +57,36 @@ namespace FishNet.Managing.Server.Editing
                 EditorGUILayout.PropertyField(_frameRate);
                 EditorGUI.indentLevel--;
             }
-            EditorGUILayout.PropertyField(_shareIds);
             EditorGUILayout.PropertyField(_startOnHeadless);
-
             EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
 
+            EditorGUILayout.LabelField("Connections", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_remoteClientTimeout);
+            if ((RemoteTimeoutType)_remoteClientTimeout.intValue != RemoteTimeoutType.Disabled)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_remoteClientTimeoutDuration,new GUIContent("Timeout"));
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.PropertyField(_shareIds);
+            EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
+
+            EditorGUILayout.LabelField("Security", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_authenticator);
+
+            EditorGUILayout.PropertyField(_allowPredictedSpawning);
+            if (_allowPredictedSpawning.boolValue == true)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_reservedObjectIds);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUI.indentLevel--;
+            EditorGUILayout.Space();
 
             serializedObject.ApplyModifiedProperties();
         }

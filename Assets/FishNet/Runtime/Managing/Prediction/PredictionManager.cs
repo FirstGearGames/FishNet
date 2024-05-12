@@ -144,40 +144,37 @@ namespace FishNet.Managing.Predicting
             _maximumServerReplicates = (byte)Mathf.Clamp(value, MINIMUM_REPLICATE_QUEUE_SIZE, MAXIMUM_REPLICATE_QUEUE_SIZE);
         }
         /// <summary>
-        /// Clients should store no more than 2 seconds worth of replicates.
+        /// No more than this value of replicates should be stored as a buffer.
         /// </summary>
-        internal ushort MaximumClientReplicates => (ushort)(_networkManager.TimeManager.TickRate * 5);
+        internal ushort MaximumPastReplicates => (ushort)(_networkManager.TimeManager.TickRate * 5);
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("How many states to try and hold in a buffer. Larger values add resillience against network issues at the cost of running states later.")]
+        [Tooltip("How many states to try and hold in a buffer before running them on clients. Larger values add resilience against network issues at the cost of running states later.")]
         [Range(MINIMUM_PAST_INPUTS, MAXIMUM_PAST_INPUTS)]
         [FormerlySerializedAs("_redundancyCount")] //Remove on V5.
+        [FormerlySerializedAs("_clientInterpolation")] //Remove on V5.
         [SerializeField]
-        private byte _interpolation = 2;
+        private byte _clientInterpolation = 2;
         /// <summary>
-        /// How many states to try and hold in a buffer. Larger values add resillience against network issues at the cost of running states later.
+        /// How many states to try and hold in a buffer before running them on clients. Larger values add resilience against network issues at the cost of running states later.
         /// </summary>
-        internal byte Interpolation => _interpolation;
+        internal byte ClientInterpolation => _clientInterpolation;
         /// <summary>
-        /// True to allow clients to use predicted spawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.
+        /// Number of past inputs to send, which is also the number of times to resend final datas.
         /// </summary>
-        internal bool GetAllowPredictedSpawning() => _allowPredictedSpawning;
-        [Tooltip("True to allow clients to use predicted spawning and despawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.")]
-        [SerializeField]
-        private bool _allowPredictedSpawning = false;
+        internal byte RedundancyCount => (byte)(ClientInterpolation + 1);
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.")]
-        [Range(1, 100)]
+        [Tooltip("How many states to try and hold in a buffer before running them on server. Larger values add resilience against network issues at the cost of running states later.")]
+        [Range(MINIMUM_PAST_INPUTS, MAXIMUM_PAST_INPUTS)]
         [SerializeField]
-        private byte _reservedObjectIds = 15;
+        private byte _serverInterpolation = 1;
         /// <summary>
-        /// Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.
+        /// How many states to try and hold in a buffer before running them on server. Larger values add resilience against network issues at the cost of running states later.
         /// </summary>
-        /// <returns></returns>
-        internal byte GetReservedObjectIds() => _reservedObjectIds;
+        internal byte ServerInterpolation => _serverInterpolation;
         #endregion
 
         #region Private.
@@ -252,14 +249,14 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         private void ClampInterpolation()
         {
-            ushort startingValue = _interpolation;
+            ushort startingValue = _clientInterpolation;
             //Check for setting if dropping.
-            if (_dropExcessiveReplicates && _interpolation > _maximumServerReplicates)
-                _interpolation = (byte)(_maximumServerReplicates - 1);
+            if (_dropExcessiveReplicates && _clientInterpolation > _maximumServerReplicates)
+                _clientInterpolation = (byte)(_maximumServerReplicates - 1);
 
             //If changed.
-            if (_interpolation != startingValue)
-                _networkManager.Log($"Interpolation has been set to {_interpolation}.");
+            if (_clientInterpolation != startingValue)
+                _networkManager.Log($"Interpolation has been set to {_clientInterpolation}.");
         }
 
         internal class StatePacket : IResettable
@@ -330,15 +327,17 @@ namespace FishNet.Managing.Predicting
             while (_reconcileStates.Count > 0)
             {
                 iterations++;
-                /* Typically there should only be 'interpolation' amount in queue.
-                 * If there's more than interpolation (+1 for buffer) then begin to
+                /* Typically there should only be 'interpolation' amount in queue but
+                 * there can be more if the clients network is unstable and they are
+                 * arriving in burst.
+                 * If there's more than interpolation (+1 for as a leniency buffer) then begin to
                  * consume multiple. */
-                int maxIterations = (_reconcileStates.Count > (Interpolation + 1)) ? 2 : 1;
+                int maxIterations = (_reconcileStates.Count > (ClientInterpolation + 1)) ? 2 : 1;
                 //At most 2 iterations.
                 if (iterations > maxIterations)
                     return;
 
-                StatePacket sp = null;
+                StatePacket sp;
                 if (!ConditionsMet(_reconcileStates.Peek()))
                     return;
                 else
@@ -351,7 +350,7 @@ namespace FishNet.Managing.Predicting
                     if (spChecked == null)
                         return false;
 
-                    return ((spChecked != null) && (spChecked.ServerTick <= (estimatedLastRemoteTick - Interpolation)) && spChecked.ClientTick < (localTick - Interpolation));
+                    return ((spChecked != null) && (spChecked.ServerTick <= (estimatedLastRemoteTick - ClientInterpolation)) && spChecked.ClientTick < (localTick - ClientInterpolation));
                 }
 
                 bool dropReconcile = false;
@@ -404,7 +403,7 @@ namespace FishNet.Managing.Predicting
                     }
 
                     bool timeManagerPhysics = (tm.PhysicsMode == PhysicsMode.TimeManager);
-                    float tickDelta = (float)tm.TickDelta;
+                    float tickDelta = ((float)tm.TickDelta * _networkManager.TimeManager.GetPhysicsTimeScale());
 
                     OnPreReconcile?.Invoke(ClientStateTick, ServerStateTick);
                     OnReconcile?.Invoke(ClientStateTick, ServerStateTick);
@@ -436,7 +435,7 @@ namespace FishNet.Managing.Predicting
                      * An additional value is subtracted to prevent
                      * client from running 1 local tick into the future
                      * since the OnTick has not run yet. */
-                    while (ClientReplayTick < localTick)
+                    while (ClientReplayTick < localTick - 1)
                     {
                         OnPreReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
                         OnReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
@@ -467,32 +466,21 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         internal void SendStateUpdate()
         {
+            uint recentReplicateToTicks = _networkManager.TimeManager.TimeToTicks(0.25f, TickRounding.RoundUp);
             TransportManager tm = _networkManager.TransportManager;
             foreach (NetworkConnection nc in _networkManager.ServerManager.Clients.Values)
             {
                 uint lastReplicateTick;
-                //If client has performed a replicate.
-                if (!nc.ReplicateTick.IsUnset)
-                {
+                //If client has performed a replicate recently.
+                if (!nc.ReplicateTick.IsUnset && nc.ReplicateTick.LocalTickDifference(_networkManager.TimeManager) < recentReplicateToTicks)
                     lastReplicateTick = nc.ReplicateTick.Value();
-                    ///* If it's been longer than queued inputs since
-                    // * server has received a replicate then
-                    // * use estimated value. Otherwise use LastRemoteTick. */
-                    //if (nc.ReplicateTick.LocalTickDifference(_networkManager.TimeManager) > QueuedInputs)
-                    //    lastReplicateTick = nc.ReplicateTick.Value();
-                    //else
-                    //    lastReplicateTick = nc.ReplicateTick.LastRemoteTick;
-                }
                 /* If not then use what is estimated to be the clients
                  * current tick along with desired prediction queue count.
                  * This should be just about the same as if the client used replicate,
                  * but even if it's not it doesn't matter because the client
                  * isn't replicating himself, just reconciling and replaying other objects. */
                 else
-                {
-                    //lastReplicateTick = (nc.PacketTick.Value() + Interpolation - 1);
-                    lastReplicateTick = (nc.PacketTick.Value() - 1);
-                }
+                    lastReplicateTick = nc.LocalTick.Value();
 
                 foreach (PooledWriter writer in nc.PredictionStateWriters)
                 {
@@ -549,12 +537,13 @@ namespace FishNet.Managing.Predicting
                  * a limit a little beyond to prevent reconciles from building up. 
                  * This is more of a last result if something went terribly
                  * wrong with the network. */
-                int maxAllowedStates = Mathf.Max(Interpolation * 4, 4);
+                int maxAllowedStates = Mathf.Max(ClientInterpolation * 4, 4);
                 while (_reconcileStates.Count > maxAllowedStates)
                 {
                     StatePacket oldSp = _reconcileStates.Dequeue();
                     DisposeOfStatePacket(oldSp);
                 }
+
                 //LocalTick of this client the state is for.
                 uint clientTick = reader.ReadTickUnpacked();
                 //Length of packet.
@@ -744,28 +733,9 @@ namespace FishNet.Managing.Predicting
         [SerializeField]
         private byte _redundancyCount = 2;
         /// <summary>
-        /// Maximum number of past inputs which may send and resend redundancy.
+        /// Maximum number of past inputs which may send.
         /// </summary>
         internal byte RedundancyCount => _redundancyCount;
-        /// <summary>
-        /// True to allow clients to use predicted spawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.
-        /// </summary>
-        internal bool GetAllowPredictedSpawning() => _allowPredictedSpawning;
-        [Tooltip("True to allow clients to use predicted spawning and despawning. While true, each NetworkObject prefab you wish to predicted spawn must be marked as to allow this feature.")]
-        [SerializeField]
-        private bool _allowPredictedSpawning = false;
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.")]
-        [Range(1, 100)]
-        [SerializeField]
-        private byte _reservedObjectIds = 15;
-        /// <summary>
-        /// Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.
-        /// </summary>
-        /// <returns></returns>
-        internal byte GetReservedObjectIds() => _reservedObjectIds;
 #endregion
 
 #region Private.

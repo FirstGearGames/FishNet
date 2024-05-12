@@ -121,7 +121,8 @@ namespace FishNet.Component.Prediction
 
         void Awake()
         {
-            _colliderDataHistory = ResettableCollectionCaches<ColliderData>.RetrieveRingBuffer();
+            //_colliderDataHistory = ResettableCollectionCaches<ColliderData>.RetrieveRingBuffer();
+            _colliderDataHistory = new();
             _hits = CollectionCaches<Collider>.RetrieveArray();
             if (_hits.Length < _maximumSimultaneousHits)
                 _hits = new Collider[_maximumSimultaneousHits];
@@ -133,6 +134,7 @@ namespace FishNet.Component.Prediction
 
         private void OnDestroy()
         {
+
             ResettableCollectionCaches<ColliderData>.StoreAndDefault(ref _colliderDataHistory);
             CollectionCaches<Collider>.StoreAndDefault(ref _hits, -_hits.Length);
             CollectionCaches<Collider>.StoreAndDefault(ref _currentlyEntered);

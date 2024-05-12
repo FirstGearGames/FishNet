@@ -147,7 +147,7 @@ namespace FishNet.Transporting.Tugboat.Server
             listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
-            base.NetManager = new NetManager(listener, _packetLayer);
+            base.NetManager = new NetManager(listener, _packetLayer, false);
             base.NetManager.DontRoute = _dontRoute;
             base.NetManager.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
@@ -200,11 +200,8 @@ namespace FishNet.Transporting.Tugboat.Server
                 StopConnection();
                 return;
             }
-            if (!_enableIPv6)
-            {
-                base.NetManager.IPv6Mode = IPv6Mode.Disabled;
-            }
 
+            base.NetManager.IPv6Enabled = _enableIPv6;
             bool startResult = base.NetManager.Start(ipv4, ipv6, _port);
             //If started succcessfully.
             if (startResult)
@@ -263,7 +260,7 @@ namespace FishNet.Transporting.Tugboat.Server
                 return string.Empty;
             }
 
-            return peer.EndPoint.Address.ToString();
+            return peer.Address.ToString();
         }
 
         /// <summary>

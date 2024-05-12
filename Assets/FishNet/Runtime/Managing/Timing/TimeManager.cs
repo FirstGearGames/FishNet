@@ -1,15 +1,8 @@
 ﻿using FishNet.Connection;
-using FishNet.Documenting;
-using FishNet.Managing.Transporting;
-using FishNet.Object;
 using FishNet.Serializing;
-using FishNet.Serializing.Helping;
 using FishNet.Transporting;
-using FishNet.Utility;
-using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
@@ -47,63 +40,6 @@ namespace FishNet.Managing.Timing
         {
             BeforeTick = 0,
             AfterTick = 1,
-        }
-        /// <summary>
-        /// Synchronizes tick timing between server and client.
-        /// </summary>
-        private class TimingSync
-        {
-            /// <summary>
-            /// Last server tick passed in.
-            /// </summary>
-            private uint _lastServerTick;
-            /// <summary>
-            /// Last local tick passed in.
-            /// </summary>
-            private uint _lastLocalTick;
-            /// <summary>
-            /// Last difference between server and client.
-            /// </summary>
-            private long? _lastServerClientDifference;
-
-            /// <summary>
-            /// Sets differences between last server and local tick.
-            /// </summary>
-            /// <returns>True if values exist, false if unable to process.</returns>
-            public bool GetTickDifference(uint currentServerTick, uint currentLocalTick, out long tickDifference)
-            {
-                if (currentServerTick < _lastServerTick)
-                {
-                    tickDifference = 0;
-                    return false;
-                }
-                else
-                {
-                    uint serverDifference = (currentServerTick - _lastServerTick);
-                    uint localDifference = (currentLocalTick - _lastLocalTick);
-
-                    long td = ((long)serverDifference - (long)localDifference);
-                    //Average tick differences over 2 updates to help with unstable connections.
-                    if (_lastServerClientDifference.HasValue)
-                    {
-                        long totalTd = (td + _lastServerClientDifference.Value);
-                        tickDifference = (totalTd / (long)2);
-                    }
-                    //Last tick difference not set yet, use current values only.
-                    else
-                    {
-                        tickDifference = td;
-                    }
-
-                    //Also update last values.
-                    _lastServerTick = currentServerTick;
-                    _lastLocalTick = currentLocalTick;
-                    _lastServerClientDifference = td;
-
-                    return true;
-                }
-            }
-
         }
         #endregion
 
@@ -309,9 +245,24 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private bool _fixedUpdateTimeStep;
         /// <summary>
-        /// Synchronizes tick deltas between server and client.
+        /// 
         /// </summary>
-        private TimingSync _timing = new TimingSync();
+        private float _physicsTimeScale = 1f;
+        /// <summary>
+        /// Gets the current physics time scale.
+        /// </summary>
+        /// <returns></returns>
+        public float GetPhysicsTimeScale() => _physicsTimeScale;
+        /// <summary>
+        /// Sets the physics time scale.
+        /// This is not automatically synchronized.
+        /// </summary>
+        /// <param name="value">New value.</param>
+        public void SetPhysicsTimeScale(float value)
+        {
+            value = Mathf.Clamp(value, 0f, float.PositiveInfinity);
+            _physicsTimeScale = value;
+        }
         #endregion
 
         #region Const.
@@ -701,6 +652,7 @@ namespace FishNet.Managing.Timing
 
             bool variableTiming = (_timingType == TimingType.Variable);
             bool frameTicked = FrameTicked;
+            float tickDelta = ((float)TickDelta * GetPhysicsTimeScale());
 
             do
             {
@@ -727,11 +679,10 @@ namespace FishNet.Managing.Timing
 
                     if (PhysicsMode == PhysicsMode.TimeManager)
                     {
-                        float tick = (float)TickDelta;
-                        OnPrePhysicsSimulation?.Invoke(tick);
-                        Physics.Simulate(tick);
-                        Physics2D.Simulate(tick);
-                        OnPostPhysicsSimulation?.Invoke(tick);
+                        OnPrePhysicsSimulation?.Invoke(tickDelta);
+                        Physics.Simulate(tickDelta);
+                        Physics2D.Simulate(tickDelta);
+                        OnPostPhysicsSimulation?.Invoke(tickDelta);
                     }
 
                     OnPostTick?.Invoke();
@@ -1141,7 +1092,7 @@ namespace FishNet.Managing.Timing
             uint nextTick = (LocalTick - clientTick) + lastPacketTick;
             long difference = ((long)nextTick - (long)prevTick);
             Tick = nextTick;
-            
+
             //Maximum difference allowed before resetting values.
             const int maximumDifference = 4;
             //Difference is extreme, reset to default timings. Client probably had an issue.

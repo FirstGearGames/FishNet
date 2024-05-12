@@ -1,4 +1,7 @@
-﻿using FishNet.CodeGenerating;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.CodeGenerating;
 using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing;
@@ -249,7 +252,7 @@ namespace FishNet.Object
             _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
 
             PooledWriter writer;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             if (NetworkManager.DebugManager.ObserverRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
 #else
             if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
@@ -314,7 +317,7 @@ namespace FishNet.Object
 
             PooledWriter writer;
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if DEVELOPMENT
             if (NetworkManager.DebugManager.TargetRpcLinks && _rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
 #else
             if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))

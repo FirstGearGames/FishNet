@@ -94,7 +94,7 @@ namespace FishNet.Managing.Client
                 {
                     foreach (NetworkObject n in Spawned.Values)
                     {
-                        n.InvokeStopCallbacks(false);
+                        n.InvokeStopCallbacks(false, true);
                         n.SetInitializedStatus(false, false);
                     }
                 }
@@ -434,8 +434,9 @@ namespace FishNet.Managing.Client
             if (sceneObject)
             {
                 ReadSceneObject(reader, out sceneId);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                base.CheckReadSceneObjectDetails(reader, ref sceneName, ref objectName);
+#if DEVELOPMENT
+                if (NetworkManager.ClientManager.IsServerDevelopment)
+                    base.CheckReadSceneObjectDetails(reader, ref sceneName, ref objectName);
 #endif
             }
             else

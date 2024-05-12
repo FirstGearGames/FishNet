@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
@@ -22,6 +23,8 @@ namespace LiteNetLib
     /// </summary>
     public static class NetUtils
     {
+        private static readonly NetworkSorter NetworkSorter = new NetworkSorter();
+
         public static IPEndPoint MakeEndPoint(string hostStr, int port)
         {
             return new IPEndPoint(ResolveAddress(hostStr), port);
@@ -81,7 +84,12 @@ namespace LiteNetLib
             bool ipv6 = (addrType & LocalAddrType.IPv6) == LocalAddrType.IPv6;
             try
             {
-                foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+                // Sort networks interfaces so it prefer Wifi over Cellular networks
+                // Most cellulars networks seems to be incompatible with NAT Punch
+                var networks = NetworkInterface.GetAllNetworkInterfaces();
+                Array.Sort(networks, NetworkSorter);
+
+                foreach (NetworkInterface ni in networks)
                 {
                     //Skip loopback and disabled network interfaces
                     if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
@@ -119,7 +127,7 @@ namespace LiteNetLib
             {
                 //ignored
             }
-            
+
             if (targetList.Count == 0)
             {
                 if(ipv4)
@@ -150,7 +158,7 @@ namespace LiteNetLib
         // ===========================================
         internal static void PrintInterfaceInfos()
         {
-            NetDebug.WriteForce(NetLogLevel.Info, "IPv6Support: {0}", NetManager.IPv6Support);
+            NetDebug.WriteForce(NetLogLevel.Info, $"IPv6Support: { NetManager.IPv6Support}");
             try
             {
                 foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
@@ -162,18 +170,14 @@ namespace LiteNetLib
                         {
                             NetDebug.WriteForce(
                                 NetLogLevel.Info,
-                                "Interface: {0}, Type: {1}, Ip: {2}, OpStatus: {3}",
-                                ni.Name,
-                                ni.NetworkInterfaceType.ToString(),
-                                ip.Address.ToString(),
-                                ni.OperationalStatus.ToString());
+                                $"Interface: {ni.Name}, Type: {ni.NetworkInterfaceType}, Ip: {ip.Address}, OpStatus: {ni.OperationalStatus}");
                         }
                     }
                 }
             }
             catch (Exception e)
             {
-                NetDebug.WriteForce(NetLogLevel.Info, "Error while getting interface infos: {0}", e.ToString());
+                NetDebug.WriteForce(NetLogLevel.Info, $"Error while getting interface infos: {e}");
             }
         }
 
@@ -189,6 +193,46 @@ namespace LiteNetLib
 #else
             return new T[count];
 #endif
+        }
+    }
+
+    // Pick the most obvious choice for the local IP
+    // Ethernet > Wifi > Others > Cellular
+    internal class NetworkSorter : IComparer<NetworkInterface>
+    {
+        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
+        public int Compare(NetworkInterface a, NetworkInterface b)
+        {
+            var isCellularA = a.NetworkInterfaceType == NetworkInterfaceType.Wman ||
+                              a.NetworkInterfaceType == NetworkInterfaceType.Wwanpp ||
+                              a.NetworkInterfaceType == NetworkInterfaceType.Wwanpp2;
+
+            var isCellularB = b.NetworkInterfaceType == NetworkInterfaceType.Wman ||
+                              b.NetworkInterfaceType == NetworkInterfaceType.Wwanpp ||
+                              b.NetworkInterfaceType == NetworkInterfaceType.Wwanpp2;
+
+            var isWifiA     = a.NetworkInterfaceType == NetworkInterfaceType.Wireless80211;
+            var isWifiB     = b.NetworkInterfaceType == NetworkInterfaceType.Wireless80211;
+
+            var isEthernetA = a.NetworkInterfaceType == NetworkInterfaceType.Ethernet ||
+                              a.NetworkInterfaceType == NetworkInterfaceType.Ethernet3Megabit ||
+                              a.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet ||
+                              a.NetworkInterfaceType == NetworkInterfaceType.FastEthernetFx ||
+                              a.NetworkInterfaceType == NetworkInterfaceType.FastEthernetT;
+
+            var isEthernetB = b.NetworkInterfaceType == NetworkInterfaceType.Ethernet ||
+                              b.NetworkInterfaceType == NetworkInterfaceType.Ethernet3Megabit ||
+                              b.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet ||
+                              b.NetworkInterfaceType == NetworkInterfaceType.FastEthernetFx ||
+                              b.NetworkInterfaceType == NetworkInterfaceType.FastEthernetT;
+
+            var isOtherA    = !isCellularA && !isWifiA && !isEthernetA;
+            var isOtherB    = !isCellularB && !isWifiB && !isEthernetB;
+
+            var priorityA = isEthernetA ? 3 : isWifiA ? 2 : isOtherA ? 1 : 0;
+            var priorityB = isEthernetB ? 3 : isWifiB ? 2 : isOtherB ? 1 : 0;
+
+            return priorityA > priorityB ? -1 : priorityA < priorityB ? 1 : 0;
         }
     }
 }

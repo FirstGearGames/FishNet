@@ -1,3 +1,6 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
 using FishNet.Component.Transforming;
 using FishNet.Connection;
 using FishNet.Documenting;
@@ -285,6 +288,12 @@ namespace FishNet.Component.Animating
         /// </summary>
         public Animator Animator { get { return _animator; } }
         /// <summary>
+        /// True to synchronize changes even when the animator component is disabled.
+        /// </summary>
+        [Tooltip("True to synchronize changes even when the animator component is disabled.")]
+        [SerializeField]
+        private bool _synchronizeWhenDisabled;
+        /// <summary>
         /// True to smooth float value changes for spectators.
         /// </summary>
         [Tooltip("True to smooth float value changes for spectators.")]
@@ -297,13 +306,6 @@ namespace FishNet.Component.Animating
         [Range(1, NetworkTransform.MAX_INTERPOLATION)]
         [SerializeField]
         private ushort _interpolation = 2;
-        ///// <summary>
-        ///// How often to synchronize this animator.
-        ///// </summary>
-        //[Tooltip("How often to synchronize this animator.")]
-        //[Range(0.01f, 0.5f)]
-        //[SerializeField]
-        //private float _synchronizeInterval = 0.1f;
         /// <summary>
         /// 
         /// </summary>
@@ -356,20 +358,21 @@ namespace FishNet.Component.Animating
         /// </summary>
         private List<byte[]> _toClientsBuffer = new List<byte[]>();
         /// <summary>
-        /// Returns if the animator is exist and is enabled.
+        /// Returns if the animator is exist and can be synchronized.
         /// </summary>
-        private bool _isAnimatorEnabled
+        private bool _canSynchronizeAnimator
         {
             get
             {
-                bool failedChecks = (!_isAnimatorValid || !_animator.enabled);
+                bool notEnabled = (!_animator.enabled && !_synchronizeWhenDisabled);
+                bool failedChecks = (!_isAnimatorSet || !notEnabled);
                 return !failedChecks;
             }
         }
         /// <summary>
         /// True if the animator is valid but not enabled.
         /// </summary>
-        private bool _isAnimatorValid
+        private bool _isAnimatorSet
         {
             get
             {
@@ -406,10 +409,6 @@ namespace FishNet.Component.Animating
         /// Layers which need to have their state synchronized. Key is the layer, Value is the state change information.
         /// </summary>
         private Dictionary<int, StateChange> _unsynchronizedLayerStates = new Dictionary<int, StateChange>();
-        /// <summary>
-        /// Layers which need to have their state blend synchronized. Key is ParameterIndex, Value is next state hash.
-        /// </summary>
-        //private Dictionary<int, int> _unsynchronizedLayerStates = new HashSet<int>();
         /// <summary>
         /// Last animator set.
         /// </summary>
@@ -480,7 +479,7 @@ namespace FishNet.Component.Animating
         [APIExclude]
         public override void OnSpawnServer(NetworkConnection connection)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
             if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, true))
                 TargetAnimatorUpdated(connection, updatedBytes);
@@ -542,7 +541,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void TimeManager_OnPreTick()
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
             {
                 _fromServerBuffer.Clear();
                 return;
@@ -576,7 +575,7 @@ namespace FishNet.Component.Animating
         private void TimeManager_OnPostTick()
         {
             //One check rather than per each method.
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
 
             CheckSendToServer();
@@ -585,7 +584,7 @@ namespace FishNet.Component.Animating
 
         private void Update()
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
 
             if (base.IsClientStarted)
@@ -604,7 +603,7 @@ namespace FishNet.Component.Animating
             if (!ApplicationState.IsPlaying())
                 return;
 
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
             {
                 //Debug.LogWarning("Animator is null or not enabled; unable to initialize for animator. Use SetAnimator if animator was changed or enable the animator.");
                 return;
@@ -1036,7 +1035,7 @@ namespace FishNet.Component.Animating
         /// <param name="changedParameters"></param>
         private void ApplyParametersUpdated(ref ArraySegment<byte> updatedParameters)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
             if (_layerWeights == null)
                 return;
@@ -1164,7 +1163,7 @@ namespace FishNet.Component.Animating
             stateHash = 0;
             normalizedTime = 0f;
 
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return false;
 
             AnimatorStateInfo st = _animator.GetCurrentAnimatorStateInfo(layerIndex);
@@ -1225,7 +1224,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         public void Play(int hash, int layer, float normalizedTime)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
             if (_animator.HasState(layer, hash) || hash == 0)
             {
@@ -1260,7 +1259,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         public void PlayInFixedTime(int hash, int layer, float fixedTime)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
             if (_animator.HasState(layer, hash) || hash == 0)
             {
@@ -1293,7 +1292,7 @@ namespace FishNet.Component.Animating
         /// <param name="normalizedTransitionTime"></param>
         public void CrossFade(int hash, float normalizedTransitionDuration, int layer, float normalizedTimeOffset = 0.0f, float normalizedTransitionTime = 0.0f)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
             if (_animator.HasState(layer, hash) || hash == 0)
             {
@@ -1323,7 +1322,7 @@ namespace FishNet.Component.Animating
         /// <param name="normalizedTransitionTime"></param>
         public void CrossFadeInFixedTime(int hash, float fixedTransitionDuration, int layer, float fixedTimeOffset = 0.0f, float normalizedTransitionTime = 0.0f)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
             if (_animator.HasState(layer, hash) || hash == 0)
             {
@@ -1340,7 +1339,7 @@ namespace FishNet.Component.Animating
         /// <param name="hash"></param>
         public void SetTrigger(int hash)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
             UpdateTrigger(hash, true);
         }
@@ -1376,7 +1375,7 @@ namespace FishNet.Component.Animating
         /// <param name="set"></param>
         private void UpdateTrigger(int hash, bool set)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
 
             bool clientAuth = ClientAuthoritative;
@@ -1433,12 +1432,12 @@ namespace FishNet.Component.Animating
         [TargetRpc(ValidateTarget = false)]
         private void TargetAnimatorUpdated(NetworkConnection connection, ArraySegment<byte> data)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
 
-#if DEVELOPMENT
+#if !DEVELOPMENT
             //If receiver is client host then do nothing, clientHost need not process.
-            if (base.IsServer && conn.IsLocalClient)
+            if (base.IsServerInitialized && connection.IsLocalClient)
                 return;
 #endif
             bool clientAuth = ClientAuthoritative;
@@ -1468,7 +1467,7 @@ namespace FishNet.Component.Animating
         [ServerRpc]
         private void ServerAnimatorUpdated(ArraySegment<byte> data)
         {
-            if (!_isAnimatorEnabled)
+            if (!_canSynchronizeAnimator)
                 return;
             if (!ClientAuthoritative)
             {
