@@ -36,7 +36,7 @@ namespace FishNet.Object
         /// <summary>
         /// Graphical smoother to use when using set for owner.
         /// </summary> 
-        public AdaptiveLocalTransformTickSmoother PredictionSmoother { get; private set; }
+        public ChildTransformTickSmoother PredictionSmoother { get; private set; }
 #endif
         /// <summary>
         /// Last tick this object replicated.
@@ -182,7 +182,8 @@ namespace FishNet.Object
                 _networkTransform.ConfigureForPrediction(_predictionType);
 
             ReplicateTick.Initialize(manager.TimeManager);
-            InitializeSmoothers();
+            if (!asServer)
+                InitializeSmoothers();
 
             if (asServer)
                 return;
@@ -256,7 +257,7 @@ namespace FishNet.Object
             else
             {
                 if (PredictionSmoother == null)
-                    PredictionSmoother = ResettableObjectCaches<AdaptiveLocalTransformTickSmoother>.Retrieve();
+                    PredictionSmoother = ResettableObjectCaches<ChildTransformTickSmoother>.Retrieve();
                 InitializeTickSmoother();
             }
         }
@@ -268,7 +269,6 @@ namespace FishNet.Object
         {
             if (PredictionSmoother == null)
                 return;
-            PredictionSmoother.ResetState();
             float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRatesCls.UNSET_VALUE;
             PredictionSmoother.Initialize(this, _graphicalObject, _detachGraphicalObject, teleportT, (float)TimeManager.TickDelta, _ownerInterpolation, _ownerSmoothedProperties, _spectatorInterpolation, _spectatorSmoothedProperties, _adaptiveInterpolation);
         }
@@ -279,7 +279,8 @@ namespace FishNet.Object
         {
             if (PredictionSmoother != null)
             {
-                ResettableObjectCaches<AdaptiveLocalTransformTickSmoother>.Store(PredictionSmoother);
+                PredictionSmoother.Deinitialize();
+                ResettableObjectCaches<ChildTransformTickSmoother>.Store(PredictionSmoother);
                 PredictionSmoother = null;
                 ResettableObjectCaches<RigidbodyPauser>.StoreAndDefault(ref _rigidbodyPauser);
             }
@@ -301,16 +302,6 @@ namespace FishNet.Object
 
             if (!asServer)
                 PredictionSmoother?.OnStopClient();
-        }
-
-        private void OnDestroy_Prediction()
-        {
-            if (_predictionBehaviours.Count == 0)
-                return;
-
-            //This is a fail-safe in the scenario the graphicalobject did not reattach during network stop.
-            if (_detachGraphicalObject && _graphicalObject != null && _graphicalObject.parent == null)
-                Destroy(_graphicalObject);
         }
 
         private void TimeManager_OnPreTick()

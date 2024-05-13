@@ -15,17 +15,23 @@ namespace FishNet.Object.Prediction
         {
             PredictionRigidbody2D.ForceApplicationType appType = value.Type;
             w.WriteByte((byte)appType);
+            PredictionRigidbody2D.AllForceData data = value.Data;
+
             switch (appType)
             {
                 case PredictionRigidbody2D.ForceApplicationType.AddForce:
                 case PredictionRigidbody2D.ForceApplicationType.AddRelativeForce:
-                    w.Write((PredictionRigidbody2D.ForceData)value.Data);
+                    w.WriteVector3(data.Vector3Force);
+                    w.WriteInt32((byte)data.Mode);
                     break;
                 case PredictionRigidbody2D.ForceApplicationType.AddTorque:
-                    w.Write((PredictionRigidbody2D.TorqueData)value.Data);
+                    w.WriteSingle(data.FloatForce);
+                    w.WriteInt32((byte)data.Mode);
                     break;
                 case PredictionRigidbody2D.ForceApplicationType.AddForceAtPosition:
-                    w.Write((PredictionRigidbody2D.PositionForceData)value.Data);
+                    w.WriteVector3(data.Vector3Force);
+                    w.WriteVector3(data.Position);
+                    w.WriteInt32((byte)data.Mode);
                     break;
                 default:
                     NetworkManagerExtensions.LogError($"ForceApplicationType of {appType} is not supported.");
@@ -40,25 +46,28 @@ namespace FishNet.Object.Prediction
             PredictionRigidbody2D.ForceApplicationType appType = (PredictionRigidbody2D.ForceApplicationType)r.ReadByte();
             fd.Type = appType;
 
+            PredictionRigidbody2D.AllForceData data = new();
+
             switch (appType)
             {
                 case PredictionRigidbody2D.ForceApplicationType.AddForce:
                 case PredictionRigidbody2D.ForceApplicationType.AddRelativeForce:
-                    fd.Data = r.Read<PredictionRigidbody2D.ForceData>();
+                    data.Vector3Force = r.ReadVector3();
+                    data.Mode = (ForceMode2D)r.ReadByte();
                     return fd;
                 case PredictionRigidbody2D.ForceApplicationType.AddTorque:
-                    fd.Data = r.Read<PredictionRigidbody2D.TorqueData>();
+                    data.FloatForce = r.ReadSingle();
+                    data.Mode = (ForceMode2D)r.ReadByte();
                     return fd;
                 case PredictionRigidbody2D.ForceApplicationType.AddForceAtPosition:
-                    fd.Data = r.Read<PredictionRigidbody2D.PositionForceData>();
+                    data.Vector3Force = r.ReadVector3();
+                    data.Position = r.ReadVector3();
+                    data.Mode = (ForceMode2D)r.ReadByte();
                     return fd;
                 default:
                     NetworkManagerExtensions.LogError($"ForceApplicationType of {appType} is not supported.");
                     return fd;
             }
-
-
-
         }
 
         public static void WritePredictionRigidbody2D(this Writer w, PredictionRigidbody2D pr)
@@ -82,7 +91,6 @@ namespace FishNet.Object.Prediction
     public class PredictionRigidbody2D : IResettable
     {
         #region Types.
-        public interface IForceData { }
         //How the force was applied.
         [System.Flags]
         public enum ForceApplicationType : byte
@@ -92,49 +100,42 @@ namespace FishNet.Object.Prediction
             AddRelativeForce = 8,
             AddTorque = 16,
         }
-        public struct ForceData : IForceData
+        public struct AllForceData
         {
-            public Vector3 Force;
-            public ForceMode2D Mode;
-
-            public ForceData(Vector3 force, ForceMode2D mode)
-            {
-                Force = force;
-                Mode = mode;
-            }
-        }
-        public struct TorqueData : IForceData
-        {
-            public float Force;
-            public ForceMode2D Mode;
-
-            public TorqueData(float force, ForceMode2D mode)
-            {
-                Force = force;
-                Mode = mode;
-            }
-        }
-        public struct PositionForceData : IForceData
-        {
-            public Vector3 Force;
+            public Vector3 Vector3Force;
+            public float FloatForce;
             public Vector3 Position;
             public ForceMode2D Mode;
 
-            public PositionForceData(Vector3 force, Vector3 position, ForceMode2D mode)
+            public AllForceData(Vector3 force, ForceMode2D mode) : this()
             {
-                Force = force;
+                Vector3Force = force;
+                Mode = mode;
+            }
+
+
+            public AllForceData(float force, ForceMode2D mode) : this()
+            {
+                FloatForce = force;
+                Mode = mode;
+            }
+
+            public AllForceData(Vector3 force, Vector3 position, ForceMode2D mode) : this()
+            {
+                Vector3Force = force;
                 Position = position;
                 Mode = mode;
             }
         }
 
+
         [UseGlobalCustomSerializer]
         public struct EntryData
         {
             public ForceApplicationType Type;
-            public IForceData Data;
+            public AllForceData Data;
 
-            public EntryData(ForceApplicationType type, IForceData data)
+            public EntryData(ForceApplicationType type, AllForceData data)
             {
                 Type = type;
                 Data = data;
@@ -188,26 +189,26 @@ namespace FishNet.Object.Prediction
         public void AddForce(Vector3 force, ForceMode2D mode = ForceMode2D.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddForce,
-                new ForceData(force, mode));
+                new AllForceData(force, mode));
             _pendingForces.Add(fd);
         }
         public void AddRelativeForce(Vector3 force, ForceMode2D mode = ForceMode2D.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddRelativeForce,
-                new ForceData(force, mode));
+                new AllForceData(force, mode));
             _pendingForces.Add(fd);
 
         }
         public void AddTorque(float force, ForceMode2D mode = ForceMode2D.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddTorque,
-                new TorqueData(force, mode));
+                new AllForceData(force, mode));
             _pendingForces.Add(fd);
         }
         public void AddForceAtPosition(Vector3 force, Vector3 position, ForceMode2D mode = ForceMode2D.Force)
         {
             EntryData fd = new EntryData(ForceApplicationType.AddForceAtPosition,
-                new PositionForceData(force, position, mode));
+                new AllForceData(force, position, mode));
             _pendingForces.Add(fd);
         }
 
@@ -238,23 +239,20 @@ namespace FishNet.Object.Prediction
         {
             foreach (EntryData item in _pendingForces)
             {
+                AllForceData data = item.Data;
                 switch (item.Type)
                 {
                     case ForceApplicationType.AddTorque:
-                        TorqueData e0 = (TorqueData)item.Data;
-                        Rigidbody2D.AddTorque(e0.Force, e0.Mode);
+                        Rigidbody2D.AddTorque(data.FloatForce, data.Mode);
                         break;
                     case ForceApplicationType.AddForce:
-                        ForceData e1 = (ForceData)item.Data;
-                        Rigidbody2D.AddForce(e1.Force, e1.Mode);
+                        Rigidbody2D.AddForce(data.Vector3Force, data.Mode);
                         break;
                     case ForceApplicationType.AddRelativeForce:
-                        ForceData e3 = (ForceData)item.Data;
-                        Rigidbody2D.AddRelativeForce(e3.Force, e3.Mode);
+                        Rigidbody2D.AddRelativeForce(data.Vector3Force, data.Mode);
                         break;
                     case ForceApplicationType.AddForceAtPosition:
-                        PositionForceData e5 = (PositionForceData)item.Data;
-                        Rigidbody2D.AddForceAtPosition(e5.Force, e5.Position, e5.Mode);
+                        Rigidbody2D.AddForceAtPosition(data.Vector3Force, data.Position, data.Mode);
                         break;
                 }
             }

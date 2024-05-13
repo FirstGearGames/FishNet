@@ -15,16 +15,16 @@ namespace FishNet.Managing.Predicting.Editing
         private SerializedProperty _dropExcessiveReplicates;
         private SerializedProperty _maximumServerReplicates;
         private SerializedProperty _maximumConsumeCount;
-        private SerializedProperty _clientInterpolation;
-        private SerializedProperty _serverInterpolation;
+        private SerializedProperty _stateInterpolation;
+       // private SerializedProperty _serverInterpolation;
 
         protected virtual void OnEnable()
         {
             _dropExcessiveReplicates = serializedObject.FindProperty(nameof(_dropExcessiveReplicates));
             _maximumServerReplicates = serializedObject.FindProperty(nameof(_maximumServerReplicates));
             _maximumConsumeCount = serializedObject.FindProperty(nameof(_maximumConsumeCount));
-            _clientInterpolation = serializedObject.FindProperty(nameof(_clientInterpolation));
-            _serverInterpolation = serializedObject.FindProperty(nameof(_serverInterpolation));
+            _stateInterpolation = serializedObject.FindProperty(nameof(_stateInterpolation));
+           // _serverInterpolation = serializedObject.FindProperty(nameof(_serverInterpolation));
         }
 
         public override void OnInspectorGUI()
@@ -38,13 +38,13 @@ namespace FishNet.Managing.Predicting.Editing
 
             EditorGUILayout.LabelField("Client", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_clientInterpolation);
+            EditorGUILayout.PropertyField(_stateInterpolation);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
             EditorGUILayout.LabelField("Server", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_serverInterpolation);
+           // EditorGUILayout.PropertyField(_serverInterpolation);
             EditorGUILayout.PropertyField(_dropExcessiveReplicates);
             EditorGUI.indentLevel++;
             if (_dropExcessiveReplicates.boolValue == true)

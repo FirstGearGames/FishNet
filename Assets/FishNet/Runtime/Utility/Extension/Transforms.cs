@@ -1,5 +1,6 @@
 ﻿using FishNet.Documenting;
 using FishNet.Object;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Utility.Extension
@@ -13,6 +14,17 @@ namespace FishNet.Utility.Extension
         public static TransformProperties GetWorldProperties(this Transform t)
         {
             TransformProperties tp = new TransformProperties(t.position, t.rotation, t.localScale);
+            return tp;
+        }
+
+        /// <summary>
+        /// Sets values of TransformProperties to a transforms world properties.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TransformProperties GetWorldProperties(this Transform t, TransformProperties offset)
+        {
+            TransformProperties tp = new TransformProperties(t.position, t.rotation, t.localScale);
+            tp.Add(offset);
             return tp;
         }
 
@@ -56,7 +68,7 @@ namespace FishNet.Utility.Extension
         }
 
         /// <summary>
-        /// Sets the offset values of target from a transform.
+        /// Gets the offset values by subtracting this from target.
         /// </summary>
         /// <param name="pos">Position offset result.</param>
         /// <param name="rot">Rotation offset result.</param>
@@ -69,7 +81,7 @@ namespace FishNet.Utility.Extension
         }
 
         /// <summary>
-        /// Gets the offset values of target from a transform.
+        /// Gets the offset values by subtracting this from target.
         /// </summary>
         public static TransformProperties GetTransformOffsets(this Transform t, Transform target)
         {

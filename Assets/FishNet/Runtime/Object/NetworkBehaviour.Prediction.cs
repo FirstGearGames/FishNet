@@ -441,11 +441,7 @@ namespace FishNet.Object
         /// </summary>
         protected internal void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
-            //NOTESSTART
-            /* Only replay the first available data after a reconcile then run the rest
-             * as default future. This is so there is a consistency of which inputs are run
-             * as created and which are future, using the ones that were not run as a buffer. */
-            //NOTESEND             
+            
             T data;
             ReplicateState state;
             //If the first replay.
@@ -843,7 +839,7 @@ namespace FishNet.Object
         /// Handles a received replicate packet.
         /// </summary>
         private void Replicate_EnqueueReceivedReplicate<T>(int receivedReplicatesCount, T[] arrBuffer, BasicQueue<T> replicatesQueue, List<T> replicatesHistory, Channel channel) where T : IReplicateData
-        {
+        {            
             int startQueueCount = replicatesQueue.Count;
             /* Owner never gets this for their own object so
 			 * this can be processed under the assumption data is only
@@ -930,8 +926,8 @@ namespace FishNet.Object
              * by holding reconcile x ticks rather than not running received
              * x ticks. */
             if (_networkObjectCache.IsServerInitialized && startQueueCount == 0 && replicatesQueue.Count > 0)
-                //_replicateStartTick = (_networkObjectCache.TimeManager.LocalTick + pm.Interpolation);
-                _replicateStartTick = (_networkObjectCache.TimeManager.LocalTick);
+                //_replicateStartTick = (_networkObjectCache.TimeManager.LocalTick);
+                _replicateStartTick = (_networkObjectCache.TimeManager.LocalTick + pm.StateInterpolation);
         }
 
 

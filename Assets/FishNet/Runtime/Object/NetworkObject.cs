@@ -405,9 +405,6 @@ namespace FishNet.Object
             IsDeinitializing = true;
 
             SetDeinitializedStatus();
-#if !PREDICTION_1
-            OnDestroy_Prediction();
-#endif
             //Do not need to set state if being destroyed.
             //Don't need to reset sync types if object is being destroyed.
 

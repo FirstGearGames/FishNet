@@ -218,10 +218,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 {
                     RpcType rpcType = base.GetClass<AttributeHelper>().GetRpcAttributeType(customAttribute);
                     if (rpcType != RpcType.None)
-                    {
                         count++;
-                        break;
-                    }
                 }
             }
 
