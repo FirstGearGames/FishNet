@@ -1334,6 +1334,27 @@ namespace FishNet.Serializing
                 WriteArray<T>(value, 0, value.Length);
         }
 
+        /// <summary>
+        /// Writes an SubStream.
+        /// </summary>
+        /// <param name="value">Substream</param>
+        public void WriteSubStream(SubStream value)
+        {
+            // Uninitialized substream, write Length as -1
+            if (!value.Initialized)
+            {
+                WriteInt32(-1);
+            }
+            else
+            {
+                var bufferWriter = value.GetWriter();
+
+                // write length and data
+                WriteInt32(bufferWriter.Length);
+                WriteBytes(bufferWriter.GetBuffer(), 0, bufferWriter.Length);
+            }
+        }
+
 
         /// <summary>
         /// Writes any supported type.
