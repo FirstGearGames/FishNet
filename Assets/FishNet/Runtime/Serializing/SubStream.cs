@@ -28,15 +28,29 @@ namespace FishNet.Serializing {
     ///     - have to use Dispose() to return buffers to pool, or it may result in memory leak
     ///     - reading in multiple receiver methods (for same client) in Broadcasts, you have extra deserialization processing per each method
     ///     - might be unsafe to use this to send from clients (undefined data length), but so is sending T[] or List<T> from clients
+    ///     - not to be used for IReplicateData/input structs, because underlying reading buffer may be changed where as IReplicateData structs are stored internally in replay buffer (substream buffer is not)
     /// 
     /// </summary>
-
-    
     public struct SubStream : IDisposable
     {
+        /// <summary>
+        /// Is Substream initialized (can be read from or written to)
+        /// </summary>
         public bool Initialized { get; private set; }
-        public int Length { get => _writer != null ? _writer.Length : _reader != null ? _reader.Length : 1; }
+
+        /// <summary>
+        /// Returns Length of substream data
+        /// </summary>
+        public int Length { get => _writer != null ? _writer.Length : _reader != null ? _reader.Length : -1; }
+
+        /// <summary>
+        /// Returns remaining bytes to read from substream
+        /// </summary>
         public int Remaining { get => _reader != null ? _reader.Remaining : -1; }
+
+        /// <summary>
+        /// Returns NetworkManager that Substream was initialized with
+        /// </summary>
         public NetworkManager Manager { get => _writer != null ? _writer.NetworkManager : _reader != null ? _reader.NetworkManager: null; }
 
         [NonSerialized]
@@ -136,7 +150,11 @@ namespace FishNet.Serializing {
             }
         }
 
-
+        /// <summary>
+        /// Used internally to get writer of SubStream
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         internal PooledWriter GetWriter()
         {
             if (!Initialized)
@@ -160,9 +178,10 @@ namespace FishNet.Serializing {
         }
 
         /// <summary>
-        /// Returns uninitialized SubStream. Can send safely over network, but cannot be read from (StartReading will return false)
+        /// Returns uninitialized SubStream. Can send safely over network, but cannot be read from (StartReading will return false).
+        /// You can also use 'var stream = default;' instead.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Empty SubStream</returns>
         internal static SubStream GetUninitialized()
         {
             return new SubStream()
