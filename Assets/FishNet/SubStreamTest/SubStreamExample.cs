@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 
 public class SubStreamExample : NetworkBehaviour
 {
+    // this method calls RPC
     public void SendData()
     {
         var stream = SubStream.StartWriting(NetworkManager, out PooledWriter paramWriter);
@@ -19,6 +20,7 @@ public class SubStreamExample : NetworkBehaviour
 
         TestObserverRPC(1, stream, Vector3.zero);
         
+        // must always be disposed after sending RPC
         stream.Dispose();
     }
 
@@ -30,8 +32,14 @@ public class SubStreamExample : NetworkBehaviour
             var text = reader.ReadString();
             var number = reader.ReadInt32();
 
+            // must always be disposed after reading
             stream.Dispose();
         }
     }
 
+    struct PathfindingData
+    {
+        public Vector3 StartPosition;
+        public SubStream PathDeltasStream;
+    }
 }

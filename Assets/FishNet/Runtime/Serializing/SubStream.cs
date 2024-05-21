@@ -30,6 +30,10 @@ namespace FishNet.Serializing {
     ///     - might be unsafe to use this to send from clients (undefined data length), but so is sending T[] or List<T> from clients
     ///     - not to be used for IReplicateData/input structs, because underlying reading buffer may be changed where as IReplicateData structs are stored internally in replay buffer (substream buffer is not)
     /// 
+    /// Note:
+    ///     - If you write/read custom structs ONLY via SubStream, automatic serializer will not pick those up. Mark those custom structs with [FishNet.CodeGenerating.IncludeSerialization].
+    ///     Codegen detects only custom structs that are used in RPC/Broadcast methods, not in SubStream.
+    ///     
     /// </summary>
     public struct SubStream : IDisposable
     {
