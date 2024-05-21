@@ -1119,7 +1119,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Stores an object if it has value then sets it to default.
         /// </summary>
-        private void StoreObject<T>(ref T obj) where T : IResettable
+        private void StoreObject<T>(ref T obj) where T : IResettable, new()
         {
             ResettableObjectCaches<T>.Store(obj);
             obj = default;
