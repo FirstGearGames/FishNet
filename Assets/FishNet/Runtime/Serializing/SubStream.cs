@@ -153,7 +153,6 @@ namespace FishNet.Serializing {
         /// <summary>
         /// Used internally to get writer of SubStream
         /// </summary>
-        /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
         internal PooledWriter GetWriter()
         {
