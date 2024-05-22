@@ -523,7 +523,7 @@ namespace FishNet.Managing.Server
             _spawnCache.Add(networkObject);
             SetupWithoutSynchronization(networkObject, ownerConnection, objectId, predictedSpawnData);
 
-            foreach (NetworkObject item in networkObject.NestedRootNetworkBehaviours)
+            foreach (NetworkObject item in networkObject.SerializedNetworkObjects)
             {
                 /* Only spawn recursively if the nob state is unset.
                  * Unset indicates that the nob has not been */
@@ -859,7 +859,7 @@ namespace FishNet.Managing.Server
             {
                 // Write out any pending sync types and be sure to clear from the dirty list
                 // to avoid trying to write out a despawned object later on.
-                for (int i = 0, count = nob.NetworkBehaviours.Length; i < count; ++i)
+                for (int i = 0, count = nob.NetworkBehaviours.Count; i < count; ++i)
                 {
                     NetworkBehaviour nb = nob.NetworkBehaviours[i];
                     if (nb.SyncTypeDirty && nb.WriteDirtySyncTypes(true, true))

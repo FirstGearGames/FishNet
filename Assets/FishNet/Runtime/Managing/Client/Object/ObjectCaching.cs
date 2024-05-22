@@ -118,8 +118,8 @@ namespace FishNet.Managing.Client
         /// <param name="syncValues"></param>
         /// <param name="manager"></param>
         public void AddSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType ost, byte componentIndex, int rootObjectId, int? parentObjectId, byte? parentComponentIndex
-            , int? prefabId, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string sceneName, string objectName
-            ,ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
+            , int? prefabId, string? sceneName, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string debugSceneName, string debugObjectName
+            , ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
         {
             //Set if initialization order has changed.
             _initializeOrderChanged |= (initializeOrder != 0);
@@ -172,8 +172,8 @@ namespace FishNet.Managing.Client
             }
 
             cnob.InitializeSpawn(manager, collectionId, objectId, initializeOrder, ownerId, ost, componentIndex, rootObjectId, parentObjectId, parentComponentIndex
-                , prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName
-                ,payload, rpcLinks, syncValues);
+                , prefabId, sceneName, localPosition, localRotation, localScale, sceneId, debugSceneName, debugObjectName
+                , payload, rpcLinks, syncValues);
 
             ReadSpawningObjects.Add(objectId);
         }
@@ -288,7 +288,7 @@ namespace FishNet.Managing.Client
                         if (cnob.IsSceneObject)
                         {
 #if DEVELOPMENT
-                            cnob.NetworkObject = _clientObjects.GetSceneNetworkObject(cnob.SceneId, cnob.SceneName, cnob.ObjectName);
+                            cnob.NetworkObject = _clientObjects.GetSceneNetworkObject(cnob.SceneId, cnob.DebugSceneName, cnob.DebugObjectName);
 #else
                             cnob.NetworkObject = _clientObjects.GetSceneNetworkObject(cnob.SceneId);
 #endif
@@ -574,13 +574,14 @@ namespace FishNet.Managing.Client
         public int? ParentObjectId;
         public byte? ParentComponentIndex;
         public int? PrefabId;
+        public string? SceneName;
         public Vector3? LocalPosition;
         public Quaternion? LocalRotation;
         public Vector3? LocalScale;
         public ulong SceneId;
 #if DEVELOPMENT
-        public string SceneName = string.Empty;
-        public string ObjectName = string.Empty;
+        public string DebugSceneName = string.Empty;
+        public string DebugObjectName = string.Empty;
 #endif
 
         /// <summary>
@@ -607,8 +608,8 @@ namespace FishNet.Managing.Client
 #pragma warning restore 0649
 
         public void InitializeSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType objectSpawnType, byte componentIndex, int rootObjectId, int? parentObjectId, byte? parentComponentIndex
-            , int? prefabId, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string sceneName, string objectName
-            ,ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
+            , int? prefabId, string? sceneName, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string debugSceneName, string debugObjectName
+            , ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
         {
             ResetState();
             Action = ActionType.Spawn;
@@ -622,13 +623,14 @@ namespace FishNet.Managing.Client
             ParentObjectId = parentObjectId;
             ParentComponentIndex = parentComponentIndex;
             PrefabId = prefabId;
+            SceneName = sceneName;
             LocalPosition = localPosition;
             LocalRotation = localRotation;
             LocalScale = localScale;
             SceneId = sceneId;
 #if DEVELOPMENT
-            SceneName = sceneName;
-            ObjectName = objectName;
+            DebugSceneName = debugSceneName;
+            DebugObjectName = debugObjectName;
 #endif
             PayloadReader = ReaderPool.Retrieve(payload, manager);
             RpcLinkReader = ReaderPool.Retrieve(rpcLinks, manager);
@@ -652,9 +654,10 @@ namespace FishNet.Managing.Client
         /// </summary>
         public void ResetState()
         {
+            SceneName = null;
 #if DEVELOPMENT
-            SceneName = string.Empty;
-            ObjectName = string.Empty;
+            DebugSceneName = string.Empty;
+            DebugObjectName = string.Empty;
 #endif
             NetworkObject = null;
 

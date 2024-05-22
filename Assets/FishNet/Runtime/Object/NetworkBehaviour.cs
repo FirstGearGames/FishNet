@@ -67,6 +67,12 @@ namespace FishNet.Object
 #pragma warning restore CS0414
         #endregion
 
+        #region Consts.
+        /// <summary>
+        /// Maximum number of allowed added NetworkBehaviours.
+        /// </summary>
+        public const byte MAXIMUM_NETWORKBEHAVIOURS = byte.MaxValue;
+        #endregion
         /// <summary>
         /// Outputs data about this NetworkBehaviour to string.
         /// </summary>

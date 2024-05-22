@@ -4,6 +4,7 @@ using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace FishNet.Object
 {
@@ -221,6 +222,12 @@ namespace FishNet.Object
         /// <param name="prevOwner">Previous owner of this object.</param>
         public virtual void OnOwnershipClient(NetworkConnection prevOwner) { }
 
+        /// <summary>
+        /// Called after the NetworkObject has changed scenes.
+        /// This will only invoke once per change even as clientHost.
+        /// </summary>
+        /// <param name="previousScene">Previous scene of the NetworkObject.</param>
+        public virtual void OnChangeScene(Scene previousScene) { }
         /// <summary>
         /// Calls ClearReplicateCache for prediction v1 or v2.
         /// </summary>

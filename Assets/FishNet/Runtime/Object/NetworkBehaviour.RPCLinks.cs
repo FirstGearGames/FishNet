@@ -33,22 +33,31 @@ namespace FishNet.Object
 
             ServerManager serverManager = NetworkManager.ServerManager;
             //ObserverRpcs.
-            foreach (uint rpcHash in _observersRpcDelegates.Keys)
+            if (_observersRpcDelegates != null)
             {
-                if (!MakeLink(rpcHash, RpcType.Observers))
-                    return;
+                foreach (uint rpcHash in _observersRpcDelegates.Keys)
+                {
+                    if (!MakeLink(rpcHash, RpcType.Observers))
+                        return;
+                }
             }
             //TargetRpcs.
-            foreach (uint rpcHash in _targetRpcDelegates.Keys)
+            if (_targetRpcDelegates != null)
             {
-                if (!MakeLink(rpcHash, RpcType.Target))
-                    return;
+                foreach (uint rpcHash in _targetRpcDelegates.Keys)
+                {
+                    if (!MakeLink(rpcHash, RpcType.Target))
+                        return;
+                }
             }
             //ReconcileRpcs.
-            foreach (uint rpcHash in _reconcileRpcDelegates.Keys)
+            if (_reconcileRpcDelegates != null)
             {
-                if (!MakeLink(rpcHash, RpcType.Reconcile))
-                    return;
+                foreach (uint rpcHash in _reconcileRpcDelegates.Keys)
+                {
+                    if (!MakeLink(rpcHash, RpcType.Reconcile))
+                        return;
+                }
             }
 
             /* Tries to make a link and returns if

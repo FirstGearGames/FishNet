@@ -43,15 +43,10 @@ namespace FishNet.Serializing
         public static PooledReader Retrieve(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
         {
             PooledReader result;
-            if (_pool.Count > 0)
-            {
-                result = _pool.Pop();
+            if (_pool.TryPop(out result))
                 result.Initialize(segment, networkManager, source);
-            }
             else
-            {
                 result = new PooledReader(segment, networkManager, source);
-            }
 
             return result;
         }

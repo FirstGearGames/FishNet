@@ -301,7 +301,7 @@ namespace FishNet.Observing
             if (notOwner)
             {
                 bool parentVisible = true;
-                if (_networkObject.CurrentParentNetworkBehaviour != null)
+                if (_networkObject.IsNested)// _networkObject.CurrentParentNetworkBehaviour != null)
                     parentVisible = _networkObject.CurrentParentNetworkBehaviour.NetworkObject.Observers.Contains(connection);
 
                 /* If parent is visible but was not previously

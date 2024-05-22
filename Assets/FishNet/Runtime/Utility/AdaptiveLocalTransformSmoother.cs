@@ -116,6 +116,11 @@ namespace FishNet.Object.Prediction
         /// <param name="adaptiveInterpolation">New value.</param>
         public void SetAdaptiveInterpolation(AdaptiveInterpolationType adaptiveInterpolation)
         {
+            if (adaptiveInterpolation != AdaptiveInterpolationType.Off)
+            {
+                adaptiveInterpolation = AdaptiveInterpolationType.Off;
+                Debug.Log($"AdaptiveInterpolation has been changed to off at runtime while it's under development. This message may be ignored.");
+            }
             _adaptiveInterpolation = adaptiveInterpolation;
         }
         /// <summary>

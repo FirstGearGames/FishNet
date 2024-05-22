@@ -19,9 +19,27 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Adds a property field.
         /// </summary>
-        public static void AddPropertyField(SerializedProperty sp, GUIContent guiContent, EditorLayoutEnableType enableType = EditorLayoutEnableType.Enabled, params GUILayoutOption[] options)
+        public static void AddPropertyField(SerializedProperty sp, GUIContent guiContent = null, EditorLayoutEnableType enableType = EditorLayoutEnableType.Enabled, params GUILayoutOption[] options)
         {
-            bool disable = DisableLayout(enableType);
+            bool disable = IsDisableLayoutType(enableType);
+            if (disable)
+                GUI.enabled = false;
+
+            EditorGUILayout.PropertyField(sp, guiContent, options);
+
+            if (disable)
+                GUI.enabled = true;
+        }
+
+
+        /// <summary>
+        /// Adds a property field.
+        /// </summary>
+        /// <param name="enabled">True to have property enabled.</param>
+        public static void AddPropertyField(SerializedProperty sp, GUIContent guiContent = null, bool enabled = true, params GUILayoutOption[] options)
+        {
+            EditorLayoutEnableType enableType = (enabled) ? EditorLayoutEnableType.Enabled : EditorLayoutEnableType.Disabled;
+            bool disable = IsDisableLayoutType(enableType);
             if (disable)
                 GUI.enabled = false;
 
@@ -36,7 +54,7 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         public static void AddObjectField(string label, MonoScript ms, Type type, bool allowSceneObjects, EditorLayoutEnableType enableType = EditorLayoutEnableType.Enabled, params GUILayoutOption[] options)
         {
-            bool disable = DisableLayout(enableType);
+            bool disable = IsDisableLayoutType(enableType);
             if (disable)
                 GUI.enabled = false;
 
@@ -68,7 +86,7 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         /// <param name="enableType"></param>
         /// <returns></returns>
-        private static bool DisableLayout(EditorLayoutEnableType enableType)
+        private static bool IsDisableLayoutType(EditorLayoutEnableType enableType)
         {
             return (enableType == EditorLayoutEnableType.Disabled || (enableType == EditorLayoutEnableType.DisabledWhilePlaying && Application.isPlaying));
         }

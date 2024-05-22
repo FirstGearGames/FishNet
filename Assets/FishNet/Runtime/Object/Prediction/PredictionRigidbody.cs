@@ -5,11 +5,12 @@ using FishNet.Serializing;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace FishNet.Object.Prediction
 {
 #if !PREDICTION_1
-
+    [Preserve]
     public static class PredictionRigidbodySerializers
     {
         public static void WriteEntryData(this Writer w, PredictionRigidbody.EntryData value)
@@ -106,6 +107,7 @@ namespace FishNet.Object.Prediction
     }
 
     [UseGlobalCustomSerializer]
+    [Preserve]
     public class PredictionRigidbody : IResettable
     {
         #region Types.

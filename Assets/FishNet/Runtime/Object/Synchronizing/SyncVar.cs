@@ -103,6 +103,11 @@ namespace FishNet.Object.Synchronizing
         /// True if T IsValueType.
         /// </summary>
         private bool _isValueType;
+        /// <summary>
+        /// True if value was ever set after the SyncType initialized.
+        /// This includes even if initial values were set.
+        /// </summary>
+        private bool _valueSetAfterInitialized;
         #endregion
 
         #region Constructors.
@@ -129,6 +134,9 @@ namespace FishNet.Object.Synchronizing
         {
             _initialValue = value;
             UpdateValues(value);
+
+            if (base.IsInitialized)
+                _valueSetAfterInitialized = true;
         }
         /// <summary>
         /// Sets current and previous values.
@@ -154,7 +162,7 @@ namespace FishNet.Object.Synchronizing
                 SetInitialValues(nextValue);
                 return;
             }
-            
+
             /* If not client or server then set skipChecks
              * as true. When neither is true it's likely user is changing
              * value before object is initialized. This is allowed
@@ -176,7 +184,7 @@ namespace FishNet.Object.Synchronizing
                  * server is active, or client has setting permissions. 
                  * We only need to set asServerInvoke to false if the network
                  * is initialized and the server is not active. */
-                bool asServerInvoke = (!isNetworkInitialized || base.NetworkBehaviour.IsServerStarted);
+                bool asServerInvoke = CanInvokeCallbackAsServer();
 
                 /* If the network has not been network initialized then
                  * Value is expected to be set on server and client since
@@ -237,6 +245,32 @@ namespace FishNet.Object.Synchronizing
                     base.Dirty();
                 //base.Dirty(sendRpc);
             }
+        }
+
+        /// <summary>
+        /// True if callback can be invoked with asServer true.
+        /// </summary>
+        /// <returns></returns>
+        private bool AsServerInvoke() => (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServerStarted);
+
+        /// <summary>
+        /// Dirties the the syncVar for a full send.
+        /// </summary>
+        public void DirtyAll()
+        {
+            if (!base.IsInitialized)
+                return;
+            if (!base.CanNetworkSetValues(true))
+                return;
+
+            base.Dirty();
+            /* Invoke even if was unable to dirty. Dirtying only
+             * becomes true if server is running, but also if there are
+             * observers. Even if there are not observers we still want
+             * to invoke for the server side. */
+            //todo: this behaviour needs to be done for all synctypes with dirt/dirtyall.
+            bool asServerInvoke = CanInvokeCallbackAsServer();
+            InvokeOnChange(_value, _value, asServerInvoke);
         }
 
         /// <summary>
@@ -309,6 +343,11 @@ namespace FishNet.Object.Synchronizing
             if (_isValueType)
             {
                 if (Comparers.EqualityCompare<T>(_initialValue, _value))
+                    return;
+            }
+            else
+            {
+                if (!_valueSetAfterInitialized)
                     return;
             }
             /* SyncVars only hold latest value, so just

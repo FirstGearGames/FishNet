@@ -7,6 +7,7 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
+using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
@@ -499,6 +500,10 @@ namespace FishNet.Managing.Client
                     else if (packetId == PacketId.OwnershipChange)
                     {
                         Objects.ParseOwnershipChange(reader);
+                    }
+                    else if (packetId == PacketId.SceneChange)
+                    {
+                        NetworkObject.ParseChangeScene(reader);
                     }
                     else if (packetId == PacketId.Authenticated)
                     {

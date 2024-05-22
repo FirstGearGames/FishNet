@@ -21,7 +21,7 @@ namespace FishNet.Transporting
         TargetRpc = 10,
         OwnershipChange = 11,
         Broadcast = 12,
-        UNUSED = 13,
+        SceneChange = 13,
         PingPong = 14,
         Replicate = 15,
         Reconcile = 16,

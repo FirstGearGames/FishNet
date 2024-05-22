@@ -1,9 +1,11 @@
 ﻿using FishNet.CodeGenerating;
+using FishNet.Component.Prediction;
 using FishNet.Managing;
 using FishNet.Serializing;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace FishNet.Object.Prediction
 {
@@ -72,15 +74,18 @@ namespace FishNet.Object.Prediction
 
         public static void WritePredictionRigidbody2D(this Writer w, PredictionRigidbody2D pr)
         {
+            w.Write(pr.Rigidbody2D.GetState());
             w.WriteList<PredictionRigidbody2D.EntryData>(pr.GetPendingForces());
         }
 
         public static PredictionRigidbody2D ReadPredictionRigidbody2D(this Reader r)
         {
             List<PredictionRigidbody2D.EntryData> lst = CollectionCaches<PredictionRigidbody2D.EntryData>.RetrieveList();
+            Rigidbody2DState rs = r.Read<Rigidbody2DState>();
             r.ReadList<PredictionRigidbody2D.EntryData>(ref lst);
             PredictionRigidbody2D pr = ResettableObjectCaches<PredictionRigidbody2D>.Retrieve();
 
+            pr.SetReconcileData(rs, lst);
             pr.SetPendingForces(lst);
             return pr;
         }
@@ -88,6 +93,7 @@ namespace FishNet.Object.Prediction
     }
 
     [UseGlobalCustomSerializer]
+    [Preserve]
     public class PredictionRigidbody2D : IResettable
     {
         #region Types.
@@ -146,6 +152,14 @@ namespace FishNet.Object.Prediction
                 Data = fd.Data;
             }
         }
+        #endregion
+
+        #region Internal.
+        /// <summary>
+        /// Rigidbody2DState set only as reconcile data.
+        /// </summary>
+        [System.NonSerialized]
+        internal Rigidbody2DState Rigidbody2DState;
         #endregion
 
         #region Public.
@@ -286,6 +300,7 @@ namespace FishNet.Object.Prediction
                 foreach (EntryData item in pr._pendingForces)
                     _pendingForces.Add(new EntryData(item));
             }
+            Rigidbody2D.SetState(pr.Rigidbody2DState);
 
             ResettableObjectCaches<PredictionRigidbody2D>.Store(pr);
         }
@@ -327,6 +342,12 @@ namespace FishNet.Object.Prediction
 
         internal List<EntryData> GetPendingForces() => _pendingForces;
         internal void SetPendingForces(List<EntryData> lst) => _pendingForces = lst;
+
+        internal void SetReconcileData(Rigidbody2DState rs, List<EntryData> lst)
+        {
+            Rigidbody2DState = rs;
+            _pendingForces = lst;
+        }
 
         public void ResetState()
         {

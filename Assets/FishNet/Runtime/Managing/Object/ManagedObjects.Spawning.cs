@@ -71,10 +71,11 @@ namespace FishNet.Managing.Object
             else
                 headerWriter.WriteNetworkConnectionId(NetworkConnection.UNSET_CLIENTID_VALUE);
 
-            bool nested = (nob.CurrentParentNetworkBehaviour != null);
+            bool nested = nob.IsNested;// (nob.CurrentParentNetworkBehaviour != null);
             bool sceneObject = nob.IsSceneObject;
             //Write type of spawn.
             SpawnType st = SpawnType.Unset;
+            bool syncScene = (!sceneObject && nob.SynchronizeScene);
             if (sceneObject)
                 st |= SpawnType.Scene;
             else
@@ -86,6 +87,7 @@ namespace FishNet.Managing.Object
             headerWriter.WriteByte((byte)st);
             //ComponentIndex for the nob. 0 is root but more appropriately there's a IsNested boolean as shown above.
             headerWriter.WriteByte(nob.ComponentIndex);
+
             //Properties on the transform which diff from serialized value.
             WriteChangedTransformProperties(nob, sceneObject, nested, headerWriter);
 
@@ -178,6 +180,10 @@ namespace FishNet.Managing.Object
                 }
 
                 headerWriter.WriteNetworkObjectId(nob.PrefabId);
+                headerWriter.WriteBoolean(nob.SynchronizeScene);
+                if (nob.SynchronizeScene)
+                    headerWriter.WriteString(nob.gameObject.scene.name);
+                    
             }
 
             //Write headers first.
@@ -305,7 +311,7 @@ namespace FishNet.Managing.Object
                 return false;
             }
             //Nested nobs not yet supported.
-            if (nob.NestedRootNetworkBehaviours.Count > 0)
+            if (nob.SerializedNetworkObjects.Count > 0)
             {
                 if (asServer)
                     spawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {spawner.ClientId} tried to spawn an object {nob.name} which has nested NetworkObjects.");
@@ -356,7 +362,7 @@ namespace FishNet.Managing.Object
                 return false;
             }
             //Nested nobs not yet supported.
-            if (nob.NestedRootNetworkBehaviours.Count > 0)
+            if (nob.SerializedNetworkObjects.Count > 0)
             {
                 if (asServer)
                     despawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {despawner.ClientId} tried to despawn an object {nob.name} which has nested NetworkObjects.");

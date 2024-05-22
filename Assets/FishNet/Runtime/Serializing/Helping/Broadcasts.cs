@@ -1,23 +1,21 @@
 ﻿using FishNet.Connection;
 using FishNet.Managing;
-using FishNet.Serializing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 
-namespace FishNet.Broadcast.Helping
+namespace FishNet.Serializing.Helping.Broadcasts
 {
-
     internal static class BroadcastsSerializers
     {
         /// <summary>
-        /// Writes a broadcast to writer.
+        /// Writes a broadcast to writer
         /// </summary>
-        internal static PooledWriter WriteBroadcast<T>(NetworkManager networkManager, PooledWriter writer, T message, ref Channel channel)
+        internal static void WriteBroadcast<T>(NetworkManager networkManager, PooledWriter writer, T message, ref Channel channel)
         {
             writer.WritePacketId(PacketId.Broadcast);
-            writer.WriteUInt16(typeof(T).FullName.GetStableHashU16());
+            writer.WriteUInt16(BroadcastExtensions.GetKey<T>());
             //Write data to a new writer.
             PooledWriter dataWriter = WriterPool.Retrieve();
             dataWriter.Write<T>(message);
@@ -29,8 +27,6 @@ namespace FishNet.Broadcast.Helping
             networkManager.TransportManager.CheckSetReliableChannel(writer.Length, ref channel);
 
             dataWriter.Store();
-
-            return writer;
         }
     }
 

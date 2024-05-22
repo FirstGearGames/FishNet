@@ -6,9 +6,21 @@ namespace FishNet.Managing.Object
     internal enum SpawnType : byte
     {
         Unset = 0,
+        /// <summary>
+        /// Is nested.
+        /// </summary>
         Nested = 1,
+        /// <summary>
+        /// Is a scene object.
+        /// </summary>
         Scene = 2,
+        /// <summary>
+        /// Instantiate into active scene.
+        /// </summary>
         Instantiated = 4,
+        /// <summary>
+        /// Instantiate into the global scene.
+        /// </summary>
         InstantiatedGlobal = 8,
     }
 

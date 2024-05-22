@@ -685,12 +685,8 @@ namespace FishNet.Object.Synchronizing
         {
             if (!base.IsInitialized)
                 return;
-
-            if (base.NetworkManager != null && !base.NetworkBehaviour.IsServerStarted)
-            {
-                base.NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
+            if (!base.CanNetworkSetValues(true))
                 return;
-            }
 
             if (base.Dirty())
                 _sendAll = true;
