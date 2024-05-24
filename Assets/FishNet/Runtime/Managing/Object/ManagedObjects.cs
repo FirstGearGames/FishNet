@@ -217,14 +217,11 @@ namespace FishNet.Managing.Object
                  * individual despawns for each child. */
                 if (asServer)
                 {
-                    List<NetworkObject> childNobs = CollectionCaches<NetworkObject>.RetrieveList();
-                    nob.GetNetworkObjects(false, ref childNobs, true);
-                    foreach (NetworkObject cn in childNobs)
+                    foreach (NetworkObject childNob in nob.NestedRootNetworkBehaviours)
                     {
-                        if (cn != null && !cn.IsDeinitializing)
-                            Despawn(cn, despawnType, asServer);
+                        if (childNob != null && !childNob.IsDeinitializing)
+                            Despawn(childNob, despawnType, asServer);
                     }
-                    CollectionCaches<NetworkObject>.Store(childNobs);
                 }
             }
 
@@ -266,7 +263,7 @@ namespace FishNet.Managing.Object
             }
 
             byte componentIndex = 0;
-            prefab.SetSerializedNetworkBehaviours(null, ref componentIndex);
+            prefab.UpdateNetworkBehaviours(null, ref componentIndex);
         }
 
         /// <summary>

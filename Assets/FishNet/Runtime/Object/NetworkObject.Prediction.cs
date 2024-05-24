@@ -206,7 +206,7 @@ namespace FishNet.Object
              * asServer may not invoke as false if the client is suddenly
              * dropping their connection. */
             if (_predictionBehaviours.Count > 0)
-            { 
+            {
                 ChangePredictionSubscriptions(false, NetworkManager);
                 foreach (NetworkBehaviour item in _predictionBehaviours)
                     item.Deinitialize_Prediction(asServer);

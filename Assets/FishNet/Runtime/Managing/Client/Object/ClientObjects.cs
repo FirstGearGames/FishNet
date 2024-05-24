@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnitySceneManagement = UnityEngine.SceneManagement;
+using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Client
 {
@@ -114,7 +114,7 @@ namespace FishNet.Managing.Client
         /// <param name="s"></param>
         /// <param name="arg1"></param>
         [APIExclude]
-        protected internal override void SceneManager_sceneLoaded(UnitySceneManagement.Scene s, UnitySceneManagement.LoadSceneMode arg1)
+        protected internal override void SceneManager_sceneLoaded(Scene s, LoadSceneMode arg1)
         {
             base.SceneManager_sceneLoaded(s, arg1);
 
@@ -209,10 +209,6 @@ namespace FishNet.Managing.Client
                 //Nested predicted spawning will be added later.
                 headerWriter.WriteByte((byte)SpawnParentType.Unset);
                 headerWriter.WriteNetworkObjectId(nob.PrefabId);
-
-                headerWriter.WriteBoolean(nob.SynchronizeScene);
-                if (nob.SynchronizeScene)
-                    headerWriter.WriteString(nob.gameObject.scene.name);
             }
 
             writer.WriteArraySegment(headerWriter.GetArraySegment());
@@ -256,15 +252,15 @@ namespace FishNet.Managing.Client
         /// </summary>
         internal void RegisterAndDespawnSceneObjects()
         {
-            for (int i = 0; i < UnitySceneManagement.SceneManager.sceneCount; i++)
-                RegisterAndDespawnSceneObjects(UnitySceneManagement.SceneManager.GetSceneAt(i));
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+                RegisterAndDespawnSceneObjects(SceneManager.GetSceneAt(i));
         }
 
         /// <summary>
         /// Adds NetworkObjects within s to SceneObjects, and despawns them.
         /// </summary>
         /// <param name="s"></param>
-        private void RegisterAndDespawnSceneObjects(UnitySceneManagement.Scene s)
+        private void RegisterAndDespawnSceneObjects(Scene s)
         {
             List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
             Scenes.GetSceneNetworkObjects(s, false, true, ref nobs);
@@ -431,9 +427,8 @@ namespace FishNet.Managing.Client
             int? parentObjectId = null;
             byte? parentComponentIndex = null;
             int? prefabId = null;
-            string? sceneName = null;
             ulong sceneId = 0;
-            string debugSceneName = string.Empty;            
+            string sceneName = string.Empty;
             string objectName = string.Empty;
 
             if (sceneObject)
@@ -441,12 +436,12 @@ namespace FishNet.Managing.Client
                 ReadSceneObject(reader, out sceneId);
 #if DEVELOPMENT
                 if (NetworkManager.ClientManager.IsServerDevelopment)
-                    base.CheckReadSceneObjectDetails(reader, ref debugSceneName, ref objectName);
+                    base.CheckReadSceneObjectDetails(reader, ref sceneName, ref objectName);
 #endif
             }
             else
             {
-                ReadSpawnedObject(reader, out parentObjectId, out parentComponentIndex, out prefabId, out sceneName);
+                ReadSpawnedObject(reader, out parentObjectId, out parentComponentIndex, out prefabId);
             }
 
             ArraySegment<byte> payload = reader.ReadArraySegmentAndSize();
@@ -477,7 +472,7 @@ namespace FishNet.Managing.Client
                 return;
             }
 
-            _objectCache.AddSpawn(base.NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, componentIndex, rootObjectId, parentObjectId, parentComponentIndex, prefabId, sceneName, localPosition, localRotation, localScale, sceneId, debugSceneName, objectName, payload, rpcLinks, syncValues);
+            _objectCache.AddSpawn(base.NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, componentIndex, rootObjectId, parentObjectId, parentComponentIndex, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncValues);
         }
         /// <summary>
         /// Caches a received despawn to be processed after all spawns and despawns are received for the tick.
@@ -525,7 +520,7 @@ namespace FishNet.Managing.Client
             }
 
             NetworkObject nob = null;
-            List<NetworkObject> childNobs = rootNob.SerializedNetworkObjects;
+            List<NetworkObject> childNobs = rootNob.NestedRootNetworkBehaviours;
             //Find nob with component index.
             for (int i = 0; i < childNobs.Count; i++)
             {
@@ -649,13 +644,6 @@ namespace FishNet.Managing.Client
                 result = networkManager.GetPooledInstantiated(prefabId, collectionId, parentTransform, cnob.LocalPosition
                     , cnob.LocalRotation, cnob.LocalScale, makeActive: true, asServer: false);
 
-                //Set to proper scene.
-                if (cnob.SceneName != null)
-                {
-                    UnitySceneManagement.Scene s = UnitySceneManagement.SceneManager.GetSceneByName(cnob.SceneName);
-                    result.ChangeSceneForInstantiation(s);
-                }
-
                 //Only need to set IsGlobal also if not host.
                 bool isGlobal = SpawnTypeEnum.Contains(cnob.SpawnType, SpawnType.InstantiatedGlobal);
                 result.SetIsGlobal(isGlobal);
@@ -711,7 +699,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Finishes reading a spawned object, and instantiates the object.
         /// </summary>
-        private void ReadSpawnedObject(PooledReader reader, out int? parentObjectId, out byte? parentComponentIndex, out int? prefabId, out string? sceneName)
+        private void ReadSpawnedObject(PooledReader reader, out int? parentObjectId, out byte? parentComponentIndex, out int? prefabId)
         {
             //Parent.
             SpawnParentType spt = (SpawnParentType)reader.ReadByte();
@@ -736,9 +724,6 @@ namespace FishNet.Managing.Client
             }
 
             prefabId = (ushort)reader.ReadNetworkObjectId();
-
-            bool synchronizedScene = reader.ReadBoolean();
-            sceneName = (synchronizedScene) ? reader.ReadString() : null;
         }
 
     }

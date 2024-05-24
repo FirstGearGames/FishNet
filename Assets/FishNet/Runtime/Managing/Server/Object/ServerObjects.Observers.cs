@@ -130,31 +130,16 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private List<NetworkObject> RetrieveOrderedSpawnedObjects(bool rootOnly)
+        private List<NetworkObject> RetrieveOrderedSpawnedObjects()
         {
             List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
 
             bool initializationOrderChanged = false;
-            /* This is the same code as below roughly, but
-             * as a separate iteration to prevent the non-essential
-             * if-else check when not root only. */
-            if (rootOnly)
-            {
-                foreach (NetworkObject item in Spawned.Values)
-                {
-                    if (item.IsNested)
-                        continue;
-                    OrderRootByInitializationOrder(item, cache, ref initializationOrderChanged);
-                }
-            }
-            else
-            {
-                //First order root objects.
-                foreach (NetworkObject item in Spawned.Values)
-                    OrderRootByInitializationOrder(item, cache, ref initializationOrderChanged);
+            //First order root objects.
+            foreach (NetworkObject item in Spawned.Values)
+                OrderRootByInitializationOrder(item, cache, ref initializationOrderChanged);
 
-                OrderNestedByInitializationOrder(cache);
-            }
+            OrderNestedByInitializationOrder(cache);
 
             return cache;
         }
@@ -218,7 +203,7 @@ namespace FishNet.Managing.Server
             {
                 NetworkObject nob = cache[i];
                 //Skip root.
-                if (!nob.IsNested)
+                if (nob.IsNested)
                     continue;
 
                 int startingIndex = i;
@@ -227,12 +212,7 @@ namespace FishNet.Managing.Server
 
             void AddChildNetworkObjects(NetworkObject n, ref int index)
             {
-                foreach (NetworkObject childObject in n.SerializedNetworkObjects)
-                {
-                    cache.Insert(++index, childObject);
-                    AddChildNetworkObjects(childObject, ref index);
-                }
-                foreach (NetworkObject childObject in n.RuntimeNetworkObjects)
+                foreach (NetworkObject childObject in n.NestedRootNetworkBehaviours)
                 {
                     cache.Insert(++index, childObject);
                     AddChildNetworkObjects(childObject, ref index);
@@ -267,7 +247,7 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(bool timedOnly = false)
         {
-            List<NetworkObject> nobCache = RetrieveOrderedSpawnedObjects(false);
+            List<NetworkObject> nobCache = RetrieveOrderedSpawnedObjects();
             List<NetworkConnection> connCache = RetrieveAuthenticatedConnections();
 
             RebuildObservers(nobCache, connCache, timedOnly);
@@ -297,7 +277,7 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(NetworkConnection connection, bool timedOnly = false)
         {
-            List<NetworkObject> nobCache = RetrieveOrderedSpawnedObjects(true);
+            List<NetworkObject> nobCache = RetrieveOrderedSpawnedObjects();
             List<NetworkConnection> connCache = CollectionCaches<NetworkConnection>.RetrieveList(connection);
 
             RebuildObservers(nobCache, connCache, timedOnly);
@@ -324,7 +304,7 @@ namespace FishNet.Managing.Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RebuildObservers(IList<NetworkConnection> connections, bool timedOnly = false)
         {
-            List<NetworkObject> nobCache = RetrieveOrderedSpawnedObjects(true);
+            List<NetworkObject> nobCache = RetrieveOrderedSpawnedObjects();
 
             RebuildObservers(nobCache, connections, timedOnly);
 
@@ -432,7 +412,7 @@ namespace FishNet.Managing.Server
                 nob.OnSpawnServer(conn);
 
             /* If there is change then also rebuild recursive networkObjects. */
-            foreach (NetworkBehaviour item in nob.RuntimeNetworkBehaviours)
+            foreach (NetworkBehaviour item in nob.RuntimeChildNetworkBehaviours)
                 RebuildObservers(item.NetworkObject, conn, timedOnly);
         }
 
@@ -473,7 +453,7 @@ namespace FishNet.Managing.Server
              * in relation to parent. 
              *
              * If here there is change. */
-            foreach (NetworkBehaviour item in nob.RuntimeNetworkBehaviours)
+            foreach (NetworkBehaviour item in nob.RuntimeChildNetworkBehaviours)
                 RebuildObservers(item.NetworkObject, conn, addedNobs, timedOnly);
         }
 

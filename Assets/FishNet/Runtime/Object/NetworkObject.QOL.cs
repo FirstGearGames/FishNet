@@ -10,9 +10,7 @@ using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using FishNet.Serializing.Helping;
-using GameKit.Dependencies.Utilities;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -222,7 +220,7 @@ namespace FishNet.Object
         /// <returns></returns>
         public NetworkBehaviour GetNetworkBehaviour(byte componentIndex, bool error)
         {
-            if (componentIndex >= NetworkBehaviours.Count)
+            if (componentIndex >= NetworkBehaviours.Length)
             {
                 if (error)
                 {
@@ -280,72 +278,19 @@ namespace FishNet.Object
         /// Takes ownership of this object and child network objects, allowing immediate control.
         /// </summary>
         /// <param name="caller">Connection to give ownership to.</param>
-        /// <param name="recursively">True to also update ownership for child networkObjects.</param>
-        public void SetLocalOwnership(NetworkConnection caller, bool recursively = true)
+        public void SetLocalOwnership(NetworkConnection caller)
         {
             NetworkConnection prevOwner = Owner;
             SetOwner(caller);
 
-            foreach (NetworkBehaviour item in NetworkBehaviours)
-                item.OnOwnershipClient_Internal(prevOwner);
-
-            if (recursively)
-            {
-                List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-
-                GetNetworkObjects(false, ref nobs, recursively);
-                foreach (NetworkObject item in nobs)
-                    item.SetLocalOwnership(caller, recursively);
-
-                CollectionCaches<NetworkObject>.Store(nobs);
-            }
+            int count;
+            count = NetworkBehaviours.Length;
+            for (int i = 0; i < count; i++)
+                NetworkBehaviours[i].OnOwnershipClient_Internal(prevOwner);
+            count = NestedRootNetworkBehaviours.Count;
+            for (int i = 0; i < count; i++)
+                NestedRootNetworkBehaviours[i].SetLocalOwnership(caller);
         }
-
-        #region Get NetworkObjects/Behaviours.
-        /// <summary>
-        /// Gets all NetworkObjects beneath this one.
-        /// Entries are added in the order of self, serialized, and runtime.
-        /// <param name="includeSelf">True to include this NetworkObject.</param>
-        /// <param name="recursively">True to iterate through top-level nested results.</param>
-        /// </summary>
-        public void GetNetworkObjects(bool includeSelf, ref List<NetworkObject> results, bool recursively = true)
-        {
-            if (includeSelf)
-                results.Add(this);
-
-            foreach (NetworkObject item in SerializedNetworkObjects)
-            {
-                results.Add(item);
-                if (recursively)
-                    item.GetNetworkObjects(false, ref results, recursively);
-            }
-            foreach (NetworkObject item in RuntimeNetworkObjects)
-            {
-                results.Add(item);
-                if (recursively)
-                    item.GetNetworkObjects(false, ref results, recursively);
-            }
-        }
-
-        /// <summary>
-        /// Recursively gets all NetworkBehaviours beneath this NetworkObject.
-        /// <param name="includeSelf">True to include this NetworkObject's behaviours.</param>
-        /// </summary>
-        public void GetNetworkBehavioursRecursively(bool includeSelf, ref List<NetworkBehaviour> results)
-        {
-            //First get all NetworkObjects.
-            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-            GetNetworkObjects(includeSelf, ref nobs, true);
-
-            foreach (NetworkObject item in nobs)
-            {
-                results.AddRange(item.NetworkBehaviours);
-                results.AddRange(item.RuntimeNetworkBehaviours);
-            }
-
-            CollectionCaches<NetworkObject>.Store(nobs);
-        }
-        #endregion
 
         #region Registered components
         /// <summary>

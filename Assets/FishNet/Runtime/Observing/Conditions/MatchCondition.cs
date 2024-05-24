@@ -12,13 +12,6 @@ using UnityEngine;
 
 namespace FishNet.Component.Observing
 {
-    internal static class AddToMatchFlagExtensions
-    {
-        public static bool Contains(this MatchCondition.AddToMatchFlag whole, MatchCondition.AddToMatchFlag part)
-        {
-            return (whole & part) == part;
-        }
-    }
     /// <summary>
     /// When this observer condition is placed on an object, a client must be within the same match to view the object.
     /// </summary>
@@ -36,15 +29,6 @@ namespace FishNet.Component.Observing
             public Dictionary<int, HashSet<NetworkObject>> MatchObjects = new Dictionary<int, HashSet<NetworkObject>>();
             public Dictionary<NetworkObject, HashSet<int>> ObjectMatches = new Dictionary<NetworkObject, HashSet<int>>();
         }
-
-        internal enum AddToMatchFlag
-        {
-            None = 0,
-            ReplaceMatch = 1,
-            Rebuild = 2,
-        }
-
-
         #endregion
 
         #region Private.
@@ -140,11 +124,9 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// Adds a connection to a match.
         /// </summary>
-        private static bool AddToMatch(int match, NetworkConnection conn, NetworkManager manager, AddToMatchFlag addFlags)
+        private static bool AddToMatch(int match, NetworkConnection conn, NetworkManager manager, bool replaceMatch, bool rebuild)
         {
             Dictionary<int, HashSet<NetworkConnection>> matchConnections = GetMatchConnections(manager);
-            bool replaceMatch = addFlags.Contains(AddToMatchFlag.ReplaceMatch);
-            bool rebuild = addFlags.Contains(AddToMatchFlag.Rebuild);
 
             if (replaceMatch)
                 RemoveFromMatchesWithoutRebuild(conn, manager);
@@ -177,10 +159,7 @@ namespace FishNet.Component.Observing
         /// <param name="replaceMatch">True to replace other matches with the new match.</param>
         public static void AddToMatch(int match, NetworkConnection conn, NetworkManager manager = null, bool replaceMatch = false)
         {
-            AddToMatchFlag flags = AddToMatchFlag.Rebuild;
-            if (replaceMatch)
-                flags |= AddToMatchFlag.ReplaceMatch;
-            AddToMatch(match, conn, manager, flags);
+            AddToMatch(match, conn, manager, replaceMatch, true);
         }
 
         /// <summary>
@@ -221,11 +200,8 @@ namespace FishNet.Component.Observing
         public static void AddToMatch(int match, List<NetworkConnection> conns, NetworkManager manager = null, bool replaceMatch = false)
         {
             bool added = false;
-            AddToMatchFlag flags = AddToMatchFlag.None;
-            if (replaceMatch)
-                flags |= AddToMatchFlag.ReplaceMatch;
             foreach (NetworkConnection c in conns)
-                added |= AddToMatch(match, c, manager, flags);
+                added |= AddToMatch(match, c, manager, replaceMatch, false);
 
             if (added)
                 GetServerObjects(manager).RebuildObservers();
@@ -236,13 +212,10 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// Adds an object to a match.
         /// </summary>
-        private static bool AddToMatch(int match, NetworkObject nob, NetworkManager manager, AddToMatchFlag addFlags)
+        private static bool AddToMatch(int match, NetworkObject nob, NetworkManager manager, bool replaceMatch, bool rebuild)
         {
             Dictionary<int, HashSet<NetworkObject>> matchObjects = GetMatchObjects(manager);
             Dictionary<NetworkObject, HashSet<int>> objectMatches = GetObjectMatches(manager);
-
-            bool replaceMatch = addFlags.Contains(AddToMatchFlag.ReplaceMatch);
-            bool rebuild = addFlags.Contains(AddToMatchFlag.Rebuild);
 
             if (replaceMatch)
                 RemoveFromMatchWithoutRebuild(nob, manager);
@@ -276,12 +249,9 @@ namespace FishNet.Component.Observing
         /// <param name="nob">Connection to add to match.</param>
         /// <param name="manager">NetworkManager to rebuild observers on. If null InstanceFinder.NetworkManager will be used.</param>
         /// <param name="replaceMatch">True to replace other matches with the new match.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddToMatch(int match, NetworkObject nob, NetworkManager manager = null, bool replaceMatch = false, bool recursively = false)
+        public static void AddToMatch(int match, NetworkObject nob, NetworkManager manager = null, bool replaceMatch = false)
         {
-            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList(nob);
-            AddToMatch(match, nobs, manager, replaceMatch, recursively);
-            CollectionCaches<NetworkObject>.Store(nobs);
+            AddToMatch(match, nob, manager, replaceMatch, true);
         }
         /// <summary>
         /// Adds objects to a match.
@@ -290,38 +260,33 @@ namespace FishNet.Component.Observing
         /// <param name="nobs">Connections to add to match.</param>
         /// <param name="manager">NetworkManager to rebuild observers on. If null InstanceFinder.NetworkManager will be used.</param>
         /// <param name="replaceMatch">True to replace other matches with the new match.</param>
-        /// <param name="recursively">True to also modify nested NetworkObjects.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddToMatch(int match, IList<NetworkObject> nobs, NetworkManager manager = null, bool replaceMatch = false, bool recursively = false)
+        public static void AddToMatch(int match, NetworkObject[] nobs, NetworkManager manager = null, bool replaceMatch = false)
         {
-            if (recursively)
-                AddToRecursively(nobs);
+            AddToMatch(match, nobs.ToList(), manager, replaceMatch);
+        }
+        /// <summary>
+        /// Adds objects to a match.
+        /// </summary>
+        /// <param name="match">Match to add conns to.</param>
+        /// <param name="nobs">Connections to add to match.</param>
+        /// <param name="manager">NetworkManager to rebuild observers on. If null InstanceFinder.NetworkManager will be used.</param>
+        /// <param name="replaceMatch">True to replace other matches with the new match.</param>
+        public static void AddToMatch(int match, List<NetworkObject> nobs, NetworkManager manager = null, bool replaceMatch = false)
+        {
+            //Remove from current matches.
+            if (replaceMatch)
+            {
+                foreach (NetworkObject n in nobs)
+                    RemoveFromMatchWithoutRebuild(n, manager);
+            }
 
             bool added = false;
             //Add to matches.
             foreach (NetworkObject n in nobs)
-            {
-                AddToMatchFlag flags = AddToMatchFlag.None;
-                if (replaceMatch)
-                    flags |= AddToMatchFlag.ReplaceMatch;
-                added |= AddToMatch(match, n, manager, flags);
-            }
+                added |= AddToMatch(match, n, manager, replaceMatch, false);
 
             if (added)
                 GetServerObjects(manager).RebuildObservers();
-        }
-
-        /// <summary>
-        /// Adds nested of each NetworkObject in collection.
-        /// </summary>
-        private static void AddToRecursively(IList<NetworkObject> nobs)
-        {
-            List<NetworkObject> nCache = CollectionCaches<NetworkObject>.RetrieveList();
-            foreach (NetworkObject item in nobs)
-                item.GetNetworkObjects(false, ref nCache);
-            //Add from cache.
-            foreach (NetworkObject item in nCache)
-                nobs.Add(item);
         }
         #endregion
 

@@ -1,10 +1,8 @@
 ﻿#if UNITY_EDITOR
 #if !PREDICTION_1
 using FishNet.Object.Prediction;
-using GameKit.Dependencies.Utilities;
 using UnityEditor;
 using UnityEngine;
-using GameKitEditing = GameKit.Dependencies.Utilities.Editing;
 
 namespace FishNet.Object.Editing
 {
@@ -16,7 +14,6 @@ namespace FishNet.Object.Editing
         private SerializedProperty _isNetworked;
         private SerializedProperty _isSpawnable;
         private SerializedProperty _isGlobal;
-        private SerializedProperty _synchronizeScene;
         private SerializedProperty _initializeOrder;
         private SerializedProperty _defaultDespawnType;
 
@@ -41,7 +38,6 @@ namespace FishNet.Object.Editing
         {
             _isNetworked = serializedObject.FindProperty(nameof(_isNetworked));
             _isSpawnable = serializedObject.FindProperty(nameof(_isSpawnable));
-            _synchronizeScene = serializedObject.FindProperty(nameof(_synchronizeScene));
             _isGlobal = serializedObject.FindProperty(nameof(_isGlobal));
             _initializeOrder = serializedObject.FindProperty(nameof(_initializeOrder));
             _defaultDespawnType = serializedObject.FindProperty(nameof(_defaultDespawnType));
@@ -66,7 +62,6 @@ namespace FishNet.Object.Editing
         {
             serializedObject.Update();
             NetworkObject nob = (NetworkObject)target;
-            bool isSceneNob = nob.gameObject.scene.IsValid();
 
             GUI.enabled = false;
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(nob), typeof(NetworkObject), false);
@@ -77,8 +72,6 @@ namespace FishNet.Object.Editing
             EditorGUILayout.PropertyField(_isNetworked);
             EditorGUILayout.PropertyField(_isSpawnable);
             EditorGUILayout.PropertyField(_isGlobal);
-
-            GameKitEditing.AddPropertyField(_synchronizeScene, null, !isSceneNob);
             EditorGUILayout.PropertyField(_initializeOrder);
             EditorGUILayout.PropertyField(_defaultDespawnType);
             EditorGUI.indentLevel--;

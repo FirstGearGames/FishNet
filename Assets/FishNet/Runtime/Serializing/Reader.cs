@@ -1027,7 +1027,7 @@ namespace FishNet.Serializing
             }
             else
             {
-                if (componentIndex >= nob.NetworkBehaviours.Count)
+                if (componentIndex >= nob.NetworkBehaviours.Length)
                 {
                     NetworkManager.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name} [id {nob.ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
                     result = null;

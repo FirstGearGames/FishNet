@@ -1089,7 +1089,7 @@ namespace FishNet.Component.Transforming
             //If there is a parent try to output the behaviour on it.
             if (_synchronizeParent)
             {
-                if (base.NetworkObject.IsNested)// base.NetworkObject.CurrentParentNetworkBehaviour != null)
+                if (base.NetworkObject.CurrentParentNetworkBehaviour != null)
                 {
                     transform.parent.TryGetComponent<NetworkBehaviour>(out parentBehaviour);
                     if (parentBehaviour == null)
