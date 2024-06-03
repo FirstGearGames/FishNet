@@ -4,6 +4,7 @@ using FishNet.Object.Helping;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -105,7 +106,7 @@ namespace FishNet.Object.Synchronizing
         private bool _isValueType;
         /// <summary>
         /// True if value was ever set after the SyncType initialized.
-        /// This includes even if initial values were set.
+        /// This is true even if SetInitialValues was called at runtime.
         /// </summary>
         private bool _valueSetAfterInitialized;
         #endregion
@@ -133,7 +134,7 @@ namespace FishNet.Object.Synchronizing
         public void SetInitialValues(T value)
         {
             _initialValue = value;
-            UpdateValues(value);
+            UpdateValues(value, true);
 
             if (base.IsInitialized)
                 _valueSetAfterInitialized = true;
@@ -142,9 +143,10 @@ namespace FishNet.Object.Synchronizing
         /// Sets current and previous values.
         /// </summary>
         /// <param name="next"></param>
-        private void UpdateValues(T next)
+        private void UpdateValues(T next, bool updateClient)
         {
-            _previousClientValue = next;
+            if (updateClient)
+                _previousClientValue = next;
             _value = next;
         }
         /// <summary>
@@ -161,6 +163,10 @@ namespace FishNet.Object.Synchronizing
             {
                 SetInitialValues(nextValue);
                 return;
+            }
+            else
+            {
+                _valueSetAfterInitialized = true;
             }
 
             /* If not client or server then set skipChecks
@@ -179,7 +185,6 @@ namespace FishNet.Object.Synchronizing
             {
                 if (!base.CanNetworkSetValues(true))
                     return;
-
                 /* We will only be this far if the network is not active yet,
                  * server is active, or client has setting permissions. 
                  * We only need to set asServerInvoke to false if the network
@@ -192,7 +197,7 @@ namespace FishNet.Object.Synchronizing
                 if (!isNetworkInitialized)
                 {
                     T prev = _value;
-                    UpdateValues(nextValue);
+                    UpdateValues(nextValue, false);
                     //Still call invoke because change will be cached for when the network initializes.
                     InvokeOnChange(prev, _value, calledByUser);
                 }
@@ -218,13 +223,13 @@ namespace FishNet.Object.Synchronizing
                 T prev = _previousClientValue;
                 if (Comparers.EqualityCompare<T>(prev, nextValue))
                     return;
-
                 /* If also server do not update value.
                  * Server side has say of the current value. */
-                if (!base.NetworkManager.IsServerStarted)
-                    UpdateValues(nextValue);
+                if (base.NetworkManager.IsServerStarted)
+                    _previousClientValue = nextValue; 
+                /* If server is not started then update both. */
                 else
-                    _previousClientValue = nextValue;
+                    UpdateValues(nextValue, true);
 
                 InvokeOnChange(prev, nextValue, calledByUser);
             }
@@ -371,6 +376,12 @@ namespace FishNet.Object.Synchronizing
         internal protected override void ResetState(bool asServer)
         {
             base.ResetState(asServer);
+
+            //todo: validate this improvement after new tests are made.
+            ////Let clientHost reset if the object containing this syncvar is initialized for them.
+            //if (asServer && base.IsNetworkInitialized && NetworkBehaviour.IsClientInitialized)
+            //    return;
+
             _value = _initialValue;
             _previousClientValue = _initialValue;
         }

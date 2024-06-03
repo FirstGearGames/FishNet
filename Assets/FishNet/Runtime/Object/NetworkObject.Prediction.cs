@@ -182,14 +182,15 @@ namespace FishNet.Object
                 _networkTransform.ConfigureForPrediction(_predictionType);
 
             ReplicateTick.Initialize(manager.TimeManager);
-            if (!asServer)
-                InitializeSmoothers();
-
             if (asServer)
                 return;
+            else
+                InitializeSmoothers();
+
+
 
             if (_predictionBehaviours.Count > 0)
-            { 
+            {
                 ChangePredictionSubscriptions(true, manager);
                 foreach (NetworkBehaviour item in _predictionBehaviours)
                     item.Preinitialize_Prediction(asServer);

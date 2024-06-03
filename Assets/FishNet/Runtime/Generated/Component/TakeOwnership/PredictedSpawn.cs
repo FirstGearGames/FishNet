@@ -69,7 +69,7 @@ namespace FishNet.Component.Ownership
         /// </summary>
         /// <param name="despawner">Connection trying to predicted despawn this object.</param>
         /// <returns>True if able to despawn.</returns>
-        public virtual bool OnTryDepawnServer(NetworkConnection despawner)
+        public virtual bool OnTryDespawnServer(NetworkConnection despawner)
         {
             return GetAllowDespawning();
         }

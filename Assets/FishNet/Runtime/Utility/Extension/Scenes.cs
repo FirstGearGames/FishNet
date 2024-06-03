@@ -16,7 +16,7 @@ namespace FishNet.Utility.Extension
         /// <param name="s">Scene to get objects in.</param>
         /// <param name="firstOnly">True to only return the first NetworkObject within an object chain. False will return nested NetworkObjects.</param>
         /// <returns></returns>
-        public static void GetSceneNetworkObjects(Scene s, bool firstOnly, bool errorOnDuplicates, ref List<NetworkObject> result)
+        public static void GetSceneNetworkObjects(Scene s, bool firstOnly, bool errorOnDuplicates, bool ignoreUnsetSceneIds, ref List<NetworkObject> result)
         {
             List<NetworkObject> nobCacheA = CollectionCaches<NetworkObject>.RetrieveList();
             List<NetworkObject> nobCacheB = CollectionCaches<NetworkObject>.RetrieveList();
@@ -42,7 +42,7 @@ namespace FishNet.Utility.Extension
                          * for effort and readability. */
                         foreach (NetworkObject nob in nobCacheA)
                         {
-                            if (!nob.IsSceneObject)
+                            if (!ignoreUnsetSceneIds && !nob.IsSceneObject)
                                 continue;
 
                             nob.GetComponentsInParent<NetworkObject>(true, nobCacheB);
@@ -56,7 +56,7 @@ namespace FishNet.Utility.Extension
                     {
                         foreach (NetworkObject item in nobCacheA)
                         {
-                            if (!item.IsSceneObject)
+                            if (!ignoreUnsetSceneIds && !item.IsSceneObject)
                                 continue;
                             if (!TryDisplayDuplicateError(item))
                                 result.Add(item);
