@@ -368,7 +368,7 @@ namespace FishNet.Managing.Object
             }
             //Blocked by PredictedSpawn settings or user logic.
             if (
-                (asServer && !nob.PredictedSpawn.OnTryDepawnServer(despawner))
+                (asServer && !nob.PredictedSpawn.OnTryDespawnServer(despawner))
                 || (!asServer && !nob.PredictedSpawn.OnTryDespawnClient())
                 )
             {
