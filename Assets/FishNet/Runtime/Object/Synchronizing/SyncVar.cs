@@ -148,6 +148,9 @@ namespace FishNet.Object.Synchronizing
             if (updateClient)
                 _previousClientValue = next;
             _value = next;
+
+            if (base.IsInitialized)
+                _valueSetAfterInitialized = true;
         }
         /// <summary>
         /// Sets current value and marks the SyncVar dirty when able to. Returns if able to set value.
