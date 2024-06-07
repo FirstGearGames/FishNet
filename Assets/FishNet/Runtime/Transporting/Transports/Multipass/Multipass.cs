@@ -771,6 +771,16 @@ namespace FishNet.Transporting.Multipass
 
             _transports[index].SetPort(port);
         }
+        /// <summary>
+        /// Gets the first transports port if any otherwise returns 0.
+        /// </summary>
+        public override ushort GetPort()
+        {
+            foreach (Transport t in _transports)
+                return t.GetPort();
+
+            return base.GetPort();
+        }
         #endregion
 
         #region Start and stop.
@@ -1601,7 +1611,7 @@ namespace FishNet.Transporting.Multipass
             {
                 added++;
                 _availableMultipassIds.Enqueue(_lastAvailableMultipassId);
-                _lastAvailableMultipassId++;                
+                _lastAvailableMultipassId++;
             }
 
             return (added > 0);
@@ -1821,6 +1831,17 @@ namespace FishNet.Transporting.Multipass
                 return;
 
             _transports[index].SetPort(port);
+        }
+
+        /// <summary>
+        /// Gets the first transports port if any otherwise returns 0.
+        /// </summary>
+        public override ushort GetPort()
+        {
+            foreach (Transport t in _transports)
+                return t.GetPort();
+
+            return base.GetPort();
         }
         #endregion
 
