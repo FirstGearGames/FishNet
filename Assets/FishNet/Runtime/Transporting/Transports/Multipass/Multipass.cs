@@ -771,6 +771,17 @@ namespace FishNet.Transporting.Multipass
 
             _transports[index].SetPort(port);
         }
+        /// <summary>
+        /// Gets the first transports port.
+        /// </summary>
+        /// <returns></returns>
+        public override ushort GetPort()
+        {
+            foreach (Transport t in _transports)
+                return t.GetPort();
+
+            return base.GetPort();
+        }
         #endregion
 
         #region Start and stop.
@@ -1384,7 +1395,7 @@ namespace FishNet.Transporting.Multipass
         private void Multipass_OnRemoteConnectionState(RemoteConnectionStateArgs connectionStateArgs)
         {
             /* When starting Multipass needs to get a new
-            * connectionId to be used within FN. This is the 'ClientId'
+             * connectionId to be used within FN. This is the 'ClientId'
              * that is passed around for ownership, rpcs, ect.
              * 
              * The new connectionId will be linked with the connectionId
@@ -1447,6 +1458,7 @@ namespace FishNet.Transporting.Multipass
                 _availableMultipassIds.Enqueue(ctd.MultipassId);
                 transportToMultipass.Remove(transportConnectionId);
                 _multpassIdLookup.Remove(ctd.MultipassId);
+
 #if DEVELOPMENT
                 //Remove packets held for connection from latency simulator.
                 base.NetworkManager.TransportManager.LatencySimulator.RemovePendingForConnection(ctd.MultipassId);
@@ -1601,7 +1613,7 @@ namespace FishNet.Transporting.Multipass
             {
                 added++;
                 _availableMultipassIds.Enqueue(_lastAvailableMultipassId);
-                _lastAvailableMultipassId++;                
+                _lastAvailableMultipassId++;
             }
 
             return (added > 0);
@@ -1821,6 +1833,17 @@ namespace FishNet.Transporting.Multipass
                 return;
 
             _transports[index].SetPort(port);
+        }
+        /// <summary>
+        /// Gets the first transports port.
+        /// </summary>
+        /// <returns></returns>
+        public override ushort GetPort()
+        {
+            foreach (Transport t in _transports)
+                return t.GetPort();
+
+            return base.GetPort();
         }
         #endregion
 
