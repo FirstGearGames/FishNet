@@ -151,30 +151,30 @@ namespace FishNet.Managing.Predicting
         /// 
         /// </summary>
         [Tooltip("How many states to try and hold in a buffer before running them on clients. Larger values add resilience against network issues at the cost of running states later.")]
-        [Range(MINIMUM_PAST_INPUTS, MAXIMUM_PAST_INPUTS)]
+        [Range(0, MAXIMUM_PAST_INPUTS)]
         [FormerlySerializedAs("_redundancyCount")] //Remove on V5.
-        [FormerlySerializedAs("_clientInterpolation")] //Remove on V5.
+        [FormerlySerializedAs("_interpolation")] //Remove on V5.
         [SerializeField]
-        private byte _clientInterpolation = 2;
+        private byte _stateInterpolation = 1;
         /// <summary>
-        /// How many states to try and hold in a buffer before running them on clients. Larger values add resilience against network issues at the cost of running states later.
-        /// </summary>
-        internal byte ClientInterpolation => _clientInterpolation;
+        /// How many states to try and hold in a buffer before running them. Larger values add resilience against network issues at the cost of running states later.
+        /// </summary> 
+        internal byte StateInterpolation => _stateInterpolation;
         /// <summary>
         /// Number of past inputs to send, which is also the number of times to resend final datas.
         /// </summary>
-        internal byte RedundancyCount => (byte)(ClientInterpolation + 1);
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("How many states to try and hold in a buffer before running them on server. Larger values add resilience against network issues at the cost of running states later.")]
-        [Range(MINIMUM_PAST_INPUTS, MAXIMUM_PAST_INPUTS)]
-        [SerializeField]
-        private byte _serverInterpolation = 1;
-        /// <summary>
-        /// How many states to try and hold in a buffer before running them on server. Larger values add resilience against network issues at the cost of running states later.
-        /// </summary>
-        internal byte ServerInterpolation => _serverInterpolation;
+        internal byte RedundancyCount => (byte)(_stateInterpolation + 1);
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //[Tooltip("How many states to try and hold in a buffer before running them on server. Larger values add resilience against network issues at the cost of running states later.")]
+        //[Range(0, MAXIMUM_PAST_INPUTS + 30)]
+        //[SerializeField]
+        //private byte _serverInterpolation = 1;
+        ///// <summary>
+        ///// How many states to try and hold in a buffer before running them on server. Larger values add resilience against network issues at the cost of running states later.
+        ///// </summary>
+        //internal byte ServerInterpolation => _serverInterpolation;
         #endregion
 
         #region Private.
@@ -249,14 +249,14 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         private void ClampInterpolation()
         {
-            ushort startingValue = _clientInterpolation;
+            ushort startingValue = _stateInterpolation;
             //Check for setting if dropping.
-            if (_dropExcessiveReplicates && _clientInterpolation > _maximumServerReplicates)
-                _clientInterpolation = (byte)(_maximumServerReplicates - 1);
+            if (_dropExcessiveReplicates && _stateInterpolation > _maximumServerReplicates)
+                _stateInterpolation = (byte)(_maximumServerReplicates - 1);
 
             //If changed.
-            if (_clientInterpolation != startingValue)
-                _networkManager.Log($"Interpolation has been set to {_clientInterpolation}.");
+            if (_stateInterpolation != startingValue)
+                _networkManager.Log($"Interpolation has been set to {_stateInterpolation}.");
         }
 
         internal class StatePacket : IResettable
@@ -332,7 +332,8 @@ namespace FishNet.Managing.Predicting
                  * arriving in burst.
                  * If there's more than interpolation (+1 for as a leniency buffer) then begin to
                  * consume multiple. */
-                int maxIterations = (_reconcileStates.Count > (ClientInterpolation + 1)) ? 2 : 1;
+                byte stateInterpolation = StateInterpolation;
+                int maxIterations = (_reconcileStates.Count > (stateInterpolation + 1)) ? 2 : 1;
                 //At most 2 iterations.
                 if (iterations > maxIterations)
                     return;
@@ -349,8 +350,9 @@ namespace FishNet.Managing.Predicting
                 {
                     if (spChecked == null)
                         return false;
-
-                    return ((spChecked != null) && (spChecked.ServerTick <= (estimatedLastRemoteTick - ClientInterpolation)) && spChecked.ClientTick < (localTick - ClientInterpolation));
+                    bool serverPass = (spChecked.ServerTick <= (estimatedLastRemoteTick - stateInterpolation));
+                    bool clientPass = spChecked.ClientTick < (localTick - stateInterpolation);
+                    return (serverPass && clientPass);
                 }
 
                 bool dropReconcile = false;
@@ -466,6 +468,7 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         internal void SendStateUpdate()
         {
+            byte stateInterpolation = StateInterpolation;
             uint recentReplicateToTicks = _networkManager.TimeManager.TimeToTicks(0.25f, TickRounding.RoundUp);
             TransportManager tm = _networkManager.TransportManager;
             foreach (NetworkConnection nc in _networkManager.ServerManager.Clients.Values)
@@ -480,7 +483,7 @@ namespace FishNet.Managing.Predicting
                  * but even if it's not it doesn't matter because the client
                  * isn't replicating himself, just reconciling and replaying other objects. */
                 else
-                    lastReplicateTick = nc.LocalTick.Value();
+                    lastReplicateTick = nc.LocalTick.Value() - stateInterpolation;
 
                 foreach (PooledWriter writer in nc.PredictionStateWriters)
                 {
@@ -537,7 +540,7 @@ namespace FishNet.Managing.Predicting
                  * a limit a little beyond to prevent reconciles from building up. 
                  * This is more of a last result if something went terribly
                  * wrong with the network. */
-                int maxAllowedStates = Mathf.Max(ClientInterpolation * 4, 4);
+                int maxAllowedStates = Mathf.Max(StateInterpolation * 4, 4);
                 while (_reconcileStates.Count > maxAllowedStates)
                 {
                     StatePacket oldSp = _reconcileStates.Dequeue();

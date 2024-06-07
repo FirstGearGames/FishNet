@@ -659,6 +659,7 @@ namespace FishNet.Component.Transforming
 
         public override void OnOwnershipServer(NetworkConnection prevOwner)
         {
+            ConfigureComponents();
             _intervalsRemaining = 0;
             //Reset last tick since each client sends their own ticks.
             _lastServerRpcTick = 0;
@@ -759,7 +760,7 @@ namespace FishNet.Component.Transforming
 
         private void Update()
         {
-            MoveToTarget();
+            MoveToTarget(Time.deltaTime);
         }
 
         /// <summary>
@@ -870,7 +871,7 @@ namespace FishNet.Component.Transforming
                     //Client auth.
                     if (_clientAuthoritative)
                     {
-                        c.enabled = base.IsOwner;
+                        c.enabled = base.HasAuthority;
                     }
                     //Server auth.
                     else
@@ -1517,7 +1518,7 @@ namespace FishNet.Component.Transforming
         /// Moves to a GoalData. Automatically determins if to use data from server or client.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void MoveToTarget(float deltaOverride = -1f)
+        private void MoveToTarget(float delta)
         {
             if (_currentGoalData == null)
                 return;
@@ -1543,7 +1544,6 @@ namespace FishNet.Component.Transforming
             if (!controlledByClient && base.IsServerInitialized)
                 return;
 
-            float delta = (deltaOverride != -1f) ? deltaOverride : Time.deltaTime;
             /* Once here it's safe to assume the object will be moving.
              * Any checks which would stop it from moving be it client
              * auth and owner, or server controlled and server, ect,

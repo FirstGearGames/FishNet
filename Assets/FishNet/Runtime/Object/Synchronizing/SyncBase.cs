@@ -305,7 +305,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Dirties this Sync and the NetworkBehaviour.
         /// </summary>
         /// <param name="sendRpc">True to send current dirtied values immediately as a RPC. When this occurs values will arrive in the order they are sent and interval is ignored.</param>
-        public bool Dirty()//bool sendRpc = false)
+        protected bool Dirty()//bool sendRpc = false)
         {
             //if (sendRpc)
             //    NextSyncTick = 0;
@@ -326,6 +326,12 @@ namespace FishNet.Object.Synchronizing.Internal
             return canDirty;
         }
 
+        /// <summary>
+        /// Returns if callbacks can be invoked with asServer ture.
+        /// This is typically used when the value is changing through user code, causing supplier to be unknown.
+        /// </summary>
+        /// <returns></returns>
+        protected bool CanInvokeCallbackAsServer() => (!IsNetworkInitialized || NetworkBehaviour.IsServerStarted);
 
         /// <summary>
         /// Reads the change Id and returns if changes should be ignored.

@@ -182,11 +182,11 @@ namespace FishNet.Object
         /// <summary>
         /// Registered Replicate methods.
         /// </summary>
-        private readonly Dictionary<uint, ReplicateRpcDelegate> _replicateRpcDelegates = new Dictionary<uint, ReplicateRpcDelegate>();
+        private Dictionary<uint, ReplicateRpcDelegate> _replicateRpcDelegates;
         /// <summary>
         /// Registered Reconcile methods.
         /// </summary>
-        private readonly Dictionary<uint, ReconcileRpcDelegate> _reconcileRpcDelegates = new Dictionary<uint, ReconcileRpcDelegate>();
+        private Dictionary<uint, ReconcileRpcDelegate> _reconcileRpcDelegates;
         /// <summary>
         /// Number of resends which may occur. This could be for client resending replicates to the server or the server resending reconciles to the client.
         /// </summary>
@@ -211,7 +211,40 @@ namespace FishNet.Object
         /// Last tick read for a replicate.
         /// </summary>
         private uint _lastReadReplicateTick;
+        /// <summary>
+        /// Ticks of replicates that have been read and not reconciled past.
+        /// This is only used on non-authoritative objects.
+        /// </summary>
+        private List<uint> _readReplicateTicks;
         #endregion
+
+        /// <summary>
+        /// Initializes the NetworkBehaviour for prediction.
+        /// </summary>
+        internal void Preinitialize_Prediction(bool asServer)
+        {
+            if (!asServer)
+            {
+                _readReplicateTicks = CollectionCaches<uint>.RetrieveList();
+            }
+        } 
+
+        /// <summary>
+        /// Deinitializes the NetworkBehaviour for prediction.
+        /// </summary>
+        internal void Deinitialize_Prediction(bool asServer)
+        {
+            CollectionCaches<uint>.StoreAndDefault(ref _readReplicateTicks);
+        }
+
+        /// <summary>
+        /// Called when the object is destroyed.
+        /// </summary>
+        internal void OnDestroy_Prediction()
+        {
+            CollectionCaches<uint, ReplicateRpcDelegate>.StoreAndDefault(ref _replicateRpcDelegates);
+            CollectionCaches<uint, ReconcileRpcDelegate>.StoreAndDefault(ref _reconcileRpcDelegates);
+        }
 
         /// <summary>
         /// Registers a RPC method.
@@ -223,8 +256,11 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterReplicateRpc(uint hash, ReplicateRpcDelegate del)
         {
+            if (_replicateRpcDelegates == null)
+                _replicateRpcDelegates = CollectionCaches<uint, ReplicateRpcDelegate>.RetrieveDictionary();
             _replicateRpcDelegates[hash] = del;
         }
+
         /// <summary>
         /// Registers a RPC method.
         /// Internal use.
@@ -235,6 +271,8 @@ namespace FishNet.Object
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterReconcileRpc(uint hash, ReconcileRpcDelegate del)
         {
+            if (_reconcileRpcDelegates == null)
+                _reconcileRpcDelegates = CollectionCaches<uint, ReconcileRpcDelegate>.RetrieveDictionary();
             _reconcileRpcDelegates[hash] = del;
         }
 
@@ -273,6 +311,8 @@ namespace FishNet.Object
         /// </summary>
         internal void ResetPredictionTicks()
         {
+            if (_readReplicateTicks != null)
+                _readReplicateTicks.Clear();
             _lastReplicateReadRemoteTick = TimeManager.UNSET_TICK;
             _lastReadReconcileTick = TimeManager.UNSET_TICK;
             _lastReadReplicateTick = TimeManager.UNSET_TICK;
@@ -316,6 +356,15 @@ namespace FishNet.Object
             bool stateForwarding = _networkObjectCache.EnableStateForwarding;
             if (!Owner.IsValid && !stateForwarding)
                 return;
+
+            /* //todo: forcing to reliable channel so that the length is written,
+            * and it will be parsed in the rpcLink reader checking length
+            * as well. This is a temporary solution to resolve an issue which was
+            * causing parsing problems due to states sending unreliable and reliable
+            * headers being written, or sending reliably and unreliable headers being written.
+            * Using an extra byte to write length is more preferred than always forcing reliable
+            * until properly resolved. */
+            channel = Channel.Reliable;
 
             PooledWriter methodWriter = WriterPool.Retrieve();
             /* Tick does not need to be written because it will always
@@ -441,11 +490,7 @@ namespace FishNet.Object
         /// </summary>
         protected internal void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
-            //NOTESSTART
-            /* Only replay the first available data after a reconcile then run the rest
-             * as default future. This is so there is a consistency of which inputs are run
-             * as created and which are future, using the ones that were not run as a buffer. */
-            //NOTESEND             
+            
             T data;
             ReplicateState state;
             //If the first replay.
@@ -457,7 +502,8 @@ namespace FishNet.Object
                 if (findResult == ReplicateTickFinder.DataPlacementResult.Exact)
                 {
                     data = replicatesHistory[replicateIndex];
-                    state = ReplicateState.ReplayedCreated;
+                    //state = ReplicateState.ReplayedCreated;
+                    state = (_readReplicateTicks.Contains(replayTick)) ? ReplicateState.ReplayedCreated : ReplicateState.ReplayedFuture;
                 }
                 else
                 {
@@ -726,7 +772,6 @@ namespace FishNet.Object
         /// <summary>
         /// Reads a replicate the client.
         /// </summary>
-        /// <param name="replicateDataOnly">Data from the reader which only applies to the replicate.</param>
         [MakePublic]
         internal void Replicate_Reader<T>(uint hash, PooledReader reader, NetworkConnection sender, ref T[] arrBuffer, BasicQueue<T> replicatesQueue, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
@@ -863,6 +908,8 @@ namespace FishNet.Object
                     continue;
                 }
                 _lastReadReplicateTick = tick;
+                if (!IsServerStarted)
+                    _readReplicateTicks.Add(tick);
                 //Cannot queue anymore, discard oldest.
                 if (replicatesQueue.Count >= maximmumReplicates)
                 {
@@ -930,8 +977,8 @@ namespace FishNet.Object
              * by holding reconcile x ticks rather than not running received
              * x ticks. */
             if (_networkObjectCache.IsServerInitialized && startQueueCount == 0 && replicatesQueue.Count > 0)
-                //_replicateStartTick = (_networkObjectCache.TimeManager.LocalTick + pm.Interpolation);
-                _replicateStartTick = (_networkObjectCache.TimeManager.LocalTick);
+                //_replicateStartTick = (_networkObjectCache.TimeManager.LocalTick);
+                _replicateStartTick = (_networkObjectCache.TimeManager.LocalTick + pm.StateInterpolation);
         }
 
 
@@ -968,6 +1015,18 @@ namespace FishNet.Object
             if (!IsBehaviourReconciling)
                 return;
 
+            //Remove up reconcile tick from received ticks.
+            uint dataTick = data.GetTick();
+            int readReplicatesRemovalCount = 0;
+            for (int i = 0; i < _readReplicateTicks.Count; i++)
+            {
+                if (_readReplicateTicks[i] > dataTick)
+                    break;
+                else
+                    readReplicatesRemovalCount++;
+            }
+            _readReplicateTicks.RemoveRange(0, readReplicatesRemovalCount);
+
             if (replicatesHistory.Count > 0)
             {
                 /* Remove replicates up to reconcile. Since the reconcile
@@ -975,7 +1034,6 @@ namespace FishNet.Object
                  * need any replicates prior. */
                 //Find the closest entry which can be removed.
                 int removalCount = 0;
-                uint dataTick = data.GetTick();
                 //A few quick tests.
                 if (replicatesHistory.Count > 0)
                 {

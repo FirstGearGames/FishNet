@@ -160,10 +160,11 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         public static ResettableRingBuffer<T> RetrieveRingBuffer()
         {
-            if (_resettableRingBufferCache.Count == 0)
-                return new ResettableRingBuffer<T>();
-            else
-                return _resettableRingBufferCache.Pop();
+            ResettableRingBuffer<T> result;
+            if (!_resettableRingBufferCache.TryPop(out result))
+                result = new();
+
+            return result;
         }
         /// <summary>
         /// Retrieves a collection.
@@ -351,10 +352,11 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static Dictionary<T1, T2> RetrieveDictionary()
         {
-            if (_dictionaryCache.Count == 0)
-                return new Dictionary<T1, T2>();
-            else
-                return _dictionaryCache.Pop();
+            Dictionary<T1, T2> result;
+            if (!_dictionaryCache.TryPop(out result))
+                result = new();
+
+            return result;
         }
 
         /// <summary>
@@ -413,10 +415,11 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static T[] RetrieveArray()
         {
-            if (_arrayCache.Count == 0)
-                return new T[0];
-            else
-                return _arrayCache.Pop();
+            T[] result;
+            if (!_arrayCache.TryPop(out result))
+                result = new T[0];
+
+            return result;
         }
         /// <summary>
         /// Retrieves a collection.
@@ -424,10 +427,11 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static List<T> RetrieveList()
         {
-            if (_listCache.Count == 0)
-                return new List<T>();
-            else
-                return _listCache.Pop();
+            List<T> result;
+            if (!_listCache.TryPop(out result))
+                result = new();
+
+            return result;
         }
         /// <summary>
         /// Retrieves a collection.
@@ -435,10 +439,11 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static Queue<T> RetrieveQueue()
         {
-            if (_queueCache.Count == 0)
-                return new Queue<T>();
-            else
-                return _queueCache.Pop();
+            Queue<T> result;
+            if (!_queueCache.TryPop(out result))
+                result = new();
+
+            return result;
         }
         /// <summary>
         /// Retrieves a collection.
@@ -446,10 +451,11 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static BasicQueue<T> RetrieveBasicQueue()
         {
-            if (_basicQueueCache.Count == 0)
-                return new BasicQueue<T>();
-            else
-                return _basicQueueCache.Pop();
+            BasicQueue<T> result;
+            if (!_basicQueueCache.TryPop(out result))
+                result = new();
+
+            return result;
         }
         /// <summary>
         /// Retrieves a collection adding one entry.
@@ -458,10 +464,8 @@ namespace GameKit.Dependencies.Utilities
         public static Queue<T> RetrieveQueue(T entry)
         {
             Queue<T> result;
-            if (_queueCache.Count == 0)
-                result = new Queue<T>();
-            else
-                result = _queueCache.Pop();
+            if (!_queueCache.TryPop(out result))
+                result = new();
 
             result.Enqueue(entry);
             return result;
@@ -473,10 +477,8 @@ namespace GameKit.Dependencies.Utilities
         public static List<T> RetrieveList(T entry)
         {
             List<T> result;
-            if (_listCache.Count == 0)
-                result = new List<T>();
-            else
-                result = _listCache.Pop();
+            if (!_listCache.TryPop(out result))
+                result = new();
 
             result.Add(entry);
             return result;
@@ -488,10 +490,11 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static HashSet<T> RetrieveHashSet()
         {
-            if (_hashsetCache.Count == 0)
-                return new HashSet<T>();
-            else
-                return _hashsetCache.Pop();
+            HashSet<T> result;
+            if (!_hashsetCache.TryPop(out result))
+                result = new();
+
+            return result;
         }
         /// <summary>
         /// Retrieves a collection adding one entry.
@@ -500,10 +503,8 @@ namespace GameKit.Dependencies.Utilities
         public static HashSet<T> RetrieveHashSet(T entry)
         {
             HashSet<T> result;
-            if (_hashsetCache.Count == 0)
-                result = new HashSet<T>();
-            else
-                result = _hashsetCache.Pop();
+            if (!_hashsetCache.TryPop(out result))
+                return new();
 
             result.Add(entry);
             return result;
@@ -645,10 +646,11 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static T Retrieve()
         {
-            if (_stack.Count == 0)
-                return Activator.CreateInstance<T>();
-            else
-                return _stack.Pop();
+            T result;
+            if (!_stack.TryPop(out result))
+                result = Activator.CreateInstance<T>();
+
+            return result;
         }
 
         /// <summary>

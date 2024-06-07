@@ -2,12 +2,14 @@
 using GameKit.Dependencies.Utilities;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace FishNet.Object.Prediction
 {
     /// <summary>
     /// Data to be used to configure smoothing for an owned predicted object.
     /// </summary>
+    [Preserve]
     internal struct MoveRates
     {
         public float Position;

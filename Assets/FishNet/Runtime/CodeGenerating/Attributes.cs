@@ -33,7 +33,7 @@ namespace FishNet.CodeGenerating
     /// <summary>
     /// Used on a type when you want a custom serializer to be global across all assemblies.
     /// </summary>
-    [AttributeUsage((AttributeTargets.Class | AttributeTargets.Struct), Inherited = true, AllowMultiple = false)]
+    [AttributeUsage((AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface), Inherited = true, AllowMultiple = false)]
     public class UseGlobalCustomSerializerAttribute : Attribute { }
     /// <summary>
     /// Uses built-in caches to retrieve read classes rather than initializing a new instance.

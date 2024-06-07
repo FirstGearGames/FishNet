@@ -36,7 +36,7 @@ namespace FishNet.Object
         /// <summary>
         /// Graphical smoother to use when using set for owner.
         /// </summary> 
-        public AdaptiveLocalTransformTickSmoother PredictionSmoother { get; private set; }
+        public ChildTransformTickSmoother PredictionSmoother { get; private set; }
 #endif
         /// <summary>
         /// Last tick this object replicated.
@@ -165,7 +165,7 @@ namespace FishNet.Object
         private List<NetworkBehaviour> _predictionBehaviours = new List<NetworkBehaviour>();
         #endregion
 
-        private void Prediction_Update()
+        private void Update_Prediction()
         {
             if (!_enablePrediction)
                 return;
@@ -173,7 +173,7 @@ namespace FishNet.Object
             PredictionSmoother?.Update();
         }
 
-        private void Prediction_Preinitialize(NetworkManager manager, bool asServer)
+        private void Preinitialize_Prediction(NetworkManager manager, bool asServer)
         {
             if (!_enablePrediction)
                 return;
@@ -182,13 +182,19 @@ namespace FishNet.Object
                 _networkTransform.ConfigureForPrediction(_predictionType);
 
             ReplicateTick.Initialize(manager.TimeManager);
-            InitializeSmoothers();
-
             if (asServer)
                 return;
+            else
+                InitializeSmoothers();
+
+
 
             if (_predictionBehaviours.Count > 0)
+            {
                 ChangePredictionSubscriptions(true, manager);
+                foreach (NetworkBehaviour item in _predictionBehaviours)
+                    item.Preinitialize_Prediction(asServer);
+            }
         }
 
         private void Prediction_Deinitialize(bool asServer)
@@ -201,7 +207,11 @@ namespace FishNet.Object
              * asServer may not invoke as false if the client is suddenly
              * dropping their connection. */
             if (_predictionBehaviours.Count > 0)
+            {
                 ChangePredictionSubscriptions(false, NetworkManager);
+                foreach (NetworkBehaviour item in _predictionBehaviours)
+                    item.Deinitialize_Prediction(asServer);
+            }
         }
 
         /// <summary>
@@ -256,7 +266,7 @@ namespace FishNet.Object
             else
             {
                 if (PredictionSmoother == null)
-                    PredictionSmoother = ResettableObjectCaches<AdaptiveLocalTransformTickSmoother>.Retrieve();
+                    PredictionSmoother = ResettableObjectCaches<ChildTransformTickSmoother>.Retrieve();
                 InitializeTickSmoother();
             }
         }
@@ -268,7 +278,6 @@ namespace FishNet.Object
         {
             if (PredictionSmoother == null)
                 return;
-            PredictionSmoother.ResetState();
             float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRatesCls.UNSET_VALUE;
             PredictionSmoother.Initialize(this, _graphicalObject, _detachGraphicalObject, teleportT, (float)TimeManager.TickDelta, _ownerInterpolation, _ownerSmoothedProperties, _spectatorInterpolation, _spectatorSmoothedProperties, _adaptiveInterpolation);
         }
@@ -279,7 +288,8 @@ namespace FishNet.Object
         {
             if (PredictionSmoother != null)
             {
-                ResettableObjectCaches<AdaptiveLocalTransformTickSmoother>.Store(PredictionSmoother);
+                PredictionSmoother.Deinitialize();
+                ResettableObjectCaches<ChildTransformTickSmoother>.Store(PredictionSmoother);
                 PredictionSmoother = null;
                 ResettableObjectCaches<RigidbodyPauser>.StoreAndDefault(ref _rigidbodyPauser);
             }
@@ -301,16 +311,6 @@ namespace FishNet.Object
 
             if (!asServer)
                 PredictionSmoother?.OnStopClient();
-        }
-
-        private void OnDestroy_Prediction()
-        {
-            if (_predictionBehaviours.Count == 0)
-                return;
-
-            //This is a fail-safe in the scenario the graphicalobject did not reattach during network stop.
-            if (_detachGraphicalObject && _graphicalObject != null && _graphicalObject.parent == null)
-                Destroy(_graphicalObject);
         }
 
         private void TimeManager_OnPreTick()

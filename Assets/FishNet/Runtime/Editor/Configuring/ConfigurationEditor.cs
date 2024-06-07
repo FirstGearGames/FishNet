@@ -149,8 +149,10 @@ namespace FishNet.Editing
                 return;
             }
 
-            int generatedCount = 0;
-            int processedScenes = 0;
+            int checkedObjects = 0;
+            int checkedScenes = 0;
+            int changedObjects = 0;
+
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 Scene s = SceneManager.GetSceneAt(i);
@@ -160,22 +162,14 @@ namespace FishNet.Editing
                     continue;
                 }
 
-                processedScenes++;
-                List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-                Scenes.GetSceneNetworkObjects(s, false, false, ref nobs);
-                int nobCount = nobs.Count;
-                for (int z = 0; z < nobCount; z++)
-                {
-                    NetworkObject nob = nobs[z];
-                    nob.TryCreateSceneID();
-                    EditorUtility.SetDirty(nob);
-                }
-                generatedCount += nobCount;
-
-                CollectionCaches<NetworkObject>.Store(nobs);
+                checkedScenes++;
+                NetworkObject.CreateSceneId(s, out int changed, out int found);
+                checkedObjects += found;
+                changedObjects += changed;
             }
 
-            Debug.Log($"Generated sceneIds for {generatedCount} objects over {processedScenes} scenes. Please save your open scenes.");
+            string saveText = (changedObjects > 0) ? " Please save your open scenes." : string.Empty;
+            Debug.Log($"SceneIds were generated for {changedObjects} object(s) over {checkedScenes} scene(s). {checkedObjects} object(s) were checked in total..{saveText}");
         }
 
 
@@ -234,17 +228,8 @@ namespace FishNet.Editing
                 Scene s = SceneManager.GetSceneAt(i);
 
                 List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-                Scenes.GetSceneNetworkObjects(s, false, false, ref nobs);
-                int nobsCount = nobs.Count;
-                for (int z = 0; z < nobsCount; z++)
-                {
-                    NetworkObject nob = nobs[z];
-                    nob.TryCreateSceneID();
-                    EditorUtility.SetDirty(nob);
-                }
-                for (int z = 0; z < nobsCount; z++)
-                    foundNobs.Add(nobs[i]);
-
+                Scenes.GetSceneNetworkObjects(s, false, false, true, ref nobs);
+                foundNobs.AddRange(nobs);
                 CollectionCaches<NetworkObject>.Store(nobs);
             }
 
@@ -256,8 +241,10 @@ namespace FishNet.Editing
                 if (count > 0)
                     removed += count;
             }
-
-            Debug.Log($"Removed {removed} duplicate NetworkObjects. Please save your open scenes and project.");
+            
+            Debug.Log($"Removed {removed} duplicate NetworkObjects.");
+            if (removed > 0)
+                RebuildSceneIdMenu.RebuildSceneIds();
         }
 
     }

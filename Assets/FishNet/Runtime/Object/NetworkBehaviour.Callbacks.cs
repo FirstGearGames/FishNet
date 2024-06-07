@@ -86,7 +86,7 @@ namespace FishNet.Object
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void OnStartNetwork_Internal()
+        internal virtual void OnStartNetwork_Internal()
         {
             _onStartNetworkCalled = true;
             _onStopNetworkCalled = false;
@@ -101,7 +101,7 @@ namespace FishNet.Object
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void OnStopNetwork_Internal()
+        internal virtual void OnStopNetwork_Internal()
         {
             _onStopNetworkCalled = true;
             _onStartNetworkCalled = false;

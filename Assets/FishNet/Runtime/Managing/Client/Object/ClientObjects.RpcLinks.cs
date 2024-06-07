@@ -34,29 +34,39 @@ namespace FishNet.Managing.Client
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ParseRpcLink(PooledReader reader, ushort index, Channel channel)
         {
-            int dataLength = Packets.GetPacketLength(ushort.MaxValue, reader, channel);
-
+            int dataLength;
             //Link index isn't stored.
             if (!_rpcLinks.TryGetValueIL2CPP(index, out RpcLink link))
             {
+                dataLength = Packets.GetPacketLength(ushort.MaxValue, reader, channel);
                 SkipDataLength(index, reader, dataLength);
                 return;
             }
-            else
             //Found NetworkObject for link.
-            if (Spawned.TryGetValueIL2CPP(link.ObjectId, out NetworkObject nob))
+            else if (Spawned.TryGetValueIL2CPP(link.ObjectId, out NetworkObject nob))
             {
+                //Still call GetPacketLength to remove any extra bytes at the front of the reader.
                 NetworkBehaviour nb = nob.NetworkBehaviours[link.ComponentIndex];
                 if (link.RpcType == RpcType.Target)
+                {
+                    Packets.GetPacketLength((ushort)PacketId.TargetRpc, reader, channel);
                     nb.OnTargetRpc(link.RpcHash, reader, channel);
+                }
                 else if (link.RpcType == RpcType.Observers)
+                {
+                    Packets.GetPacketLength((ushort)PacketId.ObserversRpc, reader, channel);
                     nb.OnObserversRpc(link.RpcHash, reader, channel);
+                }
                 else if (link.RpcType == RpcType.Reconcile)
+                {
+                    Packets.GetPacketLength((ushort)PacketId.Reconcile, reader, channel);
                     nb.OnReconcileRpc(link.RpcHash, reader, channel);
+                }
             }
             //Could not find NetworkObject.
             else
             {
+                dataLength = Packets.GetPacketLength(index, reader, channel);
                 SkipDataLength(index, reader, dataLength, link.ObjectId);
             }
         }

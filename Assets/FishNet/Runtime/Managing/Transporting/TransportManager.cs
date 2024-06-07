@@ -512,16 +512,6 @@ namespace FishNet.Managing.Transporting
         /// Sends data to observers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, NetworkConnection excludedConnection = null, bool splitLargeMessages = true, DataOrderType orderType = DataOrderType.Default)
-        {
-            _networkConnectionHashSet.Clear();
-            _networkConnectionHashSet.Add(excludedConnection);
-            SendToClients(channelId, segment, observers, _networkConnectionHashSet, splitLargeMessages, orderType);
-        }
-        /// <summary>
-        /// Sends data to observers.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SendToClients(byte channelId, ArraySegment<byte> segment, HashSet<NetworkConnection> observers, HashSet<NetworkConnection> excludedConnections = null, bool splitLargeMessages = true, DataOrderType orderType = DataOrderType.Default)
         {
             SetSplitValues(channelId, segment, splitLargeMessages, out int requiredMessages, out int maxSplitMessageSize);

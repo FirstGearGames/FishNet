@@ -124,6 +124,28 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Adds another transformProperties onto this.
+        /// </summary>
+        /// <param name="tp"></param>
+        public void Add(TransformProperties tp)
+        {
+            Position += tp.Position;
+            Rotation *= tp.Rotation;
+            LocalScale += tp.LocalScale;
+        }
+
+        /// <summary>
+        /// Subtracts another transformProperties from this.
+        /// </summary>
+        /// <param name="tp"></param>
+        public void Subtract(TransformProperties tp)
+        {
+            Position -= tp.Position;
+            Rotation *= Quaternion.Inverse(tp.Rotation);
+            LocalScale -= tp.LocalScale;
+        }
+
+        /// <summary>
         /// Returns if this TransformProperties equals anothers values.
         /// </summary>
         public bool ValuesEquals(TransformProperties properties)

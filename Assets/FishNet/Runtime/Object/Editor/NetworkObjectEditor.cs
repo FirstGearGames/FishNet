@@ -124,7 +124,7 @@ namespace FishNet.Object.Editing
 
                     EditorGUILayout.LabelField("Spectator", EditorStyles.boldLabel);
                     EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(_adaptiveInterpolation);                    
+                    EditorGUILayout.PropertyField(_adaptiveInterpolation);
                     if (_adaptiveInterpolation.intValue == (int)AdaptiveInterpolationType.Off)
                     {
                         EditorGUI.indentLevel++;

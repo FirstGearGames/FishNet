@@ -405,9 +405,6 @@ namespace FishNet.Object
             IsDeinitializing = true;
 
             SetDeinitializedStatus();
-#if !PREDICTION_1
-            OnDestroy_Prediction();
-#endif
             //Do not need to set state if being destroyed.
             //Don't need to reset sync types if object is being destroyed.
 
@@ -569,7 +566,7 @@ namespace FishNet.Object
             _networkObserverInitiliazed = true;
 
 #if !PREDICTION_1
-            Prediction_Preinitialize(networkManager, asServer);
+            Preinitialize_Prediction(networkManager, asServer);
 #endif
             //Add to connections objects. Collection is a hashset so this can be called twice for clientHost.
             owner?.AddObject(this);
@@ -578,7 +575,7 @@ namespace FishNet.Object
 #if !PREDICTION_1
         private void Update()
         {
-            Prediction_Update();
+            Update_Prediction();
         }
 #endif
 

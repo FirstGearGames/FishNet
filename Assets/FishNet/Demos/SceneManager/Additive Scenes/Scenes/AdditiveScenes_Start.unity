@@ -169,6 +169,7 @@ MonoBehaviour:
   _enableNetworkLod: 0
   _levelOfDetailDistances: []
   _updateHostVisibility: 1
+  _maximumTimedObserversDuration: 10
   _defaultConditions:
   - {fileID: 11400000, guid: 2033f54fd2794464bae08fa5a55c8996, type: 2}
   - {fileID: 11400000, guid: 37bd3d466aaa29b4da784cddaaa365ea, type: 2}
@@ -222,14 +223,19 @@ MonoBehaviour:
   _enablePrediction: 0
   _predictionType: 0
   _graphicalObject: {fileID: 0}
+  _detachGraphicalObject: 0
   _enableStateForwarding: 1
+  _networkTransform: {fileID: 0}
   _ownerInterpolation: 1
+  _ownerSmoothedProperties: 255
+  _adaptiveInterpolation: 3
+  _spectatorSmoothedProperties: 255
+  _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  _scenePathHash: 2948317627
-  <SceneId>k__BackingField: 12662927786225082631
+  <SceneId>k__BackingField: 1474231931
   <AssetPathHash>k__BackingField: 0
 --- !u!114 &2134535187
 MonoBehaviour:
@@ -423,6 +429,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -821,7 +828,7 @@ MonoBehaviour:
   _objectPool: {fileID: 0}
   _persistence: 0
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: 223fa01133c52c7469e6520b901bcebd, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: 68e79e63a16f2c74e81f070bd36822b8, type: 2}
 --- !u!1 &7443408887457311805
 GameObject:
   m_ObjectHideFlags: 0

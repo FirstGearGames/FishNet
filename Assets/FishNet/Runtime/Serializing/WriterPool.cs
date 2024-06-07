@@ -42,7 +42,10 @@ namespace FishNet.Serializing
         /// </summary>
         public static PooledWriter Retrieve(NetworkManager networkManager)
         {
-            PooledWriter result = (_pool.Count > 0) ? _pool.Pop() : new PooledWriter();
+            PooledWriter result;
+            if (!_pool.TryPop(out result))
+                result = new PooledWriter();
+
             result.Reset(networkManager);
             return result;
         }
@@ -77,25 +80,25 @@ namespace FishNet.Serializing
              * index 1 will be up to 2000. */
             int index = GetDictionaryIndex(length);
             Stack<PooledWriter> stack;
+            PooledWriter result;
             //There is already one pooled.
-            if (_lengthPool.TryGetValue(index, out stack) && stack.Count > 0)
+            if (_lengthPool.TryGetValue(index, out stack) && stack.TryPop(out result))
             {
-                PooledWriter result = stack.Pop();
                 result.Reset(networkManager);
-                return result;
             }
-            //Not pooled yet.
+            //Not pooled yet or failed to pop.
             else
             {
                 //Get any ol' writer.
-                PooledWriter writer = Retrieve(networkManager);
+                result = Retrieve(networkManager);
                 /* Ensure length to fill it's bracket.
                  * Increase index by 1 since 0 index would
                  * just return 0 as the capacity. */
                 int requiredCapacity = (index + 1) * LENGTH_BRACKET;
-                writer.EnsureBufferCapacity(requiredCapacity);
-                return writer;
+                result.EnsureBufferCapacity(requiredCapacity);
             }
+
+            return result;
         }
 
         /// <summary>

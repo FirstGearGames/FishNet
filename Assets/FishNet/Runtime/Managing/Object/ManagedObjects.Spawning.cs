@@ -288,7 +288,7 @@ namespace FishNet.Managing.Object
                 if (asServer)
                     spawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {spawner.ClientId} tried to spawn an object {nob.name} which does not support predicted spawning.");
                 else
-                    NetworkManager.LogError($"Object {nob.name} does not support predicted spawning. Modify the NetworkObject component settings to allow predicted spawning.");
+                    NetworkManager.LogError($"Object {nob.name} does not support predicted spawning. Add a PredictedSpawn component to the object and configure appropriately.");
 
                 reader?.Clear();
                 return false;
@@ -368,7 +368,7 @@ namespace FishNet.Managing.Object
             }
             //Blocked by PredictedSpawn settings or user logic.
             if (
-                (asServer && !nob.PredictedSpawn.OnTryDepawnServer(despawner))
+                (asServer && !nob.PredictedSpawn.OnTryDespawnServer(despawner))
                 || (!asServer && !nob.PredictedSpawn.OnTryDespawnClient())
                 )
             {

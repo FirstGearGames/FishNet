@@ -2,12 +2,14 @@
 using FishNet.CodeGenerating;
 using FishNet.Serializing;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace FishNet.Component.Prediction
 {
     [UseGlobalCustomSerializer]
+    [Preserve]
     public struct RigidbodyState
-    {
+    {        
         public Vector3 Position;
         public Quaternion Rotation;
         public bool IsKinematic;
@@ -21,9 +23,7 @@ namespace FishNet.Component.Prediction
             IsKinematic = isKinematic;
             Velocity = rb.velocity;
             AngularVelocity = rb.angularVelocity;
-
         }
-
         public RigidbodyState(Rigidbody rb)
         {
             Position = rb.transform.position;
@@ -35,6 +35,7 @@ namespace FishNet.Component.Prediction
     }
 
     [UseGlobalCustomSerializer]
+    [Preserve]
     public struct Rigidbody2DState
     {
         public Vector3 Position;
@@ -65,9 +66,9 @@ namespace FishNet.Component.Prediction
         }
     }
 
+    [Preserve]
     public static class RigidbodyStateSerializers
     {
-
         public static void WriteRigidbodyState(this Writer writer, RigidbodyState value)
         {
             writer.WriteVector3(value.Position);
@@ -97,7 +98,6 @@ namespace FishNet.Component.Prediction
 
             return state;
         }
-
 
         public static void WriteRigidbody2DState(this Writer writer, Rigidbody2DState value)
         {
@@ -135,7 +135,7 @@ namespace FishNet.Component.Prediction
 
     }
 
-
+    [Preserve]
     public static class RigidbodyStateExtensions
     {
         /// <summary>

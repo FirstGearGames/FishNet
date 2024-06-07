@@ -54,18 +54,26 @@ namespace FishNet.Utility.Performance
             NetworkObject nob = null;
 
             //Iterate until nob is populated just in case cache entries have been destroyed.
-            while (nob == null && cache.Count > 0)
+            while (nob == null)
             {
-                nob = cache.Pop();
-                if (nob != null)
+                if (cache.TryPop(out nob))
                 {
-                    nob.transform.SetParent(parent);
-                    nob.transform.SetLocalPositionRotationAndScale(nullableLocalPosition, nullableLocalRotation, nullableLocalScale);
-                    if (makeActive)
-                        nob.gameObject.SetActive(true);
-                    return nob;
+                    if (nob != null)
+                    {
+                        nob.transform.SetParent(parent);
+                        nob.transform.SetLocalPositionRotationAndScale(nullableLocalPosition, nullableLocalRotation, nullableLocalScale);
+                        if (makeActive)
+                            nob.gameObject.SetActive(true);
+                        return nob;
+                    }
+                }
+                //Nothing left in cache.
+                else
+                {
+                    break;
                 }
             }
+
             //Fall through, nothing in cache.
             return GetFromInstantiate();
 
@@ -79,7 +87,7 @@ namespace FishNet.Utility.Performance
                 }
                 else
                 {
-                    prefab.transform.OutLocalPropertyValues(nullableLocalPosition, nullableLocalRotation, nullableLocalScale, out Vector3 pos, out Quaternion rot, out Vector3 scale);                    
+                    prefab.transform.OutLocalPropertyValues(nullableLocalPosition, nullableLocalRotation, nullableLocalScale, out Vector3 pos, out Quaternion rot, out Vector3 scale);
                     if (parent != null)
                     {
                         //Convert pos and rot to world values for the instantiate.
@@ -176,9 +184,8 @@ namespace FishNet.Utility.Performance
             Dictionary<int, Stack<NetworkObject>> dict = _cache[collectionId];
             foreach (Stack<NetworkObject> item in dict.Values)
             {
-                while (item.Count > 0)
+                while (item.TryPop(out NetworkObject nob))
                 {
-                    NetworkObject nob = item.Pop();
                     if (nob != null)
                         Destroy(nob.gameObject);
                 }
