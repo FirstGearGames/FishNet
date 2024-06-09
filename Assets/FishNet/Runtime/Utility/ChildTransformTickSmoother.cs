@@ -611,7 +611,6 @@ namespace FishNet.Object.Prediction
             if (!_initialized)
                 return;
 
-            _networkObject = null;
             if (_graphicalObject != null)
             {
                 if (_networkObject != null)
@@ -627,6 +626,7 @@ namespace FishNet.Object.Prediction
                 }
             }
 
+            _networkObject = null;
             _teleportedTick = TimeManager.UNSET_TICK;
             _movementMultiplier = 1f;
             CollectionCaches<TickTransformProperties>.StoreAndDefault(ref _transformProperties);
