@@ -52,13 +52,14 @@ namespace FishNet.Component.Transforming
         private LocalTransformTickSmoother _tickSmoother;
         #endregion
 
-        private void Awake()
+        private void OnEnable()
         {
-            InitializeOnce();
+            Initialize();
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
+            _tickSmoother.ResetState();
             ChangeSubscription(false);
             ObjectCaches<LocalTransformTickSmoother>.StoreAndDefault(ref _tickSmoother);
         }
@@ -72,7 +73,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        private void InitializeOnce()
+        private void Initialize()
         {
             _tickSmoother = ObjectCaches<LocalTransformTickSmoother>.Retrieve();
             if (_useInstanceFinder)
