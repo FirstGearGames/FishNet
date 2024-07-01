@@ -171,6 +171,13 @@ namespace FishNet.Object.Synchronizing
         protected override void Initialized()
         {
             base.Initialized();
+
+            // Ensure that initialized values always get set
+            _initialValues ??= new Dictionary<TKey, TValue>();
+            _changed ??= new List<ChangeData>();
+            _serverOnChanges ??= new List<CachedOnChange>();
+            _clientOnChanges ??= new List<CachedOnChange>();
+
             foreach (KeyValuePair<TKey, TValue> item in Collection)
                 _initialValues[item.Key] = item.Value;
         }
