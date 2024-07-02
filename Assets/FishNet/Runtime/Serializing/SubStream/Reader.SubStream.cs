@@ -16,7 +16,7 @@ namespace FishNet.Serializing
             if (streamLength == SubStream.UNINITIALIZED_LENGTH)
             {
                 // returns Uninitialized SubStream
-                return SubStream.GetUninitialized();
+                return default;
             }
 
             return SubStream.CreateFromReader(this, streamLength);
