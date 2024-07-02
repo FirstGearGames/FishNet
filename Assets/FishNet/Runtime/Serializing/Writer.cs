@@ -410,7 +410,7 @@ namespace FishNet.Serializing
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DefaultWriter]
-        public void WriteUInt32(uint value) => WriteSignedPackedWhole(value);
+        public void WriteUInt32(uint value) => WriteUnsignedPackedWhole(value);
 
         /// <summary>
         /// Writes a uint64.
