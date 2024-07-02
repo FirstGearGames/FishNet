@@ -1,4 +1,4 @@
-namespace FishNet.Component.Prediction
+/*namespace FishNet.Component.Prediction
 {
 
     public sealed class NetworkTrigger : NetworkCollider
@@ -12,4 +12,4 @@ namespace FishNet.Component.Prediction
 #endif
     }
 
-}
+}*/
