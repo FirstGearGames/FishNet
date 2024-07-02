@@ -21,7 +21,7 @@ namespace FishNet.Editing.Upgrading
         private const string DISABLE_V3TOV4_HELPERS_DEFINE = "FISHNET_DISABLE_V3TOV4_HELPERS";
 
 #if !FISHNET_DISABLE_V3TOV4_HELPERS
-        [MenuItem("Fish-Networking/Utility/Upgrading/FishNet 3 to FishNet 4/Disable Helpers", false, -1100)]
+        [MenuItem("Tools/Fish-Networking/Utility/Upgrading/FishNet 3 to FishNet 4/Disable Helpers", false, -1100)]
         private static void Disable3To4Helpers()
         {
             bool result = RemoveOrAddDefine(DISABLE_V3TOV4_HELPERS_DEFINE, false);
@@ -29,7 +29,7 @@ namespace FishNet.Editing.Upgrading
                 Debug.LogWarning($"Version 3 to Version 4 migration helpers have been disabled.");
         }
 #else
-        [MenuItem("Fish-Networking/Utility/Upgrading/FishNet 3 to FishNet 4/Enable Helpers", false, -1100)]
+        [MenuItem("Tools/Fish-Networking/Utility/Upgrading/FishNet 3 to FishNet 4/Enable Helpers", false, -1100)]
         private static void Enable3To4Helpers()
         {
             bool result = RemoveOrAddDefine(DISABLE_V3TOV4_HELPERS_DEFINE, true);

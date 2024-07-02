@@ -178,7 +178,7 @@ namespace FishNet.Managing.Client
         internal void WriteSpawn_Client(NetworkObject nob, Writer writer)
         {
             PooledWriter headerWriter = WriterPool.Retrieve();
-            headerWriter.WritePacketId(PacketId.ObjectSpawn);
+            headerWriter.WritePacketIdUnpacked(PacketId.ObjectSpawn);
             headerWriter.WriteNetworkObjectForSpawn(nob);
             headerWriter.WriteNetworkConnection(nob.Owner);
 
@@ -189,16 +189,16 @@ namespace FishNet.Managing.Client
                 st |= SpawnType.Scene;
             else
                 st |= (nob.IsGlobal) ? SpawnType.InstantiatedGlobal : SpawnType.Instantiated;
-            headerWriter.WriteByte((byte)st);
+            headerWriter.WriteUInt8Unpacked((byte)st);
 
             //ComponentIndex for the nob. 0 is root but more appropriately there's a IsNested boolean as shown above.
-            headerWriter.WriteByte(nob.ComponentIndex);
+            headerWriter.WriteUInt8Unpacked(nob.ComponentIndex);
             //Properties on the transform which diff from serialized value.
             base.WriteChangedTransformProperties(nob, sceneObject, false, headerWriter);
             /* Writing a scene object. */
             if (sceneObject)
             {
-                headerWriter.WriteUInt64(nob.SceneId, AutoPackType.Unpacked);
+                headerWriter.WriteUInt64Unpacked(nob.SceneId);
 #if DEVELOPMENT
                 base.CheckWriteSceneObjectDetails(nob, headerWriter);
 #endif
@@ -207,7 +207,7 @@ namespace FishNet.Managing.Client
             else
             {
                 //Nested predicted spawning will be added later.
-                headerWriter.WriteByte((byte)SpawnParentType.Unset);
+                headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.Unset);
                 headerWriter.WriteNetworkObjectId(nob.PrefabId);
             }
 
@@ -243,7 +243,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         public void WriteDepawn(NetworkObject nob, Writer writer)
         {
-            writer.WritePacketId(PacketId.ObjectDespawn);
+            writer.WritePacketIdUnpacked(PacketId.ObjectDespawn);
             writer.WriteNetworkObject(nob);
         }
 
@@ -411,8 +411,8 @@ namespace FishNet.Managing.Client
             ushort collectionId;
             int objectId = reader.ReadNetworkObjectForSpawn(out initializeOrder, out collectionId, out _);
             int ownerId = reader.ReadNetworkConnectionId();
-            SpawnType st = (SpawnType)reader.ReadByte();
-            byte componentIndex = reader.ReadByte();
+            SpawnType st = (SpawnType)reader.ReadUInt8Unpacked();
+            byte componentIndex = reader.ReadUInt8Unpacked();
 
             //Read transform values which differ from serialized values.
             Vector3? localPosition;
@@ -420,9 +420,9 @@ namespace FishNet.Managing.Client
             Vector3? localScale;
             base.ReadTransformProperties(reader, out localPosition, out localRotation, out localScale);
 
-            bool nested = SpawnTypeEnum.Contains(st, SpawnType.Nested);
+            bool nested = SpawnTypeEnum.FastContains(st, SpawnType.Nested);
             int rootObjectId = (nested) ? reader.ReadNetworkObjectId() : 0;
-            bool sceneObject = SpawnTypeEnum.Contains(st, SpawnType.Scene);
+            bool sceneObject = SpawnTypeEnum.FastContains(st, SpawnType.Scene);
 
             int? parentObjectId = null;
             byte? parentComponentIndex = null;
@@ -560,7 +560,7 @@ namespace FishNet.Managing.Client
                         //RpcHash.
                         reader.ReadUInt16(),
                         //ObserverRpc.
-                        (RpcType)reader.ReadByte());
+                        (RpcType)reader.ReadUInt8Unpacked());
                     //Add to links.
                     SetRpcLink(linkIndex, link);
                     rpcLinkIndexes.Add(linkIndex);
@@ -631,6 +631,7 @@ namespace FishNet.Managing.Client
                             {
                                 NetworkObject prefab = prefabObjects.GetObject(false, prefabId);
                                 networkManager.LogError($"NetworkBehaviour on index {componentIndex} could nto be found within NetworkObject {nob.name} with ObjectId {objectId}. Prefab {prefab.name} will be instantiated without parent synchronization.");
+                                hasParent = false;
                             }
                         }
                         //The networkObject is the parent.
@@ -641,11 +642,15 @@ namespace FishNet.Managing.Client
                     }
                 }
 
-                result = networkManager.GetPooledInstantiated(prefabId, collectionId, parentTransform, cnob.LocalPosition
-                    , cnob.LocalRotation, cnob.LocalScale, makeActive: true, asServer: false);
+                ObjectPoolRetrieveOption retrieveOptions = ObjectPoolRetrieveOption.MakeActive;
+                if (hasParent)
+                    retrieveOptions |= ObjectPoolRetrieveOption.LocalSpace;
+
+                result = networkManager.GetPooledInstantiated(prefabId, collectionId, retrieveOptions, parentTransform, cnob.Position
+                    , cnob.Rotation, cnob.Scale, asServer: false);
 
                 //Only need to set IsGlobal also if not host.
-                bool isGlobal = SpawnTypeEnum.Contains(cnob.SpawnType, SpawnType.InstantiatedGlobal);
+                bool isGlobal = SpawnTypeEnum.FastContains(cnob.SpawnType, SpawnType.InstantiatedGlobal);
                 result.SetIsGlobal(isGlobal);
             }
             //If host then find server instantiated object.
@@ -693,7 +698,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         private void ReadSceneObject(PooledReader reader, out ulong sceneId)
         {
-            sceneId = reader.ReadUInt64(AutoPackType.Unpacked);
+            sceneId = reader.ReadUInt64Unpacked();
         }
 
         /// <summary>
@@ -701,8 +706,9 @@ namespace FishNet.Managing.Client
         /// </summary>
         private void ReadSpawnedObject(PooledReader reader, out int? parentObjectId, out byte? parentComponentIndex, out int? prefabId)
         {
+            //TODO: parentChange. If has parent then read local space, otherwise world.
             //Parent.
-            SpawnParentType spt = (SpawnParentType)reader.ReadByte();
+            SpawnParentType spt = (SpawnParentType)reader.ReadUInt8Unpacked();
             //Defaults.
             parentObjectId = null;
             parentComponentIndex = null;

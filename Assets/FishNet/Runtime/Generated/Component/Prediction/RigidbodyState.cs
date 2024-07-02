@@ -72,7 +72,7 @@ namespace FishNet.Component.Prediction
         public static void WriteRigidbodyState(this Writer writer, RigidbodyState value)
         {
             writer.WriteVector3(value.Position);
-            writer.WriteQuaternion(value.Rotation);
+            writer.WriteQuaternion32(value.Rotation);
             writer.WriteBoolean(value.IsKinematic);
             if (!value.IsKinematic)
             {
@@ -86,7 +86,7 @@ namespace FishNet.Component.Prediction
             RigidbodyState state = new RigidbodyState()
             {
                 Position = reader.ReadVector3(),
-                Rotation = reader.ReadQuaternion(),
+                Rotation = reader.ReadQuaternion32(),
                 IsKinematic = reader.ReadBoolean()
             };
 
@@ -102,7 +102,7 @@ namespace FishNet.Component.Prediction
         public static void WriteRigidbody2DState(this Writer writer, Rigidbody2DState value)
         {
             writer.WriteVector3(value.Position);
-            writer.WriteQuaternion(value.Rotation);
+            writer.WriteQuaternion32(value.Rotation);
             writer.WriteBoolean(value.Simulated);
             writer.WriteBoolean(value.IsKinematic);
 
@@ -118,7 +118,7 @@ namespace FishNet.Component.Prediction
             Rigidbody2DState state = new Rigidbody2DState()
             {
                 Position = reader.ReadVector3(),
-                Rotation = reader.ReadQuaternion(),
+                Rotation = reader.ReadQuaternion32(),
                 Simulated = reader.ReadBoolean(),
                 IsKinematic = reader.ReadBoolean()
             };

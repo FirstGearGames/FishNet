@@ -16,7 +16,7 @@ namespace FishNet.Object.Prediction
         public static void WriteForceData(this Writer w, PredictionRigidbody2D.EntryData value)
         {
             PredictionRigidbody2D.ForceApplicationType appType = value.Type;
-            w.WriteByte((byte)appType);
+            w.WriteUInt8Unpacked((byte)appType);
             PredictionRigidbody2D.AllForceData data = value.Data;
 
             switch (appType)
@@ -45,7 +45,7 @@ namespace FishNet.Object.Prediction
         {
             PredictionRigidbody2D.EntryData fd = new PredictionRigidbody2D.EntryData();
 
-            PredictionRigidbody2D.ForceApplicationType appType = (PredictionRigidbody2D.ForceApplicationType)r.ReadByte();
+            PredictionRigidbody2D.ForceApplicationType appType = (PredictionRigidbody2D.ForceApplicationType)r.ReadUInt8Unpacked();
             fd.Type = appType;
 
             PredictionRigidbody2D.AllForceData data = new();
@@ -55,16 +55,16 @@ namespace FishNet.Object.Prediction
                 case PredictionRigidbody2D.ForceApplicationType.AddForce:
                 case PredictionRigidbody2D.ForceApplicationType.AddRelativeForce:
                     data.Vector3Force = r.ReadVector3();
-                    data.Mode = (ForceMode2D)r.ReadByte();
+                    data.Mode = (ForceMode2D)r.ReadUInt8Unpacked();
                     return fd;
                 case PredictionRigidbody2D.ForceApplicationType.AddTorque:
                     data.FloatForce = r.ReadSingle();
-                    data.Mode = (ForceMode2D)r.ReadByte();
+                    data.Mode = (ForceMode2D)r.ReadUInt8Unpacked();
                     return fd;
                 case PredictionRigidbody2D.ForceApplicationType.AddForceAtPosition:
                     data.Vector3Force = r.ReadVector3();
                     data.Position = r.ReadVector3();
-                    data.Mode = (ForceMode2D)r.ReadByte();
+                    data.Mode = (ForceMode2D)r.ReadUInt8Unpacked();
                     return fd;
                 default:
                     NetworkManagerExtensions.LogError($"ForceApplicationType of {appType} is not supported.");
@@ -167,6 +167,10 @@ namespace FishNet.Object.Prediction
         /// Rigidbody which force is applied.
         /// </summary>
         public Rigidbody2D Rigidbody2D { get; private set; }
+        /// <summary>
+        /// Returns if there are any pending forces.
+        /// </summary>
+        public bool HasPendingForces => (_pendingForces != null && _pendingForces.Count > 0);
         #endregion
 
         #region Private
@@ -175,6 +179,11 @@ namespace FishNet.Object.Prediction
         /// </summary>
         [ExcludeSerialization]
         private List<EntryData> _pendingForces;
+        /// <summary>
+        /// Returns current pending forces.
+        /// Modifying this collection could cause undesirable results.
+        /// </summary>
+        public List<EntryData> GetPendingForces() => _pendingForces;
         #endregion
 
         ~PredictionRigidbody2D()
@@ -340,7 +349,6 @@ namespace FishNet.Object.Prediction
 
         }
 
-        internal List<EntryData> GetPendingForces() => _pendingForces;
         internal void SetPendingForces(List<EntryData> lst) => _pendingForces = lst;
 
         internal void SetReconcileData(Rigidbody2DState rs, List<EntryData> lst)

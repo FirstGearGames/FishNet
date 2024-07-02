@@ -1,96 +1,171 @@
+using System;
 using FishNet.CodeGenerating;
-using FishNet.Managing;
-using FishNet.Utility;
 using System.Runtime.CompilerServices;
-using UnityEngine;
-using static FishNet.Serializing.Writer;
+using FishNet.Managing;
 
-/* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
-/* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
-/* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
-
-[assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
-//Required for internal tests.
-[assembly: InternalsVisibleTo(UtilityConstants.TEST_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
 {
-
-    /// <summary>
-    /// Reads data from a buffer.
-    /// </summary>
+    ///* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
+    ///* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
+    ///* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
     public partial class Reader
     {
-        //[NotSerializer]
-        //internal ushort ReadUInt16Delta(ushort prev)
-        //{
-        //    int next = ReadInt32();
-        //    return (ushort)(prev + next);
-        //}
-        //[NotSerializer]
-        //internal short ReadInt16Delta(short prev) => (short)ReadUInt16Delta((ushort)prev);
+        internal double DOUBLE_ACCURACY => Writer.DOUBLE_ACCURACY;
+        internal decimal DECIMAL_ACCURACY => Writer.DECIMAL_ACCURACY;
 
-        //[NotSerializer]
-        //internal uint ReadUInt32Delta(uint prev)
-        //{
-        //    long next = ReadInt64();
-        //    return (prev + (uint)next);
-        //}
-
-        //[NotSerializer]
-        //internal int ReadInt32Delta(int prev) => (int)ReadUInt32Delta((uint)prev);
+        [DefaultDeltaReader]
+        public bool ReadDeltaBoolean(bool valueA) => ReadBoolean();
 
 
-        //[NotSerializer]
-        //internal ulong ReadUInt64Delta(ulong prev)
-        //{
-        //    bool newLarger = ReadBoolean();
-        //    ulong difference = ReadPackedWhole();
+        #region Whole values.
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public sbyte ReadDeltaInt8(sbyte valueA) => (sbyte)ReadDifference8_16_32(valueA);
 
-        //    return (newLarger) ?
-        //        (prev + difference) : (prev - difference);
-        //}
-        //[NotSerializer]
-        //internal long ReadInt64Delta(long prev) => (long)ReadUInt64Delta((ulong)prev);
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte ReadDeltaUInt8(byte valueA) => (byte)ReadDifference8_16_32(valueA);
 
-        //[NotSerializer]
-        //internal LayerMask ReadLayerMaskDelta(LayerMask prev)
-        //{
-        //    int layerValue = ReadInt32Delta(prev);
-        //    return (LayerMask)layerValue;
-        //}
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public short ReadDeltaInt16(short valueA) => (short)ReadDifference8_16_32(valueA);
 
-        [NotSerializer]
-        internal float ReadSingleDelta(float prev)
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ushort ReadDeltaUInt16(ushort valueA) => (ushort)ReadDifference8_16_32(valueA);
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ReadDeltaInt32(int valueA) => (int)ReadDifference8_16_32(valueA);
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint ReadDeltaUInt32(uint valueA) => (uint)ReadDifference8_16_32(valueA);
+
+        /// <summary>
+        /// Returns a new result by reading and applying a difference to a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        private long ReadDifference8_16_32(long valueA)
         {
-            AutoPackTypeSigned apts = (AutoPackTypeSigned)ReadByte();
-            /* If numeric value is equal to PackedPositive or higher than
-             * the pack type will be positive, as all positive types
-             * are larger than negative in the enum. */
-            float multiplier = ((byte)apts >= (byte)AutoPackTypeSigned.PackedPositive) ?
-                1f : -1f;
-
-            switch (apts)
-            {
-                case AutoPackTypeSigned.Unpacked:
-                    return ReadSingle(AutoPackType.Unpacked);
-                case AutoPackTypeSigned.PackedPositive:
-                case AutoPackTypeSigned.PackedNegative:
-                    return (prev + GetUnpackedValue(ReadByte()));
-                case AutoPackTypeSigned.PackedLessPositive:
-                case AutoPackTypeSigned.PackedLessNegative:
-                    return (prev + GetUnpackedValue(ReadUInt16()));
-            }
-
-            //Fallthrough.
-            NetworkManager.LogError("Unhandled ReadSingleDelta packType of {apts}.");
-            return default;
-
-            float GetUnpackedValue(ushort readValue)
-            {
-                return (readValue / Writer.ACCURACY) * multiplier;
-            }
+            long diff = ReadSignedPackedWhole();
+            return (valueA + diff);
         }
 
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public long ReadDeltaInt64(long valueA) => (long)ReadDeltaUInt64((ulong)valueA);
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ulong ReadDeltaUInt64(ulong valueA)
+        {
+            bool bLargerThanA = ReadBoolean();
+            ulong diff = ReadUnsignedPackedWhole();
+
+            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+        }
+        #endregion
+
+
+        #region Precision values.
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        public float ReadDeltaSingle(float valueA)
+        {
+            DeltaPrecisionType dpt = (DeltaPrecisionType)ReadUInt8Unpacked();
+
+            float diff = 0;
+            if (dpt.FastContains(DeltaPrecisionType.UInt8))
+                diff = (ReadUInt8Unpacked() / (float)DOUBLE_ACCURACY);
+            else if (dpt.FastContains(DeltaPrecisionType.UInt16))
+                diff = (ReadUInt16Unpacked() / (float)DOUBLE_ACCURACY);
+            else if (dpt.FastContains(DeltaPrecisionType.Unpacked))
+                diff = ReadSingleUnpacked();
+            else
+                NetworkManager.LogError($"Unhandled precision type of {dpt}.");
+
+            bool bLargerThanA = dpt.FastContains(DeltaPrecisionType.NextValueIsLarger);
+            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+        }
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        public double ReadDeltaDouble(double valueA)
+        {
+            DeltaPrecisionType dpt = (DeltaPrecisionType)ReadUInt8Unpacked();
+
+            double diff = 0;
+            if (dpt.FastContains(DeltaPrecisionType.UInt8))
+                diff = (ReadUInt8Unpacked() / DOUBLE_ACCURACY);
+            else if (dpt.FastContains(DeltaPrecisionType.UInt16))
+                diff = (ReadUInt16Unpacked() / DOUBLE_ACCURACY);
+            else if (dpt.FastContains(DeltaPrecisionType.UInt32))
+                diff = (ReadUInt32Unpacked() / DOUBLE_ACCURACY);
+            else if (dpt.FastContains(DeltaPrecisionType.Unpacked))
+                diff = ReadDoubleUnpacked();
+            else
+                NetworkManager.LogError($"Unhandled precision type of {dpt}.");
+
+            bool bLargerThanA = dpt.FastContains(DeltaPrecisionType.NextValueIsLarger);
+            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+        }
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        public decimal ReadDeltaDecimal(decimal valueA)
+        {
+            DeltaPrecisionType dpt = (DeltaPrecisionType)ReadUInt8Unpacked();
+
+            decimal diff = 0;
+            if (dpt.FastContains(DeltaPrecisionType.UInt8))
+                diff = (ReadUInt8Unpacked() / DECIMAL_ACCURACY);
+            else if (dpt.FastContains(DeltaPrecisionType.UInt16))
+                diff = (ReadUInt16Unpacked() / DECIMAL_ACCURACY);
+            else if (dpt.FastContains(DeltaPrecisionType.UInt32))
+                diff = (ReadUInt32Unpacked() / DECIMAL_ACCURACY);
+            else if (dpt.FastContains(DeltaPrecisionType.UInt64))
+                diff = (ReadUInt64Unpacked() / DECIMAL_ACCURACY);
+            else if (dpt.FastContains(DeltaPrecisionType.Unpacked))
+                diff = ReadDecimalUnpacked();
+            else
+                NetworkManager.LogError($"Unhandled precision type of {dpt}.");
+
+            bool bLargerThanA = dpt.FastContains(DeltaPrecisionType.NextValueIsLarger);
+            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+        }
+        #endregion
 
     }
+
 }

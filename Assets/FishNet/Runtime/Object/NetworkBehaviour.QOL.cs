@@ -12,6 +12,7 @@ using FishNet.Managing.Transporting;
 using FishNet.Observing;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -262,18 +263,13 @@ namespace FishNet.Object
         /// <summary>
         /// Removes ownership from all clients.
         /// </summary>
-        public void RemoveOwnership()
-        {
-            _networkObjectCache.GiveOwnership(null, true);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RemoveOwnership() => _networkObjectCache.RemoveOwnership();
         /// <summary>
         /// Gives ownership to newOwner.
         /// </summary>
-        /// <param name="newOwner"></param>
-        public void GiveOwnership(NetworkConnection newOwner)
-        {
-            _networkObjectCache.GiveOwnership(newOwner, true);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void GiveOwnership(NetworkConnection newOwner) => _networkObjectCache.GiveOwnership(newOwner, true);
 
         #region Registered components
         /// <summary>

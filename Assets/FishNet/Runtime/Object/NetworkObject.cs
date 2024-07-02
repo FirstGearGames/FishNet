@@ -757,6 +757,10 @@ namespace FishNet.Object
                 else
                     SerializedRootNetworkBehaviour = parentNob.NetworkBehaviours[0];
             }
+            else
+            {
+                SerializedRootNetworkBehaviour = null;
+            }
 
             //Transforms which can be searched for networkbehaviours.
             List<Transform> transformCache = CollectionCaches<Transform>.RetrieveList();
@@ -970,7 +974,7 @@ namespace FishNet.Object
                     ServerManager.Objects.RebuildObservers(this, newOwner, false);
 
                 PooledWriter writer = WriterPool.Retrieve();
-                writer.WritePacketId(PacketId.OwnershipChange);
+                writer.WritePacketIdUnpacked(PacketId.OwnershipChange);
                 writer.WriteNetworkObject(this);
                 writer.WriteNetworkConnection(Owner);
                 //If sharing then send to all observers.

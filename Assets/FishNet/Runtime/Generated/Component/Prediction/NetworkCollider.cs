@@ -77,6 +77,12 @@ namespace FishNet.Component.Prediction
         [Range(0f, 100f)]
         [SerializeField]
         private float _additionalSize = 0.1f;
+        /// <summary>
+        /// Layers to trace on. This is used when value is not nothing.
+        /// </summary>
+        [Tooltip("Layers to trace on. This is used when value is not nothing.")]
+        [SerializeField]
+        private LayerMask _layers = (LayerMask)0;
 
         /// <summary>
         /// The colliders on this object.
@@ -261,11 +267,20 @@ namespace FishNet.Component.Prediction
             // The rotation of the object for box colliders.
             Quaternion rotation = transform.rotation;
 
-            //If layer changed then get new interactableLayers.
-            if (_lastGameObjectLayer != gameObject.layer)
+            //If layers are specified then do not use GOs layers, use specified.
+            if (_layers != (LayerMask)0)
             {
-                _lastGameObjectLayer = gameObject.layer;
-                _interactableLayers = Layers.GetInteractableLayersValue(_lastGameObjectLayer);
+                _interactableLayers = _layers;
+            }
+            //Use GOs layers.
+            else
+            {
+                int currentLayer = gameObject.layer;
+                if (_lastGameObjectLayer != currentLayer)
+                {
+                    _lastGameObjectLayer = currentLayer;
+                    _interactableLayers = Layers.GetInteractableLayersValue(currentLayer);
+                }
             }
 
             // Check each collider for triggers.

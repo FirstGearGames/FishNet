@@ -464,6 +464,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Allows for Outgoing queue to be iterated.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void IterateOutgoing()
         {
             DequeueOutgoing();

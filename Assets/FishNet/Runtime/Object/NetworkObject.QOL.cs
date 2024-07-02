@@ -239,7 +239,8 @@ namespace FishNet.Object
         /// <param name="despawnType">What happens to the object after being despawned.</param>
         public void Despawn(GameObject go, DespawnType? despawnType = null)
         {
-            NetworkManager?.ServerManager.Despawn(go, despawnType);
+            if (NetworkManager != null)
+                NetworkManager.ServerManager.Despawn(go, despawnType);
         }
         /// <summary>
         /// Despawns  a NetworkObject. Only call from the server.
@@ -248,7 +249,8 @@ namespace FishNet.Object
         /// <param name="despawnType">What happens to the object after being despawned.</param>
         public void Despawn(NetworkObject nob, DespawnType? despawnType = null)
         {
-            NetworkManager?.ServerManager.Despawn(nob, despawnType);
+            if (NetworkManager != null)
+                NetworkManager.ServerManager.Despawn(nob, despawnType);
         }
         /// <summary>
         /// Despawns this NetworkObject. Only call from the server.
@@ -257,21 +259,24 @@ namespace FishNet.Object
         public void Despawn(DespawnType? despawnType = null)
         {
             NetworkObject nob = this;
-            NetworkManager?.ServerManager.Despawn(nob, despawnType);
+            if (NetworkManager != null)
+                NetworkManager.ServerManager.Despawn(nob, despawnType);
         }
         /// <summary>
         /// Spawns an object over the network. Only call from the server.
         /// </summary>
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
-            NetworkManager?.ServerManager.Spawn(go, ownerConnection, scene);
+            if (NetworkManager != null)
+                NetworkManager.ServerManager.Spawn(go, ownerConnection, scene);
         }
         /// <summary>
         /// Spawns an object over the network. Only call from the server.
         /// </summary>
         public void Spawn(NetworkObject nob, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
-            NetworkManager?.ServerManager.Spawn(nob, ownerConnection, scene);
+            if (NetworkManager != null)
+                NetworkManager.ServerManager.Spawn(nob, ownerConnection, scene);
         }
 
         /// <summary>

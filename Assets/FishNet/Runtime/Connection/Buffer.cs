@@ -75,7 +75,7 @@ namespace FishNet.Connection
             if (!HasData)
             {
                 int pos = 0;
-                WriterExtensions.WriteUInt32(Data, tick, ref pos);
+                Writer.WriteUInt32Unpacked(Data, tick, ref pos);
             }
 
             Buffer.BlockCopy(segment.Array, segment.Offset, Data, Length, segment.Count);

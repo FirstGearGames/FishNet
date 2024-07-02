@@ -812,7 +812,7 @@ namespace GameKit.Dependencies.Utilities.Types
             //Full reset if value is at or more than written.
             if (length >= _written)
             {
-                Reset();
+                Clear();
                 return;
             }
 

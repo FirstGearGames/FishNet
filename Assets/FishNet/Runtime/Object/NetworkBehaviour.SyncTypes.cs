@@ -163,7 +163,7 @@ namespace FishNet.Object
             int readerStart = reader.Position;
             while (reader.Position - readerStart < length)
             {
-                byte index = reader.ReadByte();
+                byte index = reader.ReadUInt8Unpacked();
                 if (_syncTypes.TryGetValueIL2CPP(index, out SyncBase sb))
                     sb.Read(reader, asServer);
                 else
@@ -282,10 +282,10 @@ namespace FishNet.Object
                         {
                             PooledWriter headerWriter = WriterPool.Retrieve();
                             //Write the packetId and NB information.
-                            headerWriter.WritePacketId(PacketId.SyncType);
+                            headerWriter.WritePacketIdUnpacked(PacketId.SyncType);
                             PooledWriter dataWriter = WriterPool.Retrieve();
                             dataWriter.WriteNetworkBehaviour(this);
-                            dataWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
+                            dataWriter.WriteUInt8ArrayAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
                             //Attach data onto packetWriter.
                             headerWriter.WriteArraySegment(dataWriter.GetArraySegment());
                             dataWriter.Store();
@@ -388,7 +388,7 @@ namespace FishNet.Object
                 sb.WriteFull(syncTypeWriter);
             }
 
-            writer.WriteBytesAndSize(syncTypeWriter.GetBuffer(), 0, syncTypeWriter.Length);
+            writer.WriteUInt8ArrayAndSize(syncTypeWriter.GetBuffer(), 0, syncTypeWriter.Length);
             syncTypeWriter.Store();
         }
 

@@ -153,6 +153,7 @@ namespace FishNet.Object.Synchronizing
             CollectionCaches<CachedOnChange>.StoreAndDefault(ref _clientOnChanges);
         }
         #endregion
+
         /// <summary>
         /// Gets the collection being used within this SyncList.
         /// </summary>
@@ -172,11 +173,13 @@ namespace FishNet.Object.Synchronizing
         {
             base.Initialized();
 
-            // Ensure that initialized values always get set
-            _initialValues ??= new Dictionary<TKey, TValue>();
-            _changed ??= new List<ChangeData>();
-            _serverOnChanges ??= new List<CachedOnChange>();
-            _clientOnChanges ??= new List<CachedOnChange>();
+            //Initialize collections if needed. OdinInspector can cause them to become deinitialized.
+#if ODIN_INSPECTOR
+            if (_initialValues == null) _initialValues = new();
+            if (_changed == null) _changed = new();
+            if (_serverOnChanges == null) _serverOnChanges = new();
+            if (_clientOnChanges == null) _clientOnChanges = new();
+#endif
 
             foreach (KeyValuePair<TKey, TValue> item in Collection)
                 _initialValues[item.Key] = item.Value;
@@ -266,7 +269,7 @@ namespace FishNet.Object.Synchronizing
                 for (int i = 0; i < _changed.Count; i++)
                 {
                     ChangeData change = _changed[i];
-                    writer.WriteByte((byte)change.Operation);
+                    writer.WriteUInt8Unpacked((byte)change.Operation);
 
                     //Clear does not need to write anymore data so it is not included in checks.
                     if (change.Operation == SyncDictionaryOperation.Add ||
@@ -304,7 +307,7 @@ namespace FishNet.Object.Synchronizing
             writer.WriteInt32(Collection.Count);
             foreach (KeyValuePair<TKey, TValue> item in Collection)
             {
-                writer.WriteByte((byte)SyncDictionaryOperation.Add);
+                writer.WriteUInt8Unpacked((byte)SyncDictionaryOperation.Add);
                 writer.Write(item.Key);
                 writer.Write(item.Value);
             }
@@ -338,7 +341,7 @@ namespace FishNet.Object.Synchronizing
             int changes = reader.ReadInt32();
             for (int i = 0; i < changes; i++)
             {
-                SyncDictionaryOperation operation = (SyncDictionaryOperation)reader.ReadByte();
+                SyncDictionaryOperation operation = (SyncDictionaryOperation)reader.ReadUInt8Unpacked();
                 TKey key = default;
                 TValue value = default;
 

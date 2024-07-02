@@ -426,7 +426,7 @@ namespace FishNet.Managing.Server
                 nob.Preinitialize_Internal(NetworkManager, objectId.Value, ownerConnection, true);
                 if (predictedSpawnData.HasValue)
                     base.ReadPayload(predictedSpawnData.Value.PredictedSpawner, nob, predictedSpawnData.Value.PayloadReader);
-                
+
                 base.AddToSpawned(nob, true);
                 nob.gameObject.SetActive(true);
                 nob.Initialize(true, true);
@@ -465,6 +465,10 @@ namespace FishNet.Managing.Server
                 }
                 //Various predicted spawn checks.
                 if (!base.CanPredictedSpawn(networkObject, NetworkManager.ClientManager.Connection, ownerConnection, false))
+                    return;
+
+                //Since server is not started then run TrySpawn for client, given this is a client trying to predicted spawn.
+                if (!networkObject.PredictedSpawn.OnTrySpawnClient())
                     return;
 
                 predictedSpawn = true;
@@ -563,6 +567,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         internal void ReadPredictedSpawn(PooledReader reader, NetworkConnection conn)
         {
+            //TODO: parentChange. If has parent then read local space, otherwise world.
             /* 
              * //TODO this is crucial. Length must be sent with the predicted spawn
              * to skip past it if some reason we cannot continue.
@@ -584,17 +589,17 @@ namespace FishNet.Managing.Server
             }
 
             NetworkConnection owner = reader.ReadNetworkConnection();
-            SpawnType st = (SpawnType)reader.ReadByte();
+            SpawnType st = (SpawnType)reader.ReadUInt8Unpacked();
             //Not used at the moment.
-            byte componentIndex = reader.ReadByte();
+            byte componentIndex = reader.ReadUInt8Unpacked();
             //Read transform values which differ from serialized values.
-            base.ReadTransformProperties(reader, out Vector3? nullableLocalPosition, out Quaternion? nullableLocalRotation, out Vector3? nullableLocalScale);
+            base.ReadTransformProperties(reader, out Vector3? nullablePosition, out Quaternion? nullableRotation, out Vector3? nullableScale);
 
             NetworkObject nob;
             bool isGlobal = false;
-            if (SpawnTypeEnum.Contains(st, SpawnType.Scene))
+            if (SpawnTypeEnum.FastContains(st, SpawnType.Scene))
             {
-                ulong sceneId = reader.ReadUInt64(AutoPackType.Unpacked);
+                ulong sceneId = reader.ReadUInt64Unpacked();
 #if DEVELOPMENT
                 string sceneName = string.Empty;
                 string objectName = string.Empty;
@@ -609,7 +614,7 @@ namespace FishNet.Managing.Server
                     if (!base.CanPredictedSpawn(nob, conn, owner, true))
                         return;
 
-                    nob.transform.SetLocalPositionRotationAndScale(nullableLocalPosition, nullableLocalRotation, nullableLocalScale);
+                    nob.transform.SetLocalPositionRotationAndScale(nullablePosition, nullableRotation, nullableScale);
                 }
                 else
                 {
@@ -619,8 +624,14 @@ namespace FishNet.Managing.Server
             }
             else
             {
-                //Not used right now.
-                SpawnParentType spt = (SpawnParentType)reader.ReadByte();
+                /* Read past SpawnParentType and set to unset.
+                 * PredictedSpawning does not support parenting in spawnsd
+                 * at this time. */
+                reader.ReadUInt8Unpacked();
+                //SpawnParentType spt = reader.ReadUInt8();
+                bool hasParent = false;
+                //bool hasParent = (spt != SpawnParentType.Unset);
+
                 prefabId = reader.ReadNetworkObjectId();
                 //Invalid prefabId.
                 if (prefabId == NetworkObject.UNSET_PREFABID_VALUE)
@@ -643,8 +654,12 @@ namespace FishNet.Managing.Server
                 if (!base.CanPredictedSpawn(nPrefab, conn, owner, true))
                     return;
 
-                nob = NetworkManager.GetPooledInstantiated(prefabId, collectionId, parent: null, nullableLocalPosition, nullableLocalRotation, nullableLocalScale, makeActive: true, asServer: true);
-                isGlobal = SpawnTypeEnum.Contains(st, SpawnType.InstantiatedGlobal);
+                ObjectPoolRetrieveOption retrieveOptions = ObjectPoolRetrieveOption.MakeActive;
+                if (hasParent)
+                    retrieveOptions |= ObjectPoolRetrieveOption.LocalSpace;
+
+                nob = NetworkManager.GetPooledInstantiated(prefabId, collectionId, retrieveOptions, parent: null, nullablePosition, nullableRotation, nullableScale, asServer: true);
+                isGlobal = SpawnTypeEnum.FastContains(st, SpawnType.InstantiatedGlobal);
             }
 
             nob.SetIsGlobal(isGlobal);
@@ -663,7 +678,7 @@ namespace FishNet.Managing.Server
             void WriteResponse(bool success)
             {
                 PooledWriter writer = WriterPool.Retrieve();
-                writer.WritePacketId(PacketId.PredictedSpawnResult);
+                writer.WritePacketIdUnpacked(PacketId.PredictedSpawnResult);
                 writer.WriteNetworkObjectId(nob.ObjectId);
                 writer.WriteBoolean(success);
 
@@ -908,16 +923,11 @@ namespace FishNet.Managing.Server
 
             //Maybe server destroyed the object so don't kick if null.
             if (nob == null)
-            {
-                reader.Clear();
                 return;
-            }
-            //Does not allow predicted despawning.
-            if (!nob.AllowPredictedDespawning)
-            {
-                reader.Clear();
-                conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {conn.ClientId} used predicted despawning for object {nob.name} when it does not support predicted despawning.");
-            }
+
+            //Various predicted despawn checks.
+            if (!base.CanPredictedDespawn(nob, conn, true))
+                return;
 
             //Despawn object.
             nob.Despawn();

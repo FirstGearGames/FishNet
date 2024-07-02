@@ -134,9 +134,7 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours:
-  - {fileID: 4670340455971777434}
-  - {fileID: 3019520109258855553}
+  _networkBehaviours: []
   <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
   <NestedRootNetworkBehaviours>k__BackingField: []
   SerializedTransformProperties:
@@ -149,9 +147,21 @@ MonoBehaviour:
   _initializeOrder: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
+  _enablePrediction: 0
+  _predictionType: 0
+  _graphicalObject: {fileID: 0}
+  _detachGraphicalObject: 0
+  _enableStateForwarding: 1
+  _networkTransform: {fileID: 0}
+  _ownerInterpolation: 1
+  _ownerSmoothedProperties: 255
+  _adaptiveInterpolation: 3
+  _spectatorSmoothedProperties: 255
+  _spectatorInterpolation: 2
+  _enableTeleport: 0
+  _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  _scenePathHash: 0
   <SceneId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 11406911356865610645
 --- !u!114 &4670340455971777434
@@ -166,10 +176,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10f399a5388d3b3459b7a8476ae13e6a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 4512293259955182956}
-  _networkObjectCache: {fileID: 4512293259955182956}
-  _renderer: {fileID: 2529588038898116402}
+  _networkObjectCache: {fileID: 0}
+  _renderer: {fileID: 0}
 --- !u!114 &3019520109258855553
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -182,9 +192,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 1
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 4512293259955182956}
-  _networkObjectCache: {fileID: 4512293259955182956}
+  _networkObjectCache: {fileID: 0}
   _componentConfiguration: 0
   _synchronizeParent: 0
   _packing:
@@ -193,8 +203,8 @@ MonoBehaviour:
     Scale: 0
   _interpolation: 2
   _extrapolation: 2
-  _enableTeleport: 1
-  _teleportThreshold: 0.5
+  _enableTeleport: 0
+  _teleportThreshold: 1
   _scaleThreshold: 1
   _clientAuthoritative: 1
   _sendToOwner: 1

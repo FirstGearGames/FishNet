@@ -819,10 +819,7 @@ namespace FishNet.Component.Animating
                     //If to not send to owner.
                     if (!_sendToOwner && nc == base.Owner)
                         continue;
-#if !DEVELOPMENT
-                    if (!nc.IsLocalClient)
-#endif
-                        TargetAnimatorUpdated(nc, data);
+                    TargetAnimatorUpdated(nc, data);
                 }
             }
         }
@@ -891,7 +888,7 @@ namespace FishNet.Component.Animating
                     //If changed.
                     if (forceAll || _bools[pd.TypeIndex] != next)
                     {
-                        _writer.WriteByte(parameterIndex);
+                        _writer.WriteUInt8Unpacked(parameterIndex);
                         _writer.WriteBoolean(next);
                         _bools[pd.TypeIndex] = next;
                     }
@@ -903,8 +900,8 @@ namespace FishNet.Component.Animating
                     //If changed.
                     if (forceAll || _floats[pd.TypeIndex] != next)
                     {
-                        _writer.WriteByte(parameterIndex);
-                        _writer.WriteSingle(next, AutoPackType.Packed);
+                        _writer.WriteUInt8Unpacked(parameterIndex);
+                        _writer.WriteSingle(next);
                         _floats[pd.TypeIndex] = next;
                     }
                 }
@@ -915,8 +912,8 @@ namespace FishNet.Component.Animating
                     //If changed.
                     if (forceAll || _ints[pd.TypeIndex] != next)
                     {
-                        _writer.WriteByte(parameterIndex);
-                        _writer.WriteInt32(next, AutoPackType.Packed);
+                        _writer.WriteUInt8Unpacked(parameterIndex);
+                        _writer.WriteInt32(next);
                         _ints[pd.TypeIndex] = next;
                     }
                 }
@@ -926,7 +923,7 @@ namespace FishNet.Component.Animating
              * they're one-shots. */
             for (int i = 0; i < _triggerUpdates.Count; i++)
             {
-                _writer.WriteByte(_triggerUpdates[i].ParameterIndex);
+                _writer.WriteUInt8Unpacked(_triggerUpdates[i].ParameterIndex);
                 _writer.WriteBoolean(_triggerUpdates[i].Setting);
             }
             _triggerUpdates.Clear();
@@ -963,25 +960,25 @@ namespace FishNet.Component.Animating
                     {
                         if (ReturnCurrentLayerState(out int stateHash, out float normalizedTime, layerIndex))
                         {
-                            _writer.WriteByte(STATE);
-                            _writer.WriteByte((byte)layerIndex);
+                            _writer.WriteUInt8Unpacked(STATE);
+                            _writer.WriteUInt8Unpacked((byte)layerIndex);
                             //Current hash will always be too large to compress.
-                            _writer.WriteInt32(stateHash);
-                            _writer.WriteSingle(normalizedTime, AutoPackType.Packed);
+                            _writer.WriteInt32Unpacked(stateHash);
+                            _writer.WriteSingle(normalizedTime);
                         }
                     }
                     //When it's a crossfade then send crossfade data.
                     else
                     {
-                        _writer.WriteByte(CROSSFADE);
-                        _writer.WriteByte((byte)layerIndex);
+                        _writer.WriteUInt8Unpacked(CROSSFADE);
+                        _writer.WriteUInt8Unpacked((byte)layerIndex);
                         //Current hash will always be too large to compress.
                         _writer.WriteInt32(sc.Hash);
                         _writer.WriteBoolean(sc.FixedTime);
                         //Times usually can be compressed.
-                        _writer.WriteSingle(sc.DurationTime, AutoPackType.Packed);
-                        _writer.WriteSingle(sc.OffsetTime, AutoPackType.Packed);
-                        _writer.WriteSingle(sc.NormalizedTransitionTime, AutoPackType.Packed);
+                        _writer.WriteSingle(sc.DurationTime);
+                        _writer.WriteSingle(sc.OffsetTime);
+                        _writer.WriteSingle(sc.NormalizedTransitionTime);
                     }
                 }
 
@@ -1000,9 +997,9 @@ namespace FishNet.Component.Animating
                 float next = _animator.GetLayerWeight(layerIndex);
                 if (forceAll || _layerWeights[layerIndex] != next)
                 {
-                    _writer.WriteByte(LAYER_WEIGHT);
-                    _writer.WriteByte((byte)layerIndex);
-                    _writer.WriteSingle(next, AutoPackType.Packed);
+                    _writer.WriteUInt8Unpacked(LAYER_WEIGHT);
+                    _writer.WriteUInt8Unpacked((byte)layerIndex);
+                    _writer.WriteSingle(next);
                     _layerWeights[layerIndex] = next;
                 }
             }
@@ -1012,8 +1009,8 @@ namespace FishNet.Component.Animating
             float speedNext = _animator.speed;
             if (forceAll || _speed != speedNext)
             {
-                _writer.WriteByte(SPEED);
-                _writer.WriteSingle(speedNext, AutoPackType.Packed);
+                _writer.WriteUInt8Unpacked(SPEED);
+                _writer.WriteSingle(speedNext);
                 _speed = speedNext;
             }
 
@@ -1048,41 +1045,41 @@ namespace FishNet.Component.Animating
             {
                 while (reader.Remaining > 0)
                 {
-                    byte parameterIndex = reader.ReadByte();
+                    byte parameterIndex = reader.ReadUInt8Unpacked();
                     //Layer weight
                     if (parameterIndex == LAYER_WEIGHT)
                     {
-                        byte layerIndex = reader.ReadByte();
-                        float value = reader.ReadSingle(AutoPackType.Packed);
+                        byte layerIndex = reader.ReadUInt8Unpacked();
+                        float value = reader.ReadSingle();
                         _animator.SetLayerWeight((int)layerIndex, value);
                     }
                     //Speed.
                     else if (parameterIndex == SPEED)
                     {
-                        float value = reader.ReadSingle(AutoPackType.Packed);
+                        float value = reader.ReadSingle();
                         _animator.speed = value;
                     }
                     //State.
                     else if (parameterIndex == STATE)
                     {
-                        byte layerIndex = reader.ReadByte();
+                        byte layerIndex = reader.ReadUInt8Unpacked();
                         //Hashes will always be too large to compress.
-                        int hash = reader.ReadInt32();
-                        float normalizedTime = reader.ReadSingle(AutoPackType.Packed);
+                        int hash = reader.ReadInt32Unpacked();
+                        float normalizedTime = reader.ReadSingle();
                         //Play results.
                         _animator.Play(hash, layerIndex, normalizedTime);
                     }
                     //Crossfade.
                     else if (parameterIndex == CROSSFADE)
                     {
-                        byte layerIndex = reader.ReadByte();
+                        byte layerIndex = reader.ReadUInt8Unpacked();
                         //Hashes will always be too large to compress.
                         int hash = reader.ReadInt32();
                         bool useFixedTime = reader.ReadBoolean();
                         //Get time values.
-                        float durationTime = reader.ReadSingle(AutoPackType.Packed);
-                        float offsetTime = reader.ReadSingle(AutoPackType.Packed);
-                        float normalizedTransitionTime = reader.ReadSingle(AutoPackType.Packed);
+                        float durationTime = reader.ReadSingle();
+                        float offsetTime = reader.ReadSingle();
+                        float normalizedTransitionTime = reader.ReadSingle();
                         //If using fixed.
                         if (useFixedTime)
                             _animator.CrossFadeInFixedTime(hash, durationTime, layerIndex, offsetTime, normalizedTransitionTime);
@@ -1101,7 +1098,7 @@ namespace FishNet.Component.Animating
                         //Float.
                         else if (acpt == AnimatorControllerParameterType.Float)
                         {
-                            float value = reader.ReadSingle(AutoPackType.Packed);
+                            float value = reader.ReadSingle();
                             //If able to smooth floats.
                             if (_canSmoothFloats)
                             {
@@ -1435,11 +1432,10 @@ namespace FishNet.Component.Animating
             if (!_canSynchronizeAnimator)
                 return;
 
-#if !DEVELOPMENT
             //If receiver is client host then do nothing, clientHost need not process.
             if (base.IsServerInitialized && connection.IsLocalClient)
                 return;
-#endif
+
             bool clientAuth = ClientAuthoritative;
             bool isOwner = base.IsOwner;
             /* If set for client auth and owner then do not process.

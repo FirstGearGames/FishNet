@@ -2,6 +2,7 @@
 using FishNet.Connection;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
+using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Utility.Performance;
@@ -96,24 +97,6 @@ namespace FishNet.Managing.Predicting
         #endregion
 
         #region Serialized.
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        //[Tooltip("Number of inputs to keep in queue for server and clients. " +
-        //    "Higher values will increase the likeliness of continous user created data to arrive successfully. " +
-        //    "Lower values will increase processing rate of received replicates. +" +
-        //    "This value cannot be higher than MaximumServerReplicates.")]
-        //[Range(0, 15)]
-        //[SerializeField]
-        //private byte _queuedInputs = 1;
-        ///// <summary>
-        ///// Number of inputs to keep in queue for server and clients.
-        ///// Higher values will increase the likeliness of continous user created data to arrive successfully.
-        ///// Lower values will increase processing rate of received replicates.
-        ///// This value cannot be higher than MaximumServerReplicates.
-        ///// </summary>
-        ////TODO: this is 0 until the rework on it is completed. 
-        //public byte QueuedInputs => 0;// _queuedInputs;
         /// <summary>
         /// 
         /// </summary>
@@ -160,6 +143,44 @@ namespace FishNet.Managing.Predicting
         /// How many states to try and hold in a buffer before running them. Larger values add resilience against network issues at the cost of running states later.
         /// </summary> 
         internal byte StateInterpolation => _stateInterpolation;
+        /// <summary>
+        /// 
+        /// </summary>
+        [Tooltip("The order in which clients run states. Future favors performance and does not depend upon reconciles, while Past favors accuracy but clients must reconcile every tick.")]
+        [SerializeField]
+        private ReplicateStateOrder _stateOrder = ReplicateStateOrder.Appended;
+        /// <summary>
+        /// The order in which states are run. Future favors performance and does not depend upon reconciles, while Past favors accuracy but clients must reconcile every tick.
+        /// </summary>
+        public ReplicateStateOrder StateOrder => _stateOrder;
+        /// <summary>
+        /// True if StateOrder is set to future.
+        /// </summary>
+        internal bool IsAppendedStateOrder => (_stateOrder == ReplicateStateOrder.Appended);
+        /// <summary>
+        /// Sets the current ReplicateStateOrder. This may be changed at runtime.
+        /// Changing this value only affects the client which it is changed on.
+        /// </summary>
+        /// <param name="stateOrder"></param>
+        public void SetStateOrder(ReplicateStateOrder stateOrder)
+        {
+            //Server doesnt use state order, exit early if server.
+            if (_networkManager.IsServerStarted)
+                return;
+            //Same as before, do nothing.
+            if (stateOrder == _stateOrder)
+                return;
+
+            _stateOrder = stateOrder;
+            /* If client is started and if new order is
+             * past then tell all spawned objects to
+             * clear future queue. */
+            if (stateOrder == ReplicateStateOrder.Inserted && _networkManager.IsClientStarted)
+            {
+                foreach (NetworkObject item in _networkManager.ClientManager.Objects.Spawned.Values)
+                    item.EmptyReplicatesQueueIntoHistory();
+            }
+        }
         /// <summary>
         /// Number of past inputs to send, which is also the number of times to resend final datas.
         /// </summary>
@@ -350,7 +371,16 @@ namespace FishNet.Managing.Predicting
                 {
                     if (spChecked == null)
                         return false;
-                    bool serverPass = (spChecked.ServerTick <= (estimatedLastRemoteTick - stateInterpolation));
+                    ////There are no conditions for future state order.
+                    //if (_stateOrder == ReplicateStateOrder.Future)
+                    //    return true;
+
+
+                    uint serverTickDifferenceRequirement = stateInterpolation;
+                    if (IsAppendedStateOrder)
+                        serverTickDifferenceRequirement += (uint)(1 + stateInterpolation);
+
+                    bool serverPass = (spChecked.ServerTick <= (estimatedLastRemoteTick - serverTickDifferenceRequirement));
                     bool clientPass = spChecked.ClientTick < (localTick - stateInterpolation);
                     return (serverPass && clientPass);
                 }
@@ -388,7 +418,6 @@ namespace FishNet.Managing.Predicting
                 if (!dropReconcile)
                 {
                     IsReconciling = true;
-
                     ClientStateTick = clientTick;
                     /* This is the tick which the reconcile is for.
                      * Since reconciles are performed after replicate, if
@@ -426,18 +455,16 @@ namespace FishNet.Managing.Predicting
                      * Replay up to localtick, excluding localtick. There will
                      * be no input for localtick since reconcile runs before
                      * OnTick. */
-                    ClientReplayTick = ClientStateTick;
-                    ServerReplayTick = ServerStateTick;
+                    ClientReplayTick = ClientStateTick + 1;
+                    ServerReplayTick = ServerStateTick + 1;
 
-                    /* Only replay up to this tick excluding queuedInputs.
-                     * This will prevent the client from replaying into
-                     * it's authorative/owned inputs which have not run
-                     * yet.
-                     * 
-                     * An additional value is subtracted to prevent
-                     * client from running 1 local tick into the future
-                     * since the OnTick has not run yet. */
-                    while (ClientReplayTick < localTick - 1)
+                    /* Only replay up to but excluding local tick.
+                     * This prevents client from running 1 local tick into the future
+                     * since the OnTick has not run yet. 
+                     *
+                     * EG: if localTick is 100 replay will run up to 99, then OnTick
+                     * will fire for 100.                     */
+                    while (ClientReplayTick < localTick)
                     {
                         OnPreReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
                         OnReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
@@ -494,7 +521,7 @@ namespace FishNet.Managing.Predicting
                      * Data. */
                     ArraySegment<byte> segment = writer.GetArraySegment();
                     writer.Position = 0;
-                    writer.WritePacketId(PacketId.StateUpdate);
+                    writer.WritePacketIdUnpacked(PacketId.StateUpdate);
                     writer.WriteTickUnpacked(lastReplicateTick);
                     /* Send the full length of the writer excluding
                      * the reserve count of the header. The header reserve
@@ -502,7 +529,7 @@ namespace FishNet.Managing.Predicting
                      * off immediately upon receiving. */
                     int dataLength = (segment.Count - STATE_HEADER_RESERVE_LENGTH);
                     //Write length.
-                    writer.WriteInt32(dataLength, AutoPackType.Unpacked);
+                    writer.WriteInt32Unpacked(dataLength);
                     //Channel is defaulted to unreliable.
                     Channel channel = Channel.Unreliable;
                     //If a single state exceeds MTU it must be sent on reliable. This is extremely unlikely.
@@ -529,7 +556,7 @@ namespace FishNet.Managing.Predicting
                  * need to reset states. This can occur on the clientHost
                  * side. */
                 reader.ReadTickUnpacked();
-                int length = reader.ReadInt32(AutoPackType.Unpacked);
+                int length = reader.ReadInt32Unpacked();
                 reader.Skip(length);
             }
             else
@@ -540,7 +567,14 @@ namespace FishNet.Managing.Predicting
                  * a limit a little beyond to prevent reconciles from building up. 
                  * This is more of a last result if something went terribly
                  * wrong with the network. */
-                int maxAllowedStates = Mathf.Max(StateInterpolation * 4, 4);
+                int adjustedStateInterpolation = (StateInterpolation * 4);
+                /* If appending allow an additional of stateInterpolation since
+                 * entries arent added into the past until they are run on the appended
+                 * queue for each networkObject. */
+                if (IsAppendedStateOrder)
+                    adjustedStateInterpolation += StateInterpolation;
+                int maxAllowedStates = Mathf.Max(adjustedStateInterpolation, 4);
+
                 while (_reconcileStates.Count > maxAllowedStates)
                 {
                     StatePacket oldSp = _reconcileStates.Dequeue();
@@ -550,10 +584,10 @@ namespace FishNet.Managing.Predicting
                 //LocalTick of this client the state is for.
                 uint clientTick = reader.ReadTickUnpacked();
                 //Length of packet.
-                int length = reader.ReadInt32(AutoPackType.Unpacked);
+                int length = reader.ReadInt32Unpacked();
                 //Read data into array.
                 byte[] arr = ByteArrayPool.Retrieve(length);
-                reader.ReadBytes(ref arr, length);
+                reader.ReadUInt8Array(ref arr, length);
                 //Make segment and store into states.
                 ArraySegment<byte> segment = new ArraySegment<byte>(arr, 0, length);
 

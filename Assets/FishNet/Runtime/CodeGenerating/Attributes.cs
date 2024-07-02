@@ -40,5 +40,25 @@ namespace FishNet.CodeGenerating
     /// This attribute is primarily for internal use and may change at anytime without notice.
     /// </summary>
     [AttributeUsage((AttributeTargets.Class), Inherited = true, AllowMultiple = false)]
-    public class ReadUnallocated : Attribute { }
+    public class ReadUnallocatedAttribute : Attribute { }
+    /// <summary>
+    /// Indicates a method is the default writer for a type. The first non-extension parameter indicates the type this writer is for.
+    /// This attribute is primarily for internal use and may change at anytime without notice.
+    /// </summary>
+    public class DefaultWriterAttribute : Attribute { }
+    /// <summary>
+    /// Indicates a method is the default reader for a type. The return type indicates what type the reader is for.
+    /// This attribute is primarily for internal use and may change at anytime without notice.
+    /// </summary>
+    public class DefaultReaderAttribute : Attribute { }
+    /// <summary>
+    /// Indicates a method is a delta writer. The first non-extension parameter indicates the type this writer is for.
+    /// This attribute is primarily for internal use and may change at anytime without notice.
+    /// </summary>
+    public class DefaultDeltaWriterAttribute : Attribute { }
+    /// <summary>
+    /// Indicates a method is a delta reader. The return type indicates what type the reader is for.
+    /// This attribute is primarily for internal use and may change at anytime without notice.
+    /// </summary>
+    public class DefaultDeltaReaderAttribute : Attribute { }
 }

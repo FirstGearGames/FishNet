@@ -268,7 +268,7 @@ namespace FishNet.CodeGenerating.Processing
                             error = true;
                         }
                         else
-                        { 
+                        {
                             reconcileMd = methodDef;
                             if (!CheckCreateReconcile(reconcileMd))
                                 error = true;
@@ -304,7 +304,7 @@ namespace FishNet.CodeGenerating.Processing
                             {
                                 if (mr.Name == reconcileMd.Name)
                                     return true;
-                            }    
+                            }
                         }
                     }
 
@@ -411,7 +411,7 @@ namespace FishNet.CodeGenerating.Processing
                 return true;
         }
 #endif
-#endregion
+        #endregion
 
         internal bool Process(TypeDefinition typeDef)
         {
@@ -1039,6 +1039,8 @@ namespace FishNet.CodeGenerating.Processing
                 return false;
             if (!CreateReconcile())
                 return false;
+            if (!CreateEmptyReplicatesQueueIntoHistoryStart())
+                return false;
             if (!CreateReconcileStart())
                 return false;
             if (!CreateReplicateReplayStart())
@@ -1076,22 +1078,38 @@ namespace FishNet.CodeGenerating.Processing
                 return true;
             }
 
+            bool CreateEmptyReplicatesQueueIntoHistoryStart()
+            {
+                MethodDefinition newMethodDef = nbh.EmptyReplicatesQueueIntoHistory_Start_MethodRef.CachedResolve(base.Session).CreateCopy(
+                    base.Session, null, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES);
+                typeDef.Methods.Add(newMethodDef);
+
+                ILProcessor processor = newMethodDef.Body.GetILProcessor();
+
+                MethodReference baseMethodGim = nbh.EmptyReplicatesQueueIntoHistory_MethodRef.GetMethodReference(
+                    base.Session, new TypeReference[] { predictionFields.ReplicateDataTypeRef });
+
+                processor.Emit(OpCodes.Ldarg_0);
+                processor.Emit(OpCodes.Ldarg_0);
+                processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasQueue);
+                processor.Emit(OpCodes.Ldarg_0);
+                processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasHistory);
+                processor.Emit(OpCodes.Call, baseMethodGim);
+                processor.Emit(OpCodes.Ret);
+
+                return true;
+            }
+
             //Overrides reconcile start to call reconcile_client_internal.
             bool CreateReconcileStart()
             {
-                MethodDefinition reconcileStartMd = typeDef.GetMethod(nbh.Reconcile_Client_Start_MethodName);
-                if (reconcileStartMd != null)
-                {
-                    base.Session.LogError($"Reconcile_Client_Start method has already been created. This should not be possible.");
-                    return false;
-                }
-                reconcileStartMd = new MethodDefinition(nbh.Reconcile_Client_Start_MethodName
-                    , MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES, base.Module.TypeSystem.Void);
-                typeDef.Methods.Add(reconcileStartMd);
+                MethodDefinition newMethodDef = nbh.Reconcile_Client_Start_MethodRef.CachedResolve(base.Session).CreateCopy(
+                    base.Session, null, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES);
+                typeDef.Methods.Add(newMethodDef);
 
-                ILProcessor processor = reconcileStartMd.Body.GetILProcessor();
+                ILProcessor processor = newMethodDef.Body.GetILProcessor();
 
-                MethodReference reconcileClientGim = nbh.Reconcile_Client_MethodRef.GetMethodReference(
+                MethodReference baseMethodGim = nbh.Reconcile_Client_MethodRef.GetMethodReference(
                     base.Session, new TypeReference[] { predictionFields.ReconcileData.FieldType, predictionFields.ReplicateDataTypeRef });
 
                 processor.Emit(OpCodes.Ldarg_0);
@@ -1101,7 +1119,7 @@ namespace FishNet.CodeGenerating.Processing
                 processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasHistory);
                 processor.Emit(OpCodes.Ldarg_0);
                 processor.Emit(OpCodes.Ldfld, predictionFields.ReconcileData);
-                processor.Emit(OpCodes.Call, reconcileClientGim);
+                processor.Emit(OpCodes.Call, baseMethodGim);
                 processor.Emit(OpCodes.Ret);
 
                 return true;
@@ -1109,22 +1127,14 @@ namespace FishNet.CodeGenerating.Processing
 
             bool CreateReplicateReplayStart()
             {
-                MethodDefinition replicateStartMd = typeDef.GetMethod(nbh.Replicate_Replay_Start_MethodName);
-                if (replicateStartMd != null)
-                {
-                    base.Session.LogError($"Replicate_Replay_Start method has already been created. This should not be possible.");
-                    return false;
-                }
-                replicateStartMd = new MethodDefinition(nbh.Replicate_Replay_Start_MethodName
-                    , MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES, base.Module.TypeSystem.Void);
-                //Add parameters.
-                replicateStartMd.CreateParameters(base.Session, nbh.Replicate_Replay_Start_MethodRef.CachedResolve(base.Session));
-                typeDef.Methods.Add(replicateStartMd);
+                MethodDefinition newMethodDef = nbh.Replicate_Replay_Start_MethodRef.CachedResolve(base.Session).CreateCopy(
+                    base.Session, null, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES);
+                typeDef.Methods.Add(newMethodDef);
 
-                ParameterDefinition replayTickPd = replicateStartMd.Parameters[0];
-                ILProcessor processor = replicateStartMd.Body.GetILProcessor();
+                ParameterDefinition replayTickPd = newMethodDef.Parameters[0];
+                ILProcessor processor = newMethodDef.Body.GetILProcessor();
 
-                MethodReference replicateReplayGim = nbh.Replicate_Replay_MethodRef.GetMethodReference(
+                MethodReference baseMethodGim = nbh.Replicate_Replay_MethodRef.GetMethodReference(
                     base.Session, new TypeReference[] { predictionFields.ReplicateDataTypeRef });
 
                 //uint replicateTick, ReplicateUserLogicDelegate<T> del, List<T> replicates, Channel channel) where T : IReplicateData
@@ -1135,7 +1145,7 @@ namespace FishNet.CodeGenerating.Processing
                 processor.Emit(OpCodes.Ldarg_0);
                 processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasHistory);
                 processor.Emit(OpCodes.Ldc_I4, (int)Channel.Unreliable); //Channel does not really matter when replaying. At least not until someone needs it.
-                processor.Emit(OpCodes.Call, replicateReplayGim);
+                processor.Emit(OpCodes.Call, baseMethodGim);
                 processor.Emit(OpCodes.Ret);
 
                 return true;
@@ -1145,7 +1155,7 @@ namespace FishNet.CodeGenerating.Processing
         }
 #endif
 
-#region Universal prediction.
+        #region Universal prediction.
 #if PREDICTION_1
         /// <summary>
         /// Creates an override for the method responsible for resetting replicates.
@@ -1215,7 +1225,7 @@ namespace FishNet.CodeGenerating.Processing
 
             string methodName = nameof(NetworkBehaviour.ClearReplicateCache);
             MethodDefinition baseClearMd = typeDef.GetMethodDefinitionInAnyBase(base.Session, methodName);
-            MethodDefinition clearMd = typeDef.GetOrCreateMethodDefinition(base.Session, methodName, baseClearMd,true, out bool created);
+            MethodDefinition clearMd = typeDef.GetOrCreateMethodDefinition(base.Session, methodName, baseClearMd, true, out bool created);
             clearMd.Attributes = MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES;
             //This class already has the method created when it should not.
             if (baseClearMd.DeclaringType == typeDef)
@@ -1305,9 +1315,9 @@ namespace FishNet.CodeGenerating.Processing
 
             return insts;
         }
-#endregion
+        #endregion
 
-#region Server side.
+        #region Server side.
 #if PREDICTION_1
         /// <summary>
         /// Creates replicate code for client.
@@ -1499,9 +1509,9 @@ namespace FishNet.CodeGenerating.Processing
             rpcCount++;
         }
 #endif
-#endregion
+        #endregion
 
-#region Client side.
+        #region Client side.
 #if PREDICTION_1
         /// <summary>
         /// Creates replicate code for client.
@@ -1594,6 +1604,6 @@ namespace FishNet.CodeGenerating.Processing
             result = createdMd;
             return true;
         }
-#endregion
+        #endregion
     }
 }

@@ -25,11 +25,6 @@ namespace FishNet.CodeGenerating.Helping
 
 #if PREDICTION_1
         public string ClearReplicateCache_MethodName = nameof(NetworkBehaviour.ClearReplicateCache_Virtual);
-#else
-        public string Reconcile_Client_Start_MethodName = nameof(NetworkBehaviour.Reconcile_Client_Start);
-        public string Replicate_Replay_Start_MethodName = nameof(NetworkBehaviour.Replicate_Replay_Start);
-        public MethodReference Replicate_NonAuthoritative_MethodRef;
-        public MethodReference Replicate_Authortative_MethodRef;
 #endif
 #if PREDICTION_1
         public MethodReference Replicate_Owner_MethodRef;
@@ -42,7 +37,12 @@ namespace FishNet.CodeGenerating.Helping
 #endif
         public MethodReference Reconcile_Server_MethodRef;
         //public FieldReference UsesPrediction_FieldRef;
+        public MethodReference EmptyReplicatesQueueIntoHistory_Start_MethodRef;
+        public MethodReference EmptyReplicatesQueueIntoHistory_MethodRef;
+        public MethodReference Reconcile_Client_Start_MethodRef;
         public MethodReference Replicate_Replay_Start_MethodRef;
+        public MethodReference Replicate_NonAuthoritative_MethodRef;
+        public MethodReference Replicate_Authortative_MethodRef;
         public MethodReference Reconcile_Client_MethodRef;
         public MethodReference Replicate_Replay_MethodRef;
         public MethodReference Reconcile_Reader_MethodRef;
@@ -152,8 +152,14 @@ namespace FishNet.CodeGenerating.Helping
 #else
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Authoritative))
                     Replicate_Authortative_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == Replicate_Replay_Start_MethodName)
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Replay_Start))
                     Replicate_Replay_Start_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.EmptyReplicatesQueueIntoHistory))
+                    EmptyReplicatesQueueIntoHistory_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.EmptyReplicatesQueueIntoHistory_Start))
+                    EmptyReplicatesQueueIntoHistory_Start_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client_Start))
+                    Reconcile_Client_Start_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Replay))
                     Replicate_Replay_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_NonAuthoritative))
@@ -184,16 +190,16 @@ namespace FishNet.CodeGenerating.Helping
                     TimeManager_MethodRef = base.ImportReference(pi.GetMethod);
             }
 
-//#if !PREDICTION_1
-//            foreach (FieldInfo fi in networkBehaviourType.GetFields((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
-//            {
-//                if (fi.Name == nameof(NetworkBehaviour.UsesPrediction))
-//                {
-//                    UsesPrediction_FieldRef = base.ImportReference(fi);
-//                    break;
-//                }
-//            }
-//#endif
+            //#if !PREDICTION_1
+            //            foreach (FieldInfo fi in networkBehaviourType.GetFields((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
+            //            {
+            //                if (fi.Name == nameof(NetworkBehaviour.UsesPrediction))
+            //                {
+            //                    UsesPrediction_FieldRef = base.ImportReference(fi);
+            //                    break;
+            //                }
+            //            }
+            //#endif
 
             return true;
         }
@@ -385,7 +391,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             //Checking instanceFinder.
             else
-            { 
+            {
                 instructions.Add(processor.Create(OpCodes.Call, base.GetClass<ObjectHelper>().InstanceFinder_IsClient_MethodRef));
             }
             instructions.Add(processor.Create(OpCodes.Brtrue, endIf));

@@ -95,7 +95,7 @@ namespace FishNet.CodeGenerating.Helping
             ActionT3Constructor_MethodRef = base.ImportReference(typeof(Action<,,>).GetConstructors()[0]);
 
             ExcludeSerializationAttribute_FullName = typeof(ExcludeSerializationAttribute).FullName;
-            NotSerializerAttribute_FullName = typeof(NotSerializerAttribute).FullName;
+            //NotSerializerAttribute_FullName = typeof(NotSerializerAttribute).FullName;
 
             TypeReference _objectCaches_TypeRef = base.ImportReference(typeof(ObjectCaches<>));
             _objectCaches_Retrieve_MethodRef = _objectCaches_TypeRef.CachedResolve(base.Session).GetMethodReference(base.Session, nameof(ObjectCaches<int>.Retrieve));
@@ -419,10 +419,10 @@ namespace FishNet.CodeGenerating.Helping
                 if (item.AttributeType.FullName == NotSerializerAttribute_FullName)
                     return true;
             }
-
+        
             return false;
         }
-
+        
         /// <summary>
         /// Returns if type uses CodegenExcludeAttribute.
         /// </summary>
@@ -433,7 +433,7 @@ namespace FishNet.CodeGenerating.Helping
                 if (item.AttributeType.FullName == NotSerializerAttribute_FullName)
                     return true;
             }
-
+        
             return false;
         }
         #endregion

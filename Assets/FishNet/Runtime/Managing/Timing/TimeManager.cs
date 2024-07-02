@@ -367,8 +367,8 @@ namespace FishNet.Managing.Timing
             NetworkManager = networkManager;
             LastPacketTick.Initialize(networkManager.TimeManager);
             SetInitialValues();
-            NetworkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
-            NetworkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
+            networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
+            networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
 
             AddNetworkLoops();
         }
@@ -425,6 +425,7 @@ namespace FishNet.Managing.Timing
             }
         }
 
+ 
         /// <summary>
         /// Sets values to use based on settings.
         /// </summary>
@@ -590,7 +591,7 @@ namespace FishNet.Managing.Timing
 
             uint tick = (tickOverride == null) ? LocalTick : tickOverride.Value;
             PooledWriter writer = WriterPool.Retrieve();
-            writer.WritePacketId(PacketId.PingPong);
+            writer.WritePacketIdUnpacked(PacketId.PingPong);
             writer.WriteTickUnpacked(tick);
             NetworkManager.TransportManager.SendToServer((byte)Channel.Unreliable, writer.GetArraySegment());
             writer.Store();
@@ -605,7 +606,7 @@ namespace FishNet.Managing.Timing
                 return;
 
             PooledWriter writer = WriterPool.Retrieve();
-            writer.WritePacketId(PacketId.PingPong);
+            writer.WritePacketIdUnpacked(PacketId.PingPong);
             writer.WriteTickUnpacked(clientTick);
             conn.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
             writer.Store();
@@ -1043,6 +1044,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void SendTimingAdjustment()
         {
+      
             //Send every second.
             if (LocalTick % _tickRate == 0)
             {
@@ -1053,11 +1055,10 @@ namespace FishNet.Managing.Timing
                     if (!item.IsAuthenticated)
                         continue;
 
-                    writer.WritePacketId(PacketId.TimingUpdate);
+                    writer.WritePacketIdUnpacked(PacketId.TimingUpdate);
                     writer.WriteTickUnpacked(item.PacketTick.Value());
                     item.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
                     writer.Reset();
-
                 }
 
                 writer.Store();
@@ -1079,6 +1080,7 @@ namespace FishNet.Managing.Timing
              * always be in the past. */
             if (LocalTick < clientTick)
                 return;
+
             /* Use the last ordered remote tick rather than
              * lastPacketTick. This will help with out of order
              * packets where the timing update sent before

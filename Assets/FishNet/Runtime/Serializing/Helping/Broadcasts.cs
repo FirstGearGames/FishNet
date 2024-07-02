@@ -16,7 +16,7 @@ namespace FishNet.Broadcast.Helping
         /// </summary>
         internal static PooledWriter WriteBroadcast<T>(NetworkManager networkManager, PooledWriter writer, T message, ref Channel channel)
         {
-            writer.WritePacketId(PacketId.Broadcast);
+            writer.WritePacketIdUnpacked(PacketId.Broadcast);
             writer.WriteUInt16(typeof(T).FullName.GetStableHashU16());
             //Write data to a new writer.
             PooledWriter dataWriter = WriterPool.Retrieve();

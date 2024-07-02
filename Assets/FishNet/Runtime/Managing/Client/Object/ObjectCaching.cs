@@ -119,7 +119,7 @@ namespace FishNet.Managing.Client
         /// <param name="manager"></param>
         public void AddSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType ost, byte componentIndex, int rootObjectId, int? parentObjectId, byte? parentComponentIndex
             , int? prefabId, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string sceneName, string objectName
-            ,ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
+            , ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
         {
             //Set if initialization order has changed.
             _initializeOrderChanged |= (initializeOrder != 0);
@@ -173,7 +173,7 @@ namespace FishNet.Managing.Client
 
             cnob.InitializeSpawn(manager, collectionId, objectId, initializeOrder, ownerId, ost, componentIndex, rootObjectId, parentObjectId, parentComponentIndex
                 , prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName
-                ,payload, rpcLinks, syncValues);
+                , payload, rpcLinks, syncValues);
 
             ReadSpawningObjects.Add(objectId);
         }
@@ -480,9 +480,15 @@ namespace FishNet.Managing.Client
                     {
                         _networkManager.Log($"Parent NetworkObject Id {cnob.ParentObjectId} could not be found in spawned. NetworkObject {cnob.NetworkObject} will not have it's parent set.");
                     }
+
+                    cnob.NetworkObject.transform.SetLocalPositionRotationAndScale(cnob.Position, cnob.Rotation, cnob.Scale);
+                }
+                else
+                {
+                    cnob.NetworkObject.transform.SetWorldPositionRotationAndScale(cnob.Position, cnob.Rotation, cnob.Scale);
                 }
 
-                cnob.NetworkObject.transform.SetLocalPositionRotationAndScale(cnob.LocalPosition, cnob.LocalRotation, cnob.LocalScale);
+
             }
         }
 
@@ -574,9 +580,9 @@ namespace FishNet.Managing.Client
         public int? ParentObjectId;
         public byte? ParentComponentIndex;
         public int? PrefabId;
-        public Vector3? LocalPosition;
-        public Quaternion? LocalRotation;
-        public Vector3? LocalScale;
+        public Vector3? Position;
+        public Quaternion? Rotation;
+        public Vector3? Scale;
         public ulong SceneId;
 #if DEVELOPMENT
         public string SceneName = string.Empty;
@@ -607,8 +613,8 @@ namespace FishNet.Managing.Client
 #pragma warning restore 0649
 
         public void InitializeSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType objectSpawnType, byte componentIndex, int rootObjectId, int? parentObjectId, byte? parentComponentIndex
-            , int? prefabId, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string sceneName, string objectName
-            ,ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
+            , int? prefabId, Vector3? position, Quaternion? rotation, Vector3? scale, ulong sceneId, string sceneName, string objectName
+            , ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
         {
             ResetState();
             Action = ActionType.Spawn;
@@ -622,9 +628,9 @@ namespace FishNet.Managing.Client
             ParentObjectId = parentObjectId;
             ParentComponentIndex = parentComponentIndex;
             PrefabId = prefabId;
-            LocalPosition = localPosition;
-            LocalRotation = localRotation;
-            LocalScale = localScale;
+            Position = position;
+            Rotation = rotation;
+            Scale = scale;
             SceneId = sceneId;
 #if DEVELOPMENT
             SceneName = sceneName;

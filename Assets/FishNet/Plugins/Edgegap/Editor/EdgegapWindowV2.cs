@@ -98,7 +98,7 @@ namespace Edgegap.Editor
 
         private Button _footerDocumentationBtn;
         private Button _footerNeedMoreGameServersBtn;
-        #endregion // Vars
+        #endregion // Vars\
 
         // MIRROR CHANGE
         // get the path of this .cs file so we don't need to hardcode paths to
@@ -108,8 +108,10 @@ namespace Edgegap.Editor
         internal string StylesheetPath =>
             Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this)));
         // END MIRROR CHANGE
+        internal string ProjectRootPath => Directory.GetCurrentDirectory();
+        internal string DockerFilePath => $"{Directory.GetParent(Directory.GetFiles(ProjectRootPath, GetType().Name + ".cs", SearchOption.AllDirectories)[0]).FullName}{Path.DirectorySeparatorChar}Dockerfile";
 
-        [MenuItem("Edgegap/Edgegap Hosting")] // MIRROR CHANGE: more obvious title
+        [MenuItem("Tools/Edgegap Hosting")] // MIRROR CHANGE: more obvious title
         public static void ShowEdgegapToolWindow()
         {
             EdgegapWindowV2 window = GetWindow<EdgegapWindowV2>();
@@ -118,20 +120,29 @@ namespace Edgegap.Editor
             window.minSize = window.maxSize;
         }
 
-
         #region Unity Funcs
         protected void OnEnable()
         {
+#if UNITY_2021_3_OR_NEWER // only load stylesheet in supported Unity versions, otherwise it shows errors in U2020
             // Set root VisualElement and style: V2 still uses EdgegapWindow.[uxml|uss]
             // BEGIN MIRROR CHANGE
-            _visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{StylesheetPath}/EdgegapWindow.uxml");
-            StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{StylesheetPath}/EdgegapWindow.uss");
+            _visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{StylesheetPath}{Path.DirectorySeparatorChar}EdgegapWindow.uxml");
+            StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{StylesheetPath}{Path.DirectorySeparatorChar}EdgegapWindow.uss");
             // END MIRROR CHANGE
             rootVisualElement.styleSheets.Add(styleSheet);
+#endif
         }
 
+#pragma warning disable CS1998 // disable async warning in U2020
         public async void CreateGUI()
+#pragma warning restore CS1998
         {
+            // the UI requires 'GroupBox', which is not available in Unity 2019/2020.
+            // showing it will break all of Unity's Editor UIs, not just this one.
+            // instead, show a warning that the Edgegap plugin only works on Unity 2021+
+#if !UNITY_2021_3_OR_NEWER
+            Debug.LogWarning("The Edgegap Hosting plugin requires UIToolkit in Unity 2021.3 or newer. Please upgrade your Unity version to use this.");
+#else
             // Get UI elements from UI Builder
             rootVisualElement.Clear();
             _visualTree.CloneTree(rootVisualElement);
@@ -142,14 +153,20 @@ namespace Edgegap.Editor
             await syncFormWithObjectDynamicAsync(); // API calls
 
             IsInitd = true;
+#endif
         }
 
         /// <summary>The user closed the window. Save the data.</summary>
         protected void OnDisable()
         {
+#if UNITY_2021_3_OR_NEWER // only load stylesheet in supported Unity versions, otherwise it shows errors in U2020
+            // sometimes this is called without having been registered, throwing NRE
+            if (_debugBtn == null) return;
+
             unregisterClickEvents();
             unregisterFieldCallbacks();
             SyncObjectWithForm();
+#endif
         }
         #endregion // Unity Funcs
 
@@ -204,7 +221,9 @@ namespace Edgegap.Editor
             // this finds the placeholder and dynamically replaces it with a popup field
             VisualElement dropdownPlaceholder = rootVisualElement.Q<VisualElement>("MIRROR_CHANGE_PORT_HARDCODED");
             List<string> options = Enum.GetNames(typeof(ProtocolType)).Cast<string>().ToList();
-            _containerTransportTypeEnumInput = new PopupField<string>("Protocol Type", options, 0);
+            string containerTransportTypeEnum = EditorPrefs.GetString(EdgegapWindowMetadata.CONTAINER_REGISTRY_TRANSPORT_TYPE_ENUM_KEY_STR);
+            Enum.TryParse(containerTransportTypeEnum, out ProtocolType currentProtocolType);
+            _containerTransportTypeEnumInput = new PopupField<string>("Protocol Type", options, (int)currentProtocolType);
             dropdownPlaceholder.Add(_containerTransportTypeEnumInput);
             // END MIRROR CHANGE
             _containerUseCustomRegistryToggle = rootVisualElement.Q<Toggle>(EdgegapWindowMetadata.CONTAINER_USE_CUSTOM_REGISTRY_TOGGLE_ID);
@@ -366,6 +385,7 @@ namespace Edgegap.Editor
 
             _appNameInput.RegisterValueChangedCallback(onAppNameInputChanged);
             _containerPortNumInput.RegisterCallback<FocusOutEvent>(onContainerPortNumInputFocusOut);
+            _containerTransportTypeEnumInput.RegisterValueChangedCallback(onContainerTransportTypeEnumInputChanged);
 
             _containerUseCustomRegistryToggle.RegisterValueChangedCallback(onContainerUseCustomRegistryToggle);
             _containerNewTagVersionInput.RegisterValueChangedCallback(onContainerNewTagVersionInputChanged);
@@ -593,7 +613,6 @@ namespace Edgegap.Editor
         #endregion // Init -> /Button Clicks
         #endregion // Init
 
-
         /// <summary>Throw if !appName val</summary>
         private void assertAppNameExists() =>
             Assert.IsTrue(!string.IsNullOrEmpty(_appNameInput.value),
@@ -688,6 +707,15 @@ namespace Edgegap.Editor
                 // If input is !valid, set to default
                 _containerPortNumInput.value = EdgegapWindowMetadata.PORT_DEFAULT.ToString();
             }
+        }
+
+        /// <summary>
+        /// Save the protocol type after it has been changed.
+        /// </summary>
+        /// <param name="evt"></param>
+        private void onContainerTransportTypeEnumInputChanged(ChangeEvent<string> evt)
+        {
+            EditorPrefs.SetString(EdgegapWindowMetadata.CONTAINER_REGISTRY_TRANSPORT_TYPE_ENUM_KEY_STR, evt.newValue);
         }
 
         /// <summary>
@@ -970,7 +998,8 @@ namespace Edgegap.Editor
         private void openGetApiTokenWebsite()
         {
             if (IsLogLevelDebug) Debug.Log("openGetApiTokenWebsite");
-            Application.OpenURL(EdgegapWindowMetadata.EDGEGAP_GET_A_TOKEN_URL);
+            Application.OpenURL(EdgegapWindowMetadata.EDGEGAP_GET_A_TOKEN_URL + "&" +
+                                EdgegapWindowMetadata.DEFAULT_UTM_TAGS);
         }
 
         /// <returns>isSuccess; sets _isContainerRegistryReady + _loadedApp</returns>
@@ -1089,11 +1118,13 @@ namespace Edgegap.Editor
 
         /// <summary>Open contact form in desired locale</summary>
         private void openNeedMoreGameServersWebsite() =>
-            Application.OpenURL(EdgegapWindowMetadata.EDGEGAP_ADD_MORE_GAME_SERVERS_URL);
+            Application.OpenURL(EdgegapWindowMetadata.EDGEGAP_ADD_MORE_GAME_SERVERS_URL + "?" +
+                                EdgegapWindowMetadata.DEFAULT_UTM_TAGS);
 
         private void openDocumentationWebsite()
         {
-            string documentationUrl = _apiEnvironment.GetDocumentationUrl();
+            string documentationUrl = _apiEnvironment.GetDocumentationUrl() + "?" +
+                                      EdgegapWindowMetadata.DEFAULT_UTM_TAGS;
 
             if (!string.IsNullOrEmpty(documentationUrl))
                 Application.OpenURL(documentationUrl);
@@ -1294,7 +1325,7 @@ namespace Edgegap.Editor
             Debug.Log("(!) Check your deployments here: https://app.edgegap.com/deployment-management/deployments/list");
 
             // Shake "need more servers" btn on 403
-            bool reachedNumDeploymentsHardcap = result is { IsResultCode403: true };
+            bool reachedNumDeploymentsHardcap = result != null && result.IsResultCode403;
             if (reachedNumDeploymentsHardcap)
                 shakeNeedMoreGameServersBtn();
         }
@@ -1457,7 +1488,7 @@ namespace Edgegap.Editor
             try
             {
                 // check for installation and setup docker file
-                if (!await EdgegapBuildUtils.DockerSetupAndInstallationCheck())
+                if (!await EdgegapBuildUtils.DockerSetupAndInstallationCheck(DockerFilePath))
                 {
                     onBuildPushError("Docker installation not found. " +
                         "Docker can be downloaded from:\n\nhttps://www.docker.com/");
@@ -1531,7 +1562,7 @@ namespace Edgegap.Editor
                     //     tag,
                     //     ShowBuildWorkInProgress);
 
-                    await EdgegapBuildUtils.RunCommand_DockerBuild(registry, imageName, tag, status => ShowBuildWorkInProgress("Building Docker Image", status));
+                    await EdgegapBuildUtils.RunCommand_DockerBuild(DockerFilePath, registry, imageName, tag, ProjectRootPath, status => ShowBuildWorkInProgress("Building Docker Image", status));
 
                 }
                 else

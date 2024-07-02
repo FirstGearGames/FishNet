@@ -15,7 +15,7 @@ namespace FishNet.Editing
 
         private const string SHOWED_GETTING_STARTED = "ShowedFishNetGettingStarted";
 
-        [MenuItem("Fish-Networking/Getting Started")]
+        [MenuItem("Tools/Fish-Networking/Getting Started")]
         public static void GettingStartedMenu()
         {
             FishNetGettingStartedEditor window = (FishNetGettingStartedEditor)EditorWindow.GetWindow(typeof(FishNetGettingStartedEditor));

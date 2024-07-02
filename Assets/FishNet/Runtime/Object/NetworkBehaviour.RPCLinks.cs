@@ -135,10 +135,10 @@ namespace FishNet.Object
                 //Hash.
                 rpcLinkWriter.WriteUInt16((ushort)item.Key);
                 //True/false if observersRpc.
-                rpcLinkWriter.WriteByte((byte)item.Value.RpcType);
+                rpcLinkWriter.WriteUInt8Unpacked((byte)item.Value.RpcType);
             }
 
-            writer.WriteBytesAndSize(rpcLinkWriter.GetBuffer(), 0, rpcLinkWriter.Length);
+            writer.WriteUInt8ArrayAndSize(rpcLinkWriter.GetBuffer(), 0, rpcLinkWriter.Length);
             rpcLinkWriter.Store();
         }
     }

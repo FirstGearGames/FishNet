@@ -15,7 +15,7 @@ namespace FishNet.Serializing {
             if (value.y)
                 b |= 2;
 
-            WriteByte(b);
+            WriteUInt8Unpacked(b);
         }
 
         public void Writebool3(bool3 value) {
@@ -29,7 +29,7 @@ namespace FishNet.Serializing {
             if (value.z)
                 b |= 4;
 
-            WriteByte(b);
+            WriteUInt8Unpacked(b);
         }
 
         public void Writebool4(bool4 value) {
@@ -44,7 +44,7 @@ namespace FishNet.Serializing {
             if (value.w)
                 b |= 8;
 
-            WriteByte(b);
+            WriteUInt8Unpacked(b);
         }
 
         public void Writebool2x2(bool2x2 value) {
@@ -60,7 +60,7 @@ namespace FishNet.Serializing {
             if (value.c1.y)
                 b |= 8;
 
-            WriteByte(b);
+            WriteUInt8Unpacked(b);
         }
 
         public void Writebool2x3(bool2x3 value) {
@@ -79,7 +79,7 @@ namespace FishNet.Serializing {
             if (value.c2.y)
                 b |= 32;
 
-            WriteByte(b);
+            WriteUInt8Unpacked(b);
         }
 
         public void Writebool2x4(bool2x4 value) {
@@ -102,7 +102,7 @@ namespace FishNet.Serializing {
             if (value.c3.y)
                 b |= 128;
 
-            WriteByte(b);
+            WriteUInt8Unpacked(b);
         }
 
         public void Writebool3x2(bool3x2 value) {
@@ -121,7 +121,7 @@ namespace FishNet.Serializing {
             if (value.c1.z)
                 b |= 32;
 
-            WriteByte(b);
+            WriteUInt8Unpacked(b);
         }
 
         public void Writebool3x3(bool3x3 value) {
@@ -200,7 +200,7 @@ namespace FishNet.Serializing {
             if (value.c1.w)
                 b |= 128;
 
-            WriteByte(b);
+            WriteUInt8Unpacked(b);
         }
 
         public void Writebool4x3(bool4x3 value) {
@@ -277,14 +277,14 @@ namespace FishNet.Serializing {
     public partial class Reader { 
         public bool2 Readbool2() {
 
-            byte b = ReadByte();
+            byte b = ReadUInt8Unpacked();
 
             return new bool2() { x = (b & 1) != 0, y = (b & 2) != 0 };
         }
 
         public bool3 Readbool3() {
 
-            byte b = ReadByte();
+            byte b = ReadUInt8Unpacked();
 
             return new bool3() {
                 x = (b & 1) != 0,
@@ -294,7 +294,7 @@ namespace FishNet.Serializing {
         }
 
         public bool4 Readbool4() {
-            byte b = ReadByte();
+            byte b = ReadUInt8Unpacked();
 
             return new bool4 {
                 x = (b & 1) != 0,
@@ -305,7 +305,7 @@ namespace FishNet.Serializing {
         }
 
         public bool2x2 Readbool2x2() {
-            byte b = ReadByte();
+            byte b = ReadUInt8Unpacked();
 
             bool2x2 value = default;
 
@@ -318,7 +318,7 @@ namespace FishNet.Serializing {
         }
 
         public bool2x3 Readbool2x3() {
-            byte b = ReadByte();
+            byte b = ReadUInt8Unpacked();
 
             bool2x3 value = default;
 
@@ -333,7 +333,7 @@ namespace FishNet.Serializing {
         }
 
         public bool2x4 Readbool2x4() {
-            byte b = ReadByte();
+            byte b = ReadUInt8Unpacked();
 
             bool2x4 value = default;
 
@@ -350,7 +350,7 @@ namespace FishNet.Serializing {
         }
 
         public bool3x2 Readbool3x2() {
-            byte b = ReadByte();
+            byte b = ReadUInt8Unpacked();
 
             bool3x2 value = default;
 
@@ -403,7 +403,7 @@ namespace FishNet.Serializing {
         }
 
         public bool4x2 Readbool4x2() {
-            byte b = ReadByte();
+            byte b = ReadUInt8Unpacked();
 
             bool4x2 value = default;
 

@@ -12,6 +12,12 @@ namespace FishNet.Object.Synchronizing
         public float SendRate;
         public Channel Channel;
 
+        internal bool IsDefault()
+        {
+            return (WritePermission == WritePermission.ServerOnly && ReadPermission == ReadPermission.Observers
+                && SendRate == 0f && Channel == (Channel)0);
+        }
+
         //Work around for C# parameterless struct limitation.
         public SyncTypeSettings(float sendRate = 0.1f)
         {

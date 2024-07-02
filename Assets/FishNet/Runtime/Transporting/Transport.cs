@@ -135,7 +135,7 @@ namespace FishNet.Transporting
         /// Returns if the transport is only run locally, offline.
         /// While true several security checks are disabled.
         /// </summary>
-        /// <param name="connectionid"></param>
+        /// <param name="connectionid">Optional connectionId to check against.</param>
         public virtual bool IsLocalTransport(int connectionid) => false;
         /// <summary>
         /// Gets how long in seconds until either the server or client socket must go without data before being timed out.

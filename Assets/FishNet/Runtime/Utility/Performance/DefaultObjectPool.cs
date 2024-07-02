@@ -3,13 +3,13 @@ using FishNet.Managing.Object;
 using FishNet.Object;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Utility.Performance
 {
-
 
     public class DefaultObjectPool : ObjectPool
     {
@@ -37,6 +37,17 @@ namespace FishNet.Utility.Performance
         private int _cacheCount = 0;
         #endregion
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable CS0672 // Member overrides obsolete member
+        public override NetworkObject RetrieveObject(int prefabId, ushort collectionId, Transform parent = null, Vector3? nullablePosition = null, Quaternion? nullableRotation = null, Vector3? nullableScale = null, bool makeActive = true, bool asServer = true)
+#pragma warning restore CS0672 // Member overrides obsolete member
+        {
+            ObjectPoolRetrieveOption options = ObjectPoolRetrieveOption.Unset;
+            if (makeActive)
+                options |= ObjectPoolRetrieveOption.MakeActive;
+
+            return RetrieveObject(prefabId, collectionId, options, parent, nullablePosition, nullableRotation, nullableScale, asServer);
+        }
 
         /// <summary>
         /// Returns an object that has been stored. A new object will be created if no stored objects are available.
@@ -45,8 +56,11 @@ namespace FishNet.Utility.Performance
         /// <param name="collectionId">CollectionId of the object to return.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
-        public override NetworkObject RetrieveObject(int prefabId, ushort collectionId, Transform parent = null, Vector3? nullableLocalPosition = null, Quaternion? nullableLocalRotation = null, Vector3? nullableLocalScale = null, bool makeActive = true, bool asServer = true)
+        public override NetworkObject RetrieveObject(int prefabId, ushort collectionId, ObjectPoolRetrieveOption options, Transform parent = null, Vector3? nullablePosition = null, Quaternion? nullableRotation = null, Vector3? nullableScale = null, bool asServer = true)
         {
+            bool makeActive = options.FastContains(ObjectPoolRetrieveOption.MakeActive);
+            bool localSpace = options.FastContains(ObjectPoolRetrieveOption.LocalSpace);
+
             if (!_enabled)
                 return GetFromInstantiate();
 
@@ -61,9 +75,14 @@ namespace FishNet.Utility.Performance
                     if (nob != null)
                     {
                         nob.transform.SetParent(parent);
-                        nob.transform.SetLocalPositionRotationAndScale(nullableLocalPosition, nullableLocalRotation, nullableLocalScale);
+                        if (localSpace)
+                            nob.transform.SetLocalPositionRotationAndScale(nullablePosition, nullableRotation, nullableScale);
+                        else
+                            nob.transform.SetWorldPositionRotationAndScale(nullablePosition, nullableRotation, nullableScale);
+
                         if (makeActive)
                             nob.gameObject.SetActive(true);
+
                         return nob;
                     }
                 }
@@ -87,14 +106,26 @@ namespace FishNet.Utility.Performance
                 }
                 else
                 {
-                    prefab.transform.OutLocalPropertyValues(nullableLocalPosition, nullableLocalRotation, nullableLocalScale, out Vector3 pos, out Quaternion rot, out Vector3 scale);
-                    if (parent != null)
+                    NetworkObject result;
+                    Vector3 scale;
+
+                    if (localSpace)
                     {
-                        //Convert pos and rot to world values for the instantiate.
-                        pos = parent.TransformPoint(pos);
-                        rot = (parent.rotation * rot);
+                        prefab.transform.OutLocalPropertyValues(nullablePosition, nullableRotation, nullableScale, out Vector3 pos, out Quaternion rot, out scale);
+                        if (parent != null)
+                        {
+                            //Convert pos and rot to world values for the instantiate.
+                            pos = parent.TransformPoint(pos);
+                            rot = (parent.rotation * rot);
+                        }
+                        result = Instantiate(prefab, pos, rot, parent);
                     }
-                    NetworkObject result = Instantiate(prefab, pos, rot, parent);
+                    else
+                    {
+                        prefab.transform.OutWorldPropertyValues(nullablePosition, nullableRotation, nullableScale, out Vector3 pos, out Quaternion rot, out scale);
+                        result = Instantiate(prefab, pos, rot, parent);
+                    }
+
                     result.transform.localScale = scale;
 
                     if (makeActive)

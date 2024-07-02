@@ -314,7 +314,7 @@ namespace FishNet.Managing.Client
                 _lastPacketTime = Time.unscaledTime;
                 //Send version.
                 PooledWriter writer = WriterPool.Retrieve();
-                writer.WritePacketId(PacketId.Version);
+                writer.WritePacketIdUnpacked(PacketId.Version);
                 writer.WriteString(NetworkManager.FISHNET_VERSION);
                 NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
                 WriterPool.Store(writer);
@@ -609,7 +609,7 @@ namespace FishNet.Managing.Client
             //If predicted spawning is enabled also get reserved Ids.
             if (NetworkManager.ServerManager.GetAllowPredictedSpawning())
             {
-                byte count = reader.ReadByte();
+                byte count = reader.ReadUInt8Unpacked();
                 Queue<int> q = Connection.PredictedObjectIds;
                 for (int i = 0; i < count; i++)
                     q.Enqueue(reader.ReadNetworkObjectId());

@@ -654,7 +654,7 @@ namespace FishNet.Managing.Transporting
 
             byte channelId = (byte)Channel.Reliable;
             PooledWriter headerWriter = WriterPool.Retrieve();
-            headerWriter.WritePacketId(PacketId.Split);
+            headerWriter.WritePacketIdUnpacked(PacketId.Split);
             headerWriter.WriteInt32(requiredMessages);
             ArraySegment<byte> headerSegment = headerWriter.GetArraySegment();
 

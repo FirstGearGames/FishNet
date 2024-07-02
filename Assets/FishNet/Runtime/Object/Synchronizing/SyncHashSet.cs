@@ -154,6 +154,14 @@ namespace FishNet.Object.Synchronizing
         protected override void Initialized()
         {
             base.Initialized();
+
+            //Initialize collections if needed. OdinInspector can cause them to become deinitialized.
+#if ODIN_INSPECTOR
+            if (_initialValues == null) _initialValues = new();
+            if (_changed == null) _changed = new();
+            if (_serverOnChanges == null) _serverOnChanges = new();
+            if (_clientOnChanges == null) _clientOnChanges = new();
+#endif
             foreach (T item in Collection)
                 _initialValues.Add(item);
         }
@@ -234,7 +242,7 @@ namespace FishNet.Object.Synchronizing
                 for (int i = 0; i < _changed.Count; i++)
                 {
                     ChangeData change = _changed[i];
-                    writer.WriteByte((byte)change.Operation);
+                    writer.WriteUInt8Unpacked((byte)change.Operation);
 
                     //Clear does not need to write anymore data so it is not included in checks.
                     if (change.Operation == SyncHashSetOperation.Add || change.Operation == SyncHashSetOperation.Remove || change.Operation == SyncHashSetOperation.Update)
@@ -263,7 +271,7 @@ namespace FishNet.Object.Synchronizing
             writer.WriteInt32(count);
             foreach (T item in Collection)
             {
-                writer.WriteByte((byte)SyncHashSetOperation.Add);
+                writer.WriteUInt8Unpacked((byte)SyncHashSetOperation.Add);
                 writer.Write(item);
             }
         }
@@ -295,7 +303,7 @@ namespace FishNet.Object.Synchronizing
             int changes = reader.ReadInt32();
             for (int i = 0; i < changes; i++)
             {
-                SyncHashSetOperation operation = (SyncHashSetOperation)reader.ReadByte();
+                SyncHashSetOperation operation = (SyncHashSetOperation)reader.ReadUInt8Unpacked();
                 T next = default;
 
                 //Add.

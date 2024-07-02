@@ -5,17 +5,17 @@ using FishNet.Serializing;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
-
     /// <summary>
     /// A SyncObject to efficiently synchronize timers over the network.
     /// </summary>
     public class SyncTimer : SyncBase, ICustomSync
     {
-
         #region Type.
+
         /// <summary>
         /// Information about how the timer has changed.
         /// </summary>
@@ -32,9 +32,11 @@ namespace FishNet.Object.Synchronizing
                 Next = next;
             }
         }
+
         #endregion
 
         #region Public.
+
         /// <summary>
         /// Delegate signature for when the timer operation occurs.
         /// </summary>
@@ -43,46 +45,80 @@ namespace FishNet.Object.Synchronizing
         /// <param name="next">Value of the timer. This will be -1f is the value is not available.</param>
         /// <param name="asServer">True if occurring on server.</param>
         public delegate void SyncTypeChanged(SyncTimerOperation op, float prev, float next, bool asServer);
+
         /// <summary>
         /// Called when a timer operation occurs.
         /// </summary>
         public event SyncTypeChanged OnChange;
+
         /// <summary>
         /// Time remaining on the timer. When the timer is expired this value will be 0f.
         /// </summary>
         public float Remaining { get; private set; }
+
         /// <summary>
         /// How much time has passed since the timer started.
         /// </summary>
         public float Elapsed => (Duration - Remaining);
+
         /// <summary>
         /// Starting duration of the timer.
         /// </summary>
         public float Duration { get; private set; }
+
         /// <summary>
         /// True if the SyncTimer is currently paused. Calls to Update(float) will be ignored when paused.
         /// </summary>
         public bool Paused { get; private set; }
+
         #endregion
 
         #region Private.
+
         /// <summary>
         /// Changed data which will be sent next tick.
         /// </summary>
         private List<ChangeData> _changed = new List<ChangeData>();
+
         /// <summary>
         /// Server OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<ChangeData> _serverOnChanges = new List<ChangeData>();
+        private List<ChangeData> _serverOnChanges = new List<ChangeData>();
+
         /// <summary>
         /// Client OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<ChangeData> _clientOnChanges = new List<ChangeData>();
+        private List<ChangeData> _clientOnChanges = new List<ChangeData>();
+
+        /// <summary>
+        /// Last Time.unscaledTime the timer delta was updated.
+        /// </summary>
+        private float _updateTime;
+
         #endregion
 
         #region Constructors
-        public SyncTimer(SyncTypeSettings settings = new SyncTypeSettings()) : base(settings) { }
+
+        public SyncTimer(SyncTypeSettings settings = new SyncTypeSettings()) : base(settings)
+        {
+        }
+
         #endregion
+
+        /// <summary>
+        /// Called when the SyncType has been registered, but not yet initialized over the network.
+        /// </summary>
+        protected override void Initialized()
+        {
+            base.Initialized();
+
+            //Initialize collections if needed. OdinInspector can cause them to become deinitialized.
+#if ODIN_INSPECTOR
+            if (_changed == null) _changed = new();
+            if (_serverOnChanges == null) _serverOnChanges = new();
+            if (_clientOnChanges == null) _clientOnChanges = new();
+#endif
+        }
 
         /// <summary>
         /// Starts a timer. If called when a timer is already active then StopTimer will automatically be sent.
@@ -100,6 +136,7 @@ namespace FishNet.Object.Synchronizing
             Paused = false;
             Remaining = remaining;
             Duration = remaining;
+            SetUpdateTime();
             AddOperation(SyncTimerOperation.Start, -1f, remaining);
         }
 
@@ -134,6 +171,7 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             Paused = false;
+            SetUpdateTime();
             AddOperation(SyncTimerOperation.Unpause, Remaining, Remaining);
         }
 
@@ -188,7 +226,7 @@ namespace FishNet.Object.Synchronizing
             for (int i = 0; i < _changed.Count; i++)
             {
                 ChangeData change = _changed[i];
-                writer.WriteByte((byte)change.Operation);
+                writer.WriteUInt8Unpacked((byte)change.Operation);
 
                 if (change.Operation == SyncTimerOperation.Start)
                 {
@@ -221,7 +259,7 @@ namespace FishNet.Object.Synchronizing
             //And the operations.
             WriteStartTimer(writer, true);
             if (Paused)
-                writer.WriteByte((byte)SyncTimerOperation.Pause);
+                writer.WriteUInt8Unpacked((byte)SyncTimerOperation.Pause);
         }
 
         /// <summary>
@@ -232,7 +270,7 @@ namespace FishNet.Object.Synchronizing
         private void WriteStartTimer(Writer w, bool includeOperationByte)
         {
             if (includeOperationByte)
-                w.WriteByte((byte)SyncTimerOperation.Start);
+                w.WriteUInt8Unpacked((byte)SyncTimerOperation.Start);
             w.WriteSingle(Remaining);
             w.WriteSingle(Duration);
         }
@@ -256,7 +294,7 @@ namespace FishNet.Object.Synchronizing
 
             for (int i = 0; i < changes; i++)
             {
-                SyncTimerOperation op = (SyncTimerOperation)reader.ReadByte();
+                SyncTimerOperation op = (SyncTimerOperation)reader.ReadUInt8Unpacked();
                 if (op == SyncTimerOperation.Start)
                 {
                     float next = reader.ReadSingle();
@@ -267,10 +305,11 @@ namespace FishNet.Object.Synchronizing
                         Remaining = next;
                         Duration = duration;
                     }
+
                     InvokeOnChange(op, -1f, next, asServer);
                 }
                 else if (op == SyncTimerOperation.Pause || op == SyncTimerOperation.PauseUpdated
-                    || op == SyncTimerOperation.Unpause)
+                                                        || op == SyncTimerOperation.Unpause)
                 {
                     UpdatePauseState(op);
                 }
@@ -372,6 +411,14 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
+        /// Sets updateTime to current values.
+        /// </summary>
+        private void SetUpdateTime()
+        {
+            _updateTime = Time.unscaledTime;
+        }
+
+        /// <summary>
         /// Removes delta from Remaining for server and client.
         /// </summary>
         /// <param name="delta">Value to remove from Remaining.</param>
@@ -383,8 +430,10 @@ namespace FishNet.Object.Synchronizing
             if (Paused)
                 return;
 
-            if (delta < 0)
-                delta *= -1f;
+            delta = (Time.unscaledTime - _updateTime);
+            SetUpdateTime();
+            // if (delta < 0)
+            //     delta *= -1f;
             float prev = Remaining;
             Remaining -= delta;
             //Still time left.

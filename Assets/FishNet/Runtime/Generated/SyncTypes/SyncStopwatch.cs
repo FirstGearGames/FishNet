@@ -61,16 +61,31 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Server OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<ChangeData> _serverOnChanges = new List<ChangeData>();
+        private List<ChangeData> _serverOnChanges = new List<ChangeData>();
         /// <summary>
         /// Client OnChange events waiting for start callbacks.
         /// </summary>
-        private readonly List<ChangeData> _clientOnChanges = new List<ChangeData>();
+        private List<ChangeData> _clientOnChanges = new List<ChangeData>();
         #endregion
 
         #region Constructors
         public SyncStopwatch(SyncTypeSettings settings = new SyncTypeSettings()) : base(settings) { }
         #endregion
+
+        /// <summary>
+        /// Called when the SyncType has been registered, but not yet initialized over the network.
+        /// </summary>
+        protected override void Initialized()
+        {
+            base.Initialized();
+
+            //Initialize collections if needed. OdinInspector can cause them to become deinitialized.
+#if ODIN_INSPECTOR
+            if (_changed == null) _changed = new();
+            if (_serverOnChanges == null) _serverOnChanges = new();
+            if (_clientOnChanges == null) _clientOnChanges = new();
+#endif
+        }
 
         /// <summary>
         /// Starts a Stopwatch. If called when a Stopwatch is already active then StopStopwatch will automatically be sent.
@@ -185,7 +200,7 @@ namespace FishNet.Object.Synchronizing
             for (int i = 0; i < _changed.Count; i++)
             {
                 ChangeData change = _changed[i];
-                writer.WriteByte((byte)change.Operation);
+                writer.WriteUInt8Unpacked((byte)change.Operation);
                 if (change.Operation == SyncStopwatchOperation.Start)
                     WriteStartStopwatch(writer, 0f, false);
                 //Pause and unpause updated need current value written.
@@ -214,7 +229,7 @@ namespace FishNet.Object.Synchronizing
             //And the operations.
             WriteStartStopwatch(writer, Elapsed, true);
             if (Paused)
-                writer.WriteByte((byte)SyncStopwatchOperation.Pause);
+                writer.WriteUInt8Unpacked((byte)SyncStopwatchOperation.Pause);
         }
 
         /// <summary>
@@ -224,7 +239,7 @@ namespace FishNet.Object.Synchronizing
         private void WriteStartStopwatch(Writer w, float elapsed, bool includeOperationByte)
         {
             if (includeOperationByte)
-                w.WriteByte((byte)SyncStopwatchOperation.Start);
+                w.WriteUInt8Unpacked((byte)SyncStopwatchOperation.Start);
 
             w.WriteSingle(elapsed);
         }
@@ -240,7 +255,7 @@ namespace FishNet.Object.Synchronizing
 
             for (int i = 0; i < changes; i++)
             {
-                SyncStopwatchOperation op = (SyncStopwatchOperation)reader.ReadByte();
+                SyncStopwatchOperation op = (SyncStopwatchOperation)reader.ReadUInt8Unpacked();
                 if (op == SyncStopwatchOperation.Start)
                 {
                     float elapsed = reader.ReadSingle();

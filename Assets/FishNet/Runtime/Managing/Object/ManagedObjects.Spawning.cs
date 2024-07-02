@@ -24,7 +24,7 @@ namespace FishNet.Managing.Object
         protected void ReadTransformProperties(Reader reader, out Vector3? localPosition, out Quaternion? localRotation, out Vector3? localScale)
         {
             //Read changed.
-            TransformPropertiesFlag tpf = (TransformPropertiesFlag)reader.ReadByte();
+            TransformPropertiesFlag tpf = (TransformPropertiesFlag)reader.ReadUInt8Unpacked();
             //Position.
             if (tpf.FastContains(TransformPropertiesFlag.Position))
                 localPosition = reader.ReadVector3();
@@ -64,7 +64,7 @@ namespace FishNet.Managing.Object
              * writer with values based on if owner or not. This would
              * result in significantly more iterations. */
             PooledWriter headerWriter = WriterPool.Retrieve();
-            headerWriter.WritePacketId(PacketId.ObjectSpawn);
+            headerWriter.WritePacketIdUnpacked(PacketId.ObjectSpawn);
             headerWriter.WriteNetworkObjectForSpawn(nob);
             if (NetworkManager.ServerManager.ShareIds || connection == nob.Owner)
                 headerWriter.WriteNetworkConnection(nob.Owner);
@@ -83,9 +83,9 @@ namespace FishNet.Managing.Object
             if (nested)
                 st |= SpawnType.Nested;
 
-            headerWriter.WriteByte((byte)st);
+            headerWriter.WriteUInt8Unpacked((byte)st);
             //ComponentIndex for the nob. 0 is root but more appropriately there's a IsNested boolean as shown above.
-            headerWriter.WriteByte(nob.ComponentIndex);
+            headerWriter.WriteUInt8Unpacked(nob.ComponentIndex);
             //Properties on the transform which diff from serialized value.
             WriteChangedTransformProperties(nob, sceneObject, nested, headerWriter);
 
@@ -101,7 +101,7 @@ namespace FishNet.Managing.Object
             /* Writing a scene object. */
             if (sceneObject)
             {
-                headerWriter.WriteUInt64(nob.SceneId, AutoPackType.Unpacked);
+                headerWriter.WriteUInt64Unpacked(nob.SceneId);
 #if DEVELOPMENT
                 //Check to write additional information if a scene object.
                 if (NetworkManager.DebugManager.WriteSceneObjectDetails)
@@ -130,11 +130,11 @@ namespace FishNet.Managing.Object
                         //ParentNob is null or not spawned.
                         if (!ParentIsSpawned(parentNob))
                         {
-                            headerWriter.WriteByte((byte)SpawnParentType.Unset);
+                            headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.Unset);
                         }
                         else
                         {
-                            headerWriter.WriteByte((byte)SpawnParentType.NetworkObject);
+                            headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.NetworkObject);
                             headerWriter.WriteNetworkObjectId(parentNob);
                         }
                     }
@@ -144,11 +144,11 @@ namespace FishNet.Managing.Object
                         //ParentNb is null or not spawned.
                         if (!ParentIsSpawned(parentNb.NetworkObject))
                         {
-                            headerWriter.WriteByte((byte)SpawnParentType.Unset);
+                            headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.Unset);
                         }
                         else
                         {
-                            headerWriter.WriteByte((byte)SpawnParentType.NetworkBehaviour);
+                            headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.NetworkBehaviour);
                             headerWriter.WriteNetworkBehaviour(parentNb);
                         }
                     }
@@ -174,7 +174,7 @@ namespace FishNet.Managing.Object
                 //No parent.
                 else
                 {
-                    headerWriter.WriteByte((byte)SpawnParentType.Unset);
+                    headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.Unset);
                 }
 
                 headerWriter.WriteNetworkObjectId(nob.PrefabId);
@@ -215,6 +215,7 @@ namespace FishNet.Managing.Object
             /* Write changed transform properties. */
             TransformPropertiesFlag tpf;
             //If a scene object then get it from scene properties.
+            //TODO: parentChange. If nested or has parent write local space, otherwise world.
             if (sceneObject || nested)
             {
                 tpf = nob.GetTransformChanges(nob.SerializedTransformProperties);
@@ -225,7 +226,7 @@ namespace FishNet.Managing.Object
                 tpf = nob.GetTransformChanges(po.GetObject(true, nob.PrefabId).gameObject);
             }
 
-            headerWriter.WriteByte((byte)tpf);
+            headerWriter.WriteUInt8Unpacked((byte)tpf);
             //If properties have changed.
             if (tpf != TransformPropertiesFlag.Unset)
             {
@@ -246,7 +247,7 @@ namespace FishNet.Managing.Object
         /// <param name="nob"></param>
         protected void WriteDespawn(NetworkObject nob, DespawnType despawnType, Writer everyoneWriter)
         {
-            everyoneWriter.WritePacketId(PacketId.ObjectDespawn);
+            everyoneWriter.WritePacketIdUnpacked(PacketId.ObjectDespawn);
             everyoneWriter.WriteNetworkObjectForDespawn(nob, despawnType);
         }
 
@@ -315,13 +316,6 @@ namespace FishNet.Managing.Object
                 reader?.Clear();
                 return false;
             }
-            //Blocked by PredictedSpawn settings or user logic.
-            if ((asServer && !nob.PredictedSpawn.OnTrySpawnServer(spawner, owner))
-                || (!asServer && !nob.PredictedSpawn.OnTrySpawnClient()))
-            {
-                reader?.Clear();
-                return false;
-            }
 
             return true;
         }
@@ -344,17 +338,18 @@ namespace FishNet.Managing.Object
                 reader?.Clear();
                 return false;
             }
-            //Parenting is not yet supported.
-            if (nob.transform.parent != null)
-            {
-                if (asServer)
-                    despawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {despawner.ClientId} tried to despawn an object that is not root.");
-                else
-                    NetworkManager.LogError($"Predicted despawning as a child is not supported.");
 
-                reader?.Clear();
-                return false;
-            }
+            ////Parenting is not yet supported.
+            //if (nob.transform.parent != null)
+            //{
+            //    if (asServer)
+            //        despawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {despawner.ClientId} tried to despawn an object that is not root.");
+            //    else
+            //        NetworkManager.LogError($"Predicted despawning as a child is not supported.");
+
+            //    reader?.Clear();
+            //    return false;
+            //}
             //Nested nobs not yet supported.
             if (nob.NestedRootNetworkBehaviours.Count > 0)
             {
@@ -372,7 +367,6 @@ namespace FishNet.Managing.Object
                 || (!asServer && !nob.PredictedSpawn.OnTryDespawnClient())
                 )
             {
-                reader?.Clear();
                 return false;
             }
 
@@ -387,7 +381,7 @@ namespace FishNet.Managing.Object
         {
             while (reader.Remaining > 0)
             {
-                byte componentIndex = reader.ReadByte();
+                byte componentIndex = reader.ReadUInt8Unpacked();
                 nob.NetworkBehaviours[componentIndex].ReadPayload(conn, reader);
             }
         }
@@ -404,7 +398,7 @@ namespace FishNet.Managing.Object
                 nb.WritePayload(conn, nbWriter);
                 if (nbWriter.Length > 0)
                 {
-                    writer.WriteByte(nb.ComponentIndex);
+                    writer.WriteUInt8Unpacked(nb.ComponentIndex);
                     writer.WriteArraySegment(nbWriter.GetArraySegment());
                 }
             }

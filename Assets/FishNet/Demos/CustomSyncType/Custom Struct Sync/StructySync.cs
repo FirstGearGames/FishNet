@@ -149,7 +149,7 @@ namespace FishNet.Example.CustomSyncObject
             for (int i = 0; i < _changed.Count; i++)
             {
                 ChangeData change = _changed[i];
-                writer.WriteByte((byte)change.Operation);
+                writer.WriteUInt8Unpacked((byte)change.Operation);
 
                 //Clear does not need to write anymore data so it is not included in checks.
                 if (change.Operation == CustomOperation.Age)
@@ -178,7 +178,7 @@ namespace FishNet.Example.CustomSyncObject
             //Write one change.
             writer.WriteInt32(1);
             //Write if changed is from the server, so always use the server _value.           
-            writer.WriteByte((byte)CustomOperation.Full);
+            writer.WriteUInt8Unpacked((byte)CustomOperation.Full);
             //Write value.
             writer.Write(Value);
         }
@@ -199,7 +199,7 @@ namespace FishNet.Example.CustomSyncObject
             int changes = reader.ReadInt32();
             for (int i = 0; i < changes; i++)
             {
-                CustomOperation operation = (CustomOperation)reader.ReadByte();
+                CustomOperation operation = (CustomOperation)reader.ReadUInt8Unpacked();
                 Structy prev = Value;
                 Structy next = prev;
 

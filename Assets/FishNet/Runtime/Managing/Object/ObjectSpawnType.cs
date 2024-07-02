@@ -33,7 +33,7 @@ namespace FishNet.Managing.Object
         /// <param name="whole"></param>
         /// <param name="part"></param>
         /// <returns></returns>
-        public static bool Contains(SpawnType whole, SpawnType part)
+        public static bool FastContains(SpawnType whole, SpawnType part)
         {
             return (whole & part) == part;
         }

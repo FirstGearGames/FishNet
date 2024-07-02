@@ -18,9 +18,7 @@ namespace FishNet.Connection
     /// A container for a connected client used to perform actions on and gather information for the declared client.
     /// </summary>
     public partial class NetworkConnection
-    {
-        internal void Prediction_Initialize(NetworkManager manager, bool asServer) { }
-
+    {        
 #if PREDICTION_1
         /// <summary>
         /// Local tick when the connection last replicated.
@@ -42,6 +40,9 @@ namespace FishNet.Connection
         /// Writers for states.
         /// </summary>
         internal List<PooledWriter> PredictionStateWriters = new List<PooledWriter>();
+
+        internal void Prediction_Initialize(NetworkManager manager, bool asServer) { }
+
 
         /// <summary>
         /// Writes a prediction state.

@@ -4,6 +4,7 @@ using FishNet.Managing.Timing;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace FishNet.Object.Synchronizing.Internal
 {
@@ -148,6 +149,7 @@ namespace FishNet.Object.Synchronizing.Internal
         public void UpdateSendRate(float sendRate)
         {
             Settings.SendRate = sendRate;
+            UnityEngine.Debug.LogError($"Send rate updated to {sendRate}");
             SetTimeToTicks();
         }
         /// <summary>
@@ -222,6 +224,13 @@ namespace FishNet.Object.Synchronizing.Internal
         internal protected void PreInitialize(NetworkManager networkManager)
         {
             NetworkManager = networkManager;
+
+            if (Settings.IsDefault())
+            {
+                float sendRate = Mathf.Max(networkManager.ServerManager.GetSyncTypeRate(), (float)networkManager.TimeManager.TickDelta);
+                Settings = new SyncTypeSettings(sendRate);
+            }
+
             SetTimeToTicks();
         }
 
@@ -411,7 +420,7 @@ namespace FishNet.Object.Synchronizing.Internal
             if (resetSyncTick)
                 NextSyncTick = NetworkManager.TimeManager.LocalTick + _timeToTicks;
 
-            writer.WriteByte((byte)SyncIndex);
+            writer.WriteUInt8Unpacked((byte)SyncIndex);
         }
 
         /// <summary>

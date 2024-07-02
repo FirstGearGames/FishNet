@@ -16,14 +16,13 @@ namespace FishNet.Serializing
     [APIExclude]
     public static class GenericReader<T>
     {
-        public static Func<Reader, T> Read { get; set; }
-        public static Func<Reader, AutoPackType, T> ReadAutoPack { get; set; }
+        public static Func<Reader, T> Read { get; set; }        
         /// <summary>
         /// True if this type has a custom writer.
         /// </summary>
         private static bool _hasCustomSerializer;
 
-        public static void SetReadUnpacked(Func<Reader, T> value)
+        public static void SetRead(Func<Reader, T> value)
         {
             /* If a custom serializer has already been set then exit method
              * to not overwrite serializer. */
@@ -35,9 +34,5 @@ namespace FishNet.Serializing
             Read = value;
         }
 
-        public static void SetReadAutoPacked(Func<Reader, AutoPackType, T> value)
-        {
-            ReadAutoPack = value;
-        }
     }
 }

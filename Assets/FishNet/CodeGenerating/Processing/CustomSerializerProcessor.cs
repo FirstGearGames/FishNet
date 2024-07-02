@@ -256,7 +256,6 @@ namespace FishNet.CodeGenerating.Processing
                 //If a created method already exist nothing further is required.
                 if (createdMethodRef != null)
                 {
-                    TryInsertAutoPack(ref instructionIndex);
                     //Replace call to generic with already made serializer.
                     Instruction newInstruction = processor.Create(OpCodes.Call, createdMethodRef);
                     methodDef.Body.Instructions[instructionIndex] = newInstruction;
@@ -272,39 +271,14 @@ namespace FishNet.CodeGenerating.Processing
                 //If method was created.
                 if (createdMethodRef != null)
                 {
-                    TryInsertAutoPack(ref instructionIndex);
                     //Set new instruction.
                     Instruction newInstruction = processor.Create(OpCodes.Call, createdMethodRef);
                     methodDef.Body.Instructions[instructionIndex] = newInstruction;
                 }
             }
 
-            void TryInsertAutoPack(ref int insertIndex)
-            {
-                if (IsAutoPackMethod(parameterType, extensionType))
-                {
-                    ILProcessor processor = methodDef.Body.GetILProcessor();
-                    AutoPackType packType = base.GetClass<GeneralHelper>().GetDefaultAutoPackType(parameterType);
-                    Instruction autoPack = processor.Create(OpCodes.Ldc_I4, (int)packType);
-                    methodDef.Body.Instructions.Insert(insertIndex, autoPack);
-                    insertIndex++;
-                }
-            }
         }
 
-        /// <summary>
-        /// Returns if a typeRef serializer requires or uses autopacktype.
-        /// </summary>
-        private bool IsAutoPackMethod(TypeReference typeRef, ExtensionType extensionType)
-        {
-            if (extensionType == ExtensionType.Write)
-                return base.GetClass<WriterProcessor>().IsAutoPackedType(typeRef);
-            else if (extensionType == ExtensionType.Read)
-                return base.GetClass<ReaderProcessor>().IsAutoPackedType(typeRef);
-            else
-                return false;
-
-        }
         /// <summary>
         /// Returns the RPC attribute on a method, if one exist. Otherwise returns null.
         /// </summary>

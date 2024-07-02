@@ -367,7 +367,7 @@ namespace FishNet.Object
         {
             uint replayTick = (IsOwner) ? clientTick : serverTick;
             for (int i = 0; i < _predictionBehaviours.Count; i++)
-                _predictionBehaviours[i].Replicate_Replay_Start(replayTick + 1);
+                _predictionBehaviours[i].Replicate_Replay_Start(replayTick);
         }
 
         /// <summary>
@@ -377,6 +377,16 @@ namespace FishNet.Object
         internal void RegisterPredictionBehaviourOnce(NetworkBehaviour nb)
         {
             _predictionBehaviours.Add(nb);
+        }
+
+        /// <summary>
+        /// Clears replication queue inserting them into the past replicates history when possible.
+        /// This should only be called when client only.
+        /// </summary>
+        internal void EmptyReplicatesQueueIntoHistory()
+        {
+            for (int i = 0; i < _predictionBehaviours.Count; i++)
+                _predictionBehaviours[i].EmptyReplicatesQueueIntoHistory_Start();
         }
 
         /// <summary>

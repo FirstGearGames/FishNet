@@ -48,7 +48,6 @@ namespace Edgegap.Editor
         public static readonly bool SKIP_DOCKER_IMAGE_BUILD_WHEN_PUSHING = false; // MIRROR CHANGE: 'const' changed to 'static readonly' to avoid 'unreachable code detected' warning
         #endregion // Debug
 
-        
         /// <summary>Interval at which the server status is updated</summary>
         public const int SERVER_STATUS_CRON_JOB_INTERVAL_MS = 10000;
         public const int PORT_DEFAULT = 7770;
@@ -61,8 +60,14 @@ namespace Edgegap.Editor
         public const string READY_STATUS = "Status.READY";
 
         public const string EDGEGAP_GET_A_TOKEN_URL = "https://app.edgegap.com/?oneClick=true";
-        public const string EDGEGAP_ADD_MORE_GAME_SERVERS_URL = "https://edgegap.com/en/resources/contact";
+        public const string EDGEGAP_ADD_MORE_GAME_SERVERS_URL = "https://edgegap.com/resources/contact";
         public const string EDGEGAP_DOC_BTN_HOW_TO_LOGIN_VIA_CLI_URL = "https://docs.edgegap.com/docs/container/edgegap-container-registry/#getting-your-credentials";
+        private const string DEFAULT_UTM_SOURCE_TAG = "plugin_unity";
+        private const string DEFAULT_UTM_MEDIUM_TAG = "servers_quickstart_plugin";
+        private const string DEFAULT_UTM_CONTENT_TAG = "plugin_button";
+        public const string DEFAULT_UTM_TAGS = "utm_source=" + DEFAULT_UTM_SOURCE_TAG +
+                                               "&utm_medium=" + DEFAULT_UTM_MEDIUM_TAG +
+                                               "&utm_content=" + DEFAULT_UTM_CONTENT_TAG;
         public const string DEFAULT_VERSION_TAG = "latest";
         public const string LOADING_RICH_STR = "<i>Loading...</i>";
         public const string PROCESSING_RICH_STR = "<i>Processing...</i>";
@@ -121,6 +126,7 @@ namespace Edgegap.Editor
         public const string DEPLOYMENT_REQUEST_ID_KEY_STR = "DeploymentRequestId";
         public const string DEPLOYMENT_CONNECTION_URL_KEY_STR = "DeploymentConnectionUrlLabel";
         public const string DEPLOYMENT_CONNECTION_STATUS_KEY_STR = "DeploymentsConnectionStatusLabel";
+        public const string CONTAINER_REGISTRY_TRANSPORT_TYPE_ENUM_KEY_STR = "ContainerRegistryProtocolTypeEnum";
         #endregion // Editor Pref Key Ids for persistence
         
         #region UI Element Ids

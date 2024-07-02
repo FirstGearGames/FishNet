@@ -33,6 +33,11 @@ namespace FishNet.Object
         [field: SerializeField, HideInInspector]
         internal ulong SceneId { get; private set; }
         /// <summary>
+        /// Sets SceneId value. This is not synchronized automatically.
+        /// </summary>
+        /// <param name="sceneId"></param>
+        public void SetSceneId(ulong sceneId) => SceneId = sceneId;
+        /// <summary>
         /// Hash for the path which this asset resides. This value is set during edit time.
         /// </summary> 
         [field: SerializeField, HideInInspector]
@@ -88,9 +93,20 @@ namespace FishNet.Object
 
             Scenes.GetSceneNetworkObjects(scene, false, false, false, ref sceneNobs);
             found = sceneNobs.Count;
-            System.Random rnd = new System.Random();
+            System.Random rnd = new();
+
+            //NetworkObjects which need their Ids rebuilt.
+            List<NetworkObject> rebuildingNobs = new();
 
             foreach (NetworkObject item in sceneNobs)
+            {
+                /* If an Id has not been generated yet or if it
+                 * already exist then rebuild for this object. */
+                if (!item.IsSceneObject || !setIds.Add(item.SceneId))
+                    rebuildingNobs.Add(item);
+            }
+
+            foreach (NetworkObject item in rebuildingNobs)
             {
                 ulong startSceneId = item.SceneId;
                 ulong nextSceneId = 0;
@@ -99,19 +115,15 @@ namespace FishNet.Object
                     uint rndId = (uint)(rnd.Next(int.MinValue, int.MaxValue) + int.MaxValue);
                     nextSceneId = CombineHashes(scenePathHash, rndId);
                 }
-
                 ulong CombineHashes(uint a, uint b)
                 {
                     return (b << 32 | a);
                 }
 
                 setIds.Add(nextSceneId);
-                if (nextSceneId != startSceneId)
-                {
-                    changed++;
-                    item.SceneId = nextSceneId;
-                    EditorUtility.SetDirty(item);
-                }
+                changed++;
+                item.SceneId = nextSceneId;
+                EditorUtility.SetDirty(item);
             }
         }
 

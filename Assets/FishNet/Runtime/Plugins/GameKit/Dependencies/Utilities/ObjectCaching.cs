@@ -24,7 +24,7 @@ namespace GameKit.Dependencies.Utilities
     /// <summary>
     /// Caches collections of multiple generics.
     /// </summary>
-    public static class ResettableCollectionCaches<T1, T2> where T1 : IResettable where T2 : IResettable
+    public static class ResettableCollectionCaches<T1, T2> where T1 : IResettable, new() where T2 : IResettable, new()
     {
         /// <summary>
         /// Retrieves a collection.
@@ -66,7 +66,7 @@ namespace GameKit.Dependencies.Utilities
     /// <summary>
     /// Caches collections of multiple generics.
     /// </summary>
-    public static class ResettableT1CollectionCaches<T1, T2> where T1 : IResettable
+    public static class ResettableT1CollectionCaches<T1, T2> where T1 : IResettable, new()
     {
         /// <summary>
         /// Retrieves a collection.
@@ -106,7 +106,7 @@ namespace GameKit.Dependencies.Utilities
     /// <summary>
     /// Caches collections of multiple generics.
     /// </summary>
-    public static class ResettableT2CollectionCaches<T1, T2> where T2 : IResettable
+    public static class ResettableT2CollectionCaches<T1, T2> where T2 : IResettable, new()
     {
         /// <summary>
         /// Retrieves a collection.
@@ -148,7 +148,7 @@ namespace GameKit.Dependencies.Utilities
     /// <summary>
     /// Caches collections of a single generic.
     /// </summary>
-    public static class ResettableCollectionCaches<T> where T : IResettable
+    public static class ResettableCollectionCaches<T> where T : IResettable, new()
     {
         /// <summary>
         /// Cache for ResettableRingBuffer.
@@ -207,7 +207,7 @@ namespace GameKit.Dependencies.Utilities
             value.ResetState();
             _resettableRingBufferCache.Push(value);
         }
-        
+
         /// <summary>
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
@@ -297,7 +297,7 @@ namespace GameKit.Dependencies.Utilities
     /// <summary>
     /// Caches objects of a single generic.
     /// </summary>
-    public static class ResettableObjectCaches<T> where T : IResettable
+    public static class ResettableObjectCaches<T> where T : IResettable, new()
     {
         /// <summary>
         /// Retrieves an instance of T.
@@ -633,7 +633,7 @@ namespace GameKit.Dependencies.Utilities
     /// <summary>
     /// Caches objects of a single generic.
     /// </summary>
-    public static class ObjectCaches<T>
+    public static class ObjectCaches<T> where T : new()
     {
         /// <summary>
         /// Stack to use.
@@ -648,7 +648,7 @@ namespace GameKit.Dependencies.Utilities
         {
             T result;
             if (!_stack.TryPop(out result))
-                result = Activator.CreateInstance<T>();
+                result = new();// Activator.CreateInstance<T>();
 
             return result;
         }

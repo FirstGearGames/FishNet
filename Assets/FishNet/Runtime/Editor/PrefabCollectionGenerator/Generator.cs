@@ -443,6 +443,10 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             if (settings == null)
                 settings = Configuration.Configurations.PrefabGenerator;
 
+            //If not using default prefabs then exit early.
+            if (!settings.Enabled)
+                return null;
+
             //Load the prefab collection 
             string defaultPrefabsPath = settings.DefaultPrefabObjectsPath_Platform;
             string fullDefaultPrefabsPath = (defaultPrefabsPath.Length > 0) ? Path.GetFullPath(defaultPrefabsPath) : string.Empty;

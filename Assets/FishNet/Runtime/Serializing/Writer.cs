@@ -1,80 +1,91 @@
 using FishNet.CodeGenerating;
 using FishNet.Connection;
-using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility;
-using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using System.Reflection;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
+
 namespace FishNet.Serializing
 {
-
     /// <summary>
     /// Writes data to a buffer.
     /// </summary>
     public partial class Writer
     {
         #region Public.
+
         /// <summary>
         /// Capacity of the buffer.
         /// </summary>
         public int Capacity => _buffer.Length;
+
         /// <summary>
         /// Current write position.
         /// </summary>
         public int Position;
+
         /// <summary>
         /// Number of bytes writen to the buffer.
         /// </summary>
         public int Length;
+
         /// <summary>
         /// NetworkManager associated with this writer. May be null.
         /// </summary>
         public NetworkManager NetworkManager;
+
         #endregion
 
         #region Private.
+
         /// <summary>
         /// Buffer to prevent new allocations. This will grow as needed.
         /// </summary>
         private byte[] _buffer = new byte[64];
+
         #endregion
 
         #region Const.
+
         /// <summary>
         /// Replicate data is default of T.
         /// </summary>
         internal const byte REPLICATE_DEFAULT_BYTE = 0;
+
         /// <summary>
         /// Replicate data is the same as the previous.
         /// </summary>
         internal const byte REPLICATE_DUPLICATE_BYTE = 1;
+
         /// <summary>
         /// Replicate data is different from the previous.
         /// </summary>
         internal const byte REPLICATE_UNIQUE_BYTE = 2;
+
         /// <summary>
         /// Replicate data is repeating for every entry.
         /// </summary>
         internal const byte REPLICATE_REPEATING_BYTE = 3;
+
         /// <summary>
         /// All datas in the replicate are default.
         /// </summary>
         internal const byte REPLICATE_ALL_DEFAULT_BYTE = 4;
+
         /// <summary>
         /// Value used when a collection is unset, as in null.
         /// </summary>
         public const int UNSET_COLLECTION_SIZE_VALUE = -1;
+
         #endregion
 
         /// <summary>
@@ -99,7 +110,6 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes a dictionary.
         /// </summary>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteDictionary<TKey, TValue>(Dictionary<TKey, TValue> dict)
         {
@@ -179,7 +189,6 @@ namespace FishNet.Serializing
         /// Writes length. This method is used to make debugging easier.
         /// </summary>
         /// <param name="length"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void WriteLength(int length)
         {
@@ -190,11 +199,10 @@ namespace FishNet.Serializing
         /// Sends a packetId.
         /// </summary>
         /// <param name="pid"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void WritePacketId(PacketId pid)
+        internal void WritePacketIdUnpacked(PacketId pid)
         {
-            WriteUInt16((ushort)pid, AutoPackType.Unpacked);
+            WriteUInt16Unpacked((ushort)pid);
         }
 
         /// <summary>
@@ -203,18 +211,23 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         /// <param name="index"></param>
-        [NotSerializer]
-        public void FastInsertByte(byte value, int index)
+        public void FastInsertUInt8Unpacked(byte value, int index)
         {
             _buffer[index] = value;
         }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Obsolete("Use WriteUInt8Unpacked.")]
+        public void WriteByte(byte value) => WriteUInt8Unpacked(value);
 
         /// <summary>
         /// Writes a byte.
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteByte(byte value)
+        [DefaultWriter]
+        public void WriteUInt8Unpacked(byte value)
         {
             EnsureBufferLength(1);
             _buffer[Position++] = value;
@@ -222,15 +235,17 @@ namespace FishNet.Serializing
             Length = Math.Max(Length, Position);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Obsolete("Use WriteUInt8Array.")]
+        public void WriteBytes(byte[] value, int offset, int count) => WriteUInt8Array(value, offset, count);
         /// <summary>
         /// Writes bytes.
         /// </summary>
         /// <param name="value"></param>
         /// <param name="offset"></param>
         /// <param name="count"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteBytes(byte[] value, int offset, int count)
+        public void WriteUInt8Array(byte[] value, int offset, int count)
         {
             EnsureBufferLength(count);
             Buffer.BlockCopy(value, offset, _buffer, Position, count);
@@ -238,15 +253,17 @@ namespace FishNet.Serializing
             Length = Math.Max(Length, Position);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Obsolete("Use WriteUInt8ArrayAndSize.")]
+        public void WriteBytesAndSize(byte[] value, int offset, int count) => WriteUInt8ArrayAndSize(value, offset, count);
         /// <summary>
         /// Writes bytes and length of bytes.
         /// </summary>
         /// <param name="value"></param>
         /// <param name="offset"></param>
         /// <param name="count"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteBytesAndSize(byte[] value, int offset, int count)
+        public void WriteUInt8ArrayAndSize(byte[] value, int offset, int count)
         {
             if (value == null)
             {
@@ -255,40 +272,42 @@ namespace FishNet.Serializing
             else
             {
                 WriteInt32(count);
-                WriteBytes(value, offset, count);
+                WriteUInt8Array(value, offset, count);
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Obsolete("Use WriteUInt8ArrayAndSize.")]
+        public void WriteBytesAndSize(byte[] value) => WriteUInt8ArrayAndSize(value);
         /// <summary>
         /// Writes all bytes in value and length of bytes.
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteBytesAndSize(byte[] value)
+        public void WriteUInt8ArrayAndSize(byte[] value)
         {
             int size = (value == null) ? 0 : value.Length;
             // buffer might be null, so we can't use .Length in that case
-            WriteBytesAndSize(value, 0, size);
+            WriteUInt8ArrayAndSize(value, 0, size);
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Obsolete("Use WriteInt8Unpacked.")]
+        public void WriteSByte(sbyte value) => WriteInt8Unpacked(value);
+        
         /// <summary>
         /// Writes a sbyte.
         /// </summary>
-        /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteSByte(sbyte value)
-        {
-            EnsureBufferLength(1);
-            _buffer[Position++] = (byte)value;
-            Length = Math.Max(Length, Position);
-        }
+        [DefaultWriter]
+        public void WriteInt8Unpacked(sbyte value) => WriteUInt8Unpacked((byte)value);
 
         /// <summary>
         /// Writes a char.
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteChar(char value)
         {
             EnsureBufferLength(2);
@@ -302,6 +321,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteBoolean(bool value)
         {
             EnsureBufferLength(1);
@@ -309,104 +329,141 @@ namespace FishNet.Serializing
             Length = Math.Max(Length, Position);
         }
 
+
+        /// <summary>
+        /// Writes a uint16 unpacked.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteUInt16Unpacked(ushort value)
+        {
+            EnsureBufferLength(2);
+            _buffer[Position++] = (byte)value;
+            _buffer[Position++] = (byte)(value >> 8);
+            Length = Math.Max(Length, Position);
+        }
+
         /// <summary>
         /// Writes a uint16.
         /// </summary>
         /// <param name="value"></param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteUInt16(ushort value, AutoPackType packType = AutoPackType.Packed)
-        {
-            //todo Packing for this type appears to be broken. Fix then remove this line.
-            packType = AutoPackType.Unpacked;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] //todo: should be using WritePackedWhole but something relying on unpacked short/ushort is being written packed, corrupting packets.
+        [DefaultWriter]
+        public void WriteUInt16(ushort value) => WriteUInt16Unpacked(value);
 
-            if (packType == AutoPackType.Unpacked)
-            {
-                EnsureBufferLength(2);
-                _buffer[Position++] = (byte)value;
-                _buffer[Position++] = (byte)(value >> 8);
-                Length = Math.Max(Length, Position);
-            }
-            else
-            {
-                WritePackedWhole(value);
-            }
-        }
+        /// <summary>
+        /// Writes a int16 unpacked.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] //todo: should be WritePackedWhole but something relying on unpacked short/ushort is being written packed, corrupting packets.
+        public void WriteInt16Unpacked(short value) => WriteUInt16Unpacked((ushort)value);
 
         /// <summary>
         /// Writes a int16.
         /// </summary>
         /// <param name="value"></param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt16(short value, AutoPackType packType = AutoPackType.Packed) => WriteUInt16((ushort)value, packType);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] //todo: should be WritePackedWhole but something relying on unpacked short/ushort is being written packed, corrupting packets.
+        [DefaultWriter]
+        public void WriteInt16(short value) => WriteUInt16Unpacked((ushort)value);
 
         /// <summary>
         /// Writes a int32.
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt32(int value, AutoPackType packType = AutoPackType.Packed)
+        public void WriteInt32Unpacked(int value) => WriteUInt32Unpacked((uint)value);
+
+        /// <summary>
+        /// Writes an int32.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
+        public void WriteInt32(int value) => WriteSignedPackedWhole(value);
+
+        /// <summary>
+        /// Writes value to dst without error checking.
+        /// </summary>
+        internal static void WriteUInt32Unpacked(byte[] dst, uint value, ref int position)
         {
-            if (packType == AutoPackType.Packed)
-                WritePackedWhole(ZigZagEncode((ulong)value));
-            else
-                WriteUInt32((uint)value, packType);
+            dst[position++] = (byte)value;
+            dst[position++] = (byte)(value >> 8);
+            dst[position++] = (byte)(value >> 16);
+            dst[position++] = (byte)(value >> 24);
         }
+
         /// <summary>
         /// Writes a uint32.
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteUInt32(uint value, AutoPackType packType = AutoPackType.Packed)
+        public void WriteUInt32Unpacked(uint value)
         {
-            if (packType == AutoPackType.Unpacked)
-            {
-                EnsureBufferLength(4);
-                WriterExtensions.WriteUInt32(_buffer, value, ref Position);
-                Length = Math.Max(Length, Position);
-            }
-            else
-            {
-                WritePackedWhole(value);
-            }
+            EnsureBufferLength(4);
+            WriteUInt32Unpacked(_buffer, value, ref Position);
+            Length = Math.Max(Length, Position);
         }
+
+        /// <summary>
+        /// Writes a uint32.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
+        public void WriteUInt32(uint value) => WriteSignedPackedWhole(value);
+
+        /// <summary>
+        /// Writes a uint64.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteUInt64Unpacked(ulong value)
+        {
+            EnsureBufferLength(8);
+            _buffer[Position++] = (byte)value;
+            _buffer[Position++] = (byte)(value >> 8);
+            _buffer[Position++] = (byte)(value >> 16);
+            _buffer[Position++] = (byte)(value >> 24);
+            _buffer[Position++] = (byte)(value >> 32);
+            _buffer[Position++] = (byte)(value >> 40);
+            _buffer[Position++] = (byte)(value >> 48);
+            _buffer[Position++] = (byte)(value >> 56);
+            Length = Math.Max(Position, Length);
+        }
+
+        /// <summary>
+        /// Writes a uint64.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
+        public void WriteUInt64(ulong value) => WriteUnsignedPackedWhole(value);
+
+        /// <summary>
+        /// Writes a int64.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteInt64Unpacked(long value) => WriteUInt64((ulong)value);
 
         /// <summary>
         /// Writes an int64.
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt64(long value, AutoPackType packType = AutoPackType.Packed)
-        {
-            if (packType == AutoPackType.Packed)
-                WritePackedWhole(ZigZagEncode((ulong)value));
-            else
-                WriteUInt64((ulong)value, packType);
-        }
+        [DefaultWriter]
+        public void WriteInt64(long value) => WriteSignedPackedWhole(value);
+
         /// <summary>
-        /// Writes a uint64.
+        /// Writes a single (float).
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteUInt64(ulong value, AutoPackType packType = AutoPackType.Packed)
+        public void WriteSingleUnpacked(float value)
         {
-            if (packType == AutoPackType.Unpacked)
-            {
-                EnsureBufferLength(8);
-                _buffer[Position++] = (byte)value;
-                _buffer[Position++] = (byte)(value >> 8);
-                _buffer[Position++] = (byte)(value >> 16);
-                _buffer[Position++] = (byte)(value >> 24);
-                _buffer[Position++] = (byte)(value >> 32);
-                _buffer[Position++] = (byte)(value >> 40);
-                _buffer[Position++] = (byte)(value >> 48);
-                _buffer[Position++] = (byte)(value >> 56);
-
-                Length = Math.Max(Position, Length);
-            }
-            else
-            {
-                WritePackedWhole(value);
-            }
+            EnsureBufferLength(4);
+            UIntFloat converter = new UIntFloat { FloatValue = value };
+            WriteUInt32Unpacked(converter.UIntValue);
         }
 
         /// <summary>
@@ -414,18 +471,18 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteSingle(float value, AutoPackType packType = AutoPackType.Unpacked)
+        [DefaultWriter]
+        public void WriteSingle(float value) => WriteSingleUnpacked(value);
+
+        /// <summary>
+        /// Writes a double.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteDoubleUnpacked(double value)
         {
-            if (packType == AutoPackType.Unpacked)
-            {
-                UIntFloat converter = new UIntFloat { FloatValue = value };
-                WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            }
-            else
-            {
-                long converter = (long)(value * 100f);
-                WritePackedWhole((ulong)converter);
-            }
+            UIntDouble converter = new UIntDouble { DoubleValue = value };
+            WriteUInt64Unpacked(converter.LongValue);
         }
 
         /// <summary>
@@ -433,10 +490,19 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteDouble(double value)
+        [DefaultWriter]
+        public void WriteDouble(double value) => WriteDoubleUnpacked(value);
+
+        /// <summary>
+        /// Writes a decimal.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteDecimalUnpacked(decimal value)
         {
-            UIntDouble converter = new UIntDouble { DoubleValue = value };
-            WriteUInt64(converter.LongValue, AutoPackType.Unpacked);
+            UIntDecimal converter = new UIntDecimal { DecimalValue = value };
+            WriteUInt64Unpacked(converter.LongValue1);
+            WriteUInt64Unpacked(converter.LongValue2);
         }
 
         /// <summary>
@@ -444,18 +510,15 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteDecimal(decimal value)
-        {
-            UIntDecimal converter = new UIntDecimal { DecimalValue = value };
-            WriteUInt64(converter.LongValue1, AutoPackType.Unpacked);
-            WriteUInt64(converter.LongValue2, AutoPackType.Unpacked);
-        }
+        [DefaultWriter]
+        public void WriteDecimal(decimal value) => WriteDecimalUnpacked(value);
 
         /// <summary>
         /// Writes a string.
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteString(string value)
         {
             if (value == null)
@@ -471,13 +534,13 @@ namespace FishNet.Serializing
 
             /* Resize string buffer as needed. There's no harm in
              * increasing buffer on writer side because sender will
-             * never intentionally inflict allocations on itself. 
+             * never intentionally inflict allocations on itself.
              * Reader ensures string count cannot exceed received
              * packet size. */
             int size;
             byte[] stringBuffer = WriterStatics.GetStringBuffer(value, out size);
             WriteInt32(size);
-            WriteBytes(stringBuffer, 0, size);
+            WriteUInt8Array(stringBuffer, 0, size);
         }
 
         /// <summary>
@@ -485,20 +548,25 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteArraySegmentAndSize(ArraySegment<byte> value)
-        {
-            WriteBytesAndSize(value.Array, value.Offset, value.Count);
-        }
+        [DefaultWriter]
+        public void WriteArraySegmentAndSize(ArraySegment<byte> value) => WriteUInt8ArrayAndSize(value.Array, value.Offset, value.Count);
 
         /// <summary>
         /// Writes an ArraySegment without size.
         /// </summary>
         /// <param name="value"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteArraySegment(ArraySegment<byte> value)
+        public void WriteArraySegment(ArraySegment<byte> value) => WriteUInt8Array(value.Array, value.Offset, value.Count);
+
+        /// <summary>
+        /// Writes a Vector2.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteVector2Unpacked(Vector2 value)
         {
-            WriteBytes(value.Array, value.Offset, value.Count);
+            WriteSingleUnpacked(value.x);
+            WriteSingleUnpacked(value.y);
         }
 
         /// <summary>
@@ -506,10 +574,19 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteVector2(Vector2 value)
+        [DefaultWriter]
+        public void WriteVector2(Vector2 value) => WriteVector2Unpacked(value);
+
+        /// <summary>
+        /// Writes a Vector3
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteVector3Unpacked(Vector3 value)
         {
-            WriteSingle(value.x, AutoPackType.Unpacked);
-            WriteSingle(value.y, AutoPackType.Unpacked);
+            WriteSingleUnpacked(value.x);
+            WriteSingleUnpacked(value.y);
+            WriteSingleUnpacked(value.z);
         }
 
         /// <summary>
@@ -517,11 +594,20 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteVector3(Vector3 value)
+        [DefaultWriter]
+        public void WriteVector3(Vector3 value) => WriteVector3Unpacked(value);
+
+        /// <summary>
+        /// Writes a Vector4.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteVector4Unpacked(Vector4 value)
         {
-            WriteSingle(value.x, AutoPackType.Unpacked);
-            WriteSingle(value.y, AutoPackType.Unpacked);
-            WriteSingle(value.z, AutoPackType.Unpacked);
+            WriteSingleUnpacked(value.x);
+            WriteSingleUnpacked(value.y);
+            WriteSingleUnpacked(value.z);
+            WriteSingleUnpacked(value.w);
         }
 
         /// <summary>
@@ -529,12 +615,18 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteVector4(Vector4 value)
+        [DefaultWriter]
+        public void WriteVector4(Vector4 value) => WriteVector4Unpacked(value);
+
+        /// <summary>
+        /// Writes a Vector2Int.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteVector2IntUnpacked(Vector2Int value)
         {
-            WriteSingle(value.x, AutoPackType.Unpacked);
-            WriteSingle(value.y, AutoPackType.Unpacked);
-            WriteSingle(value.z, AutoPackType.Unpacked);
-            WriteSingle(value.w, AutoPackType.Unpacked);
+            WriteInt32Unpacked(value.x);
+            WriteInt32Unpacked(value.y);
         }
 
         /// <summary>
@@ -542,10 +634,11 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteVector2Int(Vector2Int value, AutoPackType packType = AutoPackType.Packed)
+        [DefaultWriter]
+        public void WriteVector2Int(Vector2Int value)
         {
-            WriteInt32(value.x, packType);
-            WriteInt32(value.y, packType);
+            WriteSignedPackedWhole(value.x);
+            WriteSignedPackedWhole(value.y);
         }
 
         /// <summary>
@@ -553,11 +646,24 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteVector3Int(Vector3Int value, AutoPackType packType = AutoPackType.Packed)
+        public void WriteVector3IntUnpacked(Vector3Int value)
         {
-            WriteInt32(value.x, packType);
-            WriteInt32(value.y, packType);
-            WriteInt32(value.z, packType);
+            WriteInt32Unpacked(value.x);
+            WriteInt32Unpacked(value.y);
+            WriteInt32Unpacked(value.z);
+        }
+
+        /// <summary>
+        /// Writes a Vector3Int.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
+        public void WriteVector3Int(Vector3Int value)
+        {
+            WriteSignedPackedWhole(value.x);
+            WriteSignedPackedWhole(value.y);
+            WriteSignedPackedWhole(value.z);
         }
 
         /// <summary>
@@ -565,25 +671,28 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteColor(Color value, AutoPackType packType = AutoPackType.Packed)
+        public void WriteColorUnpacked(Color value)
         {
-            if (packType == AutoPackType.Unpacked)
-            {
-                WriteSingle(value.r);
-                WriteSingle(value.g);
-                WriteSingle(value.b);
-                WriteSingle(value.a);
-            }
-            else
-            {
-                EnsureBufferLength(4);
-                _buffer[Position++] = (byte)(value.r * 100f);
-                _buffer[Position++] = (byte)(value.g * 100f);
-                _buffer[Position++] = (byte)(value.b * 100f);
-                _buffer[Position++] = (byte)(value.a * 100f);
+            WriteSingleUnpacked(value.r);
+            WriteSingleUnpacked(value.g);
+            WriteSingleUnpacked(value.b);
+            WriteSingleUnpacked(value.a);
+        }
 
-                Length = Math.Max(Length, Position);
-            }
+        /// <summary>
+        /// Writes a Color.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
+        public void WriteColor(Color value)
+        {
+            EnsureBufferLength(4);
+            _buffer[Position++] = (byte)(value.r * 100f);
+            _buffer[Position++] = (byte)(value.g * 100f);
+            _buffer[Position++] = (byte)(value.b * 100f);
+            _buffer[Position++] = (byte)(value.a * 100f);
+            Length = Math.Max(Length, Position);
         }
 
         /// <summary>
@@ -591,6 +700,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteColor32(Color32 value)
         {
             EnsureBufferLength(4);
@@ -607,29 +717,56 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteQuaternion(Quaternion value, AutoPackType packType = AutoPackType.Packed)
+        public void WriteQuaternionUnpacked(Quaternion value)
         {
-            if (packType == AutoPackType.Packed)
+            WriteSingleUnpacked(value.x);
+            WriteSingleUnpacked(value.y);
+            WriteSingleUnpacked(value.z);
+            WriteSingleUnpacked(value.w);
+        }
+
+        /// <summary>
+        /// Writes a Quaternion.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteQuaternion64(Quaternion value)
+        {
+            ulong result = Quaternion64Compression.Compress(value);
+            WriteUInt64Unpacked(result);
+        }
+
+        /// <summary>
+        /// Writes a Quaternion.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
+        public void WriteQuaternion32(Quaternion value)
+        {
+            uint result = Quaternion32Compression.Compress(value);
+            WriteUInt32Unpacked(result);
+        }
+
+        /// <summary>
+        /// Reads a Quaternion.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void WriteQuaternion(Quaternion value, AutoPackType autoPackType)
+        {
+            switch (autoPackType)
             {
-                EnsureBufferLength(4);
-                uint result = Quaternion32Compression.Compress(value);
-                WriterExtensions.WriteUInt32(_buffer, result, ref Position);
-                Length = Math.Max(Length, Position);
-            }
-            else if (packType == AutoPackType.PackedLess)
-            {
-                EnsureBufferLength(8);
-                ulong result = Quaternion64Compression.Compress(value);
-                WriterExtensions.WriteUInt64(_buffer, result, ref Position);
-                Length = Math.Max(Length, Position);
-            }
-            else
-            {
-                EnsureBufferLength(16);
-                WriteSingle(value.x);
-                WriteSingle(value.y);
-                WriteSingle(value.z);
-                WriteSingle(value.w);
+                case AutoPackType.Packed:
+                    WriteQuaternion32(value);
+                    ;
+                    break;
+                case AutoPackType.PackedLess:
+                    WriteQuaternion64(value);
+                    break;
+                default:
+                    WriteQuaternionUnpacked(value);
+                    break;
             }
         }
 
@@ -638,12 +775,31 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteRect(Rect value)
+        public void WriteRectUnpacked(Rect value)
         {
-            WriteSingle(value.xMin);
-            WriteSingle(value.yMin);
-            WriteSingle(value.width);
-            WriteSingle(value.height);
+            WriteSingleUnpacked(value.xMin);
+            WriteSingleUnpacked(value.yMin);
+            WriteSingleUnpacked(value.width);
+            WriteSingleUnpacked(value.height);
+        }
+
+        /// <summary>
+        /// Writes a rect.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
+        public void WriteRect(Rect value) => WriteRectUnpacked(value);
+
+        /// <summary>
+        /// Writes a plane.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WritePlaneUnpacked(Plane value)
+        {
+            WriteVector3Unpacked(value.normal);
+            WriteSingleUnpacked(value.distance);
         }
 
         /// <summary>
@@ -651,10 +807,18 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WritePlane(Plane value)
+        [DefaultWriter]
+        public void WritePlane(Plane value) => WritePlaneUnpacked(value);
+
+        /// <summary>
+        /// Writes a Ray.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteRayUnpacked(Ray value)
         {
-            WriteVector3(value.normal);
-            WriteSingle(value.distance);
+            WriteVector3Unpacked(value.origin);
+            WriteVector3Unpacked(value.direction);
         }
 
         /// <summary>
@@ -662,10 +826,18 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteRay(Ray value)
+        [DefaultWriter]
+        public void WriteRay(Ray value) => WriteRayUnpacked(value);
+
+        /// <summary>
+        /// Writes a Ray2D.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteRay2DUnpacked(Ray2D value)
         {
-            WriteVector3(value.origin);
-            WriteVector3(value.direction);
+            WriteVector2Unpacked(value.origin);
+            WriteVector2Unpacked(value.direction);
         }
 
         /// <summary>
@@ -673,11 +845,8 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteRay2D(Ray2D value)
-        {
-            WriteVector2(value.origin);
-            WriteVector2(value.direction);
-        }
+        [DefaultWriter]
+        public void WriteRay2D(Ray2D value) => WriteRay2DUnpacked(value);
 
 
         /// <summary>
@@ -685,78 +854,84 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteMatrix4x4(Matrix4x4 value)
+        public void WriteMatrix4x4Unpacked(Matrix4x4 value)
         {
-            WriteSingle(value.m00);
-            WriteSingle(value.m01);
-            WriteSingle(value.m02);
-            WriteSingle(value.m03);
-            WriteSingle(value.m10);
-            WriteSingle(value.m11);
-            WriteSingle(value.m12);
-            WriteSingle(value.m13);
-            WriteSingle(value.m20);
-            WriteSingle(value.m21);
-            WriteSingle(value.m22);
-            WriteSingle(value.m23);
-            WriteSingle(value.m30);
-            WriteSingle(value.m31);
-            WriteSingle(value.m32);
-            WriteSingle(value.m33);
+            WriteSingleUnpacked(value.m00);
+            WriteSingleUnpacked(value.m01);
+            WriteSingleUnpacked(value.m02);
+            WriteSingleUnpacked(value.m03);
+            WriteSingleUnpacked(value.m10);
+            WriteSingleUnpacked(value.m11);
+            WriteSingleUnpacked(value.m12);
+            WriteSingleUnpacked(value.m13);
+            WriteSingleUnpacked(value.m20);
+            WriteSingleUnpacked(value.m21);
+            WriteSingleUnpacked(value.m22);
+            WriteSingleUnpacked(value.m23);
+            WriteSingleUnpacked(value.m30);
+            WriteSingleUnpacked(value.m31);
+            WriteSingleUnpacked(value.m32);
+            WriteSingleUnpacked(value.m33);
         }
+
+        /// <summary>
+        /// Writes a Matrix4x4.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
+        public void WriteMatrix4x4(Matrix4x4 value) => WriteMatrix4x4Unpacked(value);
 
         /// <summary>
         /// Writes a Guid.
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteGuidAllocated(System.Guid value)
         {
             byte[] data = value.ToByteArray();
-            WriteBytes(data, 0, data.Length);
+            WriteUInt8Array(data, 0, data.Length);
         }
 
         /// <summary>
         /// Writes a tick without packing.
         /// </summary>
         /// <param name="value"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteTickUnpacked(uint value)
-        {
-            WriteUInt32(value, AutoPackType.Unpacked);
-        }
+        public void WriteTickUnpacked(uint value) => WriteUInt32Unpacked(value);
 
         /// <summary>
         /// Writes a GameObject. GameObject must be spawned over the network already or be a prefab with a NetworkObject attached.
         /// </summary>
         /// <param name="go"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteGameObject(GameObject go)
         {
             //There needs to be a header to indicate if null, nob, or nb.
             if (go == null)
             {
-                WriteByte(0);
+                WriteUInt8Unpacked(0);
             }
             else
             {
                 //Try to write the NetworkObject first.
                 if (go.TryGetComponent<NetworkObject>(out NetworkObject nob))
                 {
-                    WriteByte(1);
+                    WriteUInt8Unpacked(1);
                     WriteNetworkObject(nob);
                 }
                 //If there was no nob try to write a NetworkBehaviour.
                 else if (go.TryGetComponent<NetworkBehaviour>(out NetworkBehaviour nb))
                 {
-                    WriteByte(2);
+                    WriteUInt8Unpacked(2);
                     WriteNetworkBehaviour(nb);
                 }
                 //Object cannot be serialized so write null.
                 else
                 {
-                    WriteByte(0);
+                    WriteUInt8Unpacked(0);
                     NetworkManager.LogError($"GameObject {go.name} cannot be serialized because it does not have a NetworkObject nor NetworkBehaviour.");
                 }
             }
@@ -767,6 +942,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="t"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteTransform(Transform t)
         {
             if (t == null)
@@ -786,6 +962,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="nob"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteNetworkObject(NetworkObject nob)
         {
             WriteNetworkObject(nob, false);
@@ -795,14 +972,11 @@ namespace FishNet.Serializing
         /// Writes a NetworkObject.ObjectId.
         /// </summary>
         /// <param name="nob"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteNetworkObjectId(NetworkObject nob)
         {
-            if (nob == null)
-                WriteUInt16(NetworkObject.UNSET_OBJECTID_VALUE);
-            else
-                WriteNetworkObjectId(nob.ObjectId);
+            int id = (nob == null) ? NetworkObject.UNSET_OBJECTID_VALUE : nob.ObjectId;
+            WriteNetworkObjectId(id);
         }
 
         /// <summary>
@@ -810,7 +984,6 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="nob"></param>
         /// <param name="forSpawn"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void WriteNetworkObject(NetworkObject nob, bool forSpawn)
         {
@@ -830,7 +1003,7 @@ namespace FishNet.Serializing
                 if (forSpawn)
                 {
                     WriteUInt16(nob.SpawnableCollectionId);
-                    WriteSByte(nob.GetInitializeOrder());
+                    WriteInt8Unpacked(nob.GetInitializeOrder());
                 }
 
                 WriteBoolean(spawned);
@@ -842,50 +1015,42 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="nob"></param>
         /// <param name="dt"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void WriteNetworkObjectForDespawn(NetworkObject nob, DespawnType dt)
         {
             WriteNetworkObjectId(nob.ObjectId);
-            WriteByte((byte)dt);
+            WriteUInt8Unpacked((byte)dt);
         }
 
 
         /// <summary>
         /// Writes an objectId.
         /// </summary>
-        [NotSerializer]
-        public void WriteNetworkObjectId(int objectId)
-        {
-            WriteUInt16((ushort)objectId);
-        }
+        public void WriteNetworkObjectId(int objectId) => WriteSignedPackedWhole(objectId);
 
         /// <summary>
         /// Writes a NetworkObject for a spawn packet.
         /// </summary>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void WriteNetworkObjectForSpawn(NetworkObject nob)
-        {
-            WriteNetworkObject(nob, true);
-        }
+        internal void WriteNetworkObjectForSpawn(NetworkObject nob) => WriteNetworkObject(nob, true);
 
         /// <summary>
         /// Writes a NetworkBehaviour.
         /// </summary>
         /// <param name="nb"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteNetworkBehaviour(NetworkBehaviour nb)
         {
             if (nb == null)
             {
                 WriteNetworkObject(null);
-                WriteByte(0);
+                WriteUInt8Unpacked(0);
             }
             else
             {
                 WriteNetworkObject(nb.NetworkObject);
-                WriteByte(nb.ComponentIndex);
+                WriteUInt8Unpacked(nb.ComponentIndex);
             }
         }
 
@@ -893,7 +1058,6 @@ namespace FishNet.Serializing
         /// Writes a NetworkBehaviourId.
         /// </summary>
         /// <param name="nb"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteNetworkBehaviourId(NetworkBehaviour nb)
         {
@@ -904,7 +1068,7 @@ namespace FishNet.Serializing
             else
             {
                 WriteNetworkObjectId(nb.NetworkObject);
-                WriteByte(nb.ComponentIndex);
+                WriteUInt8Unpacked(nb.ComponentIndex);
             }
         }
 
@@ -913,35 +1077,31 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="dt"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteDateTime(DateTime dt)
-        {
-            WriteInt64(dt.ToBinary());
-        }
+        [DefaultWriter]
+        public void WriteDateTime(DateTime dt) => WriteSignedPackedWhole(dt.ToBinary());
 
         /// <summary>
         /// Writes a transport channel.
         /// </summary>
         /// <param name="channel"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteChannel(Channel channel)
-        {
-            WriteByte((byte)channel);
-        }
+        [DefaultWriter]
+        public void WriteChannel(Channel channel) => WriteUInt8Unpacked((byte)channel);
 
         /// <summary>
         /// Writers a LayerMask.
         /// </summary>
         /// <param name="value"></param>
-        public void WriteLayerMask(LayerMask value)
-        {
-            WriteInt32(value.value);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
+        public void WriteLayerMask(LayerMask value) => WriteSignedPackedWhole(value.value);
 
         /// <summary>
         /// Writes a NetworkConnection.
         /// </summary>
         /// <param name="connection"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DefaultWriter]
         public void WriteNetworkConnection(NetworkConnection connection)
         {
             int value = (connection == null) ? NetworkConnection.UNSET_CLIENTID_VALUE : connection.ClientId;
@@ -952,18 +1112,13 @@ namespace FishNet.Serializing
         /// Writes a short for a connectionId.
         /// </summary>
         /// <returns></returns>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteNetworkConnectionId(int id)
-        {
-            WriteInt32(id);
-        }
+        public void WriteNetworkConnectionId(int id) => WriteSignedPackedWhole(id);
 
         /// <summary>
         /// Writes a list.
         /// </summary>
         /// <param name="value">Collection to write.</param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteList<T>(List<T> value)
         {
@@ -977,31 +1132,34 @@ namespace FishNet.Serializing
         /// Writes a state update packet.
         /// </summary>
         /// <param name="tick"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void WriteStateUpdatePacket(uint lastPacketTick)
-        {
-            WriteTickUnpacked(lastPacketTick);
-        }
+        internal void WriteStateUpdatePacket(uint lastPacketTick) => WriteTickUnpacked(lastPacketTick);
 
         #region Packed writers.
+
         /// <summary>
         /// ZigZag encode an integer. Move the sign bit to the right.
         /// </summary>
-        [NotSerializer]
         public ulong ZigZagEncode(ulong value)
         {
             if (value >> 63 > 0)
                 return ~(value << 1) | 1;
             return value << 1;
         }
+
         /// <summary>
         /// Writes a packed whole number.
         /// </summary>
         /// <param name="value"></param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WritePackedWhole(ulong value)
+        public void WriteSignedPackedWhole(long value) => WriteUnsignedPackedWhole(ZigZagEncode((ulong)value));
+
+        /// <summary>
+        /// Writes a packed whole number.
+        /// </summary>
+        /// <param name="value"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteUnsignedPackedWhole(ulong value)
         {
             if (value < 0x80UL)
             {
@@ -1087,22 +1245,23 @@ namespace FishNet.Serializing
 
             Length = Math.Max(Length, Position);
         }
+
         #endregion
 
         #region Generators.
+
         /// <summary>
         /// Writes a list.
         /// </summary>
         /// <param name="value">Collection to write.</param>
         /// <param name="offset">Offset to begin at.</param>
         /// <param name="count">Entries to write.</param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteList<T>(List<T> value, int offset, int count)
         {
             if (value == null)
             {
-                WriteInt32(Writer.UNSET_COLLECTION_SIZE_VALUE);
+                WriteSignedPackedWhole(Writer.UNSET_COLLECTION_SIZE_VALUE);
             }
             else
             {
@@ -1110,17 +1269,17 @@ namespace FishNet.Serializing
                 if ((offset + count > value.Count))
                     count = 0;
 
-                WriteInt32(count);
+                WriteSignedPackedWhole(count);
                 for (int i = 0; i < count; i++)
                     Write<T>(value[i + offset]);
             }
         }
+
         /// <summary>
         /// Writes a list.
         /// </summary>
         /// <param name="value">Collection to write.</param>
         /// <param name="offset">Offset to begin at.</param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteList<T>(List<T> value, int offset)
         {
@@ -1134,7 +1293,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes a replication to the server.
         /// </summary>
-        [NotSerializer]
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void WriteReplicate<T>(List<T> values, int offset)
         {
@@ -1233,12 +1392,11 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes a replication to the server.
         /// </summary>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void WriteReplicate<T>(List<T> values, int offset, uint lastTick = 0) where T : IReplicateData
         {
             /* COUNT
-             * 
+             *
              * Each Entry:
              * 0 if the same as previous.
              * 1 if default. */
@@ -1246,20 +1404,19 @@ namespace FishNet.Serializing
             //Replicate list will never be null, no need to write null check.
             //Number of entries being written.
             byte count = (byte)(collectionCount - offset);
-            WriteByte(count);
+            WriteUInt8Unpacked(count);
 
             for (int i = offset; i < collectionCount; i++)
             {
                 T v = values[i];
                 Write<T>(v);
             }
-
         }
 
         internal void WriteReplicate<T>(BasicQueue<T> values, int redundancyCount, uint lastTick = 0) where T : IReplicateData
         {
             /* COUNT
-             * 
+             *
              * Each Entry:
              * 0 if the same as previous.
              * 1 if default. */
@@ -1267,14 +1424,13 @@ namespace FishNet.Serializing
             //Replicate list will never be null, no need to write null check.
             //Number of entries being written.
             byte count = (byte)redundancyCount;
-            WriteByte(count);
+            WriteUInt8Unpacked(count);
 
             for (int i = (collectionCount - redundancyCount); i < collectionCount; i++)
             {
                 T v = values[i];
                 Write<T>(v);
             }
-
         }
 #endif
         /// <summary>
@@ -1283,35 +1439,34 @@ namespace FishNet.Serializing
         /// <param name="value">Collection to write.</param>
         /// <param name="offset">Offset to begin at.</param>
         /// <param name="count">Entries to write.</param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteArray<T>(T[] value, int offset, int count)
         {
             if (value == null)
             {
-                WriteInt32(Writer.UNSET_COLLECTION_SIZE_VALUE);
+                WriteSignedPackedWhole(Writer.UNSET_COLLECTION_SIZE_VALUE);
             }
             else
             {
                 //If theres no values, or offset exceeds count then write 0 for count.
                 if (value.Length == 0 || (offset >= count))
                 {
-                    WriteInt32(0);
+                    WriteSignedPackedWhole(0);
                 }
                 else
                 {
-                    WriteInt32(count);
+                    WriteSignedPackedWhole(count);
                     for (int i = offset; i < count; i++)
                         Write<T>(value[i]);
                 }
             }
         }
+
         /// <summary>
         /// Writes an array.
         /// </summary>
         /// <param name="value">Collection to write.</param>
         /// <param name="offset">Offset to begin at.</param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteArray<T>(T[] value, int offset)
         {
@@ -1320,11 +1475,11 @@ namespace FishNet.Serializing
             else
                 WriteArray<T>(value, offset, value.Length - offset);
         }
+
         /// <summary>
         /// Writes an array.
         /// </summary>
         /// <param name="value">Collection to write.</param>
-        [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteArray<T>(T[] value)
         {
@@ -1334,106 +1489,19 @@ namespace FishNet.Serializing
                 WriteArray<T>(value, 0, value.Length);
         }
 
-        /// <summary>
-        /// Writes an SubStream.
-        /// </summary>
-        /// <param name="value">Substream</param>
-        public void WriteSubStream(SubStream value)
-        {
-            // Uninitialized substream, write Length as -1
-            if (!value.Initialized)
-            {
-                WriteInt32(-1);
-            }
-            else
-            {
-                var bufferWriter = value.GetWriter();
-
-                // write length and data
-                WriteInt32(bufferWriter.Length);
-                WriteBytes(bufferWriter.GetBuffer(), 0, bufferWriter.Length);
-            }
-        }
-
 
         /// <summary>
-        /// Writes any supported type.
+        /// Writes any supported type using packing.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="value"></param>
-        [NotSerializer]
         public void Write<T>(T value)
-        {
-            System.Type type = typeof(T);
-            if (IsAutoPackType(type, out AutoPackType packType))
-            {
-                Action<Writer, T, AutoPackType> del = GenericWriter<T>.WriteAutoPack;
-                if (del == null)
-                    NetworkManager.LogError(GetLogMessage());
-                else
-                    del.Invoke(this, value, packType);
-            }
-            else
-            {
-                Action<Writer, T> del = GenericWriter<T>.Write;
-                if (del == null)
-                    NetworkManager.LogError(GetLogMessage());
-                else
-                    del.Invoke(this, value);
-            }
-
-            string GetLogMessage() => $"Write method not found for {type.FullName}. Use a supported type or create a custom serializer.";
-        }
-
-        /// <summary>
-        /// Writes any supported type assuming there is no AutoPackType.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="value"></param>
-        [NotSerializer]
-        [MakePublic]
-        internal void WriteUnpacked<T>(T value)
         {
             Action<Writer, T> del = GenericWriter<T>.Write;
             if (del == null)
-                NetworkManager.LogError(GetLogMessage());
+                NetworkManager.LogError($"Write method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.");
             else
                 del.Invoke(this, value);
-
-            string GetLogMessage() => $"Write method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.";
         }
 
-
-        /// <summary>
-        /// Returns if T takes AutoPackType argument.
-        /// </summary>
-        /// <param name="packType">Outputs the default pack type for T.</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsAutoPackType<T>(out AutoPackType packType)
-        {
-            System.Type type = typeof(T);
-            return IsAutoPackType(type, out packType);
-        }
-        internal static bool IsAutoPackType(Type type, out AutoPackType packType)
-        {
-            if (WriterExtensions.DefaultPackedTypes.Contains(type))
-            {
-                packType = AutoPackType.Packed;
-                return true;
-            }
-            else if (type == typeof(float))
-            {
-                packType = AutoPackType.Unpacked;
-                return true;
-            }
-            else
-            {
-                packType = AutoPackType.Unpacked;
-                return false;
-            }
-        }
         #endregion
-
     }
 }

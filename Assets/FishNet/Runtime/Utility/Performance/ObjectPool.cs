@@ -1,11 +1,11 @@
 ﻿using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Object;
+using System;
 using UnityEngine;
 
 namespace FishNet.Utility.Performance
 {
-
     public abstract class ObjectPool : MonoBehaviour
     {
         /// <summary>
@@ -31,7 +31,16 @@ namespace FishNet.Utility.Performance
         /// <param name="collectionId">CollectionId of the object to return.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
+        [Obsolete("Use RetrieveObject(int, ushort, RetrieveOption, parent, Vector3?, Quaternion? Vector3?, bool) instead.")] //Remove in V5
         public virtual NetworkObject RetrieveObject(int prefabId, ushort collectionId, Transform parent = null, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool makeActive = true, bool asServer = true) => null;
+        /// <summary>
+        /// Returns an object that has been stored. A new object will be created if no stored objects are available.
+        /// </summary>
+        /// <param name="prefabId">PrefabId of the object to return.</param>
+        /// <param name="collectionId">CollectionId of the object to return.</param>
+        /// <param name="asServer">True if being called on the server side.</param>
+        /// <returns></returns>
+        public virtual NetworkObject RetrieveObject(int prefabId, ushort collectionId, ObjectPoolRetrieveOption options, Transform parent = null, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool asServer = true) => null;
         /// <summary>
         /// Returns a prefab using specified values.
         /// </summary>
