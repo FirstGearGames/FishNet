@@ -18,3 +18,4 @@ Documentation
 *.csproj
 *.vs/
 *.vsconfig
+*.csproj.meta
