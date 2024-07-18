@@ -4,6 +4,7 @@ using GameKit.Dependencies.Utilities;
 
 namespace FishNet.Serializing
 {
+
     /// <summary>
     /// Special reader/writer buffer struct that can be used in Fishnet RPCs or Broadcasts, as arguments or part of structs
     ///
@@ -88,8 +89,7 @@ namespace FishNet.Serializing
         public const int UNINITIALIZED_LENGTH = -1;
 
         /// <summary>
-        /// Creates SubStream for writing, use this before sending into RPC or Broadcast.
-        /// If you want to send uninitialized SubStream, use GetUninitialized() instead.
+        /// Creates SubStream for writing, use this before sending into RPC or Broadcast
         /// </summary>
         /// <param name="manager">Need to include network manager for handling of networked IDs</param>
         /// <param name="minimumLength">Minimum expected length of data, that will be written</param>
@@ -128,14 +128,7 @@ namespace FishNet.Serializing
             return false;
         }
 
-        /// <summary>
-        /// Used internally to create SubStream from Reader (used in Reader.ReadSubStream)
-        /// Zero copy, inherits buffer from original reader, with different start and length.
-        /// </summary>
-        /// <param name="originalReader">Original reader that SubStream (in reading mode) will inherit.</param>
-        /// <param name="subStreamLength">Length of substream data.</param>
-        /// <returns></returns>
-        internal static SubStream CreateFromReader(Reader originalReader, int subStreamLength)
+        public static SubStream CreateFromReader(Reader originalReader, int subStreamLength)
         {
             if (subStreamLength < 0)
             {
@@ -178,6 +171,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Used internally to get writer of SubStream
         /// </summary>
+        /// <exception cref="ArgumentException"></exception>
         internal PooledWriter GetWriter()
         {
             if (!Initialized)
@@ -188,10 +182,6 @@ namespace FishNet.Serializing
             return _writer;
         }
 
-
-        /// <summary>
-        /// Used internally to get reader of SubStream
-        /// </summary>
         internal PooledReader GetReader()
         {
             if (!Initialized)
@@ -201,9 +191,21 @@ namespace FishNet.Serializing
 
             return _reader;
         }
-        
+
         /// <summary>
-        /// Alternative to Dispose.
+        /// Returns uninitialized SubStream. Can send safely over network, but cannot be read from (StartReading will return false).
+        /// You can also use 'var stream = default;' instead.
+        /// </summary>
+        /// <returns>Empty SubStream</returns>
+        internal static SubStream GetUninitialized()
+        {
+            return new SubStream()
+            {
+                Initialized = false,
+            };
+        }
+
+        /// <summary>
         /// Do not forget to call this after:
         /// - you stopped writing to Substream AND already sent it via RPCs/Broadcasts
         /// - you stoped reading from it inside RPCs/Broadcast receive event

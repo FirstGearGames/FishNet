@@ -454,12 +454,10 @@ namespace FishNet.Managing.Client
                     {
                         Objects.ParseRpcLink(reader, (ushort)packetId, channel);
                     }
-#if !PREDICTION_1
                     else if (packetId == PacketId.StateUpdate)
                     {
                         NetworkManager.PredictionManager.ParseStateUpdate(reader, channel);
                     }
-#endif
                     else if (packetId == PacketId.Replicate)
                     {
                         Objects.ParseReplicateRpc(reader, null, channel);

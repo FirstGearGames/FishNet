@@ -2,7 +2,6 @@
 using FishNet.Object;
 using FishNet.Object.Helping;
 using FishNet.Object.Prediction;
-using FishNet.Object.Synchronizing;
 using MonoFN.Cecil;
 
 
@@ -27,13 +26,8 @@ namespace FishNet.CodeGenerating.Helping
             ServerRpcAttribute_FullName = typeof(ServerRpcAttribute).FullName;
             ObserversRpcAttribute_FullName = typeof(ObserversRpcAttribute).FullName;
             TargetRpcAttribute_FullName = typeof(TargetRpcAttribute).FullName;
-#if PREDICTION_1
             ReplicateAttribute_FullName = typeof(ReplicateAttribute).FullName;
             ReconcileAttribute_FullName = typeof(ReconcileAttribute).FullName;
-#else
-            ReplicateAttribute_FullName = typeof(ReplicateAttribute).FullName;
-            ReconcileAttribute_FullName = typeof(ReconcileAttribute).FullName;
-#endif
             return true;
         }
 

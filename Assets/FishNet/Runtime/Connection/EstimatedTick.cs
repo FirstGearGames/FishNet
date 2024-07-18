@@ -26,15 +26,15 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Local tick when this was last updated.
         /// </summary>
-        public uint LocalTick { get; private set; }
+        public uint LocalTick { get; private set; } = TimeManager.UNSET_TICK;
         /// <summary>
         /// Last remote tick this was updated with that was not out of order or a duplicate.
         /// </summary>
-        public uint RemoteTick { get; private set; }
+        public uint RemoteTick { get; private set; } = TimeManager.UNSET_TICK;
         /// <summary>
         /// Last remote tick received regardless if it was out of order or a duplicate.
         /// </summary>
-        public uint LastRemoteTick { get; private set; }
+        public uint LastRemoteTick { get; private set; } = TimeManager.UNSET_TICK;
         /// <summary>
         /// True if LastRemoteTick is equal to RemoteTick.
         /// This would indicate that the LastRemoteTick did not arrive out of order.
@@ -53,7 +53,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// LocalTick when Value was last reset.
         /// </summary>
-        private uint _valueLocalTick;
+        private uint _valueLocalTick = TimeManager.UNSET_TICK;
 
 
         /// <summary>
@@ -201,10 +201,11 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public void Reset()
         {
-            LocalTick = 0;
-            RemoteTick = 0;
-            LastRemoteTick = 0;
-            _updateTimeManager = null;
+            LocalTick = TimeManager.UNSET_TICK;
+            RemoteTick = TimeManager.UNSET_TICK;
+            LastRemoteTick = TimeManager.UNSET_TICK;
+            _valueLocalTick = TimeManager.UNSET_TICK;
+            _updateTimeManager = null;           
         }
 
     }

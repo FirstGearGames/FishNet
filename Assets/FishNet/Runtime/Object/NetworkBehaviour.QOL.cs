@@ -129,12 +129,10 @@ namespace FishNet.Object
         /// To check if server or client has been initialized on this object use IsXYZInitialized.
         /// </summary>
         public bool IsNetworked => _networkObjectCache.IsNetworked;
-#if !PREDICTION_1
         /// <summary>
         /// True if a reconcile is occuring on the PredictionManager. Note the difference between this and IsBehaviourReconciling.
         /// </summary>
         public bool IsManagerReconciling => _networkObjectCache.IsManagerReconciling;
-#endif
         /// <summary>
         /// Observers for this NetworkBehaviour.
         /// </summary>

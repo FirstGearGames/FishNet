@@ -43,12 +43,17 @@ namespace FishNet.Component.Transforming
         /// BasicTickSmoother for this script.
         /// </summary>
         private LocalTransformTickSmoother _tickSmoother;
+        /// <summary>
+        /// True once destroyed. This is to resolve a race condition when the object is destroyed in awake but initialized after.
+        /// </summary>
+        private bool _destroyed;
         #endregion
 
         private void OnDestroy()
         {
             ChangeSubscription(false);
             ObjectCaches<LocalTransformTickSmoother>.StoreAndDefault(ref _tickSmoother);
+            _destroyed = true;
         }
 
         public override void OnStartClient()
@@ -95,6 +100,8 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void ChangeSubscription(bool subscribe)
         {
+            if (_destroyed)
+                return;
             if (_timeManager == null)
                 return;
 

@@ -168,6 +168,8 @@ namespace LiteNetLib
         {
             if (_buckets == null)
                 return false;
+            if (peer == null)
+                return false;
             int hashCode = peer.GetHashCode() & Lower31BitMask;
             int bucket = hashCode % _buckets.Length;
             int last = -1;

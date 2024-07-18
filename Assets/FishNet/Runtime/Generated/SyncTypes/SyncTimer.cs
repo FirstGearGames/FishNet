@@ -419,9 +419,22 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
+        /// Removes time passed from Remaining since the last unscaled time using this method.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Update()
+        {
+            float delta = (Time.unscaledTime - _updateTime);
+            Update(delta);
+        }
+
+
+        /// <summary>
         /// Removes delta from Remaining for server and client.
+        /// This also resets unscaledTime delta for Update().
         /// </summary>
         /// <param name="delta">Value to remove from Remaining.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float delta)
         {
             //Not enabled.
@@ -430,10 +443,9 @@ namespace FishNet.Object.Synchronizing
             if (Paused)
                 return;
 
-            delta = (Time.unscaledTime - _updateTime);
             SetUpdateTime();
-            // if (delta < 0)
-            //     delta *= -1f;
+            if (delta < 0)
+                delta *= -1f;
             float prev = Remaining;
             Remaining -= delta;
             //Still time left.

@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/FishNet/Runtime/Managing/Prediction.meta
 guid: dd17b65ce1c2f3248980bdc8408c808e
-========
-guid: 678ea4b95d0063048acf8abf6928acf4
->>>>>>>> origin/3-pre-3.1:Assets/Test/InitializeOrder.meta
 folderAsset: yes
 DefaultImporter:
   externalObjects: {}

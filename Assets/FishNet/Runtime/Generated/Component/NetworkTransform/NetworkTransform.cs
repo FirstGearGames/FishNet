@@ -2428,7 +2428,6 @@ namespace FishNet.Component.Transforming
             nextTransformData.Tick = base.TimeManager.LastPacketTick.LastRemoteTick;
         }
 
-#if !PREDICTION_1
         /// <summary>
         /// Configures this NetworkTransform for CSP.
         /// </summary>
@@ -2452,22 +2451,7 @@ namespace FishNet.Component.Transforming
             }
             ConfigureComponents();
         }
-#else
-        /// <summary>
-        /// Configures this NetworkTransform for CSP.
-        /// </summary>
-        internal void ConfigureForPrediction()
-        {
-            _clientAuthoritative = false;
-            _sendToOwner = false;
 
-            /* If other or CC then needs to be configured.
-             * When CC it will be configured properly, if there
-             * is no CC then no action will be taken. */
-            _componentConfiguration = ComponentConfigurationType.CharacterController;
-            ConfigureComponents();
-        }
-#endif
         /// <summary>
         /// Updates which properties are synchronized.
         /// </summary>

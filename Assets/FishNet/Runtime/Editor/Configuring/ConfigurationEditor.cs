@@ -26,7 +26,6 @@ namespace FishNet.Editing
     {
         #region const.
         private const string STABLE_DEFINE = "FISHNET_STABLE_MODE";
-        private const string PREDICTION_1_DEFINE = "PREDICTION_1";
         private const string QOL_ATTRIBUTES_DEFINE = "DISABLE_QOL_ATTRIBUTES";
         private const string DEVELOPER_ONLY_WARNING = "If you are not a developer or were not instructed to do this by a developer things are likely to break. You have been warned.";
         #endregion
@@ -52,30 +51,7 @@ namespace FishNet.Editing
         }
 #endif
         #endregion
-
-        #region PredictionV2.
-#if PREDICTION_1
-        [MenuItem("Tools/Fish-Networking/Utility/Prediction/Switch To Prediction 2", false, -998)]
-        private static void EnablePredictionV2()
-        {
-            bool result = RemoveOrAddDefine(PREDICTION_1_DEFINE, true);
-            if (result)
-                Debug.Log("Prediction 2 has been enabled.");
-        }
-#else
-        [MenuItem("Tools/Fish-Networking/Utility/Prediction/Switch To Prediction 1", false, -998)]
-        private static void DisablePredictionV2()
-        {
-            bool result = RemoveOrAddDefine(PREDICTION_1_DEFINE, false);
-            if (result)
-            {
-                Debug.Log("Prediction 1 has been enabled.");
-                Debug.LogWarning($"Please note that Prediction 1 is no longer supported and will be removed in FishNet 5.");
-            }
-        }
-#endif
-        #endregion
-
+    
         #region QOL Attributes
 #if DISABLE_QOL_ATTRIBUTES
         [MenuItem("Tools/Fish-Networking/Utility/Quality of Life Attributes/Enable", false, -999)]

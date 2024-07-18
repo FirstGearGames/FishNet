@@ -89,6 +89,10 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public event Action OnFixedUpdate;
         /// <summary>
+        /// How many ticks must pass to update timing.
+        /// </summary>
+        internal uint TimingTickInterval => _tickRate;
+        /// <summary>
         /// RoundTripTime in milliseconds. This value includes latency from the tick rate.
         /// </summary>
         public long RoundTripTime { get; private set; }
@@ -273,7 +277,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Playerprefs string to load and save user fixed time.
         /// </summary>
-        private const string SAVED_FIXED_TIME_TEXT = "SavedFixedTimeFN";
+        private const string SAVED_FIXED_TIME_TEXT = "SavedFixedTimeFN";        
         #endregion
 
 #if UNITY_EDITOR
@@ -672,10 +676,8 @@ namespace FishNet.Managing.Timing
 
                 if (frameTicked)
                 {
-#if !PREDICTION_1
                     //Tell predicted objecs to reconcile before OnTick.
                     NetworkManager.PredictionManager.ReconcileToStates();
-#endif
                     OnTick?.Invoke();
 
                     if (PhysicsMode == PhysicsMode.TimeManager)
@@ -687,10 +689,8 @@ namespace FishNet.Managing.Timing
                     }
 
                     OnPostTick?.Invoke();
-#if !PREDICTION_1
                     //After post tick send states.
                     NetworkManager.PredictionManager.SendStateUpdate();
-#endif
 
                     /* If isClient this is the
                      * last tick during this loop. */
@@ -1046,7 +1046,7 @@ namespace FishNet.Managing.Timing
         {
       
             //Send every second.
-            if (LocalTick % _tickRate == 0)
+            if (LocalTick % TimingTickInterval == 0)
             {
                 //Now send using a packetId.
                 PooledWriter writer = WriterPool.Retrieve();

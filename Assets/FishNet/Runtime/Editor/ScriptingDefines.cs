@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using FishNet.Managing;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Build;
@@ -41,7 +42,9 @@ namespace FishNet
 
             string proDefine = "FISHNET_PRO";
             string versionPrefix = "FISHNET_V";
-            string thisVersion = $"{versionPrefix}4";
+            string[] currentVersionSplit = NetworkManager.FISHNET_VERSION.Split(".");
+            string thisVersion = $"{versionPrefix}{currentVersionSplit[0]}";
+
             string[] fishNetDefines = new string[]
             {
                 "FISHNET",

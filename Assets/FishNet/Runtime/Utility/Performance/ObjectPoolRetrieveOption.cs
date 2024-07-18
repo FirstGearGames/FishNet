@@ -2,7 +2,7 @@
 namespace FishNet.Utility.Performance
 {
 
-    internal static class RetrieveOptionExtensions
+    public static class RetrieveOptionExtensions
     {
         public static bool FastContains(this ObjectPoolRetrieveOption whole, ObjectPoolRetrieveOption part) => (whole & part) == part;
     }

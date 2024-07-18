@@ -1,4 +1,4 @@
-﻿//#if !PREDICTION_1 //Remove on V5
+﻿//Remove on V5
 //using FishNet.Managing;
 //using FishNet.Managing.Timing;
 //using FishNet.Utility.Extension;
@@ -627,4 +627,3 @@
 //    }
 
 //}
-//#endif

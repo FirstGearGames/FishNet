@@ -31,7 +31,6 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 2, z: -2}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -48,39 +47,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  NetworkObserver: {fileID: 0}
+  <PrefabId>k__BackingField: 27
+  <SpawnableCollectionId>k__BackingField: 0
+  _scenePathHash: 0
+  <SceneId>k__BackingField: 0
+  <AssetPathHash>k__BackingField: 7473726319608011331
+  AdaptiveInterpolationValue: 4
   <IsNested>k__BackingField: 0
+  _enablePrediction: 0
+  _predictionType: 0
+  _graphicalObject: {fileID: 0}
+  _enableStateForwarding: 1
+  _ownerInterpolation: 1
+  _enableTeleport: 0
+  _ownerTeleportThreshold: 1
+  _spectatorAdaptiveInterpolation: 1
+  _spectatorInterpolation: 1
+  _adaptiveSmoothingType: 0
+  _customSmoothingData:
+    InterpolationPercent: 1
+    CollisionInterpolationPercent: 0.1
+    InterpolationDecreaseStep: 1
+    InterpolationIncreaseStep: 3
+  _preconfiguredSmoothingDataPreview:
+    InterpolationPercent: 0.5
+    CollisionInterpolationPercent: 0.05
+    InterpolationDecreaseStep: 1
+    InterpolationIncreaseStep: 2
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
+  _networkBehaviours:
+  - {fileID: 2759061792589502182}
+  - {fileID: 1348621277}
+  - {fileID: 1348621278}
+  <ParentNetworkObject>k__BackingField: {fileID: 0}
+  <ChildNetworkObjects>k__BackingField: []
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 0}
     LocalScale: {x: 0, y: 0, z: 0}
   _isNetworked: 1
-  _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
   _defaultDespawnType: 0
-  NetworkObserver: {fileID: 0}
-  _enablePrediction: 0
-  _predictionType: 0
-  _graphicalObject: {fileID: 0}
-  _detachGraphicalObject: 0
-  _enableStateForwarding: 1
-  _networkTransform: {fileID: 0}
-  _ownerInterpolation: 1
-  _ownerSmoothedProperties: 255
-  _adaptiveInterpolation: 3
-  _spectatorSmoothedProperties: 255
-  _spectatorInterpolation: 2
-  _enableTeleport: 0
-  _teleportThreshold: 1
-  <PrefabId>k__BackingField: 0
-  <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 7473726319608011331
 --- !u!114 &2759061792589502182
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -93,14 +103,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d3558aad46c24549bea48d0e3938264, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 8475222101369129519}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 8475222101369129519}
   _hitboxLayer:
     serializedVersion: 2
-    m_Bits: 0
-  _audio: {fileID: 0}
-  _muzzleFlashPrefab: {fileID: 0}
+    m_Bits: 32
+  _audio: {fileID: 8300000, guid: 0330762d2b3c8d641bfe11ad89b7e196, type: 3}
+  _muzzleFlashPrefab: {fileID: 39148481766341303, guid: 4385a793e032d634bb912f84a23d6db1,
+    type: 3}
 --- !u!114 &1348621277
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -113,9 +124,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6d656f377f37164d8d7431aa4e43cdb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 8475222101369129519}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 8475222101369129519}
 --- !u!114 &1348621278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -128,9 +139,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c718ab30626bbd648952910f74780a06, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 2
   _addedNetworkObject: {fileID: 8475222101369129519}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 8475222101369129519}
   _moveRate: 3
 --- !u!143 &5081159371976248031
 CharacterController:

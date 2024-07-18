@@ -1417,88 +1417,6 @@ namespace FishNet.Serializing
         #endregion
 
         #region Generators.
-#if PREDICTION_1
-        /// <summary>
-        /// Reads a replicate into collection and returns item count read.
-        /// </summary>
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal int ReadReplicate<T>(ref T[] collection, uint tick, out int count) where T : IReplicateData
-        {
-            //Number of entries written.
-            count = (int)ReadUInt8();
-            if (collection == null || collection.Length < count)
-                collection = new T[count];
-
-            /* Subtract count total minus 1
-             * from starting tick. This sets the tick to what the first entry would be.
-             * EG packet came in as tick 100, so that was passed as tick.
-             * if there are 3 replicates then 2 would be subtracted (count - 1).
-             * The new tick would be 98.
-             * Ticks would be assigned to read values from oldest to 
-             * newest as 98, 99, 100. Which is the correct result. In order for this to
-             * work properly past replicates cannot skip ticks. This will be ensured
-             * in another part of the code. */
-            tick -= (uint)(count) - 1);
-
-            int fullPackType = ReadUInt8();
-            //Read once and apply to all entries.
-            if (fullPackType > 0)
-            {
-                T value;
-                if (fullPackType == Writer.REPLICATE_ALL_DEFAULT_BYTE)
-                {
-                    value = default(T);
-                }
-                else if (fullPackType == Writer.REPLICATE_REPEATING_BYTE)
-                {
-                    value = Read<T>();
-                }
-                else
-                {
-                    value = default(T);
-                    NetworkManager?.LogError($"Unhandled Replicate pack type {fullPackType}.");
-                }
-
-                for (int i = 0; i < count; i++)
-                {
-                    collection[i] = value;
-                    collection[i].SetTick(tick + (uint)i);
-                }
-            }
-            //Values vary, read each indicator.
-            else
-            {
-                T lastData = default;
-
-                for (int i = 0; i < count; i++)
-                {
-                    T value = default;
-                    byte indicatorB = ReadUInt8();
-                    if (indicatorB == Writer.REPLICATE_DUPLICATE_BYTE)
-                    {
-                        value = lastData;
-                    }
-                    else if (indicatorB == Writer.REPLICATE_UNIQUE_BYTE)
-                    {
-                        value = Read<T>();
-                        lastData = value;
-                    }
-                    else if (indicatorB == Writer.REPLICATE_DEFAULT_BYTE)
-                    {
-                        value = default(T);
-                    }
-
-                    //Apply tick.
-                    value.SetTick(tick + (uint)i);
-                    //Assign to collection.
-                    collection[i] = value;
-                }
-            }
-
-            return count;
-        }
-#else
         /// <summary>
         /// Reads a replicate into collection and returns item count read.
         /// </summary>
@@ -1534,7 +1452,7 @@ namespace FishNet.Serializing
 
             return count;
         }
-#endif
+
         /// <summary>
         /// Reads a list with allocations.
         /// </summary>

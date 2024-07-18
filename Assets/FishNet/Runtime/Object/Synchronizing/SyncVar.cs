@@ -434,14 +434,15 @@ namespace FishNet.Object.Synchronizing
         internal protected override void ResetState(bool asServer)
         {
             base.ResetState(asServer);
-
-            //todo: validate this improvement after new tests are made.
-            ////Let clientHost reset if the object containing this syncvar is initialized for them.
-            //if (asServer && base.IsNetworkInitialized && NetworkBehaviour.IsClientInitialized)
-            //    return;
-
-            _value = _initialValue;
-            _previousClientValue = _initialValue;
+            /* Only full reset under the following conditions:
+             * asServer is true.
+             * Is not network initialized.
+             * asServer is false, and server is not started. */
+            if (asServer || !IsNetworkInitialized || (!asServer && !base.NetworkManager.IsServerStarted))
+            {
+                _value = _initialValue;
+                _previousClientValue = _initialValue;
+            }
         }
     }
 }

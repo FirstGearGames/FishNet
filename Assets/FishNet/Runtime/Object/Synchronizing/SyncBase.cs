@@ -149,7 +149,6 @@ namespace FishNet.Object.Synchronizing.Internal
         public void UpdateSendRate(float sendRate)
         {
             Settings.SendRate = sendRate;
-            UnityEngine.Debug.LogError($"Send rate updated to {sendRate}");
             SetTimeToTicks();
         }
         /// <summary>
@@ -468,10 +467,17 @@ namespace FishNet.Object.Synchronizing.Internal
                 SetCurrentChannel(Settings.Channel);
                 IsDirty = false;
             }
-            else
-            {
-                _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
-            }
+
+            /* This only needs to be reset for clients, since
+             * it only applies to clients. But if the server is resetting
+             * that means the object is deinitializing, and won't have any
+             * client observers anyway. Because of this it's safe to reset
+             * with asServer true, or false.
+             * 
+             * This change is made to resolve a bug where asServer:false
+             * sometimes does not invoke when stopping clientHost while not
+             * also stopping play mode. */
+            _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
         }
 
 

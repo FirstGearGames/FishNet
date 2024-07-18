@@ -9,7 +9,6 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using UnityEngine;
 
 namespace FishNet.Connection
 {
@@ -18,19 +17,7 @@ namespace FishNet.Connection
     /// A container for a connected client used to perform actions on and gather information for the declared client.
     /// </summary>
     public partial class NetworkConnection
-    {        
-#if PREDICTION_1
-        /// <summary>
-        /// Local tick when the connection last replicated.
-        /// </summary>
-        public uint LocalReplicateTick { get; internal set; }
-
-        /// <summary>
-        /// Resets NetworkConnection.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Prediction_Reset() { }
-#else
+    {
         /// <summary>
         /// Approximate replicate tick on the server for this connection.
         /// This also contains the last set value for local and remote.
@@ -84,7 +71,7 @@ namespace FishNet.Connection
             if (writerCount == 0 || channel == Channel.Reliable)
             {
                 stateWriter = WriterPool.Retrieve(mtu);
-                PredictionStateWriters.Add(stateWriter);               
+                PredictionStateWriters.Add(stateWriter);
                 stateWriter.Reserve(PredictionManager.STATE_HEADER_RESERVE_LENGTH);
                 /// 2 PacketId.
                 /// 4 Last replicate tick run for connection.
@@ -109,6 +96,17 @@ namespace FishNet.Connection
             PredictionStateWriters.Clear();
         }
 
+
+        /// <summary>
+        /// Sets the last tick a NetworkBehaviour replicated with.
+        /// </summary>
+        /// <param name="setUnordered">True to set unordered value, false to set ordered.</param>
+        internal void SetReplicateTick(uint value, EstimatedTick.OldTickOption oldTickOption = EstimatedTick.OldTickOption.Discard)
+        {
+            ReplicateTick.Update(value, oldTickOption);
+        }
+
+
         /// <summary>
         /// Resets NetworkConnection.
         /// </summary>
@@ -118,8 +116,6 @@ namespace FishNet.Connection
             StorePredictionStateWriters();
             ReplicateTick.Reset();
         }
-#endif
-
     }
 
 

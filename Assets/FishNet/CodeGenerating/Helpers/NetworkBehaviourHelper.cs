@@ -23,18 +23,7 @@ namespace FishNet.CodeGenerating.Helping
         internal string FullName;
         //Prediction.
 
-#if PREDICTION_1
-        public string ClearReplicateCache_MethodName = nameof(NetworkBehaviour.ClearReplicateCache_Virtual);
-#endif
-#if PREDICTION_1
-        public MethodReference Replicate_Owner_MethodRef;
-        public MethodReference Replicate_NonOwner_MethodRef;
-#endif
         public MethodReference Replicate_Reader_MethodRef;
-#if PREDICTION_1
-        public MethodReference Replicate_ExitEarly_A_MethodRef;
-        public MethodReference Reconcile_ExitEarly_A_MethodRef;
-#endif
         public MethodReference Reconcile_Server_MethodRef;
         //public FieldReference UsesPrediction_FieldRef;
         public MethodReference EmptyReplicatesQueueIntoHistory_Start_MethodRef;
@@ -128,10 +117,6 @@ namespace FishNet.CodeGenerating.Helping
                     Reconcile_Server_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client))
                     Reconcile_Client_MethodRef = base.ImportReference(mi);
-                //#if !PREDICTION_1
-                //                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Server_SendToSpectators_Internal))
-                //                    Replicate_Server_SendToSpectators_MethodRef = base.ImportReference(mi);
-                //#endif
                 //Misc.
                 else if (mi.Name == nameof(NetworkBehaviour.OwnerMatches))
                     OwnerMatches_MethodRef = base.ImportReference(mi);
@@ -140,16 +125,6 @@ namespace FishNet.CodeGenerating.Helping
                 else if (mi.Name == nameof(NetworkBehaviour.NetworkInitializeIfDisabled))
                     NetworkInitializeIfDisabled_MethodRef = base.ImportReference(mi);
                 //Prediction
-#if PREDICTION_1
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_ExitEarly_A))
-                    Replicate_ExitEarly_A_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_ExitEarly_A))
-                    Reconcile_ExitEarly_A_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Owner))
-                    Replicate_Owner_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_NonOwner))
-                    Replicate_NonOwner_MethodRef = base.ImportReference(mi);
-#else
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Authoritative))
                     Replicate_Authortative_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Replay_Start))
@@ -164,7 +139,6 @@ namespace FishNet.CodeGenerating.Helping
                     Replicate_Replay_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_NonAuthoritative))
                     Replicate_NonAuthoritative_MethodRef = base.ImportReference(mi);
-#endif
             }
 
             foreach (PropertyInfo pi in networkBehaviourType.GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
@@ -189,17 +163,6 @@ namespace FishNet.CodeGenerating.Helping
                 else if (pi.Name == nameof(NetworkBehaviour.TimeManager))
                     TimeManager_MethodRef = base.ImportReference(pi.GetMethod);
             }
-
-            //#if !PREDICTION_1
-            //            foreach (FieldInfo fi in networkBehaviourType.GetFields((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
-            //            {
-            //                if (fi.Name == nameof(NetworkBehaviour.UsesPrediction))
-            //                {
-            //                    UsesPrediction_FieldRef = base.ImportReference(fi);
-            //                    break;
-            //                }
-            //            }
-            //#endif
 
             return true;
         }

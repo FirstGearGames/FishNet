@@ -337,7 +337,7 @@ namespace FishNet.Object
         /// <summary>
         /// Resets all SyncTypes for this NetworkBehaviour for server or client.
         /// </summary>
-        internal void SyncTypes_ResetState(bool asServer)
+        internal void ResetState_SyncTypes(bool asServer)
         {
             foreach (SyncBase item in _syncTypes.Values)
                 item.ResetState(asServer);

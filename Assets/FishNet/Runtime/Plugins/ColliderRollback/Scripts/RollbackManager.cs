@@ -160,6 +160,20 @@ namespace FishNet.Component.ColliderRollback
         }
 
         /// <summary>
+        /// Rolls back colliders hit by a test cast against bounding boxes.
+        /// </summary>
+        /// <param name="origin">Ray origin.</param>
+        /// <param name="normalizedDirection">Direction to cast.</param>
+        /// <param name="distance">Distance of cast.</param>
+        /// <param name="pt">Precise tick received from the client.</param>
+        /// <param name="physicsType">Type of physics to rollback; this is often what your casts will use.</param>
+        /// <param name="asOwnerAndClientHost">True if IsOwner of the object the raycast is for. This can be ignored and only provides more accurate results for clientHost.</param>
+        public void Rollback(Vector3 origin, Vector3 normalizedDirection, float distance, PreciseTick pt, RollbackPhysicsType physicsType, bool asOwnerAndClientHost = false)
+        {
+            
+        }
+
+        /// <summary>
         /// Rolls back colliders hit by a test cast against bounding boxes, in a specific scene.
         /// </summary>
         /// <param name="scene">Scene containing colliders.</param>

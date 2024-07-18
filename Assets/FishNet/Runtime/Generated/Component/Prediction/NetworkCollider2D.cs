@@ -13,7 +13,6 @@ namespace FishNet.Component.Prediction
 
     public abstract class NetworkCollider2D : NetworkBehaviour
     {
-#if !PREDICTION_1
         #region Types.
         private struct Collider2DData : IResettable
         {
@@ -502,7 +501,6 @@ namespace FishNet.Component.Prediction
                 cd.ResetState();
             _colliderDataHistory.Clear();
         }
-#endif
     }
 
 

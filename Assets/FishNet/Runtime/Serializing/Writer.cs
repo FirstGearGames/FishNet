@@ -989,7 +989,7 @@ namespace FishNet.Serializing
         {
             if (nob == null)
             {
-                WriteUInt16(NetworkObject.UNSET_OBJECTID_VALUE);
+                WriteNetworkObjectId(NetworkObject.UNSET_OBJECTID_VALUE);
             }
             else
             {
@@ -1289,106 +1289,6 @@ namespace FishNet.Serializing
                 WriteList<T>(value, offset, value.Count - offset);
         }
 
-#if PREDICTION_1
-        /// <summary>
-        /// Writes a replication to the server.
-        /// </summary>
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void WriteReplicate<T>(List<T> values, int offset)
-        {
-            /* COUNT
-             * 
-             * Each Entry:
-             * 0 if the same as previous.
-             * 1 if default. */
-            int collectionCount = values.Count;
-            //Replicate list will never be null, no need to write null check.
-            //Number of entries being written.
-            byte count = (byte)(collectionCount - offset);
-            WriteByte(count);
-
-            //Get comparer.
-            Func<T, T, bool> compareDel = PublicPropertyComparer<T>.Compare;
-            Func<T, bool> isDefaultDel = PublicPropertyComparer<T>.IsDefault;
-            if (compareDel == null || isDefaultDel == null)
-            {
-                NetworkManager.LogError($"ReplicateComparers not found for type {typeof(T).FullName}");
-                return;
-            }
-
-            T lastData = default;
-            /* It's possible to save more bytes by writing that they are all the same.
-             * Run a check, and if they are all the same then only write
-             * the first data with the same indicator code. */
-            byte fullPackType = 0;
-            bool repeating = true;
-            bool allDefault = true;
-            for (int i = offset; i < collectionCount; i++)
-            {
-                T v = values[i];
-                if (!isDefaultDel(v))
-                    allDefault = false;
-
-                //Only check if i is larger than offset, giving us something in the past to check.
-                if (i > offset)
-                {
-                    //Not repeating.
-                    bool match = compareDel.Invoke(v, values[i - 1]);
-                    if (!match)
-                    {
-                        repeating = false;
-                        break;
-                    }
-                }
-
-            }
-
-            if (allDefault)
-                fullPackType = REPLICATE_ALL_DEFAULT_BYTE;
-            else if (repeating)
-                fullPackType = REPLICATE_REPEATING_BYTE;
-            WriteByte(fullPackType);
-
-            //If repeating only write the first entry.
-            if (repeating)
-            {
-                //Only write if not default.
-                if (!allDefault)
-                    Write<T>(values[offset]);
-            }
-            //Otherwise check each entry for differences.
-            else
-            {
-                for (int i = offset; i < collectionCount; i++)
-                {
-                    T v = values[i];
-                    bool isDefault = isDefaultDel.Invoke(v);
-                    //Default data, easy exit on writes.
-                    if (isDefault)
-                    {
-                        WriteByte(REPLICATE_DEFAULT_BYTE);
-                    }
-                    //Data is not default.
-                    else
-                    {
-                        //Same as last data.
-                        bool match = compareDel.Invoke(v, lastData);
-                        if (match)
-                        {
-                            WriteByte(REPLICATE_DUPLICATE_BYTE);
-                        }
-                        else
-                        {
-                            WriteByte(REPLICATE_UNIQUE_BYTE);
-                            Write<T>(v);
-                            lastData = v;
-                        }
-                    }
-                }
-            }
-        }
-#else
         /// <summary>
         /// Writes a replication to the server.
         /// </summary>
@@ -1432,7 +1332,7 @@ namespace FishNet.Serializing
                 Write<T>(v);
             }
         }
-#endif
+
         /// <summary>
         /// Writes an array.
         /// </summary>

@@ -9,8 +9,6 @@ using UnityEngine.Scripting;
 
 namespace FishNet.Object.Prediction
 {
-#if !PREDICTION_1
-
     public static class PredictionRigidbody2D2DSerializers
     {
         public static void WriteForceData(this Writer w, PredictionRigidbody2D.EntryData value)
@@ -365,7 +363,6 @@ namespace FishNet.Object.Prediction
 
         public void InitializeState() { }
     }
-#endif
 
 }
 

@@ -9,7 +9,6 @@ using UnityEngine.Scripting;
 
 namespace FishNet.Object.Prediction
 {
-#if !PREDICTION_1
     [Preserve]
     public static class PredictionRigidbodySerializers
     {
@@ -415,7 +414,6 @@ namespace FishNet.Object.Prediction
 
         public void InitializeState() { }
     }
-#endif
 
 }
 

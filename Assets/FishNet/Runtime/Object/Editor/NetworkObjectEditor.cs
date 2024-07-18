@@ -1,5 +1,4 @@
 ﻿#if UNITY_EDITOR
-#if !PREDICTION_1
 using FishNet.Object.Prediction;
 using UnityEditor;
 using UnityEngine;
@@ -149,6 +148,4 @@ namespace FishNet.Object.Editing
 
 }
 
-
-#endif
 #endif

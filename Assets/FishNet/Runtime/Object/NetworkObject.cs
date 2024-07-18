@@ -277,9 +277,6 @@ namespace FishNet.Object
             _isStatic = gameObject.isStatic;
             RuntimeChildNetworkBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveList();
             SetChildDespawnedState();
-#if !PREDICTION_1
-            //Prediction_Awake();
-#endif
         }
 
         protected virtual void Start()
@@ -407,13 +404,6 @@ namespace FishNet.Object
             SetDeinitializedStatus();
             //Do not need to set state if being destroyed.
             //Don't need to reset sync types if object is being destroyed.
-
-            void Deinitialize_Prediction(bool asServer)
-            {
-#if !PREDICTION_1
-                Prediction_Deinitialize(asServer);
-#endif
-            }
         }
 
         /// <summary>
@@ -540,12 +530,6 @@ namespace FishNet.Object
                 long estimatedTickDelay = (TimeManager.Tick - lastPacketTick);
                 if (estimatedTickDelay < 0)
                     estimatedTickDelay = 0;
-
-#if !PREDICTION_1
-                /* Estimate of what the first replicate would have been for this object based on
-                 * spawn delay. //TODO: this may not be needed anymore. */
-                ReplicateTick.Update(TimeManager, lastPacketTick - (uint)estimatedTickDelay);
-#endif
             }
 
             for (int i = 0; i < NetworkBehaviours.Length; i++)
@@ -565,19 +549,15 @@ namespace FishNet.Object
             }
             _networkObserverInitiliazed = true;
 
-#if !PREDICTION_1
             Preinitialize_Prediction(networkManager, asServer);
-#endif
             //Add to connections objects. Collection is a hashset so this can be called twice for clientHost.
             owner?.AddObject(this);
         }
 
-#if !PREDICTION_1
         private void Update()
         {
             Update_Prediction();
         }
-#endif
 
         /// <summary>
         /// Sets this NetworkObject as a child of another at runtime.
@@ -845,9 +825,8 @@ namespace FishNet.Object
         /// </summary>
         internal void Deinitialize(bool asServer)
         {
-#if !PREDICTION_1
-            Prediction_Deinitialize(asServer);
-#endif
+            Deinitialize_Prediction(asServer);
+
             InvokeStopCallbacks(asServer, true);
             for (int i = 0; i < NetworkBehaviours.Length; i++)
                 NetworkBehaviours[i].Deinitialize(asServer);
@@ -886,9 +865,12 @@ namespace FishNet.Object
             for (int i = 0; i < count; i++)
                 NetworkBehaviours[i].ResetState(asServer);
 
+            ResetState_Prediction(asServer);
+
             State = NetworkObjectState.Unset;
             SetOwner(NetworkManager.EmptyConnection);
-            NetworkObserver?.Deinitialize(false);
+            if (NetworkObserver != null)
+                NetworkObserver.Deinitialize(false);
             //QOL references.
             NetworkManager = null;
             ServerManager = null;
