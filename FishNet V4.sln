@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FishNet.Runtime", "FishNet.Runtime.csproj", "{1A27D225-4250-E68B-BDCC-0CADB79E82D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Edgegap", "Edgegap.csproj", "{35139E89-A5C8-28C6-675D-C205922BFF01}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameKit.Dependencies", "GameKit.Dependencies.csproj", "{5710D564-D29C-D881-84B6-D3F0EE33C67E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FishNet.Demos", "FishNet.Demos.csproj", "{54D24629-DDB8-6258-ABD9-30D24C4E0BF0}"
@@ -25,10 +23,6 @@ Global
 		{1A27D225-4250-E68B-BDCC-0CADB79E82D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A27D225-4250-E68B-BDCC-0CADB79E82D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A27D225-4250-E68B-BDCC-0CADB79E82D6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{35139E89-A5C8-28C6-675D-C205922BFF01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{35139E89-A5C8-28C6-675D-C205922BFF01}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{35139E89-A5C8-28C6-675D-C205922BFF01}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{35139E89-A5C8-28C6-675D-C205922BFF01}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5710D564-D29C-D881-84B6-D3F0EE33C67E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5710D564-D29C-D881-84B6-D3F0EE33C67E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5710D564-D29C-D881-84B6-D3F0EE33C67E}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -329,6 +329,11 @@ namespace FishNet.Serializing
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Obsolete("Use ReadUInt8ArrayAllocated.")]
+        public byte[] ReadBytesAllocated(int count) => ReadUInt8ArrayAllocated(count);
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Obsolete("Use ReadUInt8Array.")]
         public void ReadBytes(ref byte[] buffer, int count) => ReadUInt8Array(ref buffer, count);
         /// <summary>
