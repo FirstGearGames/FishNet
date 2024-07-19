@@ -617,7 +617,7 @@ namespace GameKit.Dependencies.Utilities.Types
                 GetNewCollection();
             }
 
-            Capacity = capacity;
+            Capacity = Collection.Length;
             Initialized = true;
 
             void GetNewCollection() => Collection = ArrayPool<T>.Shared.Rent(capacity);
