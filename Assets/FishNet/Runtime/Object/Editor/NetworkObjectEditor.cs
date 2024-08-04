@@ -79,25 +79,25 @@ namespace FishNet.Object.Editing
             serializedObject.Update();
             NetworkObject nob = (NetworkObject)target;
 
+            // Draw the title
+            DrawTitle("NetworkObject");
+
+            // Display script field and help button
             GUILayout.BeginHorizontal();
-            // Display the script field
             GUI.enabled = false;
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(nob), typeof(NetworkObject), false);
             GUI.enabled = true;
-            // Add a button next to the script field
-            if (GUILayout.Button(UnityEditor.EditorGUIUtility.IconContent("_Help"), GUILayout.Width(25)))
+            if (GUILayout.Button(EditorGUIUtility.IconContent("_Help"), GUILayout.Width(25)))
             {
                 Application.OpenURL("https://fish-networking.gitbook.io/docs/manual/components/network-object");
             }
             GUILayout.EndHorizontal();
 
             // Tab selection for settings and prediction
-            _selectedTab = GUILayout.Toolbar(_selectedTab, _tabNames);
-
-            // Increase indentation for tab content
-            EditorGUI.indentLevel++;
+            _selectedTab = GUILayout.Toolbar(_selectedTab, _tabNames, EditorStyles.toolbarButton);
 
             // Draw the selected tab
+            EditorGUI.BeginChangeCheck();
             if (_selectedTab == 0)
             {
                 DrawSettingsTab();
@@ -106,25 +106,144 @@ namespace FishNet.Object.Editing
             {
                 DrawPredictionTab();
             }
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+            }
+        }
 
-            // Restore indentation level
-            EditorGUI.indentLevel--;
-
-            // Apply modified properties
-            serializedObject.ApplyModifiedProperties();
+        private void DrawTitle(string title)
+        {
+            GUILayout.BeginVertical();
+            GUILayout.Space(10); // Add some space at the top
+            EditorGUILayout.LabelField(title, EditorStyles.boldLabel, GUILayout.Width(EditorGUIUtility.currentViewWidth));
+            GUILayout.Space(10); // Add some space below the title
+            GUILayout.EndVertical();
         }
 
         private void DrawSettingsTab()
         {
             // Draw settings tab content
-            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_isNetworked);
-            EditorGUILayout.PropertyField(_isSpawnable);
-            EditorGUILayout.PropertyField(_isGlobal);
-            EditorGUILayout.PropertyField(_initializeOrder);
-            EditorGUILayout.PropertyField(_defaultDespawnType);
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider); // Add horizontal line
+            DrawBackground(() =>
+            {
+                EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(_isNetworked);
+                EditorGUILayout.PropertyField(_isSpawnable);
+                EditorGUILayout.PropertyField(_isGlobal);
+                EditorGUILayout.PropertyField(_initializeOrder);
+                EditorGUILayout.PropertyField(_defaultDespawnType);
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("", GUI.skin.horizontalSlider); // Add horizontal line
+            });
+        }
+
+        private void DrawPredictionTab()
+        {
+            // Draw prediction tab content
+            DrawBackground(() =>
+            {
+                EditorGUILayout.LabelField("Prediction", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(_enablePrediction);
+
+                if (_enablePrediction.boolValue)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(_predictionType);
+                    EditorGUILayout.PropertyField(_enableStateForwarding);
+
+                    if (!_enableStateForwarding.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(_networkTransform);
+                        EditorGUI.indentLevel--;
+                    }
+
+                    bool graphicalSet = (_graphicalObject.objectReferenceValue != null);
+                    EditorGUILayout.PropertyField(_graphicalObject);
+
+                    if (graphicalSet)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(_detachGraphicalObject);
+                        EditorGUI.indentLevel--;
+                    }
+
+                    EditorGUILayout.LabelField("Smoothing", EditorStyles.boldLabel);
+
+                    if (!graphicalSet)
+                    {
+                        EditorGUILayout.HelpBox("More smoothing settings will be displayed when a graphicalObject is set.", MessageType.Info);
+                    }
+                    else
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(_enableTeleport);
+
+                        if (_enableTeleport.boolValue)
+                        {
+                            EditorGUI.indentLevel++;
+                            EditorGUILayout.PropertyField(_teleportThreshold, new GUIContent("Teleport Threshold"));
+                            EditorGUI.indentLevel--;
+                        }
+
+                        DrawOwnerSettings();
+                        DrawSpectatorSettings();
+
+                        EditorGUI.indentLevel--;
+                    }
+
+                    EditorGUI.indentLevel--;
+                }
+
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("", GUI.skin.horizontalSlider); // Add horizontal line
+            });
+        }
+
+        private void DrawOwnerSettings()
+        {
+            // Draw owner settings
+            DrawBackground(() =>
+            {
+                EditorGUILayout.LabelField("Owner", EditorStyles.boldLabel);
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_ownerInterpolation, new GUIContent("Interpolation"));
+                EditorGUILayout.PropertyField(_ownerSmoothedProperties, new GUIContent("Smoothed Properties"));
+                EditorGUI.indentLevel--;
+            });
+        }
+
+        private void DrawSpectatorSettings()
+        {
+            // Draw spectator settings
+            DrawBackground(() =>
+            {
+                EditorGUILayout.LabelField("Spectator", EditorStyles.boldLabel);
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_adaptiveInterpolation);
+
+                if (_adaptiveInterpolation.intValue == (int)AdaptiveInterpolationType.Off)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(_spectatorInterpolation, new GUIContent("Interpolation"));
+                    EditorGUI.indentLevel--;
+                }
+
+                EditorGUILayout.PropertyField(_spectatorSmoothedProperties, new GUIContent("Smoothed Properties"));
+                EditorGUI.indentLevel--;
+            });
+        }
+
+        private void DrawBackground(System.Action drawContent)
+        {
+            Rect rect = EditorGUILayout.BeginVertical();
+            GUI.backgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.2f); // Set background color
+            EditorGUI.DrawRect(rect, GUI.backgroundColor); // Draw the background rectangle
+            GUI.backgroundColor = Color.white; // Reset background color
+
+            drawContent(); // Draw the content within the background
+
+            EditorGUILayout.EndVertical();
         }
 
         public override bool HasPreviewGUI()
@@ -142,95 +261,10 @@ namespace FishNet.Object.Editing
         public override void OnPreviewSettings()
         {
             GUILayout.Label("Network Object Settings", "preLabel");
-            GUILayout.Button("Refresh", "preButton");
-        }
-
-        private void DrawPredictionTab()
-        {
-            // Draw prediction tab content
-            EditorGUILayout.LabelField("Prediction", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_enablePrediction);
-
-            if (_enablePrediction.boolValue)
+            if (GUILayout.Button("Refresh", "preButton"))
             {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_predictionType);
-                EditorGUILayout.PropertyField(_enableStateForwarding);
-
-                if (!_enableStateForwarding.boolValue)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(_networkTransform);
-                    EditorGUI.indentLevel--;
-                }
-
-                bool graphicalSet = (_graphicalObject.objectReferenceValue != null);
-                EditorGUILayout.PropertyField(_graphicalObject);
-
-                if (graphicalSet)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(_detachGraphicalObject);
-                    EditorGUI.indentLevel--;
-                }
-
-                EditorGUILayout.LabelField("Smoothing", EditorStyles.boldLabel);
-
-                if (!graphicalSet)
-                {
-                    EditorGUILayout.HelpBox("More smoothing settings will be displayed when a graphicalObject is set.", MessageType.Info);
-                }
-                else
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(_enableTeleport);
-
-                    if (_enableTeleport.boolValue)
-                    {
-                        EditorGUI.indentLevel++;
-                        EditorGUILayout.PropertyField(_teleportThreshold, new GUIContent("Teleport Threshold"));
-                        EditorGUI.indentLevel--;
-                    }
-
-                    DrawOwnerSettings();
-                    DrawSpectatorSettings();
-
-                    EditorGUI.indentLevel--;
-                }
-
-                EditorGUI.indentLevel--;
+                // Refresh logic, if needed
             }
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider); // Add horizontal line
-        }
-
-        private void DrawOwnerSettings()
-        {
-            // Draw owner settings
-            EditorGUILayout.LabelField("Owner", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_ownerInterpolation, new GUIContent("Interpolation"));
-            EditorGUILayout.PropertyField(_ownerSmoothedProperties, new GUIContent("Smoothed Properties"));
-            EditorGUI.indentLevel--;
-        }
-
-        private void DrawSpectatorSettings()
-        {
-            // Draw spectator settings
-            EditorGUILayout.LabelField("Spectator", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_adaptiveInterpolation);
-
-            if (_adaptiveInterpolation.intValue == (int)AdaptiveInterpolationType.Off)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_spectatorInterpolation, new GUIContent("Interpolation"));
-                EditorGUI.indentLevel--;
-            }
-
-            EditorGUILayout.PropertyField(_spectatorSmoothedProperties, new GUIContent("Smoothed Properties"));
-            EditorGUI.indentLevel--;
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
@@ -247,6 +281,7 @@ namespace FishNet.Object.Editing
 
             // Draw light blue background rectangle
             EditorGUI.DrawRect(r, new Color(0.0745f, 0.3647f, 0.6275f, 1f)); // 使用十六进制颜色#135da0
+
             // Draw the FishNet logo if loaded successfully
             if (fishNetLogo != null)
             {
@@ -271,43 +306,31 @@ namespace FishNet.Object.Editing
             float xOffset = r.x + 10f;
             float widthOffset = r.width - 20f;
 
-            // Change the order and add additional labels for clarity
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Object ID: {networkObject.ObjectId}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Owner ID: {networkObject.OwnerId}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Owner(ClientId) ID: {networkObject.Owner.ClientId}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Owned: {networkObject.IsOwner}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Owner Or Server: {networkObject.IsOwnerOrServer}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Client: {networkObject.IsClient}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Server: {networkObject.IsServer}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Global: {networkObject.IsGlobal}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Scene Object: {networkObject.IsSceneObject}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Nested: {networkObject.IsNested}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Spawned: {networkObject.IsSpawned}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Spawnable: {networkObject.IsSpawnable}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Is Offline: {networkObject.IsOffline}");
-            yOffset += lineHeight;
-            EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), $"Observers: {networkObject.Observers}");
-
-            // Modify the object's name to display network ID and ownership status
-            if (networkObject.IsSpawned && !monoBehaviour.gameObject.name.Contains("("))
+            string[] labels =
             {
-                string newName = $"{monoBehaviour.gameObject.name} ({networkObject.ObjectId}, Owned: {networkObject.IsOwner})";
-                monoBehaviour.gameObject.name = newName;
+                $"IsDeinitializing: {networkObject.IsDeinitializing}",
+                $"Object ID: {networkObject.ObjectId}",
+                $"Owner ID: {networkObject.OwnerId}",
+                $"Owner: {networkObject.Owner}",
+                $"Owner(ClientId) ID: {networkObject.Owner.ClientId}",
+                $"Is Owned: {networkObject.IsOwner}",
+                $"Is Owner Or Server: {networkObject.IsOwnerOrServer}",
+                $"Is Client: {networkObject.IsClientInitialized}",
+                $"Is Server: {networkObject.IsServerInitialized}",
+                $"Is Global: {networkObject.IsGlobal}",
+                $"Is Scene Object: {networkObject.IsSceneObject}",
+                $"Is Nested: {networkObject.IsNested}",
+                $"Is Spawned: {networkObject.IsSpawned}",
+                $"NetworkObserver: {networkObject.NetworkObserver}"
+            };
+
+            foreach (string label in labels)
+            {
+                EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), label);
+                yOffset += lineHeight;
             }
 
-            // Restore original text color
+            // Restore original GUI content color
             GUI.contentColor = originalColor;
         }
     }
