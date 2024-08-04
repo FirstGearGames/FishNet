@@ -25,6 +25,13 @@
     "url": "http://www.firstgeargames.com"
   },
   "dependencies": {
-    "com.unity.nuget.newtonsoft-json": "3.2.1"
+    "com.unity.nuget.newtonsoft-json": "3.2.1",
+    "com.unity.ugui": "1.0.0",
+    "com.unity.modules.animation": "1.0.0",
+    "com.unity.modules.imgui": "1.0.0",
+    "com.unity.modules.particlesystem": "1.0.0",
+    "com.unity.modules.physics": "1.0.0",
+    "com.unity.modules.physics2d": "1.0.0",
+    "com.unity.modules.ui": "1.0.0"
   }
 }
