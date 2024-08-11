@@ -35,10 +35,10 @@ namespace FishNet.Object.Editing
 
         // Editor tab selection
         private int _selectedTab = 0;
-        private string[] _tabNames = { "Settings", "Prediction" };
+        private readonly string[] _tabNames = { "Settings", "Prediction" };
 
         // FishNet logo
-        private Texture2D fishNetLogo;
+        private Texture2D _fishNetLogo;
 
         protected virtual void OnEnable()
         {
@@ -64,22 +64,35 @@ namespace FishNet.Object.Editing
             _enableTeleport = serializedObject.FindProperty(nameof(_enableTeleport));
             _teleportThreshold = serializedObject.FindProperty(nameof(_teleportThreshold));
 
-            // Find FishNet logo dynamically
+            // Load FishNet logo dynamically
+            LoadFishNetLogo();
+        }
+
+        private void LoadFishNetLogo()
+        {
             string[] guids = AssetDatabase.FindAssets("fishnet_light");
             if (guids.Length > 0)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                fishNetLogo = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                _fishNetLogo = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            }
+            else
+            {
+                Debug.LogWarning("FishNet logo asset not found.");
             }
         }
 
         public override void OnInspectorGUI()
         {
-            // Update the serialized object
+            // Apply background color to the entire inspector
+            Rect backgroundRect = EditorGUILayout.BeginVertical();
+            GUI.backgroundColor = new Color(0.0745f, 0.3647f, 0.6275f, 1f); // Background color
+            EditorGUI.DrawRect(backgroundRect, GUI.backgroundColor); // Draw background
+            GUI.backgroundColor = Color.white; // Reset color
+
             serializedObject.Update();
             NetworkObject nob = (NetworkObject)target;
 
-            // Draw the title
             DrawTitle("NetworkObject");
 
             // Display script field and help button
@@ -94,36 +107,65 @@ namespace FishNet.Object.Editing
             GUILayout.EndHorizontal();
 
             // Tab selection for settings and prediction
-            _selectedTab = GUILayout.Toolbar(_selectedTab, _tabNames, EditorStyles.toolbarButton);
+            DrawTabButtons();
 
             // Draw the selected tab
             EditorGUI.BeginChangeCheck();
-            if (_selectedTab == 0)
+            switch (_selectedTab)
             {
-                DrawSettingsTab();
-            }
-            else if (_selectedTab == 1)
-            {
-                DrawPredictionTab();
+                case 0:
+                    DrawSettingsTab();
+                    break;
+                case 1:
+                    DrawPredictionTab();
+                    break;
             }
             if (EditorGUI.EndChangeCheck())
             {
                 serializedObject.ApplyModifiedProperties();
             }
+
+            EditorGUILayout.EndVertical(); // End vertical layout
         }
 
         private void DrawTitle(string title)
         {
-            GUILayout.BeginVertical();
-            GUILayout.Space(10); // Add some space at the top
+            GUILayout.Space(10);
             EditorGUILayout.LabelField(title, EditorStyles.boldLabel, GUILayout.Width(EditorGUIUtility.currentViewWidth));
-            GUILayout.Space(10); // Add some space below the title
-            GUILayout.EndVertical();
+            GUILayout.Space(10);
+        }
+
+        private void DrawTabButtons()
+        {
+            Rect tabsRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.toolbarButton);
+            float tabWidth = tabsRect.width / _tabNames.Length;
+
+            for (int i = 0; i < _tabNames.Length; i++)
+            {
+                GUI.backgroundColor = (_selectedTab == i) ? new Color(0.1f, 0.5f, 0.8f, 1f) : new Color(0.0745f, 0.3647f, 0.6275f, 1f);
+                Rect tabRect = new Rect(tabsRect.x + (i * tabWidth), tabsRect.y, tabWidth, tabsRect.height);
+
+                EditorGUI.DrawRect(tabRect, GUI.backgroundColor);
+
+                // Draw tab button text
+                GUIStyle tabStyle = new GUIStyle(EditorStyles.toolbarButton)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    normal = { textColor = Color.white }
+                };
+                EditorGUI.LabelField(tabRect, _tabNames[i], tabStyle);
+
+                // Handle tab clicks
+                if (Event.current.type == EventType.MouseDown && tabRect.Contains(Event.current.mousePosition))
+                {
+                    _selectedTab = i;
+                    Event.current.Use();
+                }
+            }
         }
 
         private void DrawSettingsTab()
         {
-            // Draw settings tab content
             DrawBackground(() =>
             {
                 EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
@@ -133,13 +175,12 @@ namespace FishNet.Object.Editing
                 EditorGUILayout.PropertyField(_initializeOrder);
                 EditorGUILayout.PropertyField(_defaultDespawnType);
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("", GUI.skin.horizontalSlider); // Add horizontal line
+                EditorGUILayout.LabelField("", GUI.skin.horizontalSlider); // Horizontal line
             });
         }
 
         private void DrawPredictionTab()
         {
-            // Draw prediction tab content
             DrawBackground(() =>
             {
                 EditorGUILayout.LabelField("Prediction", EditorStyles.boldLabel);
@@ -158,7 +199,7 @@ namespace FishNet.Object.Editing
                         EditorGUI.indentLevel--;
                     }
 
-                    bool graphicalSet = (_graphicalObject.objectReferenceValue != null);
+                    bool graphicalSet = _graphicalObject.objectReferenceValue != null;
                     EditorGUILayout.PropertyField(_graphicalObject);
 
                     if (graphicalSet)
@@ -196,13 +237,12 @@ namespace FishNet.Object.Editing
                 }
 
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("", GUI.skin.horizontalSlider); // Add horizontal line
+                EditorGUILayout.LabelField("", GUI.skin.horizontalSlider); // Horizontal line
             });
         }
 
         private void DrawOwnerSettings()
         {
-            // Draw owner settings
             DrawBackground(() =>
             {
                 EditorGUILayout.LabelField("Owner", EditorStyles.boldLabel);
@@ -215,7 +255,6 @@ namespace FishNet.Object.Editing
 
         private void DrawSpectatorSettings()
         {
-            // Draw spectator settings
             DrawBackground(() =>
             {
                 EditorGUILayout.LabelField("Spectator", EditorStyles.boldLabel);
@@ -237,20 +276,19 @@ namespace FishNet.Object.Editing
         private void DrawBackground(System.Action drawContent)
         {
             Rect rect = EditorGUILayout.BeginVertical();
-            GUI.backgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.2f); // Set background color
-            EditorGUI.DrawRect(rect, GUI.backgroundColor); // Draw the background rectangle
-            GUI.backgroundColor = Color.white; // Reset background color
+            GUI.backgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.2f); // Background color
+            EditorGUI.DrawRect(rect, GUI.backgroundColor); // Draw background
+            GUI.backgroundColor = Color.white; // Reset color
 
-            drawContent(); // Draw the content within the background
+            drawContent(); // Draw content within the background
 
             EditorGUILayout.EndVertical();
         }
 
         public override bool HasPreviewGUI()
         {
-            // Check if the target object has a NetworkObject component
-            MonoBehaviour monoBehaviour = target as MonoBehaviour;
-            return monoBehaviour != null && monoBehaviour.GetComponent<NetworkObject>() != null;
+            // Ensure the target has a NetworkObject component
+            return target is MonoBehaviour monoBehaviour && monoBehaviour.GetComponent<NetworkObject>() != null;
         }
 
         public override GUIContent GetPreviewTitle()
@@ -261,77 +299,79 @@ namespace FishNet.Object.Editing
         public override void OnPreviewSettings()
         {
             GUILayout.Label("Network Object Settings", "preLabel");
-            if (GUILayout.Button("Refresh", "preButton"))
+            if (GUILayout.Button("Show Description", "preButton"))
             {
-                // Refresh logic, if needed
+                // 打开描述窗口
+                DescriptionWindow.ShowWindow();
             }
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
-            // Get the NetworkObject component from the target
-            MonoBehaviour monoBehaviour = target as MonoBehaviour;
-            NetworkObject networkObject = monoBehaviour.GetComponent<NetworkObject>();
-
-            if (networkObject == null)
+            // Get the NetworkObject component
+            if (target is MonoBehaviour monoBehaviour)
             {
-                EditorGUI.LabelField(r, "No NetworkObject component found");
-                return;
+                NetworkObject networkObject = monoBehaviour.GetComponent<NetworkObject>();
+
+                if (networkObject != null)
+                {
+                    // Draw background and logo
+                    EditorGUI.DrawRect(r, new Color(0.0745f, 0.3647f, 0.6275f, 1f)); // Light blue
+                    if (_fishNetLogo != null)
+                    {
+                        float logoSize = 64f;
+                        GUI.DrawTexture(new Rect(r.x + r.width - logoSize - 10, r.y + 10, logoSize, logoSize), _fishNetLogo, ScaleMode.ScaleToFit);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("FishNet logo could not be loaded.");
+                    }
+
+                    // Set text color and draw network information
+                    Color originalColor = GUI.contentColor;
+                    GUI.contentColor = Color.white; // White text for contrast
+
+                    EditorGUI.LabelField(new Rect(r.x + 5, r.y + 5, r.width, EditorGUIUtility.singleLineHeight), "Network Information", EditorStyles.boldLabel);
+
+                    float yOffset = EditorGUIUtility.singleLineHeight * 1.5f;
+                    float lineHeight = EditorGUIUtility.singleLineHeight;
+                    float xOffset = r.x + 10f;
+                    float widthOffset = r.width - 20f;
+
+                    string[] labels =
+                    {
+                        $"Object ID: {networkObject.ObjectId}",
+                        $"Owner ID: {networkObject.OwnerId}",
+                        $"Owner: {networkObject.Owner}",
+                        $"Owner(ClientId) ID: {networkObject.Owner.ClientId}",
+                        $"Is Owned: {networkObject.IsOwner}",
+                        $"Is Owner Or Server: {networkObject.IsOwnerOrServer}",
+                        $"Is Client: {networkObject.IsClientInitialized}",
+                        $"Is Server: {networkObject.IsServerInitialized}",
+                        $"Is Global: {networkObject.IsGlobal}",
+                        $"Is Scene Object: {networkObject.IsSceneObject}",
+                        $"Is Nested: {networkObject.IsNested}",
+                        $"Is Spawned: {networkObject.IsSpawned}",
+                        $"IsDeinitializing: {networkObject.IsDeinitializing}",
+                        $"IsActiveAndEnabled: {networkObject.isActiveAndEnabled}",
+                        $"IsIsNetworked: {networkObject.IsNetworked}",
+                        $"NetworkObserver: {networkObject.NetworkObserver}"
+                    };
+
+                    foreach (string label in labels)
+                    {
+                        EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), label);
+                        yOffset += lineHeight;
+                    }
+
+                    // Restore original text color
+                    GUI.contentColor = originalColor;
+                }
+                else
+                {
+                    EditorGUI.LabelField(r, "No NetworkObject component found");
+                }
             }
-
-            // Draw light blue background rectangle
-            EditorGUI.DrawRect(r, new Color(0.0745f, 0.3647f, 0.6275f, 1f)); // 使用十六进制颜色#135da0
-
-            // Draw the FishNet logo if loaded successfully
-            if (fishNetLogo != null)
-            {
-                float logoSize = 64f;
-                GUI.DrawTexture(new Rect(r.x + r.width - logoSize - 10, r.y + 10, logoSize, logoSize), fishNetLogo, ScaleMode.ScaleToFit);
-            }
-            else
-            {
-                Debug.LogWarning("FishNet logo could not be loaded.");
-            }
-
-            // Set text color
-            Color originalColor = GUI.contentColor;
-            GUI.contentColor = Color.white; // White text for better contrast
-
-            // Draw network information title
-            EditorGUI.LabelField(new Rect(r.x + 5, r.y + 5, r.width, EditorGUIUtility.singleLineHeight), "Network Information", EditorStyles.boldLabel);
-
-            // Draw network information
-            float yOffset = EditorGUIUtility.singleLineHeight * 1.5f;
-            float lineHeight = EditorGUIUtility.singleLineHeight;
-            float xOffset = r.x + 10f;
-            float widthOffset = r.width - 20f;
-
-            string[] labels =
-            {
-                $"IsDeinitializing: {networkObject.IsDeinitializing}",
-                $"Object ID: {networkObject.ObjectId}",
-                $"Owner ID: {networkObject.OwnerId}",
-                $"Owner: {networkObject.Owner}",
-                $"Owner(ClientId) ID: {networkObject.Owner.ClientId}",
-                $"Is Owned: {networkObject.IsOwner}",
-                $"Is Owner Or Server: {networkObject.IsOwnerOrServer}",
-                $"Is Client: {networkObject.IsClientInitialized}",
-                $"Is Server: {networkObject.IsServerInitialized}",
-                $"Is Global: {networkObject.IsGlobal}",
-                $"Is Scene Object: {networkObject.IsSceneObject}",
-                $"Is Nested: {networkObject.IsNested}",
-                $"Is Spawned: {networkObject.IsSpawned}",
-                $"NetworkObserver: {networkObject.NetworkObserver}"
-            };
-
-            foreach (string label in labels)
-            {
-                EditorGUI.LabelField(new Rect(xOffset, r.y + yOffset, widthOffset, lineHeight), label);
-                yOffset += lineHeight;
-            }
-
-            // Restore original GUI content color
-            GUI.contentColor = originalColor;
         }
     }
 }
