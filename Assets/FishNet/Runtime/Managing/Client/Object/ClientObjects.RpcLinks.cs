@@ -31,7 +31,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="index"></param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void ParseRpcLink(PooledReader reader, ushort index, Channel channel)
         {
             int dataLength;
@@ -50,12 +50,12 @@ namespace FishNet.Managing.Client
                 if (link.RpcType == RpcType.Target)
                 {
                     Packets.GetPacketLength((ushort)PacketId.TargetRpc, reader, channel);
-                    nb.OnTargetRpc(link.RpcHash, reader, channel);
+                    nb.ReadTargetRpc(link.RpcHash, reader, channel);
                 }
                 else if (link.RpcType == RpcType.Observers)
                 {
                     Packets.GetPacketLength((ushort)PacketId.ObserversRpc, reader, channel);
-                    nb.OnObserversRpc(link.RpcHash, reader, channel);
+                    nb.ReadObserversRpc(link.RpcHash, reader, channel);
                 }
                 else if (link.RpcType == RpcType.Reconcile)
                 {

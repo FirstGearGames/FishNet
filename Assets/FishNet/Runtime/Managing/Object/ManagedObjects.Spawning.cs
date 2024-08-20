@@ -1,16 +1,16 @@
 ﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 #define DEVELOPMENT
 #endif
+using System;
 using FishNet.Connection;
 using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using FishNet.Serializing.Helping;
 using UnityEngine;
 
 
@@ -18,6 +18,13 @@ namespace FishNet.Managing.Object
 {
     public abstract partial class ManagedObjects
     {
+        #region Consts.
+        /// <summary>
+        /// Number of bytes to reserve for a predicted spawn length.
+        /// </summary>
+        internal const byte PREDICTED_SPAWN_BYTES = 2;
+        #endregion
+
         /// <summary>
         /// Reads and outputs a transforms values.
         /// </summary>
@@ -42,36 +49,22 @@ namespace FishNet.Managing.Object
                 localScale = null;
         }
 
-        /// <summary>
-        /// Writes a spawn to clients.
-        /// </summary>
-        internal void WriteSpawn_Server(NetworkObject nob, NetworkConnection connection, Writer writer)
-        {
-            /* Using a number of writers to prevent rebuilding the
-             * packets excessively for values that are owner only
-             * vs values that are everyone. To save performance the
-             * owner writer is only written to if owner is valid.
-             * This makes the code a little uglier but will scale
-             * significantly better with more connections.
-             * 
-             * EG:
-             * with this technique networkBehaviours are iterated
-             * twice if there is an owner; once for data to send to everyone
-             * and again for data only going to owner. 
-             *
-             * The alternative would be to iterate the networkbehaviours
-             * for every connection it's going to and filling a single
-             * writer with values based on if owner or not. This would
-             * result in significantly more iterations. */
-            PooledWriter headerWriter = WriterPool.Retrieve();
-            headerWriter.WritePacketIdUnpacked(PacketId.ObjectSpawn);
-            headerWriter.WriteNetworkObjectForSpawn(nob);
-            if (NetworkManager.ServerManager.ShareIds || connection == nob.Owner)
-                headerWriter.WriteNetworkConnection(nob.Owner);
-            else
-                headerWriter.WriteNetworkConnectionId(NetworkConnection.UNSET_CLIENTID_VALUE);
 
-            bool nested = (nob.CurrentParentNetworkBehaviour != null);
+        /// <summary>
+        /// Writes a spawn to a client or server.
+        /// If connection is not null the spawn is sent ot a client, otherwise it will be considered a predicted spawn.
+        /// </summary>
+        /// <returns>True if spawn was written.</returns>
+        internal bool WriteSpawn(NetworkObject nob, PooledWriter writer, NetworkConnection connection)
+        {
+            writer.WritePacketIdUnpacked(PacketId.ObjectSpawn);
+
+            ReservedLengthWriter asClientReservedWriter = ReservedWritersExtensions.Retrieve();
+            bool predictedSpawn = (connection == null);
+
+            if (predictedSpawn)
+                asClientReservedWriter.Initialize(writer, PREDICTED_SPAWN_BYTES);
+
             bool sceneObject = nob.IsSceneObject;
             //Write type of spawn.
             SpawnType st = SpawnType.Unset;
@@ -79,151 +72,197 @@ namespace FishNet.Managing.Object
                 st |= SpawnType.Scene;
             else
                 st |= (nob.IsGlobal) ? SpawnType.InstantiatedGlobal : SpawnType.Instantiated;
-            //Add on nested if needed.
-            if (nested)
-                st |= SpawnType.Nested;
 
-            headerWriter.WriteUInt8Unpacked((byte)st);
-            //ComponentIndex for the nob. 0 is root but more appropriately there's a IsNested boolean as shown above.
-            headerWriter.WriteUInt8Unpacked(nob.ComponentIndex);
-            //Properties on the transform which diff from serialized value.
-            WriteChangedTransformProperties(nob, sceneObject, nested, headerWriter);
+            //Call before writing SpawnType so nested can be appended to it if needed.
+            PooledWriter nestedWriter = WriteNestedSpawn(nob, ref st);
 
-            /* When nested the parent nb needs to be written. */
-            if (nested)
+            writer.WriteUInt8Unpacked((byte)st);
+            //Write parent here if writer for parent is valid.
+            if (nestedWriter != null)
             {
-                /* Use Ids because using WriteNetworkBehaviour() will read from spawned
-                 * on the other end. This is problematic because the object which is parent
-                 * may not be spawned yet. Clients handle caching potentially not yet spawned
-                 * objects via Ids. */
-                headerWriter.WriteNetworkObjectId(nob.CurrentParentNetworkBehaviour.ObjectId);
+                writer.WriteArraySegment(nestedWriter.GetArraySegment());
+                WriterPool.Store(nestedWriter);
             }
+
+            writer.WriteSpawnedNetworkObject(nob);
+            writer.WriteNetworkConnection(nob.Owner);
+
+            //Properties on the transform which diff from serialized value.
+            WriteChangedTransformProperties(nob, sceneObject, writer);
+
             /* Writing a scene object. */
             if (sceneObject)
             {
-                headerWriter.WriteUInt64Unpacked(nob.SceneId);
+                writer.WriteUInt64Unpacked(nob.SceneId);
 #if DEVELOPMENT
-                //Check to write additional information if a scene object.
-                if (NetworkManager.DebugManager.WriteSceneObjectDetails)
-                {
-                    headerWriter.WriteString(nob.gameObject.scene.name);
-                    headerWriter.WriteString(nob.gameObject.name);
-                }
+                CheckWriteSceneObjectDetails(nob, writer);
 #endif
             }
             /* Writing a spawned object. */
             else
             {
-                //Check to write parent behaviour or nob.
-                NetworkBehaviour parentNb;
-                Transform t = nob.transform.parent;
-                if (t != null)
+                writer.WriteNetworkObjectId(nob.PrefabId);
+            }
+
+            NetworkConnection payloadSender = (predictedSpawn) ? NetworkManager.EmptyConnection : connection;
+            WritePayload(payloadSender, nob, writer);
+
+            /* RPCLinks and SyncTypes are ONLY written by the server.
+             * Although not neccessary, both sides will write the length
+             * to keep the reading of spawns consistent. */
+            WriteRPCLinks_SyncTypes();
+
+            void WriteRPCLinks_SyncTypes()
+            {
+                //Predicted spawns don't use these.
+                if (predictedSpawn)
+                    return;
+
+                ReservedLengthWriter rw = ReservedWritersExtensions.Retrieve();
+
+                //Write RpcLinks.
+                rw.Initialize(writer, NetworkBehaviour.RPCLINK_RESERVED_BYTES);
+                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                    nb.WriteRpcLinks(writer);
+                rw.WriteLength();
+
+                //SyncTypes.
+                rw.Initialize(writer, NetworkBehaviour.SYNCTYPE_RESERVE_BYTES);
+                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                    nb.WriteSyncTypesForSpawn(writer, connection);
+                rw.WriteLength();
+
+                rw.Store();
+            }
+
+            bool canWrite;
+            //Need to validate predicted spawn length.
+            if (predictedSpawn)
+            {
+                int maxContentLength;
+                if (PREDICTED_SPAWN_BYTES == 2)
                 {
-                    parentNb = t.GetComponent<NetworkBehaviour>();
-                    /* Check for a NetworkObject if there is no NetworkBehaviour.
-                     * There is a small chance the parent object will only contain
-                     * a NetworkObject. */
-                    if (parentNb == null)
-                    {
-                        //If null check if there is a nob.
-                        NetworkObject parentNob = t.GetComponent<NetworkObject>();
-                        //ParentNob is null or not spawned.
-                        if (!ParentIsSpawned(parentNob))
-                        {
-                            headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.Unset);
-                        }
-                        else
-                        {
-                            headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.NetworkObject);
-                            headerWriter.WriteNetworkObjectId(parentNob);
-                        }
-                    }
-                    //NetworkBehaviour found on parent.
-                    else
-                    {
-                        //ParentNb is null or not spawned.
-                        if (!ParentIsSpawned(parentNb.NetworkObject))
-                        {
-                            headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.Unset);
-                        }
-                        else
-                        {
-                            headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.NetworkBehaviour);
-                            headerWriter.WriteNetworkBehaviour(parentNb);
-                        }
-                    }
+                    maxContentLength = ushort.MaxValue;
+                }
+                else
+#pragma warning disable CS0162 // Unreachable code detected
+                {
+                    NetworkManager.LogError($"Unhandled spawn bytes value of {PREDICTED_SPAWN_BYTES}.");
+                    maxContentLength = 0;
+                }
+#pragma warning restore CS0162 // Unreachable code detected
 
-                    //True if pNob is not null, and is spawned.
-                    bool ParentIsSpawned(NetworkObject pNob)
-                    {
-                        bool isNull = (pNob == null);
-                        if (isNull || !pNob.IsSpawned)
-                        {
-                            /* Only log if pNob exist. Otherwise this would print if the user 
-                             * was parenting any object, which may not be desirable as they could be
-                             * simply doing it for organization reasons. */
-                            if (!isNull)
-                                NetworkManager.LogWarning($"Parent {t.name} is not spawned. {nob.name} will not have it's parent sent in the spawn message.");
-                            return false;
-                        }
+                //Too much content; this really should absolutely never happen.
+                canWrite = (asClientReservedWriter.Length <= maxContentLength);
+                if (!canWrite)
+                    NetworkManager.LogError($"A single predicted spawns may not exceed {maxContentLength} bytes in length. Written length is {asClientReservedWriter.Length}. Predicted spawn for {nob.name} will be despawned immediately.");
+                //Not too large.
+                else
+                    asClientReservedWriter.WriteLength();
+            }
 
-                        return true;
-                    }
+            //Not predicted, server can always write.
+            else
+            {
+                canWrite = true;
+            }
 
+            asClientReservedWriter.Store();
+            return canWrite;
+        }
+
+        /// <summary>
+        /// Writers a nested spawn and returns writer used.
+        /// If nested was not written null is returned.
+        /// </summary>
+        internal PooledWriter WriteNestedSpawn(NetworkObject nob, ref SpawnType st)
+        {
+            //Check to write parent behaviour or nob.
+            NetworkBehaviour parentNb;
+            Transform t = nob.transform.parent;
+            if (t != null)
+            {
+                parentNb = nob.CurrentParentNetworkBehaviour;
+                /* Check for a NetworkObject if there is no NetworkBehaviour.
+                 * There is a small chance the parent object will only contain
+                 * a NetworkObject. */
+                if (parentNb == null)
+                {
+                    return null;
                 }
                 //No parent.
                 else
                 {
-                    headerWriter.WriteUInt8Unpacked((byte)SpawnParentType.Unset);
+                    if (!parentNb.IsSpawned)
+                    {
+                        NetworkManager.LogWarning($"Parent {t.name} is not spawned. {nob.name} will not have it's parent sent in the spawn message.");
+                        return null;
+                    }
+                    else
+                    {
+                        st |= SpawnType.Nested;
+                        PooledWriter writer = WriterPool.Retrieve();
+                        writer.WriteUInt8Unpacked(nob.ComponentIndex);
+                        writer.WriteNetworkBehaviour(parentNb);
+                        return writer;
+                    }
                 }
+            }
+            //CurrentNetworkBehaviour is not set.
+            else
+            {
+                return null;
+            }
+        }
 
-                headerWriter.WriteNetworkObjectId(nob.PrefabId);
+        /// <summary>
+        /// If flags indicate there is a nested spawn the objectId and NetworkBehaviourId are output.
+        /// Otherwise, output value sare set to null.
+        /// </summary>
+        internal void ReadNestedSpawnIds(PooledReader reader, SpawnType st, out byte? nobComponentIndex, out int? parentObjectId, out byte? parentComponentIndex, HashSet<int> readSpawningObjects = null)
+        {
+            if (st.FastContains(SpawnType.Nested))
+            {
+                nobComponentIndex = reader.ReadUInt8Unpacked();
+                reader.ReadNetworkBehaviour(out int objectId, out byte componentIndex, readSpawningObjects);
+                if (objectId != NetworkObject.UNSET_OBJECTID_VALUE)
+                {
+                    parentObjectId = objectId;
+                    parentComponentIndex = componentIndex;
+                    return;
+                }
             }
 
-            //Write headers first.
-            writer.WriteArraySegment(headerWriter.GetArraySegment());
+            //Fall through, not nested.
+            nobComponentIndex = null;
+            parentObjectId = null;
+            parentComponentIndex = null;
+        }
 
-            PooledWriter tempWriter = WriterPool.Retrieve();
-            //Payload.
-            WritePayload(connection, nob, tempWriter);
-            writer.WriteArraySegmentAndSize(tempWriter.GetArraySegment());
-
-            /* Used to write latest data which must be sent to
-             * clients, such as SyncTypes and RpcLinks. */
-            tempWriter.Reset();
-            //Send RpcLinks first.
-            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                nb.WriteRpcLinks(tempWriter);
-            //Send links to everyone.
-            writer.WriteArraySegmentAndSize(tempWriter.GetArraySegment());
-
-            tempWriter.Reset();
-            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                nb.WriteSyncTypesForSpawn(tempWriter, connection);
-            writer.WriteArraySegmentAndSize(tempWriter.GetArraySegment());
-
-            //Dispose of writers created in this method.
-            headerWriter.Store();
-            tempWriter.Store();
+        /// <summary>
+        /// Finishes reading a scene object.
+        /// </summary>
+        protected void ReadSceneObjectId(PooledReader reader, out ulong sceneId)
+        {
+            sceneId = reader.ReadUInt64Unpacked();
         }
 
         /// <summary>
         /// Writes changed transform proeprties to writer.
         /// </summary>
-        protected void WriteChangedTransformProperties(NetworkObject nob, bool sceneObject, bool nested, Writer headerWriter)
+        protected void WriteChangedTransformProperties(NetworkObject nob, bool sceneObject, Writer headerWriter)
         {
             /* Write changed transform properties. */
             TransformPropertiesFlag tpf;
             //If a scene object then get it from scene properties.
-            //TODO: parentChange. If nested or has parent write local space, otherwise world.
-            if (sceneObject || nested)
+            if (sceneObject)
             {
                 tpf = nob.GetTransformChanges(nob.SerializedTransformProperties);
             }
             else
             {
                 PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(nob.SpawnableCollectionId, false);
-                tpf = nob.GetTransformChanges(po.GetObject(true, nob.PrefabId).gameObject);
+                tpf = nob.GetTransformChanges(po.GetObject(asServer: true, nob.PrefabId).gameObject);
             }
 
             headerWriter.WriteUInt8Unpacked((byte)tpf);
@@ -238,13 +277,11 @@ namespace FishNet.Managing.Object
                 if (tpf.FastContains(TransformPropertiesFlag.LocalScale))
                     headerWriter.WriteVector3(nob.transform.localScale);
             }
-
         }
 
         /// <summary>
         /// Writes a despawn.
         /// </summary>
-        /// <param name="nob"></param>
         protected void WriteDespawn(NetworkObject nob, DespawnType despawnType, Writer everyoneWriter)
         {
             everyoneWriter.WritePacketIdUnpacked(PacketId.ObjectDespawn);
@@ -254,11 +291,7 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Finds a scene NetworkObject and sets transform values.
         /// </summary>
-#if DEVELOPMENT
         internal NetworkObject GetSceneNetworkObject(ulong sceneId, string sceneName, string objectName)
-#else
-        internal NetworkObject GetSceneNetworkObject(ulong sceneId)
-#endif
         {
             NetworkObject nob;
             SceneObjects_Internal.TryGetValueIL2CPP(sceneId, out nob);
@@ -266,13 +299,13 @@ namespace FishNet.Managing.Object
             if (nob == null)
             {
 #if DEVELOPMENT
-                string missingObjectDetails = (sceneName == string.Empty) ? "For more information on the missing object add DebugManager to your NetworkManager and enable WriteSceneObjectDetails"
-                    : $"Scene containing the object is '{sceneName}', object name is '{objectName}";
+                string missingObjectDetails = (sceneName == string.Empty) ? "For more information on the missing object add DebugManager to your NetworkManager and enable WriteSceneObjectDetails" : $"Scene containing the object is '{sceneName}', object name is '{objectName}";
                 NetworkManager.LogError($"SceneId of {sceneId} not found in SceneObjects. {missingObjectDetails}. This may occur if your scene differs between client and server, if client does not have the scene loaded, or if networked scene objects do not have a SceneCondition. See ObserverManager in the documentation for more on conditions.");
 #else
                 NetworkManager.LogError($"SceneId of {sceneId} not found in SceneObjects. This may occur if your scene differs between client and server, if client does not have the scene loaded, or if networked scene objects do not have a SceneCondition. See ObserverManager in the documentation for more on conditions.");
 #endif
             }
+
             return nob;
         }
 
@@ -281,7 +314,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         /// <param name="reader">If not null reader will be cleared on error.</param>
         /// <returns></returns>
-        protected bool CanPredictedSpawn(NetworkObject nob, NetworkConnection spawner, NetworkConnection owner, bool asServer, Reader reader = null)
+        protected bool CanPredictedSpawn(NetworkObject nob, NetworkConnection spawner, bool asServer, Reader reader = null)
         {
             //Does not allow predicted spawning.
             if (!nob.AllowPredictedSpawning)
@@ -291,29 +324,34 @@ namespace FishNet.Managing.Object
                 else
                     NetworkManager.LogError($"Object {nob.name} does not support predicted spawning. Add a PredictedSpawn component to the object and configure appropriately.");
 
-                reader?.Clear();
+                if (reader != null)
+                    reader.Clear();
                 return false;
             }
-            //Parenting is not yet supported.
-            if (nob.transform.parent != null)
-            {
-                if (asServer)
-                    spawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {spawner.ClientId} tried to spawn an object that is not root.");
-                else
-                    NetworkManager.LogError($"Predicted spawning as a child is not supported.");
 
-                reader?.Clear();
-                return false;
-            }
+            // //Parenting is not yet supported.
+            // if (nob.CurrentParentNetworkBehaviour != null)
+            // {
+            //     if (asServer)
+            //         spawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {spawner.ClientId} tried to spawn an object that is not root.");
+            //     else
+            //         NetworkManager.LogError($"Predicted spawning as a child is not supported.");
+            //
+            //     if (reader != null)
+            //         reader.Clear();
+            //     return false;
+            // }
+
             //Nested nobs not yet supported.
-            if (nob.NestedRootNetworkBehaviours.Count > 0)
+            if (nob.SerializedNestedNetworkObjects.Count > 0)
             {
                 if (asServer)
                     spawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {spawner.ClientId} tried to spawn an object {nob.name} which has nested NetworkObjects.");
                 else
                     NetworkManager.LogError($"Predicted spawning prefabs which contain nested NetworkObjects is not yet supported but will be in a later release.");
 
-                reader?.Clear();
+                if (reader != null)
+                    reader.Clear();
                 return false;
             }
 
@@ -351,7 +389,7 @@ namespace FishNet.Managing.Object
             //    return false;
             //}
             //Nested nobs not yet supported.
-            if (nob.NestedRootNetworkBehaviours.Count > 0)
+            if (nob.SerializedNestedNetworkObjects.Count > 0)
             {
                 if (asServer)
                     despawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {despawner.ClientId} tried to despawn an object {nob.name} which has nested NetworkObjects.");
@@ -361,11 +399,9 @@ namespace FishNet.Managing.Object
                 reader?.Clear();
                 return false;
             }
+
             //Blocked by PredictedSpawn settings or user logic.
-            if (
-                (asServer && !nob.PredictedSpawn.OnTryDespawnServer(despawner))
-                || (!asServer && !nob.PredictedSpawn.OnTryDespawnClient())
-                )
+            if ((asServer && !nob.PredictedSpawn.OnTryDespawnServer(despawner)) || (!asServer && !nob.PredictedSpawn.OnTryDespawnClient()))
             {
                 return false;
             }
@@ -377,33 +413,60 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Reads a payload for a NetworkObject.
         /// </summary>
-        internal void ReadPayload(NetworkConnection conn, NetworkObject nob, PooledReader reader)
+        internal void ReadPayload(NetworkConnection sender, NetworkObject nob, PooledReader reader, int? payloadLength = null)
         {
-            while (reader.Remaining > 0)
+            if (!payloadLength.HasValue)
+                payloadLength = (int)ReservedLengthWriter.ReadLength(reader, NetworkBehaviour.PAYLOAD_RESERVE_BYTES);
+            //If there is a payload.
+            if (payloadLength > 0)
             {
-                byte componentIndex = reader.ReadUInt8Unpacked();
-                nob.NetworkBehaviours[componentIndex].ReadPayload(conn, reader);
+                foreach (NetworkBehaviour networkBehaviour in nob.NetworkBehaviours)
+                    networkBehaviour.ReadPayload(sender, reader);
             }
         }
 
         /// <summary>
-        /// Writes a payload for a NetworkObject.
+        /// Reads the payload returning it as an arraySegment.
         /// </summary>
-        internal void WritePayload(NetworkConnection conn, NetworkObject nob, PooledWriter writer)
+        /// <returns></returns>
+        internal ArraySegment<byte> ReadPayload(PooledReader reader) 
         {
-            PooledWriter nbWriter = WriterPool.Retrieve();
-            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-            {
-                nbWriter.Reset();
-                nb.WritePayload(conn, nbWriter);
-                if (nbWriter.Length > 0)
-                {
-                    writer.WriteUInt8Unpacked(nb.ComponentIndex);
-                    writer.WriteArraySegment(nbWriter.GetArraySegment());
-                }
-            }
+            int payloadLength = (int)ReservedLengthWriter.ReadLength(reader, NetworkBehaviour.PAYLOAD_RESERVE_BYTES);
+            return reader.ReadArraySegment(payloadLength);
         }
 
+        /// <summary>
+        /// /Writers a payload for a NetworkObject.
+        /// </summary>
+        private void WritePayload(NetworkConnection sender, NetworkObject nob, PooledWriter writer)
+        {
+            ReservedLengthWriter rw = ReservedWritersExtensions.Retrieve();
+
+            rw.Initialize(writer, NetworkBehaviour.PAYLOAD_RESERVE_BYTES);
+
+            foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                nb.WritePayload(sender, writer);
+
+            rw.WriteLength();
+        }
+
+
+        // /// <summary>
+        // /// Writes a payload for a NetworkObject.
+        // /// </summary>
+        // protected ArraySegment<byte> ReadPayload(PooledReader reader)
+        // {
+        //     PooledWriter nbWriter = WriterPool.Retrieve();
+        //     foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+        //     {
+        //         nbWriter.Reset();
+        //         nb.WritePayload(conn, nbWriter);
+        //         if (nbWriter.Length > 0)
+        //         {
+        //             writer.WriteUInt8Unpacked(nb.ComponentIndex);
+        //             writer.WriteArraySegment(nbWriter.GetArraySegment());
+        //         }
+        //     }
+        // }
     }
 }
-

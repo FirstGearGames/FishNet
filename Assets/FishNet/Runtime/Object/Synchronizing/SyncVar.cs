@@ -1,12 +1,10 @@
 ﻿using FishNet.CodeGenerating;
 using FishNet.Documenting;
 using FishNet.Managing;
-using FishNet.Managing.Timing;
 using FishNet.Object.Helping;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
-using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -202,7 +200,7 @@ namespace FishNet.Object.Synchronizing
         /// Sets current value and marks the SyncVar dirty when able to. Returns if able to set value.
         /// </summary>
         /// <param name="calledByUser">True if SetValue was called in response to user code. False if from automated code.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void SetValue(T nextValue, bool calledByUser, bool sendRpc = false)
         {
             /* IsInitialized is only set after the script containing this SyncVar
@@ -252,7 +250,7 @@ namespace FishNet.Object.Synchronizing
                 }
                 else
                 {
-                    if (Comparers.EqualityCompare<T>(_value, nextValue))
+                    if (Comparers.EqualityCompare(_value, nextValue))
                         return;
 
                     T prev = _value;
@@ -270,7 +268,7 @@ namespace FishNet.Object.Synchronizing
                  * to update values locally while occasionally
                  * letting the syncvar adjust their side. */
                 T prev = _previousClientValue;
-                if (Comparers.EqualityCompare<T>(prev, nextValue))
+                if (Comparers.EqualityCompare(prev, nextValue))
                     return;
                 /* If also server do not update value.
                  * Server side has say of the current value. */
@@ -361,7 +359,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [MakePublic]
         internal protected override void OnStartCallback(bool asServer)
         {
@@ -388,7 +386,7 @@ namespace FishNet.Object.Synchronizing
         internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
-            writer.Write<T>(_value);
+            writer.Write(_value);
         }
 
         /// <summary>
@@ -405,7 +403,7 @@ namespace FishNet.Object.Synchronizing
             //Compare if a value type.
             if (_isValueType)
             {
-                if (Comparers.EqualityCompare<T>(_initialValue, _value))
+                if (Comparers.EqualityCompare(_initialValue, _value))
                     return;
             }
             else
@@ -431,14 +429,15 @@ namespace FishNet.Object.Synchronizing
         /// Resets to initialized values.
         /// </summary>
         [MakePublic]
-        internal protected override void ResetState(bool asServer)
+        protected internal override void ResetState(bool asServer)
         {
             base.ResetState(asServer);
             /* Only full reset under the following conditions:
              * asServer is true.
              * Is not network initialized.
              * asServer is false, and server is not started. */
-            if (asServer || !IsNetworkInitialized || (!asServer && !base.NetworkManager.IsServerStarted))
+            if ((asServer && !base.NetworkManager.IsClientStarted) ||
+                (!asServer && base.NetworkBehaviour.IsDeinitializing))
             {
                 _value = _initialValue;
                 _previousClientValue = _initialValue;

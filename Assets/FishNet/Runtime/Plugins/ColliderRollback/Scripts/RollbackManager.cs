@@ -15,6 +15,7 @@ namespace FishNet.Component.ColliderRollback
     public class RollbackManager : MonoBehaviour
     {
         #region Internal.
+
         /// <summary>
         /// Cached value for bounding box layermask.
         /// </summary>
@@ -37,37 +38,41 @@ namespace FishNet.Component.ColliderRollback
                 return _boundingBoxLayerNumber;
             }
         }
+
         private int? _boundingBoxLayerNumber;
+
         #endregion
 
         #region Serialized.
+
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Layer to use when creating and checking against bounding boxes. This should be different from any layer used.")]
-        [SerializeField]
+        [Tooltip("Layer to use when creating and checking against bounding boxes. This should be different from any layer used.")] [SerializeField]
         private LayerMask _boundingBoxLayer = 0;
+
         /// <summary>
         /// Layer to use when creating and checking against bounding boxes. This should be different from any layer used.
         /// </summary>
         internal LayerMask BoundingBoxLayer => _boundingBoxLayer;
+
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Maximum time in the past colliders can be rolled back to.")]
-        [SerializeField]
+        [Tooltip("Maximum time in the past colliders can be rolled back to.")] [SerializeField]
         private float _maximumRollbackTime = 1.25f;
+
         /// <summary>
         /// Maximum time in the past colliders can be rolled back to.
         /// </summary>
         internal float MaximumRollbackTime => _maximumRollbackTime;
+
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Interpolation value for the NetworkTransforms or objects being rolled back.")]
-        [Range(0, 250)]
-        [SerializeField]
+        [Tooltip("Interpolation value for the NetworkTransforms or objects being rolled back.")] [Range(0, 250)] [SerializeField]
         internal ushort Interpolation = 2;
+
         #endregion
 
         
@@ -95,14 +100,14 @@ namespace FishNet.Component.ColliderRollback
         }
 
         [Obsolete("Use Rollback(Scene, Vector3, Vector3, float, PreciseTick, RollbackPhysicsType.Physics, bool) instead.")] //Remove on V5
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Rollback(Scene scene, Vector3 origin, Vector3 normalizedDirection, float distance, PreciseTick pt, bool asOwnerAndClientHost = false)
         {
             
         }
 
         [Obsolete("Use Rollback(int, Vector3, Vector3, float, PreciseTick, RollbackPhysicsType.Physics, bool) instead.")] //Remove on V5
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Rollback(int sceneHandle, Vector3 origin, Vector3 normalizedDirection, float distance, PreciseTick pt, bool asOwnerAndClientHost = false)
         {
             
@@ -110,14 +115,14 @@ namespace FishNet.Component.ColliderRollback
 
 
         [Obsolete("Use Rollback(Scene, Vector3, Vector3, float, PreciseTick, RollbackPhysicsType.Physics2D, bool) instead.")] //Remove on V5
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Rollback(Scene scene, Vector2 origin, Vector2 normalizedDirection, float distance, PreciseTick pt, bool asOwnerAndClientHost = false)
         {
             
         }
 
         [Obsolete("Use Rollback(Vector3, Vector3, float, PreciseTick, RollbackPhysicsType.Physics2D, bool) instead.")] //Remove on V5
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Rollback(Vector2 origin, Vector2 normalizedDirection, float distance, PreciseTick pt, bool asOwnerAndClientHost = false)
         {
             
@@ -142,11 +147,12 @@ namespace FishNet.Component.ColliderRollback
         /// <param name="pt">Precise tick received from the client.</param>
         /// <param name="physicsType">Type of physics to rollback; this is often what your casts will use.</param>
         /// <param name="asOwnerAndClientHost">True if IsOwner of the object the raycast is for. This can be ignored and only provides more accurate results for clientHost.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Rollback(Scene scene, PreciseTick pt, RollbackPhysicsType physicsType, bool asOwnerAndClientHost = false)
         {
             
         }
+
         /// <summary>
         /// Rolls back all colliders in a scene.
         /// </summary>
@@ -215,5 +221,4 @@ namespace FishNet.Component.ColliderRollback
 
         
     }
-
 }

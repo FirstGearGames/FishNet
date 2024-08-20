@@ -1,5 +1,6 @@
 ﻿using FishNet.Connection;
 using System.Runtime.CompilerServices;
+using FishNet.Serializing;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -7,6 +8,7 @@ namespace FishNet.Object
     public partial class NetworkObject : MonoBehaviour
     {
         #region Private.
+
         /// <summary>
         /// True if OnStartServer was called.
         /// </summary>
@@ -15,12 +17,14 @@ namespace FishNet.Object
         /// True if OnStartClient was called.
         /// </summary>
         private bool _onStartClientCalled;
+
         #endregion
 
+        // ReSharper disable Unity.PerformanceAnalysis
         /// <summary>
         /// Called after all data is synchronized with this NetworkObject.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void InvokeStartCallbacks(bool asServer, bool invokeSyncTypeCallbacks)
         {
             /* Note: When invoking OnOwnership here previous owner will
@@ -28,8 +32,12 @@ namespace FishNet.Object
              * now initializing. */
 
             //Invoke OnStartNetwork.
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
-                NetworkBehaviours[i].InvokeOnNetwork(true);
+            bool invokeOnNetwork = (asServer || IsServerOnlyStarted || IsClientOnlyInitialized);
+            if (invokeOnNetwork)
+            {
+                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    NetworkBehaviours[i].InvokeOnNetwork(start: true);
+            }
 
             //As server.
             if (asServer)
@@ -99,10 +107,10 @@ namespace FishNet.Object
                 NetworkBehaviours[i].OnDespawnServer(conn);
         }
 
+        // ReSharper disable Unity.PerformanceAnalysis
         /// <summary>
         /// Invokes OnStop callbacks.
         /// </summary>
-        /// <param name="asServer"></param>
         internal void InvokeStopCallbacks(bool asServer, bool invokeSyncTypeCallbacks)
         {
             InvokeStopCallbacks_Prediction(asServer);
@@ -110,7 +118,8 @@ namespace FishNet.Object
             if (invokeSyncTypeCallbacks)
                 InvokeOnStopSyncTypeCallbacks(asServer);
 
-            bool invokeOnNetwork = (!asServer || (asServer && !_onStartClientCalled));
+            bool clientStartCalled = _onStartClientCalled;
+
             if (asServer && _onStartServerCalled)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
@@ -124,39 +133,34 @@ namespace FishNet.Object
                 _onStartClientCalled = false;
             }
 
+            bool invokeOnNetwork = asServer || (clientStartCalled && !IsServerStarted);
             if (invokeOnNetwork)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].InvokeOnNetwork(false);
             }
-
-
         }
 
         /// <summary>
         /// Invokes OnOwnership callbacks when ownership changes.
         /// This is not to be called when assigning ownership during a spawn message.
         /// </summary>
-        private void InvokeOwnershipChange(NetworkConnection prevOwner, bool asServer)
-        {            
+        private void InvokeManualOwnershipChange(NetworkConnection prevOwner, bool asServer)
+        {
             if (asServer)
             {
                 for (int i = 0; i < NetworkBehaviours.Length; i++)
                     NetworkBehaviours[i].OnOwnershipServer_Internal(prevOwner);
-                //Also write owner syncTypes if there is an owner.
-                if (Owner.IsValid)
-                {
-                    for (int i = 0; i < NetworkBehaviours.Length; i++)
-                        NetworkBehaviours[i].WriteDirtySyncTypes(true, true, true);
-                }
+
+                WriteSyncTypesForManualOwnershipChange(prevOwner);
             }
             else
             {
                 /* If local client is owner and not server then only
                  * invoke if the prevOwner is different. This prevents
                  * the owner change callback from happening twice when
-                 * using TakeOwnership. 
-                 * 
+                 * using TakeOwnership.
+                 *
                  * Further explained, the TakeOwnership sets local client
                  * as owner client-side, which invokes the OnOwnership method.
                  * Then when the server approves the owner change it would invoke
@@ -170,6 +174,4 @@ namespace FishNet.Object
             }
         }
     }
-
 }
-

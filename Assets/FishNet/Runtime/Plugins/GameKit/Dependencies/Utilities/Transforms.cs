@@ -76,7 +76,7 @@ namespace GameKit.Dependencies.Utilities
                 if (destroyImmediately)
                     MonoBehaviour.DestroyImmediate(child.gameObject);
                 else
-                    MonoBehaviour.Destroy(child.gameObject);
+                    UnityEngine.Object.Destroy(child.gameObject);
             }
         }
 
@@ -92,7 +92,7 @@ namespace GameKit.Dependencies.Utilities
                 if (destroyImmediately)
                     MonoBehaviour.DestroyImmediate(child.gameObject);
                 else
-                    MonoBehaviour.Destroy(child.gameObject);
+                    UnityEngine.Object.Destroy(child.gameObject);
             }
         }
 

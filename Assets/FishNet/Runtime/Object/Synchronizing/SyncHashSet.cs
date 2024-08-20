@@ -180,7 +180,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Adds an operation and invokes locally.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void AddOperation(SyncHashSetOperation operation, T item)
         {
             if (!base.IsInitialized)
@@ -279,7 +279,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Reads and sets the current values for server or client.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {

@@ -136,7 +136,7 @@ namespace FishNet.Serializing
                 return default;
             }
 
-            byte[] originalReaderBuffer = originalReader.GetByteBuffer();
+            byte[] originalReaderBuffer = originalReader.GetBuffer();
 
             // inherits reading buffer directly from fishnet reader
             ArraySegment<byte> arraySegment = new ArraySegment<byte>(originalReaderBuffer, originalReader.Position, subStreamLength);

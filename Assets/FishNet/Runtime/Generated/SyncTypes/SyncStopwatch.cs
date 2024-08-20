@@ -247,7 +247,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Reads and sets the current values for server or client.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {

@@ -209,7 +209,7 @@ namespace FishNet.Transporting.Multipass
         /// <summary>
         /// Gets the Multipass connectionId using a transport connectionid.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private ClientTransportData GetDataFromTransportId(int transportIndex, int transportId)
         {
             Dictionary<int, ClientTransportData> dict = _transportIdLookup[transportIndex];
@@ -224,7 +224,7 @@ namespace FishNet.Transporting.Multipass
         /// <summary>
         /// Gets the TransportIdData using a Multipass connectionId.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private ClientTransportData GetDataFromMultipassId(int multipassId)
         {
             if (_multpassIdLookup.TryGetValueIL2CPP(multipassId, out ClientTransportData ctd))
@@ -240,7 +240,7 @@ namespace FishNet.Transporting.Multipass
         /// <summary>
         /// Gets the IP address of a remote connectionId.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override string GetConnectionAddress(int multipassId)
         {
             ClientTransportData ctd = GetDataFromMultipassId(multipassId);
@@ -265,7 +265,7 @@ namespace FishNet.Transporting.Multipass
         /// Gets the current local ConnectionState of the first transport.
         /// </summary>
         /// <param name="server">True if getting ConnectionState for the server.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override LocalConnectionState GetConnectionState(bool server)
         {
             if (server)
@@ -283,7 +283,7 @@ namespace FishNet.Transporting.Multipass
         /// Gets the current local ConnectionState of the transport on index.
         /// </summary>
         /// <param name="server">True if getting ConnectionState for the server.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public LocalConnectionState GetConnectionState(bool server, int transportIndex)
         {
             if (!IndexInRange(transportIndex, true))
@@ -295,7 +295,7 @@ namespace FishNet.Transporting.Multipass
         /// Gets the current ConnectionState of a remote client on the server.
         /// </summary>
         /// <param name="multipassId">ConnectionId to get ConnectionState for.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override RemoteConnectionState GetConnectionState(int multipassId)
         {
             ClientTransportData ctd = GetDataFromMultipassId(multipassId);
@@ -308,7 +308,7 @@ namespace FishNet.Transporting.Multipass
         /// Gets the current ConnectionState of a remote client on the server of the transport on index.
         /// </summary>
         /// <param name="connectionId">ConnectionId to get ConnectionState for.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public RemoteConnectionState GetConnectionState(int connectionId, int index)
         {
             if (!IndexInRange(index, true))
@@ -476,7 +476,7 @@ namespace FishNet.Transporting.Multipass
         /// </summary>
         /// <param name="channelId">Channel to use.</param>
         /// /// <param name="segment">Data to send.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override void SendToServer(byte channelId, ArraySegment<byte> segment)
         {
             if (ClientTransport != null)
@@ -485,7 +485,7 @@ namespace FishNet.Transporting.Multipass
         /// <summary>
         /// Sends data to a client.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override void SendToClient(byte channelId, ArraySegment<byte> segment, int multipassId)
         {
             ClientTransportData ctd = GetDataFromMultipassId(multipassId);
@@ -498,7 +498,7 @@ namespace FishNet.Transporting.Multipass
         /// Sends data to a client.
         /// </summary>
         /// <param name="transportIndex">TransportIndex the client is using.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void SendToClient(byte channelId, ArraySegment<byte> segment, int transportId, int transportIndex)
         {
             _transports[transportIndex].SendToClient(channelId, segment, transportId);
@@ -687,7 +687,7 @@ namespace FishNet.Transporting.Multipass
         /// This method is not supported. Use GetMaximumClients(transportIndex) instead.
         /// </summary>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override int GetMaximumClients()
         {
             base.NetworkManager.LogError($"This method is not supported. Use GetMaximumClients(transportIndex) instead.");
@@ -698,7 +698,7 @@ namespace FishNet.Transporting.Multipass
         /// The first transport is used.
         /// </summary>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public int GetMaximumClients(int transportIndex)
         {
             if (!IndexInRange(transportIndex, true))

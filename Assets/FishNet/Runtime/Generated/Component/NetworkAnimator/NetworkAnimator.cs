@@ -14,6 +14,7 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using FishNet.Managing;
 using UnityEngine;
 using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
@@ -190,12 +191,12 @@ namespace FishNet.Component.Animating
             {
                 if (index > _buffers.Count)
                 {
-                    Debug.LogWarning("Index exceeds Buffers count.");
+                    NetworkManagerExtensions.LogWarning("Index exceeds Buffers count.");
                     return;
                 }
                 if (index > _bufferLengths.Length)
                 {
-                    Debug.LogWarning("Index exceeds BufferLengths count.");
+                    NetworkManagerExtensions.LogWarning("Index exceeds BufferLengths count.");
                     return;
                 }
 
@@ -506,6 +507,17 @@ namespace FishNet.Component.Animating
                 _toClientsBuffer.Add(new byte[0]);
             }
         }
+        
+        public override void OnStartClient()
+        {
+            base.TimeManager.OnUpdate += TimeManager_OnUpdate;
+        }
+
+        public override void OnStopClient()
+        {
+            if (base.TimeManager != null)
+                base.TimeManager.OnUpdate -= TimeManager_OnUpdate;
+        }
 
         public override void OnStopNetwork()
         {
@@ -571,7 +583,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Called after a tick occurs; physics would have simulated if using PhysicsMode.TimeManager.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void TimeManager_OnPostTick()
         {
             //One check rather than per each method.
@@ -582,7 +594,7 @@ namespace FishNet.Component.Animating
             CheckSendToClients();
         }
 
-        private void Update()
+        private void TimeManager_OnUpdate()
         {
             if (!_canSynchronizeAnimator)
                 return;
@@ -631,7 +643,7 @@ namespace FishNet.Component.Animating
                     //Over 250 parameters; who would do this!?
                     if (_parameterDetails.Count == 240)
                     {
-                        Debug.LogError($"Parameter {item.name} exceeds the allowed 240 parameter count and is being ignored.");
+                        base.NetworkManager.LogError($"Parameter {item.name} exceeds the allowed 240 parameter count and is being ignored.");
                         continue;
                     }
 
@@ -1131,7 +1143,7 @@ namespace FishNet.Component.Animating
                         //Unhandled.
                         else
                         {
-                            Debug.LogWarning($"Unhandled parameter type of {acpt}.");
+                            base.NetworkManager.LogWarning($"Unhandled parameter type of {acpt}.");
                         }
                     }
                 }
@@ -1139,7 +1151,7 @@ namespace FishNet.Component.Animating
             }
             catch
             {
-                Debug.LogWarning("An error occurred while applying updates. This may occur when malformed data is sent or when you change the animator or controller but not on all connections.");
+                base.NetworkManager.LogWarning("An error occurred while applying updates. This may occur when malformed data is sent or when you change the animator or controller but not on all connections.");
             }
             finally
             {
@@ -1416,7 +1428,7 @@ namespace FishNet.Component.Animating
                     }
                 }
                 //Fall through, hash not found.
-                Debug.LogWarning($"Hash {hash} not found while trying to update a trigger.");
+                base.NetworkManager.LogWarning($"Hash {hash} not found while trying to update a trigger.");
             }
         }
         #endregion

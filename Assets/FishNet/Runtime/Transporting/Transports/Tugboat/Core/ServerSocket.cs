@@ -129,7 +129,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Polls the socket for new data.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void PollSocket()
         {
             base.PollSocket(base.NetManager);
@@ -138,7 +138,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Threaded operation to process server actions.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void ThreadedSocket()
         {
             EventBasedNetListener listener = new EventBasedNetListener();
@@ -352,10 +352,10 @@ namespace FishNet.Transporting.Tugboat.Server
         /// </summary>
         private void ResetQueues()
         {
-            base.ClearGenericQueue<LocalConnectionState>(ref _localConnectionStates);
+            base.ClearGenericQueue(ref _localConnectionStates);
             base.ClearPacketQueue(ref _incoming);
             base.ClearPacketQueue(ref _outgoing);
-            base.ClearGenericQueue<RemoteConnectionEvent>(ref _remoteConnectionEvents);
+            base.ClearGenericQueue(ref _remoteConnectionEvents);
         }
 
 
@@ -378,7 +378,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Called when data is received from a peer.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void Listener_NetworkReceiveEvent(NetPeer fromPeer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod)
         {
             //If over the MTU.
@@ -415,7 +415,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Dequeues and processes outgoing.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void DequeueOutgoing()
         {
             if (base.GetConnectionState() != LocalConnectionState.Started || base.NetManager == null)
@@ -464,7 +464,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Allows for Outgoing queue to be iterated.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void IterateOutgoing()
         {
             DequeueOutgoing();
@@ -473,7 +473,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Iterates the Incoming queue.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void IterateIncoming()
         {
             /* Run local connection states first so we can begin
@@ -526,7 +526,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Sends a packet to a single, or all clients.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId)
         {
             Send(ref _outgoing, channelId, segment, connectionId, _mtu);

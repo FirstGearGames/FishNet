@@ -89,7 +89,7 @@ namespace FishNet.Transporting.Tugboat.Client
         /// <summary>
         /// Polls the socket for new data.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void PollSocket()
         {
             base.PollSocket(base.NetManager);
@@ -181,10 +181,10 @@ namespace FishNet.Transporting.Tugboat.Client
         /// <summary>
         /// Resets queues.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void ResetQueues()
         {
-            base.ClearGenericQueue<LocalConnectionState>(ref _localConnectionStates);
+            base.ClearGenericQueue(ref _localConnectionStates);
             base.ClearPacketQueue(ref _incoming);
             base.ClearPacketQueue(ref _outgoing);
         }

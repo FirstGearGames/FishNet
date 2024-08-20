@@ -2,63 +2,90 @@ using System;
 using FishNet.CodeGenerating;
 using System.Runtime.CompilerServices;
 using FishNet.Managing;
+using FishNet.Object;
+using FishNet.Object.Prediction;
+using UnityEngine;
 
 namespace FishNet.Serializing
 {
-    ///* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
-    ///* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
-    ///* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
     public partial class Reader
     {
         internal double DOUBLE_ACCURACY => Writer.DOUBLE_ACCURACY;
         internal decimal DECIMAL_ACCURACY => Writer.DECIMAL_ACCURACY;
 
+        #region Other.
+        /// <summary>
+        /// Reads a boolean.
+        /// </summary>
         [DefaultDeltaReader]
-        public bool ReadDeltaBoolean(bool valueA) => ReadBoolean();
-
+        public bool ReadDeltaBoolean(bool valueA)
+        {
+            return !valueA;
+        }
+        #endregion
 
         #region Whole values.
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
         [DefaultDeltaReader]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public sbyte ReadDeltaInt8(sbyte valueA) => (sbyte)ReadDifference8_16_32(valueA);
 
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
         [DefaultDeltaReader]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public byte ReadDeltaUInt8(byte valueA) => (byte)ReadDifference8_16_32(valueA);
 
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
         [DefaultDeltaReader]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public short ReadDeltaInt16(short valueA) => (short)ReadDifference8_16_32(valueA);
 
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
         [DefaultDeltaReader]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public ushort ReadDeltaUInt16(ushort valueA) => (ushort)ReadDifference8_16_32(valueA);
 
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
         [DefaultDeltaReader]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public int ReadDeltaInt32(int valueA) => (int)ReadDifference8_16_32(valueA);
 
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
         [DefaultDeltaReader]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public uint ReadDeltaUInt32(uint valueA) => (uint)ReadDifference8_16_32(valueA);
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        
+        public long ReadDeltaInt64(long valueA) => (long)ReadDeltaUInt64((ulong)valueA);
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        
+        public ulong ReadDeltaUInt64(ulong valueA)
+        {
+            bool bLargerThanA = ReadBoolean();
+            ulong diff = ReadUnsignedPackedWhole();
+
+            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+        }
 
         /// <summary>
         /// Returns a new result by reading and applying a difference to a value.
@@ -69,103 +96,439 @@ namespace FishNet.Serializing
             long diff = ReadSignedPackedWhole();
             return (valueA + diff);
         }
+        #endregion
 
+        #region Single.
         /// <summary>
-        /// Reads a difference, appending it onto a value.
+        /// Reads a value.
         /// </summary>
-        [DefaultDeltaReader]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long ReadDeltaInt64(long valueA) => (long)ReadDeltaUInt64((ulong)valueA);
-
-        /// <summary>
-        /// Reads a difference, appending it onto a value.
-        /// </summary>
-        [DefaultDeltaReader]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ulong ReadDeltaUInt64(ulong valueA)
+        
+        private float ReadDeltaSingle(UDeltaPrecisionType dpt, bool unsigned)
         {
-            bool bLargerThanA = ReadBoolean();
-            ulong diff = ReadUnsignedPackedWhole();
+            if (dpt.FastContains(UDeltaPrecisionType.UInt8))
+            {
+                if (unsigned)
+                    return (ReadUInt8Unpacked() / (float)DOUBLE_ACCURACY);
+                else
+                    return (ReadInt8Unpacked() / (float)DOUBLE_ACCURACY);
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
+            {
+                if (unsigned)
+                    return (ReadUInt16Unpacked() / (float)DOUBLE_ACCURACY);
+                else
+                    return (ReadInt16Unpacked() / (float)DOUBLE_ACCURACY);
+            }
+            //Everything else is unpacked.
+            else
+            {
+                return ReadSingleUnpacked();
+            }
+        }
 
-            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        
+        private float ReadDeltaSingle(UDeltaPrecisionType dpt, float valueA, bool unsigned)
+        {
+            float diff = ReadDeltaSingle(dpt, unsigned);
+
+            if (unsigned)
+            {
+                bool bLargerThanA = dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger);
+                return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+            }
+            else
+            {
+                return (valueA + diff);
+            }
+        }
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        
+        private float ReadDeltaSingle(float valueA)
+        {
+            const bool unsigned = false;
+            UDeltaPrecisionType dpt = (UDeltaPrecisionType)ReadUInt8Unpacked();
+
+            return ReadDeltaSingle(dpt, valueA, unsigned);
+        }
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        public float ReadUDeltaSingle(float valueA)
+        {
+            const bool unsigned = true;
+            UDeltaPrecisionType dpt = (UDeltaPrecisionType)ReadUInt8Unpacked();
+
+            return ReadDeltaSingle(dpt, valueA, unsigned);
         }
         #endregion
 
+        #region Double.
+        /// <summary>
+        /// Reads a value.
+        /// </summary>
+        
+        private double ReadDeltaDouble(UDeltaPrecisionType dpt, bool unsigned)
+        {
+            if (dpt.FastContains(UDeltaPrecisionType.UInt8))
+            {
+                if (unsigned)
+                    return (ReadUInt8Unpacked() / DOUBLE_ACCURACY);
+                else
+                    return (ReadInt8Unpacked() / DOUBLE_ACCURACY);
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
+            {
+                if (unsigned)
+                    return (ReadUInt16Unpacked() / DOUBLE_ACCURACY);
+                else
+                    return (ReadInt16Unpacked() / DOUBLE_ACCURACY);
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt32))
+            {
+                if (unsigned)
+                    return (ReadUInt32Unpacked() / DOUBLE_ACCURACY);
+                else
+                    return (ReadInt32Unpacked() / DOUBLE_ACCURACY);
+            }
+            //Unpacked.
+            else if (dpt.FastContains(UDeltaPrecisionType.Unset))
+            {
+                return ReadDoubleUnpacked();
+            }
+            else
+            {
+                NetworkManager.LogError($"Unhandled precision type of {dpt}.");
+                return 0d;
+            }
+        }
 
-        #region Precision values.
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
-        [DefaultDeltaReader]
-        public float ReadDeltaSingle(float valueA)
+        
+        private double ReadDeltaDouble(UDeltaPrecisionType dpt, double valueA, bool unsigned)
         {
-            DeltaPrecisionType dpt = (DeltaPrecisionType)ReadUInt8Unpacked();
+            double diff = ReadDeltaDouble(dpt, unsigned);
+            //8.
 
-            float diff = 0;
-            if (dpt.FastContains(DeltaPrecisionType.UInt8))
-                diff = (ReadUInt8Unpacked() / (float)DOUBLE_ACCURACY);
-            else if (dpt.FastContains(DeltaPrecisionType.UInt16))
-                diff = (ReadUInt16Unpacked() / (float)DOUBLE_ACCURACY);
-            else if (dpt.FastContains(DeltaPrecisionType.Unpacked))
-                diff = ReadSingleUnpacked();
+            if (unsigned)
+            {
+                bool bLargerThanA = dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger);
+                return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+            }
             else
-                NetworkManager.LogError($"Unhandled precision type of {dpt}.");
+            {
+                return (valueA + diff);
+            }
+        }
 
-            bool bLargerThanA = dpt.FastContains(DeltaPrecisionType.NextValueIsLarger);
-            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        
+        private double ReadDeltaDouble(double valueA)
+        {
+            const bool unsigned = false;
+            UDeltaPrecisionType dpt = (UDeltaPrecisionType)ReadUInt8Unpacked();
+
+            return ReadDeltaDouble(dpt, valueA, unsigned);
         }
 
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
         [DefaultDeltaReader]
-        public double ReadDeltaDouble(double valueA)
+        
+        public double ReadUDeltaDouble(double valueA)
         {
-            DeltaPrecisionType dpt = (DeltaPrecisionType)ReadUInt8Unpacked();
+            const bool unsigned = true;
+            UDeltaPrecisionType dpt = (UDeltaPrecisionType)ReadUInt8Unpacked();
 
-            double diff = 0;
-            if (dpt.FastContains(DeltaPrecisionType.UInt8))
-                diff = (ReadUInt8Unpacked() / DOUBLE_ACCURACY);
-            else if (dpt.FastContains(DeltaPrecisionType.UInt16))
-                diff = (ReadUInt16Unpacked() / DOUBLE_ACCURACY);
-            else if (dpt.FastContains(DeltaPrecisionType.UInt32))
-                diff = (ReadUInt32Unpacked() / DOUBLE_ACCURACY);
-            else if (dpt.FastContains(DeltaPrecisionType.Unpacked))
-                diff = ReadDoubleUnpacked();
+            return ReadDeltaDouble(dpt, valueA, unsigned);
+        }
+        #endregion
+
+        #region Decimal.
+        /// <summary>
+        /// Reads a value.
+        /// </summary>
+        
+        private decimal ReadDeltaDecimal(UDeltaPrecisionType dpt, bool unsigned)
+        {
+            if (dpt.FastContains(UDeltaPrecisionType.UInt8))
+            {
+                if (unsigned)
+                    return (ReadUInt8Unpacked() / DECIMAL_ACCURACY);
+                else
+                    return (ReadInt8Unpacked() / DECIMAL_ACCURACY);
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
+            {
+                if (unsigned)
+                    return (ReadUInt16Unpacked() / DECIMAL_ACCURACY);
+                else
+                    return (ReadInt16Unpacked() / DECIMAL_ACCURACY);
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt32))
+            {
+                if (unsigned)
+                    return (ReadUInt32Unpacked() / DECIMAL_ACCURACY);
+                else
+                    return (ReadInt32Unpacked() / DECIMAL_ACCURACY);
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt64))
+            {
+                if (unsigned)
+                    return (ReadUInt64Unpacked() / DECIMAL_ACCURACY);
+                else
+                    return (ReadInt64Unpacked() / DECIMAL_ACCURACY);
+            }
+            //Unpacked.
+            else if (dpt.FastContains(UDeltaPrecisionType.Unset))
+            {
+                return ReadDecimalUnpacked();
+            }
             else
+            {
                 NetworkManager.LogError($"Unhandled precision type of {dpt}.");
-
-            bool bLargerThanA = dpt.FastContains(DeltaPrecisionType.NextValueIsLarger);
-            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+                return 0m;
+            }
         }
 
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
+        private decimal ReadDeltaDecimal(UDeltaPrecisionType dpt, decimal valueA, bool unsigned)
+        {
+            decimal diff = ReadDeltaDecimal(dpt, unsigned);
+
+            if (unsigned)
+            {
+                bool bLargerThanA = dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger);
+                return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+            }
+            else
+            {
+                return (valueA + diff);
+            }
+        }
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        
         [DefaultDeltaReader]
         public decimal ReadDeltaDecimal(decimal valueA)
         {
-            DeltaPrecisionType dpt = (DeltaPrecisionType)ReadUInt8Unpacked();
+            const bool unsigned = false;
+            UDeltaPrecisionType dpt = (UDeltaPrecisionType)ReadUInt8Unpacked();
 
-            decimal diff = 0;
-            if (dpt.FastContains(DeltaPrecisionType.UInt8))
-                diff = (ReadUInt8Unpacked() / DECIMAL_ACCURACY);
-            else if (dpt.FastContains(DeltaPrecisionType.UInt16))
-                diff = (ReadUInt16Unpacked() / DECIMAL_ACCURACY);
-            else if (dpt.FastContains(DeltaPrecisionType.UInt32))
-                diff = (ReadUInt32Unpacked() / DECIMAL_ACCURACY);
-            else if (dpt.FastContains(DeltaPrecisionType.UInt64))
-                diff = (ReadUInt64Unpacked() / DECIMAL_ACCURACY);
-            else if (dpt.FastContains(DeltaPrecisionType.Unpacked))
-                diff = ReadDecimalUnpacked();
-            else
-                NetworkManager.LogError($"Unhandled precision type of {dpt}.");
+            return ReadDeltaDecimal(dpt, valueA, unsigned);
+        }
 
-            bool bLargerThanA = dpt.FastContains(DeltaPrecisionType.NextValueIsLarger);
-            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        
+        [DefaultDeltaReader]
+        public decimal ReadUDeltaDecimal(decimal valueA)
+        {
+            const bool unsigned = true;
+            UDeltaPrecisionType dpt = (UDeltaPrecisionType)ReadUInt8Unpacked();
+
+            return ReadDeltaDecimal(dpt, valueA, unsigned);
         }
         #endregion
 
-    }
+        #region Types.
+        /// <summary>
+        /// Reads a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        
+        [DefaultDeltaReader]
+        public NetworkBehaviour WriteDeltaNetworkBehaviour(NetworkBehaviour valueA)
+        {
+            return ReadNetworkBehaviour();
+        }
+        #endregion
 
+        
+        #region Unity.
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// (not really for Quaternion).
+        /// </summary>
+        [DefaultDeltaReader]
+        public Quaternion ReadDeltaQuaternion(Quaternion valueA)
+        {
+            return ReadQuaternion32();
+        }
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        public Vector2 ReadDeltaVector2(Vector2 valueA)
+        {
+            const bool unsigned = true;
+            DeltaVector2Type dvt = (DeltaVector2Type)ReadUInt8Unpacked();
+
+            Debug.Log("V2 Read " + dvt);
+            
+            float x = 0f;
+            float y = 0f;
+            
+            if (dvt.FastContains(DeltaVector2Type.XUInt8))
+                x = ReadDeltaSingle(UDeltaPrecisionType.UInt8, unsigned);
+            else if (dvt.FastContains(DeltaVector2Type.XUInt16))
+                x = ReadDeltaSingle(UDeltaPrecisionType.UInt16, unsigned);
+            else if (dvt.FastContains(DeltaVector2Type.XUInt32))
+                x = ReadDeltaSingle(UDeltaPrecisionType.UInt32, unsigned);
+
+            if (dvt.FastContains(DeltaVector2Type.YUInt8))
+                y += ReadDeltaSingle(UDeltaPrecisionType.UInt8, unsigned);
+            else if (dvt.FastContains(DeltaVector2Type.YUInt16))
+                y += ReadDeltaSingle(UDeltaPrecisionType.UInt16, unsigned);
+            else if (dvt.FastContains(DeltaVector2Type.YUInt32))
+                y += ReadDeltaSingle(UDeltaPrecisionType.UInt32, unsigned);
+
+            if (dvt.FastContains(DeltaVector2Type.XNextIsLarger))
+                valueA.x += x;
+            else
+                valueA.x -= x;
+
+            if (dvt.FastContains(DeltaVector2Type.YNextIsLarger))
+                valueA.y += y;
+            else
+                valueA.y -= y;
+
+            return valueA;
+        }
+
+        /// <summary>
+        /// Reads a difference, appending it onto a value.
+        /// </summary>
+        [DefaultDeltaReader]
+        public Vector3 ReadDeltaVector3(Vector3 valueA)
+        {
+            const bool unsigned = false;
+            DeltaVector3Type dvt = (DeltaVector3Type)ReadUInt8Unpacked();
+
+            float prevX = valueA.x;
+            if (dvt.FastContains(DeltaVector3Type.XInt8))
+                valueA.x += ReadDeltaSingle(UDeltaPrecisionType.UInt8, valueA.x, unsigned);
+            else if (dvt.FastContains(DeltaVector3Type.XInt16))
+                valueA.x += ReadDeltaSingle(UDeltaPrecisionType.UInt16, valueA.x, unsigned);
+            else if (dvt.FastContains(DeltaVector3Type.XInt32))
+                valueA.x += ReadDeltaSingle(UDeltaPrecisionType.UInt32, valueA.x, unsigned);
+
+            Debug.Log("V3 Read " + dvt + $"  -- X {valueA.x}.  X Change {valueA.x - prevX}");
+            
+            
+            if (dvt.FastContains(DeltaVector3Type.ZInt8))
+                valueA.z += ReadDeltaSingle(UDeltaPrecisionType.UInt8, valueA.z, unsigned);
+            else if (dvt.FastContains(DeltaVector3Type.ZInt16))
+                valueA.z += ReadDeltaSingle(UDeltaPrecisionType.UInt16, valueA.z, unsigned);
+            else if (dvt.FastContains(DeltaVector3Type.ZInt32))
+                valueA.z += ReadDeltaSingle(UDeltaPrecisionType.UInt32, valueA.z, unsigned);
+
+            if (dvt.FastContains(DeltaVector3Type.YInt8))
+                valueA.y += ReadDeltaSingle(UDeltaPrecisionType.UInt8, valueA.y, unsigned);
+            else if (dvt.FastContains(DeltaVector3Type.YInt32))
+                valueA.y += ReadDeltaSingle(UDeltaPrecisionType.UInt32, valueA.y, unsigned);
+            
+            return valueA;
+        }
+        #endregion
+
+        #region Prediction.
+        /// <summary>
+        /// Reads a reconcile.
+        /// </summary>
+        
+        internal T ReadDeltaReconcile<T>(T lastReconcile) => ReadDelta(lastReconcile);
+
+        /// <summary>
+        /// Reads a replicate.
+        /// </summary>
+        
+        internal int ReadDeltaReplicate<T>(T lastReadReplicate, ref T[] collection, uint tick) where T : IReplicateData
+        {
+            int startRemaining = Remaining;
+
+            //Number of entries written.
+            int count = (int)ReadUInt8Unpacked();
+            if (collection == null || collection.Length < count)
+                collection = new T[count];
+
+            /* Subtract count total minus 1
+             * from starting tick. This sets the tick to what the first entry would be.
+             * EG packet came in as tick 100, so that was passed as tick.
+             * if there are 3 replicates then 2 would be subtracted (count - 1).
+             * The new tick would be 98.
+             * Ticks would be assigned to read values from oldest to
+             * newest as 98, 99, 100. Which is the correct result. In order for this to
+             * work properly past replicates cannot skip ticks. This will be ensured
+             * in another part of the code. */
+            tick -= (uint)(count - 1);
+
+            uint lastReadTick = lastReadReplicate.GetTick();
+
+            T prev = lastReadReplicate;
+            for (int i = 0; i < count; i++)
+            {
+                //Tick read is for.
+                uint readTick = (tick + (uint)i);
+                /* If readTick is equal or lesser than lastReadReplicate
+                 * then there is no reason to process the data other than getting
+                 * it out of the reader. */
+                if (readTick <= lastReadTick)
+                {
+                    ReadDelta(prev);
+                }
+                else
+                {
+                    T value = ReadDelta(prev);
+                    //Apply tick.
+                    value.SetTick(readTick);
+                    //Assign to collection.
+                    collection[i] = value;
+                    //Update previous.
+                    prev = value;
+                }
+            }
+
+            //  Debug.LogWarning($"LocalTick {InstanceFinder.TimeManager.LocalTick} Replicate read. Last Entry Tick {lastReadReplicate.GetTick()}. Read {startRemaining - Remaining}");
+            return count;
+        }
+        #endregion
+
+        #region Generic.
+        /// <summary>
+        /// Reads a delta of any time.
+        /// </summary>
+        public T ReadDelta<T>(T prev)
+        {
+            Func<Reader, T, T> del = GenericDeltaReader<T>.Read;
+            if (del == null)
+            {
+                NetworkManager.LogError($"Read delta method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.");
+                return default;
+            }
+            else
+            {
+                return del.Invoke(this, prev);
+            }
+        }
+        #endregion
+    }
 }

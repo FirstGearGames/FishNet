@@ -131,7 +131,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void MoveToTarget()
         {
             _moveRates.MoveLocalToTarget(_graphicalObject, _gfxInitializedLocalValues, Time.deltaTime);

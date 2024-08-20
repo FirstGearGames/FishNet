@@ -76,7 +76,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Sets all rates to instant.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void SetInstantRates()
         {
             Update(MoveRatesCls.INSTANT_VALUE);
@@ -84,7 +84,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Sets all rates to the same value.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(float value)
         {
             Update(value, value, value);
@@ -102,7 +102,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static MoveRates GetWorldMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
         {
             return GetMoveRates(from.position, to.position, from.rotation, to.rotation, from.localScale, to.localScale, duration, teleportThreshold);
@@ -111,7 +111,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static MoveRates GetLocalMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
         {
             return GetMoveRates(from.localPosition, to.localPosition, from.localRotation, to.localRotation, from.localScale, to.localScale, duration, teleportThreshold);
@@ -120,7 +120,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static MoveRates GetWorldMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
         {
             return GetMoveRates(prevValues.Position, t.position, prevValues.Rotation, t.rotation, prevValues.LocalScale, t.localScale, duration, teleportThreshold);
@@ -129,7 +129,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static MoveRates GetLocalMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
         {
             return GetMoveRates(prevValues.Position, t.localPosition, prevValues.Rotation, t.localRotation, prevValues.LocalScale, t.localScale, duration, teleportThreshold);
@@ -138,7 +138,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static MoveRates GetMoveRates(TransformProperties prevValues, TransformProperties nextValues, float duration, float teleportThreshold)
         {
             return GetMoveRates(prevValues.Position, nextValues.Position, prevValues.Rotation, nextValues.Rotation, prevValues.LocalScale, nextValues.LocalScale, duration, teleportThreshold);
@@ -147,7 +147,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static MoveRates GetMoveRates(Vector3 fromPosition, Vector3 toPosition, Quaternion fromRotation, Quaternion toRotation, Vector3 fromScale, Vector3 toScale, float duration, float teleportThreshold)
         {
             float rate;
@@ -176,7 +176,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Gets a move rate for two Vector3s.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static float GetMoveRate(Vector3 fromPosition, Vector3 toPosition, float duration, float teleportThreshold)
         {
             float rate;
@@ -201,7 +201,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Gets a move rate for two Quaternions.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static float GetMoveRate(Quaternion fromRotation, Quaternion toRotation, float duration)
         {
             float rate = toRotation.GetRate(fromRotation, duration, out _);
@@ -212,7 +212,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void MoveLocalToTarget(Transform movingTransform, TransformProperties goalProperties, float delta)
         {
             //No rates are set.
@@ -226,7 +226,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void MoveWorldToTarget(Transform movingTransform, TransformProperties goalProperties, float delta)
         {
             //No rates are set.
@@ -239,7 +239,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void MoveWorldToTarget(Transform movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta)
         {
             //No rates are set.
@@ -327,7 +327,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Sets all rates to instant.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void SetInstantRates()
         {
             Update(INSTANT_VALUE);
@@ -335,7 +335,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Sets all rates to the same value.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(float value)
         {
             Update(value, value, value);
@@ -352,7 +352,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Updaes values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(MoveRatesCls mr)
         {
             Update(mr.Position, mr.Rotation, mr.Scale);
@@ -381,7 +381,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void MoveLocalToTarget(Transform movingTransform, TransformPropertiesCls goalProperties, float delta)
         {
             //No rates are set.
@@ -395,7 +395,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static void MoveLocalToTarget(Transform movingTransform, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
         {
             MoveLocalToTarget(movingTransform, TransformPropertiesFlag.Everything, posGoal, posRate, rotGoal, rotRate, scaleGoal, scaleRate, delta);
@@ -404,7 +404,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static void MoveLocalToTarget(Transform movingTransform, TransformPropertiesFlag movedProperties, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
         {
             Transform t = movingTransform;
@@ -441,7 +441,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static void MoveWorldToTarget(Transform movingTransform, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
         {
             MoveWorldToTarget(movingTransform, TransformPropertiesFlag.Everything, posGoal, posRate, rotGoal, rotRate, scaleGoal, scaleRate, delta);
@@ -450,7 +450,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static void MoveWorldToTarget(Transform movingTransform, TransformPropertiesFlag movedProperties, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
         {
             Transform t = movingTransform;

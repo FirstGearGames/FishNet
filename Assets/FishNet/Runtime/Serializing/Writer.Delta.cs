@@ -1,77 +1,111 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using FishNet.CodeGenerating;
 using System.Runtime.CompilerServices;
 using FishNet.Managing;
+using FishNet.Object;
+using FishNet.Object.Prediction;
+using FishNet.Serializing.Helping;
+using GameKit.Dependencies.Utilities;
+using UnityEngine;
 
 namespace FishNet.Serializing
 {
-    ///* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
-    ///* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
-    ///* THIS IS IN DRAFTING / WIP. Do not attempt to use or modify this file. */
     public partial class Writer
     {
-        private const double LARGEST_DELTA_PRECISION_UINT8 = ((double)byte.MaxValue / DOUBLE_ACCURACY);
-        private const double LARGEST_DELTA_PRECISION_UINT16 = ((double)ushort.MaxValue / DOUBLE_ACCURACY);
-        private const double LARGEST_DELTA_PRECISION_UINT32 = ((double)uint.MaxValue / DOUBLE_ACCURACY);
-        private const double LARGEST_DELTA_PRECISION_UINT64 = ((double)ulong.MaxValue / DOUBLE_ACCURACY);
+        /// <summary>
+        /// Used to insert length for delta flags.
+        /// </summary>
+        private ReservedLengthWriter _reservedLengthWriter = new();
+
+        private const double LARGEST_DELTA_PRECISION_INT8 = (sbyte.MaxValue / DOUBLE_ACCURACY);
+        private const double LARGEST_DELTA_PRECISION_INT16 = (short.MaxValue / DOUBLE_ACCURACY);
+        private const double LARGEST_DELTA_PRECISION_INT32 = (int.MaxValue / DOUBLE_ACCURACY);
+        private const double LARGEST_DELTA_PRECISION_INT64 = (long.MaxValue / DOUBLE_ACCURACY);
+
+        private const double LARGEST_DELTA_PRECISION_UINT8 = (byte.MaxValue / DOUBLE_ACCURACY);
+        private const double LARGEST_DELTA_PRECISION_UINT16 = (ushort.MaxValue / DOUBLE_ACCURACY);
+        private const double LARGEST_DELTA_PRECISION_UINT32 = (uint.MaxValue / DOUBLE_ACCURACY);
+        private const double LARGEST_DELTA_PRECISION_UINT64 = (ulong.MaxValue / DOUBLE_ACCURACY);
         internal const double DOUBLE_ACCURACY = 1000d;
+        internal const double DOUBLE_ACCURACY_PRECISION = (1f / DOUBLE_ACCURACY);
         internal const decimal DECIMAL_ACCURACY = 1000m;
 
+        internal const byte VECTOR2_FLAG_BYTES = 1;
+        internal const byte VECTOR3_FLAG_BYTES = 1;
+
+        #region Other.
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
         [DefaultDeltaWriter]
         public bool WriteDeltaBoolean(bool valueA, bool valueB)
         {
-            if (valueA == valueB) return false;
-
-            WriteBoolean(valueB);
-
-            return true;
+            return (valueA != valueB);
         }
-
+        #endregion
 
         #region Whole values.
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
         [DefaultDeltaWriter]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool WriteDeltaInt8(sbyte valueA, sbyte valueB) => WriteDifference8_16_32((long)valueA, (long)valueB);
-
-        [DefaultDeltaWriter]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool WriteDeltaUInt8(byte valueA, byte valueB) => WriteDifference8_16_32((long)valueA, (long)valueB);
-
-        [DefaultDeltaWriter]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool WriteDeltaInt16(short valueA, short valueB) => WriteDifference8_16_32((long)valueA, (long)valueB);
-
-        [DefaultDeltaWriter]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool WriteDeltaUInt16(ushort valueA, ushort valueB) => WriteDifference8_16_32((long)valueA, (long)valueB);
-
-        [DefaultDeltaWriter]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool WriteDeltaInt32(int valueA, int valueB) => WriteDifference8_16_32((long)valueA, (long)valueB);
-
-        [DefaultDeltaWriter]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool WriteDeltaUInt32(uint valueA, uint valueB) => WriteDifference8_16_32((long)valueA, (long)valueB);
+        public bool WriteDeltaInt8(sbyte valueA, sbyte valueB) => WriteDifference8_16_32(valueA, valueB);
 
         /// <summary>
-        /// Writes the difference between two values for signed and unsigned shorts and ints.
+        /// Writes a delta value.
         /// </summary>
-        private bool WriteDifference8_16_32(long valueA, long valueB)
-        {
-            if (valueA == valueB) return false;
-
-            long next = ((long)valueB - (long)valueA);
-            WriteSignedPackedWhole(next);
-
-            return true;
-        }
-
+        /// <returns>True if written.</returns>
         [DefaultDeltaWriter]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        public bool WriteDeltaUInt8(byte valueA, byte valueB) => WriteDifference8_16_32(valueA, valueB);
+
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        [DefaultDeltaWriter]
+        public bool WriteDeltaInt16(short valueA, short valueB) => WriteDifference8_16_32(valueA, valueB);
+
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        [DefaultDeltaWriter]
+        public bool WriteDeltaUInt16(ushort valueA, ushort valueB) => WriteDifference8_16_32(valueA, valueB);
+
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        [DefaultDeltaWriter]
+        public bool WriteDeltaInt32(int valueA, int valueB) => WriteDifference8_16_32(valueA, valueB);
+
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        [DefaultDeltaWriter]
+        public bool WriteDeltaUInt32(uint valueA, uint valueB) => WriteDifference8_16_32(valueA, valueB);
+
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        [DefaultDeltaWriter]
         public bool WriteDeltaInt64(long valueA, long valueB) => WriteDeltaUInt64((ulong)valueA, (ulong)valueB);
 
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
         [DefaultDeltaWriter]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool WriteDeltaUInt64(ulong valueA, ulong valueB)
         {
             if (valueA == valueB) return false;
@@ -84,337 +118,614 @@ namespace FishNet.Serializing
 
             return true;
         }
-        #endregion
 
-
-        #region Precision values.
-        private DeltaPrecisionType GetDeltaPrecisionPack(decimal positiveValue)
-        {
-            return positiveValue switch
-            {
-                < (decimal)LARGEST_DELTA_PRECISION_UINT8 => DeltaPrecisionType.UInt8,
-                < (decimal)LARGEST_DELTA_PRECISION_UINT16 => DeltaPrecisionType.UInt16,
-                < (decimal)LARGEST_DELTA_PRECISION_UINT32 => DeltaPrecisionType.UInt32,
-                < (decimal)LARGEST_DELTA_PRECISION_UINT64 => DeltaPrecisionType.UInt64,
-                _ => DeltaPrecisionType.Unpacked,
-            };
-        }
-
-        private DeltaPrecisionType GetDeltaPrecisionPack(double positiveValue)
-        {
-            return positiveValue switch
-            {
-                < LARGEST_DELTA_PRECISION_UINT8 => DeltaPrecisionType.UInt8,
-                < LARGEST_DELTA_PRECISION_UINT16 => DeltaPrecisionType.UInt16,
-                < LARGEST_DELTA_PRECISION_UINT32 => DeltaPrecisionType.UInt32,
-                _ => DeltaPrecisionType.Unpacked,
-            };
-        }
-
-        private DeltaPrecisionType GetDeltaPrecisionPack(float positiveValue)
-        {
-            return positiveValue switch
-            {
-                < (float)LARGEST_DELTA_PRECISION_UINT8 => DeltaPrecisionType.UInt8,
-                < (float)LARGEST_DELTA_PRECISION_UINT16 => DeltaPrecisionType.UInt16,
-                _ => DeltaPrecisionType.Unpacked,
-            };
-        }
-
-        [DefaultDeltaWriter]
-        public bool WriteDeltaSingle(float valueA, float valueB)
+        /// <summary>
+        /// Writes the difference between two values for signed and unsigned shorts and ints.
+        /// </summary>
+        private bool WriteDifference8_16_32(long valueA, long valueB)
         {
             if (valueA == valueB) return false;
 
-            bool bLargerThanA = (valueB > valueA);
-            float difference = (bLargerThanA) ? (valueB - valueA) : (valueA - valueB);
-            DeltaPrecisionType dpt = GetDeltaPrecisionPack(difference);
+            long next = (valueB - valueA);
+            WriteSignedPackedWhole(next);
 
-            if (bLargerThanA)
-                dpt |= DeltaPrecisionType.NextValueIsLarger;
-
-            WriteSingleDeltaPrecision(dpt, difference);
             return true;
-        }
-
-        [DefaultDeltaWriter]
-        public bool WriteDeltaDouble(double valueA, double valueB)
-        {
-            if (valueA == valueB) return false;
-
-            bool bLargerThanA = (valueB > valueA);
-            double difference = (bLargerThanA) ? (valueB - valueA) : (valueA - valueB);
-            DeltaPrecisionType dpt = GetDeltaPrecisionPack(difference);
-
-            if (bLargerThanA)
-                dpt |= DeltaPrecisionType.NextValueIsLarger;
-
-            WriteDoubleDeltaPrecision(dpt, difference);
-            return true;
-        }
-
-        [DefaultDeltaWriter]
-        public bool WriteDeltaDecimal(decimal valueA, decimal valueB)
-        {
-            if (valueA == valueB) return false;
-
-            bool bLargerThanA = (valueB > valueA);
-            decimal difference = (bLargerThanA) ? (valueB - valueA) : (valueA - valueB);
-            DeltaPrecisionType dpt = GetDeltaPrecisionPack(difference);
-
-            if (bLargerThanA)
-                dpt |= DeltaPrecisionType.NextValueIsLarger;
-
-            WriteDecimalDeltaPrecision(dpt, difference);
-            return true;
-        }
-
-        private void WriteSingleDeltaPrecision(DeltaPrecisionType dpt, float positiveValue)
-        {
-            WriteUInt8Unpacked((byte)dpt);
-
-            if (dpt.FastContains(DeltaPrecisionType.UInt8))
-                WriteUInt8Unpacked((byte)Math.Floor(positiveValue * DOUBLE_ACCURACY));
-            else if (dpt.FastContains(DeltaPrecisionType.UInt16))
-                WriteUInt16Unpacked((ushort)Math.Floor(positiveValue * DOUBLE_ACCURACY));
-            else if (dpt.FastContains(DeltaPrecisionType.Unpacked))
-                WriteSingleUnpacked(positiveValue);
-            else
-                NetworkManagerExtensions.LogError($"Unhandled precision type of {dpt}.");
-        }
-
-        private void WriteDoubleDeltaPrecision(DeltaPrecisionType dpt, double positiveValue)
-        {
-            WriteUInt8Unpacked((byte)dpt);
-
-            if (dpt.FastContains(DeltaPrecisionType.UInt8))
-                WriteUInt8Unpacked((byte)Math.Floor(positiveValue * DOUBLE_ACCURACY));
-            else if (dpt.FastContains(DeltaPrecisionType.UInt16))
-                WriteUInt16Unpacked((ushort)Math.Floor(positiveValue * DOUBLE_ACCURACY));
-            else if (dpt.FastContains(DeltaPrecisionType.UInt32))
-                WriteUInt32Unpacked((uint)Math.Floor(positiveValue * DOUBLE_ACCURACY));
-            else if (dpt.FastContains(DeltaPrecisionType.Unpacked))
-                WriteDoubleUnpacked(positiveValue);
-            else
-                NetworkManagerExtensions.LogError($"Unhandled precision type of {dpt}.");
-        }
-
-        private void WriteDecimalDeltaPrecision(DeltaPrecisionType dpt, decimal positiveValue)
-        {
-            WriteUInt8Unpacked((byte)dpt);
-
-            if (dpt.FastContains(DeltaPrecisionType.UInt8))
-                WriteUInt8Unpacked((byte)Math.Floor(positiveValue * DECIMAL_ACCURACY));
-            else if (dpt.FastContains(DeltaPrecisionType.UInt16))
-                WriteUInt16Unpacked((ushort)Math.Floor(positiveValue * DECIMAL_ACCURACY));
-            else if (dpt.FastContains(DeltaPrecisionType.UInt32))
-                WriteUInt32Unpacked((uint)Math.Floor(positiveValue * DECIMAL_ACCURACY));
-            else if (dpt.FastContains(DeltaPrecisionType.UInt64))
-                WriteUInt64Unpacked((ulong)Math.Floor(positiveValue * DECIMAL_ACCURACY));
-            else if (dpt.FastContains(DeltaPrecisionType.Unpacked))
-                WriteDecimalUnpacked(positiveValue);
-            else
-                NetworkManagerExtensions.LogError($"Unhandled precision type of {dpt}.");
         }
         #endregion
 
+        #region Single.
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        [DefaultDeltaWriter]
+        public bool WriteUDeltaSingle(float valueA, float valueB)
+        {
+            UDeltaPrecisionType dpt = GetUDeltaPrecisionType(valueA, valueB, out float unsignedDifference);
+
+            if (dpt == UDeltaPrecisionType.Unset) return false;
+
+            WriteUInt8Unpacked((byte)dpt);
+            WriteDeltaSingle(dpt, unsignedDifference, unsigned: true);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Writes a delta value using a compression type.
+        /// </summary>
+        private void WriteDeltaSingle(UDeltaPrecisionType dpt, float value, bool unsigned)
+        {
+            if (dpt.FastContains(UDeltaPrecisionType.UInt8))
+            {
+                if (unsigned)
+                    WriteUInt8Unpacked((byte)Math.Floor(value * DOUBLE_ACCURACY));
+                else
+                    WriteInt8Unpacked((sbyte)Math.Floor(value * DOUBLE_ACCURACY));
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
+            {
+                if (unsigned)
+                    WriteUInt16Unpacked((ushort)Math.Floor(value * DOUBLE_ACCURACY));
+                else
+                    WriteInt16Unpacked((short)Math.Floor(value * DOUBLE_ACCURACY));
+            }
+            //Anything else is unpacked.
+            else
+            {
+                WriteSingleUnpacked(value);
+            }
+        }
+
+        /// <summary>
+        /// Returns DeltaPrecisionType for the difference of two values.
+        /// Value returned should be written as signed.
+        /// </summary>
+        private UDeltaPrecisionType GetSDeltaPrecisionType(float valueA, float valueB, out float signedDifference)
+        {
+            signedDifference = (valueB - valueA);
+            float posValue = (signedDifference < 0f) ? (signedDifference * -1f) : signedDifference;
+
+            return GetDeltaPrecisionType(posValue, unsigned: false);
+        }
+
+        /// <summary>
+        /// Returns DeltaPrecisionType for the difference of two values.
+        /// </summary>
+        private UDeltaPrecisionType GetUDeltaPrecisionType(float valueA, float valueB, out float unsignedDifference)
+        {
+            bool bIsLarger = (valueB > valueA);
+            if (bIsLarger)
+                unsignedDifference = (valueB - valueA);
+            else
+                unsignedDifference = (valueA - valueB);
+
+            UDeltaPrecisionType result = GetDeltaPrecisionType(unsignedDifference, unsigned: true);
+            //If result is set then set if bIsLarger.
+            if (bIsLarger && result != UDeltaPrecisionType.Unset)
+                result |= UDeltaPrecisionType.NextValueIsLarger;
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns DeltaPrecisionType for a value.
+        /// </summary>
+        private UDeltaPrecisionType GetDeltaPrecisionType(float positiveValue, bool unsigned)
+        {
+            if (unsigned)
+            {
+                return positiveValue switch
+                {
+                    < (float)DOUBLE_ACCURACY_PRECISION => UDeltaPrecisionType.Unset,
+                    < (float)LARGEST_DELTA_PRECISION_UINT8 => UDeltaPrecisionType.UInt8,
+                    < (float)LARGEST_DELTA_PRECISION_UINT16 => UDeltaPrecisionType.UInt16,
+                    _ => UDeltaPrecisionType.Unset,
+                };
+            }
+            else
+            {
+                return positiveValue switch
+                {
+                    < (float)DOUBLE_ACCURACY_PRECISION => UDeltaPrecisionType.Unset,
+                    < (float)LARGEST_DELTA_PRECISION_INT8 => UDeltaPrecisionType.UInt8,
+                    < (float)LARGEST_DELTA_PRECISION_INT16 => UDeltaPrecisionType.UInt16,
+                    _ => UDeltaPrecisionType.Unset,
+                };
+            }
+        }
+        #endregion
+
+        #region Double.
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        [DefaultDeltaWriter]
+        public bool WriteUDeltaDouble(double valueA, double valueB)
+        {
+            UDeltaPrecisionType dpt = GetUDeltaPrecisionType(valueA, valueB, out double positiveDifference);
+
+            if (dpt == UDeltaPrecisionType.Unset) return false;
+
+            WriteUInt8Unpacked((byte)dpt);
+            WriteDeltaDouble(dpt, positiveDifference, unsigned: true);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Writes a double using DeltaPrecisionType.
+        /// </summary>
+        private void WriteDeltaDouble(UDeltaPrecisionType dpt, double value, bool unsigned)
+        {
+            if (dpt.FastContains(UDeltaPrecisionType.UInt8))
+            {
+                if (unsigned)
+                    WriteUInt8Unpacked((byte)Math.Floor(value * DOUBLE_ACCURACY));
+                else
+                    WriteInt8Unpacked((sbyte)Math.Floor(value * DOUBLE_ACCURACY));
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
+            {
+                if (unsigned)
+                    WriteUInt16Unpacked((ushort)Math.Floor(value * DOUBLE_ACCURACY));
+                else
+                    WriteInt16Unpacked((short)Math.Floor(value * DOUBLE_ACCURACY));
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt32))
+            {
+                if (unsigned)
+                    WriteUInt32Unpacked((uint)Math.Floor(value * DOUBLE_ACCURACY));
+                else
+                    WriteInt32Unpacked((int)Math.Floor(value * DOUBLE_ACCURACY));
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.Unset))
+            {
+                WriteDoubleUnpacked(value);
+            }
+            else
+            {
+                NetworkManagerExtensions.LogError($"Unhandled precision type of {dpt}.");
+            }
+        }
+
+        /// <summary>
+        /// Returns DeltaPrecisionType for the difference of two values.
+        /// </summary>
+        private UDeltaPrecisionType GetSDeltaPrecisionType(double valueA, double valueB, out double signedDifference)
+        {
+            signedDifference = (valueB - valueA);
+            double posValue = (signedDifference < 0d) ? (signedDifference * -1d) : signedDifference;
+
+            return GetDeltaPrecisionType(posValue, unsigned: false);
+        }
+
+        /// <summary>
+        /// Returns DeltaPrecisionType for the difference of two values.
+        /// </summary>
+        private UDeltaPrecisionType GetUDeltaPrecisionType(double valueA, double valueB, out double unsignedDifference)
+        {
+            bool bIsLarger = (valueB > valueA);
+            if (bIsLarger)
+                unsignedDifference = (valueB - valueA);
+            else
+                unsignedDifference = (valueA - valueB);
+
+            UDeltaPrecisionType result = GetDeltaPrecisionType(unsignedDifference, unsigned: true);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns DeltaPrecisionType for a value.
+        /// </summary>
+        private UDeltaPrecisionType GetDeltaPrecisionType(double positiveValue, bool unsigned)
+        {
+            if (unsigned)
+            {
+                return positiveValue switch
+                {
+                    < LARGEST_DELTA_PRECISION_UINT8 => UDeltaPrecisionType.UInt8,
+                    < LARGEST_DELTA_PRECISION_UINT16 => UDeltaPrecisionType.UInt16,
+                    < LARGEST_DELTA_PRECISION_UINT32 => UDeltaPrecisionType.UInt32,
+                    _ => UDeltaPrecisionType.Unset,
+                };
+            }
+            else
+            {
+                return positiveValue switch
+                {
+                    < LARGEST_DELTA_PRECISION_INT8 => UDeltaPrecisionType.UInt8,
+                    < LARGEST_DELTA_PRECISION_INT16 => UDeltaPrecisionType.UInt16,
+                    < LARGEST_DELTA_PRECISION_INT32 => UDeltaPrecisionType.UInt32,
+                    _ => UDeltaPrecisionType.Unset,
+                };
+            }
+        }
+        #endregion
+
+        #region Decimal
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        [DefaultDeltaWriter]
+        public bool WriteUDeltaDecimal(decimal valueA, decimal valueB)
+        {
+            UDeltaPrecisionType dpt = GetUDeltaPrecisionType(valueA, valueB, out decimal positiveDifference);
+
+            if (dpt == UDeltaPrecisionType.Unset) return false;
+
+            WriteUInt8Unpacked((byte)dpt);
+            WriteDeltaDecimal(dpt, positiveDifference, unsigned: true);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Writes a double using DeltaPrecisionType.
+        /// </summary>
+        private void WriteDeltaDecimal(UDeltaPrecisionType dpt, decimal value, bool unsigned)
+        {
+            if (dpt.FastContains(UDeltaPrecisionType.UInt8))
+            {
+                if (unsigned)
+                    WriteUInt8Unpacked((byte)Math.Floor(value * DECIMAL_ACCURACY));
+                else
+                    WriteInt8Unpacked((sbyte)Math.Floor(value * DECIMAL_ACCURACY));
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
+            {
+                if (unsigned)
+                    WriteUInt16Unpacked((ushort)Math.Floor(value * DECIMAL_ACCURACY));
+                else
+                    WriteInt16Unpacked((short)Math.Floor(value * DECIMAL_ACCURACY));
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt32))
+            {
+                if (unsigned)
+                    WriteUInt32Unpacked((uint)Math.Floor(value * DECIMAL_ACCURACY));
+                else
+                    WriteInt32Unpacked((int)Math.Floor(value * DECIMAL_ACCURACY));
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.UInt64))
+            {
+                if (unsigned)
+                    WriteUInt64Unpacked((ulong)Math.Floor(value * DECIMAL_ACCURACY));
+                else
+                    WriteInt64Unpacked((long)Math.Floor(value * DECIMAL_ACCURACY));
+            }
+            else if (dpt.FastContains(UDeltaPrecisionType.Unset))
+            {
+                WriteDecimalUnpacked(value);
+            }
+            else
+            {
+                NetworkManagerExtensions.LogError($"Unhandled precision type of {dpt}.");
+            }
+        }
+
+        /// <summary>
+        /// Returns DeltaPrecisionType for the difference of two values.
+        /// </summary>
+        private UDeltaPrecisionType GetSDeltaPrecisionType(decimal valueA, decimal valueB, out decimal signedDifference)
+        {
+            signedDifference = (valueB - valueA);
+            decimal posValue = (signedDifference < 0m) ? (signedDifference * -1m) : signedDifference;
+
+            return GetDeltaPrecisionType(posValue, unsigned: false);
+        }
+
+        /// <summary>
+        /// Returns DeltaPrecisionType for the difference of two values.
+        /// </summary>
+        private UDeltaPrecisionType GetUDeltaPrecisionType(decimal valueA, decimal valueB, out decimal unsignedDifference)
+        {
+            bool bIsLarger = (valueB > valueA);
+            if (bIsLarger)
+                unsignedDifference = (valueB - valueA);
+            else
+                unsignedDifference = (valueA - valueB);
+
+            UDeltaPrecisionType result = GetDeltaPrecisionType(unsignedDifference, unsigned: true);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns DeltaPrecisionType for a value.
+        /// </summary>
+        private UDeltaPrecisionType GetDeltaPrecisionType(decimal positiveValue, bool unsigned)
+        {
+            if (unsigned)
+            {
+                return positiveValue switch
+                {
+                    < (decimal)LARGEST_DELTA_PRECISION_UINT8 => UDeltaPrecisionType.UInt8,
+                    < (decimal)LARGEST_DELTA_PRECISION_UINT16 => UDeltaPrecisionType.UInt16,
+                    < (decimal)LARGEST_DELTA_PRECISION_UINT32 => UDeltaPrecisionType.UInt32,
+                    < (decimal)LARGEST_DELTA_PRECISION_UINT64 => UDeltaPrecisionType.UInt64,
+                    _ => UDeltaPrecisionType.Unset,
+                };
+            }
+            else
+            {
+                return positiveValue switch
+                {
+                    < (decimal)LARGEST_DELTA_PRECISION_INT8 => UDeltaPrecisionType.UInt8,
+                    < (decimal)LARGEST_DELTA_PRECISION_INT16 => UDeltaPrecisionType.UInt16,
+                    < (decimal)LARGEST_DELTA_PRECISION_INT32 => UDeltaPrecisionType.UInt32,
+                    < (decimal)LARGEST_DELTA_PRECISION_INT64 => UDeltaPrecisionType.UInt64,
+                    _ => UDeltaPrecisionType.Unset,
+                };
+            }
+        }
+        #endregion
+
+        #region Types.
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        /// <returns>True if written.</returns>
+        [DefaultDeltaWriter]
+        public bool WriteDeltaNetworkBehaviour(NetworkBehaviour valueA, NetworkBehaviour valueB)
+        {
+            if (valueA == valueB) return false;
+
+            WriteNetworkBehaviour(valueB);
+
+            return true;
+        }
+        #endregion
+
+        #region Unity.
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        [DefaultDeltaWriter]
+        public bool WriteDeltaQuaternion(Quaternion valueA, Quaternion valueB)
+        {
+            const float minimumChange = 0.0025f;
+            bool result = false;
+
+            if (Mathf.Abs(valueA.x - valueB.x) > minimumChange)
+                result = true;
+            else if (Mathf.Abs(valueA.y - valueB.y) > minimumChange)
+                result = true;
+            else if (Mathf.Abs(valueA.z - valueB.z) > minimumChange)
+                result = true;
+            else if (Mathf.Abs(valueA.w - valueB.w) > minimumChange)
+                result = true;
+
+            if (result)
+                WriteQuaternion32(valueB);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        [DefaultDeltaWriter]
+        public bool WriteDeltaVector2(Vector2 valueA, Vector2 valueB)
+        {
+            float difference;
+            UDeltaPrecisionType dpt;
+            DeltaVector2Type dvt = DeltaVector2Type.Unset;
+            const bool unsigned = true;
+
+            _reservedLengthWriter.Initialize(this, VECTOR2_FLAG_BYTES);
+
+            dpt = GetUDeltaPrecisionType(valueA.x, valueB.x, out float xDifference);
+            if (dpt != UDeltaPrecisionType.Unset)
+            {
+                switch (dpt)
+                {
+                    case UDeltaPrecisionType.UInt8:
+                        dvt |= DeltaVector2Type.XUInt8;
+                        break;
+                    case UDeltaPrecisionType.UInt16:
+                        dvt |= DeltaVector2Type.XUInt16;
+                        break;
+                    default:
+                        dvt |= DeltaVector2Type.XUInt32;
+                        break;
+                }
+
+                if (dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger))
+                    dvt |= DeltaVector2Type.XNextIsLarger;
+
+                WriteDeltaSingle(dpt, xDifference, unsigned);
+            }
+
+            dpt = GetUDeltaPrecisionType(valueA.y, valueB.y, out float yDifference);
+            if (dpt != UDeltaPrecisionType.Unset)
+            {
+                switch (dpt)
+                {
+                    case UDeltaPrecisionType.UInt8:
+                        dvt |= DeltaVector2Type.YUInt8;
+                        break;
+                    case UDeltaPrecisionType.UInt16:
+                        dvt |= DeltaVector2Type.YUInt16;
+                        break;
+                    default:
+                        dvt |= DeltaVector2Type.YUInt32;
+                        break;
+                }
+
+                if (dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger))
+                    dvt |= DeltaVector2Type.YNextIsLarger;
+
+                WriteDeltaSingle(dpt, yDifference, unsigned);
+            }
+
+            Debug.Log("V2 Write " + dvt);
+            
+            bool written = _reservedLengthWriter.WriteLengthOrRemove((byte)dvt);
+            return written;
+        }
+
+        /// <summary>
+        /// Writes a delta value.
+        /// </summary>
+        [DefaultDeltaWriter]
+        public bool WriteDeltaVector3(Vector3 valueA, Vector3 valueB)
+        {
+            float difference;
+            UDeltaPrecisionType dpt;
+            DeltaVector3Type dvt = DeltaVector3Type.Unset;
+            const bool unsigned = false;
+
+            _reservedLengthWriter.Initialize(this, VECTOR3_FLAG_BYTES);
+
+            //X
+            dpt = GetSDeltaPrecisionType(valueA.x, valueB.x, out difference);
+            if (dpt != UDeltaPrecisionType.Unset)
+            {
+                switch (dpt)
+                {
+                    case UDeltaPrecisionType.UInt8:
+                        dvt |= DeltaVector3Type.XInt8;
+                        break;
+                    case UDeltaPrecisionType.UInt16:
+                        dvt |= DeltaVector3Type.XInt16;
+                        break;
+                    case UDeltaPrecisionType.UInt32:
+                        dvt |= DeltaVector3Type.XInt32;
+                        break;
+                }
+
+                WriteDeltaSingle(dpt, difference, unsigned);
+            }
+
+            //Z
+            dpt = GetSDeltaPrecisionType(valueA.z, valueB.z, out difference);
+            if (dpt != UDeltaPrecisionType.Unset)
+            {
+                switch (dpt)
+                {
+                    case UDeltaPrecisionType.UInt8:
+                        dvt |= DeltaVector3Type.ZInt8;
+                        break;
+                    case UDeltaPrecisionType.UInt16:
+                        dvt |= DeltaVector3Type.ZInt16;
+                        break;
+                    case UDeltaPrecisionType.UInt32:
+                        dvt |= DeltaVector3Type.ZInt32;
+                        break;
+                }
+
+                WriteDeltaSingle(dpt, difference, unsigned);
+            }
+
+            //Intentionally out of order. Y only supports 1 and 4 bytes to get all flags into 1 byte.
+            //Y
+            dpt = GetSDeltaPrecisionType(valueA.y, valueB.y, out difference);
+            if (dpt != UDeltaPrecisionType.Unset)
+            {
+                switch (dpt)
+                {
+                    case UDeltaPrecisionType.UInt8:
+                        dvt |= DeltaVector3Type.YInt8;
+                        break;
+                    default:
+                        dvt |= DeltaVector3Type.YInt32;
+                        break;
+                }
+
+                WriteDeltaSingle(dpt, difference, unsigned);
+            }
+
+            Debug.Log("V3 Write " + dvt + $"  --  X {valueB.x}.  X Change {valueB.x - valueA.x}");
+
+            bool written = _reservedLengthWriter.WriteLengthOrRemove((byte)dvt);
+            return written;
+        }
+        #endregion
+
+        #region Prediction.
+        /// <summary>
+        /// Writes a delta reconcile.
+        /// </summary>
+        internal void WriteDeltaReconcile<T>(T lastReconcile, T value, DeltaSerializerOption deltaOption) => WriteDelta(lastReconcile, value, deltaOption);
+
+        /// <summary>
+        /// Writes a delta replicate using a list.
+        /// </summary>
+        internal void WriteDeltaReplicate<T>(List<T> values, int offset, DeltaSerializerOption deltaOption) where T : IReplicateData
+        {
+            int collectionCount = values.Count;
+            //Replicate list will never be null, no need to write null check.
+            //Number of entries being written.
+            byte count = (byte)(collectionCount - offset);
+            WriteUInt8Unpacked(count);
+
+            T prev;
+            //Set previous if not full and if enough room in the collection to go back.
+            if (deltaOption != DeltaSerializerOption.FullSerialize && collectionCount > count)
+                prev = values[offset - 1];
+            else
+                prev = default;
+
+            for (int i = offset; i < collectionCount; i++)
+            {
+                T v = values[i];
+                WriteDelta(prev, v, deltaOption);
+
+                prev = v;
+                //After the first loop the deltaOption can be set to root, if not already.
+                deltaOption = DeltaSerializerOption.RootSerialize;
+            }
+        }
+
+        /// <summary>
+        /// Writes a delta replicate using a BasicQueue.
+        /// </summary>
+        internal void WriteDeltaReplicate<T>(BasicQueue<T> values, int redundancyCount, DeltaSerializerOption deltaOption) where T : IReplicateData
+        {
+            int collectionCount = values.Count;
+            //Replicate list will never be null, no need to write null check.
+            //Number of entries being written.
+            byte count = (byte)redundancyCount;
+            WriteUInt8Unpacked(count);
+
+            int offset = (collectionCount - redundancyCount);
+            T prev;
+            //Set previous if not full and if enough room in the collection to go back.
+            if (deltaOption != DeltaSerializerOption.FullSerialize && collectionCount > count)
+                prev = values[offset - 1];
+            else
+                prev = default;
+
+            for (int i = offset; i < collectionCount; i++)
+            {
+                T v = values[i];
+                WriteDelta(prev, v, deltaOption);
+
+                prev = v;
+                //After the first loop the deltaOption can be set to root, if not already.
+                deltaOption = DeltaSerializerOption.RootSerialize;
+            }
+        }
+        #endregion
+
+        #region Generic.
+        public bool WriteDelta<T>(T prev, T next, DeltaSerializerOption option)
+        {
+            Func<Writer, T, T, DeltaSerializerOption, bool> del = GenericDeltaWriter<T>.Write;
+            if (del == null)
+            {
+                NetworkManager.LogError($"Write delta method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.");
+
+                return false;
+            }
+            else
+            {
+                return del.Invoke(this, prev, next, option);
+            }
+        }
+        #endregion
     }
-
-
-    ///// <summary>
-    ///// Writes data to a buffer.
-    ///// </summary>
-    //public partial class Writer
-    //{
-    //    [System.Flags]
-    //    internal enum AutoPackTypeSigned : byte
-    //    {
-    //        Unpacked = 0,
-    //        PackedNegative = 1,
-    //        PackedLessNegative = 2,
-    //        PackedPositive = 4,            
-    //        PackedLessPositive = 8,
-    //    }
-
-
-    //    internal const float LARGEST_PACKED_UNSIGNED_FLOAT = ((float)byte.MaxValue / ACCURACY);
-    //    internal const float LARGEST_PACKEDLESS_UNSIGNED_FLOAT = ((float)ushort.MaxValue / ACCURACY);
-    //    internal const float LARGEST_PACKED_SIGNED_FLOAT = ((float)sbyte.MaxValue / ACCURACY);
-    //    internal const float LARGEST_PACKEDLESS_SIGNED_FLOAT = ((float)short.MaxValue / ACCURACY);
-    //    internal const float ACCURACY = 1000f;
-    //    internal const float ACCURACY_DECIMAL = 0.001f;
-
-
-    //    //
-    //    //internal void WriteUInt16Delta(ushort a, ushort b)
-    //    //{
-    //    //    int difference = (int)(b - a);
-    //    //    WritePackedWhole((ulong)difference);
-    //    //}
-    //    //
-    //    //internal void WriteInt16Delta(short a, short b) => WriteUInt16Delta((ushort)a, (ushort)b);
-
-
-    //    //
-    //    //internal void WriteUInt32Delta(uint a, uint b)
-    //    //{
-    //    //    long difference = (long)(b - a);
-    //    //    WritePackedWhole((ulong)difference);
-    //    //}
-    //    //
-    //    //internal void WriteInt32Delta(int a, int b) => WriteUInt32Delta((uint)a, (uint)b);
-
-
-    //    //
-    //    //internal void WriteUInt64Delta(ulong a, ulong b)
-    //    //{
-    //    //    ulong difference;
-    //    //    bool bLarger;
-    //    //    if (b > a)
-    //    //    {
-    //    //        bLarger = true;
-    //    //        difference = (b - a);
-    //    //    }
-    //    //    else
-    //    //    {
-    //    //        bLarger = false;
-    //    //        difference = (a - b);
-    //    //    }
-
-    //    //    WriteBoolean(bLarger);
-    //    //    WritePackedWhole(difference);
-    //    //}
-    //    //
-    //    //internal void WriteInt64Delta(long a, long b) => WriteUInt64Delta((ulong)a, (ulong)b);
-
-    //    //
-    //    //internal void WriteLayerMaskDelta(LayerMask a, LayerMask b)
-    //    //{
-    //    //    WriteInt32Delta(b.value, a.value);
-    //    //}
-
-    //    
-    //    internal void WriteSingleDelta(float a, float b)
-    //    {
-    //        double difference = (b - a);            
-    //        AutoPackTypeSigned apts = GetAutoPackTypeSigned(difference);
-    //        WriteByte((byte)apts);
-
-    //        switch (apts)
-    //        {
-    //            case AutoPackTypeSigned.PackedNegative:
-    //            case AutoPackTypeSigned.PackedPositive:
-    //                WriteByte((byte)(difference * ACCURACY));
-    //                return;
-    //            case AutoPackTypeSigned.PackedLessNegative:
-    //            case AutoPackTypeSigned.PackedLessPositive:
-    //                WriteUInt16((ushort)(difference * ACCURACY));
-    //                return;
-    //            case AutoPackTypeSigned.Unpacked:
-    //                WriteSingleUnpacked(b);
-    //                return;
-    //        }
-    //    }
-
-    //    private AutoPackTypeSigned GetAutoPackTypeSigned(double value)
-    //    {
-    //        double absValue = (value >= 0d) ? value : (value * -1d);
-
-    //        if (absValue <= LARGEST_PACKED_UNSIGNED_FLOAT)
-    //            return (value >= 0d) ? AutoPackTypeSigned.PackedPositive : AutoPackTypeSigned.PackedNegative;
-    //        else if (absValue <= LARGEST_PACKEDLESS_UNSIGNED_FLOAT)
-    //            return (value >= 0d) ? AutoPackTypeSigned.PackedLessPositive : AutoPackTypeSigned.PackedLessNegative;
-    //        else
-    //            return AutoPackTypeSigned.Unpacked;
-    //    }
-
-    //    //Draft / WIP below. May become discarded.
-
-    //    //internal enum DeltaPackType
-    //    //{
-    //    //    Packed = 1,
-    //    //    PackedLess = 2,
-    //    //}
-    //    //internal enum Vector3DeltaA : byte
-    //    //{
-    //    //    Unset = 0,
-    //    //    XPacked = 1,
-    //    //    XPackedLess = 2,
-    //    //    XUnpacked = 4,
-    //    //    YPacked = 8,
-    //    //    YPackedLess = 16,
-    //    //    YUnpacked = 32,
-    //    //    ZPacked = 64,
-    //    //    ZPackedLess = 128,
-    //    //    ZUnpacked = 4,
-    //    //}
-
-    //    //internal const float LARGEST_PACKED_DIFFERENCE = ((float)sbyte.MaxValue / ACCURACY);
-    //    //internal const float LARGEST_PACKEDLESS_DIFFERENCE = ((float)short.MaxValue / ACCURACY);
-    //    //internal const float ACCURACY = 1000f;
-    //    //internal const float ACCURACY_DECIMAL = 0.001f;
-
-
-    //    //
-    //    //public void WriteVector3Delta(Vector3 a, Vector3 b)
-    //    //{
-    //    //    //Start as the highest.
-
-    //    //    float xDiff = (b.x - a.x);
-    //    //    float yDiff = (b.x - a.x);
-    //    //    float zDiff = (b.x - a.x);
-
-    //    //    float absXDiff = Mathf.Abs(xDiff);
-    //    //    float absYDiff = Mathf.Abs(yDiff);
-    //    //    float absZDiff = Mathf.Abs(zDiff);
-
-    //    //    float largestDiff = 0f;
-    //    //    Vector3Delta delta = Vector3Delta.Unset;
-    //    //    if (absXDiff >= ACCURACY_DECIMAL)
-    //    //    {
-    //    //        delta |= Vector3Delta.HasX;
-    //    //        largestDiff = absXDiff;
-    //    //    }
-    //    //    if (absYDiff >= ACCURACY_DECIMAL)
-    //    //    {
-    //    //        delta |= Vector3Delta.HasY;
-    //    //        largestDiff = Mathf.Max(largestDiff, absYDiff);
-    //    //    }
-    //    //    if (absZDiff >= ACCURACY_DECIMAL)
-    //    //    {
-    //    //        delta |= Vector3Delta.HasZ;
-    //    //        largestDiff = Mathf.Max(largestDiff, absZDiff);
-    //    //    }
-
-    //    //    /* If packed is not specified then unpacked
-    //    //     * is assumed. */
-    //    //    if (largestDiff <= LARGEST_PACKED_DIFFERENCE)
-    //    //        delta |= Vector3Delta.Packed;
-    //    //    else if (largestDiff <= LARGEST_PACKEDLESS_DIFFERENCE)
-    //    //        delta |= Vector3Delta.PackedLess;
-
-
-    //    //    xDiff = Mathf.CeilToInt(xDiff * ACCURACY);
-    //    //    yDiff = Mathf.CeilToInt(yDiff * ACCURACY);
-    //    //    zDiff = Mathf.CeilToInt(zDiff * ACCURACY);
-
-    //    //    Reserve(1);
-
-
-    //    //    UIntFloat valA;
-    //    //    UIntFloat valB;
-
-    //    //    valA = new UIntFloat(a.x);
-    //    //    valB = new UIntFloat(b.x);
-    //    //    WriteUInt32(valB.UIntValue - valA.UIntValue, packType);
-    //    //    Debug.Log("Diff " + (valB.UIntValue - valA.UIntValue) + ", " + (valA.UIntValue - valB.UIntValue));
-    //    //    valA = new UIntFloat(a.y);
-    //    //    valB = new UIntFloat(b.y);
-    //    //    WriteUInt32(valB.UIntValue - valA.UIntValue, packType);
-    //    //    valA = new UIntFloat(a.z);
-    //    //    valB = new UIntFloat(b.z);
-    //    //    WriteUInt32(valB.UIntValue - valA.UIntValue, packType);
-    //    //}
-
-    //}
 }

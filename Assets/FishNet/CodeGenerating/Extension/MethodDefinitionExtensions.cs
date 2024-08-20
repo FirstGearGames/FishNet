@@ -211,7 +211,7 @@ namespace FishNet.CodeGenerating.Extension
         public static MethodDefinition CreateCopy(this MethodDefinition copiedMd, CodegenSession session, string nameOverride = null, MethodAttributes? attributesOverride = null)
         {
             session.ImportReference(copiedMd.ReturnType);
-
+            
             MethodAttributes attr = (attributesOverride.HasValue) ? attributesOverride.Value : copiedMd.Attributes;
             string name = (nameOverride == null) ? copiedMd.Name : nameOverride;
             MethodDefinition result = new MethodDefinition(name, attr, copiedMd.ReturnType);

@@ -7,8 +7,6 @@ using GameKitEditing = GameKit.Dependencies.Utilities.Editing;
 
 namespace FishNet.Component.Transforming.Editing
 {
-
-
     [CustomEditor(typeof(NetworkTransform), true)]
     [CanEditMultipleObjects]
     public class NetworkTransformEditor : Editor
@@ -20,10 +18,8 @@ namespace FishNet.Component.Transforming.Editing
         private SerializedProperty _extrapolation;
         private SerializedProperty _enableTeleport;
         private SerializedProperty _teleportThreshold;
-        private SerializedProperty _scaleThreshold;
         private SerializedProperty _clientAuthoritative;
         private SerializedProperty _sendToOwner;
-        private SerializedProperty _enableNetworkLod;
         private SerializedProperty _interval;
         private SerializedProperty _synchronizePosition;
         private SerializedProperty _positionSnapping;
@@ -42,10 +38,8 @@ namespace FishNet.Component.Transforming.Editing
             _extrapolation = serializedObject.FindProperty("_extrapolation");
             _enableTeleport = serializedObject.FindProperty("_enableTeleport");
             _teleportThreshold = serializedObject.FindProperty("_teleportThreshold");
-            _scaleThreshold = serializedObject.FindProperty(nameof(_scaleThreshold));
             _clientAuthoritative = serializedObject.FindProperty("_clientAuthoritative");
             _sendToOwner = serializedObject.FindProperty("_sendToOwner");
-            _enableNetworkLod = serializedObject.FindProperty(nameof(_enableNetworkLod));
             _interval = serializedObject.FindProperty(nameof(_interval));
             _synchronizePosition = serializedObject.FindProperty("_synchronizePosition");
             _positionSnapping = serializedObject.FindProperty("_positionSnapping");
@@ -87,10 +81,9 @@ namespace FishNet.Component.Transforming.Editing
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_teleportThreshold);
-                if (_enableNetworkLod.boolValue)
-                    EditorGUILayout.PropertyField(_scaleThreshold);
                 EditorGUI.indentLevel--;
             }
+
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
@@ -104,20 +97,15 @@ namespace FishNet.Component.Transforming.Editing
                 EditorGUILayout.PropertyField(_sendToOwner);
                 EditorGUI.indentLevel--;
             }
+
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
             //Synchronizing.
             EditorGUILayout.LabelField("Synchronizing.", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            //LOD and interval.
-            GameKitEditing.AddPropertyField(_enableNetworkLod, new GUIContent("* Use Network Level of Detail"), EditorLayoutEnableType.DisabledWhilePlaying);
-            if (!_enableNetworkLod.boolValue)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_interval, new GUIContent("Send Interval"));
-                EditorGUI.indentLevel--;
-            }
+            //Interval.
+            EditorGUILayout.PropertyField(_interval, new GUIContent("Send Interval"));
             //Position.
             EditorGUILayout.PropertyField(_synchronizePosition);
             if (_synchronizePosition.boolValue)
@@ -126,6 +114,7 @@ namespace FishNet.Component.Transforming.Editing
                 EditorGUILayout.PropertyField(_positionSnapping);
                 EditorGUI.indentLevel -= 2;
             }
+
             //Rotation.
             EditorGUILayout.PropertyField(_synchronizeRotation);
             if (_synchronizeRotation.boolValue)
@@ -134,6 +123,7 @@ namespace FishNet.Component.Transforming.Editing
                 EditorGUILayout.PropertyField(_rotationSnapping);
                 EditorGUI.indentLevel -= 2;
             }
+
             //Scale.
             EditorGUILayout.PropertyField(_synchronizeScale);
             if (_synchronizeScale.boolValue)
@@ -142,11 +132,11 @@ namespace FishNet.Component.Transforming.Editing
                 EditorGUILayout.PropertyField(_scaleSnapping);
                 EditorGUI.indentLevel -= 2;
             }
+
             EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();
         }
     }
-
 }
 #endif

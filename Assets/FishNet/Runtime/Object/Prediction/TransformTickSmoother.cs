@@ -111,7 +111,7 @@
 //        /// <summary>
 //        /// Moves transform to target values.
 //        /// </summary>
-//        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+//        
 //        private void MoveToTarget(TransformProperties tp)
 //        {
 //            _moveRates.MoveLocalToTarget(_transform, tp, Time.deltaTime);

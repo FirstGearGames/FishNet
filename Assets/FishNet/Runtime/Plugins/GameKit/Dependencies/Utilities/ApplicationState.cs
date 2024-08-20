@@ -43,7 +43,8 @@ namespace GameKit.Dependencies.Utilities
         public static bool IsQuitting()
         {
 #if UNITY_EDITOR
-            if (!EditorApplication.isPlayingOrWillChangePlaymode && EditorApplication.isPlaying)
+            if ((!EditorApplication.isPlayingOrWillChangePlaymode && EditorApplication.isPlaying) ||
+                !EditorApplication.isPlaying)
                 return true;
             else
                 return false;

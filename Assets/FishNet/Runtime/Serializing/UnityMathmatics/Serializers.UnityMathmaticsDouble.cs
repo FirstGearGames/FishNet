@@ -8,13 +8,13 @@ namespace FishNet.Serializing {
 
     public partial class Writer {
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Writedouble2(double2 value) {
             WriteDouble(value.x);
             WriteDouble(value.y);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Writedouble3(double3 value) {
             WriteDouble(value.x);
             WriteDouble(value.y);
@@ -22,7 +22,7 @@ namespace FishNet.Serializing {
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Writedouble4(double4 value) {
             WriteDouble(value.x);
             WriteDouble(value.y);
@@ -87,7 +87,7 @@ namespace FishNet.Serializing {
 
     public partial class Reader {
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public double2 Readdouble2() {
             return new double2 {
                 x = ReadDouble(),
@@ -95,7 +95,7 @@ namespace FishNet.Serializing {
             };
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public double3 Readdouble3() {
             return new double3() {
                 x = ReadDouble(),
@@ -104,7 +104,7 @@ namespace FishNet.Serializing {
             };
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public double4 Readdouble4() {
             return new double4() {
                 x = ReadDouble(),

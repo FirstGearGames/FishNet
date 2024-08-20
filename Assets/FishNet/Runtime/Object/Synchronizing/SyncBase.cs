@@ -128,7 +128,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Updates settings with new values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void UpdatePermissions(WritePermission writePermissions, ReadPermission readPermissions)
         {
             UpdatePermissions(writePermissions);
@@ -145,7 +145,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Updates settings with new values.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void UpdateSendRate(float sendRate)
         {
             Settings.SendRate = sendRate;
@@ -187,7 +187,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Initializes this SyncBase before user Awake code.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [MakePublic]
         internal void InitializeEarly(NetworkBehaviour nb, uint syncIndex, bool isSyncObject)
         {
@@ -201,7 +201,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Called during InitializeLate in NetworkBehaviours to indicate user Awake code has executed.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [MakePublic]
         internal void InitializeLate()
         {
@@ -405,7 +405,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Writes current value.
         /// </summary>
         /// <param name="resetSyncTick">True to set the next time data may sync.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [MakePublic]
         internal protected virtual void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
@@ -433,7 +433,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Writes all values for the SyncType.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [MakePublic]
         internal protected virtual void WriteFull(PooledWriter writer)
         {

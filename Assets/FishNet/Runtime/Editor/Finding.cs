@@ -129,7 +129,7 @@ namespace FishNet.Editing
             {
                 /* Get GameObjects within children of each
                  * root object then add them to the cache. */
-                gos[i].GetComponentsInChildren<Transform>(true, buffer);
+                gos[i].GetComponentsInChildren(true, buffer);
                 foreach (Transform t in buffer)
                     results.Add(t.gameObject);
             }

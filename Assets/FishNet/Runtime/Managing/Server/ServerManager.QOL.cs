@@ -90,7 +90,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="go">GameObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
             if (go == null)
@@ -124,7 +124,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="go">GameObject instance to despawn.</param>
         /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Despawn(GameObject go, DespawnType? despawnType = null)
         {
             if (go == null)

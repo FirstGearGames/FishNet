@@ -8,20 +8,20 @@ namespace FishNet.Serializing {
 
     public partial class Writer {
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Writefloat2(float2 value) {
             WriteSingle(value.x);
             WriteSingle(value.y);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Writefloat3(float3 value) {
             WriteSingle(value.x);
             WriteSingle(value.y);
             WriteSingle(value.z);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Writefloat4(float4 value) {
             WriteSingle(value.x);
             WriteSingle(value.y);
@@ -87,7 +87,7 @@ namespace FishNet.Serializing {
 
     public partial class Reader {
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public float2 Readfloat2() {
             return new float2 {
                 x = ReadSingle(),
@@ -95,7 +95,7 @@ namespace FishNet.Serializing {
             };
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public float3 Readfloat3() {
             return new float3() {
                 x = ReadSingle(),
@@ -104,7 +104,7 @@ namespace FishNet.Serializing {
             };
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public float4 Readfloat4() {
             return new float4() {
                 x = ReadSingle(),

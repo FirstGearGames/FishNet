@@ -4,6 +4,7 @@ namespace FishNet.Managing.Timing
 {
     public class EstimatedTick
     {
+        #region Types.
         /// <summary>
         /// How to handle old ticks, specifically related to EstimatedTick.
         /// </summary>
@@ -22,6 +23,7 @@ namespace FishNet.Managing.Timing
             /// </summary>
             SetRemoteTick = 2,
         }
+        #endregion
 
         /// <summary>
         /// Local tick when this was last updated.
@@ -45,7 +47,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         //Only need to check one value for unset as they all would be if not set.
         public bool IsUnset => (LocalTick == TimeManager.UNSET_TICK);
-
         /// <summary>
         /// Last TimeManager specified during an Update call.
         /// </summary>
@@ -59,7 +60,6 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Number of ticks LocalTick is being current LocalTick.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint LocalTickDifference(TimeManager tm = null)
         {
             if (!TryAssignTimeManager(ref tm))
@@ -78,7 +78,6 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// True if values were updated this tick.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsCurrent(TimeManager tm = null)
         {
             if (!TryAssignTimeManager(ref tm))
@@ -91,7 +90,6 @@ namespace FishNet.Managing.Timing
         /// Current estimated value.
         /// </summary>
         /// <param name="nm">NetworkManager to use. When null default value will be returned.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint Value(TimeManager tm = null)
         {
             if (!TryAssignTimeManager(ref tm))
@@ -105,7 +103,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name="nm">NetworkManager to use. When null default value will be returned.</param>
         /// <param name="isCurrent">True if the value was updated this local tick.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint Value(out bool isCurrent, TimeManager tm = null)
         {
             //Default value.
@@ -197,18 +194,24 @@ namespace FishNet.Managing.Timing
         }
 
         /// <summary>
-        /// Resets values to unset.
+        /// Resets values to unset and clears the NetworkManager.
         /// </summary>
         public void Reset()
+        {
+            ResetTicks();
+            _updateTimeManager = null;
+        }
+
+
+        /// <summary>
+        /// Resets only tick values, leaving type references.
+        /// </summary>
+        public void ResetTicks()
         {
             LocalTick = TimeManager.UNSET_TICK;
             RemoteTick = TimeManager.UNSET_TICK;
             LastRemoteTick = TimeManager.UNSET_TICK;
             _valueLocalTick = TimeManager.UNSET_TICK;
-            _updateTimeManager = null;           
         }
-
     }
-
-
 }

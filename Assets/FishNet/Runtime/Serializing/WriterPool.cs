@@ -2,16 +2,20 @@ using FishNet.Managing;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using GameKit.Dependencies.Utilities;
 
 namespace FishNet.Serializing
 {
     /// <summary>
     /// Writer which is reused to save on garbage collection and performance.
     /// </summary>
-    public sealed class PooledWriter : Writer
+    public sealed class PooledWriter : Writer, IResettable
     {
         public void Store() => WriterPool.Store(this);
         public void StoreLength() => WriterPool.StoreLength(this);
+        
+        public void ResetState() => Store();
+        public void InitializeState() { }
     }
 
     /// <summary>
@@ -51,7 +55,7 @@ namespace FishNet.Serializing
         }
         /// Gets a writer from the pool.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static PooledWriter Retrieve()
         {
             return Retrieve(null);
@@ -61,7 +65,7 @@ namespace FishNet.Serializing
         /// Gets the next writer in the pool of minimum length.
         /// </summary>
         /// <param name="length">Minimum length the writer buffer must be.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static PooledWriter Retrieve(int length)
         {
             return Retrieve(null, length);
@@ -70,7 +74,7 @@ namespace FishNet.Serializing
         /// Gets the next writer in the pool of minimum length.
         /// </summary>
         /// <param name="length">Minimum length the writer buffer must be.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static PooledWriter Retrieve(NetworkManager networkManager, int length)
         {
             /* The index returned will be for writers which have

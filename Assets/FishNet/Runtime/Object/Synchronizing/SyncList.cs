@@ -188,7 +188,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="index"></param>
         /// <param name="prev"></param>
         /// <param name="next"></param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void AddOperation(SyncListOperation operation, int index, T prev, T next)
         {
             if (!base.IsInitialized)
@@ -324,7 +324,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Reads and sets the current values for server or client.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {

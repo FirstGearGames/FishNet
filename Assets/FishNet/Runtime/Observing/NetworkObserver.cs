@@ -288,7 +288,7 @@ namespace FishNet.Observing
         /// Returns ObserverStateChange by comparing conditions for a connection.
         /// </summary>
         /// <returns>True if added to Observers.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal ObserverStateChange RebuildObservers(NetworkConnection connection, bool timedOnly)
         {
             bool currentlyAdded = (_networkObject.Observers.Contains(connection));

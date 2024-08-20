@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace FishNet.Utility.Template
 {
-
     /// <summary>
     /// Subscribes to tick events making them available as virtual methods.
     /// </summary>
@@ -19,6 +18,8 @@ namespace FishNet.Utility.Template
             PreTick = 1,
             Tick = 2,
             PostTick = 4,
+            Update = 8,
+            LateUpdate = 16,
             All = ~0,
         }
         #endregion
@@ -59,11 +60,15 @@ namespace FishNet.Utility.Template
             if (subscribe)
             {
                 if (TickCallbackContains(_tickCallbacks, TickCallback.PreTick))
-                        tm.OnPreTick += TimeManager_OnPreTick;
+                    tm.OnPreTick += TimeManager_OnPreTick;
                 if (TickCallbackContains(_tickCallbacks, TickCallback.Tick))
                     tm.OnTick += TimeManager_OnTick;
                 if (TickCallbackContains(_tickCallbacks, TickCallback.PostTick))
                     tm.OnPostTick += TimeManager_OnPostTick;
+                if (TickCallbackContains(_tickCallbacks, TickCallback.Update))
+                    tm.OnUpdate += TimeManager_OnUpdate;
+                if (TickCallbackContains(_tickCallbacks, TickCallback.LateUpdate))
+                    tm.OnUpdate += TimeManager_OnLateUpdate;
             }
             else
             {
@@ -73,11 +78,19 @@ namespace FishNet.Utility.Template
                     tm.OnTick -= TimeManager_OnTick;
                 if (TickCallbackContains(_tickCallbacks, TickCallback.PostTick))
                     tm.OnPostTick -= TimeManager_OnPostTick;
+                if (TickCallbackContains(_tickCallbacks, TickCallback.Update))
+                    tm.OnUpdate -= TimeManager_OnUpdate;
+                if (TickCallbackContains(_tickCallbacks, TickCallback.LateUpdate))
+                    tm.OnUpdate -= TimeManager_OnLateUpdate;
             }
         }
+
         protected virtual void TimeManager_OnPreTick() { }
         protected virtual void TimeManager_OnTick() { }
         protected virtual void TimeManager_OnPostTick() { }
+        protected virtual void TimeManager_OnUpdate() { }
+        protected virtual void TimeManager_OnLateUpdate() { }
+
         private bool TickCallbackContains(TickCallback whole, TickCallback part) => ((whole & part) == part);
     }
 }

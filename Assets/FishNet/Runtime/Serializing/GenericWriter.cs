@@ -8,9 +8,8 @@ namespace FishNet.Serializing
 {
 
     /// <summary>
-    /// Used for write references to generic types.
+    /// Used to write generic types.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     [APIExclude]
     public static class GenericWriter<T>
     {
@@ -28,7 +27,7 @@ namespace FishNet.Serializing
                 return;
 
             //Set has custom serializer if value being used is not a generated method.
-            _hasCustomSerializer = !(value.Method.Name.StartsWith(UtilityConstants.GENERATED_WRITER_PREFIX));
+            _hasCustomSerializer = !(value.Method.Name.StartsWith(UtilityConstants.GeneratedWriterPrefix));
             Write = value;
         }
     }

@@ -89,7 +89,7 @@ namespace FishNet.Managing.Logging
             {
 #if DEVELOPMENT
                 if (Application.isPlaying)
-                    Debug.LogError("CanLog called before being initialized.");
+                    NetworkManagerExtensions.LogError("CanLog called before being initialized.");
                 else
                     return true;
 #endif
@@ -102,7 +102,7 @@ namespace FishNet.Managing.Logging
         /// <summary>
         /// Logs a common value if can log.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override void Log(string value)
         {
             if (CanLog(LoggingType.Common))
@@ -112,7 +112,7 @@ namespace FishNet.Managing.Logging
         /// <summary>
         /// Logs a warning value if can log.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override void LogWarning(string value)
         {
             if (CanLog(LoggingType.Warning))
@@ -122,7 +122,7 @@ namespace FishNet.Managing.Logging
         /// <summary>
         /// Logs an error value if can log.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override void LogError(string value)
         {
             if (CanLog(LoggingType.Error))

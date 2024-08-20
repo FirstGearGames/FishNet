@@ -258,7 +258,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Initializes this for use.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void Initialize(NetworkManager nm, int clientId, int transportIndex, bool asServer)
         {
             NetworkManager = nm;
@@ -349,7 +349,7 @@ namespace FishNet.Connection
         /// Adds to Objects owned by this connection.
         /// </summary>
         /// <param name="nob"></param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void AddObject(NetworkObject nob)
         {
             if (!IsValid)
@@ -367,7 +367,7 @@ namespace FishNet.Connection
         /// Removes from Objects owned by this connection.
         /// </summary>
         /// <param name="nob"></param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void RemoveObject(NetworkObject nob)
         {
             if (!IsValid)
@@ -436,7 +436,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Resets all states for re-use.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void ResetState()
         {
             MatchCondition.RemoveFromMatchesWithoutRebuild(this, NetworkManager);
@@ -460,10 +460,6 @@ namespace FishNet.Connection
             Scenes.Clear();
             PredictedObjectIds.Clear();
             ResetPingPong();
-            ResetStates_Lod();
-            AllowedForcedLodUpdates = 0;
-            LastLevelOfDetailUpdate = 0;
-            LevelOfDetailInfractions = 0;
             Observers_Reset();
             Prediction_Reset();
         }

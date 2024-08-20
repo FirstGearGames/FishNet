@@ -18,16 +18,15 @@ using FishNet.Utility;
 using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
 [assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
+
 namespace FishNet.Object
 {
-
     #region Types.
-    /* This class is placed in this file while it is in development. 
-     * When everything is locked in the class will be integrated properly. */
     internal static class ReplicateTickFinder
     {
         public enum DataPlacementResult
@@ -154,9 +153,7 @@ namespace FishNet.Object
                     return -1;
                 }
             }
-
         }
-
     }
     #endregion
 
@@ -188,9 +185,13 @@ namespace FishNet.Object
         /// </summary>
         private Dictionary<uint, ReconcileRpcDelegate> _reconcileRpcDelegates;
         /// <summary>
-        /// Number of resends which may occur. This could be for client resending replicates to the server or the server resending reconciles to the client.
+        /// Number of replicate resends which may occur.
         /// </summary>
-        private int _remainingResends;
+        private int _remainingReplicateResends;
+        /// <summary>
+        /// Number of reconcile resends which may occur.
+        /// </summary>
+        private int _remainingReconcileResends;
         /// <summary>
         /// Last replicate tick read from remote. This can be the server reading a client or the other way around.
         /// </summary>
@@ -269,7 +270,6 @@ namespace FishNet.Object
         /// <param name="hash"></param>
         /// <param name="del"></param>
         [MakePublic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterReplicateRpc(uint hash, ReplicateRpcDelegate del)
         {
             if (_replicateRpcDelegates == null)
@@ -284,7 +284,6 @@ namespace FishNet.Object
         /// <param name="hash"></param>
         /// <param name="del"></param>
         [MakePublic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RegisterReconcileRpc(uint hash, ReconcileRpcDelegate del)
         {
             if (_reconcileRpcDelegates == null)
@@ -295,7 +294,6 @@ namespace FishNet.Object
         /// <summary>
         /// Called when a replicate is received.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnReplicateRpc(uint? methodHash, PooledReader reader, NetworkConnection sendingClient, Channel channel)
         {
             if (methodHash == null)
@@ -306,10 +304,10 @@ namespace FishNet.Object
             else
                 _networkObjectCache.NetworkManager.LogWarning($"Replicate not found for hash {methodHash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
         }
+
         /// <summary>
         /// Called when a reconcile is received.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnReconcileRpc(uint? methodHash, PooledReader reader, Channel channel)
         {
             if (methodHash == null)
@@ -342,6 +340,7 @@ namespace FishNet.Object
 
             ClearReplicateCache();
         }
+
         /// <summary>
         /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
         /// </summary>
@@ -352,13 +351,16 @@ namespace FishNet.Object
         /// </summary>
         [MakePublic]
         [APIExclude]
-        protected internal void ClearReplicateCache_Internal<T>(BasicQueue<T> replicatesQueue, List<T> replicatesHistory) where T : IReplicateData
+        protected internal void ClearReplicateCache_Internal<T>(BasicQueue<T> replicatesQueue, List<T> replicatesHistory, ref T lastFirstReadReplicate) where T : IReplicateData
         {
             while (replicatesQueue.Count > 0)
             {
                 T data = replicatesQueue.Dequeue();
                 data.Dispose();
             }
+
+            lastFirstReadReplicate.Dispose();
+            lastFirstReadReplicate = default;
 
             for (int i = 0; i < replicatesHistory.Count; i++)
                 replicatesHistory[i].Dispose();
@@ -369,13 +371,18 @@ namespace FishNet.Object
         /// Sends a RPC to target.
         /// Internal use.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [MakePublic]
         [APIExclude]
-        protected internal void Server_SendReconcileRpc<T>(uint hash, T reconcileData, Channel channel)
+        protected internal void Server_SendReconcileRpc<T>(uint hash, ref T lastReconcileData, T reconcileData, Channel channel) where T : IReconcileData
         {
             if (!IsSpawned)
                 return;
+
+            //No more redundancy left. Check if transform may have changed.
+            if (_remainingReconcileResends == 0)
+                return;
+            else
+                _remainingReconcileResends--;
 
             //No owner and no state forwarding, nothing to do.
             bool stateForwarding = _networkObjectCache.EnableStateForwarding;
@@ -383,22 +390,29 @@ namespace FishNet.Object
                 return;
 
             /* //todo: forcing to reliable channel so that the length is written,
-            * and it will be parsed in the rpcLink reader checking length
-            * as well. This is a temporary solution to resolve an issue which was
-            * causing parsing problems due to states sending unreliable and reliable
-            * headers being written, or sending reliably and unreliable headers being written.
-            * Using an extra byte to write length is more preferred than always forcing reliable
-            * until properly resolved. */
+             * and it will be parsed in the rpcLink reader checking length
+             * as well. This is a temporary solution to resolve an issue which was
+             * causing parsing problems due to states sending unreliable and reliable
+             * headers being written, or sending reliably and unreliable headers being written.
+             * Using an extra byte to write length is more preferred than always forcing reliable
+             * until properly resolved. */
             channel = Channel.Reliable;
 
             PooledWriter methodWriter = WriterPool.Retrieve();
             /* Tick does not need to be written because it will always
-            * be the localTick of the server. For the clients, this will
-            * be the LastRemoteTick of the packet. 
-            *
-            * The exception is for the owner, which we send the last replicate
-            * tick so the owner knows which to roll back to. */
-            methodWriter.Write(reconcileData);
+             * be the localTick of the server. For the clients, this will
+             * be the LastRemoteTick of the packet.
+             *
+             * The exception is for the owner, which we send the last replicate
+             * tick so the owner knows which to roll back to. */
+
+//#if !FISHNET_STABLE_MODE
+#if DO_NOT_USE
+            methodWriter.WriteDeltaReconcile(lastReconcileData, reconcileData, GetDeltaSerializeOption());
+#else
+            methodWriter.WriteReconcile<T>(reconcileData);
+#endif
+            lastReconcileData = reconcileData;
 
             PooledWriter writer;
 #if DEVELOPMENT
@@ -421,6 +435,7 @@ namespace FishNet.Object
                 foreach (NetworkConnection nc in Observers)
                     nc.WriteState(writer);
             }
+
             methodWriter.Store();
             writer.Store();
         }
@@ -469,6 +484,7 @@ namespace FishNet.Object
         //        return changed;
         //    }
 
+
         /// <summary>
         /// Returns if the tick provided is the last tick to provide created data.
         /// </summary>
@@ -480,10 +496,10 @@ namespace FishNet.Object
         /// Called internally when an input from localTick should be replayed.
         /// </summary>
         internal virtual void Replicate_Replay_Start(uint replayTick) { }
+
         /// <summary>
         /// Replays inputs from replicates.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void Replicate_Replay<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
             //Reconcile data was not received so cannot replay.
@@ -491,17 +507,18 @@ namespace FishNet.Object
                 return;
 
             if (_networkObjectCache.IsOwner)
-                Replicate_Replay_Authoritative<T>(replayTick, del, replicatesHistory, channel);
+                Replicate_Replay_Authoritative(replayTick, del, replicatesHistory, channel);
             else
-                Replicate_Replay_NonAuthoritative<T>(replayTick, del, replicatesHistory, channel);
+                Replicate_Replay_NonAuthoritative(replayTick, del, replicatesHistory, channel);
         }
+
         /// <summary>
         /// Replays an input for authoritative entity.
         /// </summary>
         protected internal void Replicate_Replay_Authoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
             ReplicateTickFinder.DataPlacementResult findResult;
-            int replicateIndex = ReplicateTickFinder.GetReplicateHistoryIndex<T>(replayTick, replicatesHistory, out findResult);
+            int replicateIndex = ReplicateTickFinder.GetReplicateHistoryIndex(replayTick, replicatesHistory, out findResult);
 
             T data;
             ReplicateState state;
@@ -515,12 +532,13 @@ namespace FishNet.Object
                 del.Invoke(data, state, channel);
             }
         }
+
         /// <summary>
         /// Replays an input for non authoritative entity.
         /// </summary>
         protected internal void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
-            
+                         
             T data;
             ReplicateState state;
             bool isAppendedOrder = _networkObjectCache.PredictionManager.IsAppendedStateOrder;
@@ -528,7 +546,7 @@ namespace FishNet.Object
             if (isAppendedOrder || replayTick == (_networkObjectCache.PredictionManager.ServerStateTick + 1))
             {
                 ReplicateTickFinder.DataPlacementResult findResult;
-                int replicateIndex = ReplicateTickFinder.GetReplicateHistoryIndex<T>(replayTick, replicatesHistory, out findResult);
+                int replicateIndex = ReplicateTickFinder.GetReplicateHistoryIndex(replayTick, replicatesHistory, out findResult);
                 //If not found then something went wrong.
                 if (findResult == ReplicateTickFinder.DataPlacementResult.Exact)
                 {
@@ -566,10 +584,8 @@ namespace FishNet.Object
         /// This is overriden by codegen to call EmptyReplicatesQueueIntoHistory().
         /// This should only be called when client only.
         /// </summary>
-        protected internal virtual void EmptyReplicatesQueueIntoHistory_Start()
-        {
+        protected internal virtual void EmptyReplicatesQueueIntoHistory_Start() { }
 
-        }
         /// <summary>
         /// Replicates which are enqueued will be removed from the queue and put into replicatesHistory.
         /// This should only be called when client only.
@@ -578,7 +594,7 @@ namespace FishNet.Object
         protected internal void EmptyReplicatesQueueIntoHistory<T>(BasicQueue<T> replicatesQueue, List<T> replicatesHistory) where T : IReplicateData
         {
             while (replicatesQueue.TryDequeue(out T data))
-                InsertIntoReplicateHistory<T>(data.GetTick(), data, replicatesHistory);
+                InsertIntoReplicateHistory(data.GetTick(), data, replicatesHistory);
         }
 
         /// <summary>
@@ -591,6 +607,8 @@ namespace FishNet.Object
         {
             bool ownerlessAndServer = (!Owner.IsValid && IsServerStarted);
             if (IsOwner || ownerlessAndServer)
+                return;
+            if (!_networkObjectCache.EnableStateForwarding)
                 return;
 
             TimeManager tm = _networkObjectCache.TimeManager;
@@ -636,6 +654,8 @@ namespace FishNet.Object
 
                         if (queueEntryValid)
                         {
+                            _remainingReconcileResends = pm.RedundancyCount;
+
                             ReplicateData(queueEntry, ReplicateState.CurrentCreated);
                             count--;
 
@@ -670,18 +690,18 @@ namespace FishNet.Object
                 uint tick = data.GetTick();
                 SetReplicateTick(tick, (state == ReplicateState.CurrentCreated));
                 /* If server or appended state order then insert/add to history when run
-                 * within this method. 
+                 * within this method.
                  * Whether data is inserted/added into the past (replicatesHistory) depends on
                  * if client only && and state order.
-                 * 
+                 *
                  * Server only adds onto the history after running the inputs. This is so
                  * the server can send past inputs with redundancy.
-                 * 
+                 *
                  * Client inserts into the history under two scenarios:
                  *  - If state order is using inserted. This is done when the data is read so it
                  *  can be iterated during the next reconcile, since the data is not added to
                  *  a queue otherwise. This is what causes the requirement to reconcile to run
-                 *  datas. 
+                 *  datas.
                  *  - If the state order if using append, and the state just ran. This is so that
                  *  the reconcile does not replay data which hasn't yet run. But, the data should still
                  *  be inserted at point of run so reconciles can correct to the state at the right
@@ -695,7 +715,7 @@ namespace FishNet.Object
                 //If client insert value into history.
                 else
                 {
-                    InsertIntoReplicateHistory<T>(tick, data, replicatesHistory);
+                    InsertIntoReplicateHistory(tick, data, replicatesHistory);
                     if (state == ReplicateState.CurrentCreated)
                         _readReplicateTicks.Add(tick);
                 }
@@ -712,7 +732,6 @@ namespace FishNet.Object
 
                 return _lastOrderedReplicatedTick;
             }
-
         }
 
         /// <summary>
@@ -731,15 +750,15 @@ namespace FishNet.Object
             Func<T, bool> isDefaultDel = PublicPropertyComparer<T>.IsDefault;
             if (isDefaultDel == null)
             {
-                NetworkManager.LogError($"ReplicateComparers not found for type {typeof(T).FullName}");
+                NetworkManager.LogError($"{nameof(PublicPropertyComparer<T>)} not found for type {typeof(T).FullName}");
                 return;
             }
 
             PredictionManager pm = NetworkManager.PredictionManager;
-            uint localTick = TimeManager.LocalTick;
+            uint dataTick = TimeManager.LocalTick;
 
             /* The following code is to remove replicates from replicatesHistory
-             * which exceed the buffer allowance. Replicates are kept for up to 
+             * which exceed the buffer allowance. Replicates are kept for up to
              * x seconds to clients can re-run them during a reconcile. The reconcile
              * method removes old histories but given the server does not reconcile,
              * it will never perform that operation.
@@ -765,28 +784,33 @@ namespace FishNet.Object
                 }
             }
 
-            data.SetTick(localTick);
+            data.SetTick(dataTick);
             replicatesHistory.Add(data);
             //Check to reset resends.
             bool isDefault = isDefaultDel.Invoke(data);
-            bool mayChange = false;// PredictedTransformMayChange();
+            bool mayChange = false; // PredictedTransformMayChange();
             bool resetResends = (mayChange || !isDefault);
 
             byte redundancyCount = PredictionManager.RedundancyCount;
-            if (resetResends)
-                _remainingResends = redundancyCount;
 
-            bool sendData = (_remainingResends > 0);
+            //Standard delta serialize option.
+            //+1 to redundancy so lastFirstRead is pushed out to the last actual input when server reads.
+            if (resetResends)
+            {
+                _remainingReplicateResends = redundancyCount;
+                _remainingReconcileResends = redundancyCount;
+            }
+
+            bool sendData = (_remainingReplicateResends > 0);
             if (sendData)
             {
                 /* If not server then send to server.
-				 * If server then send to clients. */
+                 * If server then send to clients. */
                 bool toServer = !IsServerStarted;
-                Replicate_SendAuthoritative(toServer, methodHash, redundancyCount, replicatesHistory, localTick, channel);
-                _remainingResends--;
+                Replicate_SendAuthoritative(toServer, methodHash, redundancyCount, replicatesHistory, dataTick, channel, GetDeltaSerializeOption());
+                _remainingReplicateResends--;
             }
 
-            uint dataTick = data.GetTick();
             _lastCreatedTick = dataTick;
             SetReplicateTick(dataTick, createdReplicate: true);
 
@@ -795,9 +819,35 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Returns the DeltaSerializeOption to use for the tick.
+        /// </summary>
+        /// <param name="resendsEnded"></param>
+        /// <returns></returns>
+        internal DeltaSerializerOption GetDeltaSerializeOption()
+        {
+            uint localTick = _networkObjectCache.TimeManager.LocalTick;
+            ushort tickRate = _networkObjectCache.TimeManager.TickRate;
+            /* New observers so send a full serialize next replicate.
+             * This could go out to only the newly added observers, but it
+             * would generate a lot more complexity to save presumably
+             * a small amount of occasional bandwidth. */
+            if (_networkObjectCache.ObserverAddedTick == localTick)
+                return DeltaSerializerOption.FullSerialize;
+            //Send full every half a second.
+            //else if (localTick % tickRate == 0 || localTick % (tickRate / 2) == 0)
+            //     return DeltaSerializerOption.FullSerialize;
+            //Send full every second.
+            else if (localTick % tickRate == 0)
+                return DeltaSerializerOption.FullSerialize;
+            //Otherwise return rootSerialize, the default for sending the child most data.
+            else
+                return DeltaSerializerOption.RootSerialize;
+        }
+
+        /// <summary>
         /// Sends a Replicate to server or clients.
         /// </summary>
-        private void Replicate_SendAuthoritative<T>(bool toServer, uint hash, int pastInputs, List<T> replicatesHistory, uint queuedTick, Channel channel) where T : IReplicateData
+        private void Replicate_SendAuthoritative<T>(bool toServer, uint hash, int pastInputs, List<T> replicatesHistory, uint queuedTick, Channel channel, DeltaSerializerOption deltaOption) where T : IReplicateData
         {
             /* Do not use IsSpawnedWithWarning because the server
              * will still call this a tick or two as clientHost when
@@ -815,9 +865,9 @@ namespace FishNet.Object
             if (historyCount < pastInputs)
                 pastInputs = historyCount;
             /* Where to start writing from. When passed
-			 * into the writer values from this offset
-			 * and forward will be written. 
-			 * Always write up to past inputs. */
+             * into the writer values from this offset
+             * and forward will be written.
+             * Always write up to past inputs. */
             int offset = (historyCount - pastInputs);
 
             //Write history to methodWriter.
@@ -826,8 +876,12 @@ namespace FishNet.Object
              * write the queueTick. */
             if (!toServer)
                 methodWriter.WriteTickUnpacked(queuedTick);
-            methodWriter.WriteReplicate<T>(replicatesHistory, offset, TimeManager.LocalTick);
-
+//#if !FISHNET_STABLE_MODE
+#if DO_NOT_USE
+            methodWriter.WriteDeltaReplicate(replicatesHistory, offset, deltaOption);
+#else
+            methodWriter.WriteReplicate<T>(replicatesHistory, offset);
+#endif
             _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
 
@@ -856,9 +910,9 @@ namespace FishNet.Object
             }
 
             /* If sending as reliable there is no reason
-			 * to perform resends, so clear remaining resends. */
+             * to perform resends, so clear remaining resends. */
             if (channel == Channel.Reliable)
-                _remainingResends = 0;
+                _remainingReplicateResends = 0;
 
             methodWriter.StoreLength();
             writer.StoreLength();
@@ -868,10 +922,10 @@ namespace FishNet.Object
         /// Reads a replicate the client.
         /// </summary>
         [MakePublic]
-        internal void Replicate_Reader<T>(uint hash, PooledReader reader, NetworkConnection sender, ref T[] arrBuffer, BasicQueue<T> replicatesQueue, List<T> replicatesHistory, Channel channel) where T : IReplicateData
+        internal void Replicate_Reader<T>(uint hash, PooledReader reader, NetworkConnection sender, ref T lastReadReplicate, ref T[] arrBuffer, BasicQueue<T> replicatesQueue, List<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
             /* This will never be received on owner, except in the condition
-             * the server is the owner and also a client. In such condition 
+             * the server is the owner and also a client. In such condition
              * the method is exited after data is parsed. */
             PredictionManager pm = _networkObjectCache.PredictionManager;
             TimeManager tm = _networkObjectCache.TimeManager;
@@ -890,18 +944,30 @@ namespace FishNet.Object
             else
                 tick = (tm.LastPacketTick.LastRemoteTick);
 
-            int receivedReplicatesCount = reader.ReadReplicate<T>(ref arrBuffer, tick);
+            int receivedReplicatesCount;
+//#if !FISHNET_STABLE_MODE
+#if DO_NOT_USE
+            receivedReplicatesCount = reader.ReadDeltaReplicate(lastReadReplicate, ref arrBuffer, tick);
+#else
+            receivedReplicatesCount = reader.ReadReplicate<T>(ref arrBuffer, tick);
+#endif
+            //Update first read if able.
+            if (receivedReplicatesCount > 0)
+            {
+                lastReadReplicate.Dispose();
+                lastReadReplicate = arrBuffer[receivedReplicatesCount - 1];
+            }
 
             //If received on clientHost simply ignore after parsing data.
             if (fromServer && IsHostStarted)
                 return;
 
             /* Replicate rpc readers relay to this method and
-            * do not have an owner check in the generated code. 
-            * Only server needs to check for owners. Clients
-            * should accept the servers data regardless. 
-            *
-            * If coming from a client and that client is not owner then exit. */
+             * do not have an owner check in the generated code.
+             * Only server needs to check for owners. Clients
+             * should accept the servers data regardless.
+             *
+             * If coming from a client and that client is not owner then exit. */
             if (!fromServer && !OwnerMatches(sender))
                 return;
             //Early exit if old data.
@@ -919,8 +985,8 @@ namespace FishNet.Object
                 }
             }
 
-            Replicate_EnqueueReceivedReplicate<T>(receivedReplicatesCount, arrBuffer, replicatesQueue, replicatesHistory, channel);
-            Replicate_SendNonAuthoritative<T>(hash, replicatesQueue, channel);
+            Replicate_EnqueueReceivedReplicate(receivedReplicatesCount, arrBuffer, replicatesQueue, replicatesHistory, channel);
+            Replicate_SendNonAuthoritative(hash, replicatesQueue, channel);
         }
 
         /// <summary>
@@ -939,7 +1005,6 @@ namespace FishNet.Object
             if (queueCount == 0)
                 return;
 
-            int redundancyCount = (int)Mathf.Min(_networkObjectCache.PredictionManager.RedundancyCount, queueCount);
             //If the only observer is the owner then there is no need to write.
             int observersCount = Observers.Count;
             //Quick exit for no observers other than owner.
@@ -950,8 +1015,8 @@ namespace FishNet.Object
 
             uint localTick = _networkObjectCache.TimeManager.LocalTick;
             /* Write when the last entry will run.
-             * 
-             * Typically the last entry will run on localTick + (queueCount - 1).
+             *
+             * Typically, the last entry will run on localTick + (queueCount - 1).
              * 1 is subtracted from queueCount because in most cases the first entry
              * is going to run same tick.
              * An exception is when the replicateStartTick is set, then there is going
@@ -963,8 +1028,13 @@ namespace FishNet.Object
             //Write the run tick now.
             methodWriter.WriteTickUnpacked(runTickOflastEntry);
             //Write the replicates.
-            methodWriter.WriteReplicate<T>(replicatesQueue, redundancyCount, runTickOflastEntry);
-
+            int redundancyCount = (int)Mathf.Min(_networkObjectCache.PredictionManager.RedundancyCount, queueCount);
+//#if !FISHNET_STABLE_MODE
+#if DO_NOT_USE
+            methodWriter.WriteDeltaReplicate(replicatesQueue, redundancyCount, GetDeltaSerializeOption());
+#else
+            methodWriter.WriteReplicate<T>(replicatesQueue, redundancyCount);
+#endif
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
 
             //Exclude owner and if clientHost, also localClient.
@@ -986,8 +1056,8 @@ namespace FishNet.Object
         {
             int startQueueCount = replicatesQueue.Count;
             /* Owner never gets this for their own object so
-			 * this can be processed under the assumption data is only
-			 * handled on unowned objects. */
+             * this can be processed under the assumption data is only
+             * handled on unowned objects. */
             PredictionManager pm = PredictionManager;
 
             bool isServer = _networkObjectCache.IsServerStarted;
@@ -1006,6 +1076,7 @@ namespace FishNet.Object
                     entry.Dispose();
                     continue;
                 }
+
                 _lastReadReplicateTick = tick;
 
                 if (!IsServerStarted && !isAppendedOrder)
@@ -1020,15 +1091,15 @@ namespace FishNet.Object
                 /* Check if replicate is already in history.
                  * This can occur when the replicate method has a predicted
                  * state for the tick, but a user created replicate comes
-                 * through afterwards. 
+                 * through afterwards.
                  *
                  * Only perform this check if not the server, since server
                  * does not reconcile it will never use replicatesHistory.
-                 * 
+                 *
                  * When clients are also using ReplicateStateOrder.Future the replicates
                  * do not need to be put into the past, as they're always added onto
                  * the end of the queue.
-                 * 
+                 *
                  * The server also does not predict replicates in the same way
                  * a client does. When an owner sends a replicate to the server
                  * the server only uses the owner tick to check if it's an old replicate.
@@ -1039,7 +1110,7 @@ namespace FishNet.Object
                     replicatesQueue.Enqueue(entry);
                 //Run checks to replace data if not server.
                 else
-                    InsertIntoReplicateHistory<T>(tick, entry, replicatesHistory);
+                    InsertIntoReplicateHistory(tick, entry, replicatesHistory);
             }
 
             /* If entries are being added after nothing then
@@ -1058,8 +1129,8 @@ namespace FishNet.Object
         private void InsertIntoReplicateHistory<T>(uint tick, T data, List<T> replicatesHistory) where T : IReplicateData
         {
             /* See if replicate tick is in history. Keep in mind
-            * this is the localTick from the server, not the localTick of
-            * the client which is having their replicate relayed. */
+             * this is the localTick from the server, not the localTick of
+             * the client which is having their replicate relayed. */
             ReplicateTickFinder.DataPlacementResult findResult;
             int index = ReplicateTickFinder.GetReplicateHistoryIndex(tick, replicatesHistory, out findResult);
 
@@ -1081,6 +1152,7 @@ namespace FishNet.Object
             {
                 replicatesHistory.Add(data);
             }
+
             /* Insert beginning should not happen unless the data is REALLY old.
              * This would mean the network was in an unplayable state. Discard the
              * data. */
@@ -1099,13 +1171,13 @@ namespace FishNet.Object
         /// <summary>
         /// Sends a reconcile to clients.
         /// </summary>
-        public void Reconcile_Server<T>(uint methodHash, T data, Channel channel) where T : IReconcileData
+        public void Reconcile_Server<T>(uint methodHash, ref T lastReconcileData, T data, Channel channel) where T : IReconcileData
         {
             if (!IsServerStarted)
                 return;
 
             //Tick does not need to be set for reconciles since they come in as state updates, which have the tick included globally.
-            Server_SendReconcileRpc(methodHash, data, channel);
+            Server_SendReconcileRpc(methodHash, ref lastReconcileData, data, channel);
         }
 
         /// <summary>
@@ -1114,6 +1186,7 @@ namespace FishNet.Object
         /// </summary>
         [MakePublic]
         protected internal virtual void Reconcile_Client_Start() { }
+
         /// <summary>
         /// Processes a reconcile for client.
         /// </summary>
@@ -1191,16 +1264,22 @@ namespace FishNet.Object
         /// <summary>
         /// Reads a reconcile for the client.
         /// </summary>
-        public void Reconcile_Reader<T>(PooledReader reader, ref T data, Channel channel) where T : IReconcileData
+        public void Reconcile_Reader<T>(PooledReader reader, ref T lastReconciledata, Channel channel) where T : IReconcileData
         {
-            T newData = reader.Read<T>();
+//#if !FISHNET_STABLE_MODE
+#if DO_NOT_USE
+            T newData = reader.ReadDeltaReconcile(lastReconciledata);
+#else
+            T newData = reader.ReadReconcile<T>();
+#endif
+
             uint tick = (IsOwner) ? PredictionManager.ClientStateTick : PredictionManager.ServerStateTick;
             //Do not process if an old state.
             if (tick < _lastReadReconcileTick)
                 return;
 
-            data = newData;
-            data.SetTick(tick);
+            lastReconciledata = newData;
+            lastReconciledata.SetTick(tick);
 
             IsBehaviourReconciling = true;
             //Also set on NetworkObject since at least one behaviour is reconciling.
@@ -1212,12 +1291,10 @@ namespace FishNet.Object
         /// Sets the last tick this NetworkBehaviour replicated with.
         /// </summary>
         /// <param name="setUnordered">True to set unordered value, false to set ordered.</param>
-        internal void SetReplicateTick(uint value, bool createdReplicate)
+        private void SetReplicateTick(uint value, bool createdReplicate)
         {
             _lastOrderedReplicatedTick = value;
             _networkObjectCache.SetReplicateTick(value, createdReplicate);
         }
-
-
     }
 }

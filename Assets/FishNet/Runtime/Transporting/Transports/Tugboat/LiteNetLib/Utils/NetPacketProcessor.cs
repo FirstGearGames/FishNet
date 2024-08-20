@@ -74,7 +74,7 @@ namespace LiteNetLib.Utils
         /// <param name="readDelegate"></param>
         public void RegisterNestedType<T>(Action<NetDataWriter, T> writeDelegate, Func<NetDataReader, T> readDelegate)
         {
-            _netSerializer.RegisterNestedType<T>(writeDelegate, readDelegate);
+            _netSerializer.RegisterNestedType(writeDelegate, readDelegate);
         }
 
         /// <summary>

@@ -17,7 +17,10 @@ namespace FishNet.Component.Observing
         /// </summary>
         public HashSet<GridEntry> NearbyEntries;
 
-        public GridEntry() { }
+        public GridEntry()
+        {
+        }
+
         public GridEntry(HashSet<GridEntry> nearby)
         {
             NearbyEntries = nearby;
@@ -28,10 +31,12 @@ namespace FishNet.Component.Observing
             Position = position;
             NearbyEntries = nearby;
         }
+
         public void SetValues(HashSet<GridEntry> nearby)
         {
             NearbyEntries = nearby;
         }
+
         public void SetValues(Vector2Int position)
         {
             Position = position;
@@ -47,6 +52,7 @@ namespace FishNet.Component.Observing
     public class HashGrid : MonoBehaviour
     {
         #region Types.
+
         public enum GridAxes : byte
         {
             XY = 0,
@@ -57,6 +63,7 @@ namespace FishNet.Component.Observing
         #endregion
 
         #region Internal.
+
         /// <summary>
         /// Value for when grid position is not set.
         /// </summary>
@@ -65,22 +72,22 @@ namespace FishNet.Component.Observing
         /// An empty grid entry.
         /// </summary>
         internal static GridEntry EmptyGridEntry = new GridEntry(new HashSet<GridEntry>());
+
         #endregion
 
         #region Serialized.
+
         /// <summary>
         /// Axes of world space to base the grid on.
         /// </summary>
-        [Tooltip("Axes of world space to base the grid on.")]
-        [SerializeField]
+        [Tooltip("Axes of world space to base the grid on.")] [SerializeField]
         private GridAxes _gridAxes = GridAxes.XY;
         /// <summary>
         /// Accuracy of the grid. Objects will be considered nearby if they are within this number of units. Lower values may be more expensive.
         /// </summary>
-        [Tooltip("Accuracy of the grid. Objects will be considered nearby if they are within this number of units. Lower values may be more expensive.")]
-        [Range(1, ushort.MaxValue)]
-        [SerializeField]
+        [Tooltip("Accuracy of the grid. Objects will be considered nearby if they are within this number of units. Lower values may be more expensive.")] [Range(1, ushort.MaxValue)] [SerializeField]
         private ushort _accuracy = 10;
+
         #endregion
 
         /// <summary>
@@ -151,6 +158,7 @@ namespace FishNet.Component.Observing
                 for (int i = 0; i < cacheCount; i++)
                     _gridEntryHashSetCache.Push(new HashSet<GridEntry>());
             }
+
             void BuildGridEntryCache()
             {
                 for (int i = 0; i < cacheCount; i++)
@@ -206,6 +214,7 @@ namespace FishNet.Component.Observing
                     collection.Add(new Vector2Int(x, y));
             }
         }
+
         /// <summary>
         /// Gets the grid position to use for a NetworkObjects current position.
         /// </summary>
@@ -231,21 +240,21 @@ namespace FishNet.Component.Observing
             }
             else
             {
-                _networkManager?.LogError($"GridAxes of {_gridAxes.ToString()} is not handled.");
+                _networkManager.LogError($"GridAxes of {_gridAxes.ToString()} is not handled.");
                 return default;
             }
 
             return new Vector2Int(
                 (int)fX / _halfAccuracy
                 , (int)fY / _halfAccuracy
-                );
+            );
         }
 
 
         /// <summary>
         /// Gets a GridEntry for a NetworkObject, creating the entry if needed.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal GridEntry GetGridEntry(NetworkObject nob)
         {
             Vector2Int pos = GetHashGridPosition(nob);
@@ -263,8 +272,5 @@ namespace FishNet.Component.Observing
 
             return result;
         }
-
     }
-
-
 }

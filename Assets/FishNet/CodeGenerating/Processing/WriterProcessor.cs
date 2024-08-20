@@ -258,7 +258,7 @@ namespace FishNet.CodeGenerating.Helping
             /* If a global serializer is declared for the type
              * and the method is not the declared serializer then
              * exit early. */
-            if (IsGlobalSerializer(writeMr.Parameters[1].ParameterType) && writeMr.Name.StartsWith(UtilityConstants.GENERATED_WRITER_PREFIX))
+            if (IsGlobalSerializer(writeMr.Parameters[1].ParameterType) && writeMr.Name.StartsWith(UtilityConstants.GeneratedWriterPrefix))
                 return;
 
             //Check if ret already exist, if so remove it; ret will be added on again in this method.
@@ -1074,7 +1074,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         public MethodDefinition CreateStaticWriterStubMethodDefinition(TypeReference objectTypeRef, string nameExtension = WriterProcessor.GENERATED_WRITER_NAMESPACE)
         {
-            string methodName = $"{UtilityConstants.GENERATED_WRITER_PREFIX}{objectTypeRef.FullName}{nameExtension}";
+            string methodName = $"{UtilityConstants.GeneratedWriterPrefix}{objectTypeRef.FullName}{nameExtension}";
             // create new writer for this type
             TypeDefinition writerTypeDef = base.GetClass<GeneralHelper>().GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_WRITERS_CLASS_NAME, null);
 

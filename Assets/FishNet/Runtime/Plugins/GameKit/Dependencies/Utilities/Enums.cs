@@ -31,7 +31,7 @@ namespace GameKit.Dependencies.Utilities
         /// <param name="whole"></param>
         /// <param name="part">Values to check for within whole.</param>
         /// <returns>Returns true part is within whole.</returns>
-        public static bool Contains(this Enum whole, Enum part)
+        public static bool ContainsAllocated(this Enum whole, Enum part)
         {
             //If not the same type of Enum return false.
             /* Commented out for performance. Designer

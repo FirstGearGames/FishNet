@@ -1,6 +1,7 @@
 ﻿using FishNet.Component.Observing;
 using FishNet.Connection;
 using FishNet.Managing;
+using FishNet.Managing.Timing;
 using FishNet.Observing;
 using System;
 using System.Collections.Generic;
@@ -12,31 +13,34 @@ namespace FishNet.Object
     public partial class NetworkObject : MonoBehaviour
     {
         #region Public.
+
         /// <summary>
         /// Called when the clientHost gains or loses visibility of this object.
         /// Boolean value will be true if clientHost has visibility.
         /// </summary>        
         public event HostVisibilityUpdatedDelegate OnHostVisibilityUpdated;
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="prevVisible">True if clientHost was known to have visibility of the object prior to this invoking.</param>
         /// <param name="nextVisible">True if the clientHost now has visibility of the object.</param>
         public delegate void HostVisibilityUpdatedDelegate(bool prevVisible, bool nextVisible);
+
         /// <summary>
         /// Called when this NetworkObject losses all observers or gains observers while previously having none.
         /// </summary>
         public event Action<NetworkObject> OnObserversActive;
+
         /// <summary>
         /// NetworkObserver on this object.
         /// </summary>
-        [HideInInspector]
-        public NetworkObserver NetworkObserver = null;
+        [HideInInspector] public NetworkObserver NetworkObserver = null;
         /// <summary>
         /// Clients which can see and get messages from this NetworkObject.
         /// </summary>
-        [HideInInspector]
-        public HashSet<NetworkConnection> Observers = new HashSet<NetworkConnection>();
+        [HideInInspector] public HashSet<NetworkConnection> Observers = new HashSet<NetworkConnection>();
+
         #endregion
 
         #region Internal.
@@ -44,9 +48,14 @@ namespace FishNet.Object
         /// Current HashGrid entry this belongs to.
         /// </summary>
         internal GridEntry HashGridEntry;
+        /// <summary>
+        /// Last tick an observer was added.
+        /// </summary>
+        internal uint ObserverAddedTick = TimeManager.UNSET_TICK;
         #endregion
 
         #region Private.
+
         /// <summary>
         /// True if NetworkObserver has been initialized.
         /// </summary>
@@ -54,8 +63,7 @@ namespace FishNet.Object
         /// <summary>
         /// Found renderers on the NetworkObject and it's children. This is only used as clientHost to hide non-observers objects.
         /// </summary>
-        [System.NonSerialized]
-        private Renderer[] _renderers;
+        [System.NonSerialized] private Renderer[] _renderers;
         /// <summary>
         /// True if renderers have been looked up.
         /// </summary>
@@ -80,6 +88,7 @@ namespace FishNet.Object
         /// Current grid position.
         /// </summary>
         private Vector2Int _hashGridPosition = HashGrid.UnsetGridPosition;
+
         #endregion
 
         /// <summary>
@@ -104,14 +113,14 @@ namespace FishNet.Object
             {
                 _hashGridPosition = newPosition;
                 HashGridEntry = _hashGrid.GetGridEntry(newPosition);
-            }            
+            }
         }
 
         /// <summary>
         /// Updates cached renderers used to managing clientHost visibility.
         /// </summary>
         /// <param name="updateVisibility">True to also update visibility if clientHost.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void UpdateRenderers(bool updateVisibility = true)
         {
             UpdateRenderers_Internal(updateVisibility);
@@ -122,7 +131,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="visible">True if renderers are to be visibile.</param>
         /// <param name="force">True to skip blocking checks.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void SetRenderersVisible(bool visible, bool force = false)
         {
             if (!force)
@@ -143,7 +152,7 @@ namespace FishNet.Object
         /// <summary>
         /// Clears and updates renderers.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void UpdateRenderers_Internal(bool updateVisibility)
         {
             _renderers = GetComponentsInChildren<Renderer>(true);
@@ -153,6 +162,7 @@ namespace FishNet.Object
                 if (r.enabled)
                     enabledRenderers.Add(r);
             }
+
             //If there are any disabled renderers then change _renderers to cached values.
             if (enabledRenderers.Count != _renderers.Length)
                 _renderers = enabledRenderers.ToArray();
@@ -270,12 +280,19 @@ namespace FishNet.Object
         /// <param name="startCount"></param>
         private void TryInvokeOnObserversActive(int startCount)
         {
-            if ((Observers.Count > 0 && startCount == 0) ||
-                Observers.Count == 0 && startCount > 0)
+            ObserverAddedTick = TimeManager.LocalTick;
+
+            if ((Observers.Count > 0 && startCount == 0) || Observers.Count == 0 && startCount > 0)
                 OnObserversActive?.Invoke(this);
         }
 
+        /// <summary>
+        /// Resets this object to starting values.
+        /// </summary>
+        private void ResetState_Observers(bool asServer)
+        {
+            //As server or client it's safe to reset this value.
+            ObserverAddedTick = TimeManager.UNSET_TICK;
+        }
     }
-
 }
-

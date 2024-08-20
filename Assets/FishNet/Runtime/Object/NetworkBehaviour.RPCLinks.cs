@@ -3,6 +3,7 @@ using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -18,6 +19,13 @@ namespace FishNet.Object
         private Dictionary<uint, RpcLinkType> _rpcLinks = new Dictionary<uint, RpcLinkType>();
         #endregion
 
+        #region Consts.
+        /// <summary>
+        /// Number of bytes written for each RPCLinks.
+        /// </summary>
+        internal const int RPCLINK_RESERVED_BYTES = 2;
+        #endregion
+        
         /// <summary>
         /// Initializes RpcLinks. This will only call once even as host.
         /// </summary>
@@ -93,7 +101,7 @@ namespace FishNet.Object
         /// <summary>
         /// Creates a PooledWriter and writes the header for a rpc.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private PooledWriter CreateLinkedRpc(RpcLinkType link, PooledWriter methodWriter, Channel channel)
         {
             int rpcHeaderBufferLength = GetEstimatedRpcHeaderLength();
@@ -127,19 +135,22 @@ namespace FishNet.Object
         /// </summary>
         internal void WriteRpcLinks(Writer writer)
         {
-            PooledWriter rpcLinkWriter = WriterPool.Retrieve();
+            int rpcLinksCount = _rpcLinks.Count;
+            if (rpcLinksCount == 0)
+                return;
+
+            writer.WriteNetworkBehaviourId(this);
+            writer.WriteUInt16((ushort)rpcLinksCount);
+            
             foreach (KeyValuePair<uint, RpcLinkType> item in _rpcLinks)
             {
                 //RpcLink index.
-                rpcLinkWriter.WriteUInt16(item.Value.LinkIndex);
+                writer.WriteUInt16Unpacked(item.Value.LinkIndex);
                 //Hash.
-                rpcLinkWriter.WriteUInt16((ushort)item.Key);
+                writer.WriteUInt16Unpacked((ushort)item.Key);
                 //True/false if observersRpc.
-                rpcLinkWriter.WriteUInt8Unpacked((byte)item.Value.RpcType);
+                writer.WriteUInt8Unpacked((byte)item.Value.RpcType);
             }
-
-            writer.WriteUInt8ArrayAndSize(rpcLinkWriter.GetBuffer(), 0, rpcLinkWriter.Length);
-            rpcLinkWriter.Store();
         }
     }
 }

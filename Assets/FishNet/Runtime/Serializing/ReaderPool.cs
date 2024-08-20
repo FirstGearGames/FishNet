@@ -2,17 +2,22 @@ using FishNet.Managing;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using GameKit.Dependencies.Utilities;
 
 namespace FishNet.Serializing
 {
     /// <summary>
     /// Reader which is reused to save on garbage collection and performance.
     /// </summary>
-    public sealed class PooledReader : Reader
+    public sealed class PooledReader : Reader, IResettable
     {
+        public PooledReader() { }
         internal PooledReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(bytes, networkManager, null, source) { }
         internal PooledReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(segment, networkManager, null, source) { }
         public void Store() => ReaderPool.Store(this);
+        
+        public void ResetState() => Store();
+        public void InitializeState() { }
     }
 
     /// <summary>
@@ -31,7 +36,7 @@ namespace FishNet.Serializing
         /// Get the next reader in the pool
         /// <para>If pool is empty, creates a new Reader</para>
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static PooledReader Retrieve(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
         {
             return Retrieve(new ArraySegment<byte>(bytes), networkManager, source);

@@ -15,17 +15,17 @@ namespace LiteNetLib.Utils
 
         public int Capacity
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _data.Length;
         }
         public byte[] Data
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _data;
         }
         public int Length
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _position;
         }
 
@@ -83,7 +83,7 @@ namespace LiteNetLib.Utils
             return netDataWriter;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void ResizeIfNeed(int newSize)
         {
             if (_data.Length < newSize)
@@ -92,7 +92,7 @@ namespace LiteNetLib.Utils
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void EnsureFit(int additionalSize)
         {
             if (_data.Length < _position + additionalSize)

@@ -1,6 +1,7 @@
 ﻿#if UNITY_EDITOR
 using FishNet.Editing;
 using System.Collections.Generic;
+using FishNet.Managing;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -156,7 +157,7 @@ namespace FishNet.Component.Animating.Editing
                         {
                             if (Application.isPlaying)
                             {
-                                Debug.Log("Synchronized parameters may not be changed while playing.");
+                                NetworkManagerExtensions.Log("Synchronized parameters may not be changed while playing.");
                             }
                             else
                             {

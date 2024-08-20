@@ -73,14 +73,14 @@ namespace FishNet.Object.Prediction
         public static void WritePredictionRigidbody2D(this Writer w, PredictionRigidbody2D pr)
         {
             w.Write(pr.Rigidbody2D.GetState());
-            w.WriteList<PredictionRigidbody2D.EntryData>(pr.GetPendingForces());
+            w.WriteList(pr.GetPendingForces());
         }
 
         public static PredictionRigidbody2D ReadPredictionRigidbody2D(this Reader r)
         {
             List<PredictionRigidbody2D.EntryData> lst = CollectionCaches<PredictionRigidbody2D.EntryData>.RetrieveList();
             Rigidbody2DState rs = r.Read<Rigidbody2DState>();
-            r.ReadList<PredictionRigidbody2D.EntryData>(ref lst);
+            r.ReadList(ref lst);
             PredictionRigidbody2D pr = ResettableObjectCaches<PredictionRigidbody2D>.Retrieve();
 
             pr.SetReconcileData(rs, lst);

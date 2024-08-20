@@ -100,7 +100,7 @@ namespace FishNet.Managing.Object
                 _prefabs.Add(nob);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public override void InitializePrefabRange(int startIndex)
         {
             for (int i = startIndex; i < _prefabs.Count; i++)

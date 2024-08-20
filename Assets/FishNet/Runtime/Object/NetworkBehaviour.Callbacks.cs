@@ -68,7 +68,6 @@ namespace FishNet.Object
         /// <summary>
         /// Invokes the OnStart/StopNetwork.
         /// </summary>
-        /// <param name="start"></param>
         internal void InvokeOnNetwork(bool start)
         {
             if (start)
@@ -85,7 +84,7 @@ namespace FishNet.Object
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal virtual void OnStartNetwork_Internal()
         {
             _onStartNetworkCalled = true;
@@ -100,7 +99,7 @@ namespace FishNet.Object
         public virtual void OnStartNetwork() { }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal virtual void OnStopNetwork_Internal()
         {
             _onStopNetworkCalled = true;
@@ -115,7 +114,7 @@ namespace FishNet.Object
         public virtual void OnStopNetwork() { }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void OnStartServer_Internal()
         {
             OnStartServerCalled = true;
@@ -128,7 +127,7 @@ namespace FishNet.Object
         public virtual void OnStartServer() { }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void OnStopServer_Internal()
         {
             OnStartServerCalled = false;
@@ -141,7 +140,7 @@ namespace FishNet.Object
         public virtual void OnStopServer() { }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void OnOwnershipServer_Internal(NetworkConnection prevOwner)
         {
             ResetState_Prediction(true);
@@ -166,7 +165,7 @@ namespace FishNet.Object
         public virtual void OnDespawnServer(NetworkConnection connection) { }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void OnStartClient_Internal()
         {
             OnStartClientCalled = true;
@@ -178,7 +177,7 @@ namespace FishNet.Object
         public virtual void OnStartClient() { }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void OnStopClient_Internal()
         {
             OnStartClientCalled = false;
@@ -189,7 +188,7 @@ namespace FishNet.Object
         /// </summary>
         public virtual void OnStopClient() { }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void OnOwnershipClient_Internal(NetworkConnection prevOwner)
         {
             //If losing or gaining ownership then clear replicate cache.

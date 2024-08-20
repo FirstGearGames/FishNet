@@ -20,7 +20,7 @@ namespace FishNet.Broadcast.Helping
             writer.WriteUInt16(typeof(T).FullName.GetStableHashU16());
             //Write data to a new writer.
             PooledWriter dataWriter = WriterPool.Retrieve();
-            dataWriter.Write<T>(message);
+            dataWriter.Write(message);
             //Write length of data.
             writer.WriteLength(dataWriter.Length);
             //Write data.

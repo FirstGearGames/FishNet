@@ -58,7 +58,7 @@ namespace FishNet.Managing.Object
         protected virtual void Initialize(NetworkManager manager)
         {
             NetworkManager = manager;
-            manager.TryGetInstance<HashGrid>(out _hashGrid);
+            manager.TryGetInstance(out _hashGrid);
         }
 
         /// <summary>
@@ -169,7 +169,7 @@ namespace FishNet.Managing.Object
             if (destroy)
             {
                 if (despawnType == DespawnType.Destroy)
-                    MonoBehaviour.Destroy(nob.gameObject);
+                    UnityEngine.Object.Destroy(nob.gameObject);
                 else
                     NetworkManager.StorePooledInstantiated(nob, asServer);
             }
@@ -217,7 +217,7 @@ namespace FishNet.Managing.Object
                  * individual despawns for each child. */
                 if (asServer)
                 {
-                    foreach (NetworkObject childNob in nob.NestedRootNetworkBehaviours)
+                    foreach (NetworkObject childNob in nob.SerializedNestedNetworkObjects)
                     {
                         if (childNob != null && !childNob.IsDeinitializing)
                             Despawn(childNob, despawnType, asServer);
@@ -232,7 +232,7 @@ namespace FishNet.Managing.Object
         /// Updates NetworkBehaviours on nob.
         /// </summary>
         /// <param name="asServer"></param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         protected void UpdateNetworkBehavioursForSceneObject(NetworkObject nob, bool asServer)
         {
             //Would have already been done on server side.
@@ -264,6 +264,7 @@ namespace FishNet.Managing.Object
 
             byte componentIndex = 0;
             prefab.UpdateNetworkBehaviours(null, ref componentIndex);
+            prefab.SerializeTransformProperties();
         }
 
         /// <summary>
@@ -307,7 +308,7 @@ namespace FishNet.Managing.Object
                 else
                 {
                     if (despawnType == DespawnType.Destroy)
-                        MonoBehaviour.Destroy(nob.gameObject);
+                        UnityEngine.Object.Destroy(nob.gameObject);
                     else
                         NetworkManager.StorePooledInstantiated(nob, asServer);
                 }
@@ -353,7 +354,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         /// <param name="objectId"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         protected internal NetworkObject GetSpawnedNetworkObject(int objectId)
         {
             NetworkObject r;
@@ -394,8 +395,7 @@ namespace FishNet.Managing.Object
 #if DEVELOPMENT_BUILD || UNITY_EDITOR || !UNITY_SERVER
                 NetworkManager.LogError(msg);
 #else
-                if (NetworkManager.CanLog(LoggingType.Warning))
-                    Debug.LogWarning(msg);
+                NetworkManager.LogWarning(msg);
 #endif
                 reader.Clear();
             }
@@ -418,7 +418,7 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Parses a ReplicateRpc.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void ParseReplicateRpc(PooledReader reader, NetworkConnection conn, Channel channel)
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();

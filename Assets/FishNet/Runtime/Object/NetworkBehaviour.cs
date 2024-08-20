@@ -4,14 +4,17 @@ using FishNet.Managing.Transporting;
 using FishNet.Serializing.Helping;
 using FishNet.Utility;
 using System.Runtime.CompilerServices;
+using FishNet.Managing;
 using UnityEngine;
 
 [assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
+
 namespace FishNet.Object
 {
     /// <summary>
     /// Scripts which inherit from NetworkBehaviour can be used to gain insight of, and perform actions on the network.
     /// </summary>
+    [ExcludeSerialization]
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Public.
@@ -19,11 +22,12 @@ namespace FishNet.Object
         /// True if this NetworkBehaviour is initialized for the network.
         /// </summary>
         public bool IsSpawned => _networkObjectCache.IsSpawned;
+
         /// <summary>
         /// 
         /// </summary>
         [SerializeField, HideInInspector]
-        private byte _componentIndexCache = byte.MaxValue;
+        private byte _componentIndexCache = NetworkBehaviour.UNSET_NETWORKBEHAVIOUR_ID;
         /// <summary>
         /// ComponentIndex for this NetworkBehaviour.
         /// </summary>
@@ -38,7 +42,7 @@ namespace FishNet.Object
         /// </summary>
         [SerializeField, HideInInspector]
         private NetworkObject _addedNetworkObject;
-#endif 
+#endif
         /// <summary>
         /// Cache of the TransportManager.
         /// </summary>
@@ -48,6 +52,7 @@ namespace FishNet.Object
         /// </summary>
         [SerializeField, HideInInspector]
         private NetworkObject _networkObjectCache;
+
         /// <summary>
         /// NetworkObject this behaviour is for.
         /// </summary>
@@ -71,8 +76,13 @@ namespace FishNet.Object
         /// <summary>
         /// Maximum number of allowed added NetworkBehaviours.
         /// </summary>
-        public const byte MAXIMUM_NETWORKBEHAVIOURS = byte.MaxValue;
+        public const byte MAXIMUM_NETWORKBEHAVIOURS = (UNSET_NETWORKBEHAVIOUR_ID - 1);
+        /// <summary>
+        /// Id for when a NetworkBehaviour is not valid.
+        /// </summary>
+        public const byte UNSET_NETWORKBEHAVIOUR_ID = byte.MaxValue;
         #endregion
+
         /// <summary>
         /// Outputs data about this NetworkBehaviour to string.
         /// </summary>
@@ -88,8 +98,8 @@ namespace FishNet.Object
         internal void Preinitialize_Internal(NetworkObject nob, bool asServer)
         {
             _transportManagerCache = nob.TransportManager;
-            
-            InitializeOnceSyncTypes(asServer);
+            SyncTypes_Preinitialize(asServer);
+
             if (asServer)
             {
                 InitializeRpcLinks();
@@ -107,6 +117,14 @@ namespace FishNet.Object
         internal void Deinitialize(bool asServer)
         {
             ResetState_SyncTypes(asServer);
+        }
+
+        /// <summary>
+        /// Called by the NetworkObject when this object is destroyed.
+        /// </summary>
+        internal void NetworkBehaviour_OnDestroy()
+        {
+            SyncTypes_OnDestroy();
         }
 
         /// <summary>
@@ -128,6 +146,7 @@ namespace FishNet.Object
 
             NetworkInitializeIfDisabled();
         }
+
         /// <summary>
         /// Long name is to prevent users from potentially creating their own method named the same.
         /// </summary>
@@ -191,7 +210,7 @@ namespace FishNet.Object
 
             while (climb != null)
             {
-                if (climb.TryGetComponent<NetworkObject>(out result))
+                if (climb.TryGetComponent(out result))
                     break;
                 else
                     climb = climb.parent;
@@ -205,7 +224,7 @@ namespace FishNet.Object
             else
             {
                 _addedNetworkObject = transform.root.gameObject.AddComponent<NetworkObject>();
-                Debug.Log($"Script {GetType().Name} on object {gameObject.name} added a NetworkObject component to {transform.root.name}.");
+                NetworkManagerExtensions.Log($"Script {GetType().Name} on object {gameObject.name} added a NetworkObject component to {transform.root.name}.");
             }
 
             AlertToDuplicateNetworkObjects(_addedNetworkObject.transform);
@@ -228,15 +247,11 @@ namespace FishNet.Object
                     else
                         Debug.LogError($"Object {t.name} in scene {sceneName} has multiple NetworkObject components. Please remove the extra component(s) to prevent errors.{useMenu}");
                 }
-
             }
 #else
             return null;
 #endif
         }
-
-#endregion
+        #endregion
     }
-
-
 }

@@ -286,7 +286,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Reads and sets the current values for server or client.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {
@@ -421,7 +421,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Removes time passed from Remaining since the last unscaled time using this method.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update()
         {
             float delta = (Time.unscaledTime - _updateTime);
@@ -434,7 +434,7 @@ namespace FishNet.Object.Synchronizing
         /// This also resets unscaledTime delta for Update().
         /// </summary>
         /// <param name="delta">Value to remove from Remaining.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(float delta)
         {
             //Not enabled.

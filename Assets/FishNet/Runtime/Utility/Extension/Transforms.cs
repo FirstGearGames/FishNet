@@ -20,7 +20,7 @@ namespace FishNet.Utility.Extension
         /// <summary>
         /// Sets values of TransformProperties to a transforms world properties.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static TransformProperties GetWorldProperties(this Transform t, TransformProperties offset)
         {
             TransformProperties tp = new TransformProperties(t.position, t.rotation, t.localScale);

@@ -14,6 +14,8 @@ using MonoFN.Cecil;
 using MonoFN.Cecil.Cil;
 using MonoFN.Cecil.Rocks;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 using SR = System.Reflection;
 
 namespace FishNet.CodeGenerating.Processing
@@ -21,6 +23,7 @@ namespace FishNet.CodeGenerating.Processing
     internal class PredictionProcessor : CodegenBase
     {
         #region Types.
+
         private class PredictionAttributedMethods
         {
             public MethodDefinition ReplicateMethod;
@@ -32,6 +35,7 @@ namespace FishNet.CodeGenerating.Processing
                 ReconcileMethod = reconcileMethod;
             }
         }
+
         private enum InsertType
         {
             First,
@@ -48,30 +52,34 @@ namespace FishNet.CodeGenerating.Processing
             /// <summary>
             /// Delegate for calling replicate user logic.
             /// </summary>
-            public readonly FieldReference ReplicateULDelegate;
+            public readonly FieldDefinition ReplicateULDelegate;
             /// <summary>
             /// Delegate for calling replicate user logic.
             /// </summary>
-            public readonly FieldReference ReconcileULDelegate;
+            public readonly FieldDefinition ReconcileULDelegate;
             /// <summary>
             /// Replicate data which has not run yet and is in queue to do so.
             /// </summary>
-            public readonly FieldReference ReplicateDatasQueue;
+            public readonly FieldDefinition ReplicateDatasQueue;
             /// <summary>
             /// Replicate data which has already run and is used to reconcile/replay.
             /// </summary>
-            public readonly FieldReference ReplicateDatasHistory;
+            public readonly FieldDefinition ReplicateDatasHistory;
             /// <summary>
             /// Last reconcile data received from the server.
             /// </summary>
-            public readonly FieldReference ReconcileData;
+            public readonly FieldDefinition ReconcileData;
             /// <summary>
             /// A buffer to read replicates into.
             /// </summary>
-            public readonly FieldReference ServerReplicateReaderBuffer;
+            public readonly FieldDefinition ServerReplicateReaderBuffer;
+            /// <summary>
+            /// First replicate read in the last read replicate.
+            /// </summary>
+            public readonly FieldDefinition LastReadReplicate;
 
-            public CreatedPredictionFields(TypeReference replicateDataTypeRef, FieldReference replicateULDelegate, FieldReference reconcileULDelegate, FieldReference replicateDatasQueue, FieldReference replicateDatasHistory, FieldReference reconcileData,
-                FieldReference serverReplicateReaderBuffer)
+            public CreatedPredictionFields(TypeReference replicateDataTypeRef, FieldDefinition replicateULDelegate, FieldDefinition reconcileULDelegate, FieldDefinition replicateDatasQueue, FieldDefinition replicateDatasHistory, FieldDefinition reconcileData,
+                FieldDefinition serverReplicateReaderBuffer, FieldDefinition lastReadReplicate)
             {
                 ReplicateDataTypeRef = replicateDataTypeRef;
                 ReplicateULDelegate = replicateULDelegate;
@@ -80,6 +88,7 @@ namespace FishNet.CodeGenerating.Processing
                 ReplicateDatasHistory = replicateDatasHistory;
                 ReconcileData = reconcileData;
                 ServerReplicateReaderBuffer = serverReplicateReaderBuffer;
+                LastReadReplicate = lastReadReplicate;
             }
         }
 
@@ -98,60 +107,54 @@ namespace FishNet.CodeGenerating.Processing
         #endregion
 
         #region Public.
+
         public string IReplicateData_FullName = typeof(IReplicateData).FullName;
         public string IReconcileData_FullName = typeof(IReconcileData).FullName;
         public TypeReference ReplicateULDelegate_TypeRef;
         public TypeReference ReconcileULDelegate_TypeRef;
         public MethodReference IReplicateData_GetTick_MethodRef;
-        public MethodReference IReplicateData_SetTick_MethodRef;
         public MethodReference IReconcileData_GetTick_MethodRef;
-        public MethodReference IReconcileData_SetTick_MethodRef;
-        public MethodReference Unity_GetGameObject_MethodRef;
         #endregion
 
         #region Const.
-        public const string REPLICATE_LOGIC_PREFIX = "Logic_Replicate___";
         public const string REPLICATE_READER_PREFIX = "Reader_Replicate___";
-        public const string RECONCILE_LOGIC_PREFIX = "Logic_Reconcile___";
         public const string RECONCILE_READER_PREFIX = "Reader_Reconcile___";
         #endregion
 
         public override bool ImportReferences()
         {
             System.Type locType;
-            SR.MethodInfo locMi;
 
             base.ImportReference(typeof(BasicQueue<>));
             ReplicateULDelegate_TypeRef = base.ImportReference(typeof(ReplicateUserLogicDelegate<>));
             ReconcileULDelegate_TypeRef = base.ImportReference(typeof(ReconcileUserLogicDelegate<>));
-
-            //GetGameObject.
-            locMi = typeof(UnityEngine.Component).GetMethod("get_gameObject");
-            Unity_GetGameObject_MethodRef = base.ImportReference(locMi);
 
             //Get/Set tick.
             locType = typeof(IReplicateData);
             foreach (SR.MethodInfo mi in locType.GetMethods())
             {
                 if (mi.Name == nameof(IReplicateData.GetTick))
+                {
                     IReplicateData_GetTick_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(IReplicateData.SetTick))
-                    IReplicateData_SetTick_MethodRef = base.ImportReference(mi);
+                    break;
+                }
             }
 
             locType = typeof(IReconcileData);
             foreach (SR.MethodInfo mi in locType.GetMethods())
             {
                 if (mi.Name == nameof(IReconcileData.GetTick))
+                {
                     IReconcileData_GetTick_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(IReconcileData.SetTick))
-                    IReconcileData_SetTick_MethodRef = base.ImportReference(mi);
+                    break;
+                }
             }
 
             return true;
         }
 
         #region Setup and checks.
+
         /// <summary>
         /// Gets number of predictions by checking for prediction attributes. This does not perform error checking.
         /// </summary>
@@ -186,7 +189,6 @@ namespace FishNet.CodeGenerating.Processing
                 typeDef = typeDef.GetNextBaseClassToProcess(base.Session);
                 if (typeDef != null)
                     count += GetPredictionCount(typeDef);
-
             } while (typeDef != null);
 
             return count;
@@ -229,9 +231,11 @@ namespace FishNet.CodeGenerating.Processing
                                 error = true;
                         }
                     }
+
                     if (error)
                         break;
                 }
+
                 if (error)
                     break;
             }
@@ -297,14 +301,15 @@ namespace FishNet.CodeGenerating.Processing
             else
                 return true;
         }
+
         #endregion
 
         internal bool Process(TypeDefinition typeDef)
         {
             //Set prediction count in parents here. Increase count after each predictionAttributeMethods iteration.
             //Do a for each loop on predictionAttributedMethods.
-            /* NOTES: for predictionv2 get all prediction attributed methods up front and store them inside predictionAttributedMethods.
-            * To find the proper reconciles for replicates add an attribute field allowing users to assign Ids. EG ReplicateV2.Id = 1. Default
+            /* NOTES: get all prediction attributed methods up front and store them inside predictionAttributedMethods.
+             * To find the proper reconciles for replicates add an attribute field allowing users to assign Ids. EG ReplicateV2.Id = 1. Default
              * value will be 0. */
 
             MethodDefinition replicateMd;
@@ -314,7 +319,8 @@ namespace FishNet.CodeGenerating.Processing
                 return false;
 
             RpcProcessor rp = base.GetClass<RpcProcessor>();
-            uint predictionRpcCount = GetPredictionCountInParents(typeDef) + rp.GetRpcCountInParents(typeDef); ;
+            uint predictionRpcCount = GetPredictionCountInParents(typeDef) + rp.GetRpcCountInParents(typeDef);
+            
             //If replication methods found but this hierarchy already has max.
             if (predictionRpcCount >= NetworkBehaviourHelper.MAX_RPC_ALLOWANCE)
             {
@@ -351,6 +357,7 @@ namespace FishNet.CodeGenerating.Processing
                 base.LogError($"Replicate data type {replicateDataTd.Name} does not support serialization. Use a supported type or create a custom serializer.");
                 return false;
             }
+
             //Make sure reconcile data can serialize.
             canSerialize = base.GetClass<GeneralHelper>().HasSerializerAndDeserializer(reconcileDataTd, true);
             if (!canSerialize)
@@ -358,6 +365,7 @@ namespace FishNet.CodeGenerating.Processing
                 base.LogError($"Reconcile data type {reconcileDataTd.Name} does not support serialization. Use a supported type or create a custom serializer.");
                 return false;
             }
+
             //Creates fields for buffers.
             CreatedPredictionFields predictionFields;
             CreateFields(typeDef, replicateMd, reconcileMd, out predictionFields);
@@ -376,8 +384,6 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Ensures the tick field for GetTick is non-serializable.
         /// </summary>
-        /// <param name="dataTd"></param>
-        /// <returns></returns>
         private bool TickFieldIsNonSerializable(TypeDefinition dataTd, bool replicate)
         {
             string methodName = (replicate) ? IReplicateData_GetTick_MethodRef.Name : IReconcileData_GetTick_MethodRef.Name;
@@ -481,6 +487,7 @@ namespace FishNet.CodeGenerating.Processing
 
             Generate(predictionFields.ReplicateDatasQueue, false);
             Generate(predictionFields.ReplicateDatasHistory, true);
+
             void Generate(FieldReference fr, bool isList)
             {
                 MethodDefinition ctorMd = base.GetClass<GeneralHelper>().List_TypeRef.CachedResolve(base.Session).GetDefaultConstructor(base.Session);
@@ -564,7 +571,8 @@ namespace FishNet.CodeGenerating.Processing
             FieldDefinition replicatesQueueFd = new FieldDefinition($"_replicatesQueue___{replicateMd.Name}", FieldAttributes.Private, queueDataGit);
             FieldDefinition replicatesListFd = new FieldDefinition($"_replicatesHistory___{replicateMd.Name}", FieldAttributes.Private, lstDataGit);
             FieldDefinition reconcileDataFd = new FieldDefinition($"_reconcileData___{replicateMd.Name}", FieldAttributes.Private, reconcileDataTr);
-            FieldDefinition serverReplicatesReadBufferFd = new FieldDefinition($"{replicateMd.Name}___serverReplicateReadBuffer", FieldAttributes.Private, replicateDataArrTr);
+            FieldDefinition serverReplicatesReadBufferFd = new FieldDefinition($"_serverReplicateReadBuffer___{replicateMd.Name}", FieldAttributes.Private, replicateDataArrTr);
+            FieldDefinition lastReadReplicateFd = new FieldDefinition($"_lastReadReplicate___{replicateMd.Name}", FieldAttributes.Private, replicateDataTr);
 
             typeDef.Fields.Add(replicateULDelegateFd);
             typeDef.Fields.Add(reconcileULDelegateFd);
@@ -572,9 +580,10 @@ namespace FishNet.CodeGenerating.Processing
             typeDef.Fields.Add(replicatesListFd);
             typeDef.Fields.Add(reconcileDataFd);
             typeDef.Fields.Add(serverReplicatesReadBufferFd);
+            typeDef.Fields.Add(lastReadReplicateFd);
 
             predictionFields = new CreatedPredictionFields(replicateDataTr, replicateULDelegateFd, reconcileULDelegateFd, replicatesQueueFd, replicatesListFd, reconcileDataFd,
-                serverReplicatesReadBufferFd);
+                serverReplicatesReadBufferFd, lastReadReplicateFd);
         }
 
         /// <summary>
@@ -634,8 +643,6 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates all methods needed for a RPC.
         /// </summary>
-        /// <param name="originalMethodDef"></param>
-        /// <param name="rpcAttribute"></param>
         /// <returns></returns>
         private bool CreatePredictionMethods(TypeDefinition typeDef, MethodDefinition replicateMd, MethodDefinition reconcileMd, CreatedPredictionFields predictionFields, uint rpcCount, out PredictionReaders predictionReaders, out MethodDefinition replicateULMd, out MethodDefinition reconcileULMd)
         {
@@ -772,6 +779,7 @@ namespace FishNet.CodeGenerating.Processing
         }
 
         #region Universal prediction.
+
         /// <summary>
         /// Creates an override for the method responsible for resetting replicates.
         /// </summary>
@@ -809,6 +817,8 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasQueue);
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateDatasHistory);
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldflda, predictionFields.LastReadReplicate);
             processor.Emit(OpCodes.Call, internalClearGim);
             processor.Emit(OpCodes.Ret);
         }
@@ -840,6 +850,7 @@ namespace FishNet.CodeGenerating.Processing
 
             return insts;
         }
+
         /// <summary>
         /// Subtracts 1 from a variable.
         /// </summary>
@@ -873,9 +884,11 @@ namespace FishNet.CodeGenerating.Processing
 
             return insts;
         }
+
         #endregion
 
         #region Server side.
+
         /// <summary>
         /// Creates replicate code for client.
         /// </summary>
@@ -907,8 +920,8 @@ namespace FishNet.CodeGenerating.Processing
         {
             string methodName = $"{REPLICATE_READER_PREFIX}{replicateMd.Name}";
             MethodDefinition createdMd = new MethodDefinition(methodName,
-                    MethodAttributes.Private,
-                    replicateMd.Module.TypeSystem.Void);
+                MethodAttributes.Private,
+                replicateMd.Module.TypeSystem.Void);
             typeDef.Methods.Add(createdMd);
             createdMd.Body.InitLocals = true;
 
@@ -930,6 +943,9 @@ namespace FishNet.CodeGenerating.Processing
             //Reader, NetworkConnection.
             processor.Emit(OpCodes.Ldarg, readerPd);
             processor.Emit(OpCodes.Ldarg, networkConnectionPd);
+            //lastFirstReadReplicate.
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldflda, predictionFields.LastReadReplicate);
             //arrBuffer.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldflda, predictionFields.ServerReplicateReaderBuffer);
@@ -963,15 +979,19 @@ namespace FishNet.CodeGenerating.Processing
 
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldc_I4, (int)rpcCount);
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldflda, predictionFields.ReconcileData);
             processor.Emit(OpCodes.Ldarg, reconcileDataPd);
             processor.Emit(OpCodes.Ldarg, channelPd);
             processor.Emit(OpCodes.Call, methodGim);
 
             rpcCount++;
         }
+
         #endregion
 
         #region Client side.
+
         /// <summary>
         /// Creates replicate code for client.
         /// </summary>
@@ -985,7 +1005,7 @@ namespace FishNet.CodeGenerating.Processing
 
             //Make method reference NB.SendReplicateRpc<dataTr>
             GenericInstanceMethod replicateOwnerGim = base.GetClass<NetworkBehaviourHelper>().Replicate_Authortative_MethodRef.MakeGenericMethod(new TypeReference[] { dataTr });
-            processor.Emit(OpCodes.Ldarg_0);//base.
+            processor.Emit(OpCodes.Ldarg_0); //base.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldfld, predictionFields.ReplicateULDelegate);
             processor.Emit(OpCodes.Ldc_I4, (int)rpcCount);
@@ -999,6 +1019,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, channelPd);
             processor.Emit(OpCodes.Call, replicateOwnerGim);
         }
+
         /// <summary>
         /// Creates a reader for replicate data received from clients.
         /// </summary>
@@ -1006,8 +1027,8 @@ namespace FishNet.CodeGenerating.Processing
         {
             string methodName = $"{RECONCILE_READER_PREFIX}{reconcileMd.Name}";
             MethodDefinition createdMd = new MethodDefinition(methodName,
-                    MethodAttributes.Private,
-                    reconcileMd.Module.TypeSystem.Void);
+                MethodAttributes.Private,
+                reconcileMd.Module.TypeSystem.Void);
             typeDef.Methods.Add(createdMd);
             createdMd.Body.InitLocals = true;
 
@@ -1038,6 +1059,7 @@ namespace FishNet.CodeGenerating.Processing
             result = createdMd;
             return true;
         }
+
         #endregion
     }
 }

@@ -28,7 +28,7 @@ namespace FishNet.Utility.Extension
             foreach (GameObject go in gameObjectCache)
             {
                 //Get NetworkObjects within children of each root.
-                go.GetComponentsInChildren<NetworkObject>(true, nobCacheA);
+                go.GetComponentsInChildren(true, nobCacheA);
                 //If network objects are found.
                 if (nobCacheA.Count > 0)
                 {
@@ -45,7 +45,7 @@ namespace FishNet.Utility.Extension
                             if (ignoreUnsetSceneIds && !nob.IsSceneObject)
                                 continue;
 
-                            nob.GetComponentsInParent<NetworkObject>(true, nobCacheB);
+                            nob.GetComponentsInParent(true, nobCacheB);
                             //No extra nobs, only this one.
                             if (nobCacheB.Count == 1 && !TryDisplayDuplicateError(nob))
                                 result.Add(nob);

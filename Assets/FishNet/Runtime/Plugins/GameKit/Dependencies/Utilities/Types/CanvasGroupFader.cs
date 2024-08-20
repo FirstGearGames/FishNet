@@ -1,4 +1,5 @@
-using GameKit.Dependencies.Inspectors;
+
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities.Types
@@ -38,23 +39,23 @@ namespace GameKit.Dependencies.Utilities.Types
         /// CanvasGroup to fade in and out.
         /// </summary>
         [Tooltip("CanvasGroup to fade in and out.")]
-        [SerializeField, Group("Components")]
+        [SerializeField, TabGroup("Components")]
         protected CanvasGroup CanvasGroup;
         /// <summary>
         /// True to update the CanvasGroup blocking settings when showing and hiding.
         /// </summary>
         [Tooltip("True to update the CanvasGroup blocking settings when showing and hiding.")]
-        [SerializeField, Group("Effects")]
+        [SerializeField, TabGroup("Effects")]
         protected bool UpdateCanvasBlocking = true;
         /// <summary>
         /// How long it should take to fade in the CanvasGroup.
         /// </summary>
-        [SerializeField, Group("Effects")]
+        [SerializeField, TabGroup("Effects")]
         protected float FadeInDuration = 0.1f;
         /// <summary>
         /// How long it should take to fade out the CanvasGroup.
         /// </summary>
-        [SerializeField, Group("Effects")]
+        [SerializeField, TabGroup("Effects")]
         protected float FadeOutDuration = 0.3f;
         #endregion
 

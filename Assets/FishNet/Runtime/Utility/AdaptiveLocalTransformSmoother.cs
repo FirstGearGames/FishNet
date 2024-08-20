@@ -535,7 +535,7 @@
 //        /// <summary>
 //        /// Moves transform to target values.
 //        /// </summary>
-//        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+//        
 //        private void BasicMoveToTarget(float delta)
 //        {
 //            int tpCount = _transformProperties.Count;
@@ -554,7 +554,7 @@
 //        /// <summary>
 //        /// Moves transform to target values.
 //        /// </summary>
-//        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+//        
 //        private void AdaptiveMoveToTarget(float delta)
 //        {
 //            int tpCount = _transformProperties.Count;
@@ -609,7 +609,7 @@
 //                }
 //                else if (_detach)
 //                {
-//                    MonoBehaviour.Destroy(_graphicalObject.gameObject);
+//                    UnityEngine.Object.Destroy(_graphicalObject.gameObject);
 //                }
 //            }
 //            _movementMultiplier = 1f;

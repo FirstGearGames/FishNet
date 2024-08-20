@@ -327,7 +327,7 @@ namespace FishNet.Managing.Client
                 string socketInformation = string.Empty;
                 if (state == LocalConnectionState.Starting)
                     socketInformation = $" Server IP is {t.GetClientAddress()}, port is {t.GetPort()}.";
-                Debug.Log($"Local client is {state.ToString().ToLower()} for {tName}.{socketInformation}");
+                NetworkManager.Log($"Local client is {state.ToString().ToLower()} for {tName}.{socketInformation}");
             }
 
             NetworkManager.UpdateFramerate();
@@ -437,7 +437,7 @@ namespace FishNet.Managing.Client
                 if (spawnOrDespawn)
                 {
                     if (packetId == PacketId.ObjectSpawn)
-                        Objects.CacheSpawn(reader);
+                        Objects.ReadSpawn(reader);
                     else if (packetId == PacketId.ObjectDespawn)
                         Objects.CacheDespawn(reader);
                 }
@@ -539,8 +539,7 @@ namespace FishNet.Managing.Client
             }
             catch (Exception e)
             {
-                if (NetworkManager.CanLog(LoggingType.Error))
-                    Debug.LogError($"Client encountered an error while parsing data for packetId {packetId}. Message: {e.Message}.");
+                NetworkManagerExtensions.LogError($"Client encountered an error while parsing data for packetId {packetId}. Message: {e.Message}.");
             }
 #endif
         }

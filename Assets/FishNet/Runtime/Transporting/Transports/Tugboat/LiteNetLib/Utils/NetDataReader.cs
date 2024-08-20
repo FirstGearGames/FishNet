@@ -13,42 +13,42 @@ namespace LiteNetLib.Utils
 
         public byte[] RawData
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _data;
         }
         public int RawDataSize
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _dataSize;
         }
         public int UserDataOffset
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _offset;
         }
         public int UserDataSize
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _dataSize - _offset;
         }
         public bool IsNull
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _data == null;
         }
         public int Position
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _position;
         }
         public bool EndOfData
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _position == _dataSize;
         }
         public int AvailableBytes
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            
             get => _dataSize - _position;
         }
 
@@ -449,7 +449,7 @@ namespace LiteNetLib.Utils
         }
 
 #if LITENETLIB_SPANS || NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0 || NETSTANDARD2_1
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public ReadOnlySpan<byte> GetRemainingBytesSpan()
         {
             return new ReadOnlySpan<byte>(_data, _position, _dataSize - _position);

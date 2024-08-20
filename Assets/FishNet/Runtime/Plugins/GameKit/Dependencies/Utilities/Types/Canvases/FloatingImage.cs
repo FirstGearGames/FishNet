@@ -1,4 +1,5 @@
-using GameKit.Dependencies.Inspectors;
+
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,7 +12,7 @@ namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
         /// Renderer to apply sprite on.
         /// </summary>
         [Tooltip("Renderer to apply sprite on.")]
-        [SerializeField, Group("Components")]
+        [SerializeField, TabGroup("Components")]
         protected Image Renderer;
 
         /// <summary>

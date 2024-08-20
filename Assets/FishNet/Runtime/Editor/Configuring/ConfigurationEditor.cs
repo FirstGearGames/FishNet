@@ -145,7 +145,7 @@ namespace FishNet.Editing
             }
 
             string saveText = (changedObjects > 0) ? " Please save your open scenes." : string.Empty;
-            Debug.Log($"SceneIds were generated for {changedObjects} object(s) over {checkedScenes} scene(s). {checkedObjects} object(s) were checked in total..{saveText}");
+            Debug.Log($"SceneIds were generated for {changedObjects} object(s) over {checkedScenes} scene(s). {checkedObjects} object(s) were checked in total. {saveText}");
         }
 
 

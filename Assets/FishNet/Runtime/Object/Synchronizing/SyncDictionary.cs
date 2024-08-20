@@ -194,7 +194,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="key"></param>
         /// <param name="value"></param>
         [APIExclude]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void AddOperation(SyncDictionaryOperation operation, TKey key, TValue value)
         {
             if (!base.IsInitialized)
@@ -318,7 +318,7 @@ namespace FishNet.Object.Synchronizing
         /// Reads and sets the current values for server or client.
         /// </summary>
         [APIExclude]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal protected override void Read(PooledReader reader, bool asServer)
         {
             /* When !asServer don't make changes if server is running.
@@ -481,7 +481,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="item">Item to use.</param>
         /// <returns>True if found.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
             return TryGetValue(item.Key, out TValue value) && EqualityComparer<TValue>.Default.Equals(value, item.Value);
@@ -552,7 +552,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="key">Key to use.</param>
         /// <param name="value">Variable to output to.</param>
         /// <returns>True if able to output value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public bool TryGetValue(TKey key, out TValue value)
         {
             return Collection.TryGetValueIL2CPP(key, out value);

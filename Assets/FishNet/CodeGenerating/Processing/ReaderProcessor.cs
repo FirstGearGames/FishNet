@@ -188,7 +188,7 @@ namespace FishNet.CodeGenerating.Helping
             /* If a global serializer is declared for the type
             * and the method is not the declared serializer then
             * exit early. */
-            if (wp.IsGlobalSerializer(readMr.ReturnType) && readMr.Name.StartsWith(UtilityConstants.GENERATED_READER_PREFIX))
+            if (wp.IsGlobalSerializer(readMr.ReturnType) && readMr.Name.StartsWith(UtilityConstants.GeneratedReaderPrefix))
                 return;
 
             GeneratedReader_OnLoad_MethodDef.RemoveEndRet(base.Session);
@@ -1044,7 +1044,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         public MethodDefinition CreateStaticReaderStubMethodDefinition(TypeReference objectTypeRef, string nameExtension = WriterProcessor.GENERATED_WRITER_NAMESPACE)
         {
-            string methodName = $"{UtilityConstants.GENERATED_READER_PREFIX}{objectTypeRef.FullName}{nameExtension}s";
+            string methodName = $"{UtilityConstants.GeneratedReaderPrefix}{objectTypeRef.FullName}{nameExtension}s";
             // create new reader for this type
             TypeDefinition readerTypeDef = base.GetClass<GeneralHelper>().GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_READERS_CLASS_NAME, null);
             MethodDefinition readerMethodDef = readerTypeDef.AddMethod(methodName,

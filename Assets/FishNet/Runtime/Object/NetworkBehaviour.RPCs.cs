@@ -99,7 +99,7 @@ namespace FishNet.Object
         /// <param name="del"></param>
         [APIExclude]
         [MakePublic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void RegisterServerRpc(uint hash, ServerRpcDelegate del)
         {
             if (_serverRpcDelegates.TryAdd(hash, del))
@@ -114,7 +114,7 @@ namespace FishNet.Object
         /// <param name="del"></param>
         [APIExclude]
         [MakePublic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void RegisterObserversRpc(uint hash, ClientRpcDelegate del)
         {
             if (_observersRpcDelegates.TryAdd(hash, del))
@@ -129,7 +129,7 @@ namespace FishNet.Object
         /// <param name="del"></param>
         [APIExclude]
         [MakePublic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void RegisterTargetRpc(uint hash, ClientRpcDelegate del)
         {
             if (_targetRpcDelegates.TryAdd(hash, del))
@@ -175,8 +175,8 @@ namespace FishNet.Object
         /// <summary>
         /// Called when a ServerRpc is received.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void OnServerRpc(PooledReader reader, NetworkConnection sendingClient, Channel channel)
+        
+        internal void ReadServerRpc(PooledReader reader, NetworkConnection sendingClient, Channel channel)
         {
             uint methodHash = ReadRpcHash(reader);
 
@@ -195,8 +195,8 @@ namespace FishNet.Object
         /// <summary>
         /// Called when an ObserversRpc is received.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void OnObserversRpc(uint? methodHash, PooledReader reader, Channel channel)
+        
+        internal void ReadObserversRpc(uint? methodHash, PooledReader reader, Channel channel)
         {
             if (methodHash == null)
                 methodHash = ReadRpcHash(reader);
@@ -210,8 +210,8 @@ namespace FishNet.Object
         /// <summary>
         /// Called when an TargetRpc is received.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void OnTargetRpc(uint? methodHash, PooledReader reader, Channel channel)
+        
+        internal void ReadTargetRpc(uint? methodHash, PooledReader reader, Channel channel)
         {
             if (methodHash == null)
                 methodHash = ReadRpcHash(reader);
@@ -229,7 +229,7 @@ namespace FishNet.Object
         /// <param name="methodWriter"></param>
         /// <param name="channel"></param>
         [MakePublic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         protected internal void SendServerRpc(uint hash, PooledWriter methodWriter, Channel channel, DataOrderType orderType)
         {
             if (!IsSpawnedWithWarning())
@@ -250,7 +250,7 @@ namespace FishNet.Object
         /// <param name="channel"></param>
         [APIExclude]
         [MakePublic] //Make internal.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         protected internal void SendObserversRpc(uint hash, PooledWriter methodWriter, Channel channel, DataOrderType orderType, bool bufferLast, bool excludeServer, bool excludeOwner)
         {
             if (!IsSpawnedWithWarning())
@@ -305,7 +305,7 @@ namespace FishNet.Object
         /// Sends a RPC to target.
         /// </summary>
         [MakePublic] //Make internal.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         protected internal void SendTargetRpc(uint hash, PooledWriter methodWriter, Channel channel, DataOrderType orderType, NetworkConnection target, bool excludeServer, bool validateTarget = true)
         {
             if (!IsSpawnedWithWarning())
@@ -379,7 +379,7 @@ namespace FishNet.Object
         /// <summary>
         /// Writes a full RPC and returns the writer.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private PooledWriter CreateRpc(uint hash, PooledWriter methodWriter, PacketId packetId, Channel channel)
         {
             int rpcHeaderBufferLength = GetEstimatedRpcHeaderLength();
@@ -403,7 +403,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="hash"></param>
         /// <param name="writer"></param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void WriteRpcHash(uint hash, PooledWriter writer)
         {
             if (_rpcHashSize == 1)

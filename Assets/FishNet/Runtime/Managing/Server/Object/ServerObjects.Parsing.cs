@@ -14,14 +14,14 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Parses a ServerRpc.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         internal void ParseServerRpc(PooledReader reader, NetworkConnection conn, Channel channel)
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.ServerRpc, reader, channel);
 
             if (nb != null)
-                nb.OnServerRpc(reader, conn, channel);
+                nb.ReadServerRpc(reader, conn, channel);
             else
                 SkipDataLength((ushort)PacketId.ServerRpc, reader, dataLength);
         }

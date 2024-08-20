@@ -61,7 +61,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Parses a received broadcast.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void ParseBroadcast(PooledReader reader, Channel channel)
         {
             ushort key = reader.ReadUInt16();
@@ -90,7 +90,7 @@ namespace FishNet.Managing.Client
             }
 
             PooledWriter writer = WriterPool.Retrieve();
-            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             NetworkManager.TransportManager.SendToServer((byte)channel, segment);

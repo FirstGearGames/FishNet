@@ -8,12 +8,12 @@ namespace FishNet.Serializing {
 
     public partial class Writer {
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Writequaternion(quaternion value) {
             Writefloat4(value.value);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Writerandom(Unity.Mathematics.Random random) {
             WriteUInt32(random.state);
         }
@@ -43,12 +43,12 @@ namespace FishNet.Serializing {
 
     public partial class Reader {
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public quaternion Readquaternion() {
             return new quaternion(Readfloat4());
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public Random Readrandom() {
             return new Random() { state = ReadUInt32() };
         }

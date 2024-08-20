@@ -21,30 +21,30 @@ namespace FishNet.Object
 
         public void InitializeState() { }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void ResetState()
         {
             Update(Vector3.zero, Quaternion.identity, Vector3.zero);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(Transform t)
         {
             Update(t.position, t.rotation, t.localScale);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(TransformPropertiesCls tp)
         {
             Update(tp.Position, tp.Rotation, tp.LocalScale);
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(TransformProperties tp)
         {
             Update(tp.Position, tp.Rotation, tp.LocalScale);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(Vector3 position, Quaternion rotation)
         {
             Update(position, rotation, LocalScale);
@@ -92,25 +92,25 @@ namespace FishNet.Object
             LocalScale = localScale;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Reset()
         {
             Update(Vector3.zero, Quaternion.identity, Vector3.zero);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(Transform t)
         {
             Update(t.position, t.rotation, t.localScale);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(TransformProperties tp)
         {
             Update(tp.Position, tp.Rotation, tp.LocalScale);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Update(Vector3 position, Quaternion rotation)
         {
             Update(position, rotation, LocalScale);

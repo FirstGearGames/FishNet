@@ -153,7 +153,7 @@ namespace FishNet.Object
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Start", "")]
         public bool HasAuthority => (_networkObjectCache.IsOwner || (_networkObjectCache.IsServerInitialized && !_networkObjectCache.Owner.IsValid));
-        [Obsolete("Use HasAuthority")]
+        [Obsolete("Use HasAuthority")] //Remove v5
         public bool IsOwnerOrServer => HasAuthority;
         /// <summary>
         /// Owner of this object.
@@ -261,13 +261,19 @@ namespace FishNet.Object
         /// <summary>
         /// Removes ownership from all clients.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void RemoveOwnership() => _networkObjectCache.RemoveOwnership();
         /// <summary>
         /// Gives ownership to newOwner.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void GiveOwnership(NetworkConnection newOwner) => _networkObjectCache.GiveOwnership(newOwner, true);
+        
+        public void GiveOwnership(NetworkConnection newOwner) => _networkObjectCache.GiveOwnership(newOwner, asServer: true, includeNested: false);
+
+        /// <summary>
+        /// Gives ownership to newOwner.
+        /// </summary>
+        
+        public void GiveOwnership(NetworkConnection newOwner, bool includeNested) => _networkObjectCache.GiveOwnership(newOwner, asServer: true, includeNested);
 
         #region Registered components
         /// <summary>
@@ -294,7 +300,7 @@ namespace FishNet.Object
         /// <typeparam name="T">Type to register.</typeparam>
         /// <param name="component">Reference of the component being registered.</param>
         /// <param name="replace">True to replace existing references.</param>
-        public void RegisterInstance<T>(T component, bool replace = true) where T : UnityEngine.Component => _networkObjectCache.RegisterInstance<T>(component, replace);
+        public void RegisterInstance<T>(T component, bool replace = true) where T : UnityEngine.Component => _networkObjectCache.RegisterInstance(component, replace);
         /// <summary>
         /// Tries to registers a new component to this NetworkManager.
         /// This will not register the instance if another already exists.
@@ -302,7 +308,7 @@ namespace FishNet.Object
         /// <typeparam name="T">Type to register.</typeparam>
         /// <param name="component">Reference of the component being registered.</param>
         /// <returns>True if was able to register, false if an instance is already registered.</returns>
-        public bool TryRegisterInstance<T>(T component) where T : UnityEngine.Component => _networkObjectCache.TryRegisterInstance<T>(component);
+        public bool TryRegisterInstance<T>(T component) where T : UnityEngine.Component => _networkObjectCache.TryRegisterInstance(component);
         /// <summary>
         /// Unregisters a component from this NetworkManager.
         /// </summary>

@@ -70,7 +70,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Parses a received broadcast.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void ParseBroadcast(PooledReader reader, NetworkConnection conn, Channel channel)
         {
             ushort key = reader.ReadUInt16();
@@ -112,7 +112,7 @@ namespace FishNet.Managing.Server
             }
 
             PooledWriter writer = WriterPool.Retrieve();
-            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
             NetworkManager.TransportManager.SendToClient((byte)channel, segment, connection);
             writer.Store();
@@ -137,7 +137,7 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             foreach (NetworkConnection conn in connections)
@@ -296,7 +296,7 @@ namespace FishNet.Managing.Server
         /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
         /// <param name="requireAuthenticated">True if the clients must be authenticated for this broadcast to send.</param>
         /// <param name="channel">Channel to send on.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public void Broadcast<T>(NetworkObject networkObject, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (networkObject == null)
@@ -326,7 +326,7 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             foreach (NetworkConnection conn in Clients.Values)

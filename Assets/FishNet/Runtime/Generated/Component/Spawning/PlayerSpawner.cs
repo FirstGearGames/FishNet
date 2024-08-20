@@ -73,7 +73,7 @@ namespace FishNet.Component.Spawning
             _networkManager = InstanceFinder.NetworkManager;
             if (_networkManager == null)
             {
-                Debug.LogWarning($"PlayerSpawner on {gameObject.name} cannot work as NetworkManager wasn't found on this object or within parent objects.");
+                NetworkManagerExtensions.LogWarning($"PlayerSpawner on {gameObject.name} cannot work as NetworkManager wasn't found on this object or within parent objects.");
                 return;
             }
 
@@ -89,7 +89,7 @@ namespace FishNet.Component.Spawning
                 return;
             if (_playerPrefab == null)
             {
-                Debug.LogWarning($"Player prefab is empty and cannot be spawned for connection {conn.ClientId}.");
+                NetworkManagerExtensions.LogWarning($"Player prefab is empty and cannot be spawned for connection {conn.ClientId}.");
                 return;
             }
 

@@ -122,7 +122,7 @@ namespace LiteNetLib
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static int RecvFrom(
             IntPtr socketHandle,
             byte[] pinnedBuffer,
@@ -135,7 +135,7 @@ namespace LiteNetLib
                 : WinSock.recvfrom(socketHandle, pinnedBuffer, len, 0, socketAddress, ref socketAddressSize);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static unsafe int SendTo(
             IntPtr socketHandle,
             byte* pinnedBuffer,
@@ -168,7 +168,7 @@ namespace LiteNetLib
             return new SocketException(error);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         public static short GetNativeAddressFamily(IPEndPoint remoteEndPoint)
         {
             return UnixMode
