@@ -2103,7 +2103,6 @@ namespace FishNet.Component.Transforming
         [ObserversRpc]
         private void ObserversUpdateClientAuthoritativeTransform(ArraySegment<byte> data, Channel channel)
         {
-            Debug.Log($"Got observerRpc");
             if (!_clientAuthoritative && base.IsOwner && !_sendToOwner)
                 return;
             if (_clientAuthoritative && base.IsOwner)

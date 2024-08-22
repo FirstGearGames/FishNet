@@ -199,19 +199,29 @@ namespace FishNet.Object
         /// <returns>True if there are no pending dirty sync types.</returns>
         internal bool WriteDirtySyncTypes(SyncTypeWriteFlag flags)
         {
+            // /* IsSpawned Can occur when a synctype is queued after
+            //  * the object is marked for destruction. This should not
+            //  * happen under most conditions since synctypes will be
+            //  * pushed through when despawn is called.
+            //  *
+            //  * No observers can occur when the server changes a syncType
+            //  * value but gained no observers in the same tick. We still
+            //  * want to mark a syncType as dirty in this situation because
+            //  * it needs to write in a despawn message in the scenario the object
+            //  * is spawned (no observers), synctype changed, then despawned immediately
+            //  * after.
+            //  */
+            // if (!IsSpawned || _networkObjectCache.Observers.Count == 0)
+            // {
+            //     ResetState_SyncTypes(asServer: true);
+            //     return true;
+            // }
+            
             /* IsSpawned Can occur when a synctype is queued after
              * the object is marked for destruction. This should not
              * happen under most conditions since synctypes will be
-             * pushed through when despawn is called.
-             *
-             * No observers can occur when the server changes a syncType
-             * value but gained no observers in the same tick. We still
-             * want to mark a syncType as dirty in this situation because
-             * it needs to write in a despawn message in the scenario the object
-             * is spawned (no observers), synctype changed, then despawned immediately
-             * after.
-             */
-            if (!IsSpawned || _networkObjectCache.Observers.Count == 0)
+             * pushed through when despawn is called. */
+            if (!IsSpawned)
             {
                 ResetState_SyncTypes(asServer: true);
                 return true;

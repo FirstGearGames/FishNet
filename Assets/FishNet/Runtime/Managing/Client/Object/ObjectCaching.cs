@@ -1,13 +1,8 @@
-﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
-#define DEVELOPMENT
-#endif
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Managing.Object;
 using FishNet.Object;
-using FishNet.Object.Helping;
 using FishNet.Serializing;
 using FishNet.Utility.Extension;
-using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
@@ -583,10 +578,8 @@ namespace FishNet.Managing.Client
         public Quaternion? Rotation;
         public Vector3? Scale;
         public ulong SceneId;
-#if DEVELOPMENT
         public string SceneName = string.Empty;
         public string ObjectName = string.Empty;
-#endif
 
         /// <summary>
         /// True if spawning.
@@ -631,10 +624,9 @@ namespace FishNet.Managing.Client
             Rotation = rotation;
             Scale = scale;
             SceneId = sceneId;
-#if DEVELOPMENT
             SceneName = sceneName;
             ObjectName = objectName;
-#endif
+
             if (payload.Count > 0)
                 PayloadReader = ReaderPool.Retrieve(payload, manager);
             if (rpcLinks.Count > 0)
@@ -660,10 +652,8 @@ namespace FishNet.Managing.Client
         /// </summary>
         public void ResetState()
         {
-#if DEVELOPMENT
             SceneName = string.Empty;
             ObjectName = string.Empty;
-#endif
             NetworkObject = null;
 
             ReaderPool.StoreAndDefault(ref PayloadReader);
