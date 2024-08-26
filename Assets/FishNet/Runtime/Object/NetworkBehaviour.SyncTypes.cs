@@ -474,9 +474,10 @@ namespace FishNet.Object
                 if (!canWrite)
                     continue;
 
-                written++;
-
+                int startWriterPosition = writer.Position;
                 sb.WriteFull(writer);
+                if (writer.Position != startWriterPosition)
+                    written++;
             }
 
             //If any where written.
