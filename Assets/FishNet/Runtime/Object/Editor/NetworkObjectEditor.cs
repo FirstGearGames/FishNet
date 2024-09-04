@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using FishNet.Object;
 using FishNet.Object.Prediction;
 using UnityEditor;
 using UnityEngine;
@@ -84,14 +85,14 @@ namespace FishNet.Object.Editing
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
+            NetworkObject nob = (NetworkObject)target;
+
             // Apply background color to the entire inspector
             Rect backgroundRect = EditorGUILayout.BeginVertical();
             GUI.backgroundColor = new Color(0.0745f, 0.3647f, 0.6275f, 1f); // Background color
             EditorGUI.DrawRect(backgroundRect, GUI.backgroundColor); // Draw background
             GUI.backgroundColor = Color.white; // Reset color
-
-            serializedObject.Update();
-            NetworkObject nob = (NetworkObject)target;
 
             DrawTitle("NetworkObject");
 
@@ -105,6 +106,9 @@ namespace FishNet.Object.Editing
                 Application.OpenURL("https://fish-networking.gitbook.io/docs/manual/components/network-object");
             }
             GUILayout.EndHorizontal();
+
+            // Display critical properties in a box
+            DrawCriticalProperties(nob);
 
             // Tab selection for settings and prediction
             DrawTabButtons();
@@ -162,6 +166,23 @@ namespace FishNet.Object.Editing
                     Event.current.Use();
                 }
             }
+        }
+
+        private void DrawCriticalProperties(NetworkObject nob)
+        {
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Critical Properties", EditorStyles.boldLabel);
+
+            EditorGUI.BeginDisabledGroup(true); // Lock properties
+
+            EditorGUILayout.LabelField("Owner", nob.Owner != null ? nob.Owner.ToString() : "None");
+            EditorGUILayout.LabelField("Global", nob.IsGlobal.ToString());
+            EditorGUILayout.LabelField("Owner(ClientId)", nob.Owner != null ? nob.Owner.ClientId.ToString() : "None");
+            EditorGUILayout.LabelField("Object ID", nob.ObjectId.ToString());
+
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawSettingsTab()

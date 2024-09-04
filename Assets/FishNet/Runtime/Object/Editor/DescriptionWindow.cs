@@ -4,17 +4,16 @@ using UnityEngine;
 
 public class DescriptionWindow : EditorWindow
 {
-    private static bool _showInEnglish = true;
     private int _selectedTab = 0;
-    private readonly string[] _tabNames = { "Network Object", "Network Observer", "SyncVars", "Ownership"};
+    private readonly string[] _tabNames = { "Network Object", "Network Observer", "SyncVars", "Ownership" };
 
     private GUIStyle _tabStyle;
     private GUIStyle _tabSelectedStyle;
     private GUIStyle _buttonStyle;
     private GUIStyle _boxStyle;
-    
+
     private Vector2 _scrollPosition; // For scrolling
-    
+
     public static void ShowWindow()
     {
         GetWindow<DescriptionWindow>("NetworkObject Description");
@@ -84,37 +83,21 @@ public class DescriptionWindow : EditorWindow
         switch (_selectedTab)
         {
             case 0:
-                NetworkObjectDrawer.ShowNetworkObjectDescription(_showInEnglish);
+                NetworkObjectDrawer.ShowNetworkObjectDescription();
                 break;
             case 1:
-                NetworkObserverDrawer.ShowNetworkObserverDescription(_showInEnglish);
+                NetworkObserverDrawer.ShowNetworkObserverDescription();
                 break;
             case 2:
-                SyncVarsDrawer.ShowSyncVarsDescription(_showInEnglish);
+                SyncVarsDrawer.ShowSyncVarsDescription();
                 break;
             case 3:
-                OwnershipDrawer.ShowOwnershipDescription(_showInEnglish);
+                OwnershipDrawer.ShowOwnershipDescription();
                 break;
         }
 
         // End scroll view
         EditorGUILayout.EndScrollView();
-
-        // Language switch
-        GUILayout.Space(20);
-        GUILayout.Label("Language:", EditorStyles.boldLabel);
-        GUILayout.BeginHorizontal();
-        if (GUILayout.Button("English", _buttonStyle, GUILayout.Width(100)))
-        {
-            _showInEnglish = true;
-            Repaint();
-        }
-        if (GUILayout.Button("中文", _buttonStyle, GUILayout.Width(100)))
-        {
-            _showInEnglish = false;
-            Repaint();
-        }
-        GUILayout.EndHorizontal();
     }
 
     // Helper function to create a texture
