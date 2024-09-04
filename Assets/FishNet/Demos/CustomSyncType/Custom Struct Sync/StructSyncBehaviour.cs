@@ -11,7 +11,7 @@ namespace FishNet.Example.CustomSyncObject
         /// Using my custom SyncType for Structy.
         /// </summary>
         
-        private readonly StructySync _structy = new StructySync();
+        private readonly StructySync _structy = new();
 
         private void Awake()
         {

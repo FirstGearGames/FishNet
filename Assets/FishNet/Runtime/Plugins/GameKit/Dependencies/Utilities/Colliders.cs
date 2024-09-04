@@ -21,7 +21,7 @@ namespace GameKit.Dependencies.Utilities
             float y = size.y * 0.5f * lossyScale.y;
             float z = size.z * 0.5f * lossyScale.z;
 
-            halfExtents = new Vector3(x, y, z);
+            halfExtents = new(x, y, z);
         }
 
         public static void GetCapsuleCastParams(this CapsuleCollider capsuleCollider, out Vector3 point1, out Vector3 point2, out float radius)
@@ -92,9 +92,9 @@ namespace GameKit.Dependencies.Utilities
             float y2 = center.y - offset.y;
             float z2 = center.z - offset.z;
 
-            point1 = new Vector3(x1, y1, z1);
+            point1 = new(x1, y1, z1);
 
-            point2 = new Vector3(x2, y2, z2);
+            point2 = new(x2, y2, z2);
         }
 
         public static void GetSphereOverlapParams(this SphereCollider sphereCollider, out Vector3 center, out float radius)
@@ -136,13 +136,13 @@ namespace GameKit.Dependencies.Utilities
             float y = size.y * 0.5f * lossyScale.y;
             float z = size.z * 0.5f * lossyScale.z;
 
-            halfExtents = new Vector3(x, y, z);
+            halfExtents = new(x, y, z);
         }
 
         public static void GetCircleOverlapParams(this CircleCollider2D circleCollider, out Vector3 center, out float radius)
         {
             Transform cachedTransform = circleCollider.transform;
-            Vector3 offset = new Vector3(circleCollider.offset.x, circleCollider.offset.y, circleCollider.transform.position.z);
+            Vector3 offset = new(circleCollider.offset.x, circleCollider.offset.y, circleCollider.transform.position.z);
             center = cachedTransform.TransformPoint(offset);
 
             Vector3 lossyScale = cachedTransform.lossyScale;

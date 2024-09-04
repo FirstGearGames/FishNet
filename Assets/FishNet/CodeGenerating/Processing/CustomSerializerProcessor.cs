@@ -65,7 +65,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             bool modified = false;
 
-            List<(MethodDefinition, ExtensionType)> declaredMethods = new List<(MethodDefinition, ExtensionType)>();
+            List<(MethodDefinition, ExtensionType)> declaredMethods = new();
             /* Go through all custom serializers again and see if 
              * they use any types that the user didn't make a serializer for
              * and that there isn't a built-in type for. Create serializers

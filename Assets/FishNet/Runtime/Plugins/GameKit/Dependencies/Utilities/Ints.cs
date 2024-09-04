@@ -9,7 +9,7 @@ namespace GameKit.Dependencies.Utilities
     /// </summary>
     public static class Ints
     {
-        private static System.Random _random = new System.Random();
+        private static System.Random _random = new();
 
         /// <summary>
         /// Pads an index a specified value. Preferred over typical padding so that pad values used with skins can be easily found in the code.

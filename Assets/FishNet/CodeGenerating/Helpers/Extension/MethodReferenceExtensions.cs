@@ -26,7 +26,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         public static GenericInstanceMethod MakeGenericMethod(this MethodReference method, params TypeReference[] genericArguments)
         {
-            GenericInstanceMethod result = new GenericInstanceMethod(method);
+            GenericInstanceMethod result = new(method);
             foreach (TypeReference argument in genericArguments)
                 result.GenericArguments.Add(argument);
             return result;
@@ -39,7 +39,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         public static GenericInstanceMethod MakeGenericMethod(this MethodReference method)
         {
-            GenericInstanceMethod result = new GenericInstanceMethod(method);
+            GenericInstanceMethod result = new(method);
             foreach (ParameterDefinition pd in method.Parameters)
                 result.GenericArguments.Add(pd.ParameterType);
 
@@ -106,7 +106,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         public static MethodReference MakeHostInstanceGeneric(this MethodReference self, CodegenSession session, GenericInstanceType instanceType)
         {
-            MethodReference reference = new MethodReference(self.Name, self.ReturnType, instanceType)
+            MethodReference reference = new(self.Name, self.ReturnType, instanceType)
             {
                 CallingConvention = self.CallingConvention,
                 HasThis = self.HasThis,
@@ -114,10 +114,10 @@ namespace FishNet.CodeGenerating.Helping.Extension
             };
 
             foreach (ParameterDefinition parameter in self.Parameters)
-                reference.Parameters.Add(new ParameterDefinition(parameter.ParameterType));
+                reference.Parameters.Add(new(parameter.ParameterType));
 
             foreach (GenericParameter generic_parameter in self.GenericParameters)
-                reference.GenericParameters.Add(new GenericParameter(generic_parameter.Name, reference));
+                reference.GenericParameters.Add(new(generic_parameter.Name, reference));
 
             return session.ImportReference(reference);
         }
@@ -133,7 +133,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         public static MethodReference MakeHostInstanceGeneric(this MethodReference self, TypeReference typeRef, params TypeReference[] args)
         {
             GenericInstanceType git = typeRef.MakeGenericInstanceType(args);
-            MethodReference reference = new MethodReference(self.Name, self.ReturnType, git)
+            MethodReference reference = new(self.Name, self.ReturnType, git)
             {
                 CallingConvention = self.CallingConvention,
                 HasThis = self.HasThis,
@@ -141,10 +141,10 @@ namespace FishNet.CodeGenerating.Helping.Extension
             };
 
             foreach (ParameterDefinition parameter in self.Parameters)
-                reference.Parameters.Add(new ParameterDefinition(parameter.ParameterType));
+                reference.Parameters.Add(new(parameter.ParameterType));
 
             foreach (GenericParameter generic_parameter in self.GenericParameters)
-                reference.GenericParameters.Add(new GenericParameter(generic_parameter.Name, reference));
+                reference.GenericParameters.Add(new(generic_parameter.Name, reference));
 
             return reference;
         }

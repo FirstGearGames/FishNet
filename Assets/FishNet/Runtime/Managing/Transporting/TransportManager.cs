@@ -76,7 +76,7 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         [Tooltip("Latency simulation settings.")]
         [SerializeField]
-        private LatencySimulator _latencySimulator = new LatencySimulator();
+        private LatencySimulator _latencySimulator = new();
         /// <summary>
         /// Latency simulation settings.
         /// </summary>
@@ -86,7 +86,7 @@ namespace FishNet.Managing.Transporting
             {
                 //Shouldn't ever be null unless the user nullifies it.
                 if (_latencySimulator == null)
-                    _latencySimulator = new LatencySimulator();
+                    _latencySimulator = new();
                 return _latencySimulator;
             }
         }
@@ -96,11 +96,11 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// NetworkConnections on the server which have to send data to clients.
         /// </summary>
-        private List<NetworkConnection> _dirtyToClients = new List<NetworkConnection>();
+        private List<NetworkConnection> _dirtyToClients = new();
         /// <summary>
         /// PacketBundles to send to the server.
         /// </summary>
-        private List<PacketBundle> _toServerBundles = new List<PacketBundle>();
+        private List<PacketBundle> _toServerBundles = new();
         /// <summary>
         /// NetworkManager handling this TransportManager.
         /// </summary>
@@ -108,7 +108,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Clients which are pending disconnects.
         /// </summary>
-        private List<DisconnectingClient> _disconnectingClients = new List<DisconnectingClient>();
+        private List<DisconnectingClient> _disconnectingClients = new();
         /// <summary>
         /// Lowest MTU of all transports for channels.
         /// </summary>
@@ -120,7 +120,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Used to cache NetworkConnections.
         /// </summary>
-        private HashSet<NetworkConnection> _networkConnectionHashSet = new HashSet<NetworkConnection>();
+        private HashSet<NetworkConnection> _networkConnectionHashSet = new();
         /// <summary>
         /// Custom amount to reserve on the MTU.
         /// </summary>
@@ -327,7 +327,7 @@ namespace FishNet.Managing.Transporting
             for (byte i = 0; i < CHANNEL_COUNT; i++)
             {
                 int mtu = GetLowestMTU(i);
-                _toServerBundles.Add(new PacketBundle(_networkManager, mtu));
+                _toServerBundles.Add(new(_networkManager, mtu));
             }
         }
 
@@ -671,7 +671,7 @@ namespace FishNet.Managing.Transporting
                 }
                 int chunkSize = Mathf.Min(segment.Count - writeIndex - headerReduction, maxMessageSize);
                 //Make a new array segment for the chunk that is getting split.
-                ArraySegment<byte> splitSegment = new ArraySegment<byte>(
+                ArraySegment<byte> splitSegment = new(
                     segment.Array, segment.Offset + writeIndex, chunkSize);
 
                 //If connection is specified then it's going to a client.
@@ -750,7 +750,7 @@ namespace FishNet.Managing.Transporting
                                     //Length should always be more than 0 but check to be safe.
                                     if (ppb.GetBuffer(i, out ByteBuffer bb))
                                     {
-                                        ArraySegment<byte> segment = new ArraySegment<byte>(bb.Data, 0, bb.Length);
+                                        ArraySegment<byte> segment = new(bb.Data, 0, bb.Length);
                                         if (HasIntermediateLayer)
                                             segment = ProcessIntermediateOutgoing(segment, false);
 #if DEVELOPMENT
@@ -782,7 +782,7 @@ namespace FishNet.Managing.Transporting
                          * higher chance of success that remaining
                          * data is sent. */
                         requiredTicks = Math.Max(requiredTicks, 2);
-                        _disconnectingClients.Add(new DisconnectingClient(requiredTicks + localTick, conn));
+                        _disconnectingClients.Add(new(requiredTicks + localTick, conn));
                     }
 
                     conn.ResetServerDirty();
@@ -823,7 +823,7 @@ namespace FishNet.Managing.Transporting
                             {
                                 if (ppb.GetBuffer(i, out ByteBuffer bb))
                                 {
-                                    ArraySegment<byte> segment = new ArraySegment<byte>(bb.Data, 0, bb.Length);
+                                    ArraySegment<byte> segment = new(bb.Data, 0, bb.Length);
                                     if (HasIntermediateLayer)
                                         segment = ProcessIntermediateOutgoing(segment, true);
 #if DEVELOPMENT

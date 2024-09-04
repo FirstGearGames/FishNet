@@ -32,7 +32,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// NetworkObjects which are currently active on the local client.
         /// </summary>
-        internal List<NetworkObject> LocalClientSpawned = new List<NetworkObject>();
+        internal List<NetworkObject> LocalClientSpawned = new();
         #endregion
 
         #region Private.
@@ -45,7 +45,7 @@ namespace FishNet.Managing.Client
         internal ClientObjects(NetworkManager networkManager)
         {
             base.Initialize(networkManager);
-            _objectCache = new ClientObjectCache(this, networkManager);
+            _objectCache = new(this, networkManager);
         }
 
         /// <summary>
@@ -222,6 +222,8 @@ namespace FishNet.Managing.Client
             List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
             Scenes.GetSceneNetworkObjects(s, false, true, true, ref nobs);
 
+            bool isServerStarted = base.NetworkManager.IsServerStarted;
+
             int nobsCount = nobs.Count;
             for (int i = 0; i < nobsCount; i++)
             {
@@ -229,7 +231,10 @@ namespace FishNet.Managing.Client
                 if (!nob.IsSceneObject)
                     continue;
 
-                base.UpdateNetworkBehavioursForSceneObject(nob, false);
+                //Only set initialized values if not server, as server would have already done so.
+                if (!isServerStarted)
+                    nob.SetInitializedValues(null);
+
                 if (nob.IsNetworked)
                 {
                     base.AddToSceneObjects(nob);
@@ -507,7 +512,7 @@ namespace FishNet.Managing.Client
             }
 
             NetworkObject nob = null;
-            List<NetworkObject> childNobs = rootNob.SerializedNestedNetworkObjects;
+            List<NetworkObject> childNobs = rootNob.InitializedNestedNetworkObjects;
 
             //Find nob with component index.
             for (int i = 0; i < childNobs.Count; i++)
@@ -534,7 +539,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         internal void ApplyRpcLinks(NetworkObject nob, Reader reader)
         {
-            List<ushort> rpcLinkIndexes = new List<ushort>();
+            List<ushort> rpcLinkIndexes = new();
 
             while (reader.Remaining > 0)
             {
@@ -545,7 +550,7 @@ namespace FishNet.Managing.Client
                 {
                     //Index of RpcLink.
                     ushort linkIndex = reader.ReadUInt16Unpacked();
-                    RpcLink link = new RpcLink(nob.ObjectId, componentId,
+                    RpcLink link = new(nob.ObjectId, componentId,
                         //RpcHash.
                         reader.ReadUInt16Unpacked(),
                         //ObserverRpc.

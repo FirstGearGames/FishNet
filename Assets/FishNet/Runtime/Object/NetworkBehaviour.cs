@@ -186,7 +186,6 @@ namespace FishNet.Object
             ClearBuffedRpcs();
         }
 
-
         /// <summary>
         /// Tries to add the NetworkObject component.
         /// </summary>

@@ -23,7 +23,7 @@ namespace FishNet.Example.ColliderRollbacks
             if (base.IsServerStarted)
             {
                 float x = (_movingRight) ? _startX + MoveDistance : _startX - MoveDistance;
-                Vector3 goal = new Vector3(x, transform.position.y, transform.position.z);
+                Vector3 goal = new(x, transform.position.y, transform.position.z);
                 transform.position = Vector3.MoveTowards(transform.position, goal, MoveRate * Time.deltaTime);
                 if (transform.position == goal)
                     _movingRight = !_movingRight;

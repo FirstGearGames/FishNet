@@ -24,11 +24,11 @@ namespace FishNet.Managing.Server
         /// Cache filled with objects which observers are being updated.
         /// This is primarily used to invoke events after all observers are updated, rather than as each is updated.
         /// </summary>
-        private List<NetworkObject> _observerChangedObjectsCache = new List<NetworkObject>(100);
+        private List<NetworkObject> _observerChangedObjectsCache = new(100);
         /// <summary>
         /// NetworkObservers which require regularly iteration.
         /// </summary>
-        private List<NetworkObject> _timedNetworkObservers = new List<NetworkObject>();
+        private List<NetworkObject> _timedNetworkObservers = new();
         /// <summary>
         /// Index in TimedNetworkObservers to start on next cycle.
         /// </summary>
@@ -36,9 +36,8 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Used to write spawns for everyone. This writer will exclude owner only information.
         /// </summary>
-        private PooledWriter _writer = new PooledWriter();
+        private PooledWriter _writer = new();
         #endregion
-
 
         /// <summary>
         /// Called when MonoBehaviours call Update.
@@ -212,7 +211,7 @@ namespace FishNet.Managing.Server
 
             void AddChildNetworkObjects(NetworkObject n, ref int index)
             {
-                foreach (NetworkObject childObject in n.SerializedNestedNetworkObjects)
+                foreach (NetworkObject childObject in n.InitializedNestedNetworkObjects)
                 {
                     cache.Insert(++index, childObject);
                     AddChildNetworkObjects(childObject, ref index);

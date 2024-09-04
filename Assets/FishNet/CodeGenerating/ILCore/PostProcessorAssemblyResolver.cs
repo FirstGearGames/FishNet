@@ -11,7 +11,7 @@ namespace FishNet.CodeGenerating
     internal class PostProcessorAssemblyResolver : IAssemblyResolver
     {
         private readonly string[] m_AssemblyReferences;
-        private readonly Dictionary<string, AssemblyDefinition> m_AssemblyCache = new Dictionary<string, AssemblyDefinition>();
+        private readonly Dictionary<string, AssemblyDefinition> m_AssemblyCache = new();
         private readonly ICompiledAssembly m_CompiledAssembly;
         private AssemblyDefinition m_SelfAssembly;
 
@@ -23,7 +23,7 @@ namespace FishNet.CodeGenerating
 
         public void Dispose() { }
 
-        public AssemblyDefinition Resolve(AssemblyNameReference name) => Resolve(name, new ReaderParameters(ReadingMode.Deferred));
+        public AssemblyDefinition Resolve(AssemblyNameReference name) => Resolve(name, new(ReadingMode.Deferred));
 
         public AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
         {
@@ -107,7 +107,7 @@ namespace FishNet.CodeGenerating
                     }
                 }
 
-                return new MemoryStream(byteArray);
+                return new(byteArray);
             });
         }
 

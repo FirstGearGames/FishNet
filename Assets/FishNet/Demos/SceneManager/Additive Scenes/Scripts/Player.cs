@@ -14,7 +14,7 @@ namespace FishNet.Demo.AdditiveScenes
         [SerializeField]
         private float _moveRate = 2f;
 
-        private List<Waypoint> _wayPoints = new List<Waypoint>();
+        private List<Waypoint> _wayPoints = new();
         private int _goalIndex;
         private Vector3 _goalOffset;
 
@@ -26,12 +26,12 @@ namespace FishNet.Demo.AdditiveScenes
              * than one. This is just demo fanciness. */
             if (base.ServerManager.Clients.Count % 2 == 0)
             {
-                _goalOffset = new Vector3(-0.5f, 0f, 0f);
+                _goalOffset = new(-0.5f, 0f, 0f);
                 _wayPoints = _wayPoints.OrderBy(x => x.WaypointIndex).ToList();
             }
             else
             {
-                _goalOffset = new Vector3(0.5f, 0f, 0f);
+                _goalOffset = new(0.5f, 0f, 0f);
                 _wayPoints = _wayPoints.OrderByDescending(x => x.WaypointIndex).ToList();
             }
 

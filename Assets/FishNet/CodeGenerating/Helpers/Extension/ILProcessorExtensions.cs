@@ -13,7 +13,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         public static List<Instruction> DebugLog(this ILProcessor processor, CodegenSession session, string txt)
         {
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             insts.Add(processor.Create(OpCodes.Ldstr, txt));
             insts.Add(processor.Create(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef));
             return insts;
@@ -23,7 +23,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         public static List<Instruction> DebugLog(this ILProcessor processor, CodegenSession session, VariableDefinition vd)
         {
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             insts.Add(processor.Create(OpCodes.Ldloc, vd));
             insts.Add(processor.Create(OpCodes.Box, vd.VariableType));
             insts.Add(processor.Create(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef));
@@ -34,7 +34,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         public static List<Instruction> DebugLog(this ILProcessor processor, CodegenSession session, FieldDefinition fd, bool loadArg0)
         {
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             if (loadArg0)
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
             insts.Add(processor.Create(OpCodes.Ldfld, fd));
@@ -47,7 +47,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         public static List<Instruction> DebugLog(this ILProcessor processor, CodegenSession session, ParameterDefinition pd)
         {
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             insts.Add(processor.Create(OpCodes.Ldloc, pd));
             insts.Add(processor.Create(OpCodes.Box, pd.ParameterType));
             insts.Add(processor.Create(OpCodes.Call, session.GetClass<GeneralHelper>().Debug_LogCommon_MethodRef));

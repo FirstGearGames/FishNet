@@ -21,11 +21,11 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Handler for registered broadcasts.
         /// </summary>
-        private readonly Dictionary<ushort, BroadcastHandlerBase> _broadcastHandlers = new Dictionary<ushort, BroadcastHandlerBase>();
+        private readonly Dictionary<ushort, BroadcastHandlerBase> _broadcastHandlers = new();
         /// <summary>
         /// Connections which can be broadcasted to after having excluded removed.
         /// </summary>
-        private HashSet<NetworkConnection> _connectionsWithoutExclusionsCache = new HashSet<NetworkConnection>();
+        private HashSet<NetworkConnection> _connectionsWithoutExclusionsCache = new();
         #endregion
 
         /// <summary>

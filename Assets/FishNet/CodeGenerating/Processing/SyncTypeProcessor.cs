@@ -536,7 +536,7 @@ namespace FishNet.CodeGenerating.Processing
             //InitializeEarly.
             injectionMd = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             processor = injectionMd.Body.GetILProcessor();
-            insts = new List<Instruction>
+            insts = new()
             {
                 processor.Create(OpCodes.Ldarg_0), //this.
                 processor.Create(OpCodes.Ldfld, originalFieldDef),
@@ -550,7 +550,7 @@ namespace FishNet.CodeGenerating.Processing
             //InitializeLate.
             injectionMd = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
             processor = injectionMd.Body.GetILProcessor();
-            insts = new List<Instruction>
+            insts = new()
             {
                 processor.Create(OpCodes.Ldarg_0), //this.
                 processor.Create(OpCodes.Ldfld, originalFieldDef),

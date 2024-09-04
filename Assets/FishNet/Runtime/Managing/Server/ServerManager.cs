@@ -142,7 +142,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         [Tooltip("How to pack object spawns.")]
         [SerializeField]
-        internal TransformPackingData SpawnPacking = new TransformPackingData()
+        internal TransformPackingData SpawnPacking = new()
         {
             Position = AutoPackType.Unpacked,
             Rotation = AutoPackType.PackedLess,
@@ -205,12 +205,12 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Used to read splits.
         /// </summary>
-        private SplitReader _splitReader = new SplitReader();
+        private SplitReader _splitReader = new();
 #if DEVELOPMENT
         /// <summary>
         /// Logs data about parser to help debug.
         /// </summary>
-        private ParseLogger _parseLogger = new ParseLogger();
+        private ParseLogger _parseLogger = new();
 #endif
         #endregion
 
@@ -233,7 +233,7 @@ namespace FishNet.Managing.Server
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
             NetworkManager = manager;
-            Objects = new ServerObjects(manager);
+            Objects = new(manager);
             Objects.SubscribeToSceneLoaded(true);
             InitializeRpcLinks();
             //Unsubscribe first incase already subscribed.
@@ -298,7 +298,7 @@ namespace FishNet.Managing.Server
         /// <param name="connectionIds"></param>
         internal void SendDisconnectMessages(int[] connectionIds)
         {
-            List<NetworkConnection> conns = new List<NetworkConnection>();
+            List<NetworkConnection> conns = new();
             foreach (int item in connectionIds)
             {
                 if (Clients.TryGetValueIL2CPP(item, out NetworkConnection c))
@@ -589,7 +589,7 @@ namespace FishNet.Managing.Server
                 if (args.ConnectionState == RemoteConnectionState.Started)
                 {
                     NetworkManager.Log($"Remote connection started for Id {id}.");
-                    NetworkConnection conn = new NetworkConnection(NetworkManager, id, args.TransportIndex, true);
+                    NetworkConnection conn = new(NetworkManager, id, args.TransportIndex, true);
                     Clients.Add(args.ConnectionId, conn);
                     _clientsList.Add(conn);
                     OnRemoteConnectionState?.Invoke(conn, args);
@@ -889,7 +889,7 @@ namespace FishNet.Managing.Server
             {
                 /* Send a broadcast to all authenticated clients with the clientId
                  * that just connected. The conn client will also get this. */
-                ClientConnectionChangeBroadcast changeMsg = new ClientConnectionChangeBroadcast()
+                ClientConnectionChangeBroadcast changeMsg = new()
                 {
                     Connected = connected,
                     Id = conn.ClientId
@@ -909,7 +909,7 @@ namespace FishNet.Managing.Server
                     foreach (int key in Clients.Keys)
                         cache.Add(key);
 
-                    ConnectedClientsBroadcast allMsg = new ConnectedClientsBroadcast()
+                    ConnectedClientsBroadcast allMsg = new()
                     {
                         Values = cache
                     };
@@ -925,7 +925,7 @@ namespace FishNet.Managing.Server
                     /* Send broadcast only to the client which just disconnected.
                      * Only send if connecting. If the client is disconnected there's no reason
                      * to send them a disconnect msg. */
-                    ClientConnectionChangeBroadcast changeMsg = new ClientConnectionChangeBroadcast()
+                    ClientConnectionChangeBroadcast changeMsg = new()
                     {
                         Connected = connected,
                         Id = conn.ClientId

@@ -39,7 +39,7 @@ namespace FishNet.Component.Ownership
         /// </summary>
         [Tooltip("True if to enable this component.")] [SerializeField]
         private bool _allowTakeOwnership = true;
-        private readonly SyncVar<bool> _allowTakeOwnershipSyncVar = new SyncVar<bool>();
+        private readonly SyncVar<bool> _allowTakeOwnershipSyncVar = new();
 
         /// <summary>
         /// Sets the next value for AllowTakeOwnership and synchronizes it.

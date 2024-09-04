@@ -21,7 +21,7 @@ namespace FishNet.Example.ComponentStateSync
         /// Using my custom SyncType for Structy.
         /// </summary>
         
-        private readonly ComponentStateSync<AMonoScript> _syncScript = new ComponentStateSync<AMonoScript>();
+        private readonly ComponentStateSync<AMonoScript> _syncScript = new();
 
         private void Awake()
         {

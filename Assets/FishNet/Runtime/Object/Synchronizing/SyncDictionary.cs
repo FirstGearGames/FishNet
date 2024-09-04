@@ -101,19 +101,19 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Initial values for the dictionary.
         /// </summary>
-        private Dictionary<TKey, TValue> _initialValues = new Dictionary<TKey, TValue>();
+        private Dictionary<TKey, TValue> _initialValues = new();
         /// <summary>
         /// Changed data which will be sent next tick.
         /// </summary>
-        private List<ChangeData> _changed = new List<ChangeData>();
+        private List<ChangeData> _changed = new();
         /// <summary>
         /// Server OnChange events waiting for start callbacks.
         /// </summary>
-        private List<CachedOnChange> _serverOnChanges = new List<CachedOnChange>();
+        private List<CachedOnChange> _serverOnChanges = new();
         /// <summary>
         /// Client OnChange events waiting for start callbacks.
         /// </summary>
-        private List<CachedOnChange> _clientOnChanges = new List<CachedOnChange>();
+        private List<CachedOnChange> _clientOnChanges = new();
         /// <summary>
         /// True if values have changed since initialization.
         /// The only reasonable way to reset this during a Reset call is by duplicating the original list and setting all values to it on reset.
@@ -126,8 +126,8 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors.
-        public SyncDictionary(SyncTypeSettings settings = new SyncTypeSettings()) : this(CollectionCaches<TKey, TValue>.RetrieveDictionary(), settings) { }
-        public SyncDictionary(Dictionary<TKey, TValue> objects, SyncTypeSettings settings = new SyncTypeSettings()) : base(settings)
+        public SyncDictionary(SyncTypeSettings settings = new()) : this(CollectionCaches<TKey, TValue>.RetrieveDictionary(), settings) { }
+        public SyncDictionary(Dictionary<TKey, TValue> objects, SyncTypeSettings settings = new()) : base(settings)
         {
             Collection = objects;
             ClientHostCollection = CollectionCaches<TKey, TValue>.RetrieveDictionary();
@@ -213,7 +213,7 @@ namespace FishNet.Object.Synchronizing
                 _valuesChanged = true;
                 if (base.Dirty())
                 {
-                    ChangeData change = new ChangeData(operation, key, value);
+                    ChangeData change = new(operation, key, value);
                     _changed.Add(change);
                 }
             }
@@ -389,14 +389,14 @@ namespace FishNet.Object.Synchronizing
                 if (base.NetworkBehaviour.OnStartServerCalled)
                     OnChange?.Invoke(operation, key, value, asServer);
                 else
-                    _serverOnChanges.Add(new CachedOnChange(operation, key, value));
+                    _serverOnChanges.Add(new(operation, key, value));
             }
             else
             {
                 if (base.NetworkBehaviour.OnStartClientCalled)
                     OnChange?.Invoke(operation, key, value, asServer);
                 else
-                    _clientOnChanges.Add(new CachedOnChange(operation, key, value));
+                    _clientOnChanges.Add(new(operation, key, value));
             }
         }
 

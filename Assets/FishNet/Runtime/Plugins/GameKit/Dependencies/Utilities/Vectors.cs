@@ -10,7 +10,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Vector3.zero.
         /// </summary>
-        private static readonly Vector3 VECTOR3_ZERO = new Vector3(0.0f, 0.0f, 0.0f);
+        private static readonly Vector3 VECTOR3_ZERO = new(0.0f, 0.0f, 0.0f);
         /// <summary>
         /// Float epislon.
         /// </summary>
@@ -115,7 +115,7 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static Vector3 Multiply(this Vector3 src, Vector3 multiplier)
         {
-            return new Vector3(src.x * multiplier.x, src.y * multiplier.y, src.z * multiplier.z);
+            return new(src.x * multiplier.x, src.y * multiplier.y, src.z * multiplier.z);
         }
 
         #region Fast.
@@ -242,7 +242,7 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static Vector2 Multiply(this Vector2 src, Vector2 multiplier)
         {
-            return new Vector2(src.x * multiplier.x, src.y * multiplier.y);
+            return new(src.x * multiplier.x, src.y * multiplier.y);
         }
         #endregion
 

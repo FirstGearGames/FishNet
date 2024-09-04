@@ -18,7 +18,7 @@ namespace LiteNetLib
             _id = id;
             _reliable = reliable;
             if (_reliable)
-                _ackPacket = new NetPacket(PacketProperty.Ack, 0) {ChannelId = id};
+                _ackPacket = new(PacketProperty.Ack, 0) {ChannelId = id};
         }
 
         protected override bool SendNextPackets()

@@ -30,7 +30,7 @@ namespace FishNet.Transporting.Yak.Server
         /// <summary>
         /// Packets received from local client.
         /// </summary>
-        private Queue<LocalPacket> _incoming = new Queue<LocalPacket>();
+        private Queue<LocalPacket> _incoming = new();
         /// <summary>
         /// Socket for client.
         /// </summary>

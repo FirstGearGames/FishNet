@@ -11,12 +11,12 @@ namespace GameKit.Dependencies.Utilities.Types
         /// Canvases which should block input.
         /// </summary>
         public static IReadOnlyList<object> InputBlockingCanvases => _inputBlockingCanvases;
-        private static List<object> _inputBlockingCanvases = new List<object>();
+        private static List<object> _inputBlockingCanvases = new();
         /// <summary>
         /// Canvases which are currently open, in the order they were opened.
         /// </summary>
         public static IReadOnlyList<object> OpenCanvases => _openCanvases;
-        private static List<object> _openCanvases = new List<object>();
+        private static List<object> _openCanvases = new();
         /// <summary>
         /// True if any blocking canvas is open.
         /// </summary>

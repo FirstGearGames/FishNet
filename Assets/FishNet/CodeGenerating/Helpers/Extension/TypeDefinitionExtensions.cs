@@ -18,7 +18,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         internal static GenericInstanceType CreateGenericInstanceType(this TypeDefinition type, Collection<GenericParameter> parameters)
         {
-            GenericInstanceType git = new GenericInstanceType(type);
+            GenericInstanceType git = new(type);
             foreach (GenericParameter gp in parameters)
                 git.GenericArguments.Add(gp);
 

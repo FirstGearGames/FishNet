@@ -26,7 +26,7 @@ namespace FishNet.Demo.HashGrid
             {
                 for (int y = (int)(_range * -1); y < _range; y++)
                 {
-                    NetworkObject n = Instantiate(_staticPrefab, new Vector3(x, y, transform.position.z), Quaternion.identity);
+                    NetworkObject n = Instantiate(_staticPrefab, new(x, y, transform.position.z), Quaternion.identity);
                     base.Spawn(n);
                 }
             }

@@ -119,9 +119,9 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors.
-        public SyncList(SyncTypeSettings settings = new SyncTypeSettings()) : this(CollectionCaches<T>.RetrieveList(), EqualityComparer<T>.Default, settings) { }
-        public SyncList(IEqualityComparer<T> comparer, SyncTypeSettings settings = new SyncTypeSettings()) : this(new List<T>(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
-        public SyncList(List<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new SyncTypeSettings()) : base(settings)
+        public SyncList(SyncTypeSettings settings = new()) : this(CollectionCaches<T>.RetrieveList(), EqualityComparer<T>.Default, settings) { }
+        public SyncList(IEqualityComparer<T> comparer, SyncTypeSettings settings = new()) : this(new(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
+        public SyncList(List<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new()) : base(settings)
         {
             _comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
             Collection = collection;
@@ -224,7 +224,7 @@ namespace FishNet.Object.Synchronizing
                  * collection as well the changed, which would double results. */
                 if (base.Dirty())
                 {
-                    ChangeData change = new ChangeData(operation, index, next);
+                    ChangeData change = new(operation, index, next);
                     _changed.Add(change);
                 }
             }
@@ -420,14 +420,14 @@ namespace FishNet.Object.Synchronizing
                 if (base.NetworkBehaviour.OnStartServerCalled)
                     OnChange?.Invoke(operation, index, prev, next, asServer);
                 else
-                    _serverOnChanges.Add(new CachedOnChange(operation, index, prev, next));
+                    _serverOnChanges.Add(new(operation, index, prev, next));
             }
             else
             {
                 if (base.NetworkBehaviour.OnStartClientCalled)
                     OnChange?.Invoke(operation, index, prev, next, asServer);
                 else
-                    _clientOnChanges.Add(new CachedOnChange(operation, index, prev, next));
+                    _clientOnChanges.Add(new(operation, index, prev, next));
             }
         }
 
@@ -570,7 +570,7 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public List<T> FindAll(Predicate<T> match)
         {
-            List<T> results = new List<T>();
+            List<T> results = new();
             for (int i = 0; i < Collection.Count; ++i)
             {
                 if (match(Collection[i]))
@@ -662,7 +662,7 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         public int RemoveAll(Predicate<T> match)
         {
-            List<T> toRemove = new List<T>();
+            List<T> toRemove = new();
             for (int i = 0; i < Collection.Count; ++i)
             { 
                 if (match(Collection[i]))

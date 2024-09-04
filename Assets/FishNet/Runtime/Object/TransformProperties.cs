@@ -73,7 +73,7 @@ namespace FishNet.Object
         /// <returns></returns>
         public TransformProperties ToStruct()
         {
-            TransformProperties result = new TransformProperties(Position, Rotation, LocalScale);
+            TransformProperties result = new(Position, Rotation, LocalScale);
             return result;
         }
     }

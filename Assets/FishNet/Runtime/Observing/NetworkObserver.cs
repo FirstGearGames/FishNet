@@ -76,7 +76,7 @@ namespace FishNet.Observing
         /// </summary>
         [Tooltip("Conditions connections must met to be added as an observer. Multiple conditions may be used.")]
         [SerializeField]
-        internal List<ObserverCondition> _observerConditions = new List<ObserverCondition>();
+        internal List<ObserverCondition> _observerConditions = new();
         /// <summary>
         /// Conditions connections must met to be added as an observer. Multiple conditions may be used.
         /// </summary>

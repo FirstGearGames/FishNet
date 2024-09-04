@@ -37,15 +37,15 @@ namespace FishNet.Transporting.Tugboat.Client
         /// <summary>
         /// Changes to the sockets local connection state.
         /// </summary>
-        private ConcurrentQueue<LocalConnectionState> _localConnectionStates = new ConcurrentQueue<LocalConnectionState>();
+        private ConcurrentQueue<LocalConnectionState> _localConnectionStates = new();
         /// <summary>
         /// Inbound messages which need to be handled.
         /// </summary>
-        private ConcurrentQueue<Packet> _incoming = new ConcurrentQueue<Packet>();
+        private ConcurrentQueue<Packet> _incoming = new();
         /// <summary>
         /// Outbound messages which need to be handled.
         /// </summary>
-        private Queue<Packet> _outgoing = new Queue<Packet>();
+        private Queue<Packet> _outgoing = new();
         #endregion
         /// <summary>
         /// How long in seconds until client times from server.
@@ -58,7 +58,7 @@ namespace FishNet.Transporting.Tugboat.Client
         /// <summary>
         /// Locks the NetManager to stop it.
         /// </summary>
-        private readonly object _stopLock = new object();
+        private readonly object _stopLock = new();
         /// <summary>
         /// While true, forces sockets to send data directly to interface without routing.
         /// </summary>
@@ -100,12 +100,12 @@ namespace FishNet.Transporting.Tugboat.Client
         /// </summary>
         private void ThreadedSocket()
         {
-            EventBasedNetListener listener = new EventBasedNetListener();
+            EventBasedNetListener listener = new();
             listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
             listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
             listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
 
-            base.NetManager = new NetManager(listener, _packetLayer, false);
+            base.NetManager = new(listener, _packetLayer, false);
             base.NetManager.DontRoute = _dontRoute;
             base.NetManager.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
@@ -289,7 +289,7 @@ namespace FishNet.Transporting.Tugboat.Client
             /* Incoming. */
             while (_incoming.TryDequeue(out Packet incoming))
             {
-                ClientReceivedDataArgs dataArgs = new ClientReceivedDataArgs(
+                ClientReceivedDataArgs dataArgs = new(
                     incoming.GetArraySegment(),
                     (Channel)incoming.Channel, base.Transport.Index);
                 base.Transport.HandleClientReceivedDataArgs(dataArgs);

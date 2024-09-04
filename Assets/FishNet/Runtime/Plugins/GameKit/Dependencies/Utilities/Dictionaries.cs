@@ -33,7 +33,7 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static List<TValue> ValuesToList<TKey, TValue>(this IDictionary<TKey, TValue> dict)
         {
-            List<TValue> result = new List<TValue>(dict.Count);
+            List<TValue> result = new(dict.Count);
             dict.ValuesToList(ref result);
             return result;
         }
@@ -54,7 +54,7 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static List<TKey> KeysToList<TKey, TValue>(this IDictionary<TKey, TValue> dict)
         {
-            List<TKey> result = new List<TKey>(dict.Count);
+            List<TKey> result = new(dict.Count);
             return dict.KeysToList(ref result);
         }
 

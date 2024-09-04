@@ -68,12 +68,12 @@ namespace FishNet.Example.Scened
             if (triggeringIdentity == null)
                 return;
 
-            UnloadOptions unloadOptions = new UnloadOptions()
+            UnloadOptions unloadOptions = new()
             {
                 Mode = (_unloadUnused) ? UnloadOptions.ServerUnloadMode.UnloadUnused : UnloadOptions.ServerUnloadMode.KeepUnused
             };
 
-            SceneUnloadData sud = new SceneUnloadData(_scenes);
+            SceneUnloadData sud = new(_scenes);
             sud.Options = unloadOptions;
 
             //Unload only for the triggering connection.

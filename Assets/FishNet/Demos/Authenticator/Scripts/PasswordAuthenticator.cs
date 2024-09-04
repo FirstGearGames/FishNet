@@ -59,7 +59,7 @@ namespace FishNet.Example.Authenticating
             if (AuthenticateAsHost())
                 return;
 
-            PasswordBroadcast pb = new PasswordBroadcast()
+            PasswordBroadcast pb = new()
             {
                 Password = _password
             };
@@ -110,7 +110,7 @@ namespace FishNet.Example.Authenticating
             /* Tell client if they authenticated or not. This is
             * entirely optional but does demonstrate that you can send
             * broadcasts to client on pass or fail. */
-            ResponseBroadcast rb = new ResponseBroadcast()
+            ResponseBroadcast rb = new()
             {
                 Passed = authenticated
             };

@@ -82,7 +82,7 @@ namespace GameKit.Dependencies.Utilities
         public T Dequeue(bool defaultArrayEntry = true)
         {
             if (_written == 0)
-                throw new Exception($"Queue of type {typeof(T).Name} is empty.");
+                throw new($"Queue of type {typeof(T).Name} is empty.");
 
             T result = Collection[_read];
             if (defaultArrayEntry)
@@ -120,7 +120,7 @@ namespace GameKit.Dependencies.Utilities
         public T Peek()
         {
             if (_written == 0)
-                throw new Exception($"Queue of type {typeof(T).Name} is empty.");
+                throw new($"Queue of type {typeof(T).Name} is empty.");
 
             return Collection[_read];
         }

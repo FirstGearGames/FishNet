@@ -62,7 +62,7 @@ namespace FishNet.Component.Utility
         /// <summary>
         /// Style for drawn ping.
         /// </summary>
-        private GUIStyle _style = new GUIStyle();
+        private GUIStyle _style = new();
         /// <summary>
         /// Text to show for client in/out data.
         /// </summary>
@@ -181,7 +181,7 @@ namespace FishNet.Component.Utility
                 _style.alignment = TextAnchor.LowerRight;
             }
 
-            GUI.Label(new Rect(horizontal, vertical, width, height), (_clientText + _serverText), _style);
+            GUI.Label(new(horizontal, vertical, width, height), (_clientText + _serverText), _style);
         }
 #endif
 

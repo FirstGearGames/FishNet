@@ -181,7 +181,7 @@ namespace GameKit.Dependencies.Utilities.Types
 
         public ResettableRingBuffer()
         {
-            _enumerator = new Enumerator(this);
+            _enumerator = new(this);
         }
 
         /// <summary>

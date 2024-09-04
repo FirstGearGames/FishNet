@@ -41,7 +41,7 @@ namespace FishNet.Editing.Upgrading
         private static bool RemoveOrAddDefine(string define, bool removeDefine)
         {
             string currentDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
-            HashSet<string> definesHs = new HashSet<string>();
+            HashSet<string> definesHs = new();
             string[] currentArr = currentDefines.Split(';');
 
             //Add any define which doesn't contain MIRROR.

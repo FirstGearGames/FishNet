@@ -62,7 +62,7 @@ namespace FishNet.CodeGenerating.Extension
         /// </summary>
         internal static VariableDefinition CreateVariable(this MethodDefinition methodDef, TypeReference variableTypeRef)
         {
-            VariableDefinition variableDef = new VariableDefinition(variableTypeRef);
+            VariableDefinition variableDef = new(variableTypeRef);
             methodDef.Body.Variables.Add(variableDef);
             return variableDef;
         }
@@ -99,7 +99,7 @@ namespace FishNet.CodeGenerating.Extension
         public static ParameterDefinition CreateParameter(this MethodDefinition thisMd, CodegenSession session, ParameterAttributes attr, System.Type type)
         {
             TypeReference parameterTypeRef = session.ImportReference(type);
-            ParameterDefinition pd = new ParameterDefinition($"p{thisMd.Parameters.Count}", attr, parameterTypeRef);
+            ParameterDefinition pd = new($"p{thisMd.Parameters.Count}", attr, parameterTypeRef);
             thisMd.Parameters.Add(pd);
             return pd;
         }
@@ -109,14 +109,14 @@ namespace FishNet.CodeGenerating.Extension
         /// </summary>
         public static List<ParameterDefinition> CreateParameters(this MethodDefinition thisMd, CodegenSession session, MethodDefinition otherMd)
         {
-            List<ParameterDefinition> results = new List<ParameterDefinition>();
+            List<ParameterDefinition> results = new();
 
             foreach (ParameterDefinition pd in otherMd.Parameters)
             {
                 session.ImportReference(pd.ParameterType.CachedResolve(session));
                 int currentCount = thisMd.Parameters.Count;
                 string name = (pd.Name + currentCount);
-                ParameterDefinition parameterDef = new ParameterDefinition(name, pd.Attributes, pd.ParameterType);
+                ParameterDefinition parameterDef = new(name, pd.Attributes, pd.ParameterType);
                 //Set any default values.
                 parameterDef.Constant = pd.Constant;
                 parameterDef.IsReturnValue = pd.IsReturnValue;
@@ -151,7 +151,7 @@ namespace FishNet.CodeGenerating.Extension
             if (md.DeclaringType.HasGenericParameters)
             {
                 GenericInstanceType git = methodRef.DeclaringType.MakeGenericInstanceType();
-                MethodReference result = new MethodReference(md.Name, md.ReturnType)
+                MethodReference result = new(md.Name, md.ReturnType)
                 {
                     HasThis = md.HasThis,
                     ExplicitThis = md.ExplicitThis,
@@ -214,7 +214,7 @@ namespace FishNet.CodeGenerating.Extension
             
             MethodAttributes attr = (attributesOverride.HasValue) ? attributesOverride.Value : copiedMd.Attributes;
             string name = (nameOverride == null) ? copiedMd.Name : nameOverride;
-            MethodDefinition result = new MethodDefinition(name, attr, copiedMd.ReturnType);
+            MethodDefinition result = new(name, attr, copiedMd.ReturnType);
             foreach (GenericParameter item in copiedMd.GenericParameters)
                 result.GenericParameters.Add(item);
 

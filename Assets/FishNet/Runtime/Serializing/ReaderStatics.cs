@@ -23,7 +23,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Used to encode strings.
         /// </summary>
-        private static readonly UTF8Encoding _encoding = new UTF8Encoding(false, true);
+        private static readonly UTF8Encoding _encoding = new(false, true);
         #endregion
 
         /// <summary>

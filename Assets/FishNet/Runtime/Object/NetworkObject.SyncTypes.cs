@@ -24,7 +24,7 @@ namespace FishNet.Object
             
             void WriteForConnection(NetworkConnection conn, ReadPermission permission)
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].WriteSyncTypesForConnection(conn, permission);
             }
         }

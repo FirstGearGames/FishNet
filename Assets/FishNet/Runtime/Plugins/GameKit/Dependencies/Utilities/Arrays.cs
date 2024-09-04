@@ -9,11 +9,11 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Randomizer used for shuffling.
         /// </summary>
-        private static System.Random _random = new System.Random();
+        private static System.Random _random = new();
         /// <summary>
         /// StringBuilder to save performance.
         /// </summary>
-        private static StringBuilder _stringBuilder = new StringBuilder();
+        private static StringBuilder _stringBuilder = new();
 
         /// <summary>
         /// Adds an entry to a list if it does not exist already.

@@ -121,9 +121,9 @@ namespace FishNet.Managing.Statistic
             _nextUpdateTime = Time.unscaledTime + _updateInteval;
 
             if (UpdateClient && _networkManager.IsClientStarted)
-                OnClientNetworkTraffic?.Invoke(new NetworkTrafficArgs(_client_toServerBytes, _client_fromServerBytes));
+                OnClientNetworkTraffic?.Invoke(new(_client_toServerBytes, _client_fromServerBytes));
             if (UpdateServer && _networkManager.IsServerStarted)
-                OnServerNetworkTraffic?.Invoke(new NetworkTrafficArgs(_server_fromClientsBytes, _server_toClientsBytes));
+                OnServerNetworkTraffic?.Invoke(new(_server_fromClientsBytes, _server_toClientsBytes));
 
             _client_toServerBytes = 0;
             _client_fromServerBytes = 0;

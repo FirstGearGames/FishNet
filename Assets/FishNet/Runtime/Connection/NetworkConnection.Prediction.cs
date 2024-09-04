@@ -22,11 +22,11 @@ namespace FishNet.Connection
         /// Approximate replicate tick on the server for this connection.
         /// This also contains the last set value for local and remote.
         /// </summary>
-        public EstimatedTick ReplicateTick { get; private set; } = new EstimatedTick();
+        public EstimatedTick ReplicateTick { get; private set; } = new();
         /// <summary>
         /// Writers for states.
         /// </summary>
-        internal List<PooledWriter> PredictionStateWriters = new List<PooledWriter>();
+        internal List<PooledWriter> PredictionStateWriters = new();
 
         internal void Prediction_Initialize(NetworkManager manager, bool asServer) { }
 

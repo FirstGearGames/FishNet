@@ -17,7 +17,7 @@ namespace FishNet.Configuring.Editing
         [UnitySettingsProvider]
         private static UnitySettingsProvider Create()
         {
-            return new UnitySettingsProvider("Project/Fish-Networking/Configuration", SettingsScope.Project)
+            return new("Project/Fish-Networking/Configuration", SettingsScope.Project)
             {
                 label = "Configuration",
 
@@ -45,16 +45,16 @@ namespace FishNet.Configuring.Editing
 
             EditorGUI.BeginChangeCheck();
 
-            GUIStyle scrollViewStyle = new GUIStyle()
+            GUIStyle scrollViewStyle = new()
             {
-                padding = new RectOffset(10, 10, 10, 10),
+                padding = new(10, 10, 10, 10),
             };
 
             _scrollView = GUILayout.BeginScrollView(_scrollView, scrollViewStyle);
 
             EditorGUILayout.BeginHorizontal();
 
-            GUIStyle toggleStyle = new GUIStyle(EditorStyles.toggle)
+            GUIStyle toggleStyle = new(EditorStyles.toggle)
             {
                 richText = true,
             };
@@ -67,7 +67,7 @@ namespace FishNet.Configuring.Editing
             {
                 EditorGUI.indentLevel++;
                 //Stripping Method.
-                List<string> enumStrings = new List<string>();
+                List<string> enumStrings = new();
                 foreach (string item in System.Enum.GetNames(typeof(StrippingTypes)))
                     enumStrings.Add(item);
                 configuration.CodeStripping.StrippingType = EditorGUILayout.Popup($"{ObjectNames.NicifyVariableName(nameof(configuration.CodeStripping.StrippingType))}", (int)configuration.CodeStripping.StrippingType, enumStrings.ToArray());

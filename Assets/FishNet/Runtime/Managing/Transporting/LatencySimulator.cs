@@ -34,7 +34,7 @@ namespace FishNet.Managing.Transporting
 
             public ArraySegment<byte> GetSegment()
             {
-                return new ArraySegment<byte>(Data, 0, Length);
+                return new(Data, 0, Length);
             }
         }
         #endregion
@@ -139,19 +139,19 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Reliable messages to the server.
         /// </summary>
-        private List<Message> _toServerReliable = new List<Message>();
+        private List<Message> _toServerReliable = new();
         /// <summary>
         /// Unreliable messages to the server.
         /// </summary>
-        private List<Message> _toServerUnreliable = new List<Message>();
+        private List<Message> _toServerUnreliable = new();
         /// <summary>
         /// Reliable messages to clients.
         /// </summary>
-        private List<Message> _toClientReliable = new List<Message>();
+        private List<Message> _toClientReliable = new();
         /// <summary>
         /// Unreliable messages to clients.
         /// </summary>
-        private List<Message> _toClientUnreliable = new List<Message>();
+        private List<Message> _toClientUnreliable = new();
         /// <summary>
         /// NetworkManager for this instance.
         /// </summary>
@@ -159,7 +159,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Used to generate chances of latency.
         /// </summary>
-        private readonly System.Random _random = new System.Random();
+        private readonly System.Random _random = new();
         #endregion
 
         #region Initialization and Unity
@@ -285,7 +285,7 @@ namespace FishNet.Managing.Transporting
                 }
             }
 
-            Message msg = new Message(connectionId, segment, latency);
+            Message msg = new(connectionId, segment, latency);
             int count = collection.Count;
             if (c == Channel.Unreliable && count > 0 && OutOfOrderPacket(c))
                 collection.Insert(count - 1, msg);

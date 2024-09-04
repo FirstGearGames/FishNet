@@ -30,11 +30,11 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Parameters which may be set and will be included in load callbacks.
         /// </summary>
-        public LoadParams Params = new LoadParams();
+        public LoadParams Params = new();
         /// <summary>
         /// Additional options to use for loaded scenes.
         /// </summary>
-        public LoadOptions Options = new LoadOptions();
+        public LoadOptions Options = new();
 
         public SceneLoadData() { }
         /// <summary>

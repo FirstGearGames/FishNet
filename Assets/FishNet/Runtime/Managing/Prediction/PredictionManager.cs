@@ -207,13 +207,13 @@ namespace FishNet.Managing.Predicting
         /// Current reconcile state to use.
         /// </summary>
         //private StatePacket _reconcileState;
-        private Queue<StatePacket> _reconcileStates = new Queue<StatePacket>();
+        private Queue<StatePacket> _reconcileStates = new();
         /// <summary>
         /// Look up to find states by their tick.
         /// Key: client LocalTick on the state.
         /// Value: StatePacket stored.
         /// </summary>
-        private Dictionary<uint, StatePacket> _stateLookups = new Dictionary<uint, StatePacket>();
+        private Dictionary<uint, StatePacket> _stateLookups = new();
         /// <summary>
         /// Last ordered tick read for a reconcile state.
         /// </summary>
@@ -305,7 +305,7 @@ namespace FishNet.Managing.Predicting
 
             public void AddData(ArraySegment<byte> data, Channel channel)
             {
-                Datas.Add(new IncomingData(data, channel));
+                Datas.Add(new(data, channel));
             }
 
             public void ResetState()
@@ -602,7 +602,7 @@ namespace FishNet.Managing.Predicting
                 byte[] arr = ByteArrayPool.Retrieve(length);
                 reader.ReadUInt8Array(ref arr, length);
                 //Make segment and store into states.
-                ArraySegment<byte> segment = new ArraySegment<byte>(arr, 0, length);
+                ArraySegment<byte> segment = new(arr, 0, length);
 
                 /* See if an entry was already added for the clientTick. If so then
                  * add onto the datas. Otherwise add a new state packet. */

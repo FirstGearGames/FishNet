@@ -168,7 +168,7 @@ namespace FishNet.Component.Scenes
                     return;
 
                 //If here can load scene.
-                SceneLoadData sld = new SceneLoadData(GetSceneName(_onlineScene));
+                SceneLoadData sld = new(GetSceneName(_onlineScene));
                 sld.ReplaceScenes = _replaceScenes;
                 if (_enableGlobalScenes)
                     _networkManager.SceneManager.LoadGlobalScenes(sld);
@@ -207,7 +207,7 @@ namespace FishNet.Component.Scenes
             if (!authenticated)
                 return;
 
-            SceneLoadData sld = new SceneLoadData(GetSceneName(_onlineScene));
+            SceneLoadData sld = new(GetSceneName(_onlineScene));
             _networkManager.SceneManager.LoadConnectionScenes(arg1, sld);
         }
 

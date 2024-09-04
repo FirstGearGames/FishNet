@@ -19,7 +19,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Encoder for strings.
         /// </summary>
-        private static readonly UTF8Encoding _encoding = new UTF8Encoding(false, true);
+        private static readonly UTF8Encoding _encoding = new(false, true);
         /// <summary>
         /// StringBuffer to use with encoding.
         /// </summary>

@@ -49,7 +49,7 @@ namespace FishNet.CodeGenerating.Extension
             if (baseTr.CachedResolve(session).HasGenericParameters)
             {
                 GenericInstanceType git = (GenericInstanceType)baseTr;
-                baseMr = new MethodReference(baseMd.Name, baseMd.ReturnType, git)
+                baseMr = new(baseMd.Name, baseMd.ReturnType, git)
                 {
                     HasThis = baseMd.HasThis,
                     CallingConvention = baseMd.CallingConvention,
@@ -106,7 +106,7 @@ namespace FishNet.CodeGenerating.Extension
             //Not found.
             if (md == null)
             {
-                md = new MethodDefinition(methodName, attributes, returnType);
+                md = new(methodName, attributes, returnType);
                 td.Methods.Add(md);
                 created = true;
             }
@@ -128,7 +128,7 @@ namespace FishNet.CodeGenerating.Extension
             //Not found.
             if (md == null)
             {
-                md = new MethodDefinition(methodName, attributes, returnType);
+                md = new(methodName, attributes, returnType);
                 td.Methods.Add(md);
                 created = true;
             }
@@ -150,7 +150,7 @@ namespace FishNet.CodeGenerating.Extension
             if (md == null)
             {
                 TypeReference returnType = session.ImportReference(methodTemplate.ReturnType);
-                md = new MethodDefinition(methodName, methodTemplate.Attributes, returnType)
+                md = new(methodName, methodTemplate.Attributes, returnType)
                 {
                     ExplicitThis = methodTemplate.ExplicitThis,
                     AggressiveInlining = methodTemplate.AggressiveInlining,
@@ -255,10 +255,10 @@ namespace FishNet.CodeGenerating.Extension
             //Is generic.
             if (declaringType.HasGenericParameters)
             {
-                GenericInstanceType git = new GenericInstanceType(declaringType);
+                GenericInstanceType git = new(declaringType);
                 foreach (GenericParameter item in declaringType.GenericParameters)
                     git.GenericArguments.Add(item);
-                fr = new FieldReference(fd.Name, fd.FieldType, git);
+                fr = new(fd.Name, fd.FieldType, git);
                 return fr;
             }
             //Not generic.
@@ -292,7 +292,7 @@ namespace FishNet.CodeGenerating.Extension
         /// </summary>
         public static FieldReference CreateFieldDefinition(this TypeDefinition td, CodegenSession session, string fieldName, FieldAttributes attributes, TypeReference fieldTypeRef)
         {
-            FieldDefinition fd = new FieldDefinition(fieldName, attributes, fieldTypeRef);
+            FieldDefinition fd = new(fieldName, attributes, fieldTypeRef);
             td.Fields.Add(fd);
             return fd.CreateFieldReference(session);
         }

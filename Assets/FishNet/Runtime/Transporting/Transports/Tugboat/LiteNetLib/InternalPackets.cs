@@ -50,7 +50,7 @@ namespace LiteNetLib
             if (packet.Size > HeaderSize+addrSize)
                 reader.SetSource(packet.RawData, HeaderSize + addrSize, packet.Size);
 
-            return new NetConnectRequestPacket(connectionTime, packet.ConnectionNumber, peerId, addressBytes, reader);
+            return new(connectionTime, packet.ConnectionNumber, peerId, addressBytes, reader);
         }
 
         public static NetPacket Make(NetDataWriter connectData, SocketAddress addressBytes, long connectTime, int localId)
@@ -108,7 +108,7 @@ namespace LiteNetLib
             if (peerId < 0)
                 return null;
 
-            return new NetConnectAcceptPacket(connectionId, connectionNumber, peerId, isReused == 1);
+            return new(connectionId, connectionNumber, peerId, isReused == 1);
         }
 
         public static NetPacket Make(long connectTime, byte connectNum, int localPeerId)

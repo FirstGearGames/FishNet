@@ -65,8 +65,8 @@ namespace FishNet.Managing.Object
             if (base.GetObjectCount() == 0)
                 return;
 
-            Dictionary<ulong, NetworkObject> hashcodesAndNobs = new Dictionary<ulong, NetworkObject>();
-            List<ulong> hashcodes = new List<ulong>();
+            Dictionary<ulong, NetworkObject> hashcodesAndNobs = new();
+            List<ulong> hashcodes = new();
 
             bool error = false;
             foreach (NetworkObject n in base.Prefabs)
@@ -91,7 +91,7 @@ namespace FishNet.Managing.Object
             //Once all hashes have been made re-add them to prefabs sorted.
             hashcodes.Sort();
             //Build to a new list using sorted hashcodes.
-            List<NetworkObject> sortedNobs = new List<NetworkObject>();
+            List<NetworkObject> sortedNobs = new();
             foreach (ulong hc in hashcodes)
                 sortedNobs.Add(hashcodesAndNobs[hc]);
 

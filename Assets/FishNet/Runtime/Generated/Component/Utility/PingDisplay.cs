@@ -46,7 +46,7 @@ namespace FishNet.Component.Utility
         /// <summary>
         /// Style for drawn ping.
         /// </summary>
-        private GUIStyle _style = new GUIStyle();
+        private GUIStyle _style = new();
         #endregion
 
         private void OnGUI()
@@ -101,7 +101,7 @@ namespace FishNet.Component.Utility
                 ping = (long)Mathf.Max(1, ping - deduction);
             }
 
-            GUI.Label(new Rect(horizontal, vertical, width, height), $"Ping: {ping}ms", _style);
+            GUI.Label(new(horizontal, vertical, width, height), $"Ping: {ping}ms", _style);
         }
 #endif
 

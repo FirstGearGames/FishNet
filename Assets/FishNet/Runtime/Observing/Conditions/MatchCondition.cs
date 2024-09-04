@@ -24,10 +24,10 @@ namespace FishNet.Component.Observing
         /// </summary>
         public class ConditionCollections
         {
-            public Dictionary<int, HashSet<NetworkConnection>> MatchConnections = new Dictionary<int, HashSet<NetworkConnection>>();
-            public Dictionary<NetworkConnection, HashSet<int>> ConnectionMatches = new Dictionary<NetworkConnection, HashSet<int>>();
-            public Dictionary<int, HashSet<NetworkObject>> MatchObjects = new Dictionary<int, HashSet<NetworkObject>>();
-            public Dictionary<NetworkObject, HashSet<int>> ObjectMatches = new Dictionary<NetworkObject, HashSet<int>>();
+            public Dictionary<int, HashSet<NetworkConnection>> MatchConnections = new();
+            public Dictionary<NetworkConnection, HashSet<int>> ConnectionMatches = new();
+            public Dictionary<int, HashSet<NetworkObject>> MatchObjects = new();
+            public Dictionary<NetworkObject, HashSet<int>> ObjectMatches = new();
         }
         #endregion
 
@@ -35,7 +35,7 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// Collections for each NetworkManager instance.
         /// </summary>
-        private static Dictionary<NetworkManager, ConditionCollections> _collections = new Dictionary<NetworkManager, ConditionCollections>();
+        private static Dictionary<NetworkManager, ConditionCollections> _collections = new();
         #endregion
 
         #region Collections.
@@ -71,7 +71,7 @@ namespace FishNet.Component.Observing
             ConditionCollections cc;
             if (!_collections.TryGetValue(manager, out cc))
             {
-                cc = new ConditionCollections();
+                cc = new();
                 _collections[manager] = cc;
             }
 

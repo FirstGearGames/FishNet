@@ -47,7 +47,7 @@ namespace FishNet.Object.Prediction
 
         public static PredictionRigidbody.EntryData ReadEntryData(this Reader r)
         {
-            PredictionRigidbody.EntryData fd = new PredictionRigidbody.EntryData();
+            PredictionRigidbody.EntryData fd = new();
 
             PredictionRigidbody.ForceApplicationType appType = (PredictionRigidbody.ForceApplicationType)r.ReadUInt8Unpacked();
             fd.Type = appType;
@@ -244,39 +244,39 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force)
         {
-            EntryData fd = new EntryData(ForceApplicationType.AddForce,
-                new AllForceData(force, mode));
+            EntryData fd = new(ForceApplicationType.AddForce,
+                new(force, mode));
             _pendingForces.Add(fd);
         }
         public void AddRelativeForce(Vector3 force, ForceMode mode = ForceMode.Force)
         {
-            EntryData fd = new EntryData(ForceApplicationType.AddRelativeForce,
-                new AllForceData(force, mode));
+            EntryData fd = new(ForceApplicationType.AddRelativeForce,
+                new(force, mode));
             _pendingForces.Add(fd);
 
         }
         public void AddTorque(Vector3 force, ForceMode mode = ForceMode.Force)
         {
-            EntryData fd = new EntryData(ForceApplicationType.AddTorque,
-                new AllForceData(force, mode));
+            EntryData fd = new(ForceApplicationType.AddTorque,
+                new(force, mode));
             _pendingForces.Add(fd);
         }
         public void AddRelativeTorque(Vector3 force, ForceMode mode = ForceMode.Force)
         {
-            EntryData fd = new EntryData(ForceApplicationType.AddRelativeTorque,
-                new AllForceData(force, mode));
+            EntryData fd = new(ForceApplicationType.AddRelativeTorque,
+                new(force, mode));
             _pendingForces.Add(fd);
         }
         public void AddExplosiveForce(float force, Vector3 position, float radius, float upwardsModifier = 0f, ForceMode mode = ForceMode.Force)
         {
-            EntryData fd = new EntryData(ForceApplicationType.AddExplosiveForce,
-                new AllForceData(force, position, radius, upwardsModifier, mode));
+            EntryData fd = new(ForceApplicationType.AddExplosiveForce,
+                new(force, position, radius, upwardsModifier, mode));
             _pendingForces.Add(fd);
         }
         public void AddForceAtPosition(Vector3 force, Vector3 position, ForceMode mode = ForceMode.Force)
         {
-            EntryData fd = new EntryData(ForceApplicationType.AddForceAtPosition,
-                new AllForceData(force, position, mode));
+            EntryData fd = new(ForceApplicationType.AddForceAtPosition,
+                new(force, position, mode));
             _pendingForces.Add(fd);
         }
 
@@ -358,7 +358,7 @@ namespace FishNet.Object.Prediction
             if (pr._pendingForces != null)
             {
                 foreach (EntryData item in pr._pendingForces)
-                    _pendingForces.Add(new EntryData(item));
+                    _pendingForces.Add(new(item));
             }
             //Set state.
             Rigidbody.SetState(pr.RigidbodyState);

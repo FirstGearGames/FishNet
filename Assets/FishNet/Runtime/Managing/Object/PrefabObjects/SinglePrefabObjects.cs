@@ -17,7 +17,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         [Tooltip("Prefabs which may be spawned.")]
         [SerializeField]
-        private List<NetworkObject> _prefabs = new List<NetworkObject>();
+        private List<NetworkObject> _prefabs = new();
         /// <summary>
         /// Prefabs which may be spawned.
         /// </summary>

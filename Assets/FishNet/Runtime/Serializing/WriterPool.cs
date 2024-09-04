@@ -27,11 +27,11 @@ namespace FishNet.Serializing
         /// <summary>
         /// Pool of writers where length is the minimum and increased at runtime.
         /// </summary>
-        private static readonly Stack<PooledWriter> _pool = new Stack<PooledWriter>();
+        private static readonly Stack<PooledWriter> _pool = new();
         /// <summary>
         /// Pool of writers where length is of minimum key and may be increased at runtime.
         /// </summary>
-        private static readonly Dictionary<int, Stack<PooledWriter>> _lengthPool = new Dictionary<int, Stack<PooledWriter>>();
+        private static readonly Dictionary<int, Stack<PooledWriter>> _lengthPool = new();
         #endregion
 
         #region Const.
@@ -48,7 +48,7 @@ namespace FishNet.Serializing
         {
             PooledWriter result;
             if (!_pool.TryPop(out result))
-                result = new PooledWriter();
+                result = new();
 
             result.Reset(networkManager);
             return result;
@@ -116,7 +116,7 @@ namespace FishNet.Serializing
             Stack<PooledWriter> stack;
             if (!_lengthPool.TryGetValue(index, out stack))
             {
-                stack = new Stack<PooledWriter>();
+                stack = new();
                 _lengthPool[index] = stack;
             }
 

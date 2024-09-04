@@ -13,6 +13,7 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -24,7 +25,7 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// NetworkObjects which are currently active.
         /// </summary>
-        public Dictionary<int, NetworkObject> Spawned = new Dictionary<int, NetworkObject>();
+        public Dictionary<int, NetworkObject> Spawned = new();
         #endregion
 
         #region Protected.
@@ -40,7 +41,7 @@ namespace FishNet.Managing.Object
         /// Objects in currently loaded scenes. These objects can be active or inactive.
         /// Key is the objectId while value is the object. Key is not the same as NetworkObject.ObjectId.
         /// </summary> 
-        protected Dictionary<ulong, NetworkObject> SceneObjects_Internal = new Dictionary<ulong, NetworkObject>();
+        protected Dictionary<ulong, NetworkObject> SceneObjects_Internal = new();
         /// <summary>
         /// Objects in currently loaded scenes. These objects can be active or inactive.
         /// Key is the objectId while value is the object. Key is not the same as NetworkObject.ObjectId.
@@ -217,7 +218,7 @@ namespace FishNet.Managing.Object
                  * individual despawns for each child. */
                 if (asServer)
                 {
-                    foreach (NetworkObject childNob in nob.SerializedNestedNetworkObjects)
+                    foreach (NetworkObject childNob in nob.InitializedNestedNetworkObjects)
                     {
                         if (childNob != null && !childNob.IsDeinitializing)
                             Despawn(childNob, despawnType, asServer);
@@ -227,21 +228,6 @@ namespace FishNet.Managing.Object
 
         }
 
-
-        /// <summary>
-        /// Updates NetworkBehaviours on nob.
-        /// </summary>
-        /// <param name="asServer"></param>
-        
-        protected void UpdateNetworkBehavioursForSceneObject(NetworkObject nob, bool asServer)
-        {
-            //Would have already been done on server side.
-            if (!asServer && NetworkManager.IsServerStarted)
-                return;
-
-            InitializePrefab(nob, -1);
-        }
-
         /// <summary>
         /// Initializes a prefab, not to be mistaken for initializing a spawned object.
         /// </summary>
@@ -249,22 +235,21 @@ namespace FishNet.Managing.Object
         /// <param name="index">Index within spawnable prefabs.</param>
         public static void InitializePrefab(NetworkObject prefab, int index, ushort? collectionId = null)
         {
-            if (prefab == null)
-                return;
-            /* Only set the Id if not -1. 
-             * A value of -1 would indicate it's a scene
-             * object. */
-            if (index != -1)
+            const int invalidIndex = -1;
+            if (index == invalidIndex)
             {
-                //Use +1 because 0 indicates unset.
-                prefab.PrefabId = (ushort)index;
-                if (collectionId != null)
-                    prefab.SpawnableCollectionId = collectionId.Value;
+                Debug.LogError($"An index of {invalidIndex} cannot be assigned as a PrefabId for {prefab.name}.");
+                return;
             }
 
-            byte componentIndex = 0;
-            prefab.UpdateNetworkBehaviours(null, ref componentIndex);
-            prefab.SerializeTransformProperties();
+            if (prefab == null)
+                return;
+
+            prefab.PrefabId = (ushort)index;
+            if (collectionId != null)
+                prefab.SpawnableCollectionId = collectionId.Value;
+
+            prefab.SetInitializedValues(null);
         }
 
         /// <summary>
@@ -354,7 +339,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         /// <param name="objectId"></param>
         /// <returns></returns>
-        
+
         protected internal NetworkObject GetSpawnedNetworkObject(int objectId)
         {
             NetworkObject r;
@@ -418,7 +403,7 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Parses a ReplicateRpc.
         /// </summary>
-        
+
         internal void ParseReplicateRpc(PooledReader reader, NetworkConnection conn, Channel channel)
         {
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();

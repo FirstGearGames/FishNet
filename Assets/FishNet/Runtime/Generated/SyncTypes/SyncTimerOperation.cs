@@ -1,6 +1,5 @@
 ﻿namespace FishNet.Object.Synchronizing
 {
-
     public enum SyncTimerOperation : byte
     {
         /// <summary>
@@ -36,5 +35,4 @@
         /// </summary>
         Complete = 9,
     }
-
 }

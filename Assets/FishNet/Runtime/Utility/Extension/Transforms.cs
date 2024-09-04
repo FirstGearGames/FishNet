@@ -13,7 +13,7 @@ namespace FishNet.Utility.Extension
         /// </summary>
         public static TransformProperties GetWorldProperties(this Transform t)
         {
-            TransformProperties tp = new TransformProperties(t.position, t.rotation, t.localScale);
+            TransformProperties tp = new(t.position, t.rotation, t.localScale);
             return tp;
         }
 
@@ -23,7 +23,7 @@ namespace FishNet.Utility.Extension
         
         public static TransformProperties GetWorldProperties(this Transform t, TransformProperties offset)
         {
-            TransformProperties tp = new TransformProperties(t.position, t.rotation, t.localScale);
+            TransformProperties tp = new(t.position, t.rotation, t.localScale);
             tp.Add(offset);
             return tp;
         }
@@ -33,7 +33,7 @@ namespace FishNet.Utility.Extension
         /// </summary>
         public static TransformPropertiesCls GetWorldPropertiesCls(this Transform t)
         {
-            TransformPropertiesCls tp = new TransformPropertiesCls(t.position, t.rotation, t.localScale);
+            TransformPropertiesCls tp = new(t.position, t.rotation, t.localScale);
             return tp;
         }
 
@@ -43,7 +43,7 @@ namespace FishNet.Utility.Extension
         /// </summary>
         public static TransformProperties GetLocalProperties(this Transform t)
         {
-            TransformProperties tp = new TransformProperties(t.localPosition, t.localRotation, t.localScale);
+            TransformProperties tp = new(t.localPosition, t.localRotation, t.localScale);
             return tp;
         }
 
@@ -52,7 +52,7 @@ namespace FishNet.Utility.Extension
         /// </summary>
         public static TransformPropertiesCls GetLocalPropertiesCls(this Transform t)
         {
-            TransformPropertiesCls tp = new TransformPropertiesCls(t.localPosition, t.localRotation, t.localScale);
+            TransformPropertiesCls tp = new(t.localPosition, t.localRotation, t.localScale);
             return tp;
         }
 
@@ -88,7 +88,7 @@ namespace FishNet.Utility.Extension
             if (target == null)
                 return default;
 
-            return new TransformProperties(
+            return new(
                 (target.position - t.position),
                 (target.rotation * Quaternion.Inverse(t.rotation)),
                 (target.localScale - t.localScale)

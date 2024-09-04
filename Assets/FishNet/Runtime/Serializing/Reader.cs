@@ -150,7 +150,7 @@ namespace FishNet.Serializing
             if (Remaining == 0)
                 return default;
             else
-                return new ArraySegment<byte>(_buffer, Position, Remaining);
+                return new(_buffer, Position, Remaining);
         }
 
         /// <summary>
@@ -206,7 +206,7 @@ namespace FishNet.Serializing
 
             int count = ReadInt32();
 
-            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>(count);
+            Dictionary<TKey, TValue> result = new(count);
             for (int i = 0; i < count; i++)
             {
                 TKey key = Read<TKey>();
@@ -282,7 +282,7 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public ArraySegment<byte> GetArraySegmentBuffer()
         {
-            return new ArraySegment<byte>(_buffer, Offset, Length);
+            return new(_buffer, Offset, Length);
         }
 
 
@@ -374,7 +374,7 @@ namespace FishNet.Serializing
         {
             if (count == 0) return default;
 
-            ArraySegment<byte> result = new ArraySegment<byte>(_buffer, Position, count);
+            ArraySegment<byte> result = new(_buffer, Position, count);
             Position += count;
             return result;
         }
@@ -524,7 +524,7 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public float ReadSingleUnpacked()
         {
-            UIntFloat converter = new UIntFloat();
+            UIntFloat converter = new();
             converter.UIntValue = ReadUInt32Unpacked();
             return converter.FloatValue;
         }
@@ -542,7 +542,7 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public double ReadDoubleUnpacked()
         {
-            UIntDouble converter = new UIntDouble();
+            UIntDouble converter = new();
             converter.LongValue = ReadUInt64Unpacked();
             return converter.DoubleValue;
         }
@@ -560,7 +560,7 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public decimal ReadDecimalUnpacked()
         {
-            UIntDecimal converter = new UIntDecimal();
+            UIntDecimal converter = new();
             converter.LongValue1 = ReadUInt64Unpacked();
             converter.LongValue2 = ReadUInt64Unpacked();
             return converter.DecimalValue;
@@ -650,7 +650,7 @@ namespace FishNet.Serializing
         /// Reads a Vector2.
         /// </summary>
         /// <returns></returns>
-        public Vector2 ReadVector2Unpacked() => new Vector2(ReadSingleUnpacked(), ReadSingleUnpacked());
+        public Vector2 ReadVector2Unpacked() => new(ReadSingleUnpacked(), ReadSingleUnpacked());
 
         /// <summary>
         /// Reads a Vector2.
@@ -663,7 +663,7 @@ namespace FishNet.Serializing
         /// Reads a Vector3.
         /// </summary>
         /// <returns></returns>
-        public Vector3 ReadVector3Unpacked() => new Vector3(ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked());
+        public Vector3 ReadVector3Unpacked() => new(ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked());
 
         /// <summary>
         /// Reads a Vector3.
@@ -676,7 +676,7 @@ namespace FishNet.Serializing
         /// Reads a Vector4.
         /// </summary>
         /// <returns></returns>
-        public Vector4 ReadVector4Unpacked() => new Vector4(ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked());
+        public Vector4 ReadVector4Unpacked() => new(ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked());
 
         /// <summary>
         /// Reads a Vector4.
@@ -689,27 +689,27 @@ namespace FishNet.Serializing
         /// Reads a Vector2Int.
         /// </summary>
         /// <returns></returns>
-        public Vector2Int ReadVector2IntUnpacked() => new Vector2Int(ReadInt32Unpacked(), ReadInt32Unpacked());
+        public Vector2Int ReadVector2IntUnpacked() => new(ReadInt32Unpacked(), ReadInt32Unpacked());
 
         /// <summary>
         /// Reads a Vector2Int.
         /// </summary>
         /// <returns></returns>
         [DefaultReader]
-        public Vector2Int ReadVector2Int() => new Vector2Int((int)ReadSignedPackedWhole(), (int)ReadSignedPackedWhole());
+        public Vector2Int ReadVector2Int() => new((int)ReadSignedPackedWhole(), (int)ReadSignedPackedWhole());
 
         /// <summary>
         /// Reads a Vector3Int.
         /// </summary>
         /// <returns></returns>      
-        public Vector3Int ReadVector3IntUnpacked() => new Vector3Int(ReadInt32Unpacked(), ReadInt32Unpacked(), ReadInt32Unpacked());
+        public Vector3Int ReadVector3IntUnpacked() => new(ReadInt32Unpacked(), ReadInt32Unpacked(), ReadInt32Unpacked());
 
         /// <summary>
         /// Reads a Vector3Int.
         /// </summary>
         /// <returns></returns>      
         [DefaultReader]
-        public Vector3Int ReadVector3Int() => new Vector3Int((int)ReadSignedPackedWhole(), (int)ReadSignedPackedWhole(), (int)ReadSignedPackedWhole());
+        public Vector3Int ReadVector3Int() => new((int)ReadSignedPackedWhole(), (int)ReadSignedPackedWhole(), (int)ReadSignedPackedWhole());
 
         /// <summary>
         /// Reads a color.
@@ -722,7 +722,7 @@ namespace FishNet.Serializing
             float b = ReadSingleUnpacked();
             float a = ReadSingleUnpacked();
 
-            return new Color(r, g, b, a);
+            return new(r, g, b, a);
         }
 
         /// <summary>
@@ -737,7 +737,7 @@ namespace FishNet.Serializing
             float b = (float)(ReadUInt8Unpacked() / 100f);
             float a = (float)(ReadUInt8Unpacked() / 100f);
 
-            return new Color(r, g, b, a);
+            return new(r, g, b, a);
         }
 
         /// <summary>
@@ -745,13 +745,13 @@ namespace FishNet.Serializing
         /// </summary>
         /// <returns></returns>
         [DefaultReader]
-        public Color32 ReadColor32() => new Color32(ReadUInt8Unpacked(), ReadUInt8Unpacked(), ReadUInt8Unpacked(), ReadUInt8Unpacked());
+        public Color32 ReadColor32() => new(ReadUInt8Unpacked(), ReadUInt8Unpacked(), ReadUInt8Unpacked(), ReadUInt8Unpacked());
 
         /// <summary>
         /// Reads a Quaternion.
         /// </summary>
         /// <returns></returns>
-        public Quaternion ReadQuaternionUnpacked() => new Quaternion(ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked());
+        public Quaternion ReadQuaternionUnpacked() => new(ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked());
 
         /// <summary>
         /// Reads a Quaternion.
@@ -795,7 +795,7 @@ namespace FishNet.Serializing
         /// Reads a Rect.
         /// </summary>
         /// <returns></returns>
-        public Rect ReadRectUnpacked() => new Rect(ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked());
+        public Rect ReadRectUnpacked() => new(ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked(), ReadSingleUnpacked());
 
         /// <summary>
         /// Reads a Rect.
@@ -808,7 +808,7 @@ namespace FishNet.Serializing
         /// Plane.
         /// </summary>
         /// <returns></returns>
-        public Plane ReadPlaneUnpacked() => new Plane(ReadVector3Unpacked(), ReadSingleUnpacked());
+        public Plane ReadPlaneUnpacked() => new(ReadVector3Unpacked(), ReadSingleUnpacked());
 
         /// <summary>
         /// Plane.
@@ -825,7 +825,7 @@ namespace FishNet.Serializing
         {
             Vector3 position = ReadVector3Unpacked();
             Vector3 direction = ReadVector3Unpacked();
-            return new Ray(position, direction);
+            return new(position, direction);
         }
 
         /// <summary>
@@ -843,7 +843,7 @@ namespace FishNet.Serializing
         {
             Vector3 position = ReadVector2Unpacked();
             Vector2 direction = ReadVector2Unpacked();
-            return new Ray2D(position, direction);
+            return new(position, direction);
         }
 
         /// <summary>
@@ -859,7 +859,7 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public Matrix4x4 ReadMatrix4x4Unpacked()
         {
-            Matrix4x4 result = new Matrix4x4
+            Matrix4x4 result = new()
             {
                 m00 = ReadSingleUnpacked(),
                 m01 = ReadSingleUnpacked(),
@@ -910,7 +910,7 @@ namespace FishNet.Serializing
         {
             byte[] buffer = ReaderStatics.GetGuidBuffer();
             ReadUInt8Array(ref buffer, 16);
-            return new System.Guid(buffer);
+            return new(buffer);
         }
 
         /// <summary>
@@ -1101,7 +1101,7 @@ namespace FishNet.Serializing
             }
             else
             {
-                if (componentIndex >= nob.NetworkBehaviours.Length)
+                if (componentIndex >= nob.NetworkBehaviours.Count)
                 {
                     NetworkManager.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name} [id {nob.ObjectId}]. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
                     result = null;
@@ -1206,7 +1206,7 @@ namespace FishNet.Serializing
                          * initialize it either way. Connections rarely come through
                          * without being in server/client side collection. */
                         else
-                            return new NetworkConnection(NetworkManager, value, -1, true);
+                            return new(NetworkManager, value, -1, true);
                     }
                     //Only server and not found.
                     else
@@ -1229,7 +1229,7 @@ namespace FishNet.Serializing
                      * initialize it either way. Connections rarely come through
                      * without being in server/client side collection. */
                     else
-                        return new NetworkConnection(NetworkManager, value, -1, true);
+                        return new(NetworkManager, value, -1, true);
                 }
             }
         }
@@ -1407,7 +1407,7 @@ namespace FishNet.Serializing
             else
             {
                 if (collection == null)
-                    collection = new List<T>(count);
+                    collection = new(count);
                 else
                     collection.Clear();
 

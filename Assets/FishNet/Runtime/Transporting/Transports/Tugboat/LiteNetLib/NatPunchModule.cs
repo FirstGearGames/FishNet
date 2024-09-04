@@ -78,11 +78,11 @@ namespace LiteNetLib
         }
 
         private readonly NetManager _socket;
-        private readonly ConcurrentQueue<RequestEventData> _requestEvents = new ConcurrentQueue<RequestEventData>();
-        private readonly ConcurrentQueue<SuccessEventData> _successEvents = new ConcurrentQueue<SuccessEventData>();
-        private readonly NetDataReader _cacheReader = new NetDataReader();
-        private readonly NetDataWriter _cacheWriter = new NetDataWriter();
-        private readonly NetPacketProcessor _netPacketProcessor = new NetPacketProcessor(MaxTokenLength);
+        private readonly ConcurrentQueue<RequestEventData> _requestEvents = new();
+        private readonly ConcurrentQueue<SuccessEventData> _successEvents = new();
+        private readonly NetDataReader _cacheReader = new();
+        private readonly NetDataWriter _cacheWriter = new();
+        private readonly NetPacketProcessor _netPacketProcessor = new(MaxTokenLength);
         private INatPunchListener _natPunchListener;
         public const int MaxTokenLength = 256;
 
@@ -205,7 +205,7 @@ namespace LiteNetLib
             }
             else
             {
-                _requestEvents.Enqueue(new RequestEventData
+                _requestEvents.Enqueue(new()
                 {
                     LocalEndPoint = req.Internal,
                     RemoteEndPoint = senderEndPoint,
@@ -252,7 +252,7 @@ namespace LiteNetLib
             }
             else
             {
-                _successEvents.Enqueue(new SuccessEventData
+                _successEvents.Enqueue(new()
                 {
                     TargetEndPoint = senderEndPoint,
                     Type = req.IsExternal ? NatAddressType.External : NatAddressType.Internal,

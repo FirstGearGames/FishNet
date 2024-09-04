@@ -24,7 +24,7 @@ namespace GameKit.Dependencies.Utilities.Types
             //Not yet made.
             if (_instance == null)
             {
-                GameObject obj = new GameObject();
+                GameObject obj = new();
                 obj.name = "FirstGearGames DDOL";
                 DDOL ddol = obj.AddComponent<DDOL>();
                 DontDestroyOnLoad(ddol);

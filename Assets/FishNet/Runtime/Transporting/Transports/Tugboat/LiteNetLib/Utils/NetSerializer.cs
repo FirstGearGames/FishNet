@@ -74,7 +74,7 @@ namespace LiteNetLib.Utils
                 var list = GetterList(inf);
                 if (list == null)
                 {
-                    list = new List<TProperty>(len);
+                    list = new(len);
                     SetterList(inf, list);
                 }
                 return list;
@@ -558,7 +558,7 @@ namespace LiteNetLib.Utils
 
         private NetDataWriter _writer;
         private readonly int _maxStringLength;
-        private readonly Dictionary<Type, CustomType> _registeredTypes = new Dictionary<Type, CustomType>();
+        private readonly Dictionary<Type, CustomType> _registeredTypes = new();
 
         public NetSerializer() : this(0)
         {
@@ -662,7 +662,7 @@ namespace LiteNetLib.Utils
                     throw new InvalidTypeException("Unknown property type: " + propertyType.FullName);
                 }
             }
-            ClassInfo<T>.Instance = new ClassInfo<T>(serializers);
+            ClassInfo<T>.Instance = new(serializers);
             return ClassInfo<T>.Instance;
         }
 
@@ -753,7 +753,7 @@ namespace LiteNetLib.Utils
         T>(T obj) where T : class, new()
         {
             if (_writer == null)
-                _writer = new NetDataWriter();
+                _writer = new();
             _writer.Reset();
             Serialize(_writer, obj);
             return _writer.CopyData();

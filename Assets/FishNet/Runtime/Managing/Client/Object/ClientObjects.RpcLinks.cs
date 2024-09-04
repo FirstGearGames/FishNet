@@ -23,7 +23,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// RPCLinks of currently spawned objects.
         /// </summary>
-        private Dictionary<ushort, RpcLink> _rpcLinks = new Dictionary<ushort, RpcLink>();
+        private Dictionary<ushort, RpcLink> _rpcLinks = new();
         #endregion
 
         /// <summary>

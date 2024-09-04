@@ -26,10 +26,10 @@ namespace FishNet.Demo.AdditiveScenes
              * disconnects or leaves the scene. */
             foreach (string item in _scenes)
             {
-                SceneLookupData lookupData = new SceneLookupData(item);
-                SceneLoadData sld = new SceneLoadData(lookupData)
+                SceneLookupData lookupData = new(item);
+                SceneLoadData sld = new(lookupData)
                 {
-                    Options = new LoadOptions
+                    Options = new()
                     {
                         AutomaticallyUnload = false
                     },

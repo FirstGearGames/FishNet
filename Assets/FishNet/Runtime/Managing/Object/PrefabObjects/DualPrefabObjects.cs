@@ -17,7 +17,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         [Tooltip("Prefabs which may be spawned.")]
         [SerializeField]
-        private List<DualPrefab> _prefabs = new List<DualPrefab>();
+        private List<DualPrefab> _prefabs = new();
         /// <summary>
         /// Prefabs which may be spawned.
         /// </summary>

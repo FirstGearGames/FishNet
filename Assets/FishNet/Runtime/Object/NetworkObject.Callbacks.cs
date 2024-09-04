@@ -35,26 +35,26 @@ namespace FishNet.Object
             bool invokeOnNetwork = (asServer || IsServerOnlyStarted || IsClientOnlyInitialized);
             if (invokeOnNetwork)
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].InvokeOnNetwork(start: true);
             }
 
             //As server.
             if (asServer)
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStartServer_Internal();
                 _onStartServerCalled = true;
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnOwnershipServer_Internal(FishNet.Managing.NetworkManager.EmptyConnection);
             }
             //As client.
             else
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStartClient_Internal();
                 _onStartClientCalled = true;
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnOwnershipClient_Internal(FishNet.Managing.NetworkManager.EmptyConnection);
             }
 
@@ -70,7 +70,7 @@ namespace FishNet.Object
         /// </summary>
         internal void InvokeOnStartSyncTypeCallbacks(bool asServer)
         {
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
+            for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].InvokeSyncTypeOnStartCallbacks(asServer);
         }
 
@@ -79,7 +79,7 @@ namespace FishNet.Object
         /// </summary>
         internal void InvokeOnStopSyncTypeCallbacks(bool asServer)
         {
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
+            for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].InvokeSyncTypeOnStopCallbacks(asServer);
         }
 
@@ -90,10 +90,10 @@ namespace FishNet.Object
         /// <param name=""></param>
         internal void OnSpawnServer(NetworkConnection conn)
         {
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
+            for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].SendBufferedRpcs(conn);
 
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
+            for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].OnSpawnServer(conn);
         }
 
@@ -103,7 +103,7 @@ namespace FishNet.Object
         /// <param name="conn">Connection spawn was sent to.</param>
         internal void InvokeOnServerDespawn(NetworkConnection conn)
         {
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
+            for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].OnDespawnServer(conn);
         }
 
@@ -122,13 +122,13 @@ namespace FishNet.Object
 
             if (asServer && _onStartServerCalled)
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStopServer_Internal();
                 _onStartServerCalled = false;
             }
             else if (!asServer && _onStartClientCalled)
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStopClient_Internal();
                 _onStartClientCalled = false;
             }
@@ -136,7 +136,7 @@ namespace FishNet.Object
             bool invokeOnNetwork = asServer || (clientStartCalled && !IsServerStarted);
             if (invokeOnNetwork)
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].InvokeOnNetwork(false);
             }
         }
@@ -149,7 +149,7 @@ namespace FishNet.Object
         {
             if (asServer)
             {
-                for (int i = 0; i < NetworkBehaviours.Length; i++)
+                for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnOwnershipServer_Internal(prevOwner);
 
                 WriteSyncTypesForManualOwnershipChange(prevOwner);
@@ -168,7 +168,7 @@ namespace FishNet.Object
                 bool blockInvoke = ((IsOwner && !IsServerStarted) && (prevOwner == Owner));
                 if (!blockInvoke)
                 {
-                    for (int i = 0; i < NetworkBehaviours.Length; i++)
+                    for (int i = 0; i < NetworkBehaviours.Count; i++)
                         NetworkBehaviours[i].OnOwnershipClient_Internal(prevOwner);
                 }
             }

@@ -32,7 +32,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// </summary>
         public List<AttributeData> GetRpcAttributes(MethodDefinition methodDef)
         {
-            List<AttributeData> results = new List<AttributeData>();
+            List<AttributeData> results = new();
             string asyncAttributeFullName = typeof(AsyncStateMachineAttribute).FullName;
             bool isAsync = false;
 
@@ -41,7 +41,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 RpcType rt = base.Session.GetClass<AttributeHelper>().GetRpcAttributeType(customAttribute);
                 if (rt != RpcType.None)
                 {
-                    results.Add(new AttributeData(customAttribute, rt));
+                    results.Add(new(customAttribute, rt));
                 }
                 //Not a rpc attribute.
                 else
@@ -61,7 +61,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             else if (isAsync)
             {
                 base.Session.LogError($"{methodDef.Name} is an async RPC. This feature is not currently supported. You may instead run an async method from this RPC.");
-                return new List<AttributeData>();
+                return new();
             }
             //If more than one attribute make sure the combination is allowed.
             else if (results.Count >= 2)
@@ -70,7 +70,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 if (allRpcTypes != (RpcType.Observers | RpcType.Target))
                 {
                     base.Session.LogError($"{methodDef.Name} contains multiple RPC attributes. Only ObserversRpc and TargetRpc attributes may be combined.");
-                    return new List<AttributeData>();
+                    return new();
                 }
             }
 
@@ -79,7 +79,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             {
                 //If not valid then return empty list.
                 if (!IsRpcMethodValid(methodDef, ad.RpcType))
-                    return new List<AttributeData>();
+                    return new();
             }
 
             return results;

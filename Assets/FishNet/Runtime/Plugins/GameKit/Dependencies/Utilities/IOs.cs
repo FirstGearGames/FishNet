@@ -26,7 +26,7 @@ namespace GameKit.Dependencies.Utilities
                 return new string[0];
 
             //Folders remaining to be iterated.
-            List<string> enumeratedCollection = new List<string>() { startingPath };
+            List<string> enumeratedCollection = new() { startingPath };
             //Only check other directories if recursive.
             if (recursive)
             {
@@ -45,7 +45,7 @@ namespace GameKit.Dependencies.Utilities
             }
 
             //Valid prefab files.
-            List<string> results = new List<string>();
+            List<string> results = new();
             //Build files from folders.
             int count = enumeratedCollection.Count;
             for (int i = 0; i < count; i++)

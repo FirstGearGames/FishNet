@@ -21,7 +21,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Objects currently in the pool.
         /// </summary>
-        public ListStack<GameObject> Objects = new ListStack<GameObject>();
+        public ListStack<GameObject> Objects = new();
         #endregion
 
         #region Private.
@@ -52,7 +52,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         public List<GameObject> Cull()
         {
             if (_expirationDuration == -1f)
-                return new List<GameObject>();
+                return new();
 
             return Objects.Cull(_expirationDuration);
         }

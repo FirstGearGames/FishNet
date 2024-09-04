@@ -26,7 +26,7 @@ namespace LiteNetLib.Utils
     /// </remarks>
     public class NtpPacket
     {
-        private static readonly DateTime Epoch = new DateTime(1900, 1, 1);
+        private static readonly DateTime Epoch = new(1900, 1, 1);
 
         /// <summary>
         /// Gets RFC4330-encoded SNTP packet.
@@ -290,7 +290,7 @@ namespace LiteNetLib.Utils
         /// <returns></returns>
         public static NtpPacket FromServerResponse(byte[] bytes, DateTime destinationTimestamp)
         {
-            return new NtpPacket(bytes) { DestinationTimestamp = destinationTimestamp };
+            return new(bytes) { DestinationTimestamp = destinationTimestamp };
         }
 
         internal void ValidateRequest()

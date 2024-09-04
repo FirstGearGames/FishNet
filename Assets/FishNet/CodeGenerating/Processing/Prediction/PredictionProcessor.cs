@@ -441,7 +441,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
 
             Register(readers.ReplicateReader.CachedResolve(base.Session), true);
             Register(readers.ReconcileReader.CachedResolve(base.Session), false);
@@ -498,7 +498,7 @@ namespace FishNet.CodeGenerating.Processing
                     gh.GetGenericBasicQueue(replicateDataTr, out collectionGit);
                 MethodReference ctorMr = ctorMd.MakeHostInstanceGeneric(base.Session, collectionGit);
 
-                List<Instruction> insts = new List<Instruction>();
+                List<Instruction> insts = new();
 
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
                 insts.Add(processor.Create(OpCodes.Newobj, ctorMr));
@@ -518,7 +518,7 @@ namespace FishNet.CodeGenerating.Processing
             TypeReference reconcileDataTr = reconcileMd.Parameters[0].ParameterType;
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
 
             Generate(replicateULMd, replicateDataTr, predictionFields.ReplicateULDelegate, typeof(ReplicateUserLogicDelegate<>), ReplicateULDelegate_TypeRef);
             Generate(reconcileULMd, reconcileDataTr, predictionFields.ReconcileULDelegate, typeof(ReconcileUserLogicDelegate<>), ReconcileULDelegate_TypeRef);
@@ -566,13 +566,13 @@ namespace FishNet.CodeGenerating.Processing
 
             base.ImportReference(lstDataGit);
             /* Data buffer. */
-            FieldDefinition replicateULDelegateFd = new FieldDefinition($"_replicateULDelegate___{replicateMd.Name}", FieldAttributes.Private, replicateULDelegateGit);
-            FieldDefinition reconcileULDelegateFd = new FieldDefinition($"_reconcileULDelegate___{reconcileMd.Name}", FieldAttributes.Private, reconcileULDelegateGit);
-            FieldDefinition replicatesQueueFd = new FieldDefinition($"_replicatesQueue___{replicateMd.Name}", FieldAttributes.Private, queueDataGit);
-            FieldDefinition replicatesListFd = new FieldDefinition($"_replicatesHistory___{replicateMd.Name}", FieldAttributes.Private, lstDataGit);
-            FieldDefinition reconcileDataFd = new FieldDefinition($"_reconcileData___{replicateMd.Name}", FieldAttributes.Private, reconcileDataTr);
-            FieldDefinition serverReplicatesReadBufferFd = new FieldDefinition($"_serverReplicateReadBuffer___{replicateMd.Name}", FieldAttributes.Private, replicateDataArrTr);
-            FieldDefinition lastReadReplicateFd = new FieldDefinition($"_lastReadReplicate___{replicateMd.Name}", FieldAttributes.Private, replicateDataTr);
+            FieldDefinition replicateULDelegateFd = new($"_replicateULDelegate___{replicateMd.Name}", FieldAttributes.Private, replicateULDelegateGit);
+            FieldDefinition reconcileULDelegateFd = new($"_reconcileULDelegate___{reconcileMd.Name}", FieldAttributes.Private, reconcileULDelegateGit);
+            FieldDefinition replicatesQueueFd = new($"_replicatesQueue___{replicateMd.Name}", FieldAttributes.Private, queueDataGit);
+            FieldDefinition replicatesListFd = new($"_replicatesHistory___{replicateMd.Name}", FieldAttributes.Private, lstDataGit);
+            FieldDefinition reconcileDataFd = new($"_reconcileData___{replicateMd.Name}", FieldAttributes.Private, reconcileDataTr);
+            FieldDefinition serverReplicatesReadBufferFd = new($"_serverReplicateReadBuffer___{replicateMd.Name}", FieldAttributes.Private, replicateDataArrTr);
+            FieldDefinition lastReadReplicateFd = new($"_lastReadReplicate___{replicateMd.Name}", FieldAttributes.Private, replicateDataTr);
 
             typeDef.Fields.Add(replicateULDelegateFd);
             typeDef.Fields.Add(reconcileULDelegateFd);
@@ -582,7 +582,7 @@ namespace FishNet.CodeGenerating.Processing
             typeDef.Fields.Add(serverReplicatesReadBufferFd);
             typeDef.Fields.Add(lastReadReplicateFd);
 
-            predictionFields = new CreatedPredictionFields(replicateDataTr, replicateULDelegateFd, reconcileULDelegateFd, replicatesQueueFd, replicatesListFd, reconcileDataFd,
+            predictionFields = new(replicateDataTr, replicateULDelegateFd, reconcileULDelegateFd, replicatesQueueFd, replicatesListFd, reconcileDataFd,
                 serverReplicatesReadBufferFd, lastReadReplicateFd);
         }
 
@@ -673,7 +673,7 @@ namespace FishNet.CodeGenerating.Processing
             CreateClearReplicateCacheMethod(typeDef, replicateMd.Parameters[0].ParameterType, predictionFields);
             CreateReplicateReader(typeDef, startingRpcCount, replicateMd, predictionFields, out replicateReader);
             CreateReconcileReader(typeDef, reconcileMd, predictionFields, out reconcileReader);
-            predictionReaders = new PredictionReaders(replicateReader, reconcileReader);
+            predictionReaders = new(replicateReader, reconcileReader);
 
             bool CreateReplicate()
             {
@@ -837,7 +837,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private List<Instruction> SubtractFromField(MethodDefinition methodDef, FieldDefinition fieldDef)
         {
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             //      _field--;
@@ -856,7 +856,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private List<Instruction> SubtractFromVariable(MethodDefinition methodDef, VariableDefinition variableDef)
         {
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             //      variable--;
@@ -873,7 +873,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private List<Instruction> SubtractOneVariableFromAnother(MethodDefinition methodDef, VariableDefinition srcVd, VariableDefinition modifierVd)
         {
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             //      variable -= v2;
@@ -919,7 +919,7 @@ namespace FishNet.CodeGenerating.Processing
         private bool CreateReplicateReader(TypeDefinition typeDef, uint hash, MethodDefinition replicateMd, CreatedPredictionFields predictionFields, out MethodDefinition result)
         {
             string methodName = $"{REPLICATE_READER_PREFIX}{replicateMd.Name}";
-            MethodDefinition createdMd = new MethodDefinition(methodName,
+            MethodDefinition createdMd = new(methodName,
                 MethodAttributes.Private,
                 replicateMd.Module.TypeSystem.Void);
             typeDef.Methods.Add(createdMd);
@@ -1026,7 +1026,7 @@ namespace FishNet.CodeGenerating.Processing
         private bool CreateReconcileReader(TypeDefinition typeDef, MethodDefinition reconcileMd, CreatedPredictionFields predictionFields, out MethodDefinition result)
         {
             string methodName = $"{RECONCILE_READER_PREFIX}{reconcileMd.Name}";
-            MethodDefinition createdMd = new MethodDefinition(methodName,
+            MethodDefinition createdMd = new(methodName,
                 MethodAttributes.Private,
                 reconcileMd.Module.TypeSystem.Void);
             typeDef.Methods.Add(createdMd);

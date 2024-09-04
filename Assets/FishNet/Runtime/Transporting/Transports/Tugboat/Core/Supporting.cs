@@ -33,7 +33,7 @@ namespace FishNet.Transporting.Tugboat
 
         public ArraySegment<byte> GetArraySegment()
         {
-            return new ArraySegment<byte>(Data, 0, Length);
+            return new(Data, 0, Length);
         }
 
         public void Dispose()

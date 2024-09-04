@@ -29,7 +29,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Pool of readers.
         /// </summary>
-        private static readonly Stack<PooledReader> _pool = new Stack<PooledReader>();
+        private static readonly Stack<PooledReader> _pool = new();
         #endregion
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace FishNet.Serializing
             if (_pool.TryPop(out result))
                 result.Initialize(segment, networkManager, source);
             else
-                result = new PooledReader(segment, networkManager, source);
+                result = new(segment, networkManager, source);
 
             return result;
         }

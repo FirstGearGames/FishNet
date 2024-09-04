@@ -25,7 +25,7 @@ namespace FishNet.Component.ColliderRollback
         /// Size for the bounding box. This is only used when BoundingBox is set to Manual.
         /// </summary>
         [Tooltip("Size for the bounding box.. This is only used when BoundingBox is set to Manual.")] [SerializeField]
-        private Vector3 _boundingBoxSize = new Vector3(3f, 3f, 3f);
+        private Vector3 _boundingBoxSize = new(3f, 3f, 3f);
         /// <summary>
         /// Objects holding colliders which can rollback.
         /// </summary>

@@ -64,7 +64,7 @@ namespace LiteNetLib
         private int _lastIndex;
         private int _freeList = -1;
         private NetPeer[] _peersArray = new NetPeer[32];
-        private readonly ReaderWriterLockSlim _peersLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        private readonly ReaderWriterLockSlim _peersLock = new(LockRecursionPolicy.NoRecursion);
         private volatile NetPeer _headPeer;
 
         private void ClearPeerSet()

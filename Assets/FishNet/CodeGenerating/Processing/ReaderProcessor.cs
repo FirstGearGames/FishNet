@@ -22,15 +22,15 @@ namespace FishNet.CodeGenerating.Helping
         #region Reflection references.
         public TypeDefinition GeneratedReader_TypeDef;
         public MethodDefinition GeneratedReader_OnLoad_MethodDef;
-        public readonly Dictionary<string, MethodReference> InstancedReaderMethods = new Dictionary<string, MethodReference>();
-        public readonly Dictionary<string, MethodReference> StaticReaderMethods = new Dictionary<string, MethodReference>();
+        public readonly Dictionary<string, MethodReference> InstancedReaderMethods = new();
+        public readonly Dictionary<string, MethodReference> StaticReaderMethods = new();
         #endregion
 
         #region Misc.
         /// <summary>
         /// TypeReferences which have already had delegates made for.
         /// </summary>
-        private HashSet<TypeReference> _delegatedTypes = new HashSet<TypeReference>();
+        private HashSet<TypeReference> _delegatedTypes = new();
         #endregion
 
         #region Const.
@@ -245,7 +245,7 @@ namespace FishNet.CodeGenerating.Helping
 
                 TypeReference returnTr = base.ImportReference(instancedReadMr.ReturnType);
 
-                MethodDefinition md = new MethodDefinition($"InstancedExtension___{instancedReadMr.Name}",
+                MethodDefinition md = new($"InstancedExtension___{instancedReadMr.Name}",
                     WriterProcessor.GENERATED_METHOD_ATTRIBUTES,
                     returnTr);
                 //Add extension parameter.
@@ -288,7 +288,7 @@ namespace FishNet.CodeGenerating.Helping
         internal List<Instruction> CreateRead(MethodDefinition methodDef, ParameterDefinition readerParameterDef, TypeReference readTypeRef, out VariableDefinition createdVariableDef)
         {
             ILProcessor processor = methodDef.Body.GetILProcessor();
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             MethodReference readMr = GetOrCreateReadMethodReference(readTypeRef);
 
             if (readMr != null)
@@ -784,7 +784,7 @@ namespace FishNet.CodeGenerating.Helping
             base.ImportReference(genericInstance);
             TypeReference valueTr = genericInstance.GenericArguments[0];
 
-            List<TypeReference> genericArguments = new List<TypeReference>();
+            List<TypeReference> genericArguments = new();
             //Make sure all arguments have writers.
             foreach (TypeReference gaTr in genericInstance.GenericArguments)
             {

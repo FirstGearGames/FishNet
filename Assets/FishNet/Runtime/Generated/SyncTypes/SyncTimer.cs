@@ -78,17 +78,17 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Changed data which will be sent next tick.
         /// </summary>
-        private List<ChangeData> _changed = new List<ChangeData>();
+        private List<ChangeData> _changed = new();
 
         /// <summary>
         /// Server OnChange events waiting for start callbacks.
         /// </summary>
-        private List<ChangeData> _serverOnChanges = new List<ChangeData>();
+        private List<ChangeData> _serverOnChanges = new();
 
         /// <summary>
         /// Client OnChange events waiting for start callbacks.
         /// </summary>
-        private List<ChangeData> _clientOnChanges = new List<ChangeData>();
+        private List<ChangeData> _clientOnChanges = new();
 
         /// <summary>
         /// Last Time.unscaledTime the timer delta was updated.
@@ -99,7 +99,7 @@ namespace FishNet.Object.Synchronizing
 
         #region Constructors
 
-        public SyncTimer(SyncTypeSettings settings = new SyncTypeSettings()) : base(settings)
+        public SyncTimer(SyncTypeSettings settings = new()) : base(settings)
         {
         }
 
@@ -206,7 +206,7 @@ namespace FishNet.Object.Synchronizing
             {
                 if (base.Dirty())
                 {
-                    ChangeData change = new ChangeData(operation, prev, next);
+                    ChangeData change = new(operation, prev, next);
                     _changed.Add(change);
                 }
             }
@@ -380,14 +380,14 @@ namespace FishNet.Object.Synchronizing
                 if (base.NetworkBehaviour.OnStartServerCalled)
                     OnChange?.Invoke(operation, prev, next, asServer);
                 else
-                    _serverOnChanges.Add(new ChangeData(operation, prev, next));
+                    _serverOnChanges.Add(new(operation, prev, next));
             }
             else
             {
                 if (base.NetworkBehaviour.OnStartClientCalled)
                     OnChange?.Invoke(operation, prev, next, asServer);
                 else
-                    _clientOnChanges.Add(new ChangeData(operation, prev, next));
+                    _clientOnChanges.Add(new(operation, prev, next));
             }
         }
 

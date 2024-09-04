@@ -30,7 +30,8 @@ namespace FishNet.Managing.Observing
             private set => _updateHostVisibility = value;
         }
 
-        [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")] [SerializeField]
+        [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")]
+        [SerializeField]
         private bool _updateHostVisibility = true;
 
         /// <summary>
@@ -42,20 +43,23 @@ namespace FishNet.Managing.Observing
             private set => _maximumTimedObserversDuration = value;
         }
 
-        [Tooltip("Maximum duration the server will take to update timed observer conditions as server load increases. Lower values will result in timed conditions being checked quicker at the cost of performance.")] [SerializeField] [Range(0f, 20f)]
+        [Tooltip("Maximum duration the server will take to update timed observer conditions as server load increases. Lower values will result in timed conditions being checked quicker at the cost of performance.")]
+        [SerializeField]
+        [Range(MINIMUM_TIMED_OBSERVERS_DURATION, MAXIMUM_TIMED_OBSERVERS_DURATION)]
         private float _maximumTimedObserversDuration = 10f;
 
         /// <summary>
         /// Sets the MaximumTimedObserversDuration value.
         /// </summary>
         /// <param name="value">New maximum duration to update timed observers over.</param>
-        public void SetMaximumTimedObserversDuration(float value) => MaximumTimedObserversDuration = value;
+        public void SetMaximumTimedObserversDuration(float value) => MaximumTimedObserversDuration = System.Math.Clamp(value, MINIMUM_TIMED_OBSERVERS_DURATION, MAXIMUM_TIMED_OBSERVERS_DURATION);
 
         /// <summary>
         /// 
         /// </summary>
-        [Tooltip("Default observer conditions for networked objects.")] [SerializeField]
-        private List<ObserverCondition> _defaultConditions = new List<ObserverCondition>();
+        [Tooltip("Default observer conditions for networked objects.")]
+        [SerializeField]
+        private List<ObserverCondition> _defaultConditions = new();
 
         #endregion
 
@@ -67,6 +71,17 @@ namespace FishNet.Managing.Observing
         private NetworkManager _networkManager;
         #endregion
 
+        #region Consts.
+        /// <summary>
+        /// Minimum time allowed for timed observers to rebuild.
+        /// </summary>
+        private const float MINIMUM_TIMED_OBSERVERS_DURATION = 0.1f;
+        /// <summary>
+        /// Maxmimum time allowed for timed observers to rebuild.
+        /// </summary>
+        private const float MAXIMUM_TIMED_OBSERVERS_DURATION = 20f;
+        #endregion
+
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
@@ -74,6 +89,8 @@ namespace FishNet.Managing.Observing
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
             _networkManager = manager;
+            //Update the current value to itself so it becomes clamped. This is just to protect against the user manually setting it outside clamp somehow.
+            SetMaximumTimedObserversDuration(MaximumTimedObserversDuration);
         }
 
         /// <summary>
@@ -197,6 +214,6 @@ namespace FishNet.Managing.Observing
             return result;
         }
 
-     
+
     }
 }

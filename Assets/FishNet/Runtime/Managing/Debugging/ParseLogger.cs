@@ -19,7 +19,7 @@ namespace FishNet.Managing.Debugging
         /// <summary>
         /// Contains the last several non-split packets to arrive. This is used for debugging.
         /// </summary>
-        private Queue<PacketId> _incomingPacketIds = new Queue<PacketId>();
+        private Queue<PacketId> _incomingPacketIds = new();
         /// <summary>
         /// Maximum number of packets allowed to be queued.
         /// </summary>
@@ -55,7 +55,7 @@ namespace FishNet.Managing.Debugging
             //Only log if a NM was found.
             if (nm != null)
             {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
                 foreach (PacketId item in _incomingPacketIds)
                     sb.Insert(0, $"{item.ToString()}{Environment.NewLine}");
 

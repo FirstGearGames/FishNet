@@ -9,8 +9,8 @@ namespace GameKit.Dependencies.Utilities.Types
     {
         public Vector2Range(Vector2 minimum, Vector2 maximum)
         {
-            X = new FloatRange(minimum.x, maximum.x);
-            Y = new FloatRange(minimum.y, maximum.y);
+            X = new(minimum.x, maximum.x);
+            Y = new(minimum.y, maximum.y);
         }
         public Vector2Range(FloatRange minimum, FloatRange maximum)
         {
@@ -32,7 +32,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <returns></returns>
         public Vector2 RandomInclusive()
         {
-            return new Vector2(
+            return new(
                 Floats.RandomInclusiveRange(X.Minimum, X.Maximum),
                 Floats.RandomInclusiveRange(Y.Minimum, Y.Maximum)
                 );

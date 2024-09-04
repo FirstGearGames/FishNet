@@ -70,7 +70,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         public static List<MethodDefinition> GetConstructors(this TypeDefinition typeDef)
         {
-            List<MethodDefinition> lst = new List<MethodDefinition>();
+            List<MethodDefinition> lst = new();
             foreach (MethodDefinition methodDef in typeDef.Methods)
             {
                 if (methodDef.IsConstructor)

@@ -66,7 +66,7 @@ namespace FishNet.Managing
         /// <summary>
         /// 
         /// </summary>
-        private Dictionary<ushort, PrefabObjects> _runtimeSpawnablePrefabs = new Dictionary<ushort, PrefabObjects>();
+        private Dictionary<ushort, PrefabObjects> _runtimeSpawnablePrefabs = new();
         /// <summary>
         /// Collection to use for spawnable objects added at runtime, such as addressables.
         /// </summary>
@@ -77,11 +77,11 @@ namespace FishNet.Managing
         /// <summary>
         /// Delegates waiting to be invoked when a component is registered.
         /// </summary>
-        private Dictionary<string, List<Action<UnityComponent>>> _pendingInvokes = new Dictionary<string, List<Action<UnityComponent>>>();
+        private Dictionary<string, List<Action<UnityComponent>>> _pendingInvokes = new();
         /// <summary>
         /// Currently registered components.
         /// </summary>
-        private Dictionary<string, UnityComponent> _registeredComponents = new Dictionary<string, UnityComponent>();
+        private Dictionary<string, UnityComponent> _registeredComponents = new();
         #endregion
 
         /// <summary>
@@ -180,7 +180,7 @@ namespace FishNet.Managing
                 List<Action<UnityComponent>> handlers;
                 if (!_pendingInvokes.TryGetValue(tName, out handlers))
                 {
-                    handlers = new List<Action<UnityComponent>>();
+                    handlers = new();
                     _pendingInvokes[tName] = handlers;
                 }
 

@@ -23,11 +23,11 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Entries within this ListStack.
         /// </summary>
-        public List<GameObject> Entries { get; private set; } = new List<GameObject>();
+        public List<GameObject> Entries { get; private set; } = new();
         /// <summary>
         /// Time an entry was added. Indexes will always match up with Entries.
         /// </summary>
-        public List<float> EntriesAddedTimes { get; private set; } = new List<float>();
+        public List<float> EntriesAddedTimes { get; private set; } = new();
         #endregion
 
         #region Private.
@@ -54,7 +54,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <returns></returns>
         public List<GameObject> Cull(float threshold)
         {
-            List<GameObject> results = new List<GameObject>();
+            List<GameObject> results = new();
             float time = Time.time;
 
             for (int i = 0; i < EntriesAddedTimes.Count; i++)

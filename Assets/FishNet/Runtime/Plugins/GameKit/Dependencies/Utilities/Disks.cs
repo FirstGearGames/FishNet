@@ -37,9 +37,9 @@ namespace GameKit.Dependencies.Utilities
                     Directory.CreateDirectory(directory);
 
                 //Try to write the file data.
-                using (FileStream fs = new FileStream(path, FileMode.Create))
+                using (FileStream fs = new(path, FileMode.Create))
                 {
-                    using (StreamWriter writer = new StreamWriter(fs))
+                    using (StreamWriter writer = new(fs))
                         writer.Write(text);
                 }
             }

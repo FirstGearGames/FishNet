@@ -58,7 +58,7 @@ namespace FishNet.Managing.Timing
         {
             uint tick = reader.ReadTickUnpacked();
             byte percentByte = reader.ReadUInt8Unpacked();
-            return new PreciseTick(tick, percentByte);
+            return new(tick, percentByte);
         }
     }
 }

@@ -121,7 +121,7 @@ namespace FishNet.Component.Animating.Editing
             width -= spacer;
             int entriesPerWidth = Mathf.Max(1, Mathf.FloorToInt(width / (spacePerEntry + extraSpaceJustBecause)));
 
-            List<AnimatorControllerParameter> aps = new List<AnimatorControllerParameter>();
+            List<AnimatorControllerParameter> aps = new();
             //Create a parameter detail for each parameter that can be synchronized.
             int count = 0;
             foreach (AnimatorControllerParameter item in _lastAnimatorController.parameters)
@@ -137,7 +137,7 @@ namespace FishNet.Component.Animating.Editing
             int apsCount = aps.Count;
             for (int i = 0; i < apsCount; i++)
             {
-                using (GUILayout.HorizontalScope hs = new GUILayout.HorizontalScope())
+                using (GUILayout.HorizontalScope hs = new())
                 {
                     GUILayout.Space(spacer);
                     int z = 0;

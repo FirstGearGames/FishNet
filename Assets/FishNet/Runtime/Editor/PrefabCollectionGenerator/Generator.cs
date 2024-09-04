@@ -79,7 +79,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// Last paths of updated nobs during a changed update.
         /// </summary>
         [System.NonSerialized]
-        private static List<string> _lastUpdatedNamePaths = new List<string>();
+        private static List<string> _lastUpdatedNamePaths = new();
         /// <summary>
         /// Last frame changed was updated.
         /// </summary>
@@ -105,7 +105,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 return new string[0];
 
             //Folders remaining to be iterated.
-            List<string> enumeratedCollection = new List<string>() { startingPath };
+            List<string> enumeratedCollection = new() { startingPath };
             //Only check other directories if recursive.
             if (recursive)
             {
@@ -124,7 +124,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             }
 
             //Valid prefab files.
-            List<string> results = new List<string>();
+            List<string> results = new();
             //Build files from folders.
             int count = enumeratedCollection.Count;
             for (int i = 0; i < count; i++)
@@ -227,7 +227,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 return;
 
             int assetsLength = (importedAssets.Length + deletedAssets.Length + movedAssets.Length + movedFromAssetPaths.Length);
-            List<string> changedNobPaths = new List<string>();
+            List<string> changedNobPaths = new();
 
             System.Type goType = typeof(UnityEngine.GameObject);
             IterateAssetCollection(importedAssets);
@@ -327,8 +327,8 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             bool log = settings.LogToConsole;
 
             Stopwatch sw = (log) ? Stopwatch.StartNew() : null;
-            List<NetworkObject> foundNobs = new List<NetworkObject>();
-            HashSet<string> excludedPaths = new HashSet<string>(settings.ExcludedFolders);
+            List<NetworkObject> foundNobs = new();
+            HashSet<string> excludedPaths = new(settings.ExcludedFolders);
 
             //If searching the entire project.
             if (settings.SearchScope == (int)SearchScopeType.EntireProject)
@@ -396,7 +396,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         private static List<SpecifiedFolder> GetSpecifiedFolders(List<string> folders)
         {
-            List<SpecifiedFolder> results = new List<SpecifiedFolder>();
+            List<SpecifiedFolder> results = new();
             //Remove astericks.
             foreach (string path in folders)
             {
@@ -419,7 +419,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 }
 
                 p = GetPlatformPath(p);
-                results.Add(new SpecifiedFolder(p, recursive));
+                results.Add(new(p, recursive));
             }
 
             return results;

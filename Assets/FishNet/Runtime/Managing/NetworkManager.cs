@@ -78,7 +78,7 @@ namespace FishNet.Managing
         /// <summary>
         /// 
         /// </summary>
-        private static List<NetworkManager> _instances = new List<NetworkManager>();
+        private static List<NetworkManager> _instances = new();
 
         /// <summary>
         /// Currently initialized NetworkManagers.
@@ -153,7 +153,7 @@ namespace FishNet.Managing
         /// An empty connection reference. Used when a connection cannot be found to prevent object creation.
         /// </summary>
         [APIExclude]
-        public static NetworkConnection EmptyConnection { get; private set; } = new NetworkConnection();
+        public static NetworkConnection EmptyConnection { get; private set; } = new();
         #endregion
 
         #region Internal.
@@ -212,7 +212,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.4.4";
+        public const string FISHNET_VERSION = "4.4.5";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>

@@ -154,8 +154,8 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors.
-        public SyncVar(SyncTypeSettings settings = new SyncTypeSettings()) : this(default(T), settings) { }
-        public SyncVar(T initialValue, SyncTypeSettings settings = new SyncTypeSettings()) : base(settings) => SetInitialValues(initialValue);
+        public SyncVar(SyncTypeSettings settings = new()) : this(default(T), settings) { }
+        public SyncVar(T initialValue, SyncTypeSettings settings = new()) : base(settings) => SetInitialValues(initialValue);
         #endregion
 
         /// <summary>
@@ -441,6 +441,7 @@ namespace FishNet.Object.Synchronizing
             {
                 _value = _initialValue;
                 _previousClientValue = _initialValue;
+                _valueSetAfterInitialized = false;
             }
         }
     }

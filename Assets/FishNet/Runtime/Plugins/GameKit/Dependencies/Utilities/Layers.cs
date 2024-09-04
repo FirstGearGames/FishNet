@@ -22,7 +22,7 @@ namespace GameKit.Dependencies.Utilities
             if (_interactablesLayers != null)
                 return;
 
-            _interactablesLayers = new Dictionary<int, int>();
+            _interactablesLayers = new();
             for (int i = 0; i < 32; i++)
             {
                 int mask = 0;

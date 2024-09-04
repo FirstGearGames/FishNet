@@ -343,7 +343,7 @@ namespace FishNet.Managing.Object
             // }
 
             //Nested nobs not yet supported.
-            if (nob.SerializedNestedNetworkObjects.Count > 0)
+            if (nob.InitializedNestedNetworkObjects.Count > 0)
             {
                 if (asServer)
                     spawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {spawner.ClientId} tried to spawn an object {nob.name} which has nested NetworkObjects.");
@@ -389,7 +389,7 @@ namespace FishNet.Managing.Object
             //    return false;
             //}
             //Nested nobs not yet supported.
-            if (nob.SerializedNestedNetworkObjects.Count > 0)
+            if (nob.InitializedNestedNetworkObjects.Count > 0)
             {
                 if (asServer)
                     despawner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection {despawner.ClientId} tried to despawn an object {nob.name} which has nested NetworkObjects.");

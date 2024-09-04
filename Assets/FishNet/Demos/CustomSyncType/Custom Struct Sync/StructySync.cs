@@ -74,7 +74,7 @@ namespace FishNet.Example.CustomSyncObject
         /// <summary>
         /// Current value of Structy.
         /// </summary>
-        public Structy Value = new Structy();
+        public Structy Value = new();
         #endregion
 
         #region Private.
@@ -85,7 +85,7 @@ namespace FishNet.Example.CustomSyncObject
         /// <summary>
         /// Changed data which will be sent next tick.
         /// </summary>
-        private readonly List<ChangeData> _changed = new List<ChangeData>();
+        private readonly List<ChangeData> _changed = new();
         /// <summary>
         /// True if values have changed since initialization.
         /// </summary>
@@ -93,7 +93,7 @@ namespace FishNet.Example.CustomSyncObject
         /// <summary>
         /// Last value after dirty call.
         /// </summary>
-        private Structy _lastDirtied = new Structy();
+        private Structy _lastDirtied = new();
         #endregion
 
         protected override void Initialized()
@@ -131,7 +131,7 @@ namespace FishNet.Example.CustomSyncObject
             //Data can currently only be set from server, so this is always asServer.
             bool asServer = true;
             //Add to changed.
-            ChangeData cd = new ChangeData(operation, next);
+            ChangeData cd = new(operation, next);
             _changed.Add(cd);
             OnChange?.Invoke(operation, prev, next, asServer);
         }

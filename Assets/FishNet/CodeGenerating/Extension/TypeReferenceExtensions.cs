@@ -39,7 +39,7 @@ namespace FishNet.CodeGenerating.Extension
         /// </summary>
         public static GenericInstanceType MakeGenericInstanceType(this TypeReference self)
 		{
-			GenericInstanceType instance = new GenericInstanceType(self);
+			GenericInstanceType instance = new(self);
 			foreach (GenericParameter argument in self.GenericParameters)
 				instance.GenericArguments.Add(argument);
 

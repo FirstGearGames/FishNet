@@ -48,6 +48,10 @@ namespace FishNet.Object
         /// True to only allow the owning client to call this RPC.
         /// </summary>
         public bool RequireOwnership = true;
+        /// <summary>
+        /// Type of logging to use when the IsServer check fails.
+        /// </summary>
+        public LoggingType Logging = LoggingType.Warning;
     }
 
     /// <summary>
@@ -69,6 +73,10 @@ namespace FishNet.Object
         /// RPC will be sent on the same channel as the original RPC, and immediately before the OnSpawnServer override.
         /// </summary>
         public bool BufferLast = false;
+        /// <summary>
+        /// Type of logging to use when the IsServer check fails.
+        /// </summary>
+        public LoggingType Logging = LoggingType.Warning;
     }
 
     /// <summary>
@@ -86,7 +94,10 @@ namespace FishNet.Object
         /// Use this field with caution as it may create undesired results when set to false.
         /// </summary>
         public bool ValidateTarget = true;
-
+        /// <summary>
+        /// Type of logging to use when the IsServer check fails.
+        /// </summary>
+        public LoggingType Logging = LoggingType.Warning;
     }
 
     /// <summary>

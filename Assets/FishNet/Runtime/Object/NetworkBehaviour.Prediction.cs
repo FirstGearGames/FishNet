@@ -381,22 +381,23 @@ namespace FishNet.Object
             //No more redundancy left. Check if transform may have changed.
             if (_remainingReconcileResends == 0)
                 return;
-            else
-                _remainingReconcileResends--;
+            // else
+            //     _remainingReconcileResends--;
 
             //No owner and no state forwarding, nothing to do.
             bool stateForwarding = _networkObjectCache.EnableStateForwarding;
             if (!Owner.IsValid && !stateForwarding)
                 return;
 
-            /* //todo: forcing to reliable channel so that the length is written,
-             * and it will be parsed in the rpcLink reader checking length
-             * as well. This is a temporary solution to resolve an issue which was
+            /* Set the channel for Rpcs to reliable to that the length
+             * is written. The data does not actually send reliable, unless
+             * the channel is of course that to start. */
+            /* This is a temporary solution to resolve an issue which was
              * causing parsing problems due to states sending unreliable and reliable
              * headers being written, or sending reliably and unreliable headers being written.
              * Using an extra byte to write length is more preferred than always forcing reliable
              * until properly resolved. */
-            channel = Channel.Reliable;
+            const Channel rpcChannel = Channel.Reliable;
 
             PooledWriter methodWriter = WriterPool.Retrieve();
             /* Tick does not need to be written because it will always
@@ -420,9 +421,9 @@ namespace FishNet.Object
 #else
 			if (_rpcLinks.TryGetValueIL2CPP(hash, out RpcLinkType link))
 #endif
-                writer = CreateLinkedRpc(link, methodWriter, channel);
+                writer = CreateLinkedRpc(link, methodWriter, rpcChannel);
             else
-                writer = CreateRpc(hash, methodWriter, PacketId.Reconcile, channel);
+                writer = CreateRpc(hash, methodWriter, PacketId.Reconcile, rpcChannel);
 
             //If state forwarding is not enabled then only send to owner.
             if (!stateForwarding)
@@ -483,7 +484,6 @@ namespace FishNet.Object
 
         //        return changed;
         //    }
-
 
         /// <summary>
         /// Returns if the tick provided is the last tick to provide created data.
@@ -588,7 +588,6 @@ namespace FishNet.Object
             del.Invoke(data, state, channel);
         }
 
-
         /// <summary>
         /// This is overriden by codegen to call EmptyReplicatesQueueIntoHistory().
         /// This should only be called when client only.
@@ -619,7 +618,7 @@ namespace FishNet.Object
             if (IsOwner || ownerlessAndServer)
                 return;
             /* Still need to run inputs if server, even if forwarding
-              * is not enabled.*/
+             * is not enabled.*/
             if (!_networkObjectCache.EnableStateForwarding && !serverStarted)
                 return;
 
@@ -1185,11 +1184,9 @@ namespace FishNet.Object
         /// </summary>
         public void Reconcile_Server<T>(uint methodHash, ref T lastReconcileData, T data, Channel channel) where T : IReconcileData
         {
-            if (!IsServerStarted)
-                return;
-
             //Tick does not need to be set for reconciles since they come in as state updates, which have the tick included globally.
-            Server_SendReconcileRpc(methodHash, ref lastReconcileData, data, channel);
+            if (IsServerInitialized)
+                Server_SendReconcileRpc(methodHash, ref lastReconcileData, data, channel);
         }
 
         /// <summary>

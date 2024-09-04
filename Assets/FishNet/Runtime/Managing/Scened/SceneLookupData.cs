@@ -199,19 +199,19 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name="scene">Scene to create from.</param>
         /// <returns></returns>
-        public static SceneLookupData CreateData(Scene scene) => new SceneLookupData(scene);
+        public static SceneLookupData CreateData(Scene scene) => new(scene);
         /// <summary>
         /// Returns a new SceneLookupData.
         /// </summary>
         /// <param name="scene">Scene name to create from.</param>
         /// <returns></returns>
-        public static SceneLookupData CreateData(string name) => new SceneLookupData(name);
+        public static SceneLookupData CreateData(string name) => new(name);
         /// <summary>
         /// Returns a new SceneLookupData.
         /// </summary>
         /// <param name="scene">Scene handle to create from.</param>
         /// <returns></returns>
-        public static SceneLookupData CreateData(int handle) => new SceneLookupData(handle);
+        public static SceneLookupData CreateData(int handle) => new(handle);
         /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
@@ -238,7 +238,7 @@ namespace FishNet.Managing.Scened
         public static SceneLookupData[] CreateData(Scene[] scenes)
         {
             bool invalidFound = false;
-            List<SceneLookupData> result = new List<SceneLookupData>();
+            List<SceneLookupData> result = new();
             foreach (Scene item in scenes)
             {
                 if (!item.IsValid())
@@ -264,7 +264,7 @@ namespace FishNet.Managing.Scened
         {
             SceneLookupData[] result = new SceneLookupData[names.Length];
             for (int i = 0; i < result.Length; i++)
-                result[i] = new SceneLookupData(names[i]);
+                result[i] = new(names[i]);
 
             return ValidateData(result);
         }
@@ -341,7 +341,7 @@ namespace FishNet.Managing.Scened
         public static SceneLookupData[] CreateData(int[] handles)
         {
             bool invalidFound = false;
-            List<SceneLookupData> result = new List<SceneLookupData>();
+            List<SceneLookupData> result = new();
             foreach (int item in handles)
             {
                 if (item == 0)

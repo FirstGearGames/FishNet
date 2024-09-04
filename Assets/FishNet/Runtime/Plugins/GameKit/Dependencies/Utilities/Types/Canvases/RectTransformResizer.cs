@@ -42,7 +42,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Elements to resize.
         /// </summary>
-        private List<ResizeData> _resizeDatas = new List<ResizeData>();
+        private List<ResizeData> _resizeDatas = new();
         /// <summary>
         /// Singleton instance of this class.
         /// </summary>
@@ -92,7 +92,7 @@ namespace GameKit.Dependencies.Utilities.Types
             //Check to make a singleton instance.
             if (_instance == null)
             {
-                GameObject go = new GameObject(typeof(RectTransformResizer).Name);
+                GameObject go = new(typeof(RectTransformResizer).Name);
                 _instance = go.AddComponent<RectTransformResizer>();
                 DontDestroyOnLoad(go);
             }

@@ -25,7 +25,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
             if (declaringTr.HasGenericParameters)
             {
                 GenericInstanceType git = declaringTr.MakeGenericInstanceType();
-                FieldReference result = new FieldReference(fr.Name, fr.FieldType, git);
+                FieldReference result = new(fr.Name, fr.FieldType, git);
                 return result;
             }
             else

@@ -47,15 +47,15 @@ namespace FishNet.Object
         /// <summary>
         /// Registered ServerRpc methods.
         /// </summary>
-        private readonly Dictionary<uint, ServerRpcDelegate> _serverRpcDelegates = new Dictionary<uint, ServerRpcDelegate>();
+        private readonly Dictionary<uint, ServerRpcDelegate> _serverRpcDelegates = new();
         /// <summary>
         /// Registered ObserversRpc methods.
         /// </summary>
-        private readonly Dictionary<uint, ClientRpcDelegate> _observersRpcDelegates = new Dictionary<uint, ClientRpcDelegate>();
+        private readonly Dictionary<uint, ClientRpcDelegate> _observersRpcDelegates = new();
         /// <summary>
         /// Registered TargetRpc methods.
         /// </summary>
-        private readonly Dictionary<uint, ClientRpcDelegate> _targetRpcDelegates = new Dictionary<uint, ClientRpcDelegate>();
+        private readonly Dictionary<uint, ClientRpcDelegate> _targetRpcDelegates = new();
         /// <summary>
         /// Number of total RPC methods for scripts in the same inheritance tree for this instance.
         /// </summary>
@@ -67,11 +67,11 @@ namespace FishNet.Object
         /// <summary>
         /// RPCs buffered for new clients.
         /// </summary>
-        private Dictionary<uint, BufferedRpc> _bufferedRpcs = new Dictionary<uint, BufferedRpc>();
+        private Dictionary<uint, BufferedRpc> _bufferedRpcs = new();
         /// <summary>
         /// Connections to exclude from RPCs, such as ExcludeOwner or ExcludeServer.
         /// </summary>
-        private HashSet<NetworkConnection> _networkConnectionCache = new HashSet<NetworkConnection>();
+        private HashSet<NetworkConnection> _networkConnectionCache = new();
         #endregion
 
         #region Const.
@@ -278,7 +278,7 @@ namespace FishNet.Object
                     writer.StoreLength();
                     writer = lCreateRpc(Channel.Reliable);
                 }
-                _bufferedRpcs[hash] = new BufferedRpc(writer, orderType);
+                _bufferedRpcs[hash] = new(writer, orderType);
             }
             //If not buffered then dispose immediately.
             else

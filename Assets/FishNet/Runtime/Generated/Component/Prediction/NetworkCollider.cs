@@ -375,7 +375,7 @@ namespace FishNet.Component.Prediction
                      * correct location. */
                     void AddDataToIndex(int index)
                     {
-                        ColliderData colliderData = new ColliderData(tick, current);
+                        ColliderData colliderData = new(tick, current);
                         /* If insertIndex is the same tick then replace, otherwise
                          * put in front of. */
                         //Replace.
@@ -394,7 +394,7 @@ namespace FishNet.Component.Prediction
 
                 void AddToEnd()
                 {
-                    ColliderData colliderData = new ColliderData(tick, current);
+                    ColliderData colliderData = new(tick, current);
                     _colliderDataHistory.Add(colliderData);
                 }
 

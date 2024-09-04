@@ -28,7 +28,7 @@ namespace FishNet.CodeGenerating
         /// <summary>
         /// SyncVars that are being accessed from an assembly other than the currently being processed one.
         /// </summary>
-        internal List<FieldDefinition> DifferentAssemblySyncVars = new List<FieldDefinition>();
+        internal List<FieldDefinition> DifferentAssemblySyncVars = new();
 
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace FishNet.CodeGenerating
         /// <summary>
         /// Quick lookup of base classes.
         /// </summary>
-        private Dictionary<string, CodegenBase> _basesCache = new Dictionary<string, CodegenBase>();
+        private Dictionary<string, CodegenBase> _basesCache = new();
 
         /// <summary>
         /// Returns class of type if found within CodegenBase classes.
@@ -58,9 +58,9 @@ namespace FishNet.CodeGenerating
         internal bool Initialize(ModuleDefinition module)
         {
             Module = module;
-            Diagnostics = new List<DiagnosticMessage>();
+            Diagnostics = new();
 
-            _bases = new List<CodegenBase>()
+            _bases = new()
                 {
                     new ReaderImports(), new ReaderProcessor()
                     ,new WriterImports(), new WriterProcessor()

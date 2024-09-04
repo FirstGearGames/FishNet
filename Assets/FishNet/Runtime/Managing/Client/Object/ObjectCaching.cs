@@ -29,26 +29,26 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Objects which are being spawned during iteration.
         /// </summary>
-        internal Dictionary<int, NetworkObject> IteratedSpawningObjects = new Dictionary<int, NetworkObject>();
+        internal Dictionary<int, NetworkObject> IteratedSpawningObjects = new();
         /// <summary>
         /// ObjectIds which have been read this tick.
         /// </summary>
-        internal HashSet<int> ReadSpawningObjects = new HashSet<int>();
+        internal HashSet<int> ReadSpawningObjects = new();
         #endregion
 
         #region Private.
         /// <summary>
         /// Cached objects buffer. Contains spawns and despawns.
         /// </summary>
-        private List<CachedNetworkObject> _cachedObjects = new List<CachedNetworkObject>();
+        private List<CachedNetworkObject> _cachedObjects = new();
         /// <summary>
         /// NetworkObjects which have been spawned already during the current iteration.
         /// </summary>
-        private HashSet<NetworkObject> _iteratedSpawns = new HashSet<NetworkObject>();
+        private HashSet<NetworkObject> _iteratedSpawns = new();
         /// <summary>
         /// Despawns which are occurring the same tick as their spawn.
         /// </summary>
-        private HashSet<int> _conflictingDespawns = new HashSet<int>();
+        private HashSet<int> _conflictingDespawns = new();
         /// <summary>
         /// ClientObjects reference.
         /// </summary>
@@ -188,7 +188,7 @@ namespace FishNet.Managing.Client
             try
             {
                 //Indexes which have already been processed.
-                HashSet<int> processedIndexes = new HashSet<int>();
+                HashSet<int> processedIndexes = new();
                 List<CachedNetworkObject> collection = _cachedObjects;
                 _conflictingDespawns.Clear();
                 /* The next iteration will set rpclinks,
@@ -421,7 +421,7 @@ namespace FishNet.Managing.Client
                             //  * At this time the NetworkObject is not initialized so by calling
                             //  * OnSyncType the changes are cached to invoke callbacks after initialization,
                             //  * not during the time of this action. */
-                            NetworkBehaviour[] behaviours = cnob.NetworkObject.NetworkBehaviours;
+                            List<NetworkBehaviour> behaviours = cnob.NetworkObject.NetworkBehaviours;
                             PooledReader reader = cnob.SyncTypesReader;
                             while (reader.Remaining > 0)
                             {
@@ -562,7 +562,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// True if this object has a parent.
         /// </summary>
-        public bool HasParent => (ParentObjectId != null);
+        public bool HasParent => (ParentObjectId != null && ParentComponentId != null);
 
         public ushort CollectionId;
         public int ObjectId;

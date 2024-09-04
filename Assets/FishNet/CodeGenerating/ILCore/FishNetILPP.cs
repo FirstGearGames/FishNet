@@ -59,7 +59,7 @@ namespace FishNet.CodeGenerating.ILCore
             if (!WillProcess(compiledAssembly))
                 return null;
 
-            CodegenSession session = new CodegenSession();
+            CodegenSession session = new();
             if (!session.Initialize(assemblyDef.MainModule))
                 return null;
 
@@ -71,7 +71,7 @@ namespace FishNet.CodeGenerating.ILCore
             /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
              * then don't bother processing the rest. */
             if (session.GetClass<NetworkBehaviourProcessor>().NonNetworkBehaviourHasInvalidAttributes(session.Module.Types))
-                return new ILPostProcessResult(null, session.Diagnostics);
+                return new(null, session.Diagnostics);
 
             modified |= session.GetClass<WriterProcessor>().Process();
             modified |= session.GetClass<ReaderProcessor>().Process();
@@ -100,7 +100,7 @@ namespace FishNet.CodeGenerating.ILCore
              * amount of work so it will have to be put on hold, for... a long.. long while. */
             if (session.DifferentAssemblySyncVars.Count > 0)
             {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
                 sb.AppendLine($"Assembly {session.Module.Name} has inherited access to SyncVars in different assemblies. When accessing SyncVars across assemblies be sure to use Get/Set methods withinin the inherited assembly script to change SyncVars. Accessible fields are:");
 
                 foreach (FieldDefinition item in session.DifferentAssemblySyncVars)
@@ -120,16 +120,16 @@ namespace FishNet.CodeGenerating.ILCore
             {
                 TryLogV3ToV4Helpers(session);
 
-                MemoryStream pe = new MemoryStream();
-                MemoryStream pdb = new MemoryStream();
-                WriterParameters writerParameters = new WriterParameters
+                MemoryStream pe = new();
+                MemoryStream pdb = new();
+                WriterParameters writerParameters = new()
                 {
                     SymbolWriterProvider = new PortablePdbWriterProvider(),
                     SymbolStream = pdb,
                     WriteSymbols = true
                 };
                 assemblyDef.Write(pe, writerParameters);
-                return new ILPostProcessResult(new InMemoryAssembly(pe.ToArray(), pdb.ToArray()), session.Diagnostics);
+                return new(new(pe.ToArray(), pdb.ToArray()), session.Diagnostics);
             }
         }
 
@@ -283,7 +283,7 @@ namespace FishNet.CodeGenerating.ILCore
             bool modified = false;
 
             string networkBehaviourFullName = session.GetClass<NetworkBehaviourHelper>().FullName;
-            HashSet<TypeDefinition> typeDefs = new HashSet<TypeDefinition>();
+            HashSet<TypeDefinition> typeDefs = new();
             foreach (TypeDefinition td in session.Module.Types)
             {
                 TypeDefinition climbTd = td;
@@ -388,7 +388,7 @@ namespace FishNet.CodeGenerating.ILCore
              *  Since they are both inherited by A. */
             void RemoveInheritedTypeDefinitions(List<TypeDefinition> tds)
             {
-                HashSet<TypeDefinition> inheritedTds = new HashSet<TypeDefinition>();
+                HashSet<TypeDefinition> inheritedTds = new();
                 /* Remove any networkbehaviour typedefs which are inherited by
                  * another networkbehaviour typedef. */
                 for (int i = 0; i < tds.Count; i++)

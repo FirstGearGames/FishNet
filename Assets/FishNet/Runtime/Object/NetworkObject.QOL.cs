@@ -183,7 +183,7 @@ namespace FishNet.Object
         /// <summary>
         /// The local connection of the client calling this method.
         /// </summary>
-        public NetworkConnection LocalConnection => (NetworkManager == null) ? new NetworkConnection() : NetworkManager.ClientManager.Connection;
+        public NetworkConnection LocalConnection => (NetworkManager == null) ? new() : NetworkManager.ClientManager.Connection;
         /// <summary>
         /// NetworkManager for this object.
         /// </summary>
@@ -230,7 +230,7 @@ namespace FishNet.Object
         /// <returns></returns>
         public NetworkBehaviour GetNetworkBehaviour(byte componentIndex, bool error)
         {
-            if (componentIndex >= NetworkBehaviours.Length)
+            if (componentIndex >= NetworkBehaviours.Count)
             {
                 if (error)
                 {
@@ -303,7 +303,7 @@ namespace FishNet.Object
             SetOwner(caller);
 
             int count;
-            count = NetworkBehaviours.Length;
+            count = NetworkBehaviours.Count;
             for (int i = 0; i < count; i++)
                 NetworkBehaviours[i].OnOwnershipClient_Internal(prevOwner);
 

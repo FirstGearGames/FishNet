@@ -110,7 +110,7 @@ namespace FishNet.Object.Synchronizing.Internal
 
 
         #region Constructors
-        public SyncBase() : this(new SyncTypeSettings()) { }
+        public SyncBase() : this(new()) { }
         public SyncBase(SyncTypeSettings settings)
         {
             Settings = settings;
@@ -166,7 +166,7 @@ namespace FishNet.Object.Synchronizing.Internal
         {
             CheckChannel(ref channel);
             _currentChannel = channel;
-            Settings = new SyncTypeSettings(writePermissions, readPermissions, sendRate, channel);
+            Settings = new(writePermissions, readPermissions, sendRate, channel);
             SetTimeToTicks();
         }
 
@@ -227,7 +227,7 @@ namespace FishNet.Object.Synchronizing.Internal
             if (Settings.IsDefault())
             {
                 float sendRate = Mathf.Max(networkManager.ServerManager.GetSyncTypeRate(), (float)networkManager.TimeManager.TickDelta);
-                Settings = new SyncTypeSettings(sendRate);
+                Settings = new(sendRate);
             }
 
             SetTimeToTicks();

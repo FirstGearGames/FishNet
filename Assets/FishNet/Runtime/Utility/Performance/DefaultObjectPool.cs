@@ -18,7 +18,7 @@ namespace FishNet.Utility.Performance
         /// Cache for pooled NetworkObjects.
         /// </summary>
         public IReadOnlyList<Dictionary<int, Stack<NetworkObject>>> Cache => _cache;
-        private List<Dictionary<int, Stack<NetworkObject>>> _cache = new List<Dictionary<int, Stack<NetworkObject>>>();
+        private List<Dictionary<int, Stack<NetworkObject>>> _cache = new();
         #endregion
 
         #region Serialized.
@@ -237,7 +237,7 @@ namespace FishNet.Utility.Performance
                 //Add more to the cache.
                 while (_cache.Count <= collectionId)
                 {
-                    Dictionary<int, Stack<NetworkObject>> dict = new Dictionary<int, Stack<NetworkObject>>();
+                    Dictionary<int, Stack<NetworkObject>> dict = new();
                     _cache.Add(dict);
                 }
                 _cacheCount = collectionId;
@@ -248,7 +248,7 @@ namespace FishNet.Utility.Performance
             //No cache for prefabId yet, make one.
             if (!dictionary.TryGetValueIL2CPP(prefabId, out cache))
             {
-                cache = new Stack<NetworkObject>();
+                cache = new();
                 dictionary[prefabId] = cache;
             }
             return cache;

@@ -32,7 +32,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Last times specific key operations were performed.
         /// </summary>
-        private Dictionary<string, float> _operationTimes = new Dictionary<string, float>();
+        private Dictionary<string, float> _operationTimes = new();
         /// <summary>
         /// Last time a global operation was performed.
         /// </summary>

@@ -82,7 +82,7 @@ namespace FishNet.Component.Prediction
 
         public static RigidbodyState ReadRigidbodyState(this Reader reader)
         {
-            RigidbodyState state = new RigidbodyState()
+            RigidbodyState state = new()
             {
                 Position = reader.ReadVector3(),
                 Rotation = reader.ReadQuaternion32(),
@@ -114,7 +114,7 @@ namespace FishNet.Component.Prediction
 
         public static Rigidbody2DState ReadRigidbody2DState(this Reader reader)
         {
-            Rigidbody2DState state = new Rigidbody2DState()
+            Rigidbody2DState state = new()
             {
                 Position = reader.ReadVector3(),
                 Rotation = reader.ReadQuaternion32(),
@@ -142,7 +142,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         public static RigidbodyState GetState(this Rigidbody rb)
         {
-            return new RigidbodyState(rb);
+            return new(rb);
         }
         /// <summary>
         /// Sets a state to a rigidbody.
@@ -161,7 +161,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         public static Rigidbody2DState GetState(this Rigidbody2D rb)
         {
-            return new Rigidbody2DState(rb);
+            return new(rb);
         }
         /// <summary>
         /// Sets a state to a rigidbody.

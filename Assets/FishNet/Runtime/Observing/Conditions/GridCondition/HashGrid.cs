@@ -71,7 +71,7 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// An empty grid entry.
         /// </summary>
-        internal static GridEntry EmptyGridEntry = new GridEntry(new HashSet<GridEntry>());
+        internal static GridEntry EmptyGridEntry = new(new());
 
         #endregion
 
@@ -97,15 +97,15 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// Cache of List<GridEntry>.
         /// </summary>
-        private Stack<HashSet<GridEntry>> _gridEntryHashSetCache = new Stack<HashSet<GridEntry>>();
+        private Stack<HashSet<GridEntry>> _gridEntryHashSetCache = new();
         /// <summary>
         /// Cache of GridEntrys.
         /// </summary>
-        private Stack<GridEntry> _gridEntryCache = new Stack<GridEntry>();
+        private Stack<GridEntry> _gridEntryCache = new();
         /// <summary>
         /// All grid entries.
         /// </summary>
-        private Dictionary<Vector2Int, GridEntry> _gridEntries = new Dictionary<Vector2Int, GridEntry>();
+        private Dictionary<Vector2Int, GridEntry> _gridEntries = new();
         /// <summary>
         /// NetworkManager this is used with.
         /// </summary>
@@ -156,13 +156,13 @@ namespace FishNet.Component.Observing
             void BuildGridEntryHashSetCache()
             {
                 for (int i = 0; i < cacheCount; i++)
-                    _gridEntryHashSetCache.Push(new HashSet<GridEntry>());
+                    _gridEntryHashSetCache.Push(new());
             }
 
             void BuildGridEntryCache()
             {
                 for (int i = 0; i < cacheCount; i++)
-                    _gridEntryCache.Push(new GridEntry());
+                    _gridEntryCache.Push(new());
             }
         }
 
@@ -188,7 +188,7 @@ namespace FishNet.Component.Observing
                 for (int y = (position.y - 1); y <= endY; y++)
                 {
                     iterations++;
-                    if (_gridEntries.TryGetValue(new Vector2Int(x, y), out GridEntry foundEntry))
+                    if (_gridEntries.TryGetValue(new(x, y), out GridEntry foundEntry))
                     {
                         nearby.Add(foundEntry);
                         foundEntry.NearbyEntries.Add(newEntry);
@@ -211,7 +211,7 @@ namespace FishNet.Component.Observing
             for (int x = (position.x - 1); x < endX; x++)
             {
                 for (int y = (position.y - 1); y < endY; y++)
-                    collection.Add(new Vector2Int(x, y));
+                    collection.Add(new(x, y));
             }
         }
 
@@ -244,7 +244,7 @@ namespace FishNet.Component.Observing
                 return default;
             }
 
-            return new Vector2Int(
+            return new(
                 (int)fX / _halfAccuracy
                 , (int)fY / _halfAccuracy
             );

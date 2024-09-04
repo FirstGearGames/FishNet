@@ -83,7 +83,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// ListCache for comparing.
         /// </summary>
-        private static List<T> _cache = new List<T>();
+        private static List<T> _cache = new();
         /// <summary>
         /// Values upon initialization.
         /// </summary>
@@ -117,9 +117,9 @@ namespace FishNet.Object.Synchronizing
         #endregion
 
         #region Constructors.
-        public SyncHashSet(SyncTypeSettings settings = new SyncTypeSettings()) : this(CollectionCaches<T>.RetrieveHashSet(), EqualityComparer<T>.Default, settings) { }
-        public SyncHashSet(IEqualityComparer<T> comparer, SyncTypeSettings settings = new SyncTypeSettings()) : this(CollectionCaches<T>.RetrieveHashSet(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
-        public SyncHashSet(HashSet<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new SyncTypeSettings()) : base(settings)
+        public SyncHashSet(SyncTypeSettings settings = new()) : this(CollectionCaches<T>.RetrieveHashSet(), EqualityComparer<T>.Default, settings) { }
+        public SyncHashSet(IEqualityComparer<T> comparer, SyncTypeSettings settings = new()) : this(CollectionCaches<T>.RetrieveHashSet(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
+        public SyncHashSet(HashSet<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new()) : base(settings)
         {
             _comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
             Collection = collection;
@@ -193,7 +193,7 @@ namespace FishNet.Object.Synchronizing
                 _valuesChanged = true;
                 if (base.Dirty())
                 {
-                    ChangeData change = new ChangeData(operation, item);
+                    ChangeData change = new(operation, item);
                     _changed.Add(change);
                 }
             }
@@ -355,14 +355,14 @@ namespace FishNet.Object.Synchronizing
                 if (base.NetworkBehaviour.OnStartServerCalled)
                     OnChange?.Invoke(operation, item, asServer);
                 else
-                    _serverOnChanges.Add(new CachedOnChange(operation, item));
+                    _serverOnChanges.Add(new(operation, item));
             }
             else
             {
                 if (base.NetworkBehaviour.OnStartClientCalled)
                     OnChange?.Invoke(operation, item, asServer);
                 else
-                    _clientOnChanges.Add(new CachedOnChange(operation, item));
+                    _clientOnChanges.Add(new(operation, item));
             }
         }
 

@@ -31,7 +31,7 @@ namespace FishNet.Managing.Server
         {
             List<int> cache = CollectionCaches<int>.RetrieveList();
             reader.ReadList(ref cache);
-            return new ConnectedClientsBroadcast()
+            return new()
             {
                 Values = cache
             };

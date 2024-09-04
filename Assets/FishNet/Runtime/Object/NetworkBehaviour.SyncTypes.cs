@@ -67,7 +67,7 @@ namespace FishNet.Object
         /// <summary>
         /// SyncTypes within this NetworkBehaviour.
         /// </summary>
-        private Dictionary<uint, SyncBase> _syncTypes = new Dictionary<uint, SyncBase>();
+        private Dictionary<uint, SyncBase> _syncTypes = new();
         /// <summary>
         /// True if at least one syncType is dirty.
         /// </summary>
@@ -503,6 +503,7 @@ namespace FishNet.Object
             for (int i = 0; i < written; i++)
             {
                 byte syncTypeId = reader.ReadUInt8Unpacked();
+                
                 if (_syncTypes.TryGetValueIL2CPP(syncTypeId, out SyncBase sb))
                     sb.Read(reader, asServer: true);
                 else

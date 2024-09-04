@@ -23,7 +23,7 @@ namespace FishNet.Object
         /// Networked PrefabId assigned to this Prefab.
         /// </summary>
         [field: SerializeField, HideInInspector]
-        public ushort PrefabId { get; internal set; } = 0;
+        public ushort PrefabId { get; internal set; } = NetworkObject.UNSET_PREFABID_VALUE;
 
         /// <summary>
         /// Spawn collection to use assigned to this Prefab.
@@ -61,7 +61,7 @@ namespace FishNet.Object
         /// 
         /// </summary>
         [SerializeField, HideInInspector]
-        internal TransformProperties SerializedTransformProperties = new TransformProperties();
+        internal TransformProperties SerializedTransformProperties = new();
         #endregion
 
         #region Private.
@@ -107,7 +107,7 @@ namespace FishNet.Object
             if (!scene.isLoaded)
                 return;
 
-            HashSet<ulong> setIds = new HashSet<ulong>();
+            HashSet<ulong> setIds = new();
             uint scenePathHash = scene.path.GetStableHashU32();
             List<NetworkObject> sceneNobs = new();
 

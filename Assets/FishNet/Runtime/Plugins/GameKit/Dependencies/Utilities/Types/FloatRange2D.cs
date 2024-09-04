@@ -20,13 +20,13 @@ namespace GameKit.Dependencies.Utilities.Types
 
         public FloatRange2D(float xMin, float xMax, float yMin, float yMax)
         {
-            X = new FloatRange(xMin, xMax);
-            Y = new FloatRange(yMin, yMax);
+            X = new(xMin, xMax);
+            Y = new(yMin, yMax);
         }
 
         public Vector2 Clamp(Vector2 original)
         {
-            return new Vector2(
+            return new(
                 ClampX(original.x),
                 ClampY(original.y)
                 );
@@ -34,7 +34,7 @@ namespace GameKit.Dependencies.Utilities.Types
 
         public Vector3 Clamp(Vector3 original)
         {
-            return new Vector3(
+            return new(
                 ClampX(original.x),
                 ClampY(original.y),
                 original.z

@@ -37,9 +37,9 @@ namespace FishNet.Example.ColliderRollbacks
             if (_characterController == null)
                 return;
 
-            Vector3 gravity = new Vector3(0f, -10f, 0f);
+            Vector3 gravity = new(0f, -10f, 0f);
             Vector3 inputs = transform.TransformDirection(
-                new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"))
+                new(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"))
                 );
 
             _characterController.Move((gravity + inputs) * _moveRate * Time.deltaTime);

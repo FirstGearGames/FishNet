@@ -124,14 +124,14 @@ namespace LiteNetLib.Utils
         
         public static void GetBytes(byte[] bytes, int startIndex, double value)
         {
-            ConverterHelperDouble ch = new ConverterHelperDouble { Adouble = value };
+            ConverterHelperDouble ch = new() { Adouble = value };
             WriteLittleEndian(bytes, startIndex, ch.Along);
         }
 
         
         public static void GetBytes(byte[] bytes, int startIndex, float value)
         {
-            ConverterHelperFloat ch = new ConverterHelperFloat { Afloat = value };
+            ConverterHelperFloat ch = new() { Afloat = value };
             WriteLittleEndian(bytes, startIndex, ch.Aint);
         }
 

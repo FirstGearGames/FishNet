@@ -158,7 +158,7 @@ namespace FishNet.Object.Prediction
             //Basic teleport check.
             if (teleportThreshold != MoveRatesCls.UNSET_VALUE && distance > teleportThreshold)
             {
-                return new MoveRates(MoveRatesCls.INSTANT_VALUE);
+                return new(MoveRatesCls.INSTANT_VALUE);
             }
             //Smoothing.
             else
@@ -169,7 +169,7 @@ namespace FishNet.Object.Prediction
                 rate = toScale.GetRate(fromScale, duration, out _);
                 float scaleRate = rate.SetIfUnderTolerance(0.0001f, MoveRatesCls.INSTANT_VALUE);
 
-                return new MoveRates(positionRate, rotationRate, scaleRate);
+                return new(positionRate, rotationRate, scaleRate);
             }
         }
 

@@ -15,8 +15,8 @@ namespace FishNet.CodeGenerating.ILCore
         /// <returns></returns>
         internal static AssemblyDefinition GetAssemblyDefinition(ICompiledAssembly compiledAssembly)
         {
-            PostProcessorAssemblyResolver assemblyResolver = new PostProcessorAssemblyResolver(compiledAssembly);
-            ReaderParameters readerParameters = new ReaderParameters
+            PostProcessorAssemblyResolver assemblyResolver = new(compiledAssembly);
+            ReaderParameters readerParameters = new()
             {
                 SymbolStream = new MemoryStream(compiledAssembly.InMemoryAssembly.PdbData),
                 SymbolReaderProvider = new PortablePdbReaderProvider(),

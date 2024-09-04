@@ -84,11 +84,11 @@ namespace FishNet.Transporting.Tugboat
         /// <summary>
         /// Server socket and handler.
         /// </summary>
-        private Server.ServerSocket _server = new Server.ServerSocket();
+        private Server.ServerSocket _server = new();
         /// <summary>
         /// Client socket and handler.
         /// </summary>
-        private Client.ClientSocket _client = new Client.ClientSocket();
+        private Client.ClientSocket _client = new();
         #endregion
 
         #region Const.

@@ -135,7 +135,7 @@ namespace FishNet.Object.Synchronizing
         {
             int x = (int)Mathf.Lerp(previous.x, current.x, percent);
             int y = (int)Mathf.Lerp(previous.y, current.y, percent);
-            return new Vector2Int(x, y);
+            return new(x, y);
         }
     }
     /// <summary>
@@ -150,7 +150,7 @@ namespace FishNet.Object.Synchronizing
             int x = (int)Mathf.Lerp(previous.x, current.x, percent);
             int y = (int)Mathf.Lerp(previous.y, current.y, percent);
             int z = (int)Mathf.Lerp(previous.z, current.z, percent);
-            return new Vector3Int(x, y, z);
+            return new(x, y, z);
         }
     }
 

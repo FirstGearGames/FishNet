@@ -20,11 +20,11 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Parameters which may be set and will be included in load callbacks.
         /// </summary>
-        public UnloadParams Params = new UnloadParams();
+        public UnloadParams Params = new();
         /// <summary>
         /// Additional options to use for loaded scenes.
         /// </summary>
-        public UnloadOptions Options = new UnloadOptions();
+        public UnloadOptions Options = new();
 
         /// <summary>
         /// 

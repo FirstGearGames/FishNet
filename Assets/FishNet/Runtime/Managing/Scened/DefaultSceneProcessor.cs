@@ -14,11 +14,11 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Currently active loading AsyncOperations.
         /// </summary>
-        protected List<AsyncOperation> LoadingAsyncOperations = new List<AsyncOperation>();
+        protected List<AsyncOperation> LoadingAsyncOperations = new();
         /// <summary>
         /// A collection of scenes used both for loading and unloading.
         /// </summary>
-        protected List<UnityScene> Scenes = new List<UnityScene>();
+        protected List<UnityScene> Scenes = new();
         /// <summary>
         /// Current AsyncOperation being processed.
         /// </summary>

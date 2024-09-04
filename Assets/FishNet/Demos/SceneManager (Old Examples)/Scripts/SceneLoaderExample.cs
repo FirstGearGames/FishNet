@@ -63,7 +63,7 @@ namespace FishNet.Example.Scened
         /// since original scene will still be loaded on server due to another client being in it.
         /// This scenario is extremely unlikely in production but keep it in mind.
         /// </summary>
-        private Dictionary<NetworkConnection, float> _triggeredTimes = new Dictionary<NetworkConnection, float>();
+        private Dictionary<NetworkConnection, float> _triggeredTimes = new();
 
 
         [Server(Logging = LoggingType.Off)]
@@ -103,7 +103,7 @@ namespace FishNet.Example.Scened
             _triggeredTimes[triggeringIdentity.Owner] = Time.time;
 
             //Which objects to move.
-            List<NetworkObject> movedObjects = new List<NetworkObject>();
+            List<NetworkObject> movedObjects = new();
             if (_moveAllObjects)
             {
                 foreach (NetworkConnection item in InstanceFinder.ServerManager.Clients.Values)
@@ -117,14 +117,14 @@ namespace FishNet.Example.Scened
                 movedObjects.Add(triggeringIdentity);
             }
             //Load options.
-            LoadOptions loadOptions = new LoadOptions
+            LoadOptions loadOptions = new()
             {
                 AutomaticallyUnload = _automaticallyUnload,
             };
 
             //Make scene data.
-            SceneLoadData sld = new SceneLoadData(_scenes);
-            sld.PreferredActiveScene = new PreferredScene(sld.SceneLookupDatas[0]);
+            SceneLoadData sld = new(_scenes);
+            sld.PreferredActiveScene = new(sld.SceneLookupDatas[0]);
             sld.ReplaceScenes = _replaceOption;
             sld.Options = loadOptions;
             sld.MovedNetworkObjects = movedObjects.ToArray();

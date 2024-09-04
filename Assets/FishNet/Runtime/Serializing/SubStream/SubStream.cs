@@ -101,7 +101,7 @@ namespace FishNet.Serializing
             else
                 writer = WriterPool.Retrieve(manager, minimumLength);
 
-            SubStream stream = new SubStream()
+            SubStream stream = new()
             {
                 _writer = writer,
                 Initialized = true,
@@ -139,14 +139,14 @@ namespace FishNet.Serializing
             byte[] originalReaderBuffer = originalReader.GetBuffer();
 
             // inherits reading buffer directly from fishnet reader
-            ArraySegment<byte> arraySegment = new ArraySegment<byte>(originalReaderBuffer, originalReader.Position, subStreamLength);
+            ArraySegment<byte> arraySegment = new(originalReaderBuffer, originalReader.Position, subStreamLength);
 
             PooledReader newReader = ReaderPool.Retrieve(arraySegment, originalReader.NetworkManager);
 
             // advance original reader by length of substream data
             originalReader.Skip(subStreamLength);
 
-            return new SubStream()
+            return new()
             {
                 _startPosition = newReader.Position,
                 _reader = newReader,
@@ -199,7 +199,7 @@ namespace FishNet.Serializing
         /// <returns>Empty SubStream</returns>
         internal static SubStream GetUninitialized()
         {
-            return new SubStream()
+            return new()
             {
                 Initialized = false,
             };

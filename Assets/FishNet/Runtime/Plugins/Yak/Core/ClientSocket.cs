@@ -17,7 +17,7 @@ namespace FishNet.Transporting.Yak.Client
         /// <summary>
         /// Incomimg data.
         /// </summary>
-        private Queue<LocalPacket> _incoming = new Queue<LocalPacket>();
+        private Queue<LocalPacket> _incoming = new();
         #endregion
 
         

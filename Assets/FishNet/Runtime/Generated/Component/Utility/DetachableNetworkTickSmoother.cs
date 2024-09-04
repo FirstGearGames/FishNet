@@ -90,7 +90,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// How quickly to move towards target.
         /// </summary>
-        private MoveRates _moveRates = new MoveRates(MoveRatesCls.INSTANT_VALUE);
+        private MoveRates _moveRates = new(MoveRatesCls.INSTANT_VALUE);
         /// <summary>
         /// True if initialized.
         /// </summary>

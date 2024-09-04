@@ -15,11 +15,11 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Current RPCLinks.
         /// </summary>
-        internal Dictionary<ushort, RpcLink> RpcLinks = new Dictionary<ushort, RpcLink>();
+        internal Dictionary<ushort, RpcLink> RpcLinks = new();
         /// <summary>
         /// RPCLink indexes which can be used.
         /// </summary>
-        private Queue<ushort> _availableRpcLinkIndexes = new Queue<ushort>();
+        private Queue<ushort> _availableRpcLinkIndexes = new();
         #endregion
 
         /// <summary>

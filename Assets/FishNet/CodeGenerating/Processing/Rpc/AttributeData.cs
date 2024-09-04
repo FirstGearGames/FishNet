@@ -14,7 +14,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         public static List<RpcType> GetRpcTypes(this List<AttributeData> datas)
         {
             //RpcTypes for originalMd.
-            List<RpcType> rpcTypes = new List<RpcType>();
+            List<RpcType> rpcTypes = new();
             foreach (AttributeData ad in datas)
                 rpcTypes.Add(ad.RpcType);
 

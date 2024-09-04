@@ -20,8 +20,8 @@ namespace FishNet.CodeGenerating.Helping
     {
         #region Reflection references.
 
-        public readonly Dictionary<string, MethodReference> InstancedWriterMethods = new Dictionary<string, MethodReference>();
-        public readonly Dictionary<string, MethodReference> StaticWriterMethods = new Dictionary<string, MethodReference>();
+        public readonly Dictionary<string, MethodReference> InstancedWriterMethods = new();
+        public readonly Dictionary<string, MethodReference> StaticWriterMethods = new();
 
         public TypeDefinition GeneratedWriterClassTypeDef;
         public MethodDefinition GeneratedWriterOnLoadMethodDef;
@@ -33,7 +33,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// TypeReferences which have already had delegates made for.
         /// </summary>
-        private HashSet<TypeReference> _delegatedTypes = new HashSet<TypeReference>();
+        private HashSet<TypeReference> _delegatedTypes = new();
 
         #endregion
 
@@ -181,7 +181,7 @@ namespace FishNet.CodeGenerating.Helping
 
                 TypeReference valueTr = instancedWriteMr.Parameters[0].ParameterType;
 
-                MethodDefinition md = new MethodDefinition($"InstancedExtension___{instancedWriteMr.Name}",
+                MethodDefinition md = new($"InstancedExtension___{instancedWriteMr.Name}",
                     WriterProcessor.GENERATED_METHOD_ATTRIBUTES,
                     base.Module.TypeSystem.Void);
 
@@ -445,7 +445,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             WriterImports wi = base.GetClass<WriterImports>();
 
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             resultVd = base.GetClass<GeneralHelper>().CreateVariable(methodDef, wi.PooledWriter_TypeRef);
@@ -477,7 +477,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             WriterImports wi = base.GetClass<WriterImports>();
 
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             insts.Add(processor.Create(OpCodes.Ldloc, writerDefinition));
@@ -533,7 +533,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         internal List<Instruction> CreateWriteInstructions(MethodDefinition methodDef, object pooledWriterDef, ParameterDefinition valueParameterDef, MethodReference writeMr)
         {
-            List<Instruction> insts = new List<Instruction>();
+            List<Instruction> insts = new();
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             if (writeMr != null)
@@ -551,7 +551,7 @@ namespace FishNet.CodeGenerating.Helping
                 else
                 {
                     base.LogError($"{pooledWriterDef.GetType().FullName} is not a valid writerDef. Type must be VariableDefinition or ParameterDefinition.");
-                    return new List<Instruction>();
+                    return new();
                 }
 
                 insts.Add(processor.Create(OpCodes.Ldarg, valueParameterDef));
@@ -579,7 +579,7 @@ namespace FishNet.CodeGenerating.Helping
             else
             {
                 base.LogError($"Writer not found for {valueParameterDef.ParameterType.FullName}.");
-                return new List<Instruction>();
+                return new();
             }
         }
 
@@ -1022,7 +1022,7 @@ namespace FishNet.CodeGenerating.Helping
             base.ImportReference(genericInstance);
             TypeReference valueTr = genericInstance.GenericArguments[0];
 
-            List<TypeReference> genericArguments = new List<TypeReference>();
+            List<TypeReference> genericArguments = new();
             //Make sure all arguments have writers.
             foreach (TypeReference gaTr in genericInstance.GenericArguments)
             {

@@ -58,7 +58,7 @@ namespace FishNet.Example.ColliderRollbacks
             Debug.Log(accuracyText);
         }
 
-        private List<float> _differences = new List<float>();
+        private List<float> _differences = new();
 
     }
 

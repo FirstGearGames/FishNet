@@ -155,15 +155,16 @@ namespace FishNet.Object
         /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
-        private List<NetworkBehaviour> _predictionBehaviours = new List<NetworkBehaviour>();
+        private List<NetworkBehaviour> _predictionBehaviours = new();
         #endregion
 
-        private void Update_Prediction()
+        private void TimeManager_OnUpdate_Prediction()
         {
             if (!_enablePrediction)
                 return;
 
-            PredictionSmoother?.Update();
+            if (PredictionSmoother != null)
+                PredictionSmoother.OnUpdate();
         }
 
         private void Preinitialize_Prediction(NetworkManager manager, bool asServer)
@@ -269,7 +270,7 @@ namespace FishNet.Object
             if (PredictionSmoother == null)
                 return;
             float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRatesCls.UNSET_VALUE;
-            PredictionSmoother.Initialize(this, _graphicalObject, _detachGraphicalObject, teleportT, (float)TimeManager.TickDelta, _ownerInterpolation, _ownerSmoothedProperties, _spectatorInterpolation, _spectatorSmoothedProperties, _adaptiveInterpolation);
+            PredictionSmoother.InitializeNetworked(this, _graphicalObject, _detachGraphicalObject, teleportT, (float)TimeManager.TickDelta, _ownerInterpolation, _ownerSmoothedProperties, _spectatorInterpolation, _spectatorSmoothedProperties, _adaptiveInterpolation);
         }
 
         /// <summary>
@@ -315,22 +316,26 @@ namespace FishNet.Object
 
         private void TimeManager_OnPreTick()
         {
-            PredictionSmoother?.OnPreTick();
+            if (PredictionSmoother != null)
+                PredictionSmoother.OnPreTick();
         }
 
         private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
         {
-            PredictionSmoother?.OnPostReplay(clientTick);
+            if (PredictionSmoother != null)
+                PredictionSmoother.OnPostReplay(clientTick);
         }
 
         private void TimeManager_OnPostTick()
         {
-            PredictionSmoother?.OnPostTick(NetworkManager.TimeManager.LocalTick);
+            if (PredictionSmoother != null)
+                PredictionSmoother.OnPostTick(NetworkManager.TimeManager.LocalTick);
         }
 
         private void PredictionManager_OnPreReconcile(uint clientTick, uint serverTick)
         {
-            PredictionSmoother?.OnPreReconcile();
+            if (PredictionSmoother != null)
+                PredictionSmoother.OnPreReconcile();
         }
 
 

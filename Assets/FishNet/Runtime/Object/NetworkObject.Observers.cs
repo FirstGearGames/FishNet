@@ -39,7 +39,7 @@ namespace FishNet.Object
         /// <summary>
         /// Clients which can see and get messages from this NetworkObject.
         /// </summary>
-        [HideInInspector] public HashSet<NetworkConnection> Observers = new HashSet<NetworkConnection>();
+        [HideInInspector] public HashSet<NetworkConnection> Observers = new();
 
         #endregion
 
@@ -156,7 +156,7 @@ namespace FishNet.Object
         private void UpdateRenderers_Internal(bool updateVisibility)
         {
             _renderers = GetComponentsInChildren<Renderer>(true);
-            List<Renderer> enabledRenderers = new List<Renderer>();
+            List<Renderer> enabledRenderers = new();
             foreach (Renderer r in _renderers)
             {
                 if (r.enabled)

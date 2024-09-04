@@ -78,7 +78,7 @@ namespace LiteNetLib
             _ordered = ordered;
             _pendingPackets = new PendingPacket[_windowSize];
             for (int i = 0; i < _pendingPackets.Length; i++)
-                _pendingPackets[i] = new PendingPacket();
+                _pendingPackets[i] = new();
 
             if (_ordered)
             {
@@ -95,7 +95,7 @@ namespace LiteNetLib
             _localSeqence = 0;
             _remoteSequence = 0;
             _remoteWindowStart = 0;
-            _outgoingAcks = new NetPacket(PacketProperty.Ack, (_windowSize - 1) / BitsInByte + 2) {ChannelId = id};
+            _outgoingAcks = new(PacketProperty.Ack, (_windowSize - 1) / BitsInByte + 2) {ChannelId = id};
         }
 
         //ProcessAck in packet

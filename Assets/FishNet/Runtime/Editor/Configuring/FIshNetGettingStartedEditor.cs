@@ -19,7 +19,7 @@ namespace FishNet.Editing
         public static void GettingStartedMenu()
         {
             FishNetGettingStartedEditor window = (FishNetGettingStartedEditor)EditorWindow.GetWindow(typeof(FishNetGettingStartedEditor));
-            window.position = new Rect(0, 0, 320, 355);
+            window.position = new(0, 0, 320, 355);
             Rect mainPos;
             mainPos = EditorGUIUtility.GetMainWindowPosition();
             var pos = window.position;  
@@ -30,7 +30,7 @@ namespace FishNet.Editing
             window.position = pos;
 
             window._fishnetLogo = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/FishNet/Runtime/Editor/Textures/UI/Logo_With_Text.png", typeof(Texture));
-            window._labelStyle = new GUIStyle("label");
+            window._labelStyle = new("label");
             window._labelStyle.fontSize = 24;
             window._labelStyle.wordWrap = true;   
             //window.labelStyle.alignment = TextAnchor.MiddleCenter;
@@ -38,7 +38,7 @@ namespace FishNet.Editing
 
             window._reviewButtonBg = MakeBackgroundTexture(1, 1, new Color32(52, 111, 255, 255));
             window._reviewButtonBgHover = MakeBackgroundTexture(1, 1, new Color32(99, 153, 255, 255));
-            window._reviewButtonStyle = new GUIStyle("button");
+            window._reviewButtonStyle = new("button");
             window._reviewButtonStyle.fontSize = 18;
             window._reviewButtonStyle.fontStyle = FontStyle.Bold;
             window._reviewButtonStyle.normal.background = window._reviewButtonBg;
@@ -48,7 +48,7 @@ namespace FishNet.Editing
             window._reviewButtonStyle.hover.background = window._reviewButtonBgHover;
             window._reviewButtonStyle.onHover.background = window._reviewButtonBgHover;
             window._reviewButtonStyle.alignment = TextAnchor.MiddleCenter;
-            window._reviewButtonStyle.normal.textColor = new Color(1, 1, 1, 1);
+            window._reviewButtonStyle.normal.textColor = new(1, 1, 1, 1);
 
         }
 
@@ -157,7 +157,7 @@ namespace FishNet.Editing
             Color[] pixels = new Color[width * height];
             for (int i = 0; i < pixels.Length; i++)
                 pixels[i] = color;
-            Texture2D backgroundTexture = new Texture2D(width, height);
+            Texture2D backgroundTexture = new(width, height);
             backgroundTexture.SetPixels(pixels);
             backgroundTexture.Apply();
             return backgroundTexture;

@@ -83,7 +83,7 @@ namespace LiteNetLib
 
         public NetEvent(NetManager manager)
         {
-            DataReader = new NetPacketReader(manager, this);
+            DataReader = new(manager, this);
         }
     }
 
@@ -130,14 +130,14 @@ namespace LiteNetLib
             public IPEndPoint EndPoint;
             public DateTime TimeWhenGet;
         }
-        private readonly List<IncomingData> _pingSimulationList = new List<IncomingData>();
-        private readonly Random _randomGenerator = new Random();
+        private readonly List<IncomingData> _pingSimulationList = new();
+        private readonly Random _randomGenerator = new();
         private const int MinLatencyThreshold = 5;
 #endif
 
         private Thread _logicThread;
         private bool _manualMode;
-        private readonly AutoResetEvent _updateTriggerEvent = new AutoResetEvent(true);
+        private readonly AutoResetEvent _updateTriggerEvent = new(true);
 
         private NetEvent _pendingEventHead;
         private NetEvent _pendingEventTail;
@@ -148,15 +148,15 @@ namespace LiteNetLib
         private readonly INtpEventListener _ntpEventListener;
         private readonly IPeerAddressChangedListener _peerAddressChangedListener;
 
-        private readonly Dictionary<IPEndPoint, ConnectionRequest> _requestsDict = new Dictionary<IPEndPoint, ConnectionRequest>();
-        private readonly ConcurrentDictionary<IPEndPoint, NtpRequest> _ntpRequests = new ConcurrentDictionary<IPEndPoint, NtpRequest>();
+        private readonly Dictionary<IPEndPoint, ConnectionRequest> _requestsDict = new();
+        private readonly ConcurrentDictionary<IPEndPoint, NtpRequest> _ntpRequests = new();
         private long _connectedPeersCount;
-        private readonly List<NetPeer> _connectedPeerListCache = new List<NetPeer>();
+        private readonly List<NetPeer> _connectedPeerListCache = new();
         private readonly PacketLayerBase _extraPacketLayer;
         private int _nextPeerId;
-        private ConcurrentQueue<int> _peerIds = new ConcurrentQueue<int>();
+        private ConcurrentQueue<int> _peerIds = new();
         private byte _channelsCount = 1;
-        private readonly object _eventLock = new object();
+        private readonly object _eventLock = new();
 
         //config section
         /// <summary>
@@ -257,7 +257,7 @@ namespace LiteNetLib
         /// <summary>
         /// Statistics of all connections
         /// </summary>
-        public readonly NetStatistics Statistics = new NetStatistics();
+        public readonly NetStatistics Statistics = new();
 
         /// <summary>
         /// Toggles the collection of network statistics for the instance and all known peers
@@ -374,7 +374,7 @@ namespace LiteNetLib
             _deliveryEventListener = listener as IDeliveryEventListener;
             _ntpEventListener = listener as INtpEventListener;
             _peerAddressChangedListener = listener as IPeerAddressChangedListener;
-            NatPunchModule = new NatPunchModule(this);
+            NatPunchModule = new(this);
             _extraPacketLayer = extraPacketLayer;
         }
 
@@ -445,7 +445,7 @@ namespace LiteNetLib
             {
                 evt = _netEventPoolHead;
                 if (evt == null)
-                    evt = new NetEvent(this);
+                    evt = new(this);
                 else
                     _netEventPoolHead = evt.Next;
             }
@@ -528,7 +528,7 @@ namespace LiteNetLib
                     {
                         _peersLock.EnterWriteLock();
                         RemovePeerFromSet(evt.Peer);
-                        previousAddress = new IPEndPoint(evt.Peer.Address, evt.Peer.Port);
+                        previousAddress = new(evt.Peer.Address, evt.Peer.Port);
                         evt.Peer.FinishEndPointChange(evt.RemoteEndPoint);
                         AddPeerToSet(evt.Peer);
                         _peersLock.ExitWriteLock();
@@ -647,7 +647,7 @@ namespace LiteNetLib
                 if (ntpRequest.Value.NeedToKill)
                 {
                     if (requestsToRemove == null)
-                        requestsToRemove = new List<IPEndPoint>();
+                        requestsToRemove = new();
                     requestsToRemove.Add(ntpRequest.Key);
                 }
             }
@@ -713,14 +713,14 @@ namespace LiteNetLib
                     }
                     else if (request.Result == ConnectionRequestResult.Reject)
                     {
-                        netPeer = new NetPeer(this, request.RemoteEndPoint, GetNextPeerId());
+                        netPeer = new(this, request.RemoteEndPoint, GetNextPeerId());
                         netPeer.Reject(request.InternalPacket, rejectData, start, length);
                         AddPeer(netPeer);
                         NetDebug.Write(NetLogLevel.Trace, "[NM] Peer connect reject.");
                     }
                     else //Accept
                     {
-                        netPeer = new NetPeer(this, request, GetNextPeerId());
+                        netPeer = new(this, request, GetNextPeerId());
                         AddPeer(netPeer);
                         CreateEvent(NetEvent.EType.Connect, netPeer);
                         NetDebug.Write(NetLogLevel.Trace, $"[NM] Received peer connection Id: {netPeer.ConnectTime}, EP: {netPeer}");
@@ -809,7 +809,7 @@ namespace LiteNetLib
                     req.UpdateRequest(connRequest);
                     return;
                 }
-                req = new ConnectionRequest(remoteEndPoint, connRequest, this);
+                req = new(remoteEndPoint, connRequest, this);
                 _requestsDict.Add(remoteEndPoint, req);
             }
             NetDebug.Write($"[NM] Creating request event: {connRequest.ConnectionTime}");
@@ -836,7 +836,7 @@ namespace LiteNetLib
                 {
                     lock (_pingSimulationList)
                     {
-                        _pingSimulationList.Add(new IncomingData
+                        _pingSimulationList.Add(new()
                         {
                             Data = packet,
                             EndPoint = remoteEndPoint,
@@ -1062,7 +1062,7 @@ namespace LiteNetLib
                 {
                     evt = _netEventPoolHead;
                     if (evt == null)
-                        evt = new NetEvent(this);
+                        evt = new(this);
                     else
                         _netEventPoolHead = evt.Next;
                 }
@@ -1080,7 +1080,7 @@ namespace LiteNetLib
                 {
                     evt = _netEventPoolHead;
                     if (evt == null)
-                        evt = new NetEvent(this);
+                        evt = new(this);
                     else
                         _netEventPoolHead = evt.Next;
 
@@ -1588,7 +1588,7 @@ namespace LiteNetLib
 
                 //Create reliable connection
                 //And send connection request
-                peer = new NetPeer(this, target, GetNextPeerId(), connectionNumber, connectionData);
+                peer = new(this, target, GetNextPeerId(), connectionNumber, connectionData);
                 AddPeer(peer);
                 return peer;
             }
@@ -1635,7 +1635,7 @@ namespace LiteNetLib
 
             //clear peers
             ClearPeerSet();
-            _peerIds = new ConcurrentQueue<int>();
+            _peerIds = new();
             _nextPeerId = 0;
 #if DEBUG
             lock (_pingSimulationList)
@@ -1778,7 +1778,7 @@ namespace LiteNetLib
         /// <param name="endPoint">NTP Server address.</param>
         public void CreateNtpRequest(IPEndPoint endPoint)
         {
-            _ntpRequests.TryAdd(endPoint, new NtpRequest(endPoint));
+            _ntpRequests.TryAdd(endPoint, new(endPoint));
         }
 
         /// <summary>
@@ -1789,7 +1789,7 @@ namespace LiteNetLib
         public void CreateNtpRequest(string ntpServerAddress, int port)
         {
             IPEndPoint endPoint = NetUtils.MakeEndPoint(ntpServerAddress, port);
-            _ntpRequests.TryAdd(endPoint, new NtpRequest(endPoint));
+            _ntpRequests.TryAdd(endPoint, new(endPoint));
         }
 
         /// <summary>
@@ -1799,12 +1799,12 @@ namespace LiteNetLib
         public void CreateNtpRequest(string ntpServerAddress)
         {
             IPEndPoint endPoint = NetUtils.MakeEndPoint(ntpServerAddress, NtpRequest.DefaultPort);
-            _ntpRequests.TryAdd(endPoint, new NtpRequest(endPoint));
+            _ntpRequests.TryAdd(endPoint, new(endPoint));
         }
 
         public NetPeerEnumerator GetEnumerator()
         {
-            return new NetPeerEnumerator(_headPeer);
+            return new(_headPeer);
         }
 
         IEnumerator<NetPeer> IEnumerable<NetPeer>.GetEnumerator()

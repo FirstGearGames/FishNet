@@ -47,7 +47,7 @@ namespace FishNet.Upgrading.Mirror.Editing
             /* Convert current defines into a hashset. This is so we can
              * determine if any of our defines were added. Only save playersettings
              * when a define is added. */
-            HashSet<string> definesHs = new HashSet<string>();
+            HashSet<string> definesHs = new();
             string[] currentArr = currentDefines.Split(';');
 
             bool removed = false;

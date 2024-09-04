@@ -13,10 +13,10 @@ namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
         /// </summary>
         [Tooltip("Minimum and maximum range for width and height of the RectTransform.")]
         //[Foldout("Sizing")]
-        public FloatRange2D SizeLimits = new FloatRange2D()
+        public FloatRange2D SizeLimits = new()
         {
-            X = new FloatRange(0f, 999999f),
-            Y = new FloatRange(0f, 999999f)
+            X = new(0f, 999999f),
+            Y = new(0f, 999999f)
         };
         #endregion
 
@@ -42,7 +42,7 @@ namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
             //Clamp width and height.
             widthRequired = Mathf.Clamp(widthRequired, SizeLimits.X.Minimum, SizeLimits.X.Maximum);
             heightRequired = Mathf.Clamp(heightRequired, SizeLimits.Y.Minimum, SizeLimits.Y.Maximum);
-            base.RectTransform.sizeDelta = new Vector2(widthRequired, heightRequired);
+            base.RectTransform.sizeDelta = new(widthRequired, heightRequired);
             base.Move();
             base.Show();
         }

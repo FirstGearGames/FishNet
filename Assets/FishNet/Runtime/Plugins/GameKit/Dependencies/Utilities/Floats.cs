@@ -9,7 +9,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Used to randomize float values.
         /// </summary>
-        private static System.Random _random = new System.Random();
+        private static System.Random _random = new();
 
         /// <summary>
         /// Sets a source float to value if equal to or greater than tolerance.

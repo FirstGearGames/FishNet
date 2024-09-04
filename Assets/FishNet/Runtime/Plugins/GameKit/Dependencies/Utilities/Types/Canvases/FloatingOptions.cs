@@ -11,7 +11,7 @@ namespace GameKit.Dependencies.Utilities.Types.OptionMenuButtons
         /// <summary>
         /// Current buttons.
         /// </summary>
-        protected List<ButtonData> Buttons = new List<ButtonData>();
+        protected List<ButtonData> Buttons = new();
         #endregion
 
         /// <summary>

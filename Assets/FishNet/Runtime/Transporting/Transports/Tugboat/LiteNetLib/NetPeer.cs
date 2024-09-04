@@ -59,12 +59,12 @@ namespace LiteNetLib
         private double _resendDelay = 27.0;
         private int _pingSendTimer;
         private int _rttResetTimer;
-        private readonly Stopwatch _pingTimer = new Stopwatch();
+        private readonly Stopwatch _pingTimer = new();
         private int _timeSinceLastPacket;
         private long _remoteDelta;
 
         //Common
-        private readonly object _shutdownLock = new object();
+        private readonly object _shutdownLock = new();
 
         internal volatile NetPeer NextPeer;
         internal NetPeer PrevPeer;
@@ -94,7 +94,7 @@ namespace LiteNetLib
         private int _mtuCheckAttempts;
         private const int MtuCheckDelay = 1000;
         private const int MaxMtuCheckAttempts = 4;
-        private readonly object _mtuMutex = new object();
+        private readonly object _mtuMutex = new();
 
         //Fragment
         private class IncomingFragments
@@ -176,7 +176,7 @@ namespace LiteNetLib
         /// <summary>
         /// Remote UTC time (not accurate)
         /// </summary>
-        public DateTime RemoteUtcTime => new DateTime(DateTime.UtcNow.Ticks + _remoteDelta);
+        public DateTime RemoteUtcTime => new(DateTime.UtcNow.Ticks + _remoteDelta);
 
         /// <summary>
         /// Time since last packet received (including internal library packets)
@@ -219,7 +219,7 @@ namespace LiteNetLib
         internal NetPeer(NetManager netManager, IPEndPoint remoteEndPoint, int id) : base(remoteEndPoint.Address, remoteEndPoint.Port)
         {
             Id = id;
-            Statistics = new NetStatistics();
+            Statistics = new();
             NetManager = netManager;
 
             _cachedSocketAddr = base.Serialize();
@@ -238,16 +238,16 @@ namespace LiteNetLib
             ResetMtu();
 
             _connectionState = ConnectionState.Connected;
-            _mergeData = new NetPacket(PacketProperty.Merged, NetConstants.MaxPacketSize);
-            _pongPacket = new NetPacket(PacketProperty.Pong, 0);
-            _pingPacket = new NetPacket(PacketProperty.Ping, 0) {Sequence = 1};
+            _mergeData = new(PacketProperty.Merged, NetConstants.MaxPacketSize);
+            _pongPacket = new(PacketProperty.Pong, 0);
+            _pingPacket = new(PacketProperty.Ping, 0) {Sequence = 1};
 
-            _unreliableChannel = new Queue<NetPacket>();
-            _holdedFragments = new Dictionary<ushort, IncomingFragments>();
-            _deliveredFragments = new Dictionary<ushort, ushort>();
+            _unreliableChannel = new();
+            _holdedFragments = new();
+            _deliveredFragments = new();
 
             _channels = new BaseChannel[netManager.ChannelsCount * NetConstants.ChannelTypeCount];
-            _channelSendQueue = new ConcurrentQueue<BaseChannel>();
+            _channelSendQueue = new();
         }
 
         internal void InitiateEndPointChange()
@@ -330,12 +330,12 @@ namespace LiteNetLib
             if (deliveryMethod == DeliveryMethod.Unreliable)
             {
                 packet.Property = PacketProperty.Unreliable;
-                return new PooledPacket(packet, mtu, 0);
+                return new(packet, mtu, 0);
             }
             else
             {
                 packet.Property = PacketProperty.Channeled;
-                return new PooledPacket(packet, mtu, (byte)(channelNumber * NetConstants.ChannelTypeCount + (byte)deliveryMethod));
+                return new(packet, mtu, (byte)(channelNumber * NetConstants.ChannelTypeCount + (byte)deliveryMethod));
             }
         }
 
@@ -903,7 +903,7 @@ namespace LiteNetLib
                 Interlocked.Exchange(ref _timeSinceLastPacket, 0);
 
                 //send shutdown packet
-                _shutdownPacket = new NetPacket(PacketProperty.Disconnect, length) {ConnectionNumber = _connectNum};
+                _shutdownPacket = new(PacketProperty.Disconnect, length) {ConnectionNumber = _connectNum};
                 FastBitConverter.GetBytes(_shutdownPacket.RawData, 1, _connectTime);
                 if (_shutdownPacket.Size >= _mtu)
                 {
@@ -939,7 +939,7 @@ namespace LiteNetLib
                 byte packetChannelId = p.ChannelId;
                 if (!_holdedFragments.TryGetValue(packetFragId, out var incomingFragments))
                 {
-                    incomingFragments = new IncomingFragments
+                    incomingFragments = new()
                     {
                         Fragments = new NetPacket[p.FragmentsTotal],
                         ChannelId = p.ChannelId

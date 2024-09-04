@@ -58,18 +58,18 @@ namespace FishNet.Example.Scened
         {
             float gravity = -10f * Time.deltaTime;
             //If ray hits floor then cancel gravity.
-            Ray ray = new Ray(transform.position + new Vector3(0f, 0.05f, 0f), -Vector3.up);
+            Ray ray = new(transform.position + new Vector3(0f, 0.05f, 0f), -Vector3.up);
             if (Physics.Raycast(ray, 0.1f + -gravity))
                 gravity = 0f;
 
             /* Moving. */
-            Vector3 direction = new Vector3(
+            Vector3 direction = new(
                 0f,
                 gravity,
                 ver * _moveRate * Time.deltaTime);
 
             transform.position += transform.TransformDirection(direction);
-            transform.Rotate(new Vector3(0f, hor * 100f * Time.deltaTime, 0f));
+            transform.Rotate(new(0f, hor * 100f * Time.deltaTime, 0f));
         }
 
     }

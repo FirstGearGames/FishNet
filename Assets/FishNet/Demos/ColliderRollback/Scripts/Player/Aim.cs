@@ -13,7 +13,7 @@ namespace FishNet.Example.ColliderRollbacks
     {
 
         public PlayerCamera PlayerCamera { get; private set; }
-        private readonly Vector3 _offset = new Vector3(0f, 1.65f, 0f);
+        private readonly Vector3 _offset = new(0f, 1.65f, 0f);
 
         public override void OnStartClient()
         {
@@ -39,7 +39,7 @@ namespace FishNet.Example.ColliderRollbacks
         {
             float speed = 2f;
             //Yaw.
-            transform.Rotate(new Vector3(0f, Input.GetAxis("Mouse X") * speed, 0f));
+            transform.Rotate(new(0f, Input.GetAxis("Mouse X") * speed, 0f));
             //Pitch.
             float pitch = PlayerCamera.transform.eulerAngles.x - (Input.GetAxis("Mouse Y") * speed);
             /* If not signed on X then make it
@@ -48,7 +48,7 @@ namespace FishNet.Example.ColliderRollbacks
                 pitch -= 360f;
             pitch = Mathf.Clamp(pitch, -89f, 89f);
 
-            PlayerCamera.transform.eulerAngles = new Vector3(pitch, transform.eulerAngles.y, transform.eulerAngles.z);
+            PlayerCamera.transform.eulerAngles = new(pitch, transform.eulerAngles.y, transform.eulerAngles.z);
         }
 
         /// <summary>

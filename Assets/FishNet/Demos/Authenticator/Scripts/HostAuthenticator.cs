@@ -110,8 +110,8 @@ namespace FishNet.Authenticating
             else
             {
                 const string charPool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()";
-                StringBuilder result = new StringBuilder();
-                using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
+                StringBuilder result = new();
+                using (RNGCryptoServiceProvider rng = new())
                 {
                     byte[] uintBuffer = new byte[sizeof(uint)];
                     while (length-- > 0)
@@ -137,7 +137,7 @@ namespace FishNet.Authenticating
             if (_hostHash == string.Empty)
                 return false;
 
-            HostPasswordBroadcast hpb = new HostPasswordBroadcast()
+            HostPasswordBroadcast hpb = new()
             {
                 Password = _hostHash,
             };

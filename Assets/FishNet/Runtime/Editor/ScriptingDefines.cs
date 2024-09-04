@@ -34,7 +34,7 @@ namespace FishNet
             /* Convert current defines into a hashset. This is so we can
              * determine if any of our defines were added. Only save playersettings
              * when a define is added. */
-            HashSet<string> definesHs = new HashSet<string>();
+            HashSet<string> definesHs = new();
             string[] currentArr = currentDefines.Split(';');
             //Add current defines into hs.
             foreach (string item in currentArr)
@@ -65,7 +65,7 @@ namespace FishNet
                 modified |= definesHs.Remove(proDefine);
 #pragma warning restore CS0162 // Unreachable code detected
 
-            List<string> definesToRemove = new List<string>();
+            List<string> definesToRemove = new();
             int versionPrefixLength = versionPrefix.Length;
             //Remove old versions.
             foreach (string item in definesHs)

@@ -31,7 +31,7 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static List<T> FindAllObjectsOfType<T>(bool activeSceneOnly = true, bool requireSceneLoaded = false, bool includeDDOL = true, bool includeInactive = true)
         {
-            List<T> results = new List<T>();
+            List<T> results = new();
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 Scene scene = SceneManager.GetSceneAt(i);

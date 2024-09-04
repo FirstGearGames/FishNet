@@ -16,7 +16,7 @@ namespace FishNet.Object
         /// <summary>
         /// Link indexes for RPCs.
         /// </summary>
-        private Dictionary<uint, RpcLinkType> _rpcLinks = new Dictionary<uint, RpcLinkType>();
+        private Dictionary<uint, RpcLinkType> _rpcLinks = new();
         #endregion
 
         #region Consts.
@@ -75,7 +75,7 @@ namespace FishNet.Object
             {
                 if (serverManager.GetRpcLink(out ushort linkIndex))
                 {
-                    _rpcLinks[rpcHash] = new RpcLinkType(linkIndex, rpcType);
+                    _rpcLinks[rpcHash] = new(linkIndex, rpcType);
                     return true;
                 }
                 else

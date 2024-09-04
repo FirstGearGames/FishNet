@@ -6,7 +6,7 @@ namespace LiteNetLib
     {
         private NetPacket _poolHead;
         private int _poolCount;
-        private readonly object _poolLock = new object();
+        private readonly object _poolLock = new();
 
         /// <summary>
         /// Maximum packet pool size (increase if you have tons of packets sending)
@@ -42,14 +42,14 @@ namespace LiteNetLib
         internal NetPacket PoolGetPacket(int size)
         {
             if (size > NetConstants.MaxPacketSize)
-                return new NetPacket(size);
+                return new(size);
 
             NetPacket packet;
             lock (_poolLock)
             {
                 packet = _poolHead;
                 if (packet == null)
-                    return new NetPacket(size);
+                    return new(size);
                 
                 _poolHead = _poolHead.Next;
                 _poolCount--;

@@ -200,7 +200,7 @@ namespace LiteNetLib
                 if (packet.Size == -1)
                 {
                     //Linux timeout EAGAIN
-                    return ProcessError(new SocketException((int)NativeSocket.GetSocketError())) == false;
+                    return ProcessError(new((int)NativeSocket.GetSocketError())) == false;
                 }
 
                 //NetDebug.WriteForce($"[R]Received data from {endPoint}, result: {packet.Size}");
@@ -219,7 +219,7 @@ namespace LiteNetLib
 #else
                     byte[] addrBuffer = new byte[16];
                     Buffer.BlockCopy(address, 8, addrBuffer, 0, 16);
-                    tempEndPoint.Address = new IPAddress(addrBuffer, scope);
+                    tempEndPoint.Address = new(addrBuffer, scope);
 #endif
                 }
                 else //IPv4
@@ -228,7 +228,7 @@ namespace LiteNetLib
                                                      (address[5] << 8 & 0x0000FF00) |
                                                      (address[6] << 16 & 0x00FF0000) |
                                                      (address[7] << 24)));
-                    tempEndPoint.Address = new IPAddress(ipv4Addr);
+                    tempEndPoint.Address = new(ipv4Addr);
                 }
 
                 if (TryGetPeer(tempEndPoint, out var peer))
@@ -239,7 +239,7 @@ namespace LiteNetLib
                 else
                 {
                     OnMessageReceived(packet, tempEndPoint);
-                    tempEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                    tempEndPoint = new(IPAddress.Any, 0);
                 }
                 packet = PoolGetPacket(NetConstants.MaxPacketSize);
                 return true;
@@ -341,32 +341,32 @@ namespace LiteNetLib
             NotConnected = false;
             _manualMode = manualMode;
             UseNativeSockets = UseNativeSockets && NativeSocket.IsSupported;
-            _udpSocketv4 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            if (!BindSocket(_udpSocketv4, new IPEndPoint(addressIPv4, port)))
+            _udpSocketv4 = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            if (!BindSocket(_udpSocketv4, new(addressIPv4, port)))
                 return false;
 
             LocalPort = ((IPEndPoint) _udpSocketv4.LocalEndPoint).Port;
 
 #if UNITY_SOCKET_FIX
             if (_useSocketFix && _pausedSocketFix == null)
-                _pausedSocketFix = new PausedSocketFix(this, addressIPv4, addressIPv6, port, manualMode);
+                _pausedSocketFix = new(this, addressIPv4, addressIPv6, port, manualMode);
 #endif
 
             IsRunning = true;
             if (_manualMode)
             {
-                _bufferEndPointv4 = new IPEndPoint(IPAddress.Any, 0);
+                _bufferEndPointv4 = new(IPAddress.Any, 0);
             }
 
             //Check IPv6 support
             if (IPv6Support && IPv6Enabled)
             {
-                _udpSocketv6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                _udpSocketv6 = new(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
                 //Use one port for two sockets
-                if (BindSocket(_udpSocketv6, new IPEndPoint(addressIPv6, LocalPort)))
+                if (BindSocket(_udpSocketv6, new(addressIPv6, LocalPort)))
                 {
                     if (_manualMode)
-                        _bufferEndPointv6 = new IPEndPoint(IPAddress.IPv6Any, 0);
+                        _bufferEndPointv6 = new(IPAddress.IPv6Any, 0);
                 }
                 else
                 {
@@ -379,7 +379,7 @@ namespace LiteNetLib
                 ThreadStart ts = ReceiveLogic;
                 if (UseNativeSockets)
                     ts = NativeReceiveLogic;
-                _receiveThread = new Thread(ts)
+                _receiveThread = new(ts)
                 {
                     Name = $"ReceiveThread({LocalPort})",
                     IsBackground = true
@@ -387,7 +387,7 @@ namespace LiteNetLib
                 _receiveThread.Start();
                 if (_logicThread == null)
                 {
-                    _logicThread = new Thread(UpdateLogic) { Name = "LogicThread", IsBackground = true };
+                    _logicThread = new(UpdateLogic) { Name = "LogicThread", IsBackground = true };
                     _logicThread.Start();
                 }
             }

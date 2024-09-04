@@ -63,7 +63,7 @@ namespace LiteNetLib
         public const int AF_INET = 2;
         public const int AF_INET6 = 10;
 
-        private static readonly Dictionary<int, SocketError> NativeErrorToSocketError = new Dictionary<int, SocketError>
+        private static readonly Dictionary<int, SocketError> NativeErrorToSocketError = new()
         {
             { 13, SocketError.AccessDenied },               //EACCES
             { 98, SocketError.AddressAlreadyInUse },        //EADDRINUSE
@@ -163,9 +163,9 @@ namespace LiteNetLib
             int error = Marshal.GetLastWin32Error();
             if (UnixMode)
                 return NativeErrorToSocketError.TryGetValue(error, out var err)
-                    ? new SocketException((int)err)
+                    ? new((int)err)
                     : new SocketException((int)SocketError.SocketError);
-            return new SocketException(error);
+            return new(error);
         }
 
         

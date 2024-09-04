@@ -24,7 +24,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Pauser for rigidbodies.
         /// </summary>
-        private RigidbodyPauser _rigidbodyPauser = new RigidbodyPauser();
+        private RigidbodyPauser _rigidbodyPauser = new();
         /// <summary>
         /// TimeManager subscribed to.
         /// </summary>

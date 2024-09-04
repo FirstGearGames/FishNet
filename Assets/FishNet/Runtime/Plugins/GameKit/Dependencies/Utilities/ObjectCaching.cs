@@ -153,7 +153,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Cache for ResettableRingBuffer.
         /// </summary>
-        private readonly static Stack<ResettableRingBuffer<T>> _resettableRingBufferCache = new Stack<ResettableRingBuffer<T>>();
+        private readonly static Stack<ResettableRingBuffer<T>> _resettableRingBufferCache = new();
 
         /// <summary>
         /// Retrieves a collection.
@@ -344,7 +344,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Cache for dictionaries.
         /// </summary>
-        private readonly static Stack<Dictionary<T1, T2>> _dictionaryCache = new Stack<Dictionary<T1, T2>>();
+        private readonly static Stack<Dictionary<T1, T2>> _dictionaryCache = new();
 
         /// <summary>
         /// Retrieves a collection.
@@ -391,23 +391,23 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Cache for arrays.
         /// </summary>
-        private readonly static Stack<T[]> _arrayCache = new Stack<T[]>();
+        private readonly static Stack<T[]> _arrayCache = new();
         /// <summary>
         /// Cache for lists.
         /// </summary>
-        private readonly static Stack<List<T>> _listCache = new Stack<List<T>>();
+        private readonly static Stack<List<T>> _listCache = new();
         /// <summary>
         /// Cache for queues.
         /// </summary>
-        private readonly static Stack<Queue<T>> _queueCache = new Stack<Queue<T>>();
+        private readonly static Stack<Queue<T>> _queueCache = new();
         /// <summary>
         /// Cache for queues.
         /// </summary>
-        private readonly static Stack<BasicQueue<T>> _basicQueueCache = new Stack<BasicQueue<T>>();
+        private readonly static Stack<BasicQueue<T>> _basicQueueCache = new();
         /// <summary>
         /// Cache for hashset.
         /// </summary>
-        private readonly static Stack<HashSet<T>> _hashsetCache = new Stack<HashSet<T>>();
+        private readonly static Stack<HashSet<T>> _hashsetCache = new();
 
         /// <summary>
         /// Retrieves a collection.
@@ -638,7 +638,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stack to use.
         /// </summary>
-        private readonly static Stack<T> _stack = new Stack<T>();
+        private readonly static Stack<T> _stack = new();
 
         /// <summary>
         /// Returns a value from the stack or creates an instance when the stack is empty.

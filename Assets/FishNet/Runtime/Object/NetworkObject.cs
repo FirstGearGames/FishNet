@@ -4,16 +4,9 @@ using UnityEngine;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using FishNet.Utility.Performance;
-using System;
-using FishNet.Managing.Object;
 using FishNet.Component.Ownership;
-using FishNet.Component.Observing;
-using FishNet.Serializing.Helping;
-using FishNet.Component.Transforming;
 using FishNet.Utility.Extension;
-using FishNet.Object.Prediction;
 using GameKit.Dependencies.Utilities;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -23,19 +16,19 @@ namespace FishNet.Object
 {
     public class NetworkObjectIdComparer : IEqualityComparer<NetworkObject>
     {
-        public bool Equals(NetworkObject x, NetworkObject y)
+        public bool Equals(NetworkObject valueA, NetworkObject valueB)
         {
-            bool xNull = (x is null);
-            bool yNull = (y is null);
+            bool aNull = (valueA is null);
+            bool bNull = (valueB is null);
             //One null, one isn't.
-            if (xNull != yNull)
+            if (aNull != bNull)
                 return false;
             //Both null.
-            if (xNull && yNull)
+            if (aNull && bNull)
                 return true;
 
             //If here neither are null.
-            return (x.ObjectId == y.ObjectId);
+            return (valueA.ObjectId == valueB.ObjectId);
         }
 
         public int GetHashCode(NetworkObject obj)
@@ -101,41 +94,32 @@ namespace FishNet.Object
         public PredictedOwner PredictedOwner { get; private set; }
 
         /// <summary>
-        /// 
+        /// Current Networkbehaviours.
         /// </summary>
-        [field: SerializeField, HideInInspector]
-        private NetworkBehaviour[] _networkBehaviours;
-
-        /// <summary>
-        /// NetworkBehaviours within the root and children of this object.
-        /// </summary>        
-        public NetworkBehaviour[] NetworkBehaviours
-        {
-            get => _networkBehaviours;
-            private set => _networkBehaviours = value;
-        }
+        [HideInInspector]
+        public List<NetworkBehaviour> NetworkBehaviours;
 
         /// <summary>
         /// NetworkBehaviour on the root of a NetworkObject parenting this instance. Value will be null if there was no parent during serialization.
-        /// This is exposed only for low-level use and may change without notice.
         /// </summary>
+        /// <remarks>This API is for internal use and may change at any time.</remarks>
         [field: SerializeField, HideInInspector]
-        public NetworkBehaviour SerializedRootNetworkBehaviour { get; private set; }
+        public NetworkBehaviour InitializedParentNetworkBehaviour { get; private set; }
 
         /// <summary>
-        /// NetworkBehaviours on the root of NetworkObjects which are beneath this one.
-        /// This is exposed only for low-level use and may change without notice. 
-        /// </summary> 
+        /// Nested NetworkObjects that existed during initialization.
+        /// </summary>
+        /// <remarks>This API is for internal use and may change at any time.</remarks>
         [field: SerializeField, HideInInspector]
-        public List<NetworkObject> SerializedNestedNetworkObjects { get; private set; } = new List<NetworkObject>();
+        public List<NetworkObject> InitializedNestedNetworkObjects { get; private set; } = new();
 
         /// <summary>
-        /// Returns a cached collection containing serialized and runtime nested NetworkObjects.
+        /// Returns a cached collection containing initialized and runtime nested NetworkObjects.
         /// </summary>
         internal List<NetworkObject> RetrieveNestedNetworkObjects()
         {
             List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-            nobs.AddRange(SerializedNestedNetworkObjects);
+            nobs.AddRange(InitializedNestedNetworkObjects);
             foreach (NetworkBehaviour nb in RuntimeChildNetworkBehaviours)
                 nobs.Add(nb.NetworkObject);
 
@@ -157,7 +141,7 @@ namespace FishNet.Object
         public List<NetworkBehaviour> RuntimeChildNetworkBehaviours { get; private set; }
 
         /// <summary>
-        /// NetworkBehaviour parenting this instance. This value prioritize the runtime value, then serialized value.
+        /// NetworkBehaviour parenting this instance. This value prioritizes the runtime value, then initialized value.
         /// This is exposed only for low-level use and may change without notice.
         /// </summary>
         [HideInInspector]
@@ -167,8 +151,8 @@ namespace FishNet.Object
             {
                 if (RuntimeParentNetworkBehaviour != null)
                     return RuntimeParentNetworkBehaviour;
-                else if (SerializedRootNetworkBehaviour != null)
-                    return SerializedRootNetworkBehaviour;
+                else if (InitializedParentNetworkBehaviour != null)
+                    return InitializedParentNetworkBehaviour;
 
                 return null;
             }
@@ -322,7 +306,6 @@ namespace FishNet.Object
             return $"Name [{gameObject.name}] Id [{ObjectId}]";
         }
 
-
         protected virtual void Awake()
         {
             _isStatic = gameObject.isStatic;
@@ -334,7 +317,6 @@ namespace FishNet.Object
         {
             TryStartDeactivation();
         }
-
 
         private void OnDisable()
         {
@@ -366,7 +348,7 @@ namespace FishNet.Object
                          * When this occurs do not send a despawn for this object.
                          * Rather, let it destroy from unity callbacks which will force
                         * the proper destroy/stop cycle. */
-                        if (pNob != SerializedRootNetworkBehaviour)
+                        if (pNob != InitializedParentNetworkBehaviour)
                             break;
                         //If nob is deinitialized then this one cannot exist.
                         if (pNob.IsDeinitializing)
@@ -384,7 +366,6 @@ namespace FishNet.Object
             }
         }
 
-        
         private void OnDestroy()
         {
             /* If already deinitializing then FishNet is in the process of,
@@ -454,7 +435,7 @@ namespace FishNet.Object
                 Owner.RemoveObject(this);
 
             Observers.Clear();
-            if (NetworkBehaviours.Length > 0)
+            if (NetworkBehaviours.Count > 0)
             {
                 NetworkBehaviour thisNb = NetworkBehaviours[0];
                 RuntimeParentNetworkBehaviour?.NetworkObject.RuntimeChildNetworkBehaviours.Remove(thisNb);
@@ -483,10 +464,9 @@ namespace FishNet.Object
                 return;
             _disabledNetworkBehavioursInitialized = true;
 
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
+            for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].InitializeIfDisabled();
         }
-
 
         /// <summary>
         /// Makes children of this NetworkObject global if this object is global.
@@ -496,10 +476,9 @@ namespace FishNet.Object
             if (!IsGlobal)
                 return;
 
-            for (int i = 0; i < SerializedNestedNetworkObjects.Count; i++)
-                SerializedNestedNetworkObjects[i].SetIsGlobal(true);
+            for (int i = 0; i < InitializedNestedNetworkObjects.Count; i++)
+                InitializedNestedNetworkObjects[i].SetIsGlobal(true);
         }
-
 
         /// <summary>
         /// Sets Despawned on child NetworkObjects if they are not enabled.
@@ -507,9 +486,9 @@ namespace FishNet.Object
         private void SetChildDespawnedState()
         {
             NetworkObject nob;
-            for (int i = 0; i < SerializedNestedNetworkObjects.Count; i++)
+            for (int i = 0; i < InitializedNestedNetworkObjects.Count; i++)
             {
-                nob = SerializedNestedNetworkObjects[i];
+                nob = InitializedNestedNetworkObjects[i];
                 if (!nob.gameObject.activeSelf)
                     nob.State = NetworkObjectState.Despawned;
             }
@@ -557,7 +536,6 @@ namespace FishNet.Object
         /// Preinitializes this object for the network.
         /// </summary>
         /// <param name="networkManager"></param>
-        
         internal void Preinitialize_Internal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
             //Only initialize this bit once even if clientHost.
@@ -602,7 +580,7 @@ namespace FishNet.Object
             //         estimatedTickDelay = 0;
             // }
 
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
+            for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].Preinitialize_Internal(this, asServer);
 
             /* NetworkObserver uses some information from
@@ -628,7 +606,7 @@ namespace FishNet.Object
 
         private void TimeManager_Update()
         {
-            Update_Prediction();
+            TimeManager_OnUpdate_Prediction();
         }
 
         /// <summary>
@@ -637,7 +615,9 @@ namespace FishNet.Object
         /// <param name="nb">NetworkBehaviour to use as root. Use null to remove parenting.</param>
         public void SetParent(NetworkBehaviour nb)
         {
-            if (InvalidParent(nb))
+            if (!CanChangeParent(true))
+                return;
+            if (IsInvalidParent(nb))
                 return;
 
             UpdateParent(nb);
@@ -649,6 +629,8 @@ namespace FishNet.Object
         /// <param name="nob">NetworkObject to use as root. Use null to remove parenting.</param>
         public void SetParent(NetworkObject nob)
         {
+            if (!CanChangeParent(true))
+                return;
             if (nob == null)
             {
                 UnsetParent();
@@ -656,7 +638,7 @@ namespace FishNet.Object
             }
 
             //No networkbehaviour.
-            if (nob.NetworkBehaviours.Length == 0)
+            if (nob.NetworkBehaviours.Count == 0)
             {
                 NetworkManager.LogWarning($"{nob.name} is not a valid parent because it does not have any NetworkBehaviours. Consider adding {nameof(EmptyNetworkBehaviour)} to {nob.name} to resolve this problem.");
                 return;
@@ -669,7 +651,6 @@ namespace FishNet.Object
         /// <summary>
         /// Unsets this NetworkObject's parent at runtime.
         /// </summary>
-        
         public void UnsetParent()
         {
             UpdateParent(null);
@@ -683,7 +664,7 @@ namespace FishNet.Object
         {
             NetworkBehaviour thisNb;
 
-            if (NetworkBehaviours.Length == 0)
+            if (NetworkBehaviours.Count == 0)
             {
                 NetworkManager.LogWarning($"{gameObject.name} cannot have it's parent updated because it does not have any NetworkBehaviours. Consider adding {nameof(EmptyNetworkBehaviour)} to {gameObject.name} to resolve this problem.");
                 return;
@@ -722,11 +703,28 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Returns if this NetworkObject can change it's parent.
+        /// </summary>
+        private bool CanChangeParent(bool logFailure)
+        {
+            if (IsSceneObject)
+                return true;
+            //No limitations on nobs without initialized parents.
+            if (InitializedParentNetworkBehaviour == null)
+                return true;
+
+            if (logFailure)
+                NetworkManager.LogWarning($"{this.ToString()} cannot have it's parent changed because it's nested. Only nested scene objects may change their parent runtime.");
+
+            return false;
+        }
+
+        /// <summary>
         /// True if the NetworkObject specified cannot be used as a parent.
         /// </summary>
         /// <param name="nb"></param>
         /// <returns></returns>
-        private bool InvalidParent(NetworkBehaviour nb)
+        private bool IsInvalidParent(NetworkBehaviour nb)
         {
             /* Scene objects could face destruction if the user
              * childs them to an instantiated object that gets despawned.
@@ -753,37 +751,47 @@ namespace FishNet.Object
                 return true;
             }
 
-            //Nested prefabs cannot be moved to new parent nobs.
-            if (SerializedRootNetworkBehaviour != null && SerializedRootNetworkBehaviour != nb)
-            {
-                NetworkManager.LogWarning($"{gameObject.name} cannot have the parent changed because it is a nested NetworkObject.");
-                return true;
-            }
-
             return false;
         }
-
 
         /// <summary>
         /// Adds a NetworkBehaviour and serializes it's components.
         /// </summary>
         internal T AddAndSerialize<T>() where T : NetworkBehaviour //runtimeNB, might need to be public for users.
         {
-            int startingLength = NetworkBehaviours.Length;
+            int startingLength = NetworkBehaviours.Count;
             T result = gameObject.AddComponent<T>();
+
             //Add to network behaviours.
-            Array.Resize(ref _networkBehaviours, startingLength + 1);
-            _networkBehaviours[startingLength] = result;
+            NetworkBehaviours.Add(result);
             //Serialize values and return.
             result.SerializeComponents(this, (byte)startingLength);
             return result;
         }
 
         /// <summary>
-        /// Updates NetworkBehaviours and initializes them with serialized values.
+        /// Sets values as they are during initialization, such as componentId, NetworkBehaviour Ids, and more.
+        /// Starts with a 0 componentId.
         /// </summary>
-        internal void UpdateNetworkBehaviours(NetworkObject parentNob, ref byte componentIndex) //runtimeNB, might need to be public for users.
+        internal void SetInitializedValues(NetworkObject parentNob)
         {
+            byte componentId = 0;
+            SetInitializedValues(parentNob, ref componentId);
+        }
+
+        /// <summary>
+        /// Sets values as they are during initialization, such as componentId, NetworkBehaviour Ids, and more.
+        /// </summary>
+        /// <param name="componentId">ComponentId to start from for the NetworkObject.</param>
+        internal void SetInitializedValues(NetworkObject parentNob, ref byte componentId)
+        {
+            if (!ApplicationState.IsPlaying())
+            {
+                Debug.LogError($"Method {nameof(SetInitializedValues)} should only be called at runtime.");
+                return;
+            }
+
+            SerializeTransformProperties();
             SetIsNestedThroughTraversal();
             /* This method can be called by the developer initializing prefabs, the prefab collection doing it automatically,
              * or when the networkobject is modified or added to an object.
@@ -798,11 +806,14 @@ namespace FishNet.Object
              * as the parent would have already resolved the needed information. */
 
             //If first componentIndex make sure there's no more than maximum allowed nested nobs.
-            if (componentIndex == 0)
+            if (componentId == 0)
             {
-                //Not possible for index to be 0 and nested.
+                /* It's not possible to be nested while also having a componentIndex of 0.
+                 * This would mean that the networkObject is being initialized outside of a
+                 * recursive check. We only want to initialize recursively, or when not nested. */
                 if (IsNested)
                     return;
+
                 if (GetComponentsInChildren<NetworkObject>(true).Length > NetworkBehaviour.MAXIMUM_NETWORKBEHAVIOURS)
                 {
                     NetworkManagerExtensions.LogError($"The number of child NetworkObjects on {gameObject.name} exceeds the maximum of {NetworkBehaviour.MAXIMUM_NETWORKBEHAVIOURS}.");
@@ -810,25 +821,35 @@ namespace FishNet.Object
                 }
             }
 
+            NetworkBehaviours.Clear();
+
             if (TryGetComponent(out PredictedSpawn ps))
                 PredictedSpawn = ps;
             if (TryGetComponent(out PredictedOwner po))
                 PredictedOwner = po;
 
-            ComponentIndex = componentIndex;
+            ComponentIndex = componentId;
+
+            /* Since the parent being passed in should have already
+             * added an empty nb if one didn't exist it's safe to
+             * pull the first nb. If this value is null then something went
+             * wrong. */
             if (parentNob != null)
             {
-                TryAddRuntimeEmptyNetworkBehaviour(parentNob);
-                SerializedRootNetworkBehaviour = parentNob.NetworkBehaviours[0];
-            }
-            else
-            {
-                SerializedRootNetworkBehaviour = null;
+                /* Try to add an emptyNetworkBehaviour to this objects parent
+                 * if one does not already exist. This is so this networkObject can
+                 * identify it's parent properly. */
+                AddEmptyNetworkBehaviour(parentNob, transform.parent, true);
+
+                if (!transform.parent.TryGetComponent(out NetworkBehaviour parentNb))
+                    NetworkManagerExtensions.LogError($"A NetworkBehaviour is expected to exist on {parentNob.name} but does not.");
+                else
+                    InitializedParentNetworkBehaviour = parentNb;
             }
 
             //Transforms which can be searched for networkbehaviours.
             List<Transform> transformCache = CollectionCaches<Transform>.RetrieveList();
-            SerializedNestedNetworkObjects.Clear();
+            InitializedNestedNetworkObjects.Clear();
 
             transformCache.Add(transform);
             for (int z = 0; z < transformCache.Count; z++)
@@ -849,7 +870,7 @@ namespace FishNet.Object
                          * add a scene object under an instantiated, even though
                          * this almost certainly will break things. */
                         if (IsSceneObject == childNob.IsSceneObject)
-                            SerializedNestedNetworkObjects.Add(childNob);
+                            InitializedNestedNetworkObjects.Add(childNob);
                     }
                     else
                     {
@@ -869,24 +890,24 @@ namespace FishNet.Object
                 nbCache.AddRange(nbCache2);
             }
 
-            /* If application is running and there are no networkbehaviours
-             * then add EmptyNetworkBehaviour. This will allow users to update
-             * parents without having to add the component themselves when
-             * no other networkBehaviours are present.
-             *
-             * Only perform this action when RUNNING so that EmptyNetworkBehaviour
-             * is not added at edit time, because the user might add their own
-             * NetworkBehaviours thus not needing to add EmptyNetworkBehaviour. */
-            TryAddRuntimeEmptyNetworkBehaviour(this, nbCache);
+            /* If there's no NBs then add an empty one.
+             * All NetworkObjects must have at least 1 NetworkBehaviour
+             * to allow nesting. */
+            if (nbCache.Count == 0)
+            {
+                NetworkBehaviour addedNb = AddEmptyNetworkBehaviour(this, transform, false);
+                if (addedNb != null)
+                    nbCache.Add(addedNb);
+            }
 
             //Copy to array.
             int nbCount = nbCache.Count;
-            NetworkBehaviours = new NetworkBehaviour[nbCount];
             //
             for (int i = 0; i < nbCount; i++)
             {
-                NetworkBehaviours[i] = nbCache[i];
-                NetworkBehaviours[i].SerializeComponents(this, (byte)i);
+                NetworkBehaviour nb = nbCache[i];
+                NetworkBehaviours.Add(nb);
+                nb.SerializeComponents(this, (byte)i);
             }
 
             CollectionCaches<Transform>.Store(transformCache);
@@ -894,10 +915,10 @@ namespace FishNet.Object
             CollectionCaches<NetworkBehaviour>.Store(nbCache2);
 
             //Tell children nobs to update their NetworkBehaviours.
-            foreach (NetworkObject item in SerializedNestedNetworkObjects)
+            foreach (NetworkObject item in InitializedNestedNetworkObjects)
             {
-                componentIndex++;
-                item.UpdateNetworkBehaviours(this, ref componentIndex);
+                componentId++;
+                item.SetInitializedValues(this, ref componentId);
             }
 
             //Update global states to that of this one.
@@ -905,37 +926,37 @@ namespace FishNet.Object
         }
 
         /// <summary>
-        /// Adds EmptyNetworkBehaviour to a NetworkObject at runtime if the NetworkObject has no NetworkBehaviours.
+        /// Adds EmptyNetworkBehaviour a target if it has no NetworkBehaviours. Updates a NetworkObject to contain the added behaviour.
         /// </summary>
-        private void TryAddRuntimeEmptyNetworkBehaviour(NetworkObject nob, List<NetworkBehaviour> cache)
+        /// <typeparam name="addToNetworkBehaviours">If true an added NetworkBehaviour will be adeded to NetworkBehaviours, and initialized.</typeparam>
+        /// <returns>Added NetworkBehaviour, or first NetworkBehaviour on the target if adding was not required.</returns>
+        private NetworkBehaviour AddEmptyNetworkBehaviour(NetworkObject nob, Transform target, bool addToNetworkBehaviours)
         {
-            if (cache.Count != 0)
-                return;
-            if (!ApplicationState.IsPlaying())
-                return;
+            NetworkBehaviour result;
+            //Add to target if it does not have a NB yet.
+            if (!target.TryGetComponent(out result))
+            {
+                //Already at maximum.
+                if (nob.NetworkBehaviours.Count == NetworkBehaviour.MAXIMUM_NETWORKBEHAVIOURS)
+                {
+                    Debug.LogError($"NetworkObject {this.ToString()} already has a maximum of {NetworkBehaviour.MAXIMUM_NETWORKBEHAVIOURS}. {nameof(EmptyNetworkBehaviour)} cannot be added. Nested spawning will likely fail for this object.");
+                    return null;
+                }
 
-            cache.Add(nob.gameObject.AddComponent<EmptyNetworkBehaviour>());
-        }
+                result = target.gameObject.AddComponent<EmptyNetworkBehaviour>();
+                if (addToNetworkBehaviours)
+                {
+                    nob.NetworkBehaviours.Add(result);
+                    result.SerializeComponents(nob, (byte)(nob.NetworkBehaviours.Count - 1));
+                }
+            }
 
-        /// <summary>
-        /// Adds EmptyNetworkBehaviour to a NetworkObject at runtime if the NetworkObject has no NetworkBehaviours.
-        /// </summary>
-        private void TryAddRuntimeEmptyNetworkBehaviour(NetworkObject nob)
-        {
-            if (nob.NetworkBehaviours.Length != 0)
-                return;
-            if (!ApplicationState.IsPlaying())
-                return;
-            if (nob.NetworkBehaviours.Length == 0)
-                nob.NetworkBehaviours = Array.Empty<NetworkBehaviour>();
-
-            nob.gameObject.AddComponent<EmptyNetworkBehaviour>();
+            return result;
         }
 
         /// <summary>
         /// Called after all data is synchronized with this NetworkObject.
         /// </summary>
-        
         internal void Initialize(bool asServer, bool invokeSyncTypeCallbacks)
         {
             SetInitializedStatus(true, asServer);
@@ -950,7 +971,7 @@ namespace FishNet.Object
             Deinitialize_Prediction(asServer);
 
             InvokeStopCallbacks(asServer, true);
-            for (int i = 0; i < NetworkBehaviours.Length; i++)
+            for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].Deinitialize(asServer);
 
             if (asServer)
@@ -979,7 +1000,7 @@ namespace FishNet.Object
         /// </summary>
         public void ResetState(bool asServer)
         {
-            int count = NetworkBehaviours.Length;
+            int count = NetworkBehaviours.Count;
             for (int i = 0; i < count; i++)
                 NetworkBehaviours[i].ResetState(asServer);
 
@@ -1015,21 +1036,19 @@ namespace FishNet.Object
         /// Gives ownership to newOwner.
         /// </summary>
         /// <param name="newOwner"></param>
-        
         public void GiveOwnership(NetworkConnection newOwner) => GiveOwnership(newOwner, asServer: true, includeNested: false);
 
         /// <summary>
         /// Gives ownership to newOwner.
         /// </summary>
         /// <param name="newOwner"></param>
-        
         public void GiveOwnership(NetworkConnection newOwner, bool asServer) => GiveOwnership(newOwner, asServer, includeNested: false);
 
         /// <summary>
         /// Gives ownership to newOwner.
         /// </summary>
         /// <param name="newOwner"></param>
-         //Remove at --- In V5 make IncludeNested required.
+        //Remove at --- In V5 make IncludeNested required.
         internal void GiveOwnership(NetworkConnection newOwner, bool asServer, bool includeNested = false)
         {
             /* Additional asServer checks. */
@@ -1116,7 +1135,6 @@ namespace FishNet.Object
             }
         }
 
-
         /// <summary>
         /// Initializes a predicted object for client.
         /// </summary>
@@ -1125,7 +1143,6 @@ namespace FishNet.Object
             NetworkManager = manager;
             PredictedSpawner = predictedSpawner;
         }
-
 
         /// <summary>
         /// Initializes a predicted object for client.
@@ -1164,7 +1181,6 @@ namespace FishNet.Object
         /// <summary>
         /// Returns changed properties between this transform and values.
         /// </summary>
-        
         internal TransformPropertiesFlag GetTransformChanges(TransformProperties stp)
         {
             Transform t = transform;
@@ -1174,7 +1190,6 @@ namespace FishNet.Object
         /// <summary>
         /// Returns changed properties between this transform and a prefab.
         /// </summary>
-        
         internal TransformPropertiesFlag GetTransformChanges(GameObject prefab)
         {
             Transform prefabT = prefab.transform;
@@ -1196,8 +1211,7 @@ namespace FishNet.Object
 
             return tpf;
         }
-        
-        
+
         /// <summary>
         /// Sets IsNested and returns the result.
         /// </summary>
@@ -1228,8 +1242,7 @@ namespace FishNet.Object
         /// </summary>
         internal void SerializeTransformProperties()
         {
-            SerializedTransformProperties = new TransformProperties(
-                transform.localPosition, transform.localRotation, transform.localScale);
+            SerializedTransformProperties = new(transform.localPosition, transform.localRotation, transform.localScale);
         }
 
         #region Editor.
@@ -1282,7 +1295,6 @@ namespace FishNet.Object
             _editorOwnerId = (Owner == null) ? -1 : Owner.ClientId;
         }
 #endif
-        
         #endregion
     }
 }

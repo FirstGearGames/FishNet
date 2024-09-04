@@ -45,23 +45,23 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// List of all object pools.
         /// </summary>
-        private List<PoolData> _pools = new List<PoolData>();
+        private List<PoolData> _pools = new();
         /// <summary>
         /// Holds transform information for categories of pooled objects. Used to sort pooled objects for easier hierarchy navigation.
         /// </summary>
-        private Dictionary<string, Transform> _categoryChildren = new Dictionary<string, Transform>();
+        private Dictionary<string, Transform> _categoryChildren = new();
         /// <summary>
         /// Stores which PoolData prefabs are using.
         /// </summary>
-        private Dictionary<GameObject, PoolData> _poolPrefabs = new Dictionary<GameObject, PoolData>();
+        private Dictionary<GameObject, PoolData> _poolPrefabs = new();
         /// <summary>
         /// Stores which Pooldata retrieved objects belong to.
         /// </summary>
-        private Dictionary<GameObject, PoolData> _activeObjects = new Dictionary<GameObject, PoolData>();
+        private Dictionary<GameObject, PoolData> _activeObjects = new();
         /// <summary>
         /// Objects which will be stored after a delay.
         /// </summary>
-        private Dictionary<GameObject, DelayedStoreData> _delayedStoreObjects = new Dictionary<GameObject, DelayedStoreData>();
+        private Dictionary<GameObject, DelayedStoreData> _delayedStoreObjects = new();
         #endregion
 
         private void Awake()
@@ -105,7 +105,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
                  * because then the pool would get recreated. */
                 if (_delayedStoreObjects.Count > 0)
                 {
-                    List<GameObject> keysToRemove = new List<GameObject>();
+                    List<GameObject> keysToRemove = new();
                     foreach (KeyValuePair<GameObject, DelayedStoreData> item in _delayedStoreObjects)
                     {
                         if (Time.time >= item.Value.StoreTime)
@@ -171,7 +171,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
             //Destory all children.
             transform.DestroyChildren(false);
 
-            WaitForEndOfFrame endOfFrame = new WaitForEndOfFrame();
+            WaitForEndOfFrame endOfFrame = new();
             while (transform.childCount > 0)
                 yield return endOfFrame;
 
@@ -179,7 +179,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
             if (destroyActive)
             {
                 //Make a new list to prevent collection from being modified.
-                List<GameObject> objects = new List<GameObject>();
+                List<GameObject> objects = new();
                 foreach (KeyValuePair<GameObject, PoolData> value in _activeObjects)
                     objects.Add(value.Key);
                 //Go through collection.
@@ -468,7 +468,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         }
         private void StoreInternal(GameObject instantiatedObject, float delay, bool parentPooler = true)
         {
-            _delayedStoreObjects[instantiatedObject] = new DelayedStoreData(Time.time + delay, parentPooler);
+            _delayedStoreObjects[instantiatedObject] = new(Time.time + delay, parentPooler);
         }
         /// <summary>
         /// Returns an object to it's pool.
@@ -559,7 +559,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
             }
 
             //Make a new pool.
-            PoolData pool = new PoolData(prefab, _dataExpirationDelay);
+            PoolData pool = new(prefab, _dataExpirationDelay);
 
             /* Check if the poolObject has a name in the scene.
              * If it does then the object is spawned. If not
