@@ -392,8 +392,9 @@ namespace FishNet.Managing.Predicting
                 uint serverTick = sp.ServerTick;
 
                 /* If client has a low frame rate
-                 * then limit the number of reconciles to prevent further performance loss. */
-                if (_networkManager.TimeManager.LowFrameRate)
+                 * then limit the number of reconciles to prevent further performance loss.
+                 * Wait 2 seconds for client to achieve a 'not low framerate'.*/
+                if (_networkManager.TimeManager.LowFrameRate && _networkManager.TimeManager.ClientUptime > 2f)
                 {
                     /* Limit 3 drops a second. DropValue will be roughly the same
                      * as every 330ms. */

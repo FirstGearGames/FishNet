@@ -1472,6 +1472,7 @@ namespace FishNet.Serializing
         public T Read<T>()
         {
             Func<Reader, T> del = GenericReader<T>.Read;
+            
             if (del == null)
             {
                 NetworkManager.LogError($"Read method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.");

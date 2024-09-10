@@ -4,9 +4,9 @@ using System;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
+
 namespace FishNet.Serializing
 {
-
     /// <summary>
     /// Used to write generic types.
     /// </summary>
@@ -17,19 +17,24 @@ namespace FishNet.Serializing
         /// <summary>
         /// True if this type has a custom writer.
         /// </summary>
-        private static bool _hasCustomSerializer;
+        internal static bool HasCustomSerializer;
 
         public static void SetWrite(Action<Writer, T> value)
         {
             /* If a custom serializer has already been set then exit method
              * to not overwrite serializer. */
-            if (_hasCustomSerializer)
+            if (HasCustomSerializer)
                 return;
 
+            bool isGenerated = value.Method.Name.StartsWith(UtilityConstants.GeneratedWriterPrefix);
+
+            //If not generated then unset any generated delta serializer.
+            if (!isGenerated && GenericDeltaWriter<T>.HasCustomSerializer)
+                GenericDeltaWriter<T>.Write = null;
+
             //Set has custom serializer if value being used is not a generated method.
-            _hasCustomSerializer = !(value.Method.Name.StartsWith(UtilityConstants.GeneratedWriterPrefix));
+            HasCustomSerializer = !isGenerated;
             Write = value;
         }
     }
-
 }

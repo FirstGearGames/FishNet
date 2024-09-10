@@ -1,4 +1,4 @@
-﻿#if FISHNET_STABLE_MODE
+﻿#if !FISHNET_STABLE_MODE
 using FishNet.CodeGenerating;
 using FishNet.Documenting;
 using FishNet.Managing;
@@ -131,10 +131,6 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private T _initialValue;
         /// <summary>
-        /// Previous value on the client.
-        /// </summary>
-        private T _previousClientValue;
-        /// <summary>
         /// Current value on the server, or client.
         /// </summary>
         [SerializeField]
@@ -177,7 +173,7 @@ namespace FishNet.Object.Synchronizing
         public void SetInitialValues(T value)
         {
             _initialValue = value;
-            UpdateValues(value, true);
+            UpdateValues(value);
 
             if (base.IsInitialized)
                 _valueSetAfterInitialized = true;
@@ -186,11 +182,8 @@ namespace FishNet.Object.Synchronizing
         /// Sets current and previous values.
         /// </summary>
         /// <param name="next"></param>
-        private void UpdateValues(T next, bool updateClient)
+        private void UpdateValues(T next)
         {
-            if (updateClient)
-                _previousClientValue = next;
-
             //If network initialized then update interpolator.
             if (base.IsNetworkInitialized)
                 _interpolator.Update(_value);
@@ -245,7 +238,7 @@ namespace FishNet.Object.Synchronizing
                 if (!isNetworkInitialized)
                 {
                     T prev = _value;
-                    UpdateValues(nextValue, false);
+                    UpdateValues(nextValue);
                     //Still call invoke because change will be cached for when the network initializes.
                     InvokeOnChange(prev, _value, calledByUser);
                 }
@@ -255,7 +248,7 @@ namespace FishNet.Object.Synchronizing
                         return;
 
                     T prev = _value;
-                    UpdateValues(nextValue, false);
+                    UpdateValues(nextValue);
                     InvokeOnChange(prev, _value, asServerInvoke);
                 }
 
@@ -268,16 +261,16 @@ namespace FishNet.Object.Synchronizing
                  * but this has been changed because clients may want
                  * to update values locally while occasionally
                  * letting the syncvar adjust their side. */
-                T prev = _previousClientValue;
+                T prev = _value;
                 if (Comparers.EqualityCompare(prev, nextValue))
                     return;
                 /* If also server do not update value.
                  * Server side has say of the current value. */
-                if (base.NetworkManager.IsServerStarted)
-                    _previousClientValue = nextValue;
-                /* If server is not started then update both. */
-                else
-                    UpdateValues(nextValue, true);
+                /* Only update value if not server. We do not want
+                 * clientHost overwriting servers current with what
+                 * they just received.*/
+                if (!base.NetworkManager.IsServerStarted)
+                    UpdateValues(nextValue);
 
                 InvokeOnChange(prev, nextValue, calledByUser);
             }
@@ -441,7 +434,6 @@ namespace FishNet.Object.Synchronizing
                 (!asServer && base.NetworkBehaviour.IsDeinitializing))
             {
                 _value = _initialValue;
-                _previousClientValue = _initialValue;
                 _valueSetAfterInitialized = false;
             }
         }

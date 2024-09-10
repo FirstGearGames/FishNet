@@ -226,6 +226,19 @@ namespace FishNet.Object
         /// Do not read this value directly other than when being used within GetLastCreatedTick().
         /// </summary>
         private uint _lastCreatedTick = TimeManager.UNSET_TICK;
+        /// <summary>
+        /// Last values when checking for transform changes since previous tick.
+        /// </summary>
+        private Vector3 _lastTransformPosition;
+        /// <summary>
+        /// Last values when checking for transform changes since previous tick.
+        /// </summary>
+        private Quaternion _lastTransformRotation;
+        /// <summary>
+        /// Last values when checking for transform changes since previous tick.
+        /// </summary>
+        private Vector3 _lastTransformScale;
+
         #endregion
 
         #region Consts.
@@ -441,49 +454,37 @@ namespace FishNet.Object
             writer.Store();
         }
 
-        //    /// <summary> 
-        //    /// Returns if there is a chance the transform may change after the tick.
-        //    /// </summary>
-        //    /// <returns></returns>
-        //    protected internal bool PredictedTransformMayChange()
-        //    {
-        //        if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
-        //            return false;
+        /// <summary> 
+        /// Returns if there is a chance the transform may change after the tick.
+        /// </summary>
+        /// <returns></returns>
+        private bool TransformChanged()
+        {
+            if (TimeManager.PhysicsMode == PhysicsMode.Disabled)
+                return false;
 
-        //        if (!_predictionInitialized)
-        //        {
-        //            _predictionInitialized = true;
-        //            _predictionRigidbody = GetComponentInParent<Rigidbody>();
-        //            _predictionRigidbody2d = GetComponentInParent<Rigidbody2D>();
-        //        }
+            /* Use distance when checking if changed because rigidbodies can twitch
+             * or move an extremely small amount. These small moves are not worth
+             * resending over because they often fix themselves each frame. */
+            float changeDistance = 0.000004f;
 
-        //        /* Use distance when checking if changed because rigidbodies can twitch
-        //* or move an extremely small amount. These small moves are not worth
-        //* resending over because they often fix themselves each frame. */
-        //        float changeDistance = 0.000004f;
+            bool anyChanged = false;
+            anyChanged |= (transform.position - _lastTransformPosition).sqrMagnitude > changeDistance;
+            if (!anyChanged)
+                anyChanged |= (transform.rotation.eulerAngles - _lastTransformRotation.eulerAngles).sqrMagnitude > changeDistance;
+            if (!anyChanged)
+                anyChanged |= (transform.localScale - _lastTransformScale).sqrMagnitude > changeDistance;
 
-        //        bool positionChanged = (transform.position - _lastMayChangePosition).sqrMagnitude > changeDistance;
-        //        bool rotationChanged = (transform.rotation.eulerAngles - _lastMayChangeRotation.eulerAngles).sqrMagnitude > changeDistance;
-        //        bool scaleChanged = (transform.localScale - _lastMayChangeScale).sqrMagnitude > changeDistance;
-        //        bool transformChanged = (positionChanged || rotationChanged || scaleChanged);
-        //        /* Returns true if transform.hasChanged, or if either
-        //* of the rigidbodies have velocity. */
-        //        bool changed = (
-        //            transformChanged ||
-        //            (_predictionRigidbody != null && (_predictionRigidbody.velocity != Vector3.zero || _predictionRigidbody.angularVelocity != Vector3.zero)) ||
-        //            (_predictionRigidbody2d != null && (_predictionRigidbody2d.velocity != Vector2.zero || _predictionRigidbody2d.angularVelocity != 0f))
-        //            );
+            //If transform changed update last values.
+            if (anyChanged)
+            {
+                _lastTransformPosition = transform.position;
+                _lastTransformRotation = transform.rotation;
+                _lastTransformScale = transform.localScale;
+            }
 
-        //        //If transform changed update last values.
-        //        if (transformChanged)
-        //        {
-        //            _lastMayChangePosition = transform.position;
-        //            _lastMayChangeRotation = transform.rotation;
-        //            _lastMayChangeScale = transform.localScale;
-        //        }
-
-        //        return changed;
-        //    }
+            return anyChanged;
+        }
 
         /// <summary>
         /// Returns if the tick provided is the last tick to provide created data.
@@ -799,8 +800,7 @@ namespace FishNet.Object
             replicatesHistory.Add(data);
             //Check to reset resends.
             bool isDefault = isDefaultDel.Invoke(data);
-            bool mayChange = false; // PredictedTransformMayChange();
-            bool resetResends = (mayChange || !isDefault);
+            bool resetResends = (!isDefault || TransformChanged());
 
             byte redundancyCount = PredictionManager.RedundancyCount;
 
@@ -828,7 +828,7 @@ namespace FishNet.Object
             //Owner always replicates with new data.
             del.Invoke(data, ReplicateState.CurrentCreated, channel);
         }
-
+        
         /// <summary>
         /// Returns the DeltaSerializeOption to use for the tick.
         /// </summary>
@@ -1275,14 +1275,13 @@ namespace FishNet.Object
         /// </summary>
         public void Reconcile_Reader<T>(PooledReader reader, ref T lastReconciledata, Channel channel) where T : IReconcileData
         {
+            uint tick = (IsOwner) ? PredictionManager.ClientStateTick : PredictionManager.ServerStateTick;
 //#if !FISHNET_STABLE_MODE
 #if DO_NOT_USE
             T newData = reader.ReadDeltaReconcile(lastReconciledata);
 #else
             T newData = reader.ReadReconcile<T>();
 #endif
-
-            uint tick = (IsOwner) ? PredictionManager.ClientStateTick : PredictionManager.ServerStateTick;
             //Do not process if an old state.
             if (tick < _lastReadReconcileTick)
                 return;

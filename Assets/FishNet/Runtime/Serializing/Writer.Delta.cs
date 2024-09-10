@@ -313,6 +313,8 @@ namespace FishNet.Serializing
                 unsignedDifference = (valueA - valueB);
 
             UDeltaPrecisionType result = GetDeltaPrecisionType(unsignedDifference, unsigned: true);
+            if (bIsLarger && result != UDeltaPrecisionType.Unset)
+                result |= UDeltaPrecisionType.NextValueIsLarger;
 
             return result;
         }
@@ -429,6 +431,8 @@ namespace FishNet.Serializing
                 unsignedDifference = (valueA - valueB);
 
             UDeltaPrecisionType result = GetDeltaPrecisionType(unsignedDifference, unsigned: true);
+            if (bIsLarger && result != UDeltaPrecisionType.Unset)
+                result |= UDeltaPrecisionType.NextValueIsLarger;
 
             return result;
         }
@@ -510,61 +514,24 @@ namespace FishNet.Serializing
         [DefaultDeltaWriter]
         public bool WriteDeltaVector2(Vector2 valueA, Vector2 valueB)
         {
-            float difference;
-            UDeltaPrecisionType dpt;
-            DeltaVector2Type dvt = DeltaVector2Type.Unset;
-            const bool unsigned = true;
+            //TODO Fit as many flags into a byte as possible for pack levels of each axis rather than 1 per axis.
+            byte allFlags = 0;
 
-            _reservedLengthWriter.Initialize(this, VECTOR2_FLAG_BYTES);
+            int startPosition = Position;
+            Skip(1);
 
-            dpt = GetUDeltaPrecisionType(valueA.x, valueB.x, out float xDifference);
-            if (dpt != UDeltaPrecisionType.Unset)
+            if (WriteUDeltaSingle(valueA.x, valueB.x))
+                allFlags += 1;
+            if (WriteUDeltaSingle(valueA.y, valueB.y))
+                allFlags += 2;
+
+            if (allFlags != 0)
             {
-                switch (dpt)
-                {
-                    case UDeltaPrecisionType.UInt8:
-                        dvt |= DeltaVector2Type.XUInt8;
-                        break;
-                    case UDeltaPrecisionType.UInt16:
-                        dvt |= DeltaVector2Type.XUInt16;
-                        break;
-                    default:
-                        dvt |= DeltaVector2Type.XUInt32;
-                        break;
-                }
-
-                if (dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger))
-                    dvt |= DeltaVector2Type.XNextIsLarger;
-
-                WriteDeltaSingle(dpt, xDifference, unsigned);
+                InsertUInt8Unpacked(allFlags, startPosition);
+                return true;
             }
 
-            dpt = GetUDeltaPrecisionType(valueA.y, valueB.y, out float yDifference);
-            if (dpt != UDeltaPrecisionType.Unset)
-            {
-                switch (dpt)
-                {
-                    case UDeltaPrecisionType.UInt8:
-                        dvt |= DeltaVector2Type.YUInt8;
-                        break;
-                    case UDeltaPrecisionType.UInt16:
-                        dvt |= DeltaVector2Type.YUInt16;
-                        break;
-                    default:
-                        dvt |= DeltaVector2Type.YUInt32;
-                        break;
-                }
-
-                if (dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger))
-                    dvt |= DeltaVector2Type.YNextIsLarger;
-
-                WriteDeltaSingle(dpt, yDifference, unsigned);
-            }
-
-            Debug.Log("V2 Write " + dvt);
-            
-            bool written = _reservedLengthWriter.WriteLengthOrRemove((byte)dvt);
-            return written;
+            return false;
         }
 
         /// <summary>
@@ -573,75 +540,26 @@ namespace FishNet.Serializing
         [DefaultDeltaWriter]
         public bool WriteDeltaVector3(Vector3 valueA, Vector3 valueB)
         {
-            float difference;
-            UDeltaPrecisionType dpt;
-            DeltaVector3Type dvt = DeltaVector3Type.Unset;
-            const bool unsigned = false;
+            //TODO Fit as many flags into a byte as possible for pack levels of each axis rather than 1 per axis.
+            byte allFlags = 0;
 
-            _reservedLengthWriter.Initialize(this, VECTOR3_FLAG_BYTES);
+            int startPosition = Position;
+            Skip(1);
 
-            //X
-            dpt = GetSDeltaPrecisionType(valueA.x, valueB.x, out difference);
-            if (dpt != UDeltaPrecisionType.Unset)
+            if (WriteUDeltaSingle(valueA.x, valueB.x))
+                allFlags += 1;
+            if (WriteUDeltaSingle(valueA.y, valueB.y))
+                allFlags += 2;
+            if (WriteUDeltaSingle(valueA.z, valueB.z))
+                allFlags += 4;
+
+            if (allFlags != 0)
             {
-                switch (dpt)
-                {
-                    case UDeltaPrecisionType.UInt8:
-                        dvt |= DeltaVector3Type.XInt8;
-                        break;
-                    case UDeltaPrecisionType.UInt16:
-                        dvt |= DeltaVector3Type.XInt16;
-                        break;
-                    case UDeltaPrecisionType.UInt32:
-                        dvt |= DeltaVector3Type.XInt32;
-                        break;
-                }
-
-                WriteDeltaSingle(dpt, difference, unsigned);
+                InsertUInt8Unpacked(allFlags, startPosition);
+                return true;
             }
 
-            //Z
-            dpt = GetSDeltaPrecisionType(valueA.z, valueB.z, out difference);
-            if (dpt != UDeltaPrecisionType.Unset)
-            {
-                switch (dpt)
-                {
-                    case UDeltaPrecisionType.UInt8:
-                        dvt |= DeltaVector3Type.ZInt8;
-                        break;
-                    case UDeltaPrecisionType.UInt16:
-                        dvt |= DeltaVector3Type.ZInt16;
-                        break;
-                    case UDeltaPrecisionType.UInt32:
-                        dvt |= DeltaVector3Type.ZInt32;
-                        break;
-                }
-
-                WriteDeltaSingle(dpt, difference, unsigned);
-            }
-
-            //Intentionally out of order. Y only supports 1 and 4 bytes to get all flags into 1 byte.
-            //Y
-            dpt = GetSDeltaPrecisionType(valueA.y, valueB.y, out difference);
-            if (dpt != UDeltaPrecisionType.Unset)
-            {
-                switch (dpt)
-                {
-                    case UDeltaPrecisionType.UInt8:
-                        dvt |= DeltaVector3Type.YInt8;
-                        break;
-                    default:
-                        dvt |= DeltaVector3Type.YInt32;
-                        break;
-                }
-
-                WriteDeltaSingle(dpt, difference, unsigned);
-            }
-
-            Debug.Log("V3 Write " + dvt + $"  --  X {valueB.x}.  X Change {valueB.x - valueA.x}");
-
-            bool written = _reservedLengthWriter.WriteLengthOrRemove((byte)dvt);
-            return written;
+            return false;
         }
         #endregion
 
@@ -715,6 +633,7 @@ namespace FishNet.Serializing
         public bool WriteDelta<T>(T prev, T next, DeltaSerializerOption option)
         {
             Func<Writer, T, T, DeltaSerializerOption, bool> del = GenericDeltaWriter<T>.Write;
+
             if (del == null)
             {
                 NetworkManager.LogError($"Write delta method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.");
