@@ -172,11 +172,6 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private bool _detach;
         /// <summary>
-        /// True if were an owner of the NetworkObject during PreTick.
-        /// This is only used for performance gains.
-        /// </summary>
-        private bool _ownerOnPretick;
-        /// <summary>
         /// True if Initialized has been called and settings have not been reset.
         /// </summary>
         private InitializeType _initializeType = InitializeType.Unset;
@@ -620,7 +615,7 @@ namespace FishNet.Object.Prediction
                 return;
 
             TickTransformProperties ttp = _transformProperties.Peek();
-            TransformPropertiesFlag smoothedProperties = (_ownerOnPretick) ? _ownerSmoothedProperties : _spectatorSmoothedProperties;
+            TransformPropertiesFlag smoothedProperties = (_networkObject.IsOwner) ? _ownerSmoothedProperties : _spectatorSmoothedProperties;
             _moveRates.MoveWorldToTarget(_graphicalObject, ttp.Properties, smoothedProperties, (delta * _movementMultiplier));
 
             float tRemaining = _moveRates.TimeRemaining;
