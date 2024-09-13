@@ -2328,7 +2328,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets synchronized values based on value.
         /// </summary>
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = true)]
         private void ServerSetSynchronizedProperties(SynchronizedProperty value)
         {
             if (!_clientAuthoritative)
@@ -2337,20 +2337,15 @@ namespace FishNet.Component.Transforming
                 return;
             }
 
-            SetSynchronizedPropertiesInternal(value);
             ObserversSetSynchronizedProperties(value);
         }
 
         /// <summary>
         /// Sets synchronized values based on value.
         /// </summary>
-        [ObserversRpc(BufferLast = true)]
+        [ObserversRpc(BufferLast = true, RunLocally = true)]
         private void ObserversSetSynchronizedProperties(SynchronizedProperty value)
         {
-            //Would have already run on server if host.
-            if (base.IsServerInitialized)
-                return;
-
             SetSynchronizedPropertiesInternal(value);
         }
 
