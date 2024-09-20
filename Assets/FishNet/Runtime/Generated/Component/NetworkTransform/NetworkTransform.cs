@@ -2306,23 +2306,28 @@ namespace FishNet.Component.Transforming
         /// <param name="value">Properties to synchronize.</param>
         public void SetSynchronizedProperties(SynchronizedProperty value)
         {
-            /* Make sure permissions are proper to change values.
-             * Let the server override client auth.
-             *
-             * Can send if server.
-             * Or owner + client auth.
-             */
-            bool canSend = (base.IsServerInitialized || (_clientAuthoritative && base.IsOwner));
-
-            if (!canSend)
-                return;
-
-            //If server send out observerRpc.
+            //If sending from the server.
             if (base.IsServerInitialized)
-                ObserversSetSynchronizedProperties(value);
-            //Otherwise send to the server.
-            else
+            {
+                //If no owner, or not client auth.
+                if (base.HasAuthority || !_clientAuthoritative)
+                    ObserversSetSynchronizedProperties(value);
+                else
+                    return;
+            }
+            //Sending from client.
+            else if (_clientAuthoritative && base.IsOwner)
+            {
                 ServerSetSynchronizedProperties(value);
+            }
+            //Cannot change.
+            else
+            {
+                return;
+            }
+
+            //Update locally.
+            SetSynchronizedPropertiesInternal(value);
         }
 
         /// <summary>
@@ -2338,19 +2343,16 @@ namespace FishNet.Component.Transforming
             }
 
             SetSynchronizedPropertiesInternal(value);
+            //Send to observers.
             ObserversSetSynchronizedProperties(value);
         }
 
         /// <summary>
         /// Sets synchronized values based on value.
         /// </summary>
-        [ObserversRpc(BufferLast = true)]
+        [ObserversRpc(BufferLast = true, ExcludeServer = true)]
         private void ObserversSetSynchronizedProperties(SynchronizedProperty value)
         {
-            //Would have already run on server if host.
-            if (base.IsServerInitialized)
-                return;
-
             SetSynchronizedPropertiesInternal(value);
         }
 
