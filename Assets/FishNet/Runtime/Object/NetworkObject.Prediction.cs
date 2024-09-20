@@ -1,10 +1,13 @@
-﻿using FishNet.Component.Prediction;
+﻿using System;
+using FishNet.Component.Prediction;
 using FishNet.Component.Transforming;
 using FishNet.Managing;
 using FishNet.Managing.Timing;
 using FishNet.Object.Prediction;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
+using FishNet.Connection;
+using FishNet.Managing.Server;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -235,7 +238,6 @@ namespace FishNet.Object
             }
         }
 
-
         /// <summary>
         /// Initializes tick smoothing.
         /// </summary>
@@ -287,7 +289,6 @@ namespace FishNet.Object
             }
         }
 
-
         private void InvokeStartCallbacks_Prediction(bool asServer)
         {
             if (_predictionBehaviours.Count == 0)
@@ -338,19 +339,25 @@ namespace FishNet.Object
                 PredictionSmoother.OnPreReconcile();
         }
 
-
         private void PredictionManager_OnReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
+            /* If still not reconciling then pause rigidbody.
+             * This shouldn't happen unless the user is not calling
+             * reconcile at all. */
             if (!IsObjectReconciling)
             {
                 if (_rigidbodyPauser != null)
                     _rigidbodyPauser.Pause();
+
+                return;
             }
-            else
-            {
-                for (int i = 0; i < _predictionBehaviours.Count; i++)
-                    _predictionBehaviours[i].Reconcile_Client_Start();
-            }
+            
+            /* Tell all prediction behaviours to set/validate their
+             * reconcile data now. This will use reconciles from the server
+             * whenever possible, and local reconciles if a server reconcile
+             * is not available. */
+            for (int i = 0; i < _predictionBehaviours.Count; i++)
+                _predictionBehaviours[i].Reconcile_Client_Start();
         }
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
@@ -366,7 +373,6 @@ namespace FishNet.Object
                 _rigidbodyPauser.Unpause();
             IsObjectReconciling = false;
         }
-
 
         private void PredictionManager_OnReplicateReplay(uint clientTick, uint serverTick)
         {
@@ -408,5 +414,48 @@ namespace FishNet.Object
         /// ResetState for prediction values.
         /// </summary>
         private void ResetState_Prediction(bool asServer) { }
+    }
+
+    /// <summary>
+    /// Place this component on your NetworkManager object to remove ownership of objects for a disconnecting client.
+    /// This prevents any owned object from being despawned when the owner disconnects.
+    /// </summary>
+    public class GlobalPreserveOwnedObjects : MonoBehaviour
+    {
+        private void Awake()
+        {
+            ServerManager sm = GetComponent<ServerManager>();
+            sm.Objects.OnPreDestroyClientObjects += Objects_OnPreDestroyClientObjects;
+        }
+
+        protected virtual void Objects_OnPreDestroyClientObjects(NetworkConnection conn)
+        {
+            foreach (NetworkObject networkObject in conn.Objects)
+                networkObject.RemoveOwnership();
+        }
+    }
+    
+    /// <summary>
+    /// Place this component on NetworkObjects you wish to remove ownership on for a disconnecting owner.
+    /// This prevents the object from being despawned when the owner disconnects.
+    /// </summary>
+    public class NetworkPreserveOwnedObjects : NetworkBehaviour
+    {
+        public override void OnStartServer()
+        {
+            ServerManager.Objects.OnPreDestroyClientObjects += OnPreDestroyClientObjects;
+        }
+
+        public override void OnStopServer()
+        {
+            if (ServerManager != null)
+                ServerManager.Objects.OnPreDestroyClientObjects -= OnPreDestroyClientObjects;
+        }
+
+        private void OnPreDestroyClientObjects(NetworkConnection conn)
+        {
+            if (conn == Owner)
+                RemoveOwnership();
+        }
     }
 }

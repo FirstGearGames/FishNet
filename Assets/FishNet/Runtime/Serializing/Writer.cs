@@ -10,6 +10,7 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using GameKit.Dependencies.Utilities.Types;
 using UnityEngine;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
@@ -1261,9 +1262,8 @@ namespace FishNet.Serializing
         /// <summary>
         /// Writes a replication to the server.
         /// </summary>
-        internal void WriteReplicate<T>(List<T> values, int offset) where T : IReplicateData
+        internal void WriteReplicate<T>(RingBuffer<T> values, int offset) where T : IReplicateData
         {
-            int startLength = Length;
             /* COUNT
              *
              * Each Entry:

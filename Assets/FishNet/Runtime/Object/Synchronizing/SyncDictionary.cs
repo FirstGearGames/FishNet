@@ -15,7 +15,6 @@ namespace FishNet.Object.Synchronizing
     [System.Serializable]
     public class SyncDictionary<TKey, TValue> : SyncBase, IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
     {
-
         #region Types.
         /// <summary>
         /// Information needed to invoke a callback.
@@ -58,6 +57,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         [APIExclude]
         public bool IsReadOnly => false;
+
         /// <summary>
         /// Delegate signature for when SyncDictionary changes.
         /// </summary>
@@ -67,6 +67,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="asServer">True if callback is on the server side. False is on the client side.</param>
         [APIExclude]
         public delegate void SyncDictionaryChanged(SyncDictionaryOperation op, TKey key, TValue value, bool asServer);
+
         /// <summary>
         /// Called when the SyncDictionary changes.
         /// </summary>
@@ -128,6 +129,7 @@ namespace FishNet.Object.Synchronizing
 
         #region Constructors.
         public SyncDictionary(SyncTypeSettings settings = new()) : this(CollectionCaches<TKey, TValue>.RetrieveDictionary(), settings) { }
+
         public SyncDictionary(Dictionary<TKey, TValue> objects, SyncTypeSettings settings = new()) : base(settings)
         {
             Collection = objects;
@@ -195,18 +197,17 @@ namespace FishNet.Object.Synchronizing
         /// <param name="key"></param>
         /// <param name="value"></param>
         [APIExclude]
-        
         private void AddOperation(SyncDictionaryOperation operation, TKey key, TValue value)
         {
             if (!base.IsInitialized)
                 return;
 
             /* asServer might be true if the client is setting the value
-            * through user code. Typically synctypes can only be set
-            * by the server, that's why it is assumed asServer via user code.
-            * However, when excluding owner for the synctype the client should
-            * have permission to update the value locally for use with
-            * prediction. */
+             * through user code. Typically synctypes can only be set
+             * by the server, that's why it is assumed asServer via user code.
+             * However, when excluding owner for the synctype the client should
+             * have permission to update the value locally for use with
+             * prediction. */
             bool asServerInvoke = (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServerStarted);
 
             if (asServerInvoke)
@@ -221,7 +222,6 @@ namespace FishNet.Object.Synchronizing
 
             InvokeOnChange(operation, key, value, asServerInvoke);
         }
-
 
         /// <summary>
         /// Called after OnStartXXXX has occurred.
@@ -241,7 +241,6 @@ namespace FishNet.Object.Synchronizing
             collection.Clear();
         }
 
-
         /// <summary>
         /// Writes all changed values.
         /// Internal use.
@@ -252,8 +251,6 @@ namespace FishNet.Object.Synchronizing
         [APIExclude]
         internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
-            base.WriteDelta(writer, resetSyncTick);
-
             //If sending all then clear changed and write full.
             if (_sendAll)
             {
@@ -263,6 +260,8 @@ namespace FishNet.Object.Synchronizing
             }
             else
             {
+                base.WriteDelta(writer, resetSyncTick);
+
                 //False for not full write.
                 writer.WriteBoolean(false);
                 writer.WriteInt32(_changed.Count);
@@ -273,8 +272,7 @@ namespace FishNet.Object.Synchronizing
                     writer.WriteUInt8Unpacked((byte)change.Operation);
 
                     //Clear does not need to write anymore data so it is not included in checks.
-                    if (change.Operation == SyncDictionaryOperation.Add ||
-                        change.Operation == SyncDictionaryOperation.Set)
+                    if (change.Operation == SyncDictionaryOperation.Add || change.Operation == SyncDictionaryOperation.Set)
                     {
                         writer.Write(change.Key);
                         writer.Write(change.Value);
@@ -288,7 +286,6 @@ namespace FishNet.Object.Synchronizing
                 _changed.Clear();
             }
         }
-
 
         /// <summary>
         /// Writers all values if not initial values.
@@ -314,25 +311,20 @@ namespace FishNet.Object.Synchronizing
             }
         }
 
-
         /// <summary>
         /// Reads and sets the current values for server or client.
         /// </summary>
         [APIExclude]
-        
         internal protected override void Read(PooledReader reader, bool asServer)
         {
-            /* When !asServer don't make changes if server is running.
-            * This is because changes would have already been made on
-            * the server side and doing so again would result in duplicates
-            * and potentially overwrite data not yet sent. */
-            bool asClientAndHost = (!asServer && base.NetworkBehaviour.IsServerStarted);
+            base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
+
             //True to warn if this object was deinitialized on the server.
-            bool deinitialized = (asClientAndHost && !base.OnStartServerCalled);
+            bool deinitialized = (asClientHost && !base.OnStartServerCalled);
             if (deinitialized)
                 base.NetworkManager.LogWarning($"SyncType {GetType().Name} received a Read but was deinitialized on the server. Client callback values may be incorrect. This is a ClientHost limitation.");
 
-            IDictionary<TKey, TValue> collection = (asClientAndHost) ? ClientHostCollection : Collection;
+            IDictionary<TKey, TValue> collection = (asClientHost) ? ClientHostCollection : Collection;
 
             //Clear collection since it's a full write.
             bool fullWrite = reader.ReadBoolean();
@@ -354,6 +346,7 @@ namespace FishNet.Object.Synchronizing
                 {
                     key = reader.Read<TKey>();
                     value = reader.Read<TValue>();
+
                     if (!deinitialized)
                         collection[key] = value;
                 }
@@ -367,18 +360,19 @@ namespace FishNet.Object.Synchronizing
                 else if (operation == SyncDictionaryOperation.Remove)
                 {
                     key = reader.Read<TKey>();
+
                     if (!deinitialized)
                         collection.Remove(key);
                 }
 
-                InvokeOnChange(operation, key, value, false);
+                if (newChangeId)
+                    InvokeOnChange(operation, key, value, false);
             }
 
             //If changes were made invoke complete after all have been read.
-            if (changes > 0)
+            if (newChangeId && changes > 0)
                 InvokeOnChange(SyncDictionaryOperation.Complete, default, default, false);
         }
-
 
         /// <summary>
         /// Invokes OnChanged callback.
@@ -401,7 +395,6 @@ namespace FishNet.Object.Synchronizing
             }
         }
 
-
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
@@ -422,7 +415,6 @@ namespace FishNet.Object.Synchronizing
             }
         }
 
-
         /// <summary>
         /// Adds item.
         /// </summary>
@@ -431,6 +423,7 @@ namespace FishNet.Object.Synchronizing
         {
             Add(item.Key, item.Value);
         }
+
         /// <summary>
         /// Adds key and value.
         /// </summary>
@@ -440,6 +433,7 @@ namespace FishNet.Object.Synchronizing
         {
             Add(key, value, true);
         }
+
         private void Add(TKey key, TValue value, bool asServer)
         {
             if (!base.CanNetworkSetValues(true))
@@ -457,6 +451,7 @@ namespace FishNet.Object.Synchronizing
         {
             Clear(true);
         }
+
         private void Clear(bool asServer)
         {
             if (!base.CanNetworkSetValues(true))
@@ -467,7 +462,6 @@ namespace FishNet.Object.Synchronizing
                 AddOperation(SyncDictionaryOperation.Clear, default, default);
         }
 
-
         /// <summary>
         /// Returns if key exist.
         /// </summary>
@@ -477,12 +471,12 @@ namespace FishNet.Object.Synchronizing
         {
             return Collection.ContainsKey(key);
         }
+
         /// <summary>
         /// Returns if item exist.
         /// </summary>
         /// <param name="item">Item to use.</param>
         /// <returns>True if found.</returns>
-        
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
             return TryGetValue(item.Key, out TValue value) && EqualityComparer<TValue>.Default.Equals(value, item.Value);
@@ -516,7 +510,6 @@ namespace FishNet.Object.Synchronizing
             }
         }
 
-
         /// <summary>
         /// Removes a key.
         /// </summary>
@@ -536,7 +529,6 @@ namespace FishNet.Object.Synchronizing
             return false;
         }
 
-
         /// <summary>
         /// Removes an item.
         /// </summary>
@@ -553,7 +545,6 @@ namespace FishNet.Object.Synchronizing
         /// <param name="key">Key to use.</param>
         /// <param name="value">Variable to output to.</param>
         /// <returns>True if able to output value.</returns>
-        
         public bool TryGetValue(TKey key, out TValue value)
         {
             return Collection.TryGetValueIL2CPP(key, out value);
@@ -640,12 +631,12 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <returns></returns>
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => Collection.GetEnumerator();
+
         /// <summary>
         /// Gets the IEnumerator for the collection.
         /// </summary>
         /// <returns></returns>
         IEnumerator IEnumerable.GetEnumerator() => Collection.GetEnumerator();
-
     }
 }
 #endif

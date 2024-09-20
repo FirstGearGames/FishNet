@@ -267,19 +267,13 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
-        /// Returns if values can be updated.
-        /// </summary>
-        private bool CanSetValues(bool asServer)
-        {
-            return (asServer || !base.NetworkManager.IsServerStarted);
-        }
-
-        /// <summary>
         /// Reads and sets the current values for server or client.
         /// </summary>
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {
+            base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
+
             int changes = reader.ReadInt32();
 
             for (int i = 0; i < changes; i++)
@@ -289,32 +283,43 @@ namespace FishNet.Object.Synchronizing
                 {
                     float next = reader.ReadSingle();
                     float duration = reader.ReadSingle();
-                    if (CanSetValues(asServer))
+
+                    if (canModifyValues)
                     {
                         Paused = false;
                         Remaining = next;
                         Duration = duration;
                     }
-                    
-                    InvokeOnChange(op, -1f, next, asServer);
+
+                    if (newChangeId)
+                        InvokeOnChange(op, -1f, next, asServer);
                 }
                 else if (op == SyncTimerOperation.Pause || op == SyncTimerOperation.PauseUpdated || op == SyncTimerOperation.Unpause)
                 {
-                    UpdatePauseState(op);
+                    if (canModifyValues)
+                        UpdatePauseState(op);
                 }
                 else if (op == SyncTimerOperation.Stop)
                 {
                     float prev = Remaining;
-                    StopTimer_Internal(asServer);
-                    InvokeOnChange(op, prev, 0f, false);
+
+                    if (canModifyValues)
+                        StopTimer_Internal(asServer);
+
+                    if (newChangeId)
+                        InvokeOnChange(op, prev, 0f, false);
                 }
                 //
                 else if (op == SyncTimerOperation.StopUpdated)
                 {
                     float prev = Remaining;
                     float next = reader.ReadSingle();
-                    StopTimer_Internal(asServer);
-                    InvokeOnChange(op, prev, next, asServer);
+
+                    if (canModifyValues)
+                        StopTimer_Internal(asServer);
+
+                    if (newChangeId)
+                        InvokeOnChange(op, prev, next, asServer);
                 }
             }
 
@@ -329,20 +334,19 @@ namespace FishNet.Object.Synchronizing
                 if (op == SyncTimerOperation.PauseUpdated)
                 {
                     next = reader.ReadSingle();
-                    if (CanSetValues(asServer))
-                        Remaining = next;
+                    Remaining = next;
                 }
                 else
                 {
                     next = Remaining;
                 }
 
-                if (CanSetValues(asServer))
-                    Paused = newPauseState;
-                InvokeOnChange(op, prev, next, asServer);
+                Paused = newPauseState;
+                if (newChangeId)
+                    InvokeOnChange(op, prev, next, asServer);
             }
 
-            if (changes > 0)
+            if (newChangeId && changes > 0)
                 InvokeOnChange(SyncTimerOperation.Complete, -1f, -1f, false);
         }
 
@@ -351,9 +355,6 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private void StopTimer_Internal(bool asServer)
         {
-            if (!CanSetValues(asServer))
-                return;
-
             Paused = false;
             Remaining = 0f;
         }

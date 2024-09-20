@@ -423,8 +423,21 @@ namespace FishNet.Object.Synchronizing
         protected internal override void Read(PooledReader reader, bool asServer)
         {
             T value = reader.Read<T>();
+            
+            if (!ReadChangeId(reader))
+                return;
+            
             SetValue(value, false);
+            //TODO this needs to separate invokes from setting values so that syncvar can be written like remainder of synctypes.
         }
+        
+        //SyncVars do not use changeId.
+        [APIExclude]
+        protected override bool ReadChangeId(Reader reader) => true;
+
+        //SyncVars do not use changeId.
+        [APIExclude]
+        protected override void WriteChangeId(PooledWriter writer) { }
 
         /// <summary>
         /// Resets to initialized values.

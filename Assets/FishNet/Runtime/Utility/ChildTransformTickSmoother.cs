@@ -224,7 +224,7 @@ namespace FishNet.Object.Prediction
         public void InitializeNetworked(NetworkObject nob, Transform graphicalObject, bool detach, float teleportDistance, float tickDelta, byte ownerInterpolation, TransformPropertiesFlag ownerSmoothedProperties, byte spectatorInterpolation, TransformPropertiesFlag specatorSmoothedProperties, AdaptiveInterpolationType adaptiveInterpolation)
         {
             ResetState();
-            
+
             _networkObject = nob;
             _spectatorInterpolation = spectatorInterpolation;
             _spectatorSmoothedProperties = specatorSmoothedProperties;
@@ -579,7 +579,7 @@ namespace FishNet.Object.Prediction
 
             _moveRates = MoveRates.GetMoveRates(prevValues, nextValues, duration, teleportT);
             _moveRates.TimeRemaining = duration;
-            
+
             SetMovementMultiplier();
         }
 

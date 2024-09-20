@@ -8,8 +8,6 @@ using UnityEngine;
 
 namespace FishNet.Example.ComponentStateSync
 {
-
-
     /// <summary>
     /// It's very important to exclude this from codegen.
     /// However, whichever value you are synchronizing must not be excluded. This is why the value is outside the StructySync class.
@@ -29,10 +27,12 @@ namespace FishNet.Example.ComponentStateSync
         /// Component to state sync.
         /// </summary>
         public T Component { get; private set; }
+
         /// <summary>
         /// Delegate signature for when the component changes.
         /// </summary>
         public delegate void StateChanged(T component, bool prevState, bool nextState, bool asServer);
+
         /// <summary>
         /// Called when the component state changes.
         /// </summary>
@@ -99,6 +99,7 @@ namespace FishNet.Example.ComponentStateSync
             bool asServer = true;
             OnChange?.Invoke(component, prev, next, asServer);
         }
+
         /// <summary>
         /// Writes all changed values.
         /// </summary>
@@ -128,21 +129,20 @@ namespace FishNet.Example.ComponentStateSync
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {
-            bool nextValue = reader.ReadBoolean();
-            if (base.NetworkManager == null)
-                return;
-
+            base.SetReadArguments(reader, asServer, out bool newChangeId, out bool _, out bool canModifyValues);
+            
             bool prevValue = GetState();
+            bool nextValue = reader.ReadBoolean();
 
             /* When !asServer don't make changes if server is running.
-            * This is because changes would have already been made on
-            * the server side and doing so again would result in duplicates
-            * and potentially overwrite data not yet sent. */
-            bool asClientAndHost = (!asServer && base.NetworkManager.IsServerStarted);
-            if (!asClientAndHost)
+             * This is because changes would have already been made on
+             * the server side and doing so again would result in duplicates
+             * and potentially overwrite data not yet sent. */
+            if (canModifyValues)
                 Component.enabled = nextValue;
 
-            OnChange?.Invoke(Component, prevValue, nextValue, asServer);
+            if (newChangeId)
+                OnChange?.Invoke(Component, prevValue, nextValue, asServer);
         }
 
         /// <summary>

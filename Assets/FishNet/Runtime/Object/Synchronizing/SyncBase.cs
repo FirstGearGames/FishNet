@@ -1,4 +1,5 @@
-﻿using FishNet.CodeGenerating;
+﻿using System;
+using FishNet.CodeGenerating;
 using FishNet.Managing;
 using FishNet.Managing.Timing;
 using FishNet.Serializing;
@@ -41,13 +42,11 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// NetworkManager this uses.
         /// </summary>
-        [MakePublic]
-        internal NetworkManager NetworkManager = null;
+        public NetworkManager NetworkManager = null;
         /// <summary>
         /// NetworkBehaviour this SyncVar belongs to.
         /// </summary>
-        [MakePublic]
-        internal NetworkBehaviour NetworkBehaviour = null;
+        public NetworkBehaviour NetworkBehaviour = null;
         /// <summary>
         /// True if the server side has initialized this SyncType.
         /// </summary>
@@ -70,13 +69,14 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Channel to send on.
         /// </summary>
         internal Channel Channel => _currentChannel;
+
         /// <summary>
         /// Sets a new currentChannel.
         /// </summary>
         /// <param name="channel"></param>
         internal void SetCurrentChannel(Channel channel) => _currentChannel = channel;
         #endregion
-
+        
         #region Private.
         /// <summary>
         /// Sync interval converted to ticks.
@@ -87,30 +87,29 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         private Channel _currentChannel;
         /// <summary>
-        /// Last localTick when full data was written.
+        /// Last changerId read from sender.
         /// </summary>
-        protected uint _lastWriteFullLocalTick;
+        private ushort _lastReadChangeId = UNSET_CHANGE_ID;
         /// <summary>
-        /// Id of the current change since the last full write.
-        /// This is used to prevent duplicates caused by deltas writing after full writes when clients already received the delta in the full write, such as a spawn message.
+        /// Last changeId that was sent to receivers.
         /// </summary>
-        protected uint _changeId;
-        /// <summary>
-        /// Last changeId read.
-        /// </summary>
-        private long _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
+        private ushort _lastWrittenChangeId = UNSET_CHANGE_ID;
         #endregion
 
-        #region Const.
+        #region Consts.
         /// <summary>
-        /// Default value for LastReadDirtyId.
+        /// Value to use when readId is unset.
         /// </summary>
-        private const long DEFAULT_LAST_READ_DIRTYID = -1;
+        private const ushort UNSET_CHANGE_ID = 0;
+        /// <summary>
+        /// Maximum value readId can be before resetting to the beginning.
+        /// </summary>
+        private const ushort MAXIMUM_CHANGE_ID = ushort.MaxValue;
         #endregion
-
 
         #region Constructors
         public SyncBase() : this(new()) { }
+
         public SyncBase(SyncTypeSettings settings)
         {
             Settings = settings;
@@ -125,32 +124,35 @@ namespace FishNet.Object.Synchronizing.Internal
             Settings = settings;
             SetTimeToTicks();
         }
+
         /// <summary>
         /// Updates settings with new values.
         /// </summary>
-        
         public void UpdatePermissions(WritePermission writePermissions, ReadPermission readPermissions)
         {
             UpdatePermissions(writePermissions);
             UpdatePermissions(readPermissions);
         }
+
         /// <summary>
         /// Updates settings with new values.
         /// </summary>
         public void UpdatePermissions(WritePermission writePermissions) => Settings.WritePermission = writePermissions;
+
         /// <summary>
         /// Updates settings with new values.
         /// </summary>
         public void UpdatePermissions(ReadPermission readPermissions) => Settings.ReadPermission = readPermissions;
+
         /// <summary>
         /// Updates settings with new values.
         /// </summary>
-        
         public void UpdateSendRate(float sendRate)
         {
             Settings.SendRate = sendRate;
             SetTimeToTicks();
         }
+
         /// <summary>
         /// Updates settings with new values.
         /// </summary>
@@ -159,6 +161,7 @@ namespace FishNet.Object.Synchronizing.Internal
             CheckChannel(ref channel);
             _currentChannel = channel;
         }
+
         /// <summary>
         /// Updates settings with new values.
         /// </summary>
@@ -187,7 +190,6 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Initializes this SyncBase before user Awake code.
         /// </summary>
-        
         [MakePublic]
         internal void InitializeEarly(NetworkBehaviour nb, uint syncIndex, bool isSyncObject)
         {
@@ -201,7 +203,6 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Called during InitializeLate in NetworkBehaviours to indicate user Awake code has executed.
         /// </summary>
-        
         [MakePublic]
         internal void InitializeLate()
         {
@@ -255,6 +256,7 @@ namespace FishNet.Object.Synchronizing.Internal
             else
                 OnStartClientCalled = true;
         }
+
         /// <summary>
         /// Called before OnStopXXXX has occurred for the NetworkBehaviour.
         /// </summary>
@@ -271,9 +273,9 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// True if can set values and send them over the network.
         /// </summary>
-        /// <param name="warn"></param>
+        /// <param name="log"></param>
         /// <returns></returns>
-        protected bool CanNetworkSetValues(bool warn = true)
+        protected bool CanNetworkSetValues(bool log = true)
         {
             /* If not registered then values can be set
              * since at this point the object is still being initialized
@@ -294,7 +296,7 @@ namespace FishNet.Object.Synchronizing.Internal
             /* If here then server is not active and additional
              * checks must be performed. */
             bool result = (Settings.WritePermission == WritePermission.ClientUnsynchronized) || (Settings.ReadPermission == ReadPermission.ExcludeOwner && NetworkBehaviour.IsOwner);
-            if (!result && warn)
+            if (!result && log)
                 LogServerNotActiveWarning();
 
             return result;
@@ -313,7 +315,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Dirties this Sync and the NetworkBehaviour.
         /// </summary>
         /// <param name="sendRpc">True to send current dirtied values immediately as a RPC. When this occurs values will arrive in the order they are sent and interval is ignored.</param>
-        protected bool Dirty()//bool sendRpc = false)
+        protected bool Dirty() //bool sendRpc = false)
         {
             //if (sendRpc)
             //    NextSyncTick = 0;
@@ -326,9 +328,6 @@ namespace FishNet.Object.Synchronizing.Internal
              * processed. This ensures that data
              * is flushed. */
             bool canDirty = NetworkBehaviour.DirtySyncType();
-            //If first time dirtying increase dirtyId.
-            if (IsDirty != canDirty)
-                _changeId++;
             IsDirty |= canDirty;
 
             return canDirty;
@@ -342,33 +341,88 @@ namespace FishNet.Object.Synchronizing.Internal
         protected bool CanInvokeCallbackAsServer() => (!IsNetworkInitialized || NetworkBehaviour.IsServerStarted);
 
         /// <summary>
-        /// Reads the change Id and returns if changes should be ignored.
+        /// Reads a change Id and returns true if the change is new.
         /// </summary>
-        /// <returns></returns>
-        protected bool ReadChangeId(PooledReader reader)
+        /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
+        protected virtual bool ReadChangeId(Reader reader)
         {
-            bool reset = reader.ReadBoolean();
-            uint id = reader.ReadUInt32();
-            bool ignoreResults = !reset && (id <= _lastReadDirtyId);
+            if (NetworkManager == null)
+            {
+                NetworkManager.LogWarning($"NetworkManager is unexpectedly null during a SyncType read.");
+                return false;
+            }
 
-            _lastReadDirtyId = id;
-            return ignoreResults;
+            bool rolledOver = reader.ReadBoolean();
+            ushort id = reader.ReadUInt16();
+
+            //Only check lastReadId if its not unset.
+            if (_lastReadChangeId != UNSET_CHANGE_ID)
+            {
+                /* If not rolledOver then Id should always be larger
+                 * than the last read. If it's not then the data is
+                 * old.
+                 *
+                 * If Id is smaller then rolledOver should be normal,
+                 * as rolling over means to restart the Id from the lowest
+                 * value. */
+                if (rolledOver)
+                {
+                    if (id >= _lastReadChangeId)
+                        return false;
+                }
+                else
+                {
+                    if (id <= _lastReadChangeId)
+                        return false;
+                }
+            }
+
+            _lastReadChangeId = id;
+            return true;
+        }
+        
+        
+        /// <summary>
+        /// Writes the readId for a change.
+        /// </summary>
+        /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
+        protected virtual void WriteChangeId(PooledWriter writer)
+        {
+            bool rollOver;
+            if (_lastWrittenChangeId >= MAXIMUM_CHANGE_ID)
+            {
+                rollOver = true;
+                _lastWrittenChangeId = UNSET_CHANGE_ID;
+            }
+            else
+            {
+                rollOver = false;
+            }
+            
+            _lastWrittenChangeId++;
+            writer.WriteBoolean(rollOver);
+            writer.WriteUInt16(_lastWrittenChangeId);
         }
 
         /// <summary>
-        /// Writers the current ChangeId, and if it has been reset.
+        /// Returns true if values are being read as clientHost.
         /// </summary>
-        protected void WriteChangeId(PooledWriter writer, bool fullWrite)
+        /// <param name="asServer">True if reading as server.</param>
+        /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
+        protected bool IsReadAsClientHost(bool asServer) => (!asServer && NetworkManager.IsServerStarted);
+
+        /// <summary>
+        /// Outputs values which may be helpful on how to process a read operation.
+        /// </summary>
+        /// <param name="newChangeId">True if the changeId read is not old data.</param>
+        /// <param name="asClientHost">True if being read as clientHost.</param>
+        /// <param name="canModifyValues">True if can modify values from the read, typically when asServer or not asServer and not clientHost.</param>
+        /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
+        protected void SetReadArguments(PooledReader reader, bool asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues)
         {
-            /* Fullwrites do not reset the Id, only
-             * delta changes do. */
-            bool resetId = (!fullWrite && NetworkManager.TimeManager.LocalTick > _lastWriteFullLocalTick);
-            writer.WriteBoolean(resetId);
-            //If to reset Id then do so.
-            if (resetId)
-                _changeId = 0;
-            //Write Id.
-            writer.WriteUInt32(_changeId);
+            newChangeId = ReadChangeId(reader);
+            asClientHost = IsReadAsClientHost(asServer);
+            canModifyValues = (newChangeId && !asClientHost);
         }
 
         /// <summary>
@@ -392,27 +446,27 @@ namespace FishNet.Object.Synchronizing.Internal
                 IsDirty = false;
             }
         }
+
         /// <summary>
         /// True if dirty and enough time has passed to write changes.
         /// </summary>
-        /// <param name="tick"></param>
-        /// <returns></returns>
-        internal bool SyncTimeMet(uint tick)
-        {
-            return (IsDirty && tick >= NextSyncTick);
-        }
+        internal bool IsNextSyncTimeMet(uint tick) => (IsDirty && tick >= NextSyncTick);
+
+        [Obsolete("Use IsNextSyncTimeMet.")] //Remove on V5
+        internal bool SyncTimeMet(uint tick) => IsNextSyncTimeMet(tick);
+
         /// <summary>
         /// Writes current value.
         /// </summary>
         /// <param name="resetSyncTick">True to set the next time data may sync.</param>
-        
         [MakePublic]
         internal protected virtual void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             WriteHeader(writer, resetSyncTick);
         }
+
         /// <summary>
-        /// Writers the header for this SyncType.
+        /// Writes the header for this SyncType.
         /// </summary>
         protected virtual void WriteHeader(PooledWriter writer, bool resetSyncTick = true)
         {
@@ -420,30 +474,28 @@ namespace FishNet.Object.Synchronizing.Internal
                 NextSyncTick = NetworkManager.TimeManager.LocalTick + _timeToTicks;
 
             writer.WriteUInt8Unpacked((byte)SyncIndex);
+            WriteChangeId(writer);
         }
 
         /// <summary>
         /// Indicates that a full write has occurred.
         /// This is called from WriteFull, or can be called manually.
         /// </summary>
-        protected void FullWritten()
-        {
-            _lastWriteFullLocalTick = NetworkManager.TimeManager.LocalTick;
-        }
+        [Obsolete("This method no longer functions. You may remove it from your code.")] //Remove on V5.
+        protected void FullWritten() { }
+
         /// <summary>
         /// Writes all values for the SyncType.
         /// </summary>
-        
         [MakePublic]
-        internal protected virtual void WriteFull(PooledWriter writer)
-        {
-            FullWritten();
-        }
+        internal protected virtual void WriteFull(PooledWriter writer) { }
+
         /// <summary>
         /// Sets current value as server or client through deserialization.
         /// </summary>
         [MakePublic]
         internal protected virtual void Read(PooledReader reader, bool asServer) { }
+
         /// <summary>
         /// Resets initialized values for server and client.
         /// </summary>
@@ -461,8 +513,6 @@ namespace FishNet.Object.Synchronizing.Internal
         {
             if (asServer)
             {
-                _lastWriteFullLocalTick = 0;
-                _changeId = 0;
                 NextSyncTick = 0;
                 SetCurrentChannel(Settings.Channel);
                 IsDirty = false;
@@ -473,13 +523,11 @@ namespace FishNet.Object.Synchronizing.Internal
              * that means the object is deinitializing, and won't have any
              * client observers anyway. Because of this it's safe to reset
              * with asServer true, or false.
-             * 
+             *
              * This change is made to resolve a bug where asServer:false
              * sometimes does not invoke when stopping clientHost while not
              * also stopping play mode. */
-            _lastReadDirtyId = DEFAULT_LAST_READ_DIRTYID;
+            _lastReadChangeId = UNSET_CHANGE_ID;
         }
-
-
     }
 }

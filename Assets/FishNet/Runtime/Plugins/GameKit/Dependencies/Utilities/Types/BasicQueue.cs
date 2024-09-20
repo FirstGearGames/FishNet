@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities
 {
@@ -82,7 +83,10 @@ namespace GameKit.Dependencies.Utilities
         public T Dequeue(bool defaultArrayEntry = true)
         {
             if (_written == 0)
-                throw new($"Queue of type {typeof(T).Name} is empty.");
+            {
+                Debug.LogError($"Queue of type {typeof(T).Name} is empty.");
+                return default;
+            }
 
             T result = Collection[_read];
             if (defaultArrayEntry)

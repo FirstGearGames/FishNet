@@ -12,7 +12,6 @@ using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
-
     internal interface ISyncVar { }
 
     [APIExclude]
@@ -114,6 +113,7 @@ namespace FishNet.Object.Synchronizing
         /// Called when the SyncDictionary changes.
         /// </summary>
         public event OnChanged OnChange;
+
         public delegate void OnChanged(T prev, T next, bool asServer);
         #endregion
 
@@ -178,6 +178,7 @@ namespace FishNet.Object.Synchronizing
             if (base.IsInitialized)
                 _valueSetAfterInitialized = true;
         }
+
         /// <summary>
         /// Sets current and previous values.
         /// </summary>
@@ -190,11 +191,11 @@ namespace FishNet.Object.Synchronizing
 
             _value = next;
         }
+
         /// <summary>
         /// Sets current value and marks the SyncVar dirty when able to. Returns if able to set value.
         /// </summary>
         /// <param name="calledByUser">True if SetValue was called in response to user code. False if from automated code.</param>
-        
         internal void SetValue(T nextValue, bool calledByUser, bool sendRpc = false)
         {
             /* IsInitialized is only set after the script containing this SyncVar
@@ -227,7 +228,7 @@ namespace FishNet.Object.Synchronizing
                 if (!base.CanNetworkSetValues(true))
                     return;
                 /* We will only be this far if the network is not active yet,
-                 * server is active, or client has setting permissions. 
+                 * server is active, or client has setting permissions.
                  * We only need to set asServerInvoke to false if the network
                  * is initialized and the server is not active. */
                 bool asServerInvoke = CanInvokeCallbackAsServer();
@@ -240,7 +241,7 @@ namespace FishNet.Object.Synchronizing
                     T prev = _value;
                     UpdateValues(nextValue);
                     //Still call invoke because change will be cached for when the network initializes.
-                    InvokeOnChange(prev, _value, calledByUser);
+                    InvokeOnChange(prev, _value, asServer: true);
                 }
                 else
                 {
@@ -257,13 +258,27 @@ namespace FishNet.Object.Synchronizing
             //Not called by user.
             else
             {
-                /* Previously clients were not allowed to set values
-                 * but this has been changed because clients may want
-                 * to update values locally while occasionally
-                 * letting the syncvar adjust their side. */
-                T prev = _value;
-                if (Comparers.EqualityCompare(prev, nextValue))
-                    return;
+                /* Only perform the equality checks when not host.
+                 *
+                 * In the previous SyncVar version it was okay to call
+                 * this on host because a separate clientHost value was kept for
+                 * the client side, and that was compared against.
+                 *
+                 * In newer SyncVar(this one) a client side copy is
+                 * not kept so when compariing against the current vlaue
+                 * as clientHost, it will always return as matched.
+                 *
+                 * But it's impossible for clientHost to send a value
+                 * and it not have changed, so this check is not needed. */
+
+                // /* Previously clients were not allowed to set values
+                //  * but this has been changed because clients may want
+                //  * to update values locally while occasionally
+                //  * letting the syncvar adjust their side. */
+                // T prev = _value;
+                // if (Comparers.EqualityCompare(prev, nextValue))
+                //     return;
+                
                 /* If also server do not update value.
                  * Server side has say of the current value. */
                 /* Only update value if not server. We do not want
@@ -272,7 +287,9 @@ namespace FishNet.Object.Synchronizing
                 if (!base.NetworkManager.IsServerStarted)
                     UpdateValues(nextValue);
 
-                InvokeOnChange(prev, nextValue, calledByUser);
+                T prev = _value;
+                
+                InvokeOnChange(prev, nextValue, asServer: false);
             }
 
 
@@ -353,7 +370,6 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        
         [MakePublic]
         internal protected override void OnStartCallback(bool asServer)
         {
@@ -391,7 +407,7 @@ namespace FishNet.Object.Synchronizing
         {
             /* If a class then skip comparer check.
              * InitialValue and Value will be the same reference.
-             * 
+             *
              * If a value then compare field changes, since the references
              * will not be the same. */
             //Compare if a value type.
@@ -416,8 +432,21 @@ namespace FishNet.Object.Synchronizing
         protected internal override void Read(PooledReader reader, bool asServer)
         {
             T value = reader.Read<T>();
+
+            if (!ReadChangeId(reader))
+                return;
+
             SetValue(value, false);
+            //TODO this needs to separate invokes from setting values so that syncvar can be written like remainder of synctypes.
         }
+
+        //SyncVars do not use changeId.
+        [APIExclude]
+        protected override bool ReadChangeId(Reader reader) => true;
+
+        //SyncVars do not use changeId.
+        [APIExclude]
+        protected override void WriteChangeId(PooledWriter writer) { }
 
         /// <summary>
         /// Resets to initialized values.
@@ -430,8 +459,7 @@ namespace FishNet.Object.Synchronizing
              * asServer is true.
              * Is not network initialized.
              * asServer is false, and server is not started. */
-            if ((asServer && !base.NetworkManager.IsClientStarted) ||
-                (!asServer && base.NetworkBehaviour.IsDeinitializing))
+            if ((asServer && !base.NetworkManager.IsClientStarted) || (!asServer && base.NetworkBehaviour.IsDeinitializing))
             {
                 _value = _initialValue;
                 _valueSetAfterInitialized = false;

@@ -3,13 +3,15 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine;
+
 namespace GameKit.Dependencies.Utilities.Types
 {
 
     /// <summary>
     /// Writes values to a collection of a set size, overwriting old values as needed.
     /// </summary>
-    public class ResettableRingBuffer<T> : IResettable where T : IResettable
+    public class ResettableRingBuffer<T> : IResettable, IEnumerable<T> where T : IResettable
     {
         #region Types.
         /// <summary>
@@ -30,7 +32,7 @@ namespace GameKit.Dependencies.Utilities.Types
                 get
                 {
                     int total = (_startIndex + (_read - 1));
-                    int capacity = _rollingCollection.Capacity;
+                    int capacity = _enumeratedRingBuffer.Capacity;
                     if (total >= capacity)
                         total -= capacity;
 
@@ -47,11 +49,15 @@ namespace GameKit.Dependencies.Utilities.Types
             /// <summary>
             /// RollingCollection to use.
             /// </summary>
-            private ResettableRingBuffer<T> _rollingCollection;
+            private ResettableRingBuffer<T> _enumeratedRingBuffer;
             /// <summary>
             /// Collection to iterate.
             /// </summary>
-            private readonly T[] _collection;
+            private T[] _collection;
+            /// <summary>
+            /// Number of entries read during the enumeration.
+            /// </summary>
+            private int _entriesEnumerated;            
             /// <summary>
             /// Number of entries read during the enumeration.
             /// </summary>
@@ -60,69 +66,55 @@ namespace GameKit.Dependencies.Utilities.Types
             /// Start index of enumerations.
             /// </summary>
             private int _startIndex;
+           /// <summary>
+            /// True if currently enumerating.
+            /// </summary>
+            private bool _enumerating => (_enumeratedRingBuffer != null);
+            /// <summary>
+            /// Count of the collection during initialization.
+            /// </summary>
+            private int _initializeCollectionCount;
             #endregion
 
-            public Enumerator(ResettableRingBuffer<T> c)
+            public void Initialize(ResettableRingBuffer<T> c)
             {
-                _read = 0;
-                _startIndex = 0;
-                _rollingCollection = c;
+                _entriesEnumerated = 0;
+                _startIndex = c.GetRealIndex(0);
+                _enumeratedRingBuffer = c;
                 _collection = c.Collection;
+                _initializeCollectionCount = c.Count;
                 Current = default;
             }
 
             public bool MoveNext()
             {
-                int written = _rollingCollection.Count;
-                if (_read >= written)
+                if (!_enumerating)
+                    return false;
+
+                int written = _enumeratedRingBuffer.Count;
+
+                if (written != _initializeCollectionCount)
                 {
-                    ResetRead();
+                    Debug.LogError($"{_enumeratedRingBuffer.GetType().Name} collection was modified during enumeration.");
+                    //This will force a return/reset.
+                    _entriesEnumerated = written;
+                }
+
+                if (_entriesEnumerated >= written)
+                {
+                    Reset();
                     return false;
                 }
 
-                int index = (_startIndex + _read);
-                int capacity = _rollingCollection.Capacity;
+                int index = (_startIndex + _entriesEnumerated);
+                int capacity = _enumeratedRingBuffer.Capacity;
                 if (index >= capacity)
                     index -= capacity;
                 Current = _collection[index];
 
-                _read++;
+                _entriesEnumerated++;
 
                 return true;
-            }
-
-            /// <summary>
-            /// Sets a new start index to begin reading at.
-            /// </summary>
-            public void SetStartIndex(int index)
-            {
-                _startIndex = index;
-                ResetRead();
-            }
-
-
-            /// <summary>
-            /// Sets a new start index to begin reading at.
-            /// </summary>
-            public void AddStartIndex(int value)
-            {
-                _startIndex += value;
-
-                int cap = _rollingCollection.Capacity;
-                if (_startIndex > cap)
-                    _startIndex -= cap;
-                else if (_startIndex < 0)
-                    _startIndex += cap;
-
-                ResetRead();
-            }
-
-            /// <summary>
-            /// Resets number of entries read during the enumeration.
-            /// </summary>
-            public void ResetRead()
-            {
-                _read = 0;
             }
 
             /// <summary>
@@ -130,8 +122,11 @@ namespace GameKit.Dependencies.Utilities.Types
             /// </summary>
             public void Reset()
             {
-                _startIndex = 0;
-                ResetRead();
+                /* Only need to reset value types.
+                 * Numeric types change during initialization. */
+                _enumeratedRingBuffer = default;
+                _collection = default;
+                Current = default;
             }
 
             object IEnumerator.Current => Current;
@@ -178,10 +173,18 @@ namespace GameKit.Dependencies.Utilities.Types
         /// </summary>
         private bool _atCapacity => (_written == Capacity);
         #endregion
+        
+        
+        #region Consts.
+        /// <summary>
+        /// Default capacity when none is psecified.
+        /// </summary>
+        public const int DEFAULT_CAPACITY = 60;
+        #endregion
 
-        public ResettableRingBuffer()
+        public ResettableRingBuffer() 
         {
-            _enumerator = new(this);
+            Initialize(DEFAULT_CAPACITY);
         }
 
         /// <summary>
@@ -216,6 +219,20 @@ namespace GameKit.Dependencies.Utilities.Types
             void GetNewCollection() => Collection = ArrayPool<T>.Shared.Rent(capacity);
 
         }
+        
+        /// <summary>
+        /// Initializes with default capacity.
+        /// </summary>
+        /// <param name="log">True to log automatic initialization.</param>
+        public void Initialize()
+        {
+            if (!Initialized)
+            {
+                UnityEngine.Debug.Log($"RingBuffer for type {typeof(T).FullName} is being initialized with a default capacity of {DEFAULT_CAPACITY}.");
+                Initialize(DEFAULT_CAPACITY);
+            }
+        }
+
 
         /// <summary>
         /// Clears the collection to default values and resets indexing.
@@ -345,13 +362,10 @@ namespace GameKit.Dependencies.Utilities.Types
                 WriteIndex = 0;
 
             /* If written has exceeded capacity
-            * then the start index needs to be moved
-            * to adjust for overwritten values. */
+             * then the start index needs to be moved
+             * to adjust for overwritten values. */
             if (_written > capacity)
-            {
                 _written = capacity;
-                _enumerator.SetStartIndex(WriteIndex);
-            }
         }
 
 
@@ -389,20 +403,6 @@ namespace GameKit.Dependencies.Utilities.Types
         }
 
         /// <summary>
-        /// Returns Enumerator for the collection.
-        /// </summary>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Enumerator GetEnumerator()
-        {
-            if (!IsInitializedWithError())
-                return default;
-
-            _enumerator.ResetRead();
-            return _enumerator;
-        }
-
-        /// <summary>
         /// Removes values from the simulated start of the collection.
         /// </summary>
         /// <param name="fromStart">True to remove from the start, false to remove from the end.</param>
@@ -426,11 +426,10 @@ namespace GameKit.Dependencies.Utilities.Types
             _written -= length;
             if (fromStart)
             {
-                _enumerator.AddStartIndex(length);
+                //No steps are needed from start other than reduce written, which is done above.
             }
             else
             {
-
                 WriteIndex -= length;
                 if (WriteIndex < 0)
                     WriteIndex += Capacity;
@@ -467,6 +466,21 @@ namespace GameKit.Dependencies.Utilities.Types
         }
 
         public void InitializeState() { }
+        
+        
+        /// <summary>
+        /// Returns Enumerator for the collection.
+        /// </summary>
+        /// <returns></returns>
+        public Enumerator GetEnumerator()
+        {
+            Initialize();
+            _enumerator.Initialize(this);
+            return _enumerator;
+        }
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => this.GetEnumerator(); // Collection.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator(); // Collection.GetEnumerator();
     }
 
 }

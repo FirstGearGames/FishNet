@@ -113,12 +113,14 @@ namespace FishNet.Object
         {
             if (!IsServerStarted)
                 return false;
-            // /* No reason to dirty if there are no observers.
-            //  * This can happen even if a client is going to see
-            //  * this object because the server side initializes
-            //  * before observers are built. */
-            // if (_networkObjectCache.Observers.Count == 0 && !_networkObjectCache.PredictedSpawner.IsValid)
-            //     return false;
+            /* No reason to dirty if there are no observers.
+             * This can happen even if a client is going to see
+             * this object because the server side initializes
+             * before observers are built. Clients which become observers
+             * will get the latest values in the spawn message, which is separate
+             * from writing dirty syncTypes. */
+            if (_networkObjectCache.Observers.Count == 0 && !_networkObjectCache.PredictedSpawner.IsValid)
+                return false;
             if (!SyncTypeDirty)
                 _networkObjectCache.NetworkManager.ServerManager.Objects.SetDirtySyncType(this);
 
@@ -265,7 +267,7 @@ namespace FishNet.Object
                 dirtyCount++;
 
                 //Interval not yet met.
-                if (!ignoreInterval && !sb.SyncTimeMet(tick))
+                if (!ignoreInterval && !sb.IsNextSyncTimeMet(tick))
                     continue;
 
                 //Unset that SyncType is dirty as it will be written now.
@@ -505,7 +507,7 @@ namespace FishNet.Object
                 byte syncTypeId = reader.ReadUInt8Unpacked();
                 
                 if (_syncTypes.TryGetValueIL2CPP(syncTypeId, out SyncBase sb))
-                    sb.Read(reader, asServer: true);
+                    sb.Read(reader, asServer: false);
                 else
                     NetworkManager.LogWarning($"SyncType not found for index {syncTypeId} on {transform.name}, component {GetType().FullName}. Remainder of packet may become corrupt.");
             }

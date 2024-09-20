@@ -393,7 +393,6 @@ namespace FishNet.Managing.Server
             CollectionCaches<NetworkObject>.Store(sceneNobs);
         }
 
-
         /// <summary>
         /// Setup NetworkObjects in a scene. Should only be called when server is active.
         /// </summary>
@@ -591,8 +590,12 @@ namespace FishNet.Managing.Server
             if (NetworkManager.IsClientStarted)
             {
                 int count = spawnCacheCopyCount;
+                NetworkConnection localConnection = NetworkManager.ClientManager.Connection;
                 for (int i = 0; i < count; i++)
-                    spawnCacheCopy[i].SetRenderersVisible(networkObject.Observers.Contains(NetworkManager.ClientManager.Connection));
+                {
+                    NetworkObject nob = spawnCacheCopy[i];
+                    nob.SetRenderersVisible(nob.Observers.Contains(localConnection));
+                }
             }
 
             CollectionCaches<NetworkObject>.Store(spawnCacheCopy);
@@ -685,7 +688,7 @@ namespace FishNet.Managing.Server
             nob.Preinitialize_Internal(NetworkManager, objectId, owner, true);
             //Initialize for prediction.
             nob.InitializePredictedObject_Server(base.NetworkManager, conn);
-            
+
             base.ReadPayload(conn, nob, reader);
 
             //Check user implementation of trySpawn.
@@ -700,7 +703,7 @@ namespace FishNet.Managing.Server
             /* This initializes the object again which cost only a small
              * amount of perf. Once the refactor is complete this will be changed. */
             SpawnWithoutChecks(nob, owner, objectId);
-            
+
             void SendFailedResponse(int objectId)
             {
                 SkipRemainingSpawnLength();
@@ -740,7 +743,7 @@ namespace FishNet.Managing.Server
                     rw.Initialize(writer, NetworkBehaviour.RPCLINK_RESERVED_BYTES);
                     foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
                         nb.WriteRpcLinks(writer);
-                    
+
                     rw.WriteLength();
                 }
 

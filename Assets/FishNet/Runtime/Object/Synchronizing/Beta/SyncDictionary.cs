@@ -239,8 +239,6 @@ namespace FishNet.Object.Synchronizing
         [APIExclude]
         internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
-            base.WriteDelta(writer, resetSyncTick);
-
             //If sending all then clear changed and write full.
             if (_sendAll)
             {
@@ -250,10 +248,11 @@ namespace FishNet.Object.Synchronizing
             }
             else
             {
+                base.WriteDelta(writer, resetSyncTick);
+
                 //False for not full write.
                 writer.WriteBoolean(false);
-                base.WriteChangeId(writer, false);
-                
+
                 writer.WriteInt32(_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
@@ -276,7 +275,7 @@ namespace FishNet.Object.Synchronizing
                 _changed.Clear();
             }
         }
-
+        
         /// <summary>
         /// Writers all values if not initial values.
         /// Internal use.
@@ -290,9 +289,9 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             base.WriteHeader(writer, false);
+            
             //True for full write.
             writer.WriteBoolean(true);
-            base.WriteChangeId(writer, true);
             
             writer.WriteInt32(Collection.Count);
             foreach (KeyValuePair<TKey, TValue> item in Collection)
@@ -309,24 +308,19 @@ namespace FishNet.Object.Synchronizing
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {
-            /* When !asServer don't make changes if server is running.
-             * This is because changes would have already been made on
-             * the server side and doing so again would result in duplicates
-             * and potentially overwrite data not yet sent. */
-            bool asClientAndHost = (!asServer && base.NetworkBehaviour.IsServerStarted);
+            base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
+            
             //True to warn if this object was deinitialized on the server.
-            bool deinitialized = (asClientAndHost && !base.OnStartServerCalled);
+            bool deinitialized = (asClientHost && !base.OnStartServerCalled);
             if (deinitialized)
                 base.NetworkManager.LogWarning($"SyncType {GetType().Name} received a Read but was deinitialized on the server. Client callback values may be incorrect. This is a ClientHost limitation.");
 
             IDictionary<TKey, TValue> collection = Collection;
 
             bool fullWrite = reader.ReadBoolean();
-            bool ignoreReadChanges = base.ReadChangeId(reader);
-            bool canModifyCollection = (!asClientAndHost && !ignoreReadChanges);
 
             //Clear collection since it's a full write.
-            if (canModifyCollection && fullWrite)
+            if (canModifyValues && fullWrite)
                 collection.Clear();
 
             int changes = reader.ReadInt32();
@@ -344,29 +338,31 @@ namespace FishNet.Object.Synchronizing
                 {
                     key = reader.Read<TKey>();
                     value = reader.Read<TValue>();
-                    if (canModifyCollection)
+                    
+                    if (canModifyValues)
                         collection[key] = value;
                 }
                 //Clear.
                 else if (operation == SyncDictionaryOperation.Clear)
                 {
-                    if (canModifyCollection)
+                    if (canModifyValues)
                         collection.Clear();
                 }
                 //Remove.
                 else if (operation == SyncDictionaryOperation.Remove)
                 {
                     key = reader.Read<TKey>();
-                    if (canModifyCollection)
+                    
+                    if (canModifyValues)
                         collection.Remove(key);
                 }
 
-                if (!ignoreReadChanges)
+                if (newChangeId)
                     InvokeOnChange(operation, key, value, false);
             }
 
             //If changes were made invoke complete after all have been read.
-            if (!ignoreReadChanges && changes > 0)
+            if (newChangeId && changes > 0)
                 InvokeOnChange(SyncDictionaryOperation.Complete, default, default, false);
         }
 
@@ -567,7 +563,7 @@ namespace FishNet.Object.Synchronizing
         {
             if (!base.IsInitialized)
                 return;
-            if (!base.CanNetworkSetValues(true))
+            if (!base.CanNetworkSetValues(log: true))
                 return;
 
             if (base.Dirty())

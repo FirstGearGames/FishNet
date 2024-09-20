@@ -255,9 +255,10 @@ namespace FishNet.Object.Synchronizing
             else
             {
                 base.WriteDelta(writer, resetSyncTick);
+                
                 //False for not full write.
                 writer.WriteBoolean(false);
-                base.WriteChangeId(writer, false);
+                
                 //Number of entries expected.
                 writer.WriteInt32(_changed.Count);
 
@@ -298,7 +299,6 @@ namespace FishNet.Object.Synchronizing
             base.WriteHeader(writer, false);
             //True for full write.
             writer.WriteBoolean(true);
-            base.WriteChangeId(writer, true);
 
             int count = Collection.Count;
             writer.WriteInt32(count);
@@ -316,24 +316,18 @@ namespace FishNet.Object.Synchronizing
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {
-            /* When !asServer don't make changes if server is running.
-            * This is because changes would have already been made on
-            * the server side and doing so again would result in duplicates
-            * and potentially overwrite data not yet sent. */
-            bool asClientAndHost = (!asServer && base.NetworkManager.IsServerStarted);
+            base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
+            
             //True to warn if this object was deinitialized on the server.
-            bool deinitialized = (asClientAndHost && !base.OnStartServerCalled);
+            bool deinitialized = (asClientHost && !base.OnStartServerCalled);
             if (deinitialized)
                 base.NetworkManager.LogWarning($"SyncType {GetType().Name} received a Read but was deinitialized on the server. Client callback values may be incorrect. This is a ClientHost limitation.");
 
             List<T> collection = Collection;
 
             bool fullWrite = reader.ReadBoolean();
-            bool ignoreReadChanges = base.ReadChangeId(reader);
-            bool canModifyCollection = (!asClientAndHost && !ignoreReadChanges);
-
             //Clear collection since it's a full write.
-            if (canModifyCollection && fullWrite)
+            if (canModifyValues && fullWrite)
                 collection.Clear();
 
             int changes = reader.ReadInt32();
@@ -349,7 +343,8 @@ namespace FishNet.Object.Synchronizing
                 if (operation == SyncListOperation.Add)
                 {
                     next = reader.Read<T>();
-                    if (canModifyCollection)
+                    
+                    if (canModifyValues)
                     {
                         index = collection.Count;
                         collection.Add(next);
@@ -358,7 +353,7 @@ namespace FishNet.Object.Synchronizing
                 //Clear.
                 else if (operation == SyncListOperation.Clear)
                 {
-                    if (canModifyCollection)
+                    if (canModifyValues)
                         collection.Clear();
                 }
                 //Insert.
@@ -366,14 +361,16 @@ namespace FishNet.Object.Synchronizing
                 {
                     index = reader.ReadInt32();
                     next = reader.Read<T>();
-                    if (canModifyCollection)
+                    
+                    if (canModifyValues)
                         collection.Insert(index, next);
                 }
                 //RemoveAt.
                 else if (operation == SyncListOperation.RemoveAt)
                 {
                     index = reader.ReadInt32();
-                    if (canModifyCollection)
+                    
+                    if (canModifyValues)
                     {
                         prev = collection[index];
                         collection.RemoveAt(index);
@@ -384,19 +381,20 @@ namespace FishNet.Object.Synchronizing
                 {
                     index = reader.ReadInt32();
                     next = reader.Read<T>();
-                    if (canModifyCollection)
+                    
+                    if (canModifyValues)
                     {
                         prev = collection[index];
                         collection[index] = next;
                     }
                 }
 
-                if (!ignoreReadChanges)
+                if (newChangeId)
                     InvokeOnChange(operation, index, prev, next, false);
             }
 
             //If changes were made invoke complete after all have been read.
-            if (!ignoreReadChanges && changes > 0)
+            if (newChangeId && changes > 0)
                 InvokeOnChange(SyncListOperation.Complete, -1, default, default, false);
         }
 

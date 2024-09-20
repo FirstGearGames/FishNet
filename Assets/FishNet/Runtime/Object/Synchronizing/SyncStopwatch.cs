@@ -8,13 +8,11 @@ using System.Runtime.CompilerServices;
 
 namespace FishNet.Object.Synchronizing
 {
-
     /// <summary>
     /// A SyncObject to efficiently synchronize Stopwatchs over the network.
     /// </summary>
     public class SyncStopwatch : SyncBase, ICustomSync
     {
-
         #region Type.
         /// <summary>
         /// Information about how the Stopwatch has changed.
@@ -40,6 +38,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="prev">Previous value of the Stopwatch. This will be -1f is the value is not available.</param>
         /// <param name="asServer">True if occurring on server.</param>
         public delegate void SyncTypeChanged(SyncStopwatchOperation op, float prev, bool asServer);
+
         /// <summary>
         /// Called when a Stopwatch operation occurs.
         /// </summary>
@@ -248,10 +247,11 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Reads and sets the current values for server or client.
         /// </summary>
-        
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {
+            base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
+
             int changes = reader.ReadInt32();
 
             for (int i = 0; i < changes; i++)
@@ -260,52 +260,61 @@ namespace FishNet.Object.Synchronizing
                 if (op == SyncStopwatchOperation.Start)
                 {
                     float elapsed = reader.ReadSingle();
-                    if (CanSetValues(asServer))
+
+                    if (canModifyValues)
                         Elapsed = elapsed;
-                    InvokeOnChange(op, elapsed, asServer);
+
+                    if (newChangeId)
+                        InvokeOnChange(op, elapsed, asServer);
                 }
                 else if (op == SyncStopwatchOperation.Pause)
                 {
-                    if (CanSetValues(asServer))
+                    if (canModifyValues)
                         Paused = true;
-                    InvokeOnChange(op, -1f, asServer);
+
+                    if (newChangeId)
+                        InvokeOnChange(op, -1f, asServer);
                 }
                 else if (op == SyncStopwatchOperation.PauseUpdated)
                 {
                     float prev = reader.ReadSingle();
-                    if (CanSetValues(asServer))
+
+                    if (newChangeId)
                         Paused = true;
-                    InvokeOnChange(op, prev, asServer);
+
+                    if (newChangeId)
+                        InvokeOnChange(op, prev, asServer);
                 }
                 else if (op == SyncStopwatchOperation.Unpause)
                 {
-                    if (CanSetValues(asServer))
+                    if (canModifyValues)
                         Paused = false;
-                    InvokeOnChange(op, -1f, asServer);
+
+                    if (newChangeId)
+                        InvokeOnChange(op, -1f, asServer);
                 }
                 else if (op == SyncStopwatchOperation.Stop)
                 {
-                    StopStopwatch_Internal(asServer);
-                    InvokeOnChange(op, -1f, false);
+                    if (canModifyValues)
+                        StopStopwatch_Internal(asServer);
+
+                    if (newChangeId)
+                        InvokeOnChange(op, -1f, false);
                 }
                 else if (op == SyncStopwatchOperation.StopUpdated)
                 {
                     float prev = reader.ReadSingle();
-                    StopStopwatch_Internal(asServer);
-                    InvokeOnChange(op, prev, asServer);
+
+                    if (canModifyValues)
+                        StopStopwatch_Internal(asServer);
+
+                    if (newChangeId)
+                        InvokeOnChange(op, prev, asServer);
                 }
             }
 
-            if (changes > 0)
+            if (newChangeId && changes > 0)
                 InvokeOnChange(SyncStopwatchOperation.Complete, -1f, asServer);
-        }
-
-        /// <summary>
-        /// Returns if values can be updated.
-        /// </summary>
-        private bool CanSetValues(bool asServer)
-        {
-            return (asServer || !base.NetworkManager.IsServerStarted);
         }
 
         /// <summary>
@@ -313,13 +322,9 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private void StopStopwatch_Internal(bool asServer)
         {
-            if (!CanSetValues(asServer))
-                return;
-
             Paused = false;
             Elapsed = -1f;
         }
-
 
         /// <summary>
         /// Invokes OnChanged callback.
@@ -341,7 +346,6 @@ namespace FishNet.Object.Synchronizing
                     _clientOnChanges.Add(new(operation, prev));
             }
         }
-
 
         /// <summary>
         /// Called after OnStartXXXX has occurred.
