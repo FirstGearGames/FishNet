@@ -224,7 +224,7 @@ namespace FishNet.Managing.Client
                         //Nested.
                         if (cnob.HasParent)
                         {
-                            bool nested = cnob.IsSerializedNested;
+                            bool nested = cnob.IsInitializedNested;
                             //It's not possible to be nested and have a parent. Set the Id to look for based on if nested or parented.
                             int targetObjectId = cnob.ParentObjectId.Value;
                             NetworkObject nob = GetSpawnedObject(targetObjectId);
@@ -282,12 +282,13 @@ namespace FishNet.Managing.Client
                             SetParentAndTransformProperties(cnob);
                         }
                         //Is nested in a prefab.
-                        else if (cnob.IsSerializedNested)
+                        else if (cnob.IsInitializedNested)
                         {
                             cnob.NetworkObject = _clientObjects.GetNestedNetworkObject(cnob);
-                            SetParentAndTransformProperties(cnob);
+                            //Do not try to set parent if initialized nested.
+                            cnob.NetworkObject.transform.SetLocalPositionRotationAndScale(cnob.Position, cnob.Rotation, cnob.Scale);
                         }
-                        /* Not sceneObject or serializedNested. Could still be runtime
+                        /* Not sceneObject or initializedNested. Could still be runtime
                          * nested but this also requires instantiation. The instantiation process
                          * handles parenting and position. */
                         else
@@ -302,7 +303,7 @@ namespace FishNet.Managing.Client
                         cnob.NetworkObject = _clientObjects.GetSpawnedNetworkObject(cnob);
                         /* Do not log unless not nested. Nested nobs sometimes
                          * could be destroyed if parent was first. */
-                        if (!_networkManager.IsHostStarted && cnob.NetworkObject == null && !cnob.IsSerializedNested)
+                        if (!_networkManager.IsHostStarted && cnob.NetworkObject == null && !cnob.IsInitializedNested)
                             _networkManager.Log($"NetworkObject for ObjectId of {cnob.ObjectId} was found null. Unable to despawn object. This may occur if a nested NetworkObject had it's parent object unexpectedly destroyed. This incident is often safe to ignore.");
                     }
 
@@ -550,9 +551,9 @@ namespace FishNet.Managing.Client
         #endregion
 
         /// <summary>
-        /// True if cached object is nested.
+        /// True if cached object is nested during initialization.
         /// </summary>
-        public bool IsSerializedNested => (ComponentId > 0);
+        public bool IsInitializedNested => (ComponentId > 0);
 
         /// <summary>
         /// True if a scene object.

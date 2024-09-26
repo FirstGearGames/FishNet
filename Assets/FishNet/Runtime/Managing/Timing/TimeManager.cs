@@ -976,7 +976,23 @@ namespace FishNet.Managing.Timing
             else
                 return (uint)Math.Ceiling(result);
         }
+        
+        /// <summary>
+        /// Converts time to a PreciseTick.
+        /// </summary>
+        /// <param name="time">Time to convert.</param>
+        /// <returns></returns>
+        public PreciseTick TimeToPreciseTick(double time)
+        {
+            double delta = TickDelta;
+            
+            uint ticks = (uint)Math.Floor(time / delta);
+            double percent = (time % delta);
 
+            return new PreciseTick(ticks, percent);
+        }
+
+        
         /// <summary>
         /// Estimatedly converts a synchronized tick to what it would be for the local tick.
         /// </summary>

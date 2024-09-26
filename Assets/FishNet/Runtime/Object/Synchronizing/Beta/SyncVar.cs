@@ -278,7 +278,7 @@ namespace FishNet.Object.Synchronizing
                 // T prev = _value;
                 // if (Comparers.EqualityCompare(prev, nextValue))
                 //     return;
-                
+
                 /* If also server do not update value.
                  * Server side has say of the current value. */
                 /* Only update value if not server. We do not want
@@ -288,7 +288,7 @@ namespace FishNet.Object.Synchronizing
                     UpdateValues(nextValue);
 
                 T prev = _value;
-                
+
                 InvokeOnChange(prev, nextValue, asServer: false);
             }
 
@@ -334,6 +334,9 @@ namespace FishNet.Object.Synchronizing
                 return;
             if (!base.CanNetworkSetValues(true))
                 return;
+
+            //Also set that values have changed since the user is forcing a sync.
+            _valueSetAfterInitialized = true;
 
             base.Dirty();
             /* Invoke even if was unable to dirty. Dirtying only
@@ -405,22 +408,26 @@ namespace FishNet.Object.Synchronizing
         [MakePublic]
         internal protected override void WriteFull(PooledWriter obj0)
         {
-            /* If a class then skip comparer check.
-             * InitialValue and Value will be the same reference.
-             *
-             * If a value then compare field changes, since the references
-             * will not be the same. */
-            //Compare if a value type.
-            if (_isValueType)
-            {
-                if (Comparers.EqualityCompare(_initialValue, _value))
-                    return;
-            }
-            else
-            {
-                if (!_valueSetAfterInitialized)
-                    return;
-            }
+            // /* If a class then skip comparer check.
+            //  * InitialValue and Value will be the same reference.
+            //  *
+            //  * If a value then compare field changes, since the references
+            //  * will not be the same. */
+            // //Compare if a value type.
+            // if (_isValueType)
+            // {
+            //     if (Comparers.EqualityCompare(_initialValue, _value))
+            //         return;
+            // }
+            // else
+            // {
+            //     if (!_valueSetAfterInitialized)
+            //         return;
+            // }
+            
+            if (!_valueSetAfterInitialized)
+                return;
+
             /* SyncVars only hold latest value, so just
              * write current delta. */
             WriteDelta(obj0, false);

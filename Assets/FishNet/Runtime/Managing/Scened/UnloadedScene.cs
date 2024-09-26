@@ -17,5 +17,23 @@ namespace FishNet.Managing.Scened
             Name = name;
             Handle = handle;
         }
+
+        /// <summary>
+        /// Returns a scene based on handle.
+        /// Result may not be valid as some Unity versions discard of the scene information after unloading.
+        /// </summary>
+        /// <returns></returns>
+        public Scene GetScene()
+        {
+            int loadedScenes = UnityEngine.SceneManagement.SceneManager.sceneCount;
+            for (int i = 0; i < loadedScenes; i++)
+            {
+                Scene s = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+                if (s.IsValid() && s.handle == Handle)
+                    return s;
+            }
+
+            return default;
+        }
     }
 }

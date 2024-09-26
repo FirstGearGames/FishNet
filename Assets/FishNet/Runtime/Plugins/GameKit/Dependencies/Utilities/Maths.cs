@@ -1,9 +1,7 @@
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class Maths
     {
-
         /// <summary>
         /// Returns a clamped SBytte.
         /// </summary>
@@ -29,6 +27,18 @@ namespace GameKit.Dependencies.Utilities
             else
                 return value;
         }
-    }
 
+        /// <summary>
+        /// Returns a clamped byte.
+        /// </summary>
+        public static byte ClampByte(byte value, byte min, byte max)
+        {
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            else
+                return value;
+        }
+    }
 }

@@ -6,7 +6,6 @@ using FishNet.Managing;
 using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Transporting.Multipass
@@ -102,7 +101,7 @@ namespace FishNet.Transporting.Multipass
         /// <summary>
         /// Transports to use.
         /// </summary>
-        public IList<Transport> Transports => _transports;
+        public IReadOnlyList<Transport> Transports => _transports;
         #endregion
 
         #region Private. 
