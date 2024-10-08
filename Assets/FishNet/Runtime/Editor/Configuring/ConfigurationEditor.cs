@@ -103,6 +103,23 @@ namespace FishNet.Editing
 
     }
 
+    public class RebuildSelectedSceneIdsMenu : MonoBehaviour {
+        /// <summary>
+        /// Rebuilds sceneIds for open scenes.
+        /// </summary>
+        [MenuItem("Tools/Fish-Networking/Rebuild Selected Scenes's SceneIds", false, 20)]
+        public static void RebuildSelectedScenesSceneIds()
+        {
+            SceneAsset[] selectedScenes = Selection.GetFiltered<SceneAsset>(SelectionMode.Assets);
+            // Debug.Log(selectedScenes.Length);
+            for (int i = 0; i < selectedScenes.Length; ++i) {
+                string path = AssetDatabase.GetAssetPath(selectedScenes[i]);
+                Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+                RebuildSceneIdMenu.RebuildSceneIds();
+                EditorSceneManager.SaveScene(scene);
+            }
+        }
+    }
 
     public class RebuildSceneIdMenu : MonoBehaviour
     {
