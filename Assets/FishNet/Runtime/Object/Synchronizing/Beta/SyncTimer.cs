@@ -275,6 +275,8 @@ namespace FishNet.Object.Synchronizing
             base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
 
             int changes = reader.ReadInt32();
+            //Has previous value if should invoke finished.
+            float? finishedPrevious = null;
 
             for (int i = 0; i < changes; i++)
             {
@@ -292,7 +294,17 @@ namespace FishNet.Object.Synchronizing
                     }
 
                     if (newChangeId)
+                    {
                         InvokeOnChange(op, -1f, next, asServer);
+                        /* If next is 0 then that means the timer
+                         * expired on the same tick it was started.
+                         * This can be true depending on when in code
+                         * the server starts the timer.
+                         *
+                         * When 0 also invoke finished. */
+                        if (next == 0)
+                            finishedPrevious = duration;
+                    }
                 }
                 else if (op == SyncTimerOperation.Pause || op == SyncTimerOperation.PauseUpdated || op == SyncTimerOperation.Unpause)
                 {
@@ -348,6 +360,8 @@ namespace FishNet.Object.Synchronizing
 
             if (newChangeId && changes > 0)
                 InvokeOnChange(SyncTimerOperation.Complete, -1f, -1f, false);
+            if (finishedPrevious.HasValue)
+                InvokeFinished(finishedPrevious.Value);
         }
 
         /// <summary>
@@ -446,6 +460,15 @@ namespace FishNet.Object.Synchronizing
              * for some but at this time I'm unable to think of any
              * problems. */
             Remaining = 0f;
+            InvokeFinished(prev);
+        }
+
+        /// <summary>
+        /// Invokes SyncTimer finished a previous value.
+        /// </summary>
+        /// <param name="prev"></param>
+        private void InvokeFinished(float prev)
+        {
             if (base.NetworkManager.IsServerStarted)
                 OnChange?.Invoke(SyncTimerOperation.Finished, prev, 0f, true);
             if (base.NetworkManager.IsClientStarted)

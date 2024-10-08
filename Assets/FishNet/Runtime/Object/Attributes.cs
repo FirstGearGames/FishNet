@@ -165,7 +165,7 @@ namespace FishNet.Object.Synchronizing
     /// Synchronizes a variable from server to clients automatically.
     /// Value must be changed on server.
     /// </summary>
-    [Obsolete("This no longer functions. See console errors and Break Solutions in the documentation for resolution.")]
+    [Obsolete("This no longer functions. Use SyncVar<Type> instead. See console errors and Break Solutions in the documentation for resolution.")]
     [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public class SyncVarAttribute : PropertyAttribute
     {

@@ -54,6 +54,10 @@ namespace GameKit.Dependencies.Utilities.Types
 
             public void Initialize(RingBuffer<T> c)
             {
+                //if none are written then return.
+                if (c.Count == 0)
+                    return;
+                
                 _entriesEnumerated = 0;
                 _startIndex = c.GetRealIndex(0);
                 _enumeratedRingBuffer = c;
@@ -200,7 +204,7 @@ namespace GameKit.Dependencies.Utilities.Types
 
             void GetNewCollection() => Collection = ArrayPool<T>.Shared.Rent(capacity);
         }
-        
+
         /// <summary>
         /// Initializes with default capacity.
         /// </summary>
@@ -213,7 +217,6 @@ namespace GameKit.Dependencies.Utilities.Types
                 Initialize(DEFAULT_CAPACITY);
             }
         }
-
 
         /// <summary>
         /// Clears the collection to default values and resets indexing.
@@ -404,7 +407,7 @@ namespace GameKit.Dependencies.Utilities.Types
                     WriteIndex += Capacity;
             }
         }
-        
+
         /// <summary>
         /// Returns Enumerator for the collection.
         /// </summary>

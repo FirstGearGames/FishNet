@@ -60,6 +60,8 @@ namespace FishNet.Object
         /// </summary>
         internal void InvokeSyncTypeOnStopCallbacks(bool asServer)
         {
+            // if (_syncTypes == null)
+            //     return;
             foreach (SyncBase item in _syncTypes.Values)
                 item.OnStopCallback(asServer);
         }

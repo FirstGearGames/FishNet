@@ -503,6 +503,8 @@ namespace FishNet.Managing.Server
                 MatchCondition.StoreCollections(NetworkManager);
                 //Despawn without synchronizing network objects.
                 Objects.DespawnWithoutSynchronization(true);
+                //Clear all clients.
+                Clients.Clear();
             }
             Objects.OnServerConnectionState(args);
 

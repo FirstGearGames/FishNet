@@ -30,6 +30,11 @@ namespace FishNet.Component.Spawning
         [SerializeField]
         private NetworkObject _playerPrefab;
         /// <summary>
+        /// Sets the PlayerPrefab to use.
+        /// </summary>
+        /// <param name="nob"></param>
+        public void SetPlayerPrefab(NetworkObject nob) => _playerPrefab = nob;
+        /// <summary>
         /// True to add player to the active scene when no global scenes are specified through the SceneManager.
         /// </summary>
         [Tooltip("True to add player to the active scene when no global scenes are specified through the SceneManager.")]

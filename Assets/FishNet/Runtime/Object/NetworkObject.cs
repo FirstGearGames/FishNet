@@ -1,4 +1,5 @@
-﻿using FishNet.Managing;
+﻿using System;
+using FishNet.Managing;
 using FishNet.Connection;
 using UnityEngine;
 using FishNet.Serializing;
@@ -8,6 +9,7 @@ using FishNet.Utility.Performance;
 using FishNet.Component.Ownership;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
+using GameKit.Dependencies.Utilities.Types;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -37,8 +39,9 @@ namespace FishNet.Object
         }
     }
 
+    [DefaultExecutionOrder(short.MinValue + 1)]
     [DisallowMultipleComponent]
-    public partial class NetworkObject : MonoBehaviour
+    public partial class NetworkObject : MonoBehaviour, IOrderable
     {
         #region Public.
         /// <summary>
@@ -170,19 +173,25 @@ namespace FishNet.Object
         /// True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.
         /// To check if server or client has been initialized on this object use IsXYZInitialized.
         /// </summary>
+        [Obsolete("Use Get/SetIsNetworked.")]
         public bool IsNetworked
         {
-            get => _isNetworked;
-            private set => _isNetworked = value;
+            get => GetIsNetworked();
+            private set => SetIsNetworked(value);
         }
 
+        /// <summary>
+        /// Returns IsNetworked value.
+        /// </summary>
+        /// <returns></returns>
+        public bool GetIsNetworked() => _isNetworked;
         /// <summary>
         /// Sets IsNetworked value. This method must be called before Start.
         /// </summary>
         /// <param name="value">New IsNetworked value.</param>
         public void SetIsNetworked(bool value)
         {
-            IsNetworked = value;
+            _isNetworked = value;
         }
 
         [Tooltip("True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.")]
@@ -192,7 +201,18 @@ namespace FishNet.Object
         /// <summary>
         /// True if the object can be spawned at runtime; this is generally false for scene prefabs you do not spawn.
         /// </summary>
+        [Obsolete("Use GetIsSpawnable.")] //Remove on V5.
         public bool IsSpawnable => _isSpawnable;
+        /// <summary>
+        /// Gets the current IsSpawnable value.
+        /// </summary>
+        /// <returns></returns>
+        public bool GetIsSpawnable() => _isSpawnable;
+        /// <summary>
+        /// Sets IsSpawnable value.
+        /// </summary>
+        /// <param name="value">Next value.</param>
+        public void SetIsSpawnable(bool value) => _isSpawnable = value;
 
         [Tooltip("True if the object can be spawned at runtime; this is generally false for scene prefabs you do not spawn.")]
         [SerializeField]
@@ -243,6 +263,11 @@ namespace FishNet.Object
         /// Order to initialize this object's callbacks when spawned with other NetworkObjects in the same tick. Default value is 0, negative values will execute callbacks first.
         /// </summary>
         public sbyte GetInitializeOrder() => _initializeOrder;
+
+        /// <summary>
+        /// This is for internal use. Returns the order to initialize the object.
+        /// </summary>
+        public int Order => _initializeOrder;
 
         [Tooltip("Order to initialize this object's callbacks when spawned with other NetworkObjects in the same tick. Default value is 0, negative values will execute callbacks first.")]
         [SerializeField]
@@ -310,6 +335,31 @@ namespace FishNet.Object
         {
             _isStatic = gameObject.isStatic;
             RuntimeChildNetworkBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveList();
+            
+            /* If networkBehaviours are not yet initialized then do so now.
+             * After initializing at least 1 networkBehaviour will always exist
+             * as emptyNetworkBehaviour is added automatically when none are present. */
+            if (NetworkBehaviours == null || NetworkBehaviours.Count == 0)
+            {
+                bool isNested = false;
+                //Make sure there are no networkObjects above this since initializing will trickle down.
+                Transform parent = transform.parent;
+                while (parent != null)
+                {
+                    if (parent.TryGetComponent<NetworkObject>(out _))
+                    {
+                        isNested = true;
+                        break;
+                    }
+                    
+                    parent = parent.parent;
+                }
+                
+                //If not nested then init
+                if (!isNested)
+                    SetInitializedValues(parentNob: null);
+            }
+            
             SetChildDespawnedState();
         }
 
@@ -395,34 +445,33 @@ namespace FishNet.Object
                 }
             }
 
-            Owner?.RemoveObject(this);
-            NetworkObserver?.Deinitialize(true);
+            if (Owner.IsValid)
+                Owner.RemoveObject(this);
+            if (NetworkObserver != null)
+                NetworkObserver.Deinitialize(true);
 
             if (NetworkManager != null)
             {
+                bool isServerStarted = IsServerStarted;
+                bool isClientStarted = IsClientStarted;
                 //Was destroyed without going through the proper methods.
-                if (NetworkManager.IsServerStarted)
+                if (isServerStarted)
                 {
                     Deinitialize_Prediction(true);
                     NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, true);
+                    
+                    InvokeStopCallbacks(asServer: true, invokeSyncTypeCallbacks: true);
                 }
 
-                if (NetworkManager.IsClientStarted)
+                if (isClientStarted)
                 {
                     Deinitialize_Prediction(false);
                     NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, false);
+                    
+                    InvokeStopCallbacks(false, true);
                 }
             }
-
-            /* When destroyed unexpectedly it's
-             * impossible to know if this occurred on
-             * the server or client side, so send callbacks
-             * for both. */
-            if (IsServerStarted)
-                InvokeStopCallbacks(true, true);
-            if (IsClientStarted)
-                InvokeStopCallbacks(false, true);
-
+            
             /* If owner exist then remove object from owner.
              * This has to be called here as well OnDisable because
              * the OnDisable will only remove the object if
@@ -496,7 +545,7 @@ namespace FishNet.Object
 
         internal void TryStartDeactivation()
         {
-            if (!IsNetworked)
+            if (!GetIsNetworked())
                 return;
 
             //Global.
@@ -964,10 +1013,28 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// Returns if a deinitialize call can process.
+        /// </summary>
+        internal bool CanDeinitialize(bool asServer)
+        {
+            if (NetworkManager == null)
+                return false;
+            else if (asServer && !IsServerInitialized)
+                return false;
+            else if (!asServer && !IsClientInitialized)
+                return false;
+            
+            return true;
+        }
+
+        /// <summary>
         /// Called to prepare this object to be destroyed or disabled.
         /// </summary>
         internal void Deinitialize(bool asServer)
         {
+            if (!CanDeinitialize(asServer))
+                return;
+
             Deinitialize_Prediction(asServer);
 
             InvokeStopCallbacks(asServer, true);
@@ -976,12 +1043,14 @@ namespace FishNet.Object
 
             if (asServer)
             {
-                NetworkObserver?.Deinitialize(false);
+                if (NetworkObserver != null)
+                    NetworkObserver.Deinitialize(false);
                 IsDeinitializing = true;
             }
             else
             {
                 //Client only.
+                //if (NetworkManager != null && !NetworkManager.IsServerStarted)
                 if (!NetworkManager.IsServerStarted)
                     IsDeinitializing = true;
 
@@ -1011,6 +1080,7 @@ namespace FishNet.Object
             SetOwner(NetworkManager.EmptyConnection);
             if (NetworkObserver != null)
                 NetworkObserver.Deinitialize(false);
+            
             //QOL references.
             NetworkManager = null;
             ServerManager = null;

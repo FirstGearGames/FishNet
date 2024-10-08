@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Text;
+using GameKit.Dependencies.Utilities.Types;
 
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class Arrays
     {
         /// <summary>
@@ -81,7 +81,6 @@ namespace GameKit.Dependencies.Utilities
             list.RemoveAt(list.Count - 1);
         }
 
-
         /// <summary>
         /// Shuffles an array.
         /// </summary>
@@ -116,7 +115,33 @@ namespace GameKit.Dependencies.Utilities
             }
         }
 
+        /// <summary>
+        /// Adds an item to a collection, ordering it's position based on itemOrder. Lower values are inserted near the beginning of the collection.
+        /// </summary>
+        public static void AddOrdered<T>(this List<T> collection, T item) where T : IOrderable
+        {
+            int count = collection.Count;
+            int itemOrder = item.Order;
+
+            /* If no entries or is equal or larger to last
+             * entry then value can be added onto the end. */
+            if (count == 0 || itemOrder >= collection[^1].Order)
+            {
+                collection.Add(item);
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    /* If item being sorted is lower than the one in already added.
+                     * then insert it before the one already added. */
+                    if (itemOrder <= collection[i].Order)
+                    {
+                        collection.Insert(i, item);
+                        break;
+                    }
+                }
+            }
+        }
     }
-
-
 }

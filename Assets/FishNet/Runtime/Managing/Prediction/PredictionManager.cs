@@ -174,9 +174,19 @@ namespace FishNet.Managing.Predicting
         /// No more than this value of replicates should be stored as a buffer.
         /// </summary>
         internal ushort MaximumPastReplicates => (ushort)(_networkManager.TimeManager.TickRate * 5);
+
         /// <summary>
-        /// 
+        /// True for the client to create local reconcile states. Enabling this feature allows reconciles to be sent less frequently and provides data to use for reconciles when packets are lost.
         /// </summary>
+        internal bool CreateLocalStates => _createLocalStates;
+        [FormerlySerializedAs("_localStates")]
+        [Tooltip("True for the client to create local reconcile states. Enabling this feature allows reconciles to be sent less frequently and provides data to use for reconciles when packets are lost.")]
+        [SerializeField]
+        private bool _createLocalStates = true;
+        /// <summary>
+        /// How many states to try and hold in a buffer before running them. Larger values add resilience against network issues at the cost of running states later.
+        /// </summary> 
+        internal byte StateInterpolation => _stateInterpolation;
         [Tooltip("How many states to try and hold in a buffer before running them on clients. Larger values add resilience against network issues at the cost of running states later.")]
         [Range(0, MAXIMUM_PAST_INPUTS)]
         [FormerlySerializedAs("_redundancyCount")] //Remove on V5.
@@ -184,19 +194,12 @@ namespace FishNet.Managing.Predicting
         [SerializeField]
         private byte _stateInterpolation = 1;
         /// <summary>
-        /// How many states to try and hold in a buffer before running them. Larger values add resilience against network issues at the cost of running states later.
-        /// </summary> 
-        internal byte StateInterpolation => _stateInterpolation;
-        /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("The order in which clients run states. Future favors performance and does not depend upon reconciles, while Past favors accuracy but clients must reconcile every tick.")]
-        [SerializeField]
-        private ReplicateStateOrder _stateOrder = ReplicateStateOrder.Appended;
-        /// <summary>
         /// The order in which states are run. Future favors performance and does not depend upon reconciles, while Past favors accuracy but clients must reconcile every tick.
         /// </summary>
         public ReplicateStateOrder StateOrder => _stateOrder;
+        [Tooltip("The order in which clients run states. Future favors performance and does not depend upon reconciles, while Past favors accuracy but clients must reconcile every tick.")]
+        [SerializeField]
+        private ReplicateStateOrder _stateOrder = ReplicateStateOrder.Appended;
         /// <summary>
         /// True if StateOrder is set to future.
         /// </summary>
@@ -391,7 +394,7 @@ namespace FishNet.Managing.Predicting
                 return;
 
             //Creates a local state update if one is not available in reconcile states.
-         //   CreateLocalStateUpdate();
+            //   CreateLocalStateUpdate();
 
             //If there are no states then guestimate the next state.
             if (_reconcileStates.Count == 0)

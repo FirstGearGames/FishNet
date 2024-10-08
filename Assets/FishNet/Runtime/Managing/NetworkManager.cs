@@ -212,7 +212,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.4.7";
+        public const string FISHNET_VERSION = "4.5.0";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
@@ -322,7 +322,7 @@ namespace FishNet.Managing
         {
             bool clientStarted = ClientManager.Started;
             bool serverStarted = ServerManager.Started;
-
+            
             int frameRate = 0;
             //If both client and server are started then use whichever framerate is higher.
             if (clientStarted && serverStarted)
@@ -335,8 +335,8 @@ namespace FishNet.Managing
             /* Make sure framerate isn't set to max on server.
              * If it is then default to tick rate. If framerate is
              * less than tickrate then also set to tickrate. */
-#if UNITY_SERVER
-            ushort minimumServerFramerate = (ushort)(TimeManager.TickRate + 1);
+#if UNITY_SERVER && !UNITY_EDITOR
+            ushort minimumServerFramerate = (ushort)(TimeManager.TickRate + 15);
             if (frameRate == MAXIMUM_FRAMERATE)
                 frameRate = minimumServerFramerate;
             else if (frameRate < TimeManager.TickRate)

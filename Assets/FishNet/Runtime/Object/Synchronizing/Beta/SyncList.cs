@@ -14,7 +14,7 @@ namespace FishNet.Object.Synchronizing
 {
     [System.Serializable]
     public class SyncList<T> : SyncBase, IList<T>, IReadOnlyList<T>
-    { 
+    {
         #region Types.
         /// <summary>
         /// Information needed to invoke a callback.
@@ -59,6 +59,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         [APIExclude]
         public bool IsReadOnly => false;
+
         /// <summary>
         /// Delegate signature for when SyncList changes.
         /// </summary>
@@ -68,6 +69,7 @@ namespace FishNet.Object.Synchronizing
         /// <param name="newItem"></param>
         [APIExclude]
         public delegate void SyncListChanged(SyncListOperation op, int index, T oldItem, T newItem, bool asServer);
+
         /// <summary>
         /// Called when the SyncList changes.
         /// </summary>
@@ -82,7 +84,7 @@ namespace FishNet.Object.Synchronizing
         public int Count => Collection.Count;
         #endregion
 
-        #region Private.        
+        #region Private.
         /// <summary>
         /// Values upon initialization.
         /// </summary>
@@ -117,6 +119,7 @@ namespace FishNet.Object.Synchronizing
         #region Constructors.
         public SyncList(SyncTypeSettings settings = new()) : this(CollectionCaches<T>.RetrieveList(), EqualityComparer<T>.Default, settings) { }
         public SyncList(IEqualityComparer<T> comparer, SyncTypeSettings settings = new()) : this(new(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
+
         public SyncList(List<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new()) : base(settings)
         {
             _comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
@@ -176,18 +179,17 @@ namespace FishNet.Object.Synchronizing
         /// <param name="index"></param>
         /// <param name="prev"></param>
         /// <param name="next"></param>
-        
         private void AddOperation(SyncListOperation operation, int index, T prev, T next)
         {
             if (!base.IsInitialized)
                 return;
 
             /* asServer might be true if the client is setting the value
-            * through user code. Typically synctypes can only be set
-            * by the server, that's why it is assumed asServer via user code.
-            * However, when excluding owner for the synctype the client should
-            * have permission to update the value locally for use with
-            * prediction. */
+             * through user code. Typically synctypes can only be set
+             * by the server, that's why it is assumed asServer via user code.
+             * However, when excluding owner for the synctype the client should
+             * have permission to update the value locally for use with
+             * prediction. */
             bool asServerInvoke = (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServerStarted);
 
             /* Only the adds asServer may set
@@ -197,10 +199,10 @@ namespace FishNet.Object.Synchronizing
             if (asServerInvoke)
             {
                 /* Set as changed even if cannot dirty.
-                * Dirty is only set when there are observers,
-                * but even if there are not observers
-                * values must be marked as changed so when
-                * there are observers, new values are sent. */
+                 * Dirty is only set when there are observers,
+                 * but even if there are not observers
+                 * values must be marked as changed so when
+                 * there are observers, new values are sent. */
                 _valuesChanged = true;
 
                 /* If unable to dirty then do not add to changed.
@@ -255,10 +257,10 @@ namespace FishNet.Object.Synchronizing
             else
             {
                 base.WriteDelta(writer, resetSyncTick);
-                
+
                 //False for not full write.
                 writer.WriteBoolean(false);
-                
+
                 //Number of entries expected.
                 writer.WriteInt32(_changed.Count);
 
@@ -312,12 +314,11 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Reads and sets the current values for server or client.
         /// </summary>
-        
         [APIExclude]
         internal protected override void Read(PooledReader reader, bool asServer)
         {
             base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
-            
+
             //True to warn if this object was deinitialized on the server.
             bool deinitialized = (asClientHost && !base.OnStartServerCalled);
             if (deinitialized)
@@ -343,7 +344,7 @@ namespace FishNet.Object.Synchronizing
                 if (operation == SyncListOperation.Add)
                 {
                     next = reader.Read<T>();
-                    
+
                     if (canModifyValues)
                     {
                         index = collection.Count;
@@ -361,7 +362,7 @@ namespace FishNet.Object.Synchronizing
                 {
                     index = reader.ReadInt32();
                     next = reader.Read<T>();
-                    
+
                     if (canModifyValues)
                         collection.Insert(index, next);
                 }
@@ -369,7 +370,7 @@ namespace FishNet.Object.Synchronizing
                 else if (operation == SyncListOperation.RemoveAt)
                 {
                     index = reader.ReadInt32();
-                    
+
                     if (canModifyValues)
                     {
                         prev = collection[index];
@@ -381,7 +382,7 @@ namespace FishNet.Object.Synchronizing
                 {
                     index = reader.ReadInt32();
                     next = reader.Read<T>();
-                    
+
                     if (canModifyValues)
                     {
                         prev = collection[index];
@@ -425,14 +426,19 @@ namespace FishNet.Object.Synchronizing
         internal protected override void ResetState(bool asServer)
         {
             base.ResetState(asServer);
-            _sendAll = false;
-            _changed.Clear();
-            Collection.Clear();
 
-            foreach (T item in _initialValues)
-                Collection.Add(item);
+            bool canReset = (asServer || !base.IsReadAsClientHost(asServer));
+
+            if (canReset)
+            {
+                _sendAll = false;
+                _changed.Clear();
+                Collection.Clear();
+
+                foreach (T item in _initialValues)
+                    Collection.Add(item);
+            }
         }
-
 
         /// <summary>
         /// Adds value.
@@ -442,6 +448,7 @@ namespace FishNet.Object.Synchronizing
         {
             Add(item, true);
         }
+
         private void Add(T item, bool asServer)
         {
             if (!base.CanNetworkSetValues(true))
@@ -451,6 +458,7 @@ namespace FishNet.Object.Synchronizing
             if (asServer)
                 AddOperation(SyncListOperation.Add, Collection.Count - 1, default, item);
         }
+
         /// <summary>
         /// Adds a range of values.
         /// </summary>
@@ -468,6 +476,7 @@ namespace FishNet.Object.Synchronizing
         {
             Clear(true);
         }
+
         private void Clear(bool asServer)
         {
             if (!base.CanNetworkSetValues(true))
@@ -564,6 +573,7 @@ namespace FishNet.Object.Synchronizing
         {
             Insert(index, item, true);
         }
+
         private void Insert(int index, T item, bool asServer)
         {
             if (!base.CanNetworkSetValues(true))
@@ -612,6 +622,7 @@ namespace FishNet.Object.Synchronizing
         {
             RemoveAt(index, true);
         }
+
         private void RemoveAt(int index, bool asServer)
         {
             if (!base.CanNetworkSetValues(true))
@@ -632,11 +643,11 @@ namespace FishNet.Object.Synchronizing
         {
             List<T> toRemove = new();
             for (int i = 0; i < Collection.Count; ++i)
-            { 
+            {
                 if (match(Collection[i]))
                     toRemove.Add(Collection[i]);
             }
-            
+
             foreach (T entry in toRemove)
                 Remove(entry);
 
@@ -683,6 +694,7 @@ namespace FishNet.Object.Synchronizing
             else
                 base.NetworkManager.LogError($"Could not find object within SyncList, dirty will not be set.");
         }
+
         /// <summary>
         /// Marks an index as dirty.
         /// While using this operation previous value will be the same as next.
@@ -698,6 +710,7 @@ namespace FishNet.Object.Synchronizing
             if (asServer)
                 AddOperation(SyncListOperation.Set, index, value, value);
         }
+
         /// <summary>
         /// Sets value at index.
         /// </summary>
@@ -707,6 +720,7 @@ namespace FishNet.Object.Synchronizing
         {
             Set(index, value, true, force);
         }
+
         private void Set(int index, T value, bool asServer, bool force)
         {
             if (!base.CanNetworkSetValues(true))
@@ -722,17 +736,17 @@ namespace FishNet.Object.Synchronizing
             }
         }
 
-
         /// <summary>
         /// Returns Enumerator for collection.
         /// </summary>
         /// <returns></returns>
         public IEnumerator GetEnumerator() => Collection.GetEnumerator();
+
         [APIExclude]
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => Collection.GetEnumerator();
+
         [APIExclude]
         IEnumerator IEnumerable.GetEnumerator() => Collection.GetEnumerator();
-
     }
 }
 #endif

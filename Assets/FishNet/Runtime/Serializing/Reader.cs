@@ -205,7 +205,14 @@ namespace FishNet.Serializing
                 return null;
 
             int count = ReadInt32();
-
+            if (count < 0)
+            {
+                NetworkManager.Log($"Dictionary count cannot be less than 0.");
+                //Purge renaming and return default.
+                Position += Remaining;
+                return default;
+            }
+            
             Dictionary<TKey, TValue> result = new(count);
             for (int i = 0; i < count; i++)
             {
@@ -372,7 +379,13 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public ArraySegment<byte> ReadArraySegment(int count)
         {
-            if (count == 0) return default;
+            if (count < 0)
+            {
+                NetworkManager.Log($"ArraySegment count cannot be less than 0.");
+                //Purge renaming and return default.
+                Position += Remaining;
+                return default;
+            }
 
             ArraySegment<byte> result = new(_buffer, Position, count);
             Position += count;
@@ -896,6 +909,15 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public byte[] ReadUInt8ArrayAllocated(int count)
         {
+            if (count < 0)
+            {
+                NetworkManager.Log($"Bytes count cannot be less than 0.");
+                //Purge renaming and return default.
+                Position += Remaining;
+                return default;
+            }
+
+            
             byte[] bytes = new byte[count];
             ReadUInt8Array(ref bytes, count);
             return bytes;
@@ -1353,6 +1375,14 @@ namespace FishNet.Serializing
         {
             //Number of entries written.
             int count = (int)ReadUInt8Unpacked();
+            if (count <= 0)
+            {
+                NetworkManager.Log($"Replicate count cannot be 0 or less.");
+                //Purge renaming and return default.
+                Position += Remaining;
+                return default;
+            }
+            
             if (collection == null || collection.Length < count)
                 collection = new T[count];
 
@@ -1398,6 +1428,14 @@ namespace FishNet.Serializing
         public int ReadList<T>(ref List<T> collection, bool allowNullification = false)
         {
             int count = (int)ReadSignedPackedWhole();
+            if (count < 0)
+            {
+                NetworkManager.Log($"List count cannot be less than 0.");
+                //Purge renaming and return default.
+                Position += Remaining;
+                return default;
+            }
+            
             if (count == Writer.UNSET_COLLECTION_SIZE_VALUE)
             {
                 if (allowNullification)
@@ -1440,6 +1478,14 @@ namespace FishNet.Serializing
         public int ReadArray<T>(ref T[] collection)
         {
             int count = (int)ReadSignedPackedWhole();
+            if (count < 0)
+            {
+                NetworkManager.Log($"Array count cannot be less than 0.");
+                //Purge renaming and return default.
+                Position += Remaining;
+                return default;
+            }
+            
             if (count == Writer.UNSET_COLLECTION_SIZE_VALUE)
             {
                 return 0;

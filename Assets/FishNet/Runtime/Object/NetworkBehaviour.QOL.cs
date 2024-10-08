@@ -128,7 +128,21 @@ namespace FishNet.Object
         /// True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.
         /// To check if server or client has been initialized on this object use IsXYZInitialized.
         /// </summary>
-        public bool IsNetworked => _networkObjectCache.IsNetworked;
+        [Obsolete("Use GetIsNetworked.")] //Remove on V5.
+        public bool IsNetworked => GetIsNetworked();
+
+        /// <summary>
+        /// True if the object will always initialize as a networked object. When false the object will not automatically initialize over the network. Using Spawn() on an object will always set that instance as networked.
+        /// To check if server or client has been initialized on this object use IsXYZInitialized.
+        /// </summary>
+        public bool GetIsNetworked() => _networkObjectCache.GetIsNetworked();
+
+        /// <summary>
+        /// Sets IsNetworked value. This method must be called before Start.
+        /// </summary>
+        /// <param name="value">New IsNetworked value.</param>
+        public void SetIsNetworked(bool value) => _networkObjectCache.SetIsNetworked(value);
+        
         /// <summary>
         /// True if a reconcile is occuring on the PredictionManager. Note the difference between this and IsBehaviourReconciling.
         /// </summary>

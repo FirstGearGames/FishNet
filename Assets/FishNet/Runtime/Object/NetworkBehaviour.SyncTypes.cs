@@ -339,7 +339,7 @@ namespace FishNet.Object
                     //None written for this channel.
                     if (writer.Length == 0)
                         continue;
-                    ;
+                    
                     CompleteSyncTypePacket(fullWriter, writer);
                     writer.Reset();
                     

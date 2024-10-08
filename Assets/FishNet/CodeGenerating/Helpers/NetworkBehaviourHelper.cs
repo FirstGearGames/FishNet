@@ -90,8 +90,10 @@ namespace FishNet.CodeGenerating.Helping
 
             foreach (MethodInfo mi in networkBehaviourType.GetMethods((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
+                if (mi.Name == nameof(NetworkBehaviour.GetIsNetworked))
+                    IsNetworked_MethodRef = base.ImportReference(mi);
                 //CreateDelegates.
-                if (mi.Name == nameof(NetworkBehaviour.RegisterServerRpc))
+                else if (mi.Name == nameof(NetworkBehaviour.RegisterServerRpc))
                     RegisterServerRpc_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.RegisterObserversRpc))
                     RegisterObserversRpc_MethodRef = base.ImportReference(mi);
@@ -152,8 +154,6 @@ namespace FishNet.CodeGenerating.Helping
                     IsHost_MethodRef = base.ImportReference(pi.GetMethod);
                 else if (pi.Name == nameof(NetworkBehaviour.IsOwner))
                     IsOwner_MethodRef = base.ImportReference(pi.GetMethod);
-                else if (pi.Name == nameof(NetworkBehaviour.IsNetworked))
-                    IsNetworked_MethodRef = base.ImportReference(pi.GetMethod);
                 //Owner.
                 else if (pi.Name == nameof(NetworkBehaviour.Owner))
                     Owner_MethodRef = base.ImportReference(pi.GetMethod);

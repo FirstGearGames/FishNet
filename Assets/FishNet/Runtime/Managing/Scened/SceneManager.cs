@@ -782,7 +782,7 @@ namespace FishNet.Managing.Scened
             if (nob == null)
                 return WarnAndReturnFalse($"NetworkObject is null.");
             //Not networked.
-            if (!nob.IsNetworked)
+            if (!nob.GetIsNetworked())
                 return WarnAndReturnFalse($"NetworkObject {nob.name} cannot be moved as it is not networked.");
             //Not spawned.
             if (!nob.IsSpawned)

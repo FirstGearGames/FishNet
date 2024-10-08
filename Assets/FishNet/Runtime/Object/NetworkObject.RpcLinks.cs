@@ -5,7 +5,6 @@ namespace FishNet.Object
 {
     public partial class NetworkObject : MonoBehaviour
     {
-
         #region Private.
         /// <summary>
         /// RpcLinks being used within this NetworkObject.
@@ -26,9 +25,8 @@ namespace FishNet.Object
         /// </summary>
         internal void RemoveClientRpcLinkIndexes()
         {
-            NetworkManager.ClientManager.Objects.RemoveLinkIndexes(_rpcLinkIndexes);
+            //if (NetworkManager != null)
+                NetworkManager.ClientManager.Objects.RemoveLinkIndexes(_rpcLinkIndexes);
         }
     }
-
 }
-

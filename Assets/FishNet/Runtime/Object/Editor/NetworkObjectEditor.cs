@@ -31,8 +31,8 @@ namespace FishNet.Object.Editing
         private SerializedProperty _enableTeleport;
         private SerializedProperty _teleportThreshold;
 
-
-
+        private int _tabIndex;
+        
         protected virtual void OnEnable()
         {
             _isNetworked = serializedObject.FindProperty(nameof(_isNetworked));
@@ -65,20 +65,36 @@ namespace FishNet.Object.Editing
             GUI.enabled = false;
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(nob), typeof(NetworkObject), false);
             GUI.enabled = true;
-
-            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_isNetworked);
-            EditorGUILayout.PropertyField(_isSpawnable);
-            EditorGUILayout.PropertyField(_isGlobal);
-            EditorGUILayout.PropertyField(_initializeOrder);
-            EditorGUILayout.PropertyField(_defaultDespawnType);
-            EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
-            EditorGUILayout.LabelField("Prediction", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_enablePrediction);
+            _tabIndex = GUILayout.Toolbar (_tabIndex, new string[] {"Settings", "Prediction"});
+            EditorGUILayout.Space();
+            switch (_tabIndex) 
+            {
+                case 0:
+                    ShowSettingsTab();
+                    break;
+                case 1:
+                    ShowPredictionTab();
+                    break;
+                default:
+                    ShowSettingsTab();
+                    break;
+            }
+    
+            
+            void ShowSettingsTab() 
+            {
+                EditorGUILayout.PropertyField(_isNetworked);
+                EditorGUILayout.PropertyField(_isSpawnable);
+                EditorGUILayout.PropertyField(_isGlobal);
+                EditorGUILayout.PropertyField(_initializeOrder);
+                EditorGUILayout.PropertyField(_defaultDespawnType);
+            }
+            void ShowPredictionTab() 
+            {
+                
+                            EditorGUILayout.PropertyField(_enablePrediction);
             if (_enablePrediction.boolValue == true)
             {
                 EditorGUI.indentLevel++;
@@ -136,8 +152,8 @@ namespace FishNet.Object.Editing
 
                 EditorGUI.indentLevel--;
             }
-            EditorGUI.indentLevel--;
-
+                
+            }
 
             serializedObject.ApplyModifiedProperties();
         }

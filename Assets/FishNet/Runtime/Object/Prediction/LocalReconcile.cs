@@ -1,5 +1,6 @@
 ﻿using FishNet.Documenting;
 using FishNet.Serializing;
+using UnityEngine;
 
 namespace FishNet.Object.Prediction
 {

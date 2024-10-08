@@ -185,7 +185,7 @@ namespace FishNet.Object
             //If not building check to rebuild sceneIds this for object and the scene its in.
             else
             {
-                double realtime = Time.realtimeSinceStartupAsDouble;
+                double realtime = EditorApplication.timeSinceStartup;
                 //Only do this once every Xms to prevent excessive rebiulds.
                 if (realtime - _lastSceneIdAutomaticRebuildTime < 0.250d)
                     return;

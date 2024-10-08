@@ -95,6 +95,9 @@ namespace FishNet.Managing.Client
                 {
                     foreach (NetworkObject n in Spawned.Values)
                     {
+                        if (!n.CanDeinitialize(asServer: false))
+                            continue;
+                        
                         n.InvokeStopCallbacks(false, true);
                         n.SetInitializedStatus(false, false);
                     }
@@ -174,7 +177,7 @@ namespace FishNet.Managing.Client
             }
             else
             {
-                networkObject.Deinitialize(false);
+                networkObject.Deinitialize(asServer: false);
                 NetworkManager.StorePooledInstantiated(networkObject, false);
             }
 
@@ -191,8 +194,8 @@ namespace FishNet.Managing.Client
             base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
             writer.Store();
 
-            networkObject.Deinitialize(false);
-            NetworkManager.StorePooledInstantiated(networkObject, false);
+            networkObject.Deinitialize(asServer: false);
+            NetworkManager.StorePooledInstantiated(networkObject, asServer: false);
         }
 
         /// <summary>
@@ -233,9 +236,9 @@ namespace FishNet.Managing.Client
 
                 //Only set initialized values if not server, as server would have already done so.
                 if (!isServerStarted)
-                    nob.SetInitializedValues(null);
+                    nob.SetInitializedValues(parentNob: null);
 
-                if (nob.IsNetworked)
+                if (nob.GetIsNetworked())
                 {
                     base.AddToSceneObjects(nob);
                     //Only run if not also server, as this already ran on server.
@@ -333,7 +336,7 @@ namespace FishNet.Managing.Client
             {
                 if (Spawned.TryGetValueIL2CPP(usedObjectId, out NetworkObject nob))
                 {
-                    nob.Deinitialize(false);
+                    nob.Deinitialize(asServer: false);
                     NetworkManager.StorePooledInstantiated(nob, false);
                 }
             }

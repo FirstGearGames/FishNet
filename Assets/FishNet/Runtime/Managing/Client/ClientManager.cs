@@ -281,7 +281,8 @@ namespace FishNet.Managing.Client
         /// </summary>
         public bool StartConnection(string address)
         {
-            return StartConnection(address, NetworkManager.TransportManager.Transport.GetPort());
+            NetworkManager.TransportManager.Transport.SetClientAddress(address);
+            return StartConnection();
         }
         /// <summary>
         /// Sets the transport address and port, and starts the local client connection.

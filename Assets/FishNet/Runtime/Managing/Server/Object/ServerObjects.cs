@@ -102,7 +102,6 @@ namespace FishNet.Managing.Server
             {
                 _scenesLoading = false;
                 ClearSceneLoadedNetworkObjects();
-                _loadedSceneNetworkObjects.Clear();
                 return;
             }
 
@@ -206,7 +205,8 @@ namespace FishNet.Managing.Server
         {
             RemoveFromObserversWithoutSynchronization(connection);
 
-            OnPreDestroyClientObjects?.Invoke(connection);
+            if (OnPreDestroyClientObjects != null)
+                OnPreDestroyClientObjects.Invoke(connection);
 
             /* A cache is made because the Objects
              * collection would end up modified during
@@ -360,8 +360,24 @@ namespace FishNet.Managing.Server
                 return;
 
             List<NetworkObject> sceneNobs = CollectionCaches<NetworkObject>.RetrieveList();
-            Scenes.GetSceneNetworkObjects(s, false, true, true, ref sceneNobs);
+            Scenes.GetSceneNetworkObjects(s, firstOnly: false, errorOnDuplicates: true, ignoreUnsetSceneIds: true, ref sceneNobs);
             _loadedSceneNetworkObjects.Add((Time.frameCount, sceneNobs));
+
+            InitializeRootNetworkObjects(sceneNobs);
+        }
+
+        /// <summary>
+        /// Sets initial values for NetworkObjects.
+        /// </summary>
+        /// <param name="nobs"></param>
+        private void InitializeRootNetworkObjects(List<NetworkObject> nobs) 
+        {
+            //Initialize sceneNobs cache, but do not invoke callbacks till next frame.
+            foreach (NetworkObject nob in nobs)
+            {
+                if (nob.IsSceneObject && !nob.IsNested)
+                    nob.SetInitializedValues(parentNob: null);
+            }
         }
 
         /// <summary>
@@ -387,9 +403,10 @@ namespace FishNet.Managing.Server
                 return;
 
             List<NetworkObject> sceneNobs = CollectionCaches<NetworkObject>.RetrieveList();
-            Scenes.GetSceneNetworkObjects(s, false, true, true, ref sceneNobs);
+            Scenes.GetSceneNetworkObjects(s, firstOnly: false, errorOnDuplicates: true, ignoreUnsetSceneIds: true, ref sceneNobs);
 
             SetupSceneObjects(sceneNobs);
+            
             CollectionCaches<NetworkObject>.Store(sceneNobs);
         }
 
@@ -399,16 +416,20 @@ namespace FishNet.Managing.Server
         /// <param name="s"></param>
         private void SetupSceneObjects(List<NetworkObject> sceneNobs)
         {
-            //Initialize the objects if not yet done.
-            foreach (NetworkObject obj in sceneNobs)
-                obj.SetInitializedValues(null);
+            InitializeRootNetworkObjects(sceneNobs);
 
-            int startCount = sceneNobs.Count;
             //Sort the nobs based on initialization order.
-            bool initializationOrderChanged = false;
             List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
+
+            //First order root objects.
             foreach (NetworkObject item in sceneNobs)
-                OrderRootByInitializationOrder(item, cache, ref initializationOrderChanged);
+            {
+                if (item.IsNested)
+                    continue;
+
+                cache.AddOrdered(item);
+            }
+
             OrderNestedByInitializationOrder(cache);
             //Store sceneNobs.
             CollectionCaches<NetworkObject>.Store(sceneNobs);
@@ -419,7 +440,7 @@ namespace FishNet.Managing.Server
             {
                 NetworkObject nob = cache[i];
                 //Only setup if a scene object and not initialzied.
-                if (nob.IsNetworked && nob.IsSceneObject && nob.IsDeinitializing)
+                if (nob.GetIsNetworked() && nob.IsSceneObject && nob.IsDeinitializing)
                 {
                     base.AddToSceneObjects(nob);
                     /* If was active in the editor (before hitting play), or currently active
@@ -447,7 +468,7 @@ namespace FishNet.Managing.Server
         /// <param name="objectId">Override ObjectId to use.</param>
         private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null, int? objectId = null)
         {
-            if (nob.IsNetworked)
+            if (nob.GetIsNetworked())
             {
                 if (objectId == null)
                     objectId = GetNextNetworkObjectId();

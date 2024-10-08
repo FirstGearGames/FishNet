@@ -2,6 +2,7 @@
 using FishNet.Managing.Server;
 using FishNet.Object;
 using System;
+using GameKit.Dependencies.Utilities.Types;
 using UnityEngine;
 
 namespace FishNet.Observing
@@ -10,7 +11,7 @@ namespace FishNet.Observing
     /// Condition a connection must meet to be added as an observer.
     /// This class can be inherited from for custom conditions.
     /// </summary>
-    public abstract class ObserverCondition : ScriptableObject
+    public abstract class ObserverCondition : ScriptableObject, IOrderable
     {
         #region Public.
         /// <summary>
@@ -20,6 +21,17 @@ namespace FishNet.Observing
         public NetworkObject NetworkObject;
         #endregion
 
+        #region Serialized.
+        /// <summary>
+        /// Order in which conditions are added to the NetworkObserver. Lower values will added first, resulting in the condition being checked first. Timed conditions will never check before non-timed conditions.
+        /// </summary>
+        public int Order => _addOrder;
+        [Tooltip("Order in which conditions are added to the NetworkObserver. Lower values will added first, resulting in the condition being checked first. Timed conditions will never check before non-timed conditions.")]
+        [SerializeField]
+        [Range(sbyte.MinValue, sbyte.MaxValue)]
+        private sbyte _addOrder;
+        #endregion
+        
         #region Private.
         /// <summary>
         /// True if this condition is enabled.
@@ -80,6 +92,5 @@ namespace FishNet.Observing
         /// </summary>
         /// <returns></returns>
         public abstract ObserverConditionType GetConditionType();
-
     }
 }

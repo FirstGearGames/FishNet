@@ -89,8 +89,9 @@ namespace FishNet.Connection
         /// <summary>
         /// TransportIndex this connection is on.
         /// For security reasons this value will be unset on clients if this is not their connection.
+        /// This is not yet used.
         /// </summary>
-        public int TransportIndex { get; internal set; } = -1;
+        public int TransportIndex { get; private set; } = -1;
         /// <summary>
         /// True if this connection is authenticated. Only available to server.
         /// </summary>

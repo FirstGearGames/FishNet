@@ -275,7 +275,7 @@ namespace FishNet.Object.Synchronizing
                 _changed.Clear();
             }
         }
-        
+
         /// <summary>
         /// Writers all values if not initial values.
         /// Internal use.
@@ -289,10 +289,10 @@ namespace FishNet.Object.Synchronizing
                 return;
 
             base.WriteHeader(writer, false);
-            
+
             //True for full write.
             writer.WriteBoolean(true);
-            
+
             writer.WriteInt32(Collection.Count);
             foreach (KeyValuePair<TKey, TValue> item in Collection)
             {
@@ -309,7 +309,7 @@ namespace FishNet.Object.Synchronizing
         internal protected override void Read(PooledReader reader, bool asServer)
         {
             base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
-            
+
             //True to warn if this object was deinitialized on the server.
             bool deinitialized = (asClientHost && !base.OnStartServerCalled);
             if (deinitialized)
@@ -338,7 +338,7 @@ namespace FishNet.Object.Synchronizing
                 {
                     key = reader.Read<TKey>();
                     value = reader.Read<TValue>();
-                    
+
                     if (canModifyValues)
                         collection[key] = value;
                 }
@@ -352,7 +352,7 @@ namespace FishNet.Object.Synchronizing
                 else if (operation == SyncDictionaryOperation.Remove)
                 {
                     key = reader.Read<TKey>();
-                    
+
                     if (canModifyValues)
                         collection.Remove(key);
                 }
@@ -394,13 +394,19 @@ namespace FishNet.Object.Synchronizing
         internal protected override void ResetState(bool asServer)
         {
             base.ResetState(asServer);
-            _sendAll = false;
-            _changed.Clear();
-            Collection.Clear();
-            _valuesChanged = false;
 
-            foreach (KeyValuePair<TKey, TValue> item in _initialValues)
-                Collection[item.Key] = item.Value;
+            bool canReset = (asServer || !base.IsReadAsClientHost(asServer));
+
+            if (canReset)
+            {
+                _sendAll = false;
+                _changed.Clear();
+                Collection.Clear();
+                _valuesChanged = false;
+
+                foreach (KeyValuePair<TKey, TValue> item in _initialValues)
+                    Collection[item.Key] = item.Value;
+            }
         }
 
         /// <summary>

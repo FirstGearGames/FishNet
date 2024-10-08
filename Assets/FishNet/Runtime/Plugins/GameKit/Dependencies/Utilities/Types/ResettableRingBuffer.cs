@@ -78,6 +78,10 @@ namespace GameKit.Dependencies.Utilities.Types
 
             public void Initialize(ResettableRingBuffer<T> c)
             {
+                //if none are written then return.
+                if (c.Count == 0)
+                    return;
+
                 _entriesEnumerated = 0;
                 _startIndex = c.GetRealIndex(0);
                 _enumeratedRingBuffer = c;
