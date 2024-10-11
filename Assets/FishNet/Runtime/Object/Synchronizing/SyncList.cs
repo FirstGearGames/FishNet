@@ -743,7 +743,7 @@ namespace FishNet.Object.Synchronizing
             if (!base.CanNetworkSetValues(true))
                 return;
 
-            bool sameValue = (!force && !_comparer.Equals(Collection[index], value));
+            bool sameValue = (!force && _comparer.Equals(Collection[index], value));
             if (!sameValue)
             {
                 T prev = Collection[index];
