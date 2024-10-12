@@ -726,10 +726,8 @@ namespace FishNet.Object.Synchronizing
             if (!base.CanNetworkSetValues(true))
                 return;
 
-//            bool asServer = true;
             T value = Collection[index];
-//            if (asServer)
-                AddOperation(SyncListOperation.Set, index, value, value);
+            AddOperation(SyncListOperation.Set, index, value, value);
         }
         /// <summary>
         /// Sets value at index.
