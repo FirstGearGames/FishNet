@@ -329,19 +329,19 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// All parameter values, excluding triggers.
         /// </summary>
-        private List<ParameterDetail> _parameterDetails = new();
+        private readonly List<ParameterDetail> _parameterDetails = new();
         /// <summary>
         /// Last int values.
         /// </summary>
-        private List<int> _ints = new();
+        private readonly List<int> _ints = new();
         /// <summary>
         /// Last float values.
         /// </summary>
-        private List<float> _floats = new();
+        private readonly List<float> _floats = new();
         /// <summary>
         /// Last bool values.
         /// </summary>
-        private List<bool> _bools = new();
+        private readonly List<bool> _bools = new();
         /// <summary>
         /// Last layer weights.
         /// </summary>
@@ -353,11 +353,11 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Trigger values set by using SetTrigger and ResetTrigger.
         /// </summary>
-        private List<TriggerUpdate> _triggerUpdates = new();
-        /// <summary>
-        /// Updates going to clients.
-        /// </summary>
-        private List<byte[]> _toClientsBuffer = new();
+        private readonly List<TriggerUpdate> _triggerUpdates = new();
+        // /// <summary>
+        // /// Updates going to clients.
+        // /// </summary>
+        // private List<byte[]> _toClientsBuffer = new();
         /// <summary>
         /// Returns if the animator is exist and can be synchronized.
         /// </summary>
@@ -365,9 +365,13 @@ namespace FishNet.Component.Animating
         {
             get
             {
-                bool enabled = _animator && (_animator.enabled || _synchronizeWhenDisabled);
-                bool failedChecks = (!_isAnimatorSet || !enabled);
-                return !failedChecks;
+                if (!_isAnimatorSet)
+                    return false;
+
+                if (_animator.enabled || _synchronizeWhenDisabled)
+                    return true;
+
+                return false;
             }
         }
         /// <summary>
@@ -498,14 +502,14 @@ namespace FishNet.Component.Animating
             if (_clientAuthoritative)
             {
                 _clientAuthoritativeUpdates = new();
-                //Expand to clients buffer count to however many buffers can be held.
-                for (int i = 0; i < ClientAuthoritativeUpdate.MAXIMUM_BUFFER_COUNT; i++)
-                    _toClientsBuffer.Add(new byte[0]);
+                // //Expand to clients buffer count to however many buffers can be held.
+                // for (int i = 0; i < ClientAuthoritativeUpdate.MAXIMUM_BUFFER_COUNT; i++)
+                //     _toClientsBuffer.Add(new byte[0]);
             }
-            else
-            {
-                _toClientsBuffer.Add(new byte[0]);
-            }
+            // else
+            // {
+            //     _toClientsBuffer.Add(new byte[0]);
+            // }
         }
         
         public override void OnStartClient()
