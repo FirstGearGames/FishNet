@@ -726,9 +726,9 @@ namespace FishNet.Object.Synchronizing
             if (!base.CanNetworkSetValues(true))
                 return;
 
-            bool asServer = true;
+//            bool asServer = true;
             T value = Collection[index];
-            if (asServer)
+//            if (asServer)
                 AddOperation(SyncListOperation.Set, index, value, value);
         }
         /// <summary>
@@ -745,7 +745,7 @@ namespace FishNet.Object.Synchronizing
             if (!base.CanNetworkSetValues(true))
                 return;
 
-            bool sameValue = (!force && !_comparer.Equals(Collection[index], value));
+            bool sameValue = (!force && _comparer.Equals(Collection[index], value));
             if (!sameValue)
             {
                 T prev = Collection[index];

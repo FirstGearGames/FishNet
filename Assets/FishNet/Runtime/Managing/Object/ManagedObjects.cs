@@ -261,7 +261,8 @@ namespace FishNet.Managing.Object
             {
                 if (nob == null)
                     continue;
-                DespawnWithoutSynchronization(nob, asServer, nob.GetDefaultDespawnType(), false);
+                
+                DespawnWithoutSynchronization(nob, asServer, nob.GetDefaultDespawnType(), removeFromSpawned: false);
             }
 
             Spawned.Clear();
@@ -271,18 +272,14 @@ namespace FishNet.Managing.Object
         /// Despawns a network object.
         /// </summary>
         /// <param name="nob"></param>
-        internal virtual void DespawnWithoutSynchronization(NetworkObject nob, bool asServer, DespawnType despawnType, bool removeFromSpawned)
+        protected virtual void DespawnWithoutSynchronization(NetworkObject nob, bool asServer, DespawnType despawnType, bool removeFromSpawned)
         {
-            //Null can occur when running as host and server already despawns such as when stopping.
-            if (nob == null)
-                return;
-
             nob.Deinitialize(asServer);
             /* Only run if asServer, or not 
             * asServer and server isn't running. This
             * prevents objects from affecting the server
             * as host when being modified client side. */
-            if (asServer || (!asServer && !NetworkManager.IsServerStarted))
+            if (asServer || (!NetworkManager.IsServerStarted))
             {
                 if (removeFromSpawned)
                     RemoveFromSpawned(nob, false, asServer);

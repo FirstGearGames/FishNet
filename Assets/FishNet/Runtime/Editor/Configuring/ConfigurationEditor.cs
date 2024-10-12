@@ -2,10 +2,10 @@
 using FishNet.Editing.PrefabCollectionGenerator;
 using FishNet.Object;
 using FishNet.Utility.Extension;
-using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -20,7 +20,7 @@ namespace FishNet.Editing
             SettingsService.OpenProjectSettings("Project/Fish-Networking/Configuration");
         }
 
-    }
+    } 
 
     public class DeveloperMenu : MonoBehaviour
     {
@@ -103,6 +103,25 @@ namespace FishNet.Editing
 
     }
 
+    
+
+    public class RebuildSelectedSceneIdsMenu : MonoBehaviour {
+        /// <summary>
+        /// Rebuilds sceneIds for open scenes.
+        /// </summary>
+        [MenuItem("Tools/Fish-Networking/Rebuild Selected Scenes's SceneIds", false, 20)]
+        public static void RebuildSelectedScenesSceneIds()
+        {
+            SceneAsset[] selectedScenes = Selection.GetFiltered<SceneAsset>(SelectionMode.Assets);
+            //Thanks FREEZX
+            for (int i = 0; i < selectedScenes.Length; ++i) {
+                string path = AssetDatabase.GetAssetPath(selectedScenes[i]);
+                Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+                RebuildSceneIdMenu.RebuildSceneIds();
+                EditorSceneManager.SaveScene(scene);
+            }
+        }
+    }
 
     public class RebuildSceneIdMenu : MonoBehaviour
     {

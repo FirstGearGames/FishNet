@@ -5,7 +5,6 @@ using FishNet.Managing.Timing;
 using FishNet.Observing;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
 
@@ -64,7 +63,7 @@ namespace FishNet.Object
         /// Found renderers on the NetworkObject and it's children. This is only used as clientHost to hide non-observers objects.
         /// </summary>
         [System.NonSerialized]
-        private List<Renderer> _renderers = new();
+        private List<Renderer> _renderers;
         /// <summary>
         /// True if renderers have been looked up.
         /// </summary>
@@ -122,7 +121,7 @@ namespace FishNet.Object
         /// <param name="updateVisibility">True to also update visibility if clientHost.</param>
         public void UpdateRenderers(bool updateVisibility = true)
         {
-            UpdateRenderers_Internal(updateVisibility);
+            InitializeRendererCollection(force: true, updateVisibility);
         }
 
         /// <summary>
@@ -134,43 +133,18 @@ namespace FishNet.Object
         {
             if (!force && !NetworkObserver.UpdateHostVisibility)
                 return;
-
-            if (!_renderersPopulated)
-                UpdateRenderers_Internal(updateVisibility: false);
-
+            
             UpdateRenderVisibility(visible);
         }
-
-        /// <summary>
-        /// Clears and updates renderers.
-        /// </summary>
-        private void UpdateRenderers_Internal(bool updateVisibility)
-        {
-            _renderersPopulated = true;
-            
-            List<Renderer> cache = CollectionCaches<Renderer>.RetrieveList();
-            GetComponentsInChildren<Renderer>(includeInactive: true, cache);
-
-            _renderers.Clear();
-
-            foreach (Renderer r in cache)
-            {
-                if (r.enabled)
-                    _renderers.Add(r);
-            }
-
-            CollectionCaches<Renderer>.Store(cache);
-
-            if (updateVisibility)
-                UpdateRenderVisibility(_lastClientHostVisibility);
-        }
-
+        
         /// <summary>
         /// Updates visibilites on renders without checks.
         /// </summary>
         /// <param name="visible"></param>
         private void UpdateRenderVisibility(bool visible)
         {
+            InitializeRendererCollection(force: false, updateVisibility: false);
+
             List<Renderer> rs = _renderers;
             for (int i = 0; i < rs.Count; i++)
             {
@@ -186,8 +160,40 @@ namespace FishNet.Object
                 }
             }
 
-            OnHostVisibilityUpdated?.Invoke(_lastClientHostVisibility, visible);
+            if (OnHostVisibilityUpdated != null)
+                OnHostVisibilityUpdated.Invoke(_lastClientHostVisibility, visible);
             _lastClientHostVisibility = visible;
+        }
+
+        /// <summary>
+        /// If needed Renderers collection is initialized and populated.
+        /// </summary>
+        private void InitializeRendererCollection(bool force, bool updateVisibility)
+        {
+            if (!force && _renderersPopulated)
+                return;
+
+            List<Renderer> cache = CollectionCaches<Renderer>.RetrieveList();
+            GetComponentsInChildren<Renderer>(includeInactive: true, cache);
+
+            _renderers = new();
+
+            foreach (Renderer r in cache)
+            {
+                if (r.enabled)
+                    _renderers.Add(r);
+            }
+
+            CollectionCaches<Renderer>.Store(cache);
+
+            /* Intentionally set before event call. This is to prevent
+             * a potential endless loop should the user make another call
+             * to this objects renderer API from the event, resulting in
+             * the population repeating. */
+            _renderersPopulated = true;
+
+            if (updateVisibility)
+                UpdateRenderVisibility(_lastClientHostVisibility);
         }
 
         /// <summary>

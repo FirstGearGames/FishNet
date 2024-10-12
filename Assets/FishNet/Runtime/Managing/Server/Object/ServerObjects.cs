@@ -12,7 +12,6 @@ using GameKit.Dependencies.Utilities;
 using GameKit.Dependencies.Utilities.Types;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using FishNet.Managing.Logging;
 using FishNet.Object.Synchronizing;
 using FishNet.Serializing.Helping;
@@ -109,6 +108,7 @@ namespace FishNet.Managing.Server
 
             if (!_scenesLoading)
                 IterateLoadedScenes(false);
+
             Observers_OnUpdate();
         }
 
@@ -370,7 +370,7 @@ namespace FishNet.Managing.Server
         /// Sets initial values for NetworkObjects.
         /// </summary>
         /// <param name="nobs"></param>
-        private void InitializeRootNetworkObjects(List<NetworkObject> nobs) 
+        private void InitializeRootNetworkObjects(List<NetworkObject> nobs)
         {
             //Initialize sceneNobs cache, but do not invoke callbacks till next frame.
             foreach (NetworkObject nob in nobs)
@@ -385,11 +385,24 @@ namespace FishNet.Managing.Server
         /// </summary>
         protected internal void SetupSceneObjects()
         {
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-                SetupSceneObjects(SceneManager.GetSceneAt(i));
-
             Scene ddolScene = DDOL.GetDDOL().gameObject.scene;
-            if (ddolScene.isLoaded)
+            bool ddolLoaded = ddolScene.isLoaded;
+
+            /* Becomes false if setup in GetSceenAt.
+             * This is a safety check for if Unity ever changes
+             * the behavior where DDOL scenes appear in the sceneCount. */
+            bool trySetupDdol = true;
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene s = SceneManager.GetSceneAt(i);
+                if (ddolLoaded && s.handle == ddolScene.handle)
+                    trySetupDdol = false;
+
+                SetupSceneObjects(s);
+            }
+
+            if (trySetupDdol)
                 SetupSceneObjects(ddolScene);
         }
 
@@ -406,7 +419,7 @@ namespace FishNet.Managing.Server
             Scenes.GetSceneNetworkObjects(s, firstOnly: false, errorOnDuplicates: true, ignoreUnsetSceneIds: true, ref sceneNobs);
 
             SetupSceneObjects(sceneNobs);
-            
+
             CollectionCaches<NetworkObject>.Store(sceneNobs);
         }
 
@@ -418,21 +431,7 @@ namespace FishNet.Managing.Server
         {
             InitializeRootNetworkObjects(sceneNobs);
 
-            //Sort the nobs based on initialization order.
-            List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
-
-            //First order root objects.
-            foreach (NetworkObject item in sceneNobs)
-            {
-                if (item.IsNested)
-                    continue;
-
-                cache.AddOrdered(item);
-            }
-
-            OrderNestedByInitializationOrder(cache);
-            //Store sceneNobs.
-            CollectionCaches<NetworkObject>.Store(sceneNobs);
+            List<NetworkObject> cache = SortRootAndNestedByInitializeOrder(sceneNobs);
 
             bool isHost = base.NetworkManager.IsHostStarted;
             int nobsCount = cache.Count;
@@ -565,13 +564,13 @@ namespace FishNet.Managing.Server
             if (predictedSpawn)
                 base.NetworkManager.ClientManager.Objects.PredictedSpawn(networkObject, ownerConnection);
             else
-                SpawnWithoutChecks(networkObject, ownerConnection);
+                SpawnWithoutChecks(networkObject, recursiveSpawnCache: null, ownerConnection);
         }
 
         /// <summary>
         /// Spawns networkObject without any checks.
         /// </summary>
-        private void SpawnWithoutChecks(NetworkObject networkObject, NetworkConnection ownerConnection = null, int? objectId = null, bool rebuildObservers = true)
+        private void SpawnWithoutChecks(NetworkObject networkObject, List<NetworkObject> recursiveSpawnCache = null, NetworkConnection ownerConnection = null, int? objectId = null, bool rebuildObservers = true)
         {
             /* Setup locally without sending to clients.
              * When observers are built for the network object
@@ -586,7 +585,7 @@ namespace FishNet.Managing.Server
                 /* Only spawn recursively if the nob state is unset.
                  * Unset indicates that the nob has not been */
                 if (item.gameObject.activeInHierarchy || item.State == NetworkObjectState.Spawned)
-                    SpawnWithoutChecks(item, ownerConnection, null);
+                    SpawnWithoutChecks(item, recursiveSpawnCache: null, ownerConnection);
             }
 
             /* Copy to a new cache then reset _spawnCache
@@ -597,15 +596,17 @@ namespace FishNet.Managing.Server
              * the same objects would be rebuilt again. This likely
              * would not affect anything other than perf but who
              * wants that. */
-            List<NetworkObject> spawnCacheCopy = CollectionCaches<NetworkObject>.RetrieveList();
-            spawnCacheCopy.AddRange(_spawnCache);
+            bool recursiveCacheWasNull = (recursiveSpawnCache == null);
+            if (recursiveCacheWasNull)
+                recursiveSpawnCache = CollectionCaches<NetworkObject>.RetrieveList();
+            recursiveSpawnCache.AddRange(_spawnCache);
             _spawnCache.Clear();
 
             //Also rebuild observers for the object so it spawns for others.
             if (rebuildObservers)
-                RebuildObservers(spawnCacheCopy);
+                RebuildObservers(recursiveSpawnCache);
 
-            int spawnCacheCopyCount = spawnCacheCopy.Count;
+            int spawnCacheCopyCount = recursiveSpawnCache.Count;
             /* If also client then we need to make sure the object renderers have correct visibility.
              * Set visibility based on if the observers contains the clientHost connection. */
             if (NetworkManager.IsClientStarted)
@@ -614,12 +615,16 @@ namespace FishNet.Managing.Server
                 NetworkConnection localConnection = NetworkManager.ClientManager.Connection;
                 for (int i = 0; i < count; i++)
                 {
-                    NetworkObject nob = spawnCacheCopy[i];
+                    NetworkObject nob = recursiveSpawnCache[i];
                     nob.SetRenderersVisible(nob.Observers.Contains(localConnection));
                 }
             }
 
-            CollectionCaches<NetworkObject>.Store(spawnCacheCopy);
+            /* If collection was null then store the one retrieved.
+             * Otherwise, let the calling method handle the provided
+             * cache. */
+            if (recursiveCacheWasNull)
+                CollectionCaches<NetworkObject>.Store(recursiveSpawnCache);
         }
 
         /// <summary>
@@ -627,6 +632,8 @@ namespace FishNet.Managing.Server
         /// </summary>
         internal void ReadSpawn(PooledReader reader, NetworkConnection conn)
         {
+            List<NetworkObject> spawnedNobs = null;
+            
             ushort spawnLength = reader.ReadUInt16Unpacked();
 
             int readStartPosition = reader.Position;
@@ -719,29 +726,38 @@ namespace FishNet.Managing.Server
                 return;
             }
 
+            
+            spawnedNobs = CollectionCaches<NetworkObject>.RetrieveList();
+            
             //Once here everything is good.
             SendResponse(true, objectId);
-            /* This initializes the object again which cost only a small
-             * amount of perf. Once the refactor is complete this will be changed. */
-            SpawnWithoutChecks(nob, owner, objectId);
 
-            void SendFailedResponse(int objectId)
+
+            List<NetworkConnection> conns = RetrieveAuthenticatedConnections();
+            conns.Remove(conn);
+            
+            RebuildObservers(spawnedNobs, conns);
+            CollectionCaches<NetworkObject>.Store(spawnedNobs);
+            CollectionCaches<NetworkConnection>.Store(conns);
+            //  SpawnWithoutChecks(nob, owner, objectId, rebuildObservers: true);
+
+            void SendFailedResponse(int lCbjectId)
             {
                 SkipRemainingSpawnLength();
                 if (nob != null)
                     base.NetworkManager.StorePooledInstantiated(nob, true);
-                SendResponse(false, objectId);
+                SendResponse(false, lCbjectId);
             }
 
             //Writes a predicted spawn result to a client.
-            void SendResponse(bool success, int objectId)
+            void SendResponse(bool success, int lCbjectId)
             {
                 PooledWriter writer = WriterPool.Retrieve();
                 writer.WritePacketIdUnpacked(PacketId.PredictedSpawnResult);
                 writer.WriteBoolean(success);
 
                 //Id of object which was predicted spawned.
-                writer.WriteNetworkObjectId(objectId);
+                writer.WriteNetworkObjectId(lCbjectId);
 
                 //Write the next Id even if not succesful.
                 Queue<int> objectIdCache = NetworkManager.ServerManager.Objects.GetObjectIdCache();
@@ -756,7 +772,7 @@ namespace FishNet.Managing.Server
 
                 if (success)
                 {
-                    SpawnWithoutChecks(nob, owner, objectId, false);
+                    SpawnWithoutChecks(nob, spawnedNobs, owner, lCbjectId, rebuildObservers: false);
 
                     ReservedLengthWriter rw = ReservedWritersExtensions.Retrieve();
 
@@ -965,7 +981,7 @@ namespace FishNet.Managing.Server
                 {
                     NetworkBehaviour nb = nob.NetworkBehaviours[i];
                     if (nb.SyncTypeDirty && nb.WriteDirtySyncTypes((SyncTypeWriteFlag.ForceReliable | SyncTypeWriteFlag.IgnoreInterval)))
-                        _dirtySyncTypeBehaviours.Remove(nb);
+                        dirtiedNbs.Remove(nb);
                 }
 
                 WriteDespawnAndSend(nob, despawnType);
@@ -1010,6 +1026,8 @@ namespace FishNet.Managing.Server
 
             //Maybe server destroyed the object so don't kick if null.
             if (nob == null)
+                return;
+            if (nob.IsDeinitializing)
                 return;
 
             //Various predicted despawn checks.

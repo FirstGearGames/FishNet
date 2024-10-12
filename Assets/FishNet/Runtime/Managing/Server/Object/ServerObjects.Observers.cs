@@ -1,18 +1,12 @@
-﻿using FishNet.Component.Observing;
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Managing.Object;
 using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Observing;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using FishNet.Utility;
-using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace FishNet.Managing.Server
@@ -162,48 +156,70 @@ namespace FishNet.Managing.Server
         /// <returns></returns>
         private List<NetworkObject> RetrieveOrderedSpawnedObjects()
         {
+            List<NetworkObject> spawnedCache = GetSpawnedNetworkObjects();
+
+            List<NetworkObject> sortedCache = SortRootAndNestedByInitializeOrder(spawnedCache);
+
+            CollectionCaches<NetworkObject>.Store(spawnedCache);
+
+            return sortedCache;
+        }
+
+        /// <summary>
+        /// Returns spawned NetworkObjects as a list.
+        /// Collection returned is a new cache and should be disposed of properly.
+        /// </summary>
+        /// <returns></returns>
+        private List<NetworkObject> GetSpawnedNetworkObjects()
+        {
             List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
-
-            //First order root objects.
-            foreach (NetworkObject item in Spawned.Values)
-            {
-                if (item.IsNested)
-                    continue;
-
-                cache.AddOrdered(item);
-            }
-
-            OrderNestedByInitializationOrder(cache);
-
+            Spawned.ValuesToList(ref cache);
+            
             return cache;
         }
 
         /// <summary>
-        /// Orders nested NetworkObjects of cache by initialization order.
+        /// Sorts a collection of NetworkObjects root and nested by initialize order.
+        /// Collection returned is a new cache and should be disposed of properly.
         /// </summary>
-        /// <param name="cache">Cache to sort.</param>
-        private void OrderNestedByInitializationOrder(List<NetworkObject> cache)
+        internal List<NetworkObject> SortRootAndNestedByInitializeOrder(List<NetworkObject> nobs)
         {
-            //After everything is sorted by root only insert children.
-            for (int i = 0; i < cache.Count; i++)
+            List<NetworkObject> sortedRootCache = CollectionCaches<NetworkObject>.RetrieveList();
+
+            //First order root objects.
+            foreach (NetworkObject item in nobs)
             {
-                NetworkObject nob = cache[i];
-                //Skip root.
-                if (!nob.IsNested)
+                if (item.IsNested)
                     continue;
 
-                int startingIndex = i;
-                AddChildNetworkObjects(nob, ref startingIndex);
+                sortedRootCache.AddOrdered(item);
+            }
+            
+            /* After all root are ordered check
+             * their nested. Order nested in segments
+             * of each root then insert after the root.
+             * This must be performed after all roots are ordered. */
+            List<NetworkObject> sortedRootAndNestedCache = CollectionCaches<NetworkObject>.RetrieveList();
+            List<NetworkObject> sortedNestedCache = CollectionCaches<NetworkObject>.RetrieveList();
+            foreach (NetworkObject item in sortedRootCache)
+            {
+                foreach (NetworkObject nestedItem in item.InitializedNestedNetworkObjects)
+                    sortedNestedCache.AddOrdered(nestedItem);
+
+                /* Once all nested are sorted then can be added to the
+                 * sorted root and nested cache. */
+                sortedRootAndNestedCache.Add(item);
+                sortedRootAndNestedCache.AddRange(sortedNestedCache);
+
+                //Reset cache.
+                sortedNestedCache.Clear();
             }
 
-            void AddChildNetworkObjects(NetworkObject n, ref int index)
-            {
-                foreach (NetworkObject childObject in n.InitializedNestedNetworkObjects)
-                {
-                    cache.Insert(++index, childObject);
-                    AddChildNetworkObjects(childObject, ref index);
-                }
-            }
+            //Store temp caches.
+            CollectionCaches<NetworkObject>.Store(sortedRootCache);
+            CollectionCaches<NetworkObject>.Store(sortedNestedCache);
+
+            return sortedRootAndNestedCache;
         }
 
         /// <summary>

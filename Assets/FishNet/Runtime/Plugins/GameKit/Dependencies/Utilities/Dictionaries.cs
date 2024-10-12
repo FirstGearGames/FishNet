@@ -39,35 +39,23 @@ namespace GameKit.Dependencies.Utilities
         }
 
         /// <summary>
-        /// Returns values as a list using the supplied collection as-is.
+        /// Clears a collection and populates it with this dictionaries values.
         /// </summary>
-        /// <returns></returns>
         public static void ValuesToList<TKey, TValue>(this IDictionary<TKey, TValue> dict, ref List<TValue> result)
         {
-            foreach (KeyValuePair<TKey, TValue> item in dict)
-                result.Add(item.Value);
+            result.Clear();
+            foreach (TValue item in dict.Values)
+                result.Add(item);
         }
-
+        
         /// <summary>
-        /// Returns keys as an allocated list.
+        /// Clears a collection and populates it with this dictionaries keys.
         /// </summary>
-        /// <returns></returns>
-        public static List<TKey> KeysToList<TKey, TValue>(this IDictionary<TKey, TValue> dict)
+        public static void KeysToList<TKey, TValue>(this IDictionary<TKey, TValue> dict, ref List<TKey> result)
         {
-            List<TKey> result = new(dict.Count);
-            return dict.KeysToList(ref result);
-        }
-
-        /// <summary>
-        /// Returns keys as a list using the supplied collection as-is.
-        /// </summary>
-        /// <returns></returns>
-        public static List<TKey> KeysToList<TKey, TValue>(this IDictionary<TKey, TValue> dict, ref List<TKey> result)
-        {
-            foreach (KeyValuePair<TKey, TValue> item in dict)
-                result.Add(item.Key);
-
-            return result;
+            result.Clear();
+            foreach (TKey item in dict.Keys)
+                result.Add(item);
         }
 
     }

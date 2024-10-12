@@ -1034,7 +1034,7 @@ namespace FishNet.Object
         {
             if (!CanDeinitialize(asServer))
                 return;
-
+            
             Deinitialize_Prediction(asServer);
 
             InvokeStopCallbacks(asServer, true);

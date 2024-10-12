@@ -385,7 +385,8 @@ namespace FishNet.Managing.Client
                          * all spawns are iterated, but that will break the order
                          * reliability. This is unfortunately a lose/lose situation so
                          * the best we can do is let the user know the risk. */
-                        if (_iteratedSpawns.Contains(cnob.NetworkObject))
+                        NetworkObject n = cnob.NetworkObject;
+                        if (_iteratedSpawns.Contains(n))
                         {
                             // if (!_loggedSameTickWarning)
                             // {
@@ -396,8 +397,8 @@ namespace FishNet.Managing.Client
                             // }
 
                             _conflictingDespawns.Add(cnob.ObjectId);
-                            cnob.NetworkObject.gameObject.SetActive(true);
-                            cnob.NetworkObject.Initialize(false, true);
+                            n.gameObject.SetActive(true);
+                            n.Initialize(false, true);
                         }
 
                         //Now being initialized, despawn the object.

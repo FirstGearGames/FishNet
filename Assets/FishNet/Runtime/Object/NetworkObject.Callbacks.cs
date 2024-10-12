@@ -134,6 +134,7 @@ namespace FishNet.Object
             }
 
             bool invokeOnNetwork = asServer || (clientStartCalled && !IsServerStarted);
+        
             if (invokeOnNetwork)
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)

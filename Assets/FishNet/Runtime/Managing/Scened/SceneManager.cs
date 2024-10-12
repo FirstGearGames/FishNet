@@ -1737,7 +1737,7 @@ namespace FishNet.Managing.Scened
 
                 NetworkConnection[] arrayConn = new NetworkConnection[] { conn };
                 InvokeClientPresenceChange(scene, arrayConn, true, true);
-                RebuildObservers(arrayConn.ToArray());
+                RebuildObservers(arrayConn);
                 InvokeClientPresenceChange(scene, arrayConn, true, false);
 
                 /* Also need to rebuild all networkobjects
