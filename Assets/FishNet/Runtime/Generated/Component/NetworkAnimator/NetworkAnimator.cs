@@ -365,7 +365,7 @@ namespace FishNet.Component.Animating
         {
             get
             {
-                bool enabled = (_animator.enabled || _synchronizeWhenDisabled);
+                bool enabled = _animator && (_animator.enabled || _synchronizeWhenDisabled);
                 bool failedChecks = (!_isAnimatorSet || !enabled);
                 return !failedChecks;
             }
