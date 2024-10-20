@@ -96,7 +96,7 @@ namespace FishNet.Object
         /// <summary>
         /// Tries to generate a SceneIds for NetworkObjects in a scene.
         /// </summary>
-        internal static void CreateSceneId(UnityEngine.SceneManagement.Scene scene, out int changed, out int found)
+        internal static void CreateSceneId(UnityEngine.SceneManagement.Scene scene, bool force, out int changed, out int found)
         {
             changed = 0;
             found = 0;
@@ -120,10 +120,11 @@ namespace FishNet.Object
 
             foreach (NetworkObject item in sceneNobs)
             {
+                bool canGenerate = (!item.IsSceneObject || !setIds.Add(item.SceneId));
                 /* If an Id has not been generated yet or if it
                  * already exist then rebuild for this object. */
-                if (!item.IsSceneObject || !setIds.Add(item.SceneId))
-                {
+                 if (force || canGenerate)
+                 {
                     item.SceneId = NetworkObject.UNSET_SCENEID_VALUE;
                     rebuildingNobs.Add(item);
                 }
@@ -140,7 +141,7 @@ namespace FishNet.Object
 
                 ulong CombineHashes(uint a, uint b)
                 {
-                    return (b << 32 | a);
+                    return (b | a);
                 }
 
                 setIds.Add(nextSceneId);
@@ -153,7 +154,7 @@ namespace FishNet.Object
         /// <summary>
         /// Tries to generate a SceneId.
         /// </summary>
-        private void CreateSceneId()
+        private void CreateSceneId(bool force)
         {
             if (Application.isPlaying)
                 return;
@@ -197,7 +198,7 @@ namespace FishNet.Object
 
                 _lastSceneIdAutomaticRebuildTime = realtime;
 
-                CreateSceneId(gameObject.scene, out _, out _);
+                CreateSceneId(gameObject.scene, force, out _, out _);
             }
         }
 
@@ -228,12 +229,12 @@ namespace FishNet.Object
 
         private void ReferenceIds_OnValidate()
         {
-            CreateSceneId();
+            CreateSceneId(force: false);
         }
 
         private void ReferenceIds_Reset()
         {
-            CreateSceneId();
+            CreateSceneId(force: false);
         }
 #endif
     }

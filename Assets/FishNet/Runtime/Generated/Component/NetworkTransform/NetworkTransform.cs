@@ -724,7 +724,7 @@ namespace FishNet.Component.Transforming
 
             TryClearGoalDatas_OwnershipChange(prevOwner, false);
         }
-        
+
         public override void OnStopNetwork()
         {
             ResetState();
@@ -946,7 +946,6 @@ namespace FishNet.Component.Transforming
             else
                 _timeManager.OnUpdate -= TimeManager_OnUpdate;
         }
-        
 
         /// <summary>
         /// Returns if controlling logic can be run. This may be the server when there is no owner, even if client authoritative, and more.
@@ -2442,7 +2441,8 @@ namespace FishNet.Component.Transforming
             while (_goalDataQueue.Count > 0)
                 ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
 
-            _lastSentTransformData.ResetState();
+            if (_lastSentTransformData != null)
+                _lastSentTransformData.ResetState();
             ResettableObjectCaches<GoalData>.StoreAndDefault(ref _currentGoalData);
         }
 

@@ -309,10 +309,10 @@ namespace FishNet.Object
 
             if (includeNested)
             {
-                List<NetworkObject> allNested = RetrieveNestedNetworkObjects();
+                List<NetworkObject> allNested = RetrieveNestedNetworkObjects(recursive: true);
                 
                 foreach (NetworkObject nob in allNested)
-                    nob.SetLocalOwnership(caller, includeNested);
+                    nob.SetLocalOwnership(caller, includeNested: true);
                 
                 CollectionCaches<NetworkObject>.Store(allNested);
             }

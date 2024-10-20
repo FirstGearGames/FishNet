@@ -101,32 +101,43 @@ namespace FishNet.Object
         /// </summary>
         [HideInInspector]
         public List<NetworkBehaviour> NetworkBehaviours;
-
         /// <summary>
         /// NetworkBehaviour on the root of a NetworkObject parenting this instance. Value will be null if there was no parent during serialization.
         /// </summary>
         /// <remarks>This API is for internal use and may change at any time.</remarks>
-        [field: SerializeField, HideInInspector]
-        public NetworkBehaviour InitializedParentNetworkBehaviour { get; private set; }
+        [HideInInspector]
+        public NetworkBehaviour InitializedParentNetworkBehaviour;
 
         /// <summary>
         /// Nested NetworkObjects that existed during initialization.
         /// </summary>
         /// <remarks>This API is for internal use and may change at any time.</remarks>
-        [field: SerializeField, HideInInspector]
-        public List<NetworkObject> InitializedNestedNetworkObjects { get; private set; } = new();
+        [HideInInspector]
+        public List<NetworkObject> InitializedNestedNetworkObjects = new();
 
         /// <summary>
         /// Returns a cached collection containing initialized and runtime nested NetworkObjects.
         /// </summary>
-        internal List<NetworkObject> RetrieveNestedNetworkObjects()
+        /// <param name="recursive">True to also return nested NetworkObjects beyond direct children of this object.</param>
+        internal List<NetworkObject> RetrieveNestedNetworkObjects(bool recursive)
         {
-            List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
-            nobs.AddRange(InitializedNestedNetworkObjects);
+            List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
+            cache.AddRange(InitializedNestedNetworkObjects);
             foreach (NetworkBehaviour nb in RuntimeChildNetworkBehaviours)
-                nobs.Add(nb.NetworkObject);
+                cache.Add(nb.NetworkObject);
 
-            return nobs;
+            if (recursive)
+            {
+                int count = cache.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    List<NetworkObject> recursiveCache = cache[i].RetrieveNestedNetworkObjects(recursive: true);
+                    cache.AddRange(recursiveCache);
+                    CollectionCaches<NetworkObject>.Store(recursiveCache);
+                }
+            }
+
+            return cache;
         }
 
         /// <summary>
@@ -134,20 +145,17 @@ namespace FishNet.Object
         /// This is exposed only for low-level use and may change without notice.
         /// </summary>
         [HideInInspector]
-        public NetworkBehaviour RuntimeParentNetworkBehaviour { get; private set; }
-
+        public NetworkBehaviour RuntimeParentNetworkBehaviour;
         /// <summary>
         /// NetworkObjects which are made child at runtime using NetworkObject.SetParent.
         /// This is exposed only for low-level use and may change without notice.
         /// </summary>
         [HideInInspector]
-        public List<NetworkBehaviour> RuntimeChildNetworkBehaviours { get; private set; }
-
+        public List<NetworkBehaviour> RuntimeChildNetworkBehaviours;
         /// <summary>
         /// NetworkBehaviour parenting this instance. This value prioritizes the runtime value, then initialized value.
         /// This is exposed only for low-level use and may change without notice.
         /// </summary>
-        [HideInInspector]
         internal NetworkBehaviour CurrentParentNetworkBehaviour
         {
             get
@@ -185,6 +193,7 @@ namespace FishNet.Object
         /// </summary>
         /// <returns></returns>
         public bool GetIsNetworked() => _isNetworked;
+
         /// <summary>
         /// Sets IsNetworked value. This method must be called before Start.
         /// </summary>
@@ -203,11 +212,13 @@ namespace FishNet.Object
         /// </summary>
         [Obsolete("Use GetIsSpawnable.")] //Remove on V5.
         public bool IsSpawnable => _isSpawnable;
+
         /// <summary>
         /// Gets the current IsSpawnable value.
         /// </summary>
         /// <returns></returns>
         public bool GetIsSpawnable() => _isSpawnable;
+
         /// <summary>
         /// Sets IsSpawnable value.
         /// </summary>
@@ -299,6 +310,11 @@ namespace FishNet.Object
         /// True if disabled NetworkBehaviours have been initialized.
         /// </summary>
         private bool _disabledNetworkBehavioursInitialized;
+        /// <summary>
+        /// Becomes true once initialized values are set.
+        /// </summary>
+        [System.NonSerialized]
+        private bool _initializedValusSet;
         #endregion
 
         #region Const.
@@ -334,8 +350,7 @@ namespace FishNet.Object
         protected virtual void Awake()
         {
             _isStatic = gameObject.isStatic;
-            RuntimeChildNetworkBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveList();
-            
+
             /* If networkBehaviours are not yet initialized then do so now.
              * After initializing at least 1 networkBehaviour will always exist
              * as emptyNetworkBehaviour is added automatically when none are present. */
@@ -351,15 +366,15 @@ namespace FishNet.Object
                         isNested = true;
                         break;
                     }
-                    
+
                     parent = parent.parent;
                 }
-                
+
                 //If not nested then init
                 if (!isNested)
                     SetInitializedValues(parentNob: null);
             }
-            
+
             SetChildDespawnedState();
         }
 
@@ -418,6 +433,10 @@ namespace FishNet.Object
 
         private void OnDestroy()
         {
+            //The object never initialized for use.
+            if (!_initializedValusSet)
+                return;
+
             /* If already deinitializing then FishNet is in the process of,
              * or has finished cleaning up this object. */
             //callStopNetwork = (ServerManager.Objects.GetFromPending(ObjectId) == null);
@@ -459,7 +478,7 @@ namespace FishNet.Object
                 {
                     Deinitialize_Prediction(true);
                     NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, true);
-                    
+
                     InvokeStopCallbacks(asServer: true, invokeSyncTypeCallbacks: true);
                 }
 
@@ -467,11 +486,11 @@ namespace FishNet.Object
                 {
                     Deinitialize_Prediction(false);
                     NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, false);
-                    
+
                     InvokeStopCallbacks(false, true);
                 }
             }
-            
+
             /* If owner exist then remove object from owner.
              * This has to be called here as well OnDisable because
              * the OnDisable will only remove the object if
@@ -487,15 +506,17 @@ namespace FishNet.Object
             if (NetworkBehaviours.Count > 0)
             {
                 NetworkBehaviour thisNb = NetworkBehaviours[0];
-                RuntimeParentNetworkBehaviour?.NetworkObject.RuntimeChildNetworkBehaviours.Remove(thisNb);
+                if (RuntimeParentNetworkBehaviour != null)
+                    RuntimeParentNetworkBehaviour.NetworkObject.RuntimeChildNetworkBehaviours.Remove(thisNb);
             }
 
-            CollectionCaches<NetworkBehaviour>.Store(RuntimeChildNetworkBehaviours);
             IsDeinitializing = true;
 
             SetDeinitializedStatus();
 
             NetworkBehaviour_OnDestroy();
+
+            StoreCollections();
 
             void NetworkBehaviour_OnDestroy()
             {
@@ -840,6 +861,18 @@ namespace FishNet.Object
                 return;
             }
 
+            /* If NetworkBehaviours is null then all collections are.
+             * Set values for each collection. */
+            if (!_initializedValusSet)
+            {
+                /* This only runs when playing, so it's safe to return existing to the pool. */
+                StoreCollections();
+
+                RetrieveCollections();
+
+                _initializedValusSet = true;
+            }
+
             SerializeTransformProperties();
             SetIsNestedThroughTraversal();
             /* This method can be called by the developer initializing prefabs, the prefab collection doing it automatically,
@@ -1023,7 +1056,7 @@ namespace FishNet.Object
                 return false;
             else if (!asServer && !IsClientInitialized)
                 return false;
-            
+
             return true;
         }
 
@@ -1034,7 +1067,7 @@ namespace FishNet.Object
         {
             if (!CanDeinitialize(asServer))
                 return;
-            
+
             Deinitialize_Prediction(asServer);
 
             InvokeStopCallbacks(asServer, true);
@@ -1080,7 +1113,7 @@ namespace FishNet.Object
             SetOwner(NetworkManager.EmptyConnection);
             if (NetworkObserver != null)
                 NetworkObserver.Deinitialize(false);
-            
+
             //QOL references.
             NetworkManager = null;
             ServerManager = null;
@@ -1196,10 +1229,10 @@ namespace FishNet.Object
 
             if (includeNested)
             {
-                List<NetworkObject> allNested = RetrieveNestedNetworkObjects();
+                List<NetworkObject> allNested = RetrieveNestedNetworkObjects(recursive: true);
 
                 foreach (NetworkObject nob in allNested)
-                    nob.GiveOwnership(newOwner, asServer, includeNested);
+                    nob.GiveOwnership(newOwner, asServer, includeNested: true);
 
                 CollectionCaches<NetworkObject>.Store(allNested);
             }
@@ -1313,6 +1346,23 @@ namespace FishNet.Object
         internal void SerializeTransformProperties()
         {
             SerializedTransformProperties = new(transform.localPosition, transform.localRotation, transform.localScale);
+        }
+
+        /// <summary>
+        /// Stores collections to caches.
+        /// </summary>
+        private void StoreCollections()
+        {
+            CollectionCaches<NetworkBehaviour>.StoreAndDefault(ref NetworkBehaviours);
+            CollectionCaches<NetworkObject>.StoreAndDefault(ref InitializedNestedNetworkObjects);
+            CollectionCaches<NetworkBehaviour>.StoreAndDefault(ref RuntimeChildNetworkBehaviours);
+        }
+
+        private void RetrieveCollections()
+        {
+            NetworkBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveList();
+            InitializedNestedNetworkObjects = CollectionCaches<NetworkObject>.RetrieveList();
+            RuntimeChildNetworkBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveList();
         }
 
         #region Editor.

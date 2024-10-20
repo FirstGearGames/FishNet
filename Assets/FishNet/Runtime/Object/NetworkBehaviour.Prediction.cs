@@ -542,16 +542,7 @@ namespace FishNet.Object
         /// </summary>
         protected internal void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
-            //NOTESSTART
-            /* When inserting states only replay the first state after the reconcile.
-             * This prevents an inconsistency on running created states if other created states
-             * were to arrive late. Essentially the first state is considered 'current' and the rest
-             * are acting as a buffer against unsteady networking conditions. */
-
-            /* When appending states all created can be run. Appended states are only inserted after they've
-             * run at the end of the tick, which performs of it's own queue. Because of this, it's safe to assume
-             * if the state has been inserted into the past it has already passed it's buffer checks. */
-            //NOTESEND             
+                         
             T data;
             ReplicateState state;
             bool isAppendedOrder = _networkObjectCache.PredictionManager.IsAppendedStateOrder;
@@ -2025,16 +2016,7 @@ namespace FishNet.Object
         /// </summary>
         protected internal void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<T> replicatesHistory, Channel channel) where T : IReplicateData
         {
-            //NOTESSTART
-            /* When inserting states only replay the first state after the reconcile.
-             * This prevents an inconsistency on running created states if other created states
-             * were to arrive late. Essentially the first state is considered 'current' and the rest
-             * are acting as a buffer against unsteady networking conditions. */
-
-            /* When appending states all created can be run. Appended states are only inserted after they've
-             * run at the end of the tick, which performs of it's own queue. Because of this, it's safe to assume
-             * if the state has been inserted into the past it has already passed it's buffer checks. */
-            //NOTESEND             
+                         
             T data;
             ReplicateState state;
             bool isAppendedOrder = _networkObjectCache.PredictionManager.IsAppendedStateOrder;

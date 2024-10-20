@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -139,7 +138,7 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 30
+  _tickRate: 60
   _pingInterval: 15
   _physicsMode: 1
 --- !u!1 &442045874
@@ -191,10 +190,11 @@ MonoBehaviour:
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
-  _networkBehaviours:
-  - {fileID: 0}
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <SerializedNestedNetworkObjects>k__BackingField: []
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
@@ -217,7 +217,7 @@ MonoBehaviour:
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 0
-  <SceneId>k__BackingField: 10134845970961547977
+  <SceneId>k__BackingField: 3684663076
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
@@ -582,7 +582,7 @@ MonoBehaviour:
   _objectPool: {fileID: 0}
   _persistence: 0
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: 68e79e63a16f2c74e81f070bd36822b8, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: ef18464092139404db8e515b0bf59331, type: 2}
 --- !u!1 &7443408886575219563
 GameObject:
   m_ObjectHideFlags: 0
@@ -596,6 +596,7 @@ GameObject:
   - component: {fileID: 370472796}
   - component: {fileID: 7443408886575219565}
   - component: {fileID: 7443408886575219564}
+  - component: {fileID: 7443408886575219566}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -635,3 +636,29 @@ MonoBehaviour:
   _placement: 2
   _showOutgoing: 1
   _showIncoming: 1
+--- !u!114 &7443408886575219566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408886575219563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68828c85278210948b9d50a8db3aab74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _authenticator: {fileID: 0}
+  _remoteClientTimeout: 2
+  _remoteClientTimeoutDuration: 60
+  _allowPredictedSpawning: 0
+  _reservedObjectIds: 15
+  _syncTypeRate: 0.1
+  SpawnPacking:
+    Position: 0
+    Rotation: 2
+    Scale: 2
+  _changeFrameRate: 1
+  _frameRate: 70
+  _shareIds: 1
+  _startOnHeadless: 1

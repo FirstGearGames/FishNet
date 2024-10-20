@@ -994,6 +994,10 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void WriteDespawnAndSend(NetworkObject nob, DespawnType despawnType)
         {
+            HashSet<NetworkConnection> observers = nob.Observers;
+            if (observers.Count == 0)
+                return;
+            
             PooledWriter everyoneWriter = WriterPool.Retrieve();
             WriteDespawn(nob, despawnType, everyoneWriter);
 
@@ -1001,8 +1005,12 @@ namespace FishNet.Managing.Server
 
             //Add observers to a list cache.
             List<NetworkConnection> cache = CollectionCaches<NetworkConnection>.RetrieveList();
-            cache.AddRange(nob.Observers);
+            /* Must be added into a new collection because the
+             * user might try and modify the observers in the despawn, which
+             * would cause a collection modified error. */
+            cache.AddRange(observers);
             int cacheCount = cache.Count;
+
             for (int i = 0; i < cacheCount; i++)
             {
                 //Invoke ondespawn and send despawn.

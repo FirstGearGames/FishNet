@@ -1,5 +1,7 @@
-﻿using FishNet.Utility.Template;
+﻿using System;
+using FishNet.Utility.Template;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace FishNet.Demo.Benchmarks.NetworkTransforms
 {
@@ -18,6 +20,8 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
 
         [Header("Movement")]
         [SerializeField]
+        private bool _moveInUpdate = false;
+        [SerializeField]
         [Range(0.1f, 30f)]
         private float _moveRate = 3f;
         [Range(1f, 1000f)]
@@ -31,19 +35,32 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         private Vector3 _goalPosition;
         //Rotation to move towards.
         private Quaternion _goalRotation;
-        //Position at spawn.
-        private Vector3 _startPosition;
 
         private Quaternion _lastRot;
 
         protected override void TimeManager_OnTick()
         {
+            if (_moveInUpdate)
+                return;
+            
+            float delta = (float)base.TimeManager.TickDelta;
+            Move(delta);
+        }
+
+        private void Update()
+        {
+            if (!_moveInUpdate)
+                return;
+
+            Move(Time.deltaTime);
+        }
+
+        private void Move(float delta)
+        {        
             if (!_isActive)
                 return;
             if (!base.IsServerInitialized)
                 return;
-
-            float delta = (float)base.TimeManager.TickDelta;
             
             transform.position = Vector3.MoveTowards(transform.position, _goalPosition, _moveRate * delta);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, _goalRotation, _rotateRate * delta);
@@ -51,11 +68,9 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
             if (transform.position == _goalPosition)
                 RandomizeGoal();
         }
-        
+
         public override void OnStartServer()
         {
-            _startPosition = transform.position;
-            
             RandomizeGoal();
         }
 

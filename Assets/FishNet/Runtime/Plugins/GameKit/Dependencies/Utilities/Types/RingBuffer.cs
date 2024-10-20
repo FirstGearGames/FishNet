@@ -419,7 +419,7 @@ namespace GameKit.Dependencies.Utilities.Types
             return _enumerator;
         }
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => this.GetEnumerator(); // Collection.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator(); // Collection.GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator(); 
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

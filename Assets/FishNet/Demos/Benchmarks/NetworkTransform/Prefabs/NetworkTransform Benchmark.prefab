@@ -51,11 +51,13 @@ MonoBehaviour:
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
-  _networkBehaviours:
-  - {fileID: 0}
+  NetworkBehaviours:
+  - {fileID: 6667641716399555817}
   - {fileID: -5271135124957689192}
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <SerializedNestedNetworkObjects>k__BackingField: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
@@ -75,7 +77,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 26
+  <PrefabId>k__BackingField: 33
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 14364260540862342890
   <SceneId>k__BackingField: 0
@@ -95,13 +97,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9880e85651efd71469092ce519317f7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 4512293259955182956}
-  _networkObjectCache: {fileID: 0}
-  _tickCallbacks: 6
+  _networkObjectCache: {fileID: 4512293259955182956}
+  _tickCallbacks: 14
   _isActive: 1
   _axes: 3
   _rotationChance: 0.33
+  _moveInUpdate: 0
   _moveRate: 3
   _rotateRate: 30
 --- !u!114 &-5271135124957689192
@@ -125,7 +128,7 @@ MonoBehaviour:
     Position: 1
     Rotation: 1
     Scale: 0
-  _interpolation: 2
+  _interpolation: 3
   _extrapolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1

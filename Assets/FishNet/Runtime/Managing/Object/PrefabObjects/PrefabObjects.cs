@@ -22,12 +22,12 @@ namespace FishNet.Managing.Object
         public abstract int GetObjectCount();
         public abstract NetworkObject GetObject(bool asServer, int id);
         public abstract void RemoveNull();
-        public abstract void AddObject(NetworkObject networkObject, bool checkForDuplicates = false);
-        public abstract void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false);
-        public abstract void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false);
-        public abstract void AddObject(DualPrefab dualPrefab, bool checkForDuplicates = false);
-        public abstract void AddObjects(List<DualPrefab> dualPrefab, bool checkForDuplicates = false);
-        public abstract void AddObjects(DualPrefab[] dualPrefab, bool checkForDuplicates = false);
+        public abstract void AddObject(NetworkObject networkObject, bool checkForDuplicates = false, bool initializeAdded = true);
+        public abstract void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false, bool initializeAdded = true);
+        public abstract void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false, bool initializeAdded = true);
+        public abstract void AddObject(DualPrefab dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true);
+        public abstract void AddObjects(List<DualPrefab> dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true);
+        public abstract void AddObjects(DualPrefab[] dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true);
         public abstract void InitializePrefabRange(int startIndex);
 
 

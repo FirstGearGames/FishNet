@@ -203,8 +203,11 @@ namespace FishNet.Managing.Server
             List<NetworkObject> sortedNestedCache = CollectionCaches<NetworkObject>.RetrieveList();
             foreach (NetworkObject item in sortedRootCache)
             {
-                foreach (NetworkObject nestedItem in item.InitializedNestedNetworkObjects)
+                List<NetworkObject> nested = item.RetrieveNestedNetworkObjects(recursive: true);
+                foreach (NetworkObject nestedItem in nested)
                     sortedNestedCache.AddOrdered(nestedItem);
+
+                CollectionCaches<NetworkObject>.Store(nested);
 
                 /* Once all nested are sorted then can be added to the
                  * sorted root and nested cache. */

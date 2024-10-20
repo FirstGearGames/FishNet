@@ -63,22 +63,19 @@ namespace FishNet.Managing.Object
                     i--;
                 }
             }
-
-            if (Application.isPlaying)
-                InitializePrefabRange(0);
         }
 
-        public override void AddObject(DualPrefab dualPrefab, bool checkForDuplicates = false)
+        public override void AddObject(DualPrefab dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true)
         {
-            AddObjects(new DualPrefab[] { dualPrefab }, checkForDuplicates);
+            AddObjects(new DualPrefab[] { dualPrefab }, checkForDuplicates, initializeAdded);
         }
 
-        public override void AddObjects(List<DualPrefab> dualPrefabs, bool checkForDuplicates = false)
+        public override void AddObjects(List<DualPrefab> dualPrefabs, bool checkForDuplicates = false, bool initializeAdded = true)
         {
-            AddObjects(dualPrefabs.ToArray(), checkForDuplicates);
+            AddObjects(dualPrefabs.ToArray(), checkForDuplicates, initializeAdded);
         }
 
-        public override void AddObjects(DualPrefab[] dualPrefabs, bool checkForDuplicates = false)
+        public override void AddObjects(DualPrefab[] dualPrefabs, bool checkForDuplicates = false, bool initializeAdded = true)
         {
             if (!checkForDuplicates)
             {
@@ -90,7 +87,7 @@ namespace FishNet.Managing.Object
                     AddUniqueNetworkObjects(dp);
             }
 
-            if (Application.isPlaying)
+            if (initializeAdded && Application.isPlaying)
                 InitializePrefabRange(0);
         }
 
@@ -117,17 +114,17 @@ namespace FishNet.Managing.Object
 
 
         #region Unused.
-        public override void AddObject(NetworkObject networkObject, bool checkForDuplicates = false)
+        public override void AddObject(NetworkObject networkObject, bool checkForDuplicates = false, bool initializeAdded = true)
         {
             NetworkManagerExtensions.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
         }
 
-        public override void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false)
+        public override void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false, bool initializeAdded = true)
         {
             NetworkManagerExtensions.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
         }
 
-        public override void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false)
+        public override void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false, bool initializeAdded = true)
         {
             NetworkManagerExtensions.LogError($"Single prefabs are not supported with DualPrefabObjects. Make a SinglePrefabObjects asset instead.");
         }

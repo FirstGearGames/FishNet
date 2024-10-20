@@ -212,7 +212,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.5.1";
+        public const string FISHNET_VERSION = "4.5.2";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
@@ -240,7 +240,7 @@ namespace FishNet.Managing
             {
                 Generator.IgnorePostProcess = true;
                 Debug.Log("DefaultPrefabCollection is being refreshed.");
-                Generator.GenerateFull();
+                Generator.GenerateFull(initializeAdded: false);
                 Generator.IgnorePostProcess = false;
             }
 #endif
@@ -250,7 +250,7 @@ namespace FishNet.Managing
                 DefaultPrefabObjects originalDpo = (DefaultPrefabObjects)SpawnablePrefabs;
                 //If not editor then a new instance must be made and sorted.
                 DefaultPrefabObjects instancedDpo = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
-                instancedDpo.AddObjects(originalDpo.Prefabs.ToList(), false);
+                instancedDpo.AddObjects(originalDpo.Prefabs.ToList(), checkForDuplicates: false, initializeAdded: false);
                 instancedDpo.Sort();
                 SpawnablePrefabs = instancedDpo;
             }

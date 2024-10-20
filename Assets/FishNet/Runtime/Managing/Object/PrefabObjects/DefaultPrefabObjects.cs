@@ -96,7 +96,7 @@ namespace FishNet.Managing.Object
                 sortedNobs.Add(hashcodesAndNobs[hc]);
 
             base.Clear();
-            base.AddObjects(sortedNobs, false);
+            base.AddObjects(sortedNobs, checkForDuplicates: false, initializeAdded: false);
         }
 
 

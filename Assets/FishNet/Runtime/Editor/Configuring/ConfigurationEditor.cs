@@ -158,7 +158,7 @@ namespace FishNet.Editing
                 }
 
                 checkedScenes++;
-                NetworkObject.CreateSceneId(s, out int changed, out int found);
+                NetworkObject.CreateSceneId(s, force: true, out int changed, out int found);
                 checkedObjects += found;
                 changedObjects += changed;
             }

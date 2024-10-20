@@ -1,5 +1,4 @@
 using GameKit.Dependencies.Utilities.Types;
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -181,7 +180,16 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         /// <returns></returns>
         public static HashSet<T> RetrieveHashSet() => CollectionCaches<T>.RetrieveHashSet();
-
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        /// <returns></returns>
+        public static Queue<T> RetrieveQueue() => CollectionCaches<T>.RetrieveQueue();
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        /// <returns></returns>
+        public static BasicQueue<T> RetrieveBasicQueue() => CollectionCaches<T>.RetrieveBasicQueue();
 
         /// <summary>
         /// Stores a collection and sets the original reference to default.
@@ -292,6 +300,67 @@ namespace GameKit.Dependencies.Utilities
             value.Clear();
             CollectionCaches<T>.Store(value);
         }
+        
+        /// <summary>
+        /// Stores a collection and sets the original reference to default.
+        /// Method will not execute if value is null.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void StoreAndDefault(ref Queue<T> value)
+        {
+            if (value == null)
+                return;
+            
+            Store(value);
+            value = default;
+        }
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        public static void Store(Queue<T> value)
+        {
+            foreach (T item in value)
+            {
+                item.ResetState();
+                ObjectCaches<T>.Store(item);
+            }
+            value.Clear();
+            CollectionCaches<T>.Store(value);
+        }
+          
+        /// <summary>
+        /// Stores a collection and sets the original reference to default.
+        /// Method will not execute if value is null.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void StoreAndDefault(ref BasicQueue<T> value)
+        {
+            if (value == null)
+                return;
+            
+            Store(value);
+            value = default;
+        }
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        public static void Store(BasicQueue<T> value)
+        {
+            while (value.TryDequeue(out T result))
+            {
+                result.ResetState();
+                ObjectCaches<T>.Store(result);
+            }
+
+            value.Clear();
+            CollectionCaches<T>.Store(value);
+        }
+
+
     }
 
     /// <summary>
