@@ -738,7 +738,7 @@ namespace FishNet.Object.Synchronizing
         /// Returns Enumerator for collection.
         /// </summary>
         /// <returns></returns>
-        public IEnumerator GetEnumerator() => Collection.GetEnumerator();
+        public IEnumerator<T> GetEnumerator() => Collection.GetEnumerator();
 
         [APIExclude]
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => Collection.GetEnumerator();
