@@ -140,10 +140,6 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         private InterpolationContainer _interpolator = new();
         /// <summary>
-        /// True if T IsValueType.
-        /// </summary>
-        private bool _isValueType;
-        /// <summary>
         /// True if value was ever set after the SyncType initialized.
         /// This is true even if SetInitialValues was called at runtime.
         /// </summary>
@@ -161,7 +157,6 @@ namespace FishNet.Object.Synchronizing
         protected override void Initialized()
         {
             base.Initialized();
-            _isValueType = typeof(T).IsValueType;
             _initialValue = _value;
         }
 
@@ -279,6 +274,7 @@ namespace FishNet.Object.Synchronizing
                 // if (Comparers.EqualityCompare(prev, nextValue))
                 //     return;
 
+                T prev = _value;
                 /* If also server do not update value.
                  * Server side has say of the current value. */
                 /* Only update value if not server. We do not want
@@ -286,8 +282,6 @@ namespace FishNet.Object.Synchronizing
                  * they just received.*/
                 if (!base.NetworkManager.IsServerStarted)
                     UpdateValues(nextValue);
-
-                T prev = _value;
 
                 InvokeOnChange(prev, nextValue, asServer: false);
             }
@@ -374,7 +368,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
         [MakePublic]
-        internal protected override void OnStartCallback(bool asServer)
+        protected internal override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
 
@@ -396,7 +390,7 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         /// <param name="resetSyncTick">True to set the next time data may sync.</param>
         [MakePublic]
-        internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
+        protected internal override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
             writer.Write(_value);
@@ -406,7 +400,7 @@ namespace FishNet.Object.Synchronizing
         /// Writes current value if not initialized value.
         /// </summary>m>
         [MakePublic]
-        internal protected override void WriteFull(PooledWriter obj0)
+        protected internal override void WriteFull(PooledWriter obj0)
         {
             // /* If a class then skip comparer check.
             //  * InitialValue and Value will be the same reference.

@@ -10,6 +10,7 @@ using FishNet.Component.Ownership;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using GameKit.Dependencies.Utilities.Types;
+using UnityEngine.Serialization;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -281,8 +282,16 @@ namespace FishNet.Object
         public int Order => _initializeOrder;
 
         [Tooltip("Order to initialize this object's callbacks when spawned with other NetworkObjects in the same tick. Default value is 0, negative values will execute callbacks first.")]
+        [Range(sbyte.MinValue, sbyte.MaxValue)]
         [SerializeField]
         private sbyte _initializeOrder = 0;
+        /// <summary>
+        /// True to keep this object spawned when the owner disconnects.
+        /// </summary>
+        internal bool PreventDespawnOnDisconnect => _preventDespawnOnDisconnect;
+        [Tooltip("True to keep this object spawned when the owner disconnects.")]
+        [SerializeField]
+        private bool _preventDespawnOnDisconnect;
         /// <summary>
         /// How to handle this object when it despawns. Scene objects are never destroyed when despawning.
         /// </summary>

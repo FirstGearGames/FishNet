@@ -14,6 +14,7 @@ namespace FishNet.Object.Editing
         private SerializedProperty _isSpawnable;
         private SerializedProperty _isGlobal;
         private SerializedProperty _initializeOrder;
+        private SerializedProperty _removeOwnerOnDisconnect;
         private SerializedProperty _defaultDespawnType;
 
         private SerializedProperty _enablePrediction;
@@ -39,6 +40,7 @@ namespace FishNet.Object.Editing
             _isSpawnable = serializedObject.FindProperty(nameof(_isSpawnable));
             _isGlobal = serializedObject.FindProperty(nameof(_isGlobal));
             _initializeOrder = serializedObject.FindProperty(nameof(_initializeOrder));
+            _removeOwnerOnDisconnect = serializedObject.FindProperty(nameof(_removeOwnerOnDisconnect));
             _defaultDespawnType = serializedObject.FindProperty(nameof(_defaultDespawnType));
 
             _enablePrediction = serializedObject.FindProperty(nameof(_enablePrediction));
@@ -89,6 +91,7 @@ namespace FishNet.Object.Editing
                 EditorGUILayout.PropertyField(_isSpawnable);
                 EditorGUILayout.PropertyField(_isGlobal);
                 EditorGUILayout.PropertyField(_initializeOrder);
+                EditorGUILayout.PropertyField(_removeOwnerOnDisconnect);
                 EditorGUILayout.PropertyField(_defaultDespawnType);
             }
             void ShowPredictionTab() 

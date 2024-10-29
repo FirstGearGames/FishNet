@@ -104,7 +104,7 @@ namespace FishNet.Example.ComponentStateSync
         /// Writes all changed values.
         /// </summary>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
+        protected internal override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
             writer.WriteBoolean(Component.enabled);
@@ -113,7 +113,7 @@ namespace FishNet.Example.ComponentStateSync
         /// <summary>
         /// Writes all values.
         /// </summary>
-        internal protected override void WriteFull(PooledWriter writer)
+        protected internal override void WriteFull(PooledWriter writer)
         {
             /* Always write full for this custom sync type.
              * It would be difficult to know if the
@@ -127,7 +127,7 @@ namespace FishNet.Example.ComponentStateSync
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [APIExclude]
-        internal protected override void Read(PooledReader reader, bool asServer)
+        protected internal override void Read(PooledReader reader, bool asServer)
         {
             base.SetReadArguments(reader, asServer, out bool newChangeId, out bool _, out bool canModifyValues);
             

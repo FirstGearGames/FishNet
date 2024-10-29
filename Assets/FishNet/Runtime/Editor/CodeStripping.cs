@@ -95,7 +95,7 @@ namespace FishNet.Configuring
             CompilationPipeline.compilationStarted -= CompilationPipelineOnCompilationStarted;
             CompilationPipeline.compilationFinished -= CompilationPipelineOnCompilationFinished;
 
-            BuildingEnded();
+           // BuildingEnded();
         }
 
         private void BuildingEnded()

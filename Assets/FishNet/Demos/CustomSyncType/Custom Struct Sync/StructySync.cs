@@ -143,7 +143,7 @@ namespace FishNet.Example.CustomSyncObject
         /// </summary>
         /// <param name="writer"></param>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
+        protected internal override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
             writer.WriteInt32(_changed.Count);
@@ -171,7 +171,7 @@ namespace FishNet.Example.CustomSyncObject
         /// Writes all values if not initial values.
         /// </summary>
         /// <param name="writer"></param>
-        internal protected override void WriteFull(PooledWriter writer)
+        protected internal override void WriteFull(PooledWriter writer)
         {
             if (!_valuesChanged)
                 return;
@@ -190,7 +190,7 @@ namespace FishNet.Example.CustomSyncObject
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [APIExclude]
-        internal protected override void Read(PooledReader reader, bool asServer)
+        protected internal override void Read(PooledReader reader, bool asServer)
         {
             base.SetReadArguments(reader, asServer, out bool newChangeId, out bool _, out bool canModifyValues);
 
@@ -238,7 +238,7 @@ namespace FishNet.Example.CustomSyncObject
         /// <summary>
         /// Resets to initialized values.
         /// </summary>
-        internal protected override void ResetState(bool asServer)
+        protected internal override void ResetState(bool asServer)
         {
             base.ResetState(asServer);
             _changed.Clear();

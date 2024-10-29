@@ -177,13 +177,13 @@ namespace FishNet.Component.Prediction
                 {
                     Rigidbody[] rbs = t.GetComponentsInChildren<Rigidbody>();
                     for (int i = 0; i < rbs.Length; i++)
-                        _rigidbodyDatas.Add(new(rbs[i]));
+                        AddRigidbody(rbs[i]);
                 }
                 else
                 {
                     Rigidbody rb = t.GetComponent<Rigidbody>();
                     if (rb != null)
-                        _rigidbodyDatas.Add(new(rb));
+                        AddRigidbody(rb);
                 }
             }
             //2D.
@@ -193,16 +193,28 @@ namespace FishNet.Component.Prediction
                 {
                     Rigidbody2D[] rbs = t.GetComponentsInChildren<Rigidbody2D>();
                     for (int i = 0; i < rbs.Length; i++)
-                        _rigidbody2dDatas.Add(new(rbs[i]));
+                        AddRigidbody2D(rbs[i]);
                 }
                 else
                 {
                     Rigidbody2D rb = t.GetComponent<Rigidbody2D>();
                     if (rb != null)
-                        _rigidbody2dDatas.Add(new(rb));
+                        AddRigidbody2D(rb);
                 }
             }
 
+            void AddRigidbody(Rigidbody rb)
+            {
+                if (!rb.TryGetComponent<OfflineRigidbody>(out _))
+                    _rigidbodyDatas.Add(new(rb));
+            }
+
+            void AddRigidbody2D(Rigidbody2D rb)
+            {
+                if (!rb.TryGetComponent<OfflineRigidbody>(out _))
+                    _rigidbody2dDatas.Add(new(rb));
+            }
+            
             _initialized = true;
         }
 

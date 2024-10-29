@@ -218,6 +218,7 @@ namespace FishNet.Managing.Server
             int nobsCount = nobs.Count;
             for (int i = 0; i < nobsCount; i++)
             {
+                NetworkObject n = nobs[i];
                 /* Objects may already be deinitializing when a client disconnects
                  * because the root object could have been despawned first, and in result
                  * all child objects would have been recursively despawned.
@@ -230,7 +231,7 @@ namespace FishNet.Managing.Server
                  * in collection. Should A despawn first B will recursively despawn
                  * from it. Then once that finishes and the next index of collection
                  * is run, which would B, the object B would have already been deinitialized. */
-                if (!nobs[i].IsDeinitializing)
+                if (!n.IsDeinitializing && !n.PreventDespawnOnDisconnect)
                     base.NetworkManager.ServerManager.Despawn(nobs[i]);
             }
 

@@ -210,7 +210,7 @@ namespace FishNet.Object.Synchronizing
         /// Writes all changed values.
         /// </summary>
         ///<param name="resetSyncTick">True to set the next time data may sync.</param>
-        internal protected override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
+        protected internal override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
             writer.WriteInt32(_changed.Count);
@@ -238,7 +238,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Writes all values.
         /// </summary>
-        internal protected override void WriteFull(PooledWriter writer)
+        protected internal override void WriteFull(PooledWriter writer)
         {
             //Only write full if a timer is running.
             if (Remaining <= 0f)
@@ -271,7 +271,7 @@ namespace FishNet.Object.Synchronizing
         /// Reads and sets the current values for server or client.
         /// </summary>
         [APIExclude]
-        internal protected override void Read(PooledReader reader, bool asServer)
+        protected internal override void Read(PooledReader reader, bool asServer)
         {
             base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
 
@@ -384,7 +384,7 @@ namespace FishNet.Object.Synchronizing
         /// Called after OnStartXXXX has occurred.
         /// </summary>
         /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
-        internal protected override void OnStartCallback(bool asServer)
+        protected internal override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
             List<ChangeData> collection = (asServer) ? _serverOnChanges : _clientOnChanges;

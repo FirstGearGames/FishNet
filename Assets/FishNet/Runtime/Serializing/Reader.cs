@@ -18,7 +18,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
 //Required for internal tests.
 [assembly: InternalsVisibleTo(UtilityConstants.TEST_ASSEMBLY_NAME)]
@@ -104,12 +103,10 @@ namespace FishNet.Serializing
 
         public Reader() { }
 
-
         public Reader(byte[] bytes, NetworkManager networkManager, NetworkConnection networkConnection = null, DataSource source = DataSource.Unset)
         {
             Initialize(bytes, networkManager, networkConnection, source);
         }
-
 
         public Reader(ArraySegment<byte> segment, NetworkManager networkManager, NetworkConnection networkConnection = null, DataSource source = DataSource.Unset)
         {
@@ -212,7 +209,7 @@ namespace FishNet.Serializing
                 Position += Remaining;
                 return default;
             }
-            
+
             Dictionary<TKey, TValue> result = new(count);
             for (int i = 0; i < count; i++)
             {
@@ -223,7 +220,6 @@ namespace FishNet.Serializing
 
             return result;
         }
-
 
         /// <summary>
         /// Reads length. This method is used to make debugging easier.
@@ -292,7 +288,6 @@ namespace FishNet.Serializing
             return new(_buffer, Offset, Length);
         }
 
-
         [Obsolete("Use GetBuffer.")] //Remove V5
         public byte[] GetByteBuffer() => GetBuffer();
 
@@ -304,7 +299,6 @@ namespace FishNet.Serializing
         {
             return _buffer;
         }
-
 
         [Obsolete("Use GetBufferAllocated().")] //Remove V5
         public byte[] GetByteBufferAllocated() => GetBufferAllocated();
@@ -333,7 +327,6 @@ namespace FishNet.Serializing
             Position += count;
         }
 
-
         [Obsolete("Use ReadUInt8Unpacked.")] //Remove in V5.
         public byte ReadByte() => ReadUInt8Unpacked();
 
@@ -349,10 +342,8 @@ namespace FishNet.Serializing
             return r;
         }
 
-
         [Obsolete("Use ReadUInt8ArrayAllocated.")]
         public byte[] ReadBytesAllocated(int count) => ReadUInt8ArrayAllocated(count);
-
 
         [Obsolete("Use ReadUInt8Array.")]
         public void ReadBytes(ref byte[] buffer, int count) => ReadUInt8Array(ref buffer, count);
@@ -391,7 +382,6 @@ namespace FishNet.Serializing
             Position += count;
             return result;
         }
-
 
         [Obsolete("Use ReadInt8Unpacked.")] //Remove in V5.
         public sbyte ReadSByte() => ReadInt8Unpacked();
@@ -606,7 +596,6 @@ namespace FishNet.Serializing
             return ReaderStatics.GetString(data);
         }
 
-
         [Obsolete("Use ReadUInt8ArrayAndSizeAllocated.")]
         public byte[] ReadBytesAndSizeAllocated() => ReadUInt8ArrayAndSizeAllocated();
 
@@ -623,7 +612,6 @@ namespace FishNet.Serializing
             else
                 return ReadUInt8ArrayAllocated(size);
         }
-
 
         [Obsolete("Use ReadUInt8ArrayAndSize.")]
         public int ReadBytesAndSize(ref byte[] target) => ReadUInt8ArrayAndSize(ref target);
@@ -657,7 +645,6 @@ namespace FishNet.Serializing
 
             return ReadArraySegment(size);
         }
-
 
         /// <summary>
         /// Reads a Vector2.
@@ -917,7 +904,7 @@ namespace FishNet.Serializing
                 return default;
             }
 
-            
+
             byte[] bytes = new byte[count];
             ReadUInt8Array(ref bytes, count);
             return bytes;
@@ -976,7 +963,6 @@ namespace FishNet.Serializing
             return result;
         }
 
-
         /// <summary>
         /// Reads a Transform.
         /// </summary>
@@ -987,7 +973,6 @@ namespace FishNet.Serializing
             NetworkObject nob = ReadNetworkObject();
             return (nob == null) ? null : nob.transform;
         }
-
 
         /// <summary>
         /// Reads a NetworkObject.
@@ -1092,7 +1077,6 @@ namespace FishNet.Serializing
             return objectId;
         }
 
-
         /// <summary>
         /// Reads a NetworkBehaviourId and ObjectId.
         /// </summary>
@@ -1166,7 +1150,6 @@ namespace FishNet.Serializing
             DateTime result = DateTime.FromBinary(value);
             return result;
         }
-
 
         /// <summary>
         /// Reads a transport channel.
@@ -1382,7 +1365,7 @@ namespace FishNet.Serializing
                 Position += Remaining;
                 return default;
             }
-            
+
             if (collection == null || collection.Length < count)
                 collection = new T[count];
 
@@ -1435,7 +1418,7 @@ namespace FishNet.Serializing
                 Position += Remaining;
                 return default;
             }
-            
+
             if (count == Writer.UNSET_COLLECTION_SIZE_VALUE)
             {
                 if (allowNullification)
@@ -1478,14 +1461,7 @@ namespace FishNet.Serializing
         public int ReadArray<T>(ref T[] collection)
         {
             int count = (int)ReadSignedPackedWhole();
-            if (count < 0)
-            {
-                NetworkManager.Log($"Array count cannot be less than 0.");
-                //Purge renaming and return default.
-                Position += Remaining;
-                return default;
-            }
-            
+
             if (count == Writer.UNSET_COLLECTION_SIZE_VALUE)
             {
                 return 0;
@@ -1496,6 +1472,13 @@ namespace FishNet.Serializing
                     collection = new T[0];
 
                 return 0;
+            }
+            else if (count < 0)
+            {
+                NetworkManager.Log($"Array count cannot be less than 0.");
+                //Purge renaming and return default.
+                Position += Remaining;
+                return default;
             }
             else
             {
@@ -1518,7 +1501,7 @@ namespace FishNet.Serializing
         public T Read<T>()
         {
             Func<Reader, T> del = GenericReader<T>.Read;
-            
+
             if (del == null)
             {
                 NetworkManager.LogError($"Read method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.");

@@ -646,6 +646,8 @@ namespace FishNet.Component.Transforming
         {
             _cachedTransform = transform;
             _timeManager = base.TimeManager;
+
+            ChangeTickSubscription(true);
         }
 
         public override void OnStartServer()
@@ -654,11 +656,6 @@ namespace FishNet.Component.Transforming
             ConfigureComponents();
             InitializeFields(true);
             SetDefaultGoalData();
-            /* Server must always subscribe.
-             * Server needs to relay client auth in
-             * ticks or send non-auth/non-owner to
-             * clients in tick. */
-            ChangeTickSubscription(true);
         }
 
         public override void OnSpawnServer(NetworkConnection connection)
@@ -701,25 +698,14 @@ namespace FishNet.Component.Transforming
             ConfigureComponents();
             _intervalsRemaining = 0;
 
-            /* If newOwner is self then client
-             * must subscribe to ticks. Client can also
-             * unsubscribe from ticks if not owner,
-             * long as the server is also not active. */
-            if (base.IsOwner)
-            {
-                ChangeTickSubscription(true);
-            }
             //Not new owner.
-            else
+            if (!base.IsOwner)
             {
                 /* If client authoritative and ownership was lost
                  * then default goals must be set to force the
                  * object to it's last transform. */
                 if (_clientAuthoritative)
                     SetDefaultGoalData();
-
-                if (!base.IsServerInitialized)
-                    ChangeTickSubscription(false);
             }
 
             TryClearGoalDatas_OwnershipChange(prevOwner, false);

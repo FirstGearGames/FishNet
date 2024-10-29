@@ -695,10 +695,7 @@ namespace FishNet.Managing.Timing
             do
             {
                 if (frameTicked)
-                {
-                    _elapsedTickTime -= timePerSimulation;
                     OnPreTick?.Invoke();
-                }
 
                 /* This has to be called inside the loop because
                  * OnPreTick promises data hasn't been read yet.
@@ -739,6 +736,7 @@ namespace FishNet.Managing.Timing
 
                 if (frameTicked)
                 {
+                    _elapsedTickTime -= timePerSimulation;
                     Tick++;
                     LocalTick++;
                 }
