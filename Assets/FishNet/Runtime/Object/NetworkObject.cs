@@ -322,7 +322,7 @@ namespace FishNet.Object
         /// <summary>
         /// Becomes true once initialized values are set.
         /// </summary>
-        [System.NonSerialized]
+        [SerializeField, HideInInspector]
         private bool _initializedValusSet;
         #endregion
 
@@ -363,7 +363,7 @@ namespace FishNet.Object
             /* If networkBehaviours are not yet initialized then do so now.
              * After initializing at least 1 networkBehaviour will always exist
              * as emptyNetworkBehaviour is added automatically when none are present. */
-            if (NetworkBehaviours == null || NetworkBehaviours.Count == 0)
+            if (!_initializedValusSet)
             {
                 bool isNested = false;
                 //Make sure there are no networkObjects above this since initializing will trickle down.
@@ -381,7 +381,7 @@ namespace FishNet.Object
 
                 //If not nested then init
                 if (!isNested)
-                    SetInitializedValues(parentNob: null);
+                    SetInitializedValues(parentNob: null, force: false);
             }
 
             SetChildDespawnedState();
@@ -852,17 +852,17 @@ namespace FishNet.Object
         /// Sets values as they are during initialization, such as componentId, NetworkBehaviour Ids, and more.
         /// Starts with a 0 componentId.
         /// </summary>
-        internal void SetInitializedValues(NetworkObject parentNob)
+        internal void SetInitializedValues(NetworkObject parentNob, bool force = false)
         {
             byte componentId = 0;
-            SetInitializedValues(parentNob, ref componentId);
+            SetInitializedValues(parentNob, ref componentId, force);
         }
 
         /// <summary>
         /// Sets values as they are during initialization, such as componentId, NetworkBehaviour Ids, and more.
         /// </summary>
         /// <param name="componentId">ComponentId to start from for the NetworkObject.</param>
-        internal void SetInitializedValues(NetworkObject parentNob, ref byte componentId)
+        internal void SetInitializedValues(NetworkObject parentNob, ref byte componentId, bool force = false)
         {
             if (!ApplicationState.IsPlaying())
             {
@@ -872,7 +872,7 @@ namespace FishNet.Object
 
             /* If NetworkBehaviours is null then all collections are.
              * Set values for each collection. */
-            if (!_initializedValusSet)
+            if (force || !_initializedValusSet)
             {
                 /* This only runs when playing, so it's safe to return existing to the pool. */
                 StoreCollections();
@@ -1009,7 +1009,7 @@ namespace FishNet.Object
             foreach (NetworkObject item in InitializedNestedNetworkObjects)
             {
                 componentId++;
-                item.SetInitializedValues(this, ref componentId);
+                item.SetInitializedValues(this, ref componentId, force);
             }
 
             //Update global states to that of this one.

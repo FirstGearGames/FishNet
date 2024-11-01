@@ -1719,6 +1719,11 @@ namespace FishNet.Managing.Scened
         {
             if (!conn.IsValid())
                 return;
+            if (!scene.isLoaded || !scene.IsValid())
+            {
+                NetworkManager.LogError($"Only valid, loaded scenes may be used.");
+                return;
+            }
 
             HashSet<NetworkConnection> hs;
             //Scene doesn't have any connections yet.

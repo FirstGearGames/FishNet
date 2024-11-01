@@ -236,7 +236,7 @@ namespace FishNet.Managing.Client
 
                 //Only set initialized values if not server, as server would have already done so.
                 if (!isServerStarted)
-                    nob.SetInitializedValues(parentNob: null);
+                    nob.SetInitializedValues(parentNob: null, force: false);
 
                 if (nob.GetIsNetworked())
                 {

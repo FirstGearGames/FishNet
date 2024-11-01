@@ -377,7 +377,7 @@ namespace FishNet.Managing.Server
             foreach (NetworkObject nob in nobs)
             {
                 if (nob.IsSceneObject && !nob.IsNested)
-                    nob.SetInitializedValues(parentNob: null);
+                    nob.SetInitializedValues(parentNob: null, force: false);
             }
         }
 
