@@ -724,7 +724,8 @@ namespace FishNet.Managing.Timing
 
                     /* If isClient this is the
                      * last tick during this loop. */
-                    if (isClient && (_elapsedTickTime < timePerSimulation))
+                    bool lastTick = (_elapsedTickTime < (timePerSimulation * 2d));
+                    if (isClient && lastTick)
                         TrySendPing(LocalTick + 1);
                     if (NetworkManager.IsServerStarted)
                         SendTimingAdjustment();
