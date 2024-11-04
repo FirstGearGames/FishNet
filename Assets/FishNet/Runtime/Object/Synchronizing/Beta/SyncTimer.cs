@@ -291,6 +291,8 @@ namespace FishNet.Object.Synchronizing
                         Paused = false;
                         Remaining = next;
                         Duration = duration;
+
+                        SetUpdateTime();
                     }
 
                     if (newChangeId)
@@ -354,6 +356,12 @@ namespace FishNet.Object.Synchronizing
                 }
 
                 Paused = newPauseState;
+
+                if (!Paused && Remaining > 0f)
+                {
+                    SetUpdateTime();
+                }
+
                 if (newChangeId)
                     InvokeOnChange(op, prev, next, asServer);
             }
