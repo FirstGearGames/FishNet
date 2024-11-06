@@ -23,7 +23,7 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// Maximum distance a client must be within this object to see it.
         /// </summary>
-        public float MaximumDistance { get => _maximumDistance; set => _maximumDistance = value; }
+        public float MaximumDistance { get => _maximumDistance; set => SetMaximumDistance(value); }
         /// <summary>
         /// Additional percent of distance client must be until this object is hidden. For example, if distance was 100f and percent was 0.5f the client must be 150f units away before this object is hidden again. This can be useful for keeping objects from regularly appearing and disappearing.
         /// </summary>
