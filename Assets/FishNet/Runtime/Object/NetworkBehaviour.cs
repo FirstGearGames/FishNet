@@ -107,7 +107,7 @@ namespace FishNet.Object
             }
             else
             {
-                if (!_initializedOnceClient && nob.EnablePrediction)
+                if (!_initializedOnceClient && nob.EnablePrediction && _usesPrediction) 
                     nob.RegisterPredictionBehaviourOnce(this);
 
                 _initializedOnceClient = true;

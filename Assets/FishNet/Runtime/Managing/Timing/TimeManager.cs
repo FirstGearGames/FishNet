@@ -664,12 +664,6 @@ namespace FishNet.Managing.Timing
                 NetworkManagerExtensions.LogWarning($"Simulation delta cannot be 0. Network timing will not continue.");
                 return;
             }
-            ////If client needs to slow down then increase delta very slightly.
-            //if (!isServer && NetworkManager.PredictionManager.ReduceClientTiming)
-            //{
-            //    Debug.LogWarning($"Slowing down.");
-            //    timePerSimulation *= 1.05f;
-            //}
 
             double time = Time.unscaledDeltaTime;
 

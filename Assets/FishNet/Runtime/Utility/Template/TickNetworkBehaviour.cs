@@ -1,5 +1,6 @@
 using FishNet.Managing.Timing;
 using FishNet.Object;
+using GameKit.Dependencies.Utilities;
 using UnityEngine;
 
 namespace FishNet.Utility.Template
@@ -12,15 +13,15 @@ namespace FishNet.Utility.Template
         #region Types.
         [System.Flags]
         [System.Serializable]
-        private enum TickCallback : int
+        public enum TickCallback : uint
         {
             None = 0,
-            PreTick = 1,
-            Tick = 2,
-            PostTick = 4,
-            Update = 8,
-            LateUpdate = 16,
-            All = ~0,
+            PreTick = (1 << 0),
+            Tick = (1 << 1),
+            PostTick = (1 << 2),
+            Update = (1 << 3),
+            LateUpdate = (1 << 4),
+            Everything = Enums.SHIFT_EVERYTHING_UINT,
         }
         #endregion
 
@@ -48,6 +49,17 @@ namespace FishNet.Utility.Template
             ChangeSubscriptions(false);
         }
 
+        /// <summary>
+        /// Updates callbacks to use and changes subscriptions accordingly.
+        /// </summary>
+        /// <param name="value">Next value.</param>
+        public void SetTickCallbacks(TickCallback value)
+        {
+            ChangeSubscriptions(subscribe: false);
+            _tickCallbacks = value;
+            ChangeSubscriptions(subscribe: true);            
+        }
+        
         private void ChangeSubscriptions(bool subscribe)
         {
             TimeManager tm = base.TimeManager;

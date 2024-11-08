@@ -162,12 +162,6 @@ namespace FishNet.Object
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Public.
-        //        /// <summary>
-        //        /// True if this Networkbehaviour implements prediction methods.
-        //        /// </summary>
-        //        [APIExclude]
-        //        [MakePublic]
-        //        protected internal bool UsesPrediction;
         /// <summary>
         /// True if this NetworkBehaviour is reconciling.
         /// If this NetworkBehaviour does not implemnent prediction methods this value will always be false.
@@ -240,6 +234,11 @@ namespace FishNet.Object
         /// Last values when checking for transform changes since previous tick.
         /// </summary>
         private Vector3 _lastTransformScale;
+        /// <summary>
+        /// True if this Networkbehaviour implements prediction methods.
+        /// </summary>
+        [APIExclude]
+        private bool _usesPrediction;
         #endregion
 
         #region Consts.
@@ -286,6 +285,8 @@ namespace FishNet.Object
         [MakePublic]
         internal void RegisterReplicateRpc(uint hash, ReplicateRpcDelegate del)
         {
+            _usesPrediction = true;
+            
             if (_replicateRpcDelegates == null)
                 _replicateRpcDelegates = CollectionCaches<uint, ReplicateRpcDelegate>.RetrieveDictionary();
             _replicateRpcDelegates[hash] = del;
@@ -359,7 +360,7 @@ namespace FishNet.Object
         /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
         /// </summary>
         public virtual void ClearReplicateCache() { }
-
+        
         /// <summary>
         /// Clears cached replicates and histories.
         /// </summary>
@@ -1204,7 +1205,7 @@ namespace FishNet.Object
         }
 
         /// <summary>
-        /// This is called when the networkbehaviour should perform a reconcile.
+        /// This is called when the NetworkBehaviour should perform a reconcile.
         /// Codegen overrides this calling Reconcile_Client with the needed data.
         /// </summary>
         [MakePublic]

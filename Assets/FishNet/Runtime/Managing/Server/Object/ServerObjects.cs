@@ -735,7 +735,6 @@ namespace FishNet.Managing.Server
 
 
             List<NetworkConnection> conns = RetrieveAuthenticatedConnections();
-            conns.Remove(conn);
             
             RebuildObservers(spawnedNobs, conns);
             CollectionCaches<NetworkObject>.Store(spawnedNobs);

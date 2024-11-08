@@ -61,7 +61,7 @@ namespace FishNet.Managing.Server
 
             /* Try to iterate all timed observers every half a second.
              * This value will increase as there's more observers or timed conditions. */
-            float timeMultiplier = 1f + (float)((base.NetworkManager.ServerManager.Clients.Count * 0.005f) + (_timedNetworkObservers.Count * 0.0005f));
+            float timeMultiplier = 1f + ((base.NetworkManager.ServerManager.Clients.Count * 0.005f) + (_timedNetworkObservers.Count * 0.0005f));
             //Check cap this way for readability.
             float completionTime = Mathf.Min((0.5f * timeMultiplier), base.NetworkManager.ObserverManager.MaximumTimedObserversDuration);
             uint completionTicks = base.NetworkManager.TimeManager.TimeToTicks(completionTime, TickRounding.RoundUp);
@@ -174,7 +174,7 @@ namespace FishNet.Managing.Server
         {
             List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
             Spawned.ValuesToList(ref cache);
-            
+
             return cache;
         }
 
@@ -194,7 +194,7 @@ namespace FishNet.Managing.Server
 
                 sortedRootCache.AddOrdered(item);
             }
-            
+
             /* After all root are ordered check
              * their nested. Order nested in segments
              * of each root then insert after the root.
@@ -414,7 +414,12 @@ namespace FishNet.Managing.Server
             ObserverStateChange osc = nob.RebuildObservers(conn, timedOnly);
             if (osc == ObserverStateChange.Added)
             {
-                WriteSpawn(nob, _writer, conn);
+                /* Only write spawn if not predicted spawned, or if
+                 * conn is not predicted spawner. There is no need to send spawn
+                 * to predicted spawner given they spawned the object locally. */
+                NetworkConnection predictedSpawner = nob.PredictedSpawner;
+                if (!predictedSpawner.IsActive || predictedSpawner != conn)
+                    WriteSpawn(nob, _writer, conn);
                 addedNobs.Add(nob);
             }
             else if (osc == ObserverStateChange.Removed)

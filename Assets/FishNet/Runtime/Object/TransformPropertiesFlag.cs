@@ -1,13 +1,15 @@
-﻿namespace FishNet.Object
+﻿using GameKit.Dependencies.Utilities;
+
+namespace FishNet.Object
 {
     [System.Flags]
-    public enum TransformPropertiesFlag : byte
+    public enum TransformPropertiesFlag : uint
     {
         Unset = 0,
-        Position = 1,
-        Rotation = 2,
-        LocalScale = 4,
-        Everything = ~(-1 << 8),
+        Position = (1 << 0),
+        Rotation = (1 << 1),
+        LocalScale = (1 << 2),
+        Everything = Enums.SHIFT_EVERYTHING_UINT,
     }
 
     public static class TransformPropertiesOptionExtensions

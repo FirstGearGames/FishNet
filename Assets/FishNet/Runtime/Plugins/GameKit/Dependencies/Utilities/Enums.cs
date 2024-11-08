@@ -6,6 +6,9 @@ namespace GameKit.Dependencies.Utilities
 
     public static class Enums
     {
+        public const int SHIFT_EVERYTHING_INT = ~0;
+        public const uint SHIFT_EVERYTHING_UINT = ~0u;
+//65535
         /// <summary>
         /// Determine an enum value from a given string. This can be an expensive function.
         /// </summary>
