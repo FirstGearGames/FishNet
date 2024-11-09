@@ -1717,6 +1717,11 @@ namespace FishNet.Object
         /// Last values when checking for transform changes since previous tick.
         /// </summary>
         private Vector3 _lastTransformScale;
+        /// <summary>
+        /// True if this Networkbehaviour implements prediction methods.
+        /// </summary>
+        [APIExclude]
+        private bool _usesPrediction;
         #endregion
 
         #region Consts.
