@@ -911,7 +911,7 @@ namespace FishNet.Managing.Timing
         {
             PreciseTick currentPt = GetPreciseTick(TickType.Tick);
 
-            long tickDifference = (currentPt.Tick - preciseTick.Tick);
+            long tickDifference = ((long)currentPt.Tick - (long)preciseTick.Tick);
             double percentDifference = (currentPt.PercentAsDouble - preciseTick.PercentAsDouble);
 
             /* If tickDifference is less than 0 or tickDifference and percentDifference are 0 or less
