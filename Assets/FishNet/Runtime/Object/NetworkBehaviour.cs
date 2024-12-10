@@ -95,7 +95,7 @@ namespace FishNet.Object
         /// <summary>
         /// Preinitializes this script for the network.
         /// </summary>
-        internal void Preinitialize_Internal(NetworkObject nob, bool asServer)
+        internal void InitializeEarly(NetworkObject nob, bool asServer)
         {
             _transportManagerCache = nob.TransportManager;
             SyncTypes_Preinitialize(asServer);

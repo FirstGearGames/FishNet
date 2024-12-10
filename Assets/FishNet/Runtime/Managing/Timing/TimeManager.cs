@@ -1096,7 +1096,7 @@ namespace FishNet.Managing.Timing
                     writer.WritePacketIdUnpacked(PacketId.TimingUpdate);
                     writer.WriteTickUnpacked(item.PacketTick.Value());
                     item.SendToClient((byte)Channel.Unreliable, writer.GetArraySegment());
-                    writer.Reset();
+                    writer.Clear();
                 }
 
                 writer.Store();

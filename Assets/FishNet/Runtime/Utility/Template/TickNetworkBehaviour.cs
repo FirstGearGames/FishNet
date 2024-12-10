@@ -57,9 +57,10 @@ namespace FishNet.Utility.Template
         {
             ChangeSubscriptions(subscribe: false);
             _tickCallbacks = value;
-            ChangeSubscriptions(subscribe: true);            
+            if (value != TickCallback.None)
+                ChangeSubscriptions(subscribe: true);
         }
-        
+
         private void ChangeSubscriptions(bool subscribe)
         {
             TimeManager tm = base.TimeManager;

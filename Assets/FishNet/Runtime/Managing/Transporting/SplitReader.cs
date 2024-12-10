@@ -90,7 +90,7 @@ namespace FishNet.Managing.Transporting
             _tick = tick;
             _receivedMessages = 0;
             _expectedMessages = expectedMessages;
-            _writer.Reset();
+            _writer.Clear();
         }
 
     }

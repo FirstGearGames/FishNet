@@ -112,7 +112,7 @@ namespace FishNet.Utility.Extension
         {
             t.localPosition = tp.Position;
             t.localRotation = tp.Rotation;
-            t.localScale = tp.LocalScale;
+            t.localScale = tp.Scale;
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace FishNet.Utility.Extension
         {
             t.position = tp.Position;
             t.rotation = tp.Rotation;
-            t.localScale = tp.LocalScale;
+            t.localScale = tp.Scale;
         }
 
         /// <summary>

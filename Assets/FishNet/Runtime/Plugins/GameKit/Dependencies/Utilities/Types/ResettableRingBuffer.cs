@@ -313,20 +313,66 @@ namespace GameKit.Dependencies.Utilities.Types
         /// Adds an entry to the collection.
         /// </summary>
         /// <param name="data">Data to add.</param>
+        /// <param name="resetState">True to reset state of the entry being replaced.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(T data)
+        public T Add(T data, bool resetState = true)
         {
-            if (!IsInitializedWithError())
-                return;
+            Initialize();
 
             T current = Collection[WriteIndex];
             //If current has data then reset it.
-            if (_atCapacity)
+            if (_atCapacity && resetState)
                 current.ResetState();
-
+            
             Collection[WriteIndex] = data;
             IncreaseWritten();
+            
+            return current;
         }
+        
+        
+        /// <summary>
+        /// Returns the first entry and removes it from the buffer.
+        /// </summary>
+        /// <returns></returns>
+        public T Dequeue()
+        {
+            if (_written == 0)
+                return default;
+            
+            int offset = GetRealIndex(0);
+            T result = Collection[offset];
+
+            RemoveRange(fromStart: true, 1, resetRemoved: false);
+            return result;
+        }
+
+        
+        /// <summary>
+        /// Returns if able to dequeue an entry and removes it from the buffer if so.
+        /// </summary>
+        /// <returns></returns>
+        public bool TryDequeue(out T result)
+        {
+            if (_written == 0)
+            {
+                result = default;
+                return false;
+            }
+
+            int offset = GetRealIndex(0);
+            result = Collection[offset];
+
+            RemoveRange(fromStart: true, 1, resetRemoved: false);
+            return true;
+        }
+
+        /// <summary>
+        /// Adds an entry to the collection, returning a replaced entry.
+        /// This method internally redirects to add.
+        /// </summary>
+        public T Enqueue(T data) => Add(data);
+
 
         /// <summary>
         /// Returns value in actual index as it relates to simulated index.
@@ -411,7 +457,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// </summary>
         /// <param name="fromStart">True to remove from the start, false to remove from the end.</param>
         /// <param name="length">Number of entries to remove.</param>
-        public void RemoveRange(bool fromStart, int length)
+        public void RemoveRange(bool fromStart, int length, bool resetRemoved = true)
         {
             if (length == 0)
                 return;
@@ -425,6 +471,42 @@ namespace GameKit.Dependencies.Utilities.Types
             {
                 Clear();
                 return;
+            }
+
+            //Reset state on removed.
+            if (resetRemoved) 
+            {
+                //Resetting from the beginning of the collection.
+                if (fromStart) 
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        int index = GetRealIndex(i);
+                        Collection[index].ResetState();
+                    }
+                }
+                //Resetting from the end.
+                else
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        /* If written is 5 the last entry index
+                         * would be 4. So if i == 0 the simulated
+                         * index would be... (5 - (0 + 1)) = 4, the
+                         * last entry. */
+                        /* Another example, if there were 3 total written
+                         * and all 3 were being removed then the simulated
+                         * indexes in order would be:
+                         * 2, 1, 0.
+                         * (3 - (0 + 1)) = 2.
+                         * (2 - (0 + 1)) = 1.
+                         * (1 - (0 + 1)) = 0.
+                         * */
+                        int simulatedIndex = _written - (i + 1);
+                        int index = GetRealIndex(simulatedIndex);
+                        Collection[index].ResetState();
+                    }
+                }
             }
 
             _written -= length;

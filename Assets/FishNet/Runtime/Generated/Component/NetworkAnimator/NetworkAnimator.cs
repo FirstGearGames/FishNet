@@ -885,7 +885,7 @@ namespace FishNet.Component.Animating
             if (_layerWeights == null)
                 return false;
             //Reset the writer.
-            _writer.Reset();
+            _writer.Clear();
 
             /* Every time a parameter is updated a byte is added
              * for it's index, this is why requiredBytes increases

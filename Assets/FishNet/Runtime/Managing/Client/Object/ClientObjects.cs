@@ -28,13 +28,6 @@ namespace FishNet.Managing.Client
     /// </summary>
     public partial class ClientObjects : ManagedObjects
     {
-        #region Internal.
-        /// <summary>
-        /// NetworkObjects which are currently active on the local client.
-        /// </summary>
-        internal List<NetworkObject> LocalClientSpawned = new();
-        #endregion
-
         #region Private.
         /// <summary>
         /// NetworkObjects which are cached to be spawned or despawned.
@@ -97,7 +90,7 @@ namespace FishNet.Managing.Client
                     {
                         if (!n.CanDeinitialize(asServer: false))
                             continue;
-                        
+
                         n.InvokeStopCallbacks(false, true);
                         n.SetInitializedStatus(false, false);
                     }
@@ -108,10 +101,8 @@ namespace FishNet.Managing.Client
                  * was called but it won't hurt anything clearing an empty collection. */
                 base.Spawned.Clear();
                 base.SceneObjects_Internal.Clear();
-                LocalClientSpawned.Clear();
             }
         }
-
 
         /// <summary>
         /// Called when a scene is loaded.
@@ -136,21 +127,10 @@ namespace FishNet.Managing.Client
         /// </summary>
         internal override void AddToSpawned(NetworkObject nob, bool asServer)
         {
-            LocalClientSpawned.Add(nob);
             base.AddToSpawned(nob, asServer);
             //If being added as client and is also server.
             if (NetworkManager.IsServerStarted)
                 nob.SetRenderersVisible(true);
-        }
-
-        /// <summary>
-        /// Removes a NetworkedObject from spawned.
-        /// </summary>
-        protected override void RemoveFromSpawned(NetworkObject nob, bool unexpectedlyDestroyed, bool asServer)
-        {
-            //No need to check if !asServer.
-            LocalClientSpawned.Remove(nob);
-            base.RemoveFromSpawned(nob, unexpectedlyDestroyed, asServer);
         }
 
         /// <summary>
@@ -168,7 +148,7 @@ namespace FishNet.Managing.Client
 
             networkObject.InitializePredictedObject_Client(base.NetworkManager, predictedObjectIds.Dequeue(), ownerConnection, base.NetworkManager.ClientManager.Connection);
             NetworkManager.ClientManager.Objects.AddToSpawned(networkObject, false);
-            networkObject.Initialize(false, true);
+            networkObject.Initialize(asServer: false, invokeSyncTypeCallbacks: true);
 
             PooledWriter writer = WriterPool.Retrieve();
             if (WriteSpawn(networkObject, writer, connection: null))
@@ -194,8 +174,7 @@ namespace FishNet.Managing.Client
             base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
             writer.Store();
 
-            networkObject.Deinitialize(asServer: false);
-            NetworkManager.StorePooledInstantiated(networkObject, asServer: false);
+            base.Despawn(networkObject, networkObject.GetDefaultDespawnType(), asServer: false);
         }
 
         /// <summary>
@@ -313,34 +292,18 @@ namespace FishNet.Managing.Client
             int nextObjectId = reader.ReadNetworkObjectId();
             if (nextObjectId != NetworkObject.UNSET_OBJECTID_VALUE)
                 NetworkManager.ClientManager.Connection.PredictedObjectIds.Enqueue(nextObjectId);
-            
-            /* If successful then read and apply RPCLinks.
-             * Otherwise, find and deinitialize/destroy failed predicted spawn. */
-            if (success)
-            {
-                //Read RpcLinks.
-                uint segmentSize = ReservedLengthWriter.ReadLength(reader, NetworkBehaviour.RPCLINK_RESERVED_BYTES);
-                ArraySegment<byte> rpcLinks = reader.ReadArraySegment((int)segmentSize);
 
-                /* If found as still spawned then apply RPCLinks. If
-                 * not found it shouldn't be a problem, just have to make sure
-                 * the remainder of the response is parsed. */
-                if (Spawned.TryGetValueIL2CPP(usedObjectId, out NetworkObject nob))
-                {
-                    PooledReader rpcLinkReader = ReaderPool.Retrieve(rpcLinks, NetworkManager, Reader.DataSource.Server);
-                    ApplyRpcLinks(nob, rpcLinkReader);
-                    ReaderPool.Store(rpcLinkReader);
-                }
-            }
-            else
+            //Server would not allow the predicted spawn.
+            if (!success)
             {
                 if (Spawned.TryGetValueIL2CPP(usedObjectId, out NetworkObject nob))
                 {
-                    nob.Deinitialize(asServer: false);
-                    NetworkManager.StorePooledInstantiated(nob, false);
+                    //TODO support pooling. This first requires a rework of the initialization / clientHost message system.
+                    UnityEngine.Object.Destroy(nob.gameObject);
+                    //nob.Deinitialize(asServer: false);
+                    //NetworkManager.StorePooledInstantiated(nob, false);
                 }
             }
-
         }
 
         /// <summary>
@@ -364,9 +327,8 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         internal void ParseObserversRpc(PooledReader reader, Channel channel)
         {
-            NetworkBehaviour nb = reader.ReadNetworkBehaviour();
+            NetworkBehaviour nb = reader.ReadNetworkBehaviour(logException: false);
             int dataLength = Packets.GetPacketLength((ushort)PacketId.ObserversRpc, reader, channel);
-
             if (nb != null && nb.IsSpawned)
                 nb.ReadObserversRpc(null, reader, channel);
             else
@@ -394,15 +356,14 @@ namespace FishNet.Managing.Client
         internal void ReadSpawn(PooledReader reader)
         {
             SpawnType st = (SpawnType)reader.ReadUInt8Unpacked();
-            
+
             bool sceneObject = st.FastContains(SpawnType.Scene);
 
             ReadNestedSpawnIds(reader, st, out byte? nobComponentId, out int? parentObjectId, out byte? parentComponentId, _objectCache.ReadSpawningObjects);
 
             //NeworkObject and owner information.
-            int objectId = reader.ReadSpawnedNetworkObject(out sbyte initializeOrder, out ushort collectionId);
+            int objectId = reader.ReadNetworkObjectForSpawn(out sbyte initializeOrder, out ushort collectionId);
             int ownerId = reader.ReadNetworkConnectionId();
-
             //Read transform values which differ from serialized values.
             Vector3? localPosition;
             Quaternion? localRotation;
@@ -428,43 +389,56 @@ namespace FishNet.Managing.Client
             }
 
             ArraySegment<byte> payload = base.ReadPayload(reader);
+            ArraySegment<byte> rpcLinks = ReadRpcLinks(reader);
+            ArraySegment<byte> syncTypes = ReadSyncTypesForSpawn(reader);
 
-            //Read RpcLinks.
-            uint segmentSize = ReservedLengthWriter.ReadLength(reader, NetworkBehaviour.RPCLINK_RESERVED_BYTES);
-            ArraySegment<byte> rpcLinks = reader.ReadArraySegment((int)segmentSize);
+            bool isPredictedSpawner = st.FastContains(SpawnType.IsPredictedSpawner);
 
-            //Read SyncTypes.
-            segmentSize = ReservedLengthWriter.ReadLength(reader, NetworkBehaviour.SYNCTYPE_RESERVE_BYTES);
-            ArraySegment<byte> syncTypes = reader.ReadArraySegment((int)segmentSize);
-
-            /* If the objectId can be found as already spawned then check if it's predicted.
-             * Should the spawn be predicted then no need to continue. Later on however
-             * we may want to apply synctypes.
-             *
-             * Only check if not server, since if server the client doesnt need
-             * to predicted spawn. */
-            if (!base.NetworkManager.IsServerStarted && base.Spawned.TryGetValue(objectId, out NetworkObject nob))
+            //If found in spawn already.
+            if (base.Spawned.TryGetValue(objectId, out NetworkObject nob))
             {
-                //If not predicted the nob should not be in spawned.
-                if (!nob.PredictedSpawner.IsValid)
+                /* If not server then extra checks must be done. Client should never
+                 * receive spawn messages for already spawned objects, unless they locally
+                 * predicted spawned the object. */
+                if (!base.NetworkManager.IsServerStarted)
                 {
-                    NetworkManager.LogWarning($"Received a spawn objectId of {objectId} which was already found in spawned, and was not predicted. This sometimes may occur on clientHost when the server destroys an object unexpectedly before the clientHost gets the spawn message.");
-                }
-                //Everything is proper, apply RPC links.
-                else
-                {
-                    //Only apply rpcLinks if there are links to apply.
-                    if (rpcLinks.Count > 0)
+                    //Not predicted spawner.
+                    if (!st.FastContains(SpawnType.IsPredictedSpawner))
                     {
-                        PooledReader linkReader = ReaderPool.Retrieve(rpcLinks, NetworkManager);
-                        ApplyRpcLinks(nob, linkReader);
-                        linkReader.Store();
+                        NetworkManager.LogWarning($"Received a spawn objectId of {objectId} which was already found in spawned, and was not predicted. This sometimes may occur on clientHost when the server destroys an object unexpectedly before the clientHost gets the spawn message.");
                     }
-                }
+                    //Is predicted spawner.
+                    else
+                    {
+                        PooledReader segmentReader = ReaderPool.Retrieve(ArraySegment<byte>.Empty, NetworkManager);
 
-                //No further initialization needed when predicting.
-                return;
+                        //RpcLinks.
+                        segmentReader.Initialize(rpcLinks, NetworkManager, Reader.DataSource.Server);
+                        ApplyRpcLinks(nob, segmentReader);
+                    
+                        //Payload.
+                        segmentReader.Initialize(payload, NetworkManager, Reader.DataSource.Server);
+                        ReadPayload(sender: null, nob, segmentReader);
+                        
+                        //SyncTypes.
+                        segmentReader.Initialize(syncTypes, NetworkManager, Reader.DataSource.Server);
+                        ApplySyncTypesForSpawn(nob, segmentReader);
+                    }
+
+                    /* Nob isn't added to spawn if predicted spawner.
+                     * We only wanted to read and apply initial data from the server. */
+                    return;
+                }
             }
+            else
+            {
+                /* If predicted spawner and not in spawned then simply exit early.
+                 * The predicted spawner destroyed the object locally. */
+                if (isPredictedSpawner)
+                    return;
+
+            }
+
 
             _objectCache.AddSpawn(base.NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, nobComponentId, parentObjectId, parentComponentId, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncTypes);
         }
@@ -476,7 +450,7 @@ namespace FishNet.Managing.Client
         internal void CacheDespawn(PooledReader reader)
         {
             DespawnType despawnType;
-            int objectId = reader.ReadNetworkObjectForDepawn(out despawnType);
+            int objectId = reader.ReadNetworkObjectForDespawn(out despawnType);
             _objectCache.AddDespawn(objectId, despawnType);
         }
 
@@ -539,9 +513,13 @@ namespace FishNet.Managing.Client
 
         /// <summary>
         /// Applies RPCLinks to a NetworkObject.
+        /// This method will exit early if reader is null.
         /// </summary>
-        internal void ApplyRpcLinks(NetworkObject nob, Reader reader)
+        internal void ApplyRpcLinks(NetworkObject nob, PooledReader reader)
         {
+            if (reader == null)
+                return;
+
             List<ushort> rpcLinkIndexes = new();
 
             while (reader.Remaining > 0)
@@ -565,6 +543,31 @@ namespace FishNet.Managing.Client
             }
 
             nob.SetRpcLinkIndexes(rpcLinkIndexes);
+        }
+
+        /// <summary>
+        /// Applies initial SyncTypes to a NetworkObject.
+        /// A null reader will exit the method early.
+        /// </summary>
+        internal void ApplySyncTypesForSpawn(NetworkObject nob, PooledReader reader)
+        {
+            if (reader == null)
+                return;
+            /* Apply syncTypes. It's very important to do this after all
+             * spawns have been processed and added to the manager.Objects collection.
+             * Otherwise, the synctype may reference an object spawning the same tick
+             * and the result would be null due to said object not being in spawned.
+             *
+             * At this time the NetworkObject is not initialized so by calling
+             * OnSyncType the changes are cached to invoke callbacks after initialization,
+             * not during the time of this action. */
+            List<NetworkBehaviour> behaviours = nob.NetworkBehaviours;
+
+            while (reader.Remaining > 0)
+            {
+                byte behaviourId = reader.ReadUInt8Unpacked();
+                behaviours[behaviourId].ReadSyncTypesForSpawn(reader);
+            }
         }
 
         /// <summary>

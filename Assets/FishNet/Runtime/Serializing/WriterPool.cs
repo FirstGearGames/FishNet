@@ -9,12 +9,14 @@ namespace FishNet.Serializing
     /// <summary>
     /// Writer which is reused to save on garbage collection and performance.
     /// </summary>
-    public sealed class PooledWriter : Writer, IResettable
+    public sealed class PooledWriter : Writer
     {
         public void Store() => WriterPool.Store(this);
         public void StoreLength() => WriterPool.StoreLength(this);
-        
-        public void ResetState() => Store();
+
+        [Obsolete("Use Clear instead.")]
+        public void ResetState() => base.Clear();
+        [Obsolete("This does not function.")]
         public void InitializeState() { }
     }
 
@@ -50,7 +52,7 @@ namespace FishNet.Serializing
             if (!_pool.TryPop(out result))
                 result = new();
 
-            result.Reset(networkManager);
+            result.Clear(networkManager);
             return result;
         }
         /// Gets a writer from the pool.
@@ -88,7 +90,7 @@ namespace FishNet.Serializing
             //There is already one pooled.
             if (_lengthPool.TryGetValue(index, out stack) && stack.TryPop(out result))
             {
-                result.Reset(networkManager);
+                result.Clear(networkManager);
             }
             //Not pooled yet or failed to pop.
             else

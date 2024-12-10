@@ -1,5 +1,5 @@
-﻿using GameKit.Dependencies.Utilities;
-using System.Runtime.CompilerServices;
+﻿using System;
+using GameKit.Dependencies.Utilities;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -12,6 +12,7 @@ namespace FishNet.Object
         public Vector3 LocalScale;
 
         public TransformPropertiesCls() { }
+
         public TransformPropertiesCls(Vector3 position, Quaternion rotation, Vector3 localScale)
         {
             Position = position;
@@ -21,30 +22,26 @@ namespace FishNet.Object
 
         public void InitializeState() { }
 
-        
         public void ResetState()
         {
             Update(Vector3.zero, Quaternion.identity, Vector3.zero);
         }
 
-        
         public void Update(Transform t)
         {
             Update(t.position, t.rotation, t.localScale);
         }
 
-        
         public void Update(TransformPropertiesCls tp)
         {
             Update(tp.Position, tp.Rotation, tp.LocalScale);
         }
-        
+
         public void Update(TransformProperties tp)
         {
-            Update(tp.Position, tp.Rotation, tp.LocalScale);
+            Update(tp.Position, tp.Rotation, tp.Scale);
         }
 
-        
         public void Update(Vector3 position, Quaternion rotation)
         {
             Update(position, rotation, LocalScale);
@@ -62,9 +59,7 @@ namespace FishNet.Object
         /// </summary>
         public bool ValuesEquals(TransformPropertiesCls properties)
         {
-            return (this.Position == properties.Position
-                && this.Rotation == properties.Rotation
-                && this.LocalScale == properties.LocalScale);
+            return (this.Position == properties.Position && this.Rotation == properties.Rotation && this.LocalScale == properties.LocalScale);
         }
 
         /// <summary>
@@ -83,44 +78,54 @@ namespace FishNet.Object
     {
         public Vector3 Position;
         public Quaternion Rotation;
-        public Vector3 LocalScale;
+        [Obsolete("Use Scale.")]
+        public Vector3 LocalScale => Scale;
+        public Vector3 Scale;
+        /// <summary>
+        /// Becomes true when values are set through update or constructor.
+        /// </summary>
+        public bool IsValid;
 
         public TransformProperties(Vector3 position, Quaternion rotation, Vector3 localScale)
         {
             Position = position;
             Rotation = rotation;
-            LocalScale = localScale;
+            Scale = localScale;
+            IsValid = true;
         }
 
-        
-        public void Reset()
+        public TransformProperties(Transform t) : this(t.position, t.rotation, t.localScale) { }
+
+        [Obsolete("Use ResetState.")]
+        public void Reset() => ResetState();
+
+        public void ResetState()
         {
             Update(Vector3.zero, Quaternion.identity, Vector3.zero);
+            IsValid = false;
         }
 
-        
         public void Update(Transform t)
         {
             Update(t.position, t.rotation, t.localScale);
         }
 
-        
         public void Update(TransformProperties tp)
         {
-            Update(tp.Position, tp.Rotation, tp.LocalScale);
+            Update(tp.Position, tp.Rotation, tp.Scale);
         }
 
-        
         public void Update(Vector3 position, Quaternion rotation)
         {
-            Update(position, rotation, LocalScale);
+            Update(position, rotation, Scale);
         }
 
         public void Update(Vector3 position, Quaternion rotation, Vector3 localScale)
         {
             Position = position;
             Rotation = rotation;
-            LocalScale = localScale;
+            Scale = localScale;
+            IsValid = true;
         }
 
         /// <summary>
@@ -131,7 +136,7 @@ namespace FishNet.Object
         {
             Position += tp.Position;
             Rotation *= tp.Rotation;
-            LocalScale += tp.LocalScale;
+            Scale += tp.Scale;
         }
 
         /// <summary>
@@ -142,7 +147,7 @@ namespace FishNet.Object
         {
             Position -= tp.Position;
             Rotation *= Quaternion.Inverse(tp.Rotation);
-            LocalScale -= tp.LocalScale;
+            Scale -= tp.Scale;
         }
 
         /// <summary>
@@ -150,10 +155,7 @@ namespace FishNet.Object
         /// </summary>
         public bool ValuesEquals(TransformProperties properties)
         {
-            return (this.Position == properties.Position
-                && this.Rotation == properties.Rotation
-                && this.LocalScale == properties.LocalScale);
+            return (this.Position == properties.Position && this.Rotation == properties.Rotation && this.Scale == properties.Scale);
         }
     }
 }
-

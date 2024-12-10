@@ -90,6 +90,7 @@ namespace FishNet.Managing.Client
         [Range(1, ServerManager.MAXIMUM_REMOTE_CLIENT_TIMEOUT_DURATION)]
         [SerializeField]
         private ushort _remoteServerTimeoutDuration = 60;
+
         /// <summary>
         /// Sets timeout settings. Can be used at runtime.
         /// </summary>
@@ -100,6 +101,7 @@ namespace FishNet.Managing.Client
             duration = (ushort)Mathf.Clamp(duration, 1, ServerManager.MAXIMUM_REMOTE_CLIENT_TIMEOUT_DURATION);
             _remoteServerTimeoutDuration = duration;
         }
+
         //todo add remote server timeout (see ServerManager.RemoteClientTimeout).
         /// <summary>
         /// True to automatically set the frame rate when the client connects.
@@ -110,10 +112,12 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.
         /// </summary>
-        internal ushort FrameRate => (_changeFrameRate) ? _frameRate : (ushort)0; [Tooltip("Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.")]
+        internal ushort FrameRate => (_changeFrameRate) ? _frameRate : (ushort)0;
+        [Tooltip("Maximum frame rate the client may run at. When as host this value runs at whichever is higher between client and server.")]
         [Range(1, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
+
         /// Sets the maximum frame rate the client may run at. Calling this method will enable ChangeFrameRate.
         /// </summary>
         /// <param name="value">New value.</param>
@@ -148,7 +152,6 @@ namespace FishNet.Managing.Client
             Objects?.SubscribeToSceneLoaded(false);
         }
 
-
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
@@ -166,7 +169,6 @@ namespace FishNet.Managing.Client
             RegisterBroadcast<ClientConnectionChangeBroadcast>(OnClientConnectionBroadcast);
             RegisterBroadcast<ConnectedClientsBroadcast>(OnConnectedClientsBroadcast);
         }
-
 
         /// <summary>
         /// Called when the server sends a connection state change for any client.
@@ -219,7 +221,6 @@ namespace FishNet.Managing.Client
             }
 
             OnConnectedClients?.Invoke(new(collection));
-
         }
 
         /// <summary>
@@ -284,6 +285,7 @@ namespace FishNet.Managing.Client
             NetworkManager.TransportManager.Transport.SetClientAddress(address);
             return StartConnection();
         }
+
         /// <summary>
         /// Sets the transport address and port, and starts the local client connection.
         /// </summary>
@@ -384,7 +386,6 @@ namespace FishNet.Managing.Client
             tm.LastPacketTick.Update(reader.ReadTickUnpacked(), EstimatedTick.OldTickOption.Discard, false);
             ParseReader(reader, args.Channel);
             ReaderPool.Store(reader);
-
         }
 
         internal void ParseReader(PooledReader reader, Channel channel, bool print = false)
@@ -396,8 +397,8 @@ namespace FishNet.Managing.Client
 #endif
             Reader.DataSource dataSource = Reader.DataSource.Server;
             /* This is a special condition where a message may arrive split.
-            * When this occurs buffer each packet until all packets are
-            * received. */
+             * When this occurs buffer each packet until all packets are
+             * received. */
             if (reader.PeekPacketId() == PacketId.Split)
             {
                 //Skip packetId.
@@ -420,8 +421,16 @@ namespace FishNet.Managing.Client
             {
                 packetId = reader.ReadPacketId();
 #if DEVELOPMENT
-                if (print)
-                    Debug.Log($"PacketId {packetId} - Remaining {reader.Remaining}.");
+                // if (!NetworkManager.IsServerStarted)
+                //     print = true;
+                // if (print)
+                // {
+                //     if (packetId == PacketId.ObserversRpc)
+                //         Debug.Log($"PacketId {packetId} - Remaining {reader.Remaining}.");
+                //     else
+                //         Debug.LogWarning($"PacketId {packetId} - Remaining {reader.Remaining}.");
+                // }
+                // print = false;
                 _parseLogger.AddPacket(packetId);
 #endif
                 bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
@@ -514,7 +523,6 @@ namespace FishNet.Managing.Client
                     }
                     else
                     {
-
                         NetworkManager.LogError($"Client received an unhandled PacketId of {(ushort)packetId} on channel {channel}. Remaining data has been purged.");
 #if DEVELOPMENT
                         _parseLogger.Print(NetworkManager);
@@ -530,11 +538,11 @@ namespace FishNet.Managing.Client
             }
 
             /* Iterate cache when reader is emptied.
-            * This is incase the last packet received
-            * was a spawned, which wouldn't trigger
-            * the above iteration. There's no harm
-            * in doing this check multiple times as there's
-            * an exit early check. */
+             * This is incase the last packet received
+             * was a spawned, which wouldn't trigger
+             * the above iteration. There's no harm
+             * in doing this check multiple times as there's
+             * an exit early check. */
             Objects.IterateObjectCache();
 #if !DEVELOPMENT
             }
@@ -555,7 +563,6 @@ namespace FishNet.Managing.Client
             NetworkManager.TimeManager.ModifyPing(clientTick);
         }
 
-
         /// <summary>
         /// Parses a Version packet.
         /// </summary>
@@ -564,7 +571,6 @@ namespace FishNet.Managing.Client
         {
             IsServerDevelopment = reader.ReadBoolean();
         }
-
 
         /// <summary>
         /// Parses a received connectionId. This is received before client receives connection state change.
@@ -630,7 +636,7 @@ namespace FishNet.Managing.Client
              * scene may already be loaded on server, but not
              * for client. This means the sceneLoaded unity event
              * won't fire, and since client isn't authenticated
-            * at the connection start phase objects won't be added. */
+             * at the connection start phase objects won't be added. */
             Objects.RegisterAndDespawnSceneObjects();
         }
 
@@ -641,7 +647,6 @@ namespace FishNet.Managing.Client
         {
             CheckServerTimeout();
         }
-
 
         /// <summary>
         /// Checks to timeout client connections.
@@ -676,7 +681,5 @@ namespace FishNet.Managing.Client
                 StopConnection();
             }
         }
-
     }
-
 }

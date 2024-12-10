@@ -123,7 +123,7 @@ namespace FishNet.Object.Prediction
         
         public static MoveRates GetWorldMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
         {
-            return GetMoveRates(prevValues.Position, t.position, prevValues.Rotation, t.rotation, prevValues.LocalScale, t.localScale, duration, teleportThreshold);
+            return GetMoveRates(prevValues.Position, t.position, prevValues.Rotation, t.rotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace FishNet.Object.Prediction
         
         public static MoveRates GetLocalMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
         {
-            return GetMoveRates(prevValues.Position, t.localPosition, prevValues.Rotation, t.localRotation, prevValues.LocalScale, t.localScale, duration, teleportThreshold);
+            return GetMoveRates(prevValues.Position, t.localPosition, prevValues.Rotation, t.localRotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace FishNet.Object.Prediction
         
         public static MoveRates GetMoveRates(TransformProperties prevValues, TransformProperties nextValues, float duration, float teleportThreshold)
         {
-            return GetMoveRates(prevValues.Position, nextValues.Position, prevValues.Rotation, nextValues.Rotation, prevValues.LocalScale, nextValues.LocalScale, duration, teleportThreshold);
+            return GetMoveRates(prevValues.Position, nextValues.Position, prevValues.Rotation, nextValues.Rotation, prevValues.Scale, nextValues.Scale, duration, teleportThreshold);
         }
 
         /// <summary>
@@ -219,7 +219,7 @@ namespace FishNet.Object.Prediction
             if (!AnySet)
                 return;
 
-            MoveRatesCls.MoveLocalToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.LocalScale, Scale, delta);
+            MoveRatesCls.MoveLocalToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta);
             TimeRemaining -= delta;
         }
 
@@ -233,7 +233,7 @@ namespace FishNet.Object.Prediction
             if (!AnySet)
                 return;
 
-            MoveRatesCls.MoveWorldToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.LocalScale, Scale, delta);
+            MoveRatesCls.MoveWorldToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta);
             TimeRemaining -= delta;
         }
         /// <summary>
@@ -246,7 +246,7 @@ namespace FishNet.Object.Prediction
             if (!AnySet)
                 return;
 
-            MoveRatesCls.MoveWorldToTarget(movingTransform, movedProperties, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.LocalScale, Scale, delta);
+            MoveRatesCls.MoveWorldToTarget(movingTransform, movedProperties, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta);
             TimeRemaining -= delta;
         }
     }

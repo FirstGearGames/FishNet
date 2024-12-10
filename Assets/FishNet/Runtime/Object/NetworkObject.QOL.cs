@@ -97,6 +97,11 @@ namespace FishNet.Object
         public bool IsManagerReconciling => PredictionManager.IsReconciling;
 
         /// <summary>
+        /// True if the local client is currently using a PredictedOwner component on this object to take ownership.
+        /// </summary>
+        public bool IsTakingOwnership => (PredictedOwner != null && PredictedOwner.TakingOwnership);
+
+        /// <summary>
         /// True if the local client is the owner of this object.
         /// This will only return true if IsClientInitialized is also true. You may check ownership status regardless of client initialized state by using Owner.IsLocalClient.
         /// </summary>

@@ -209,9 +209,7 @@ namespace FishNet.Component.Prediction
                     removeCount++;
                 }
 
-                for (int i = 0; i < removeCount; i++)
-                    _colliderDataHistory[i].ResetState();
-                _colliderDataHistory.RemoveRange(true, removeCount);
+                _colliderDataHistory.RemoveRange(true, removeCount, resetRemoved: true);
             }
             //Cache is not used.
             else

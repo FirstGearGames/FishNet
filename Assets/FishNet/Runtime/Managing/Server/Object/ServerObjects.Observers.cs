@@ -356,7 +356,7 @@ namespace FishNet.Managing.Server
                 if (_writer.Length > 0)
                 {
                     NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, _writer.GetArraySegment(), nc);
-                    _writer.Reset();
+                    _writer.Clear();
 
                     foreach (NetworkObject n in nobCache)
                         n.OnSpawnServer(nc);
@@ -373,7 +373,7 @@ namespace FishNet.Managing.Server
         {
             if (ApplicationState.IsQuitting())
                 return;
-            _writer.Reset();
+            _writer.Clear();
 
             conn.UpdateHashGridPositions(!timedOnly);
             //If observer state changed then write changes.
@@ -414,12 +414,7 @@ namespace FishNet.Managing.Server
             ObserverStateChange osc = nob.RebuildObservers(conn, timedOnly);
             if (osc == ObserverStateChange.Added)
             {
-                /* Only write spawn if not predicted spawned, or if
-                 * conn is not predicted spawner. There is no need to send spawn
-                 * to predicted spawner given they spawned the object locally. */
-                NetworkConnection predictedSpawner = nob.PredictedSpawner;
-                if (!predictedSpawner.IsActive || predictedSpawner != conn)
-                    WriteSpawn(nob, _writer, conn);
+                WriteSpawn(nob, _writer, conn);
                 addedNobs.Add(nob);
             }
             else if (osc == ObserverStateChange.Removed)

@@ -292,11 +292,54 @@ namespace GameKit.Dependencies.Utilities.Types
             Initialize();
 
             T current = Collection[WriteIndex];
+            
             Collection[WriteIndex] = data;
             IncreaseWritten();
 
             return current;
         }
+        
+        
+        /// <summary>
+        /// Returns the first entry and removes it from the buffer.
+        /// </summary>
+        /// <returns></returns>
+        public T Dequeue()
+        {
+            if (_written == 0)
+                return default;
+            
+            int offset = GetRealIndex(0);
+            T result = Collection[offset];
+
+            RemoveRange(fromStart: true, 1);
+            return result;
+        }
+        
+        /// <summary>
+        /// Returns if able to dequeue an entry and removes it from the buffer if so.
+        /// </summary>
+        /// <returns></returns>
+        public bool TryDequeue(out T result)
+        {
+            if (_written == 0)
+            {
+                result = default;
+                return false;
+            }
+
+            int offset = GetRealIndex(0);
+            result = Collection[offset];
+
+            RemoveRange(fromStart: true, 1);
+            return true;
+        }
+
+        /// <summary>
+        /// Adds an entry to the collection, returning a replaced entry.
+        /// This method internally redirects to add.
+        /// </summary>
+        public T Enqueue(T data) => Add(data);
 
         /// <summary>
         /// Returns value in actual index as it relates to simulated index.

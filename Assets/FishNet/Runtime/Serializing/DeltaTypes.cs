@@ -2,8 +2,11 @@ using System.Runtime.CompilerServices;
 
 namespace FishNet.Serializing
 {
+    /// <summary>
+    /// This is for internal use and may change at any time.
+    /// </summary>
     [System.Flags]
-    internal enum DeltaVector2Type : byte
+    public enum DeltaVector2Type : byte
     {
         /// <summary>
         /// This is unused.
@@ -43,8 +46,11 @@ namespace FishNet.Serializing
         YNextIsLarger = 128,
     }
 
+    /// <summary>
+    /// This is for internal use and may change at any time.
+    /// </summary>
     [System.Flags]
-    internal enum DeltaVector3Type : ushort
+    public enum DeltaVector3Type : ushort
     {
         /// <summary>
         /// This is unused.
@@ -118,8 +124,11 @@ namespace FishNet.Serializing
         NextValueIsLarger = 32,
     }
     
+    /// <summary>
+    /// This is for internal use and may change at any time.
+    /// </summary>
     [System.Flags]
-    internal enum UDeltaPrecisionType : byte
+    public enum UDeltaPrecisionType : byte
     {
         /// <summary>
         /// Indicates there is no compression. This can also be used to initialize the enum.
@@ -152,7 +161,10 @@ namespace FishNet.Serializing
         NextValueIsLarger = 128,
     }
  
-    internal static class DeltaTypeExtensions
+    /// <summary>
+    /// This is for internal use and may change at any time.
+    /// </summary>
+    public static class DeltaTypeExtensions
     {
         public static bool FastContains(this UDeltaPrecisionType whole, UDeltaPrecisionType part) => (whole & part) == part;
         

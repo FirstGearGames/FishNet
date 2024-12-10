@@ -9,14 +9,16 @@ namespace FishNet.Serializing
     /// <summary>
     /// Reader which is reused to save on garbage collection and performance.
     /// </summary>
-    public sealed class PooledReader : Reader, IResettable
+    public sealed class PooledReader : Reader//, IResettable
     {
-        public PooledReader() { }
+        public PooledReader() { } 
         internal PooledReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(bytes, networkManager, null, source) { }
         internal PooledReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(segment, networkManager, null, source) { }
         public void Store() => ReaderPool.Store(this);
         
-        public void ResetState() => Store();
+        [Obsolete("Use Clear instead.")]
+        public void ResetState() => base.Clear();
+        [Obsolete("This does not function.")]
         public void InitializeState() { }
     }
 

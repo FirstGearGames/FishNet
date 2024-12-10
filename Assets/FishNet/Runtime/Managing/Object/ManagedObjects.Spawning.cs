@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using FishNet.Serializing.Helping;
 using UnityEngine;
 
-
 namespace FishNet.Managing.Object
 {
     public abstract partial class ManagedObjects
@@ -49,7 +48,6 @@ namespace FishNet.Managing.Object
                 localScale = null;
         }
 
-
         /// <summary>
         /// Writes a spawn to a client or server.
         /// If connection is not null the spawn is sent ot a client, otherwise it will be considered a predicted spawn.
@@ -72,6 +70,9 @@ namespace FishNet.Managing.Object
                 st |= SpawnType.Scene;
             else
                 st |= (nob.IsGlobal) ? SpawnType.InstantiatedGlobal : SpawnType.Instantiated;
+
+            if (connection == nob.PredictedSpawner)
+                st |= SpawnType.IsPredictedSpawner;
 
             //Call before writing SpawnType so nested can be appended to it if needed.
             PooledWriter nestedWriter = WriteNestedSpawn(nob, ref st);
@@ -108,32 +109,10 @@ namespace FishNet.Managing.Object
             WritePayload(payloadSender, nob, writer);
 
             /* RPCLinks and SyncTypes are ONLY written by the server.
-             * Although not neccessary, both sides will write the length
+             * Although not necessary, both sides will write the length
              * to keep the reading of spawns consistent. */
-            WriteRPCLinks_SyncTypes();
-
-            void WriteRPCLinks_SyncTypes()
-            {
-                //Predicted spawns don't use these.
-                if (predictedSpawn)
-                    return;
-
-                ReservedLengthWriter rw = ReservedWritersExtensions.Retrieve();
-
-                //Write RpcLinks.
-                rw.Initialize(writer, NetworkBehaviour.RPCLINK_RESERVED_BYTES);
-                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                    nb.WriteRpcLinks(writer);
-                rw.WriteLength();
-
-                //SyncTypes.
-                rw.Initialize(writer, NetworkBehaviour.SYNCTYPE_RESERVE_BYTES);
-                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
-                    nb.WriteSyncTypesForSpawn(writer, connection);
-                rw.WriteLength();
-
-                rw.Store();
-            }
+            WriteRpcLinks(nob, writer);
+            WriteSyncTypesForSpawn(nob, writer, connection);
 
             bool canWrite;
             //Need to validate predicted spawn length.
@@ -169,6 +148,64 @@ namespace FishNet.Managing.Object
 
             asClientReservedWriter.Store();
             return canWrite;
+        }
+
+        /// <summary>
+        /// Writes RPCLinks for a NetworkObject.
+        /// </summary>
+        protected void WriteRpcLinks(NetworkObject nob, PooledWriter writer)
+        {
+            ReservedLengthWriter rw = ReservedWritersExtensions.Retrieve();
+
+            rw.Initialize(writer, NetworkBehaviour.RPCLINK_RESERVED_BYTES);
+
+            if (NetworkManager.IsServerStarted)
+            {
+                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                    nb.WriteRpcLinks(writer);
+            }
+
+            rw.WriteLength();
+
+            rw.Store();
+        }
+
+        /// <summary>
+        /// Reads RpcLinks from a spawn into an arraySegment.
+        /// </summary>
+        protected ArraySegment<byte> ReadRpcLinks(PooledReader reader)
+        {
+            uint segmentSize = ReservedLengthWriter.ReadLength(reader, NetworkBehaviour.RPCLINK_RESERVED_BYTES);
+            return reader.ReadArraySegment((int)segmentSize);
+        }
+
+        /// <summary>
+        /// Writes SyncTypes for a NetworkObject.
+        /// </summary>
+        protected void WriteSyncTypesForSpawn(NetworkObject nob, PooledWriter writer, NetworkConnection connection)
+        {
+            ReservedLengthWriter rw = ReservedWritersExtensions.Retrieve();
+
+            //SyncTypes.
+            rw.Initialize(writer, NetworkBehaviour.SYNCTYPE_RESERVE_BYTES);
+
+            if (NetworkManager.IsServerStarted)
+            {
+                foreach (NetworkBehaviour nb in nob.NetworkBehaviours)
+                    nb.WriteSyncTypesForSpawn(writer, connection);
+            }
+
+            rw.WriteLength();
+            rw.Store();
+        }
+
+        /// <summary>
+        /// Reads SyncTypes from a spawn into an arraySegment.
+        /// </summary>
+        protected ArraySegment<byte> ReadSyncTypesForSpawn(PooledReader reader)
+        {
+            uint segmentSize = ReservedLengthWriter.ReadLength(reader, NetworkBehaviour.SYNCTYPE_RESERVE_BYTES);
+            return reader.ReadArraySegment((int)segmentSize);
         }
 
         /// <summary>
@@ -419,7 +456,6 @@ namespace FishNet.Managing.Object
             return true;
         }
 
-
         /// <summary>
         /// Reads a payload for a NetworkObject.
         /// </summary>
@@ -430,8 +466,16 @@ namespace FishNet.Managing.Object
             //If there is a payload.
             if (payloadLength > 0)
             {
-                foreach (NetworkBehaviour networkBehaviour in nob.NetworkBehaviours)
-                    networkBehaviour.ReadPayload(sender, reader);
+                if (nob != null)
+                {
+                    foreach (NetworkBehaviour networkBehaviour in nob.NetworkBehaviours)
+                        networkBehaviour.ReadPayload(sender, reader);
+                }
+                //NetworkObject could be null if payload is for a predicted spawn.
+                else
+                {
+                    reader.Skip((int)payloadLength);
+                }
             }
         }
 
@@ -439,7 +483,7 @@ namespace FishNet.Managing.Object
         /// Reads the payload returning it as an arraySegment.
         /// </summary>
         /// <returns></returns>
-        internal ArraySegment<byte> ReadPayload(PooledReader reader) 
+        internal ArraySegment<byte> ReadPayload(PooledReader reader)
         {
             int payloadLength = (int)ReservedLengthWriter.ReadLength(reader, NetworkBehaviour.PAYLOAD_RESERVE_BYTES);
             return reader.ReadArraySegment(payloadLength);
@@ -448,7 +492,7 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// /Writers a payload for a NetworkObject.
         /// </summary>
-        private void WritePayload(NetworkConnection sender, NetworkObject nob, PooledWriter writer)
+        protected void WritePayload(NetworkConnection sender, NetworkObject nob, PooledWriter writer)
         {
             ReservedLengthWriter rw = ReservedWritersExtensions.Retrieve();
 
@@ -459,7 +503,6 @@ namespace FishNet.Managing.Object
 
             rw.WriteLength();
         }
-
 
         // /// <summary>
         // /// Writes a payload for a NetworkObject.

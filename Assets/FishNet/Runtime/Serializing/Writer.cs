@@ -98,14 +98,25 @@ namespace FishNet.Serializing
             return $"Position: {Position:0000}, Length: {Length:0000}, Buffer: {BitConverter.ToString(_buffer, offset, length)}.";
         }
 
+        [Obsolete("Use Clear(NetworkManager) instead.")]
+        public void Reset(NetworkManager newManager = null) => Clear(newManager);
+
         /// <summary>
-        /// Resets the writer as though it was unused. Does not reset buffers.
+        /// Resets written data.
         /// </summary>
-        public void Reset(NetworkManager manager = null)
+        public void Clear()
         {
             Length = 0;
             Position = 0;
-            NetworkManager = manager;
+        }
+
+        /// <summary>
+        /// Resets written data and sets the NetworkManager.
+        /// </summary>
+        public void Clear(NetworkManager newManager)
+        {
+            Clear();
+            NetworkManager = newManager;
         }
 
         /// <summary>
@@ -271,7 +282,6 @@ namespace FishNet.Serializing
             _buffer[index] = (byte)(value >> 24);
         }
 
-
         [Obsolete("Use WriteUInt8Unpacked.")]
         public void WriteByte(byte value) => WriteUInt8Unpacked(value);
 
@@ -287,7 +297,6 @@ namespace FishNet.Serializing
 
             Length = Math.Max(Length, Position);
         }
-
 
         [Obsolete("Use WriteUInt8Array.")]
         public void WriteBytes(byte[] value, int offset, int count) => WriteUInt8Array(value, offset, count);
@@ -305,7 +314,6 @@ namespace FishNet.Serializing
             Position += count;
             Length = Math.Max(Length, Position);
         }
-
 
         [Obsolete("Use WriteUInt8ArrayAndSize.")]
         public void WriteBytesAndSize(byte[] value, int offset, int count) => WriteUInt8ArrayAndSize(value, offset, count);
@@ -329,7 +337,6 @@ namespace FishNet.Serializing
             }
         }
 
-
         [Obsolete("Use WriteUInt8ArrayAndSize.")]
         public void WriteBytesAndSize(byte[] value) => WriteUInt8ArrayAndSize(value);
 
@@ -343,7 +350,6 @@ namespace FishNet.Serializing
             // buffer might be null, so we can't use .Length in that case
             WriteUInt8ArrayAndSize(value, 0, size);
         }
-
 
         [Obsolete("Use WriteInt8Unpacked.")]
         public void WriteSByte(sbyte value) => WriteInt8Unpacked(value);
@@ -378,7 +384,6 @@ namespace FishNet.Serializing
             _buffer[Position++] = (value) ? (byte)1 : (byte)0;
             Length = Math.Max(Length, Position);
         }
-
 
         /// <summary>
         /// Writes a uint16 unpacked.
@@ -855,7 +860,6 @@ namespace FishNet.Serializing
         [DefaultWriter]
         public void WriteRay2D(Ray2D value) => WriteRay2DUnpacked(value);
 
-
         /// <summary>
         /// Writes a Matrix4x4.
         /// </summary>
@@ -956,7 +960,7 @@ namespace FishNet.Serializing
                 WriteNetworkObject(nob);
             }
         }
-        
+
         /// <summary>
         /// Writes a NetworkObject.ObjectId.
         /// </summary>
@@ -980,7 +984,7 @@ namespace FishNet.Serializing
             else
             {
                 bool spawned = nob.IsSpawned;
-               
+
                 if (spawned)
                     WriteNetworkObjectId(nob.ObjectId);
                 else
@@ -1013,12 +1017,12 @@ namespace FishNet.Serializing
             WriteNetworkObjectId(nob.ObjectId);
             WriteUInt8Unpacked((byte)dt);
         }
-        
+
         /// <summary>
         /// Writes an objectId.
         /// </summary>
         public void WriteNetworkObjectId(int objectId) => WriteSignedPackedWhole(objectId);
-        
+
         /// <summary>
         /// Writes a NetworkBehaviour.
         /// </summary>
@@ -1078,6 +1082,17 @@ namespace FishNet.Serializing
         {
             int value = (connection == null) ? NetworkConnection.UNSET_CLIENTID_VALUE : connection.ClientId;
             WriteNetworkConnectionId(value);
+        }
+
+        /// <summary>
+        /// Writes TransformProperties.
+        /// </summary>
+        [DefaultWriter]
+        public void WriteTransformProperties(TransformProperties value)
+        {
+            WriteVector3(value.Position);
+            WriteQuaternion32(value.Rotation);
+            WriteVector3(value.Scale);
         }
 
         /// <summary>
@@ -1354,7 +1369,6 @@ namespace FishNet.Serializing
             else
                 WriteArray(value, 0, value.Length);
         }
-
 
         /// <summary>
         /// Writes any supported type using packing.

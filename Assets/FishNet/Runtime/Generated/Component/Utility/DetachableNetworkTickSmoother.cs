@@ -156,7 +156,7 @@ namespace FishNet.Component.Transforming
                 transform.SetLocalProperties(_transformInstantiatedLocalProperties);
             }
 
-            _postTickFollowObjectWorldProperties.Reset();
+            _postTickFollowObjectWorldProperties.ResetState();
             ChangeSubscription(false);
 
             _initialized = false;
@@ -183,7 +183,7 @@ namespace FishNet.Component.Transforming
             if (!_synchronizeRotation)
                 _postTickFollowObjectWorldProperties.Rotation = transform.rotation;
             if (!_synchronizeScale)
-                _postTickFollowObjectWorldProperties.LocalScale = transform.localScale;
+                _postTickFollowObjectWorldProperties.Scale = transform.localScale;
             SetMoveRates();
         }
 

@@ -5,6 +5,7 @@ using UnityEngine;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using FishNet.Utility.Performance;
 using FishNet.Component.Ownership;
 using FishNet.Utility.Extension;
@@ -56,7 +57,6 @@ namespace FishNet.Object
         /// NetworkConnection which predicted spawned this object.
         /// </summary>
         public NetworkConnection PredictedSpawner { get; private set; } = NetworkManager.EmptyConnection;
-
         /// <summary>
         /// True if this NetworkObject was active during edit. Will be true if placed in scene during edit, and was in active state on run.
         /// </summary>
@@ -78,7 +78,7 @@ namespace FishNet.Object
         /// <summary>
         /// Unique Id for this NetworkObject. This does not represent the object owner.
         /// </summary>
-        public int ObjectId { get; private set; }
+        public int ObjectId { get; private set; } = NetworkObject.UNSET_OBJECTID_VALUE;
 
         /// <summary>
         /// True if this NetworkObject is deinitializing. Will also be true until Initialize is called. May be false until the object is cleaned up if object is destroyed without using Despawn.
@@ -476,7 +476,7 @@ namespace FishNet.Object
             if (Owner.IsValid)
                 Owner.RemoveObject(this);
             if (NetworkObserver != null)
-                NetworkObserver.Deinitialize(true);
+                NetworkObserver.Deinitialize(destroyed: true);
 
             if (NetworkManager != null)
             {
@@ -615,7 +615,7 @@ namespace FishNet.Object
         /// Preinitializes this object for the network.
         /// </summary>
         /// <param name="networkManager"></param>
-        internal void Preinitialize_Internal(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
+        internal void InitializeEarly(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
             //Only initialize this bit once even if clientHost.
             if (!networkManager.DoubleLogic(asServer))
@@ -635,6 +635,10 @@ namespace FishNet.Object
                 RollbackManager = networkManager.RollbackManager;
 
                 SetOwner(owner);
+
+                if (ObjectId != NetworkObject.UNSET_OBJECTID_VALUE)
+                    NetworkManager.LogError($"Object was initialized twice without being reset. Object {this.ToString()}");
+
                 ObjectId = objectId;
 
                 /* This must be called at the beginning
@@ -644,23 +648,8 @@ namespace FishNet.Object
                 AddDefaultNetworkObserverConditions();
             }
 
-            // /* Guestimate the last replicate tick
-            //  * based on latency and last packet tick.
-            //  * Going to try and send last input with spawn
-            //  * packet which will have definitive tick. //todo
-            //  */
-            // if (!asServer && !IsServerStarted && !IsOwner)
-            // {
-            //     /* This is an estimation as to how long it took to receive the spawn
-            //      * message. */
-            //     uint lastPacketTick = TimeManager.LastPacketTick.LastRemoteTick;
-            //     long estimatedTickDelay = (TimeManager.Tick - lastPacketTick);
-            //     if (estimatedTickDelay < 0)
-            //         estimatedTickDelay = 0;
-            // }
-
             for (int i = 0; i < NetworkBehaviours.Count; i++)
-                NetworkBehaviours[i].Preinitialize_Internal(this, asServer);
+                NetworkBehaviours[i].InitializeEarly(this, asServer);
 
             /* NetworkObserver uses some information from
              * NetworkBehaviour so it must be preinitialized
@@ -678,9 +667,10 @@ namespace FishNet.Object
 
             _networkObserverInitiliazed = true;
 
-            Preinitialize_Prediction(networkManager, asServer);
+            InitializePredictionEarly(networkManager, asServer);
             //Add to connections objects. Collection is a hashset so this can be called twice for clientHost.
-            owner?.AddObject(this);
+            if (owner != null)
+                owner.AddObject(this);
         }
 
         private void TimeManager_Update()
@@ -1083,21 +1073,26 @@ namespace FishNet.Object
             for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].Deinitialize(asServer);
 
+            bool asServerOnly = (asServer && !IsClientInitialized);
+
             if (asServer)
             {
                 if (NetworkObserver != null)
-                    NetworkObserver.Deinitialize(false);
+                    NetworkObserver.Deinitialize(destroyed: false);
                 IsDeinitializing = true;
             }
             else
             {
                 //Client only.
-                //if (NetworkManager != null && !NetworkManager.IsServerStarted)
-                if (!NetworkManager.IsServerStarted)
+                bool asClientOnly = !NetworkManager.IsServerStarted;
+                if (asClientOnly)
                     IsDeinitializing = true;
 
                 RemoveClientRpcLinkIndexes();
             }
+
+            if (!asServer ||  asServerOnly)
+                PredictedSpawner = NetworkManager.EmptyConnection;
 
             SetInitializedStatus(false, asServer);
 
@@ -1133,7 +1128,7 @@ namespace FishNet.Object
             SceneManager = null;
             RollbackManager = null;
             //Misc sets.
-            ObjectId = 0;
+            ObjectId = NetworkObject.UNSET_OBJECTID_VALUE;
         }
 
         /// <summary>
@@ -1250,9 +1245,8 @@ namespace FishNet.Object
         /// <summary>
         /// Initializes a predicted object for client.
         /// </summary>
-        internal void InitializePredictedObject_Server(NetworkManager manager, NetworkConnection predictedSpawner)
+        internal void InitializePredictedObject_Server(NetworkConnection predictedSpawner)
         {
-            NetworkManager = manager;
             PredictedSpawner = predictedSpawner;
         }
 
@@ -1262,23 +1256,16 @@ namespace FishNet.Object
         internal void InitializePredictedObject_Client(NetworkManager manager, int objectId, NetworkConnection owner, NetworkConnection predictedSpawner)
         {
             PredictedSpawner = predictedSpawner;
-            Preinitialize_Internal(manager, objectId, owner, false);
+            InitializeEarly(manager, objectId, owner, false);
         }
 
-        // /// <summary>
-        // /// Deinitializes this predicted spawned object.
-        // /// </summary>
-        // internal void DeinitializePredictedObject_Client()
-        // {
-        //     /* For the time being we're just going to disable the object because
-        //      * deinitializing instead could present a lot of problems.
-        //      * For example: if client deinitializes rpc links are unregistered,
-        //      * and if server had a rpc on the way already the link would
-        //      * not be found. This would cause the reader length to be wrong
-        //      * resulting in packet corruption. */
-        //     //^^ This probably does not apply anymore. Needs testing.
-        //     gameObject.SetActive(false);
-        // }
+        /// <summary>
+        /// Deinitializes this predicted spawned object.
+        /// </summary>
+        internal void DeinitializePredictedObject_Client()
+        {
+            Deinitialize(asServer: false);
+        }
 
         /// <summary>
         /// Sets the owner of this object.
@@ -1296,7 +1283,7 @@ namespace FishNet.Object
         internal TransformPropertiesFlag GetTransformChanges(TransformProperties stp)
         {
             Transform t = transform;
-            return GetTransformChanges(t, stp.Position, stp.Rotation, stp.LocalScale);
+            return GetTransformChanges(t, stp.Position, stp.Rotation, stp.Scale);
         }
 
         /// <summary>

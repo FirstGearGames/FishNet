@@ -108,9 +108,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Initializes for a spawned NetworkObject.
         /// </summary>
-        public void AddSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType ost, byte? nobComponentId, int? parentObjectId, byte? parentComponentId
-            , int? prefabId, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string sceneName, string objectName
-            , ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
+        public void AddSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType ost, byte? nobComponentId, int? parentObjectId, byte? parentComponentId, int? prefabId, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string sceneName, string objectName, ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
         {
             //Set if initialization order has changed.
             _initializeOrderChanged |= (initializeOrder != 0);
@@ -162,9 +160,7 @@ namespace FishNet.Managing.Client
                 }
             }
 
-            cnob.InitializeSpawn(manager, collectionId, objectId, initializeOrder, ownerId, ost, nobComponentId, parentObjectId, parentComponentId
-                , prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName
-                , payload, rpcLinks, syncValues);
+            cnob.InitializeSpawn(manager, collectionId, objectId, initializeOrder, ownerId, ost, nobComponentId, parentObjectId, parentComponentId, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncValues);
 
             ReadSpawningObjects.Add(objectId);
         }
@@ -241,9 +237,7 @@ namespace FishNet.Managing.Client
                                         found = true;
                                         if (cnob.Action != CachedNetworkObject.ActionType.Spawn)
                                         {
-                                            errMsg = (nested)
-                                                ? $"ObjectId {targetObjectId} was found for a nested spawn, but ActionType is not spawn. ComponentIndex {cnob.ComponentId} will not be spawned."
-                                                : $"ObjectId {targetObjectId} was found for a parented spawn, but ActionType is not spawn. ObjectId {cnob.ObjectId} will not be spawned.";
+                                            errMsg = (nested) ? $"ObjectId {targetObjectId} was found for a nested spawn, but ActionType is not spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn, but ActionType is not spawn. ObjectId {cnob.ObjectId} will not be spawned.";
                                             _networkManager.LogError(errMsg);
                                             break;
                                         }
@@ -258,9 +252,7 @@ namespace FishNet.Managing.Client
                                 //Root nob could not be found.
                                 if (!found)
                                 {
-                                    errMsg = (nested)
-                                        ? $"ObjectId {targetObjectId} could not be found for a nested spawn. ComponentIndex {cnob.ComponentId} will not be spawned."
-                                        : $"ObjectId {targetObjectId} was found for a parented spawn. ObjectId {cnob.ObjectId} will not be spawned.";
+                                    errMsg = (nested) ? $"ObjectId {targetObjectId} could not be found for a nested spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn. ObjectId {cnob.ObjectId} will not be spawned.";
                                     _networkManager.LogError(errMsg);
                                 }
                             }
@@ -301,10 +293,14 @@ namespace FishNet.Managing.Client
                     else
                     {
                         cnob.NetworkObject = _clientObjects.GetSpawnedNetworkObject(cnob);
-                        /* Do not log unless not nested. Nested nobs sometimes
-                         * could be destroyed if parent was first. */
-                        if (!_networkManager.IsHostStarted && cnob.NetworkObject == null && !cnob.IsInitializedNested)
-                            _networkManager.Log($"NetworkObject for ObjectId of {cnob.ObjectId} was found null. Unable to despawn object. This may occur if a nested NetworkObject had it's parent object unexpectedly destroyed. This incident is often safe to ignore.");
+
+                        /* //TODO cache recent predicted despawns for up to a few seconds.
+                         * If not found and the Id is in recently predicted despawned then simply
+                         * do nothing. Otherwise log missing Id. */
+                        // /* Do not log unless not nested. Nested nobs sometimes
+                        //  * could be destroyed if parent was first. */
+                        // if (!_networkManager.IsHostStarted && cnob.NetworkObject == null && !cnob.IsInitializedNested)
+                        //     _networkManager.Log($"NetworkObject for ObjectId of {cnob.ObjectId} was found null. Unable to despawn object. This may occur if a nested NetworkObject had it's parent object unexpectedly destroyed. This incident is often safe to ignore.");
                     }
 
                     NetworkObject nob = cnob.NetworkObject;
@@ -344,7 +340,7 @@ namespace FishNet.Managing.Client
                         }
 
                         //Preinitialize client side.
-                        nob.Preinitialize_Internal(_networkManager, objectId, owner, false);
+                        nob.InitializeEarly(_networkManager, objectId, owner, false);
                         //Read payload.
                         if (cnob.PayloadReader != null)
                             _networkManager.ClientManager.Objects.ReadPayload(NetworkManager.EmptyConnection, nob, cnob.PayloadReader, cnob.PayloadReader.Length);
@@ -356,8 +352,7 @@ namespace FishNet.Managing.Client
                          * IterateSpawn was always running after the above lines, and not
                          * from anywhere else. So there's no reason we cannot inline it
                          * here. */
-                        if (cnob.RpcLinkReader != null)
-                            _clientObjects.ApplyRpcLinks(cnob.NetworkObject, cnob.RpcLinkReader);
+                        _clientObjects.ApplyRpcLinks(cnob.NetworkObject, cnob.RpcLinkReader);
                         //IterateSpawn(cnob);
                         _iteratedSpawns.Add(cnob.NetworkObject);
 
@@ -413,25 +408,8 @@ namespace FishNet.Managing.Client
                     CachedNetworkObject cnob = collection[i];
                     if (cnob.Action == CachedNetworkObject.ActionType.Spawn && cnob.NetworkObject != null)
                     {
-                        if (cnob.SyncTypesReader != null)
-                        {
-                            // /* Apply syncTypes. It's very important to do this after all
-                            //  * spawns have been processed and added to the manager.Objects collection.
-                            //  * Otherwise, the synctype may reference an object spawning the same tick
-                            //  * and the result would be null due to said object not being in spawned.
-                            //  *
-                            //  * At this time the NetworkObject is not initialized so by calling
-                            //  * OnSyncType the changes are cached to invoke callbacks after initialization,
-                            //  * not during the time of this action. */
-                            List<NetworkBehaviour> behaviours = cnob.NetworkObject.NetworkBehaviours;
-                            PooledReader reader = cnob.SyncTypesReader;
-                            while (reader.Remaining > 0)
-                            {
-                                byte behaviourId = reader.ReadUInt8Unpacked();
-                                behaviours[behaviourId].ReadSyncTypesForSpawn(reader);
-                            }
-                        }
- 
+                        _clientObjects.ApplySyncTypesForSpawn(cnob.NetworkObject, cnob.SyncTypesReader);
+
                         /* Only continue with the initialization if it wasn't initialized
                          * early to prevent a despawn conflict. */
                         bool canInitialize = (!_conflictingDespawns.Contains(cnob.ObjectId) || !_iteratedSpawns.Contains(cnob.NetworkObject));
@@ -510,15 +488,12 @@ namespace FishNet.Managing.Client
             //If not found in Spawning then check Spawned.
             if (!IteratedSpawningObjects.TryGetValue(objectId, out result))
             {
-                Dictionary<int, NetworkObject> spawned = (_networkManager.IsHostStarted)
-                    ? _networkManager.ServerManager.Objects.Spawned
-                    : _networkManager.ClientManager.Objects.Spawned;
+                Dictionary<int, NetworkObject> spawned = (_networkManager.IsHostStarted) ? _networkManager.ServerManager.Objects.Spawned : _networkManager.ClientManager.Objects.Spawned;
                 spawned.TryGetValue(objectId, out result);
             }
 
             return result;
         }
-
 
         /// <summary>
         /// Resets cache.
@@ -607,9 +582,7 @@ namespace FishNet.Managing.Client
         public PooledReader SyncTypesReader;
 #pragma warning restore 0649
 
-        public void InitializeSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType objectSpawnType, byte? nobComponentId, int? parentObjectId, byte? parentComponentId
-            , int? prefabId, Vector3? position, Quaternion? rotation, Vector3? scale, ulong sceneId, string sceneName, string objectName
-            , ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncTypes)
+        public void InitializeSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType objectSpawnType, byte? nobComponentId, int? parentObjectId, byte? parentComponentId, int? prefabId, Vector3? position, Quaternion? rotation, Vector3? scale, ulong sceneId, string sceneName, string objectName, ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncTypes)
         {
             ResetState();
             Action = ActionType.Spawn;

@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6667641716399555817}
   - component: {fileID: -5271135124957689192}
   m_Layer: 0
-  m_Name: NetworkTransform Benchmark
+  m_Name: NetworkTransform Benchmark Cubes
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -79,9 +79,9 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 35
+  <PrefabId>k__BackingField: 30
   <SpawnableCollectionId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 14364260540862342890
+  <AssetPathHash>k__BackingField: 15845183709739124870
   <SceneId>k__BackingField: 0
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
@@ -110,6 +110,7 @@ MonoBehaviour:
   _moveInUpdate: 0
   _moveRate: 3
   _rotateRate: 30
+  _range: 10
 --- !u!114 &-5271135124957689192
 MonoBehaviour:
   m_ObjectHideFlags: 0

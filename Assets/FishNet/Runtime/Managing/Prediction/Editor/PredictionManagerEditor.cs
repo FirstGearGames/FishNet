@@ -37,9 +37,9 @@ namespace FishNet.Managing.Predicting.Editing
 
             EditorGUILayout.LabelField("Client", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-#if !FISHNET_STABLE_MODE
+
             EditorGUILayout.PropertyField(_createLocalStates);
-#endif
+
             if (_stateInterpolation.intValue == 0)
                 EditorGUILayout.HelpBox($"With interpolation set at 0 states will run as they are received, rather than create an interpolation buffer. Using 0 interpolation drastically increases the chance of Created states arriving out of order.", MessageType.Warning);
             EditorGUILayout.PropertyField(_stateInterpolation);

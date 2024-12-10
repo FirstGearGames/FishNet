@@ -61,7 +61,7 @@ namespace FishNet.Component.Transforming
                 if (Writer == null)
                     Writer = WriterPool.Retrieve();
 
-                Writer.Reset();
+                Writer.Clear();
                 Writer.WriteArraySegment(data);
                 Channel = channel;
                 LocalTick = localTick;
@@ -769,12 +769,11 @@ namespace FishNet.Component.Transforming
                 else
                     _lastSentTransformData = ResettableObjectCaches<TransformData>.Retrieve();
             }
-
-
+            
             if (asServer)
             {
                 if (_toClientChangedWriter != null)
-                    _toClientChangedWriter.ResetState();
+                    _toClientChangedWriter.Clear();
                 else
                     _toClientChangedWriter = WriterPool.Retrieve();
             }
@@ -1665,7 +1664,7 @@ namespace FishNet.Component.Transforming
                 else
                 {
                     //Since this is writing new data, reset the writer.
-                    writer.Reset();
+                    writer.Clear();
 
                     _serverChangedSinceReliable |= changed;
 

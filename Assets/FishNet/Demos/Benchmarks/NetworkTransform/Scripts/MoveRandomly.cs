@@ -27,9 +27,9 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         [Range(1f, 1000f)]
         [SerializeField]
         private float _rotateRate = 30f;
-
-        //Maximum range for new position.
-        private const float _range = 10f;
+        [Range(0.1f, 40f)]
+        [SerializeField]
+        private float _range = 6f;
 
         //Position to move towards.
         private Vector3 _goalPosition;

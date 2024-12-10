@@ -171,7 +171,7 @@ namespace FishNet.Object
                 PredictionSmoother.OnUpdate();
         }
 
-        private void Preinitialize_Prediction(NetworkManager manager, bool asServer)
+        private void InitializePredictionEarly(NetworkManager manager, bool asServer)
         {
             if (!_enablePrediction)
                 return;
@@ -340,7 +340,6 @@ namespace FishNet.Object
                 PredictionSmoother.OnPreReconcile();
         }
 
-#if !FISHNET_STABLE_MODE
         private void PredictionManager_OnReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
             /* Tell all prediction behaviours to set/validate their
@@ -359,28 +358,6 @@ namespace FishNet.Object
                     _rigidbodyPauser.Pause();
             }
         }
-#else
-        private void PredictionManager_OnReconcile(uint clientReconcileTick, uint serverReconcileTick)
-        {
-            /* If still not reconciling then pause rigidbody.
-             * This shouldn't happen unless the user is not calling
-             * reconcile at all. */
-            if (!IsObjectReconciling)
-            {
-                if (_rigidbodyPauser != null)
-                    _rigidbodyPauser.Pause();
-
-                return;
-            }
-
-            /* Tell all prediction behaviours to set/validate their
-             * reconcile data now. This will use reconciles from the server
-             * whenever possible, and local reconciles if a server reconcile
-             * is not available. */
-            for (int i = 0; i < _predictionBehaviours.Count; i++)
-                _predictionBehaviours[i].Reconcile_Client_Start();
-        }
-#endif
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {

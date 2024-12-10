@@ -17,10 +17,6 @@ using Mirror;
 using MirrorNetworkTransformBase = Mirror.NetworkTransformBase;
 using MirrorNetworkTransformChild = Mirror.NetworkTransformChild;
 using MirrorNetworkAnimator = Mirror.NetworkAnimator;
-#if !MIRROR_57_0_OR_NEWER
-using MirrorNetworkProximityChecker = Mirror.NetworkProximityChecker;
-using MirrorNetworkSceneChecker = Mirror.NetworkSceneChecker;
-#endif
 
 #if FGG_ASSETS
 using FlexNetworkAnimator = FirstGearGames.Mirrors.Assets.FlexNetworkAnimators.FlexNetworkAnimator;
@@ -303,15 +299,9 @@ namespace FishNet.Upgrading.Mirror.Editing
 
         private bool IterateSceneChecker(GameObject go)
         {
-#if !MIRROR_57_0_OR_NEWER
             if (_sceneCondition == null)
                 return false;
 
-            if (go.TryGetComponent(out MirrorNetworkSceneChecker msc))
-            {
-                Replace(msc);
-                return true;
-            }
 #if FGG_PROJECTS
             if (go.TryGetComponent(out FlexSceneChecker fsc))
             {
@@ -344,7 +334,6 @@ namespace FishNet.Upgrading.Mirror.Editing
                     networkObserver.ObserverConditionsInternal.Add(_sceneCondition);
             }
 
-#endif
             return false;
         }
 
@@ -352,15 +341,9 @@ namespace FishNet.Upgrading.Mirror.Editing
 
         private bool IterateProximityChecker(GameObject go)
         {
-#if !MIRROR_57_0_OR_NEWER
-            if (_distanceCondition == null)
+           if (_distanceCondition == null)
                 return false;
-
-            if (go.TryGetComponent(out MirrorNetworkProximityChecker mnpc))
-            {
-                Replace(mnpc);
-                return true;
-            }
+            
 #if FGG_PROJECTS
             if (go.TryGetComponent(out FastProximityChecker fpc))
             {
@@ -392,7 +375,6 @@ namespace FishNet.Upgrading.Mirror.Editing
                 if (!conditionFound)
                     networkObserver.ObserverConditionsInternal.Add(_distanceCondition);
             }
-#endif
 
             return false;
         }

@@ -980,13 +980,19 @@ namespace FishNet.Serializing
         /// <returns></returns>
         [DefaultReader]
         public NetworkObject ReadNetworkObject() => ReadNetworkObject(out _);
+        
+        /// <summary>
+        /// Reads a NetworkObject.
+        /// </summary>
+        /// <returns></returns>
+        public NetworkObject ReadNetworkObject(bool logException) => ReadNetworkObject(out _, null, logException);
 
         /// <summary>
         /// Reads a NetworkObject.
         /// </summary>
         /// <param name="readSpawningObjects">Objects which have been read to be spawned this tick, but may not have spawned yet.</param>
         /// <returns></returns>
-        public NetworkObject ReadNetworkObject(out int objectOrPrefabId, HashSet<int> readSpawningObjects = null)
+        public NetworkObject ReadNetworkObject(out int objectOrPrefabId, HashSet<int> readSpawningObjects = null, bool logException = true)
         {
 #if DEVELOPMENT
             LastNetworkBehaviour = null;
@@ -1028,7 +1034,7 @@ namespace FishNet.Serializing
 
                 if (result == null && !isServer)
                 {
-                    if (readSpawningObjects == null || !readSpawningObjects.Contains(objectOrPrefabId))
+                    if (logException && (readSpawningObjects == null || !readSpawningObjects.Contains(objectOrPrefabId)))
                         NetworkManager.LogWarning($"Spawned NetworkObject was expected to exist but does not for Id {objectOrPrefabId}. This may occur if you sent a NetworkObject reference which does not exist, be it destroyed or if the client does not have visibility.");
                 }
             }
@@ -1057,7 +1063,7 @@ namespace FishNet.Serializing
         /// Reads the Id for a NetworkObject and outputs spawn settings.
         /// </summary>
         /// <returns></returns>
-        internal int ReadSpawnedNetworkObject(out sbyte initializeOrder, out ushort collectionid)
+        internal int ReadNetworkObjectForSpawn(out sbyte initializeOrder, out ushort collectionid)
         {
             int objectId = ReadNetworkObjectId();
             collectionid = ReadUInt16();
@@ -1070,7 +1076,7 @@ namespace FishNet.Serializing
         /// Reads the Id for a NetworkObject and outputs despawn settings.
         /// </summary>
         /// <returns></returns>
-        internal int ReadNetworkObjectForDepawn(out DespawnType dt)
+        internal int ReadNetworkObjectForDespawn(out DespawnType dt)
         {
             int objectId = ReadNetworkObjectId();
             dt = (DespawnType)ReadUInt8Unpacked();
@@ -1095,9 +1101,9 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="readSpawningObjects">Objects which have been read to be spawned this tick, but may not have spawned yet.</param>
         /// <returns></returns>
-        public NetworkBehaviour ReadNetworkBehaviour(out int objectId, out byte componentIndex, HashSet<int> readSpawningObjects = null)
+        public NetworkBehaviour ReadNetworkBehaviour(out int objectId, out byte componentIndex, HashSet<int> readSpawningObjects = null, bool logException = true)
         {
-            NetworkObject nob = ReadNetworkObject(out objectId, readSpawningObjects);
+            NetworkObject nob = ReadNetworkObject(out objectId, readSpawningObjects, logException);
             componentIndex = ReadUInt8Unpacked();
 
             NetworkBehaviour result;
@@ -1133,6 +1139,12 @@ namespace FishNet.Serializing
         {
             return ReadNetworkBehaviour(out _, out _);
         }
+        
+        public NetworkBehaviour ReadNetworkBehaviour(bool logException)
+        {
+            return ReadNetworkBehaviour(out _, out _, null, logException);
+        }
+
 
         /// <summary>
         /// Reads a NetworkBehaviourId.
@@ -1237,6 +1249,19 @@ namespace FishNet.Serializing
                         return new(NetworkManager, value, -1, true);
                 }
             }
+        }
+        
+        /// <summary>
+        /// Reads TransformProperties.
+        /// </summary>
+        [DefaultReader]
+        public TransformProperties ReadTransformProperties()
+        {
+            Vector3 position = ReadVector3();
+            Quaternion rotation = ReadQuaternion32();
+            Vector3 scale = ReadVector3();
+
+            return new(position, rotation, scale);
         }
 
         /// <summary>

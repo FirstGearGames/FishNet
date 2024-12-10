@@ -22,6 +22,10 @@ namespace FishNet.Managing.Object
         /// Instantiate into the global scene.
         /// </summary>
         InstantiatedGlobal = 8,
+        /// <summary>
+        /// Indicates the receiver is the predicted spawner.
+        /// </summary>
+        IsPredictedSpawner = 16,
     }
 
     [APIExclude]

@@ -94,7 +94,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a value.
         /// </summary>
-        private float ReadDeltaSingle(UDeltaPrecisionType dpt, bool unsigned)
+        public float ReadDeltaSingle(UDeltaPrecisionType dpt, bool unsigned)
         {
             if (dpt.FastContains(UDeltaPrecisionType.UInt8))
             {
@@ -120,7 +120,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
-        private float ReadDeltaSingle(UDeltaPrecisionType dpt, float valueA, bool unsigned)
+        public float ReadDeltaSingle(UDeltaPrecisionType dpt, float valueA, bool unsigned)
         {
             float diff = ReadDeltaSingle(dpt, unsigned);
 
@@ -138,7 +138,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
-        private float ReadDeltaSingle(float valueA)
+        public float ReadDeltaSingle(float valueA)
         {
             const bool unsigned = false;
             UDeltaPrecisionType dpt = (UDeltaPrecisionType)ReadUInt8Unpacked();
@@ -163,7 +163,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a value.
         /// </summary>
-        private double ReadDeltaDouble(UDeltaPrecisionType dpt, bool unsigned)
+        public double ReadDeltaDouble(UDeltaPrecisionType dpt, bool unsigned)
         {
             if (dpt.FastContains(UDeltaPrecisionType.UInt8))
             {
@@ -201,7 +201,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
-        private double ReadDeltaDouble(UDeltaPrecisionType dpt, double valueA, bool unsigned)
+        public double ReadDeltaDouble(UDeltaPrecisionType dpt, double valueA, bool unsigned)
         {
             double diff = ReadDeltaDouble(dpt, unsigned);
             //8.
@@ -220,7 +220,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
-        private double ReadDeltaDouble(double valueA)
+        public double ReadDeltaDouble(double valueA)
         {
             const bool unsigned = false;
             UDeltaPrecisionType dpt = (UDeltaPrecisionType)ReadUInt8Unpacked();
@@ -245,7 +245,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a value.
         /// </summary>
-        private decimal ReadDeltaDecimal(UDeltaPrecisionType dpt, bool unsigned)
+        public decimal ReadDeltaDecimal(UDeltaPrecisionType dpt, bool unsigned)
         {
             if (dpt.FastContains(UDeltaPrecisionType.UInt8))
             {
@@ -290,7 +290,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// </summary>
-        private decimal ReadDeltaDecimal(UDeltaPrecisionType dpt, decimal valueA, bool unsigned)
+        public decimal ReadDeltaDecimal(UDeltaPrecisionType dpt, decimal valueA, bool unsigned)
         {
             decimal diff = ReadDeltaDecimal(dpt, unsigned);
 
@@ -330,7 +330,7 @@ namespace FishNet.Serializing
         }
         #endregion
 
-        #region Types.
+        #region FishNet Types.
         /// <summary>
         /// Reads a delta value.
         /// </summary>
@@ -343,6 +343,29 @@ namespace FishNet.Serializing
         #endregion
 
         #region Unity.
+        /// <summary>
+        /// Writes delta position, rotation, and scale of a transform.
+        /// </summary>
+        [DefaultDeltaReader]
+        public TransformProperties ReadDeltaTransformProperties(TransformProperties valueA)
+        {
+            byte allFlags = ReadUInt8Unpacked();
+
+            TransformProperties result = default;
+            
+            if ((allFlags & 1) == 1)
+                result.Position = ReadDeltaVector3(valueA.Position);
+            if ((allFlags & 2) == 2)
+                result.Rotation = ReadDeltaQuaternion(valueA.Rotation);
+            if ((allFlags & 4) == 4)
+                result.Scale = ReadDeltaVector3(valueA.Scale);
+
+            if (allFlags != 0)
+                result.IsValid = true;
+
+            return result;
+        }
+
         /// <summary>
         /// Reads a difference, appending it onto a value.
         /// (not really for Quaternion).
@@ -359,11 +382,11 @@ namespace FishNet.Serializing
         [DefaultDeltaReader]
         public Vector2 ReadDeltaVector2(Vector2 valueA)
         {
-            byte allBytes = ReadUInt8Unpacked();
+            byte allFlags = ReadUInt8Unpacked();
 
-            if ((allBytes & 1) == 1)
+            if ((allFlags & 1) == 1)
                 valueA.x = ReadUDeltaSingle(valueA.x);
-            if ((allBytes & 2) == 2)
+            if ((allFlags & 2) == 2)
                 valueA.y = ReadUDeltaSingle(valueA.y);
 
             return valueA;
@@ -375,13 +398,13 @@ namespace FishNet.Serializing
         [DefaultDeltaReader]
         public Vector3 ReadDeltaVector3(Vector3 valueA)
         {
-            byte allBytes = ReadUInt8Unpacked();
+            byte allFlags = ReadUInt8Unpacked();
 
-            if ((allBytes & 1) == 1)
+            if ((allFlags & 1) == 1)
                 valueA.x = ReadUDeltaSingle(valueA.x);
-            if ((allBytes & 2) == 2)
+            if ((allFlags & 2) == 2)
                 valueA.y = ReadUDeltaSingle(valueA.y);
-            if ((allBytes & 4) == 4)
+            if ((allFlags & 4) == 4)
                 valueA.z = ReadUDeltaSingle(valueA.z);
 
             return valueA;
@@ -454,7 +477,7 @@ namespace FishNet.Serializing
         public T ReadDelta<T>(T prev)
         {
             Func<Reader, T, T> del = GenericDeltaReader<T>.Read;
-            
+
             if (del == null)
             {
                 NetworkManager.LogError($"Read delta method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.");

@@ -20,6 +20,15 @@ namespace GameKit.Dependencies.Utilities
         }
 
         /// <summary>
+        /// Subtracts b quaternion from a.
+        /// </summary>
+        public static Quaternion Subtract(this Quaternion a, Quaternion b) => (a * Quaternion.Inverse(b));
+        /// <summary>
+        /// Adds quaternion b onto quaternion a.
+        /// </summary>
+        public static Quaternion Add(this Quaternion a, Quaternion b) => (a * b);
+
+        /// <summary>
         /// Returns if two quaternions match.
         /// </summary>
         /// <param name="precise">True to use a custom implementation with no error tolerance. False to use Unity's implementation which may return a match even when not true due to error tolerance.</param>
