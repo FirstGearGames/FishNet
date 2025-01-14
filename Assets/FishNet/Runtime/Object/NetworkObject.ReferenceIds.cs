@@ -81,6 +81,10 @@ namespace FishNet.Object
                 SceneId = 0;
                 return;
             }
+            // Porting in some checks from the updated version of fishnet to prevent spamming during runtime
+            if (!gameObject.scene.IsValid() || !gameObject.scene.isLoaded)
+                return;
+
 
             ulong startId = SceneId;
             uint startPath = _scenePathHash;
