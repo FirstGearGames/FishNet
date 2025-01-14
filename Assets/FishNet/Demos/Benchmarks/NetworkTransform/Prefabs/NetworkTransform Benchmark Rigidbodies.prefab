@@ -80,7 +80,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 6
+  <PrefabId>k__BackingField: 41
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 15013615375196309252
   <SceneId>k__BackingField: 0
@@ -148,7 +148,7 @@ MonoBehaviour:
     X: 0
     Y: 0
     Z: 0
-  _synchronizeScale: 1
+  _synchronizeScale: 0
   _scaleSnapping:
     X: 0
     Y: 0

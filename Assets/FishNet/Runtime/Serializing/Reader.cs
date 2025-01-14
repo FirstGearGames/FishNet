@@ -587,7 +587,8 @@ namespace FishNet.Serializing
             //Null string.
             if (size == Writer.UNSET_COLLECTION_SIZE_VALUE)
                 return null;
-            else if (size == 0)
+
+            if (size == 0)
                 return string.Empty;
 
             if (!CheckAllocationAttack(size))
@@ -609,8 +610,8 @@ namespace FishNet.Serializing
             int size = ReadInt32();
             if (size == Writer.UNSET_COLLECTION_SIZE_VALUE)
                 return null;
-            else
-                return ReadUInt8ArrayAllocated(size);
+            
+            return ReadUInt8ArrayAllocated(size);
         }
 
         [Obsolete("Use ReadUInt8ArrayAndSize.")]
@@ -980,7 +981,7 @@ namespace FishNet.Serializing
         /// <returns></returns>
         [DefaultReader]
         public NetworkObject ReadNetworkObject() => ReadNetworkObject(out _);
-        
+
         /// <summary>
         /// Reads a NetworkObject.
         /// </summary>
@@ -1139,12 +1140,11 @@ namespace FishNet.Serializing
         {
             return ReadNetworkBehaviour(out _, out _);
         }
-        
+
         public NetworkBehaviour ReadNetworkBehaviour(bool logException)
         {
             return ReadNetworkBehaviour(out _, out _, null, logException);
         }
-
 
         /// <summary>
         /// Reads a NetworkBehaviourId.
@@ -1250,7 +1250,7 @@ namespace FishNet.Serializing
                 }
             }
         }
-        
+
         /// <summary>
         /// Reads TransformProperties.
         /// </summary>
@@ -1436,6 +1436,13 @@ namespace FishNet.Serializing
         public int ReadList<T>(ref List<T> collection, bool allowNullification = false)
         {
             int count = (int)ReadSignedPackedWhole();
+            if (count == Writer.UNSET_COLLECTION_SIZE_VALUE)
+            {
+                if (allowNullification)
+                    collection = null;
+                return Writer.UNSET_COLLECTION_SIZE_VALUE;
+            }
+
             if (count < 0)
             {
                 NetworkManager.Log($"List count cannot be less than 0.");
@@ -1444,25 +1451,16 @@ namespace FishNet.Serializing
                 return default;
             }
 
-            if (count == Writer.UNSET_COLLECTION_SIZE_VALUE)
-            {
-                if (allowNullification)
-                    collection = null;
-                return Writer.UNSET_COLLECTION_SIZE_VALUE;
-            }
+            if (collection == null)
+                collection = new(count);
             else
-            {
-                if (collection == null)
-                    collection = new(count);
-                else
-                    collection.Clear();
+                collection.Clear();
 
 
-                for (int i = 0; i < count; i++)
-                    collection.Add(Read<T>());
+            for (int i = 0; i < count; i++)
+                collection.Add(Read<T>());
 
-                return count;
-            }
+            return count;
         }
 
         /// <summary>
@@ -1488,36 +1486,34 @@ namespace FishNet.Serializing
             int count = (int)ReadSignedPackedWhole();
 
             if (count == Writer.UNSET_COLLECTION_SIZE_VALUE)
-            {
                 return 0;
-            }
-            else if (count == 0)
+
+            if (count == 0)
             {
                 if (collection == null)
                     collection = new T[0];
 
                 return 0;
             }
-            else if (count < 0)
+
+            if (count < 0)
             {
                 NetworkManager.Log($"Array count cannot be less than 0.");
                 //Purge renaming and return default.
                 Position += Remaining;
                 return default;
             }
-            else
-            {
-                //Initialize buffer if not already done.
-                if (collection == null)
-                    collection = new T[count];
-                else if (collection.Length < count)
-                    Array.Resize(ref collection, count);
 
-                for (int i = 0; i < count; i++)
-                    collection[i] = Read<T>();
+            //Initialize buffer if not already done.
+            if (collection == null)
+                collection = new T[count];
+            else if (collection.Length < count)
+                Array.Resize(ref collection, count);
 
-                return count;
-            }
+            for (int i = 0; i < count; i++)
+                collection[i] = Read<T>();
+
+            return count;
         }
 
         /// <summary>

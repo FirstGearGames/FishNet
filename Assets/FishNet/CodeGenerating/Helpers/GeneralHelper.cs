@@ -164,7 +164,7 @@ namespace FishNet.CodeGenerating.Helping
             List_TypeRef = base.ImportReference(tmpType);
             tmpType = typeof(RingBuffer<>);
             RingBuffer_TypeRef = base.ImportReference(tmpType);
-            
+
             SR.MethodInfo lstMi;
             lstMi = tmpType.GetMethod("Add");
             List_Add_MethodRef = base.ImportReference(lstMi);
@@ -485,8 +485,7 @@ namespace FishNet.CodeGenerating.Helping
             TypeReference typeTr = base.ImportReference(typeof(List<>));
             return typeTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
         }
-        
-        
+
         /// <summary>
         /// Outputs generic Dictionary for keyTr and valueTr.
         /// </summary>
@@ -522,6 +521,29 @@ namespace FishNet.CodeGenerating.Helping
             TypeReference typeTr = base.ImportReference(typeof(BasicQueue<>));
             return typeTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
         }
+        
+        
+        /// <summary>
+        /// Copies one method to another while transferring diagnostic paths.
+        /// </summary>
+        public void CopyIntoMethod(MethodDefinition originalMethodDef, MethodDefinition targetMethodDef)
+        {
+            TypeDefinition typeDef = originalMethodDef.DeclaringType;
+
+
+            (targetMethodDef.Body, originalMethodDef.Body) = (originalMethodDef.Body, targetMethodDef.Body);
+            //Move over all the debugging information
+            foreach (SequencePoint sequencePoint in originalMethodDef.DebugInformation.SequencePoints)
+                targetMethodDef.DebugInformation.SequencePoints.Add(sequencePoint);
+            originalMethodDef.DebugInformation.SequencePoints.Clear();
+
+            foreach (CustomDebugInformation customInfo in originalMethodDef.CustomDebugInformations)
+                targetMethodDef.CustomDebugInformations.Add(customInfo);
+            originalMethodDef.CustomDebugInformations.Clear();
+            //Swap debuginformation scope.
+            (originalMethodDef.DebugInformation.Scope, targetMethodDef.DebugInformation.Scope) = (targetMethodDef.DebugInformation.Scope, originalMethodDef.DebugInformation.Scope);
+        }
+
 
         /// <summary>
         /// Copies one method to another while transferring diagnostic paths.
@@ -531,22 +553,13 @@ namespace FishNet.CodeGenerating.Helping
             TypeDefinition typeDef = originalMd.DeclaringType;
 
             MethodDefinition md = typeDef.GetOrCreateMethodDefinition(base.Session, toMethodName, originalMd, true, out bool created);
+
             alreadyCreated = !created;
             if (alreadyCreated)
-                return md;
+                md.Body.Instructions.Clear();
 
-            (md.Body, originalMd.Body) = (originalMd.Body, md.Body);
-            //Move over all the debugging information
-            foreach (SequencePoint sequencePoint in originalMd.DebugInformation.SequencePoints)
-                md.DebugInformation.SequencePoints.Add(sequencePoint);
-            originalMd.DebugInformation.SequencePoints.Clear();
-
-            foreach (CustomDebugInformation customInfo in originalMd.CustomDebugInformations)
-                md.CustomDebugInformations.Add(customInfo);
-            originalMd.CustomDebugInformations.Clear();
-            //Swap debuginformation scope.
-            (originalMd.DebugInformation.Scope, md.DebugInformation.Scope) = (md.DebugInformation.Scope, originalMd.DebugInformation.Scope);
-
+            CopyIntoMethod(originalMd, md);
+            
             return md;
         }
 

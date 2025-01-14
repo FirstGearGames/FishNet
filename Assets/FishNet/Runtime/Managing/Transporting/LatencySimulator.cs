@@ -205,6 +205,10 @@ namespace FishNet.Managing.Transporting
         /// <param name="conn">Connection to remove pending packets for.</param>
         public void RemovePendingForConnection(int connectionId)
         {
+            //If not enabled exit early to save work.
+            if (!GetEnabled())
+                return;
+            
             RemoveFromCollection(_toServerUnreliable);
             RemoveFromCollection(_toServerUnreliable);
             RemoveFromCollection(_toClientReliable);

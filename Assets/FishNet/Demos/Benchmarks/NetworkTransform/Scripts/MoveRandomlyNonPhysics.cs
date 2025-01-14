@@ -54,7 +54,7 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
 
         public override void OnStartNetwork()
         {
-            if (!base.IsServerStarted)
+            if (!base.IsServerStarted && !base.Owner.IsLocalClient)
             {
                 base.SetTickCallbacks(TickCallback.None);
                 DestroyImmediate(this);
@@ -83,7 +83,9 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         {
             if (!_isActive)
                 return;
-
+            if (!base.HasAuthority)
+                return;
+            
             transform.position = Vector3.MoveTowards(transform.position, _goalPosition, _moveRate * delta);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, _goalRotation, _rotateRate * delta);
 

@@ -111,6 +111,10 @@ namespace FishNet.Object
         /// Type of logging to use when the IsServer check fails.
         /// </summary>
         public LoggingType Logging = LoggingType.Warning;
+        /// <summary>
+        /// False to prefer using networkObject.IsServer/ClientInitialized. True to use InstanceFinder.IsServer/ClientStarted.
+        /// </summary>
+        public bool UseIsStarted = false;
     }
 
     /// <summary>
@@ -127,6 +131,10 @@ namespace FishNet.Object
         /// True to only allow a client to run the method if they are owner of the object.
         /// </summary>
         public bool RequireOwnership = false;
+        /// <summary>
+        /// False to prefer using networkObject.IsServer/ClientInitialized. True to use InstanceFinder.IsServer/ClientStarted.
+        /// </summary>
+        public bool UseIsStarted = false;
     }
 }
 

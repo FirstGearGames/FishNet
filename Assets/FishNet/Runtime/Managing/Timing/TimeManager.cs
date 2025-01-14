@@ -910,7 +910,7 @@ namespace FishNet.Managing.Timing
         public double TimePassed(PreciseTick preciseTick, bool allowNegative = false)
         {
             PreciseTick currentPt = GetPreciseTick(TickType.Tick);
-
+            
             long tickDifference = ((long)currentPt.Tick - (long)preciseTick.Tick);
             double percentDifference = (currentPt.PercentAsDouble - preciseTick.PercentAsDouble);
 

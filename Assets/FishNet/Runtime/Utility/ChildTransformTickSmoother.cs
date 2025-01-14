@@ -54,6 +54,12 @@ namespace FishNet.Object.Prediction
                 Tick = tick;
                 Properties = tp;
             }
+            public TickTransformProperties(uint tick, TransformProperties tp, Vector3 localScale)
+            {
+                Tick = tick;
+                tp.Scale = localScale;
+                Properties = tp;
+            }
         }
         #endregion
 
@@ -403,8 +409,6 @@ namespace FishNet.Object.Prediction
         /// <param name="clientTick">Replay tick for the local client.</param>
         public void OnPostReplay(uint clientTick)
         {
-            // if (_reconcileInterval > 1)
-            //     return;
             if (_networkObject.IsOwner || _adaptiveInterpolation == AdaptiveInterpolationType.Off)
                 return;
             if (_transformProperties.Count == 0)
@@ -528,7 +532,7 @@ namespace FishNet.Object.Prediction
                 }
                 else
                 {
-                    _transformProperties[index] = new(tick, _networkObject.transform, _graphicalObject.localScale);
+                    _transformProperties[index] = new(tick,  GetNetworkObjectWorldPropertiesWithOffset(), _graphicalObject.localScale);
                 }
             }
             else
@@ -553,7 +557,9 @@ namespace FishNet.Object.Prediction
                 return false;
             if (_networkObject != null && _networkObject.EnablePrediction && !_networkObject.EnableStateForwarding && !_networkObject.HasAuthority)
                 return false;
-
+            if (_networkObject.IsServerOnlyStarted)
+                return false;
+            
             return true;
         }
 
@@ -651,7 +657,8 @@ namespace FishNet.Object.Prediction
             {
                 if (_rootTransform != null)
                 {
-                    if (_detach)
+                    //Check isQuitting for UnityEditor fix //https://github.com/FirstGearGames/FishNet/issues/818
+                    if (_detach && !ApplicationState.IsQuitting())
                         _graphicalObject.SetParent(_rootTransform);
                     _graphicalObject.SetWorldProperties(GetNetworkObjectWorldPropertiesWithOffset());
                     _graphicalObject = null;

@@ -150,25 +150,19 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         internal bool DropExcessiveReplicates => _dropExcessiveReplicates;
         /// <summary>
-        /// 
-        /// </summary>
-        [Tooltip("Maximum number of replicates a server can queue per object. Higher values will put more load on the server and add replicate latency for the client.")]
-        [SerializeField]
-        private byte _maximumServerReplicates = 15;
-
-        /// <summary>
-        /// Maximum number of replicates a server can queue per object. Higher values will put more load on the server and add replicate latency for the client.
-        /// </summary>
-        public byte GetMaximumServerReplicates() => _maximumServerReplicates;
-
-        /// <summary>
         /// Sets the maximum number of replicates a server can queue per object.
         /// </summary>
-        /// <param name="value"></param>
         public void SetMaximumServerReplicates(byte value)
         {
             _maximumServerReplicates = (byte)Mathf.Clamp(value, MINIMUM_REPLICATE_QUEUE_SIZE, MAXIMUM_REPLICATE_QUEUE_SIZE);
         }
+        /// <summary>
+        /// Maximum number of replicates a server can queue per object. Higher values will reduce the chance of dropped input when the client's connection is unstable, but will potentially add latency to the client's object both on the server and client.
+        /// </summary>
+        public byte GetMaximumServerReplicates() => _maximumServerReplicates;
+        [Tooltip("Maximum number of replicates a server can queue per object. Higher values will reduce the chance of dropped input when the client's connection is unstable, but will potentially add latency to the client's object both on the server and client.")]
+        [SerializeField]
+        private byte _maximumServerReplicates = 15;
 
         /// <summary>
         /// No more than this value of replicates should be stored as a buffer.
@@ -192,7 +186,7 @@ namespace FishNet.Managing.Predicting
         [FormerlySerializedAs("_redundancyCount")] //Remove on V5.
         [FormerlySerializedAs("_interpolation")] //Remove on V5.
         [SerializeField]
-        private byte _stateInterpolation = 1;
+        private byte _stateInterpolation = 2;
         /// <summary>
         /// The order in which states are run. Future favors performance and does not depend upon reconciles, while Past favors accuracy but clients must reconcile every tick.
         /// </summary>
@@ -295,12 +289,32 @@ namespace FishNet.Managing.Predicting
         /// Maxmimum amount of replicate queue size.
         /// </summary>
         private const byte MAXIMUM_REPLICATE_QUEUE_SIZE = byte.MaxValue;
+        /// <summary>
+        /// Recommended state interpolation value when using appended state order.
+        /// </summary>
+        internal const int MINIMUM_APPENDED_INTERPOLATION_RECOMMENDATION = 2;
+        /// <summary>
+        /// Recommended state interpolation value when using inserted state order.
+        /// </summary>
+        internal const int MINIMUM_INSERTED_INTERPOLATION_RECOMMENDATION = 1;
+        /// <summary>
+        /// Message when state interpolation is 0.
+        /// </summary>
+        internal static readonly string ZERO_STATE_INTERPOLATION_MESSAGE = $"When interpolation is 0 the chances of de-synchronizations on non-owned objects is increased drastically.";
+        /// <summary>
+        /// Message when state interpolation is less than ideal for appended state order.
+        /// </summary>
+        internal static readonly string LESS_THAN_MINIMUM_APPENDED_MESSAGE = $"When using Appended StateOrder and an interpolation less than {MINIMUM_APPENDED_INTERPOLATION_RECOMMENDATION} the chances of de-synchronizations on non-owned objects is increased.";
+        /// <summary>
+        /// Message when state interpolation is less than ideal for inserted state order.
+        /// </summary>
+        internal static readonly string LESS_THAN_MINIMUM_INSERTED_MESSAGE = $"When using Inserted StateOrder and an interpolation less than {MINIMUM_INSERTED_INTERPOLATION_RECOMMENDATION} the chances of de-synchronizations on non-owned objects is increased.";
         #endregion
 
         internal void InitializeOnce(NetworkManager manager)
         {
             _networkManager = manager;
-            ClampInterpolation();
+            ValidateClampInterpolation();
             _networkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
         }
 
@@ -321,7 +335,7 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// Clamps queued inputs to a valid value.
         /// </summary>
-        private void ClampInterpolation()
+        private void ValidateClampInterpolation()
         {
             ushort startingValue = _stateInterpolation;
             //Check for setting if dropping.
@@ -331,6 +345,14 @@ namespace FishNet.Managing.Predicting
             //If changed.
             if (_stateInterpolation != startingValue)
                 _networkManager.Log($"Interpolation has been set to {_stateInterpolation}.");
+            
+            //Check to warn if low value.
+            if (_stateInterpolation == 0)
+                _networkManager.LogWarning(ZERO_STATE_INTERPOLATION_MESSAGE);
+            else if (_stateOrder == ReplicateStateOrder.Appended && _stateInterpolation < MINIMUM_APPENDED_INTERPOLATION_RECOMMENDATION)
+                _networkManager.LogWarning(LESS_THAN_MINIMUM_APPENDED_MESSAGE);
+            else if (_stateOrder == ReplicateStateOrder.Inserted && _stateInterpolation < MINIMUM_INSERTED_INTERPOLATION_RECOMMENDATION)
+                _networkManager.LogWarning(LESS_THAN_MINIMUM_INSERTED_MESSAGE);
         }
 
         internal class StatePacket : IResettable
@@ -766,7 +788,7 @@ namespace FishNet.Managing.Predicting
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            ClampInterpolation();
+            ValidateClampInterpolation();
         }
 
 #endif

@@ -9,7 +9,7 @@ using UnityEngine.Scripting;
 
 namespace FishNet.Object.Prediction
 {
-    public static class PredictionRigidbody2D2DSerializers
+    public static class PredictionRigidbody2DSerializers
     {
         public static void WriteForceData(this Writer w, PredictionRigidbody2D.EntryData value)
         {

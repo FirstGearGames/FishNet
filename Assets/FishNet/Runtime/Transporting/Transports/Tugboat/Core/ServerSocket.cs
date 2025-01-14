@@ -30,7 +30,7 @@ namespace FishNet.Transporting.Tugboat.Server
                 return RemoteConnectionState.Started;
         }
         #endregion
-
+        
         #region Private.
         #region Configuration.
         /// <summary>

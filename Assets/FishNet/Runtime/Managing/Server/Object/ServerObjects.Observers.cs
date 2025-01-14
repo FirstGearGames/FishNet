@@ -379,11 +379,18 @@ namespace FishNet.Managing.Server
             //If observer state changed then write changes.
             ObserverStateChange osc = nob.RebuildObservers(conn, timedOnly);
             if (osc == ObserverStateChange.Added)
+            {
                 WriteSpawn(nob, _writer, conn);
+            }
             else if (osc == ObserverStateChange.Removed)
+            {
+                nob.InvokeOnServerDespawn(conn);
                 WriteDespawn(nob, nob.GetDefaultDespawnType(), _writer);
+            }
             else
+            {
                 return;
+            }
 
             NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, _writer.GetArraySegment(), conn);
 
@@ -419,6 +426,7 @@ namespace FishNet.Managing.Server
             }
             else if (osc == ObserverStateChange.Removed)
             {
+                nob.InvokeOnServerDespawn(conn);
                 WriteDespawn(nob, nob.GetDefaultDespawnType(), _writer);
             }
             else

@@ -227,6 +227,8 @@ namespace FishNet.Managing.Client
                             //If not spawned yet.
                             if (nob == null)
                             {
+                                bool isClientHost = _networkManager.IsServerStarted;
+
                                 bool found = false;
                                 string errMsg;
                                 for (int z = (i + 1); z < written; z++)
@@ -237,8 +239,11 @@ namespace FishNet.Managing.Client
                                         found = true;
                                         if (cnob.Action != CachedNetworkObject.ActionType.Spawn)
                                         {
-                                            errMsg = (nested) ? $"ObjectId {targetObjectId} was found for a nested spawn, but ActionType is not spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn, but ActionType is not spawn. ObjectId {cnob.ObjectId} will not be spawned.";
-                                            _networkManager.LogError(errMsg);
+                                            if (!isClientHost)
+                                            {
+                                                errMsg = (nested) ? $"ObjectId {targetObjectId} was found for a nested spawn, but ActionType is not spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn, but ActionType is not spawn. ObjectId {cnob.ObjectId} will not be spawned.";
+                                                _networkManager.LogError(errMsg);
+                                            }
                                             break;
                                         }
                                         else
@@ -249,11 +254,14 @@ namespace FishNet.Managing.Client
                                     }
                                 }
 
-                                //Root nob could not be found.
+                                //Root nob could not be found. Only log if not clientHost.
                                 if (!found)
                                 {
-                                    errMsg = (nested) ? $"ObjectId {targetObjectId} could not be found for a nested spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn. ObjectId {cnob.ObjectId} will not be spawned.";
-                                    _networkManager.LogError(errMsg);
+                                    if (!isClientHost)
+                                    {
+                                        errMsg = (nested) ? $"ObjectId {targetObjectId} could not be found for a nested spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn. ObjectId {cnob.ObjectId} will not be spawned.";
+                                        _networkManager.LogError(errMsg);
+                                    }
                                 }
                             }
                         }
@@ -266,19 +274,24 @@ namespace FishNet.Managing.Client
                 {
                     processedIndexes.Add(index);
 
+                    /* If the NetworkObject is null on lookup then something happened in the retrieval. Exit early.
+                     * This can be normal on clientHost when client side gets packets late. When
+                     * clientHost this will fail silently.*/
+
                     if (spawn)
                     {
                         if (cnob.IsSceneObject)
                         {
                             cnob.NetworkObject = _clientObjects.GetSceneNetworkObject(cnob.SceneId, cnob.SceneName, cnob.ObjectName);
-                            SetParentAndTransformProperties(cnob);
+                            if (cnob.NetworkObject != null)
+                                SetParentAndTransformProperties(cnob);
                         }
                         //Is nested in a prefab.
                         else if (cnob.IsInitializedNested)
                         {
                             cnob.NetworkObject = _clientObjects.GetNestedNetworkObject(cnob);
-                            //Do not try to set parent if initialized nested.
-                            cnob.NetworkObject.transform.SetLocalPositionRotationAndScale(cnob.Position, cnob.Rotation, cnob.Scale);
+                            if (cnob.NetworkObject != null)
+                                cnob.NetworkObject.transform.SetLocalPositionRotationAndScale(cnob.Position, cnob.Rotation, cnob.Scale);
                         }
                         /* Not sceneObject or initializedNested. Could still be runtime
                          * nested but this also requires instantiation. The instantiation process

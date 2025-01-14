@@ -40,9 +40,15 @@ namespace FishNet.Managing.Predicting.Editing
 
             EditorGUILayout.PropertyField(_createLocalStates);
 
-            if (_stateInterpolation.intValue == 0)
-                EditorGUILayout.HelpBox($"With interpolation set at 0 states will run as they are received, rather than create an interpolation buffer. Using 0 interpolation drastically increases the chance of Created states arriving out of order.", MessageType.Warning);
+            int interpolationValue = _stateInterpolation.intValue;
+            if (interpolationValue == 0)
+                EditorGUILayout.HelpBox(PredictionManager.ZERO_STATE_INTERPOLATION_MESSAGE, MessageType.Warning);
+            else if (_stateOrder.intValue == (int)ReplicateStateOrder.Appended && interpolationValue < PredictionManager.MINIMUM_APPENDED_INTERPOLATION_RECOMMENDATION)
+                EditorGUILayout.HelpBox(PredictionManager.LESS_THAN_MINIMUM_APPENDED_MESSAGE, MessageType.Warning);
+            else if (_stateOrder.intValue == (int)ReplicateStateOrder.Inserted && interpolationValue < PredictionManager.MINIMUM_INSERTED_INTERPOLATION_RECOMMENDATION)
+                EditorGUILayout.HelpBox(PredictionManager.LESS_THAN_MINIMUM_INSERTED_MESSAGE, MessageType.Warning);
             EditorGUILayout.PropertyField(_stateInterpolation);
+            
             EditorGUILayout.PropertyField(_stateOrder);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();

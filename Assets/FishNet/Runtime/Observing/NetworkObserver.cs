@@ -165,6 +165,7 @@ namespace FishNet.Observing
 
             _serverManager = null;
             _networkObject = null;
+            _initializedPreviously = false;
         }
 
         /// <summary>

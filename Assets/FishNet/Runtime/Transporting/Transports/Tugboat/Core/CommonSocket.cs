@@ -40,16 +40,19 @@ namespace FishNet.Transporting.Tugboat
                 Transport.HandleClientConnectionState(new(connectionState, Transport.Index));
         }
         #endregion
+        
+        #region Internal.
+        /// <summary>
+        /// NetManager for this socket.
+        /// </summary>
+        internal NetManager NetManager;
+        #endregion
 
         #region Protected.
         /// <summary>
         /// Transport controlling this socket.
         /// </summary>
         protected Transport Transport;
-        /// <summary>
-        /// NetManager for this socket.
-        /// </summary>
-        protected NetManager NetManager;
         #endregion
 
         /// <summary>

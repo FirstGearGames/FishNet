@@ -12,14 +12,14 @@ using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEngine;
 using FishNet.Object;
+using MonoFN.Collections.Generic;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing.Rpc
 {
     internal class RpcProcessor : CodegenBase
     {
-
         #region Types.
         private struct DelegateData
         {
@@ -40,7 +40,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 RpcAttribute = rpcAttribute;
             }
         }
-
         #endregion
 
         #region Public.
@@ -138,11 +137,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             if (modified)
             {
                 foreach (CreatedRpc cr in typeDefCeatedRpcs)
-                {
-                    base.GetClass<NetworkBehaviourHelper>().CreateRpcDelegate(cr.RunLocally, cr.TypeDef,
-                        cr.ReaderMethodDef, cr.RpcType, cr.MethodHash,
-                        cr.Attribute);
-                }
+                    base.GetClass<NetworkBehaviourHelper>().CreateRpcDelegate(cr.RunLocally, cr.TypeDef, cr.ReaderMethodDef, cr.RpcType, cr.MethodHash, cr.Attribute);
+
                 return true;
             }
             else
@@ -178,7 +174,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 typeDef = typeDef.GetNextBaseClassToProcess(base.Session);
                 if (typeDef != null)
                     count += GetRpcCount(typeDef);
-
             } while (typeDef != null);
 
             return count;
@@ -251,18 +246,12 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             if (!intentionallyNull && cr.ReaderMethodDef == null)
                 return false;
 
-
             return true;
         }
-
-
 
         /// <summary>
         /// Creates a writer for a RPC.
         /// </summary>
-        /// <param name="originalMd"></param>
-        /// <param name="rpcAttribute"></param>
-        /// <returns></returns>
         private MethodDefinition CreateRpcWriterMethod(List<ParameterDefinition> serializedParameters, List<AttributeData> datas, CreatedRpc cr, out bool intentionallyNull)
         {
             intentionallyNull = false;
@@ -284,9 +273,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             else
             {
                 //Create the method body.
-                createdMd = new(methodName,
-                    MethodAttributes.Private,
-                    cr.Module.TypeSystem.Void);
+                createdMd = new(methodName, MethodAttributes.Private, cr.Module.TypeSystem.Void);
                 cr.TypeDef.Methods.Add(createdMd);
                 createdMd.Body.InitLocals = true;
             }
@@ -340,7 +327,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 nonserializedParameters.Add(targetConnectionParameterDef);
             }
 
-            //Add all parameters which are NOT nonserialized to serializedParameters.
+            //Add all parameters which are NOT non-serialized to serializedParameters.
             foreach (ParameterDefinition pd in originalMd.Parameters)
             {
                 if (!nonserializedParameters.Contains(pd))
@@ -483,7 +470,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             return localChannelVariableDef;
         }
 
-
         /// <summary>
         /// Creates a reader for a RPC.
         /// </summary>
@@ -506,7 +492,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             string methodName = $"{READER_PREFIX}{GetRpcMethodName(cr)}";
             /* If method already exist then just return it. This
              * can occur when a method needs to be rebuilt due to
-             * inheritence, and renumbering the RPC method names. 
+             * inheritence, and renumbering the RPC method names.
              * The reader method however does not need to be rewritten. */
             MethodDefinition createdMd = typeDef.GetMethod(methodName);
             //If found.
@@ -518,10 +504,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             else
             {
                 //Create the method body.
-                createdMd = new(
-                    methodName,
-                    MethodAttributes.Private,
-                    originalMd.Module.TypeSystem.Void);
+                createdMd = new(methodName, MethodAttributes.Private, originalMd.Module.TypeSystem.Void);
                 typeDef.Methods.Add(createdMd);
                 createdMd.Body.InitLocals = true;
                 cr.ReaderMethodDef = createdMd;
@@ -534,7 +517,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             else
                 return null;
         }
-
 
         /// <summary>
         /// Creates a reader for ServerRpc.
@@ -604,8 +586,10 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 processor.Emit(OpCodes.Ldarg, channelParameterDef);
             if (originalConnectionParameterDef != null)
                 processor.Emit(OpCodes.Ldarg, connectionParameterDef);
+
             //Call __Logic method.
-            processor.Emit(OpCodes.Call, logicMd);
+            MethodReference logicMr = logicMd.GetMethodReference(base.Session);
+            processor.Emit(OpCodes.Call, logicMr);
             processor.Emit(OpCodes.Ret);
 
             return createdMd;
@@ -642,11 +626,11 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             processor.Add(allReadInsts);
 
             /* Don't continue if client is not active.
-            * This can happen if an object is deinitializing
-            * as a RPC arrives. When separate server and client
-            * this should not occur but there's a chance as host
-            * because deinitializations are slightly delayed to support
-            * the clientHost deinitializing the object as well. */
+             * This can happen if an object is deinitializing
+             * as a RPC arrives. When separate server and client
+             * this should not occur but there's a chance as host
+             * because deinitializations are slightly delayed to support
+             * the clientHost deinitializing the object as well. */
             base.GetClass<NetworkBehaviourHelper>().CreateIsClientCheck(createdMd, LoggingType.Off, false, false, false);
 
             //Block from running twice as host.
@@ -655,7 +639,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             processor.Emit(OpCodes.Ldarg_0); //this.
             /* TargetRpc passes in localconnection
-            * as receiver for connection. */
+             * as receiver for connection. */
             if (rpcType == RpcType.Target)
             {
                 processor.Emit(OpCodes.Ldarg_0); //this.
@@ -675,13 +659,14 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             ParameterDefinition originalChannelParameterDef = GetChannelParameter(originalMd, rpcType);
             if (originalChannelParameterDef != null)
                 processor.Emit(OpCodes.Ldarg, channelParameterDef);
+
             //Call __Logic method.
+            //MethodReference logicMr = cr.LogicMethodDef.GetMethodReference(base.Session);
             processor.Emit(OpCodes.Call, cr.LogicMethodDef);
             processor.Emit(OpCodes.Ret);
 
             return createdMd;
         }
-
 
         /// <summary>
         /// Appends a block to the method if running as host.
@@ -709,7 +694,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// <returns></returns>
         private ParameterDefinition GetNetworkConnectionParameter(MethodDefinition methodDef)
         {
-
             ParameterDefinition result = methodDef.GetEndParameter(0);
             //Is null, not networkconnection, or doesn't have default.
             if (result == null || !result.Is(typeof(NetworkConnection)) || !result.HasDefault)
@@ -803,10 +787,10 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         private void CreateRpcReadInstructions(MethodDefinition methodDef, ParameterDefinition readerParameterDef, List<ParameterDefinition> serializedParameters, out VariableDefinition[] readVariableDefs, out List<Instruction> allReadInsts)
         {
             /* It's very important to read everything
-            * from the PooledReader before applying any
-            * exit logic. Should the method return before
-            * reading the data then anything after the rpc
-            * packet will be malformed due to invalid index. */
+             * from the PooledReader before applying any
+             * exit logic. Should the method return before
+             * reading the data then anything after the rpc
+             * packet will be malformed due to invalid index. */
             readVariableDefs = new VariableDefinition[serializedParameters.Count];
             allReadInsts = new();
 
@@ -817,8 +801,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 List<Instruction> insts = base.GetClass<ReaderProcessor>().CreateRead(methodDef, readerParameterDef, serializedParameters[i].ParameterType, out readVariableDefs[i]);
                 allReadInsts.AddRange(insts);
             }
-
         }
+
         /// <summary>
         /// Creates conditions that clients must pass to send a ServerRpc.
         /// </summary>
@@ -872,7 +856,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         {
             intentionallyNull = false;
 
-            RpcType rpcType = cr.RpcType;
             TypeDefinition typeDef = cr.TypeDef;
             MethodDefinition originalMd = cr.OriginalMethodDef;
 
@@ -880,14 +863,80 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             //Methodname for logic methods do not use prefixes because there can be only one.
             string methodName = $"{LOGIC_PREFIX}{GetMethodNameAsParameters(originalMd)}";
-            /* If method already exist then just return it. This
-             * can occur when a method needs to be rebuilt due to
-             * inheritence, and renumbering the RPC method names. 
-             * The logic method however does not need to be rewritten. */
-            MethodDefinition logicMd = base.GetClass<GeneralHelper>().CopyIntoNewMethod(originalMd, methodName, out _);
 
-            cr.LogicMethodDef = logicMd;
-            return logicMd;
+            /* Check if method exists first. If it does already exist then return found method.
+             * This can happen if the logic method was already made when using multiple Rpc attributes
+             * such as TargetRpc/ObserversRpc. */
+            MethodDefinition createdMd = typeDef.GetMethod(methodName);
+            if (createdMd != null)
+                return createdMd;
+
+            //If here logic method does not exist yet.
+            createdMd = new(methodName, cr.OriginalMethodDef.Attributes, base.ImportReference(typeof(void)));
+            typeDef.Methods.Add(createdMd);
+            createdMd.Body.InitLocals = true;
+
+            foreach (ParameterDefinition pd in originalMd.Parameters)
+                createdMd.Parameters.Add(new(base.ImportReference(pd.ParameterType)));
+
+            base.GetClass<GeneralHelper>().CopyIntoMethod(cr.OriginalMethodDef, createdMd);
+
+            /* This is a partial fix for Unity 2021 IL2CPP builds. The issue appears to be resolved in Unity 2022.
+             * In Unity 2021 when calling a generated method in a generic class the codegen must
+             * strip the calls to the method of its generics. This is of course improper code but
+             * that some reason is the resolution, because Unity. However, even with this fix if the
+             * developer makes use of the generic properties of the class from the offending method
+             * there is a fair chance the application will crash. */
+#if !UNITY_2022_3_OR_NEWER
+            /* If the declaring type has a generic then we need to see if any
+             * logic instructions call methods in another or same generic class. */
+            ILProcessor processor = createdMd.Body.GetILProcessor();
+            List<Instruction> inserter = new();
+
+            //base.LogWarning($"Created {createdMd.Name}. Original {cr.OriginalMethodDef.Name}");
+            Collection<Instruction> instructions = createdMd.Body.Instructions;
+            for (int i = 0; i < instructions.Count; i++)
+            {
+                inserter.Clear();
+
+                Instruction v = instructions[i];
+                if (v.OpCode == OpCodes.Callvirt || v.OpCode == OpCodes.Call)
+                {
+                    bool print = cr.OriginalMethodDef.Name.Contains("ClientDetectFigure");
+                    if (print)
+                        base.LogWarning($"   Operand is {v.Operand.GetType().Name}");
+
+                    MethodDefinition calledMd = null;
+
+                    if (v.Operand is MethodDefinition md)
+                    {
+                        calledMd = md;
+                    }
+                    else if (v.Operand is MethodReference mr)
+                    {
+                        bool hasGenerics = mr.DeclaringType.ContainsGenericParameter;
+
+                        //If methodReference declaring type has generics.
+                        if (mr.DeclaringType.ContainsGenericParameter)
+                            calledMd = mr.CachedResolve(base.Session);
+                        
+                        if (print)
+                            base.LogWarning($"Instruction # {i}. HasGenerics {hasGenerics}. MethodName {mr.Name}. call");
+                    }
+
+                    //If need to make a new call then remove old and insert.
+                    if (calledMd != null)
+                    {
+                        instructions.RemoveAt(i);
+                        inserter.Add(processor.Create(OpCodes.Call, calledMd));
+                        processor.InsertAt(i, inserter);
+                    }
+                }
+                // }
+            }
+#endif
+
+            return createdMd;
         }
 
         /// <summary>
@@ -922,15 +971,14 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             }
         }
 
-
         /// <summary> 
         /// Redirects calls from the original Rpc method to the writer method.
         /// </summary>
         private void RedirectOriginalToWriter(List<CreatedRpc> createdRpcs)
         {
             /* If there are multiple attributes/createdRpcs they will
-            * share the same originalMd so it's fine to take the first
-            * entry. */
+             * share the same originalMd so it's fine to take the first
+             * entry. */
             MethodDefinition originalMd = createdRpcs[0].OriginalMethodDef;
 
             
@@ -942,7 +990,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             if (createdRpcs.Count == 1)
             {
                 processor.Emit(OpCodes.Ldarg_0); //this.
-                                                 //Parameters.
+                //Parameters.
                 foreach (ParameterDefinition pd in originalMd.Parameters)
                     processor.Emit(OpCodes.Ldarg, pd);
 
@@ -988,23 +1036,23 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             }
 
             //Adds run locally logic if needed.
-            void AddRunLocally(CreatedRpc cRpc)
+            void AddRunLocally(CreatedRpc cr)
             {
                 //Runlocally.
-                if (cRpc.RunLocally)
+                if (cr.RunLocally)
                 {
                     processor.Emit(OpCodes.Ldarg_0); //this.
-                                                     //Parameters.
+                    //Parameters.
                     foreach (ParameterDefinition pd in originalMd.Parameters)
                         processor.Emit(OpCodes.Ldarg, pd);
-                    processor.Emit(OpCodes.Call, cRpc.LogicMethodDef);
-                }
 
+                    MethodReference logicMr = cr.LogicMethodDef.GetMethodReference(base.Session);
+                    processor.Emit(OpCodes.Call, logicMr);
+                }
             }
 
             processor.Emit(OpCodes.Ret);
         }
-
 
         #region CreateSend
         /// <summary>
@@ -1059,6 +1107,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             return insts;
         }
+
         /// <summary>
         /// Creates a call to SendTargetRpc on NetworkBehaviour.
         /// </summary>

@@ -3,6 +3,7 @@ using FishNet.Managing.Transporting;
 using LiteNetLib.Layers;
 using System;
 using System.Runtime.CompilerServices;
+using LiteNetLib;
 using UnityEngine;
 
 namespace FishNet.Transporting.Tugboat
@@ -230,8 +231,34 @@ namespace FishNet.Transporting.Tugboat
                 _client.IterateOutgoing();
         }
         #endregion
-
-        #region ReceivedData.
+        
+        #region Sending.
+        /// <summary>
+        /// Sends to the server or all clients.
+        /// </summary>
+        /// <param name="channelId">Channel to use.</param>
+        /// <param name="segment">Data to send.</param>
+        
+        public override void SendToServer(byte channelId, ArraySegment<byte> segment)
+        {
+            SanitizeChannel(ref channelId);
+            _client.SendToServer(channelId, segment);
+        }
+        /// <summary>
+        /// Sends data to a client.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <param name="segment"></param>
+        /// <param name="connectionId"></param>
+        
+        public override void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId)
+        {
+            SanitizeChannel(ref channelId);
+            _server.SendToClient(channelId, segment, connectionId);
+        }
+        #endregion
+        
+        #region Receiving.
         /// <summary>
         /// Called when client receives data.
         /// </summary>
@@ -256,31 +283,25 @@ namespace FishNet.Transporting.Tugboat
         {
             OnServerReceivedData?.Invoke(receivedDataArgs);
         }
-        #endregion
 
-        #region Sending.
         /// <summary>
-        /// Sends to the server or all clients.
+        /// Returns packet loss percentage. This transport supports this feature.
         /// </summary>
-        /// <param name="channelId">Channel to use.</param>
-        /// <param name="segment">Data to send.</param>
-        
-        public override void SendToServer(byte channelId, ArraySegment<byte> segment)
+        /// <param name="asServer">True to return packet loss on the server, false to return packet loss on the client.</param>
+        public override float GetPacketLoss(bool asServer)
         {
-            SanitizeChannel(ref channelId);
-            _client.SendToServer(channelId, segment);
-        }
-        /// <summary>
-        /// Sends data to a client.
-        /// </summary>
-        /// <param name="channelId"></param>
-        /// <param name="segment"></param>
-        /// <param name="connectionId"></param>
-        
-        public override void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId)
-        {
-            SanitizeChannel(ref channelId);
-            _server.SendToClient(channelId, segment, connectionId);
+            NetManager nm;
+            if (asServer && _server != null)
+                nm = _server.NetManager;
+            else if (!asServer && _client != null)
+                nm = _client.NetManager;
+            else
+                nm = null;
+
+            if (nm == null)
+                return 0f;
+
+            return nm.Statistics.PacketLossPercent;
         }
         #endregion
 

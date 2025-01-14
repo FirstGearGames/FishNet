@@ -415,11 +415,11 @@ namespace FishNet.Managing.Client
                         //RpcLinks.
                         segmentReader.Initialize(rpcLinks, NetworkManager, Reader.DataSource.Server);
                         ApplyRpcLinks(nob, segmentReader);
-                    
+
                         //Payload.
                         segmentReader.Initialize(payload, NetworkManager, Reader.DataSource.Server);
                         ReadPayload(sender: null, nob, segmentReader);
-                        
+
                         //SyncTypes.
                         segmentReader.Initialize(syncTypes, NetworkManager, Reader.DataSource.Server);
                         ApplySyncTypesForSpawn(nob, segmentReader);
@@ -436,7 +436,6 @@ namespace FishNet.Managing.Client
                  * The predicted spawner destroyed the object locally. */
                 if (isPredictedSpawner)
                     return;
-
             }
 
 
@@ -484,7 +483,9 @@ namespace FishNet.Managing.Client
             //If still null, that's not good.
             if (rootNob == null)
             {
-                NetworkManager.LogError($"Nested spawned object with componentIndex of {componentIndex} and a parentId of {rootObjectId} could not be spawned because parent was not found.");
+                //Only log if not clientHost.
+                if (!base.NetworkManager.IsServerStarted)
+                    NetworkManager.LogError($"Nested spawned object with componentIndex of {componentIndex} and a parentId of {rootObjectId} could not be spawned because parent was not found.");
                 return null;
             }
 
@@ -504,7 +505,9 @@ namespace FishNet.Managing.Client
             //If child nob was not found.
             if (nob == null)
             {
-                NetworkManager.LogError($"Nested spawned object with componentIndex of {componentIndex} could not be found as a child NetworkObject of {rootNob.name}.");
+                //Only log if not clientHost.
+                if (!base.NetworkManager.IsServerStarted)
+                    NetworkManager.LogError($"Nested spawned object with componentIndex of {componentIndex} could not be found as a child NetworkObject of {rootNob.name}.");
                 return null;
             }
 

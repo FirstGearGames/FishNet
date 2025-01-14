@@ -22,7 +22,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Subtracts b quaternion from a.
         /// </summary>
-        public static Quaternion Subtract(this Quaternion a, Quaternion b) => (a * Quaternion.Inverse(b));
+        public static Quaternion Subtract(this Quaternion a, Quaternion b) => (Quaternion.Inverse(b) * a);
         /// <summary>
         /// Adds quaternion b onto quaternion a.
         /// </summary>

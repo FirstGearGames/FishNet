@@ -163,7 +163,7 @@ namespace FishNet.Object
             {
                 if (RuntimeParentNetworkBehaviour != null)
                     return RuntimeParentNetworkBehaviour;
-                else if (InitializedParentNetworkBehaviour != null)
+                if (InitializedParentNetworkBehaviour != null)
                     return InitializedParentNetworkBehaviour;
 
                 return null;
@@ -515,7 +515,10 @@ namespace FishNet.Object
             if (NetworkBehaviours.Count > 0)
             {
                 NetworkBehaviour thisNb = NetworkBehaviours[0];
-                if (RuntimeParentNetworkBehaviour != null)
+                /* A null check must also be run on the RuntimeChildNbs because the collection is stored
+                 * when an object is destroyed, and if the other object OnDestroy runs before this one deinitializes/destroys
+                 * then the collection will be null. */
+                if (RuntimeParentNetworkBehaviour != null && RuntimeParentNetworkBehaviour.NetworkObject.RuntimeChildNetworkBehaviours != null)
                     RuntimeParentNetworkBehaviour.NetworkObject.RuntimeChildNetworkBehaviours.Remove(thisNb);
             }
 

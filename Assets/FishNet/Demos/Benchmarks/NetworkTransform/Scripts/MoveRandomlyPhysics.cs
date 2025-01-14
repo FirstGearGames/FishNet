@@ -1,4 +1,5 @@
-﻿using FishNet.Component.Transforming;
+﻿using System;
+using FishNet.Component.Transforming;
 using FishNet.Managing.Timing;
 using FishNet.Utility.Template;
 using GameKit.Dependencies.Utilities.Types;
@@ -20,6 +21,13 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         [Tooltip("How often to apply force.")]
         [SerializeField]
         private FloatRange _interval = new FloatRange(3f, 10f);
+
+        [SerializeField]
+        private bool _forceOppositeX = true;
+        [SerializeField]
+        private bool _forceOppositeY = true;
+        [SerializeField]
+        private bool _forceOppositeZ = true;
 
         private uint _nextForceTick = TimeManager.UNSET_TICK;
         private Rigidbody _rigidbody;
@@ -60,8 +68,18 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
             _nextForceTick = tick + base.TimeManager.TimeToTicks(_interval.RandomInclusive(), TickRounding.RoundUp);
 
             Vector3 force = Random.insideUnitSphere * _force;
-            if (force.y < 0f)
-                force.y = -force.y;
+
+            bool flipX = Math.Sign(force.x) == Math.Sign(transform.position.x);
+            if (_forceOppositeX && flipX)
+                force.x *= -1f;
+
+            if (_forceOppositeY && force.y < 0f)
+                force.y *= -1f;
+            
+            bool flipZ = Math.Sign(force.z) == Math.Sign(transform.position.z);
+            if (_forceOppositeZ && flipZ)
+                force.z *= -1f;
+            
             _rigidbody.AddForce(force, ForceMode.Impulse);
         }
     }

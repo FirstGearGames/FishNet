@@ -21,6 +21,7 @@ namespace FishNet.Component.Observing
         public override bool ConditionMet(NetworkConnection connection, bool currentlyAdded, out bool notProcessed)
         {
             notProcessed = false;
+
             /* When there is no owner only then is the gameobject
              * scene checked. That's the only way to know at this point. */
             return connection.Scenes.Contains(base.NetworkObject.gameObject.scene);

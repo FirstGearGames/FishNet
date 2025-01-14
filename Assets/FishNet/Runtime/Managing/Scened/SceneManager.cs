@@ -132,11 +132,16 @@
 //         [SerializeField]
 //         private LightProbeUpdateType _lightProbeUpdating = LightProbeUpdateType.Asynchronous;
 //         /// <summary>
-//         /// True to move objects visible to clientHost that are within an unloading scene. This ensures the objects are despawned on the client side rather than when the scene is destroyed.
+//         /// True to move spawned objects visible to the client that are within an unloading scene. This ensures the objects are despawned on the client side rather than when the scene is destroyed.
 //         /// </summary>
-//         [Tooltip("True to move objects visible to clientHost that are within an unloading scene. This ensures the objects are despawned on the client side rather than when the scene is destroyed.")]
+//         [FormerlySerializedAs("_moveClientHostObjects")]
+//         [Tooltip("True to move spawned objects visible to the client that are within an unloading scene. This ensures the objects are despawned on the client side rather than when the scene is destroyed.")]
 //         [SerializeField]
-//         private bool _moveClientHostObjects = true;
+//         private bool _moveClientObjects = true;
+//         /// <summary>
+//         /// Sets a new value for MoveClientObjects.
+//         /// </summary>
+//         public void SetMoveClientObjects(bool value) => _moveClientObjects = value;
 //         /// <summary>
 //         /// True to automatically set active scenes when loading and unloading scenes.
 //         /// </summary>
@@ -1660,7 +1665,7 @@
 //         /// <param name="scene"></param>
 //         private void MoveClientHostObjects(Scene scene, bool asServer)
 //         {
-//             if (!_moveClientHostObjects)
+//             if (!_moveClientObjects)
 //                 return;
 //             /* The asServer isn't really needed. I could only call
 //              * this method when asServer is true. But for the sake
@@ -2275,19 +2280,18 @@
 //         /// </summary>
 //         private void SetActiveScene(Scene preferredScene = default, bool byUser = false)
 //         {
+//             //If user specified then skip figuring it out checks.
+//             if (byUser && preferredScene.IsValid())
+//             {
+//                 CompleteSetActive(preferredScene);
+//             }
 //             //Setting active scene is not used.
-//             if (!_setActiveScene)
+//             else if (!_setActiveScene)
 //             {
 //                 //Still invoke event with current scene.
 //                 Scene s = UnitySceneManager.GetActiveScene();
 //                 CompleteSetActive(s);
 //                 return;
-//             }
-//
-//             //If user specified then skip figuring it out checks.
-//             if (byUser && preferredScene.IsValid())
-//             {
-//                 CompleteSetActive(preferredScene);
 //             }
 //             //Need to figure out which scene to use.
 //             else
@@ -2459,6 +2463,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 
 namespace FishNet.Managing.Scened
@@ -2577,11 +2582,16 @@ namespace FishNet.Managing.Scened
         [SerializeField]
         private LightProbeUpdateType _lightProbeUpdating = LightProbeUpdateType.Asynchronous;
         /// <summary>
-        /// True to move objects visible to clientHost that are within an unloading scene. This ensures the objects are despawned on the client side rather than when the scene is destroyed.
+        /// True to move spawned objects visible to the client that are within an unloading scene. This ensures the objects are despawned on the client side rather than when the scene is destroyed.
         /// </summary>
-        [Tooltip("True to move objects visible to clientHost that are within an unloading scene. This ensures the objects are despawned on the client side rather than when the scene is destroyed.")]
+        [FormerlySerializedAs("_moveClientHostObjects")]
+        [Tooltip("True to move spawned objects visible to the client that are within an unloading scene. This ensures the objects are despawned on the client side rather than when the scene is destroyed.")]
         [SerializeField]
-        private bool _moveClientHostObjects = true;
+        private bool _moveClientObjects = true;
+        /// <summary>
+        /// Sets a new value for MoveClientObjects.
+        /// </summary>
+        public void SetMoveClientObjects(bool value) => _moveClientObjects = value;
         /// <summary>
         /// True to automatically set active scenes when loading and unloading scenes.
         /// </summary>
@@ -3379,11 +3389,12 @@ namespace FishNet.Managing.Scened
                 //Do not run if running as client, and server is active. This would have already run as server.
                 if (!asHost)
                 {
+                    Scene moveScene = GetMovedObjectsScene();
                     foreach (NetworkObject nob in sceneLoadData.MovedNetworkObjects)
                     {
                         //NetworkObject might be null if client lost observation of it.
                         if (nob != null && CanMoveNetworkObject(nob, true))
-                            UnitySceneManager.MoveGameObjectToScene(nob.gameObject, GetMovedObjectsScene());
+                            UnitySceneManager.MoveGameObjectToScene(nob.gameObject, moveScene);
                     }
                 }
 
@@ -3499,11 +3510,15 @@ namespace FishNet.Managing.Scened
                  * have a reason to update visibility. */
                 if (!data.AsServer && !asHost && (replaceScenes != ReplaceOption.None))
                 {
-                    Scene s = GetMovedObjectsScene();
-                    foreach (NetworkObject nob in NetworkManager.ClientManager.Objects.Spawned.Values)
+                    //Only proceed if moving is disabled. This statement is nested for readability.
+                    if (_moveClientObjects)
                     {
-                        if (CanMoveNetworkObject(nob, false))
-                            UnitySceneManager.MoveGameObjectToScene(nob.gameObject, s);
+                        Scene s = GetMovedObjectsScene();
+                        foreach (NetworkObject nob in NetworkManager.ClientManager.Objects.Spawned.Values)
+                        {
+                            if (CanMoveNetworkObject(nob, false))
+                                UnitySceneManager.MoveGameObjectToScene(nob.gameObject, s);
+                        }
                     }
                 }
                 /* Unloading scenes. */
@@ -4057,7 +4072,7 @@ namespace FishNet.Managing.Scened
         /// <param name="scene"></param>
         private void MoveClientHostObjects(Scene scene, bool asServer)
         {
-            if (!_moveClientHostObjects)
+            if (!_moveClientObjects)
                 return;
             /* The asServer isn't really needed. I could only call
              * this method when asServer is true. But for the sake
@@ -4645,19 +4660,17 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private void SetActiveScene(Scene preferredScene = default, bool byUser = false)
         {
-            //Setting active scene is not used.
-            if (!_setActiveScene)
-            {
-                //Still invoke event with current scene.
-                Scene s = UnitySceneManager.GetActiveScene();
-                CompleteSetActive(s);
-                return;
-            }
-
             //If user specified then skip figuring it out checks.
             if (byUser && preferredScene.IsValid())
             {
                 CompleteSetActive(preferredScene);
+            }
+            //Setting active scene is not used.
+            else if (!_setActiveScene)
+            {
+                //Still invoke event with current scene.
+                Scene s = UnitySceneManager.GetActiveScene();
+                CompleteSetActive(s);
             }
             //Need to figure out which scene to use.
             else

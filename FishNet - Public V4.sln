@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FishNet.Runtime", "FishNet.Runtime.csproj", "{24e1a9c5-86d3-2d1b-e1a3-bc4b787578e9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Edgegap", "Edgegap.csproj", "{33062ca1-c144-2e80-1df7-850ffaf220e4}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameKit.Dependencies", "GameKit.Dependencies.csproj", "{567323b9-99ef-de42-954a-43fdf7194904}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FishNet.Demos", "FishNet.Demos.csproj", "{e26d1d97-7c0c-fd3f-c6d2-c3d7566d51d7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{4e97400e-6901-e4b2-61ca-c2b7083738e0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Edgegap", "Edgegap.csproj", "{33062ca1-c144-2e80-1df7-850ffaf220e4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "asset-store-tools-editor", "asset-store-tools-editor.csproj", "{d7cde7c1-471b-c843-4cbd-8c809a39f5d5}"
 EndProject
@@ -24,14 +24,14 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{24e1a9c5-86d3-2d1b-e1a3-bc4b787578e9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{24e1a9c5-86d3-2d1b-e1a3-bc4b787578e9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{33062ca1-c144-2e80-1df7-850ffaf220e4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{33062ca1-c144-2e80-1df7-850ffaf220e4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{567323b9-99ef-de42-954a-43fdf7194904}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{567323b9-99ef-de42-954a-43fdf7194904}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{e26d1d97-7c0c-fd3f-c6d2-c3d7566d51d7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{e26d1d97-7c0c-fd3f-c6d2-c3d7566d51d7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4e97400e-6901-e4b2-61ca-c2b7083738e0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4e97400e-6901-e4b2-61ca-c2b7083738e0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33062ca1-c144-2e80-1df7-850ffaf220e4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33062ca1-c144-2e80-1df7-850ffaf220e4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{d7cde7c1-471b-c843-4cbd-8c809a39f5d5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{d7cde7c1-471b-c843-4cbd-8c809a39f5d5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{f32bffeb-fbfd-b774-267e-e93be467af42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

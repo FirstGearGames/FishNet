@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using FishNet.Managing;
 using FishNet.Object;
 using FishNet.Object.Prediction;
+using FishNet.Serializing.Helping;
 using UnityEngine;
 
 namespace FishNet.Serializing
@@ -344,37 +345,11 @@ namespace FishNet.Serializing
 
         #region Unity.
         /// <summary>
-        /// Writes delta position, rotation, and scale of a transform.
-        /// </summary>
-        [DefaultDeltaReader]
-        public TransformProperties ReadDeltaTransformProperties(TransformProperties valueA)
-        {
-            byte allFlags = ReadUInt8Unpacked();
-
-            TransformProperties result = default;
-            
-            if ((allFlags & 1) == 1)
-                result.Position = ReadDeltaVector3(valueA.Position);
-            if ((allFlags & 2) == 2)
-                result.Rotation = ReadDeltaQuaternion(valueA.Rotation);
-            if ((allFlags & 4) == 4)
-                result.Scale = ReadDeltaVector3(valueA.Scale);
-
-            if (allFlags != 0)
-                result.IsValid = true;
-
-            return result;
-        }
-
-        /// <summary>
         /// Reads a difference, appending it onto a value.
         /// (not really for Quaternion).
         /// </summary>
         [DefaultDeltaReader]
-        public Quaternion ReadDeltaQuaternion(Quaternion valueA)
-        {
-            return ReadQuaternion32();
-        }
+        public Quaternion ReadDeltaQuaternion(Quaternion valueA, float precision = Writer.QUATERNION_PRECISION) => QuaternionDeltaVariableCompression.Decompress(this, valueA, out _, precision);
 
         /// <summary>
         /// Reads a difference, appending it onto a value.

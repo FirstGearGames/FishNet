@@ -284,7 +284,7 @@ namespace FishNet.Object
         internal void RegisterReplicateRpc(uint hash, ReplicateRpcDelegate del)
         {
             _usesPrediction = true;
-            
+
             if (_replicateRpcDelegates == null)
                 _replicateRpcDelegates = CollectionCaches<uint, ReplicateRpcDelegate>.RetrieveDictionary();
             _replicateRpcDelegates[hash] = del;
@@ -312,6 +312,8 @@ namespace FishNet.Object
             if (methodHash == null)
                 methodHash = ReadRpcHash(reader);
 
+            reader.NetworkManager = _networkObjectCache.NetworkManager;
+            
             if (_replicateRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReplicateRpcDelegate del))
                 del.Invoke(reader, sendingClient, channel);
             else
@@ -326,6 +328,8 @@ namespace FishNet.Object
             if (methodHash == null)
                 methodHash = ReadRpcHash(reader);
 
+            reader.NetworkManager = _networkObjectCache.NetworkManager;
+            
             if (_reconcileRpcDelegates.TryGetValueIL2CPP(methodHash.Value, out ReconcileRpcDelegate del))
                 del.Invoke(reader, channel);
             else
@@ -358,7 +362,7 @@ namespace FishNet.Object
         /// Clears cached replicates for server and client. This can be useful to call on server and client after teleporting.
         /// </summary>
         public virtual void ClearReplicateCache() { }
-        
+
         /// <summary>
         /// Clears cached replicates and histories.
         /// </summary>
@@ -393,11 +397,13 @@ namespace FishNet.Object
             if (!IsSpawned)
                 return;
 
-            //No more redundancy left. Check if transform may have changed.
+            //If channel is reliable set remaining resends to 1.
+            if (channel == Channel.Reliable)
+                _remainingReconcileResends = 1;
+
             if (_remainingReconcileResends == 0)
                 return;
-            else
-                _remainingReconcileResends--;
+            _remainingReconcileResends--;
 
             //No owner and no state forwarding, nothing to do.
             bool stateForwarding = _networkObjectCache.EnableStateForwarding;
@@ -630,22 +636,18 @@ namespace FishNet.Object
                  * and as predicted. */
                 if (count == 0)
                 {
-                    uint tick = (GetDefaultedLastReplicateTick() + 1);
-                    T data = default(T);
-                    data.SetTick(tick);
-                    ReplicateData(data, ReplicateState.CurrentFuture);
+                    ReplicateDefaultData();
                 }
                 //Not predicted, is user created.
                 else
                 {
                     //Check to unset start tick, which essentially voids it resulting in inputs being run immediately.
-                    if (localTick >= _replicateStartTick)
-                        _replicateStartTick = TimeManager.UNSET_TICK;
                     /* As said above, if start tick is unset then replicates
                      * can run. When still set that means the start condition has
                      * not been met yet. */
-                    if (_replicateStartTick == TimeManager.UNSET_TICK)
+                    if (localTick >= _replicateStartTick)
                     {
+                        _replicateStartTick = TimeManager.UNSET_TICK;
                         T queueEntry;
                         bool queueEntryValid = false;
                         while (replicatesQueue.TryDequeue(out queueEntry))
@@ -681,10 +683,21 @@ namespace FishNet.Object
                             }
                         }
                     }
+                    //Not enough ticks passed yet to run actually data.
+                    else
+                    {
+                        ReplicateDefaultData();
+                    }
                 }
             }
             //Is client only and not using future state order.
             else
+            {
+                ReplicateDefaultData();
+            }
+
+            //Performs a replicate using default data.
+            void ReplicateDefaultData()
             {
                 uint tick = (GetDefaultedLastReplicateTick() + 1);
                 T data = default(T);
@@ -1072,6 +1085,7 @@ namespace FishNet.Object
 
             //Maximum number of replicates allowed to be queued at once.
             int maximmumReplicates = (IsServerStarted) ? pm.GetMaximumServerReplicates() : pm.MaximumPastReplicates;
+
             for (int i = 0; i < receivedReplicatesCount; i++)
             {
                 T entry = arrBuffer[i];
@@ -1089,7 +1103,7 @@ namespace FishNet.Object
                 if (!IsServerStarted && !isAppendedOrder)
                     _readReplicateTicks.Add(tick);
                 //Cannot queue anymore, discard oldest.
-                if (replicatesQueue.Count >= maximmumReplicates)
+                if (replicatesQueue.Count > maximmumReplicates)
                 {
                     T data = replicatesQueue.Dequeue();
                     data.Dispose();
@@ -1098,7 +1112,7 @@ namespace FishNet.Object
                 /* Check if replicate is already in history.
                  * This can occur when the replicate method has a predicted
                  * state for the tick, but a user created replicate comes
-                 * through afterwards.
+                 * through afterward.
                  *
                  * Only perform this check if not the server, since server
                  * does not reconcile it will never use replicatesHistory.
@@ -1221,7 +1235,7 @@ namespace FishNet.Object
                 return;
             if (!_networkObjectCache.PredictionManager.CreateLocalStates)
                 return;
-            
+
             /* This is called by the local client when creating
              * a local reconcile state. These states should always
              * be in order, so we will add data to the end
@@ -1314,18 +1328,17 @@ namespace FishNet.Object
                     }
 
                     //If index is set and behaviour is not reconciling then apply data.
-                    if (!isBehaviourReconciling && historyIndex != unsetHistoryIndex) 
+                    if (!isBehaviourReconciling && historyIndex != unsetHistoryIndex)
                     {
                         LocalReconcile<T> localReconcile = reconcilesHistory[(int)historyIndex];
                         //Before disposing get the writer and call reconcile reader so it's parsed.
                         PooledWriter reconcileWritten = localReconcile.Writer;
                         /* Although this is actually from the local client the datasource is being set to server since server
                          * is what typically sends reconciles. */
-                        PooledReader reader = ReaderPool.Retrieve(reconcileWritten.GetArraySegment(), null, Reader.DataSource.Server);
+                        PooledReader reader = ReaderPool.Retrieve(reconcileWritten.GetArraySegment(), _networkObjectCache.NetworkManager, Reader.DataSource.Server);
                         data = Reconcile_Reader_Local<T>(localReconcile.Tick, reader);
                         ReaderPool.Store(reader);
                     }
-
                 }
             }
 
@@ -1420,7 +1433,7 @@ namespace FishNet.Object
         {
             foreach (LocalReconcile<T> localReconcile in reconcilesHistory)
                 localReconcile.Dispose();
-            
+
             reconcilesHistory.Clear();
         }
 
@@ -1453,6 +1466,7 @@ namespace FishNet.Object
         /// </summary>
         public T Reconcile_Reader_Local<T>(uint tick, PooledReader reader) where T : IReconcileData
         {
+            reader.NetworkManager = _networkObjectCache.NetworkManager;
             T newData = reader.ReadReconcile<T>();
             newData.SetTick(tick);
 
