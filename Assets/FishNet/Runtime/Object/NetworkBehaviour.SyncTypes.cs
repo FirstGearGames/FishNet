@@ -184,7 +184,7 @@ namespace FishNet.Object
                 if (_syncTypes.TryGetValueIL2CPP(syncTypeId, out SyncBase sb))
                     sb.Read(reader, asServer);
                 else
-                    NetworkManager.LogWarning($"SyncType not found for index {syncTypeId} on {transform.name}, component {GetType().FullName}. Remainder of packet may become corrupt.");
+                    NetworkManager.LogError($"SyncType not found for index {syncTypeId} on {transform.name}, component {GetType().FullName}. The remainder of the packet will become corrupt likely resulting in unforeseen issues for this tick, such as data missing or objects not spawning.");
             }
 
             if (reader.Position > endPosition)

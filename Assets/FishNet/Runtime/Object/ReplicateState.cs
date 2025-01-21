@@ -13,8 +13,9 @@ namespace FishNet.Object
         /// </summary>
         Invalid = 0,
         /// <summary>
-        /// Value is seen on server, and clients when they own the object.
-        /// Data has been received on the object for the tick.
+        /// Value is seen on server and clients.
+        /// Client or server has data on the object for the tick.
+        /// Clients will only see this value on spectated objects when PredictionManager is using Appended state order.
         /// </summary>
         CurrentCreated = 1,
         /// <summary>

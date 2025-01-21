@@ -446,16 +446,18 @@ namespace FishNet.Object
             if (!_initializedValusSet)
                 return;
 
+            /* There is however chance the object can get destroyed before deinitializing
+             * as clientHost. If not clientHost its safe to skip deinitializing again.
+             * But if clientHost, check if the client has deinitialized. If not then do
+             * so now for the client side. */
+            bool exitMethod = false;
+            
             /* If already deinitializing then FishNet is in the process of,
              * or has finished cleaning up this object. */
             //callStopNetwork = (ServerManager.Objects.GetFromPending(ObjectId) == null);
             if (IsDeinitializing)
             {
-                /* There is however chance the object can get destroyed before deinitializing
-                 * as clientHost. If not clientHost its safe to skip deinitializing again.
-                 * But if clientHost, check if the client has deinitialized. If not then do
-                 * so now for the client side. */
-                bool exitMethod = false;
+
                 if (IsHostStarted)
                 {
                     if (!_onStartClientCalled)
@@ -465,18 +467,18 @@ namespace FishNet.Object
                 {
                     exitMethod = true;
                 }
-
-                if (exitMethod)
-                {
-                    NetworkBehaviour_OnDestroy();
-                    return;
-                }
             }
 
             if (Owner.IsValid)
                 Owner.RemoveObject(this);
             if (NetworkObserver != null)
                 NetworkObserver.Deinitialize(destroyed: true);
+            
+            if (exitMethod)
+            {
+                NetworkBehaviour_OnDestroy();
+                return;
+            }
 
             if (NetworkManager != null)
             {

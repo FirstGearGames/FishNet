@@ -30,18 +30,28 @@ namespace FishNet.Observing
         [SerializeField]
         [Range(sbyte.MinValue, sbyte.MaxValue)]
         private sbyte _addOrder;
+        /// <summary>
+        /// Setting this to true can save performance on conditions which do change settings or store data at runtime.
+        /// This feature does not function yet but you may set values now for future implementation.
+        /// </summary>
+        public bool IsConstant => _isConstant;
+        [Tooltip("Setting this to true can save performance on conditions which do change settings or store data at runtime. This feature does not function yet but you may set values now for future implementation.")]
+        [SerializeField]
+        private bool _isConstant;
         #endregion
-        
+
         #region Private.
         /// <summary>
         /// True if this condition is enabled.
         /// </summary>
         private bool _isEnabled = true;
+
         /// <summary>
         /// Gets the enabled state of this condition.
         /// </summary>
         /// <returns></returns>
         public bool GetIsEnabled() => _isEnabled;
+
         /// <summary>
         /// Sets the enabled state of this condition.
         /// If the state has changed observers will be rebuilt
@@ -72,6 +82,7 @@ namespace FishNet.Observing
         {
             NetworkObject = networkObject;
         }
+
         /// <summary>
         /// Deinitializes this script.
         /// </summary>
@@ -80,6 +91,7 @@ namespace FishNet.Observing
         {
             NetworkObject = null;
         }
+
         /// <summary>
         /// Returns if the object which this condition resides should be visible to connection.
         /// </summary>
@@ -87,6 +99,7 @@ namespace FishNet.Observing
         /// <param name="currentlyAdded">True if the connection currently has visibility of this object.</param>
         /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
         public abstract bool ConditionMet(NetworkConnection connection, bool currentlyAdded, out bool notProcessed);
+
         /// <summary>
         /// Type of condition this is. Certain types are handled different, such as Timed which are checked for changes at timed intervals.
         /// </summary>

@@ -147,6 +147,10 @@ namespace FishNet.Managing.Observing
             }
             else
             {
+                //If already setup by this manager then return.
+                if (result.ConditionsSetByObserverManager)
+                    return result;
+
                 obsAdded = false;
             }
 
@@ -211,6 +215,8 @@ namespace FishNet.Managing.Observing
                 }
             }
 
+            result.ConditionsSetByObserverManager = true;
+            
             return result;
         }
 
