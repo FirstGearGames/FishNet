@@ -26,6 +26,11 @@ namespace FishNet.Managing.Object
         /// NetworkObjects which are currently active.
         /// </summary>
         public Dictionary<int, NetworkObject> Spawned = new();
+
+        /// <summary>
+        /// Represents [{PrefabId}, {amount of that prefab currently spawned}]
+        /// </summary>
+        public Dictionary<int, int> PrefabSpawnCounts = new();
         #endregion
 
         #region Protected.
@@ -34,6 +39,10 @@ namespace FishNet.Managing.Object
         /// </summary>
         protected internal virtual int GetNextNetworkObjectId(bool errorCheck = true) => NetworkObject.UNSET_OBJECTID_VALUE;
 
+        /// <summary>
+        /// Called when a prefab's amount changes.
+        /// </summary>
+        protected event Action<int, int> OnPrefabSpawnCountsChanged;
         /// <summary>
         /// NetworkManager handling this.
         /// </summary>
@@ -100,9 +109,19 @@ namespace FishNet.Managing.Object
         protected virtual void RemoveFromSpawned(NetworkObject nob, bool unexpectedlyDestroyed, bool asServer)
         {
             Spawned.Remove(nob.ObjectId);
-            //Do the same with SceneObjects.
-            if (unexpectedlyDestroyed && nob.IsSceneObject)
-                RemoveFromSceneObjects(nob);
+            
+            if (nob.IsSceneObject)
+            {
+                //Do the same with SceneObjects.
+                if (unexpectedlyDestroyed)
+                {
+                    RemoveFromSceneObjects(nob);
+                }
+            }
+            else
+            {
+                PrefabSpawnCounts.Remove(nob.PrefabId);
+            }
         }
 
         /// <summary>
@@ -316,6 +335,18 @@ namespace FishNet.Managing.Object
         internal virtual void AddToSpawned(NetworkObject nob, bool asServer)
         {
             Spawned[nob.ObjectId] = nob;
+
+            if (!nob.IsSceneObject)
+            {
+                if (PrefabSpawnCounts.ContainsKey(nob.PrefabId))
+                {
+                    PrefabSpawnCounts.Add(nob.PrefabId, 1);
+                }
+                else
+                {
+                    PrefabSpawnCounts.Add(nob.PrefabId, PrefabSpawnCounts[nob.PrefabId] + 1);
+                } 
+            }            
         }
 
         /// <summary>
