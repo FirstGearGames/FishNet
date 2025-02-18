@@ -42,6 +42,10 @@ namespace FishNet.Managing.Client
         /// </summary>
         private List<CachedNetworkObject> _cachedObjects = new();
         /// <summary>
+        /// Cached objects we are awaiting prefabs for.
+        /// </summary>
+        private List<CachedNetworkObject> _pendingCachedObjects = new();
+        /// <summary>
         /// NetworkObjects which have been spawned already during the current iteration.
         /// </summary>
         private HashSet<NetworkObject> _iteratedSpawns = new();
@@ -72,6 +76,7 @@ namespace FishNet.Managing.Client
         {
             _clientObjects = cobs;
             _networkManager = networkManager;
+            _networkManager.TimeManager.OnPostTick += CheckPendingCachedObjects;       
         }
 
         /// <summary>
@@ -113,12 +118,15 @@ namespace FishNet.Managing.Client
             //Set if initialization order has changed.
             _initializeOrderChanged |= (initializeOrder != 0);
 
+            //Put in a seperate cache if the collection prefab may yet to be loaded.
+            List<CachedNetworkObject> caches = ost.HasFlag(SpawnType.IsInstantiateAsync) ? _pendingCachedObjects : _cachedObjects;
+
             CachedNetworkObject cnob = null;
             //If order has not changed then add normally.
             if (!_initializeOrderChanged)
             {
                 cnob = ResettableObjectCaches<CachedNetworkObject>.Retrieve();
-                _cachedObjects.Add(cnob);
+                caches.Add(cnob);
             }
             //Otherwise see if values need to be sorted.
             else
@@ -137,17 +145,17 @@ namespace FishNet.Managing.Client
                  * as well to preserve user spawn order if they spawned multiple
                  * objects the same which, with the same order. */
 
-                int written = _cachedObjects.Count;
+                int written = caches.Count;
                 for (int i = 0; i < written; i++)
                 {
-                    CachedNetworkObject item = _cachedObjects[i];
+                    CachedNetworkObject item = caches[i];
                     /* If item order is larger then that means
                      * initializeOrder has reached the last entry
                      * of its value. Insert just before item index. */
                     if (initializeOrder < item.InitializeOrder)
                     {
                         cnob = ResettableObjectCaches<CachedNetworkObject>.Retrieve();
-                        _cachedObjects.Insert(i, cnob);
+                        caches.Insert(i, cnob);
                         break;
                     }
                 }
@@ -156,13 +164,33 @@ namespace FishNet.Managing.Client
                 if (cnob == null)
                 {
                     cnob = ResettableObjectCaches<CachedNetworkObject>.Retrieve();
-                    _cachedObjects.Add(cnob);
+                    caches.Add(cnob);
                 }
             }
 
             cnob.InitializeSpawn(manager, collectionId, objectId, initializeOrder, ownerId, ost, nobComponentId, parentObjectId, parentComponentId, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncValues);
 
             ReadSpawningObjects.Add(objectId);
+        }
+
+        private void CheckPendingCachedObjects()
+        {
+            for (int i = _pendingCachedObjects.Count -1; i >= 0; i--)
+            {
+                CachedNetworkObject cached = _pendingCachedObjects[i];
+
+                PrefabObjects prefabObjects = _networkManager.GetPrefabObjects<PrefabObjects>(cached.CollectionId, false);
+
+                if (prefabObjects.HasObject(false, cached.ObjectId))
+                {
+                    _cachedObjects.Add(cached);
+                    _pendingCachedObjects.Remove(cached);
+                }
+            }
+            if (_cachedObjects.Count > 0)
+            {
+                Iterate();
+            }
         }
 
         public void AddDespawn(int objectId, DespawnType despawnType)
