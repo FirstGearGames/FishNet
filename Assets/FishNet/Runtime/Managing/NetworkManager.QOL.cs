@@ -66,7 +66,10 @@ namespace FishNet.Managing
         /// <summary>
         /// 
         /// </summary>
-        private Dictionary<ushort, PrefabObjects> _runtimeSpawnablePrefabs = new();
+        private SpawnablePrefabsCollection<ushort, PrefabObjects> _runtimeSpawnablePrefabs = new();
+
+        internal SpawnablePrefabsCollection<ushort, PrefabObjects> SpawnablePrefabsManager => _runtimeSpawnablePrefabs;
+
         /// <summary>
         /// Collection to use for spawnable objects added at runtime, such as addressables.
         /// </summary>
