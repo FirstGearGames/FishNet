@@ -23,6 +23,8 @@ namespace FishNet.Managing.Object
         /// </summary>
         public IReadOnlyList<DualPrefab> Prefabs => _prefabs;
 
+        public override bool UsingOnDemandPrefabs() => false;
+
         public override void Clear()
         {
             _prefabs.Clear();
@@ -63,6 +65,22 @@ namespace FishNet.Managing.Object
                     i--;
                 }
             }
+        }
+        public override bool HasObject(bool asServer, int id)
+        {
+            if (id < 0 || id >= _prefabs.Count)
+            {
+                return false;
+            }
+
+            DualPrefab dp = _prefabs[id];
+            NetworkObject nob = (asServer) ? dp.Server : dp.Client;
+            if (nob == null)
+            {
+                return false;
+            }
+
+            return true;            
         }
 
         public override void AddObject(DualPrefab dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true)

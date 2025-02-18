@@ -23,6 +23,8 @@ namespace FishNet.Managing.Object
         /// </summary>
         public IReadOnlyList<NetworkObject> Prefabs => _prefabs;
 
+        public override bool UsingOnDemandPrefabs() => false;
+
         public override void Clear()
         {
             _prefabs.Clear();
@@ -46,6 +48,22 @@ namespace FishNet.Managing.Object
 
                 return nob;
             }
+        }
+
+        public override bool HasObject(bool asServer, int id)
+        {
+            if (id < 0 || id >= _prefabs.Count)
+            {
+                return false;
+            }
+             
+            NetworkObject nob = _prefabs[id];
+            if (nob == null)
+            {
+                return false;
+            }
+
+            return nob;
         }
 
         public override void RemoveNull()
