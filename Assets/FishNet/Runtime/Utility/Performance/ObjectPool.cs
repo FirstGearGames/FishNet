@@ -3,6 +3,7 @@ using FishNet.Managing.Object;
 using FishNet.Object;
 using System;
 using UnityEngine;
+using UnityEngine.XR;
 
 namespace FishNet.Utility.Performance
 {
@@ -23,7 +24,32 @@ namespace FishNet.Utility.Performance
         public virtual void InitializeOnce(NetworkManager nm)
         {
             NetworkManager = nm;
+            nm.SpawnablePrefabsManager.OnPrefabAddedForCollection += CollectionObjectAdded;
+            nm.SpawnablePrefabsManager.OnPrefabDiscardedForCollection += CollectionObjectDiscarded;
         }
+
+        /// <summary>
+        /// Is called after a prefab is removed from a collection
+        /// </summary>
+        /// <param name="prefabId">PrefabId of the removed prefab</param>
+        /// <param name="collectionId">CollectionId of the collection removed from</param>
+        internal virtual void CollectionObjectDiscarded(ushort collectionId, int prefabId, bool asServer)
+        {
+            
+        }
+
+        /// <summary>
+        /// Is called once an object is added to a collection
+        /// </summary>
+        /// <param name="collectionId">CollectionId of the collection removed from</param>
+        /// <param name="prefabId">PrefabId of the removed prefab</param>
+        /// <param name="nob">Network object added</param>
+        internal virtual void CollectionObjectAdded(ushort collectionId, int prefabId, NetworkObject nob, bool asServer)
+        {
+            
+        }
+
+
         /// <summary>
         /// Returns an object that has been stored. A new object will be created if no stored objects are available.
         /// </summary>
@@ -52,6 +78,14 @@ namespace FishNet.Utility.Performance
         {
             PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
             return po.GetObject(asServer, prefabId);
+        }
+        /// <summary>
+        /// Checks if the <see cref="PrefabObjects"/> of collectionId has the specified prefab readily available.
+        /// </summary>
+        public virtual bool CanRetrieveObject(int prefabId, ushort collectionId, bool asServer)
+        {
+            PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);       
+            return po.HasObject(asServer, prefabId);
         }
         /// <summary>
         /// Stores an object into the pool.

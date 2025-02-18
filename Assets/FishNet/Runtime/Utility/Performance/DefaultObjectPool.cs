@@ -1,9 +1,11 @@
+using Codice.Client.BaseCommands.BranchExplorer;
 using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Object;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -142,13 +144,23 @@ namespace FishNet.Utility.Performance
             PrefabObjects po = base.NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
             return po.GetObject(asServer, prefabId);
         }
+
+        /// <summary>
+        /// Checks if the <see cref="PrefabObjects"/> of collectionId has the specified prefab readily available.
+        /// </summary>
+        public override bool CanRetrieveObject(int prefabId, ushort collectionId, bool asServer)
+        {
+            PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
+            return po.HasObject(asServer, prefabId);
+        }
+
         /// <summary>
         /// Stores an object into the pool.
         /// </summary>
         /// <param name="instantiated">Object to store.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
-        
+
         public override void StoreObject(NetworkObject instantiated, bool asServer)
         {
             //Pooling is not enabled.
@@ -194,6 +206,45 @@ namespace FishNet.Utility.Performance
         }
 
         /// <summary>
+        /// Is called after a prefab is removed from a collection
+        /// </summary>
+        /// <param name="prefabId">PrefabId of the removed prefab</param>
+        /// <param name="collectionId">CollectionId of the collection removed from</param>
+        internal override void CollectionObjectDiscarded(ushort collectionId, int prefabId, bool asServer)
+        {
+            if (NetworkManager.IsOffline)
+                return;
+            /* We will assume user's implementing async spawns make the OnObjectDiscarded callback
+             * after they ensure all instances of the prefab are despawned but before attempting to unload
+             * them from memory
+             */
+            ManagedObjects objects = NetworkManager.IsServerStarted ? NetworkManager.ServerManager.Objects : NetworkManager.ClientManager.Objects;
+
+            if (objects.PrefabSpawnCounts[prefabId] > 0)
+            {
+                NetworkManager.LogWarning(
+                    $"PrefabId: [{prefabId}] was removed from it's collection {collectionId} before all instances of it were despawned. " +
+                    $"Ensure all instances are despawned before removal.");
+                return;
+            }
+
+            ClearIndividualCache(collectionId, prefabId);
+        }
+
+        /// <summary>
+        /// Is called once an object is added to a collection
+        /// </summary>
+        /// <param name="collectionId">CollectionId of the collection removed from</param>
+        /// <param name="prefabId">PrefabId of the removed prefab</param>
+        /// <param name="nob">Network object added</param>
+        internal override void CollectionObjectAdded(ushort collectionId, int prefabId, NetworkObject nob, bool asServer)
+        {
+            CacheObjects(nob, prefabId, asServer);
+        }
+
+
+
+        /// <summary>
         /// Clears pools destroying objects for all collectionIds
         /// </summary>
         public void ClearPool()
@@ -223,6 +274,26 @@ namespace FishNet.Utility.Performance
             }
 
             dict.Clear();
+        }
+
+        public void ClearIndividualCache(int collectionId, int prefabId)
+        {
+            if (collectionId < 0 || _cache.Count -1 < collectionId)
+            {
+                return;
+            }
+            Dictionary<int, Stack<NetworkObject>> dict = _cache[collectionId];
+
+            Stack<NetworkObject> cache;
+
+            if (dict.TryGetValueIL2CPP(prefabId, out cache))
+            {
+                while (cache.TryPop(out NetworkObject nob))
+                {
+                    if (nob != null)
+                        Destroy(nob.gameObject);
+                }
+            }
         }
 
         /// <summary>
