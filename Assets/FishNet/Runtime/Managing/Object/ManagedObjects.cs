@@ -338,7 +338,7 @@ namespace FishNet.Managing.Object
 
             if (!nob.IsSceneObject)
             {
-                if (PrefabSpawnCounts.ContainsKey(nob.PrefabId))
+                if (PrefabSpawnCounts.ContainsKey(nob.PrefabId) == false)
                 {
                     PrefabSpawnCounts.Add(nob.PrefabId, 1);
                 }
