@@ -251,6 +251,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     if (assetType != goType)
                         continue;
 
+
                     NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(item);
                     if (CanAddNetworkObject(nob, settings))
                     {
@@ -368,6 +369,9 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             {
                 UnityDebug.LogError($"{settings.SearchScope} is not handled; default prefabs will not generator properly.");
             }
+
+            if (dirtiedAnyNobs)
+                AssetDatabase.SaveAssets();
 
             DefaultPrefabObjects prefabCollection = GetDefaultPrefabObjects(settings);
             //No need to error if not found, GetDefaultPrefabObjects will throw.
