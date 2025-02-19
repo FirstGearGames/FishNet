@@ -616,7 +616,7 @@ namespace FishNet.Managing.Client
 
                     if (nob == null)
                     {
-                        NetworkObject prefab = prefabObjects.GetObject(false, prefabId);
+                        NetworkObject prefab = prefabObjects.GetObject(prefabId, false);
                         networkManager.LogError($"NetworkObject not found for ObjectId {objectId}. Prefab {prefab.name} will be instantiated without parent synchronization.");
                     }
                     else
@@ -629,7 +629,7 @@ namespace FishNet.Managing.Client
                         }
                         else
                         {
-                            NetworkObject prefab = prefabObjects.GetObject(false, prefabId);
+                            NetworkObject prefab = prefabObjects.GetObject(prefabId, false);
                             networkManager.LogError($"NetworkBehaviour on index {componentIndex} could not be found within NetworkObject {nob.name} with ObjectId {objectId}. Prefab {prefab.name} will be instantiated without parent synchronization.");
                         }
                     }

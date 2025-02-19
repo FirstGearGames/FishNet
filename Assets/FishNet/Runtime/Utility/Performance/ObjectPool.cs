@@ -66,7 +66,7 @@ namespace FishNet.Utility.Performance
         public virtual NetworkObject GetPrefab(int prefabId, ushort collectionId, bool asServer)
         {
             PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
-            return po.GetObject(asServer, prefabId);
+            return po.GetObject(prefabId, asServer);
         }
         /// <summary>
         /// Checks if the <see cref="PrefabObjects"/> of collectionId has the specified prefab readily available.

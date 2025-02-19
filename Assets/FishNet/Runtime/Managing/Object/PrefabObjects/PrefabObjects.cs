@@ -33,7 +33,7 @@ namespace FishNet.Managing.Object
         public abstract bool UsingOnDemandPrefabs();
         public abstract void Clear();
         public abstract int GetObjectCount();
-        public abstract NetworkObject GetObject(bool asServer, int id);
+        public abstract NetworkObject GetObject(int id, bool asServer);
         public abstract bool HasObject(int id, bool asServer);
         public abstract void RemoveNull();
         public abstract void AddObject(NetworkObject networkObject, bool checkForDuplicates = false, bool initializeAdded = true);

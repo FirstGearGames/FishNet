@@ -157,7 +157,7 @@ namespace FishNet.Managing
             int count = SpawnablePrefabs.GetObjectCount();
             for (int i = 0; i < count; i++)
             {
-                GameObject go = SpawnablePrefabs.GetObject(asServer, i).gameObject;
+                GameObject go = SpawnablePrefabs.GetObject(i, asServer).gameObject;
                 if (go == prefab)
                     return i;
             }
@@ -174,7 +174,7 @@ namespace FishNet.Managing
         /// <param name="asServer">True if getting the prefab asServer.</param>
         public NetworkObject GetPrefab(int prefabId, bool asServer)
         {
-            return SpawnablePrefabs.GetObject(asServer, prefabId);
+            return SpawnablePrefabs.GetObject(prefabId, asServer);
         }
 
 

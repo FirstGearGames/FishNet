@@ -142,7 +142,7 @@ namespace FishNet.Utility.Performance
         public override NetworkObject GetPrefab(int prefabId, ushort collectionId, bool asServer)
         {
             PrefabObjects po = base.NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
-            return po.GetObject(asServer, prefabId);
+            return po.GetObject(prefabId, asServer);
         }
 
         /// <summary>

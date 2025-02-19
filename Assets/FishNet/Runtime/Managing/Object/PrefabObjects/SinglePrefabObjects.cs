@@ -33,7 +33,7 @@ namespace FishNet.Managing.Object
         {
             return _prefabs.Count;
         }
-        public override NetworkObject GetObject(bool asServer, int id)
+        public override NetworkObject GetObject(int id, bool asServer)
         {
             if (id < 0 || id >= _prefabs.Count)
             {
