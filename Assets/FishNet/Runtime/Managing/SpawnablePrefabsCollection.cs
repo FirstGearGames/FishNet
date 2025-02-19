@@ -10,14 +10,14 @@ namespace FishNet.Managing
     /// <summary>
     /// This exists so that other objects don't need to manage event subscriptions if available PrefabObjects change at runtime.
     /// </summary>
-    public class SpawnablePrefabsCollection<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
+    public class SpawnablePrefabsDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
         where TValue : PrefabObjects
     {
         private readonly Dictionary<TKey, TValue> _dictionary = new();
-        public event Action<TKey, int, NetworkObject, bool> OnPrefabAddedForCollection;
-        public event Action<TKey, int, bool> OnPrefabDiscardedForCollection;
+        public event Action<TKey, int, NetworkObject, bool> OnPrefabAdded;
+        public event Action<TKey, int, bool> OnPrefabDiscarded;
 
-        public static implicit operator Dictionary<TKey, TValue>(SpawnablePrefabsCollection<TKey, TValue> wrapper)
+        public static implicit operator Dictionary<TKey, TValue>(SpawnablePrefabsDictionary<TKey, TValue> wrapper)
         {
             return new Dictionary<TKey, TValue>(wrapper._dictionary);
         }
@@ -132,12 +132,12 @@ namespace FishNet.Managing
 
         private void HandleOnObjectDiscarded(TKey key, int obj, bool asServer)
         {
-            OnPrefabDiscardedForCollection(key, obj, asServer);
+            OnPrefabDiscarded(key, obj, asServer);
         }
 
         private void HandleOnObjectAdded(TKey key, int distance, NetworkObject nob, bool asServer)
         {
-            OnPrefabAddedForCollection?.Invoke(key, distance, nob, asServer);
+            OnPrefabAdded?.Invoke(key, distance, nob, asServer);
         }
         #endregion
     } 

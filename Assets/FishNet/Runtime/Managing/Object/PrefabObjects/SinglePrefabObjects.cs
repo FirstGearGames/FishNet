@@ -50,7 +50,7 @@ namespace FishNet.Managing.Object
             }
         }
 
-        public override bool HasObject(bool asServer, int id)
+        public override bool HasObject(int id, bool asServer)
         {
             if (id < 0 || id >= _prefabs.Count)
             {

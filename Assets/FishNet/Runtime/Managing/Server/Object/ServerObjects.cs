@@ -687,22 +687,38 @@ namespace FishNet.Managing.Server
 
                 SetupNob();
             }
-            else if(st.HasFlag(SpawnType.IsInstantiateAsync))
-            {
-                IEnumerator WaitForPrefab() { GetPooledNob(); SetupNob(); yield return null; }
-                NetworkManager.StartCoroutine(WaitForPrefab());
-            }
             else
             {
-                GetPooledNob();
+                prefabId = reader.ReadNetworkObjectId();
+
+                if (!st.HasFlag(SpawnType.IsInstantiateAsync) || NetworkManager.HasPrefabObject(collectionId, prefabId, false))
+                {
+                    GetPooledNob();
+                    SetupNob();
+                }
+
+                else
+                {
+                    Action<ushort, int, NetworkObject, bool> handler = null;
+                    handler = (ushort collectionId, int objectId, NetworkObject nob, bool asServer) =>
+                    {
+                        GetPooledNob();
+                        SetupNob();
+
+                        NetworkManager.RuntimeSpawnablePrefabsWrapper.OnPrefabAdded -= handler;
+                    };
+
+                    NetworkManager.RuntimeSpawnablePrefabsWrapper.OnPrefabAdded += handler;
+
+                    // Do this last in case it loads immediately
+                    NetworkManager.RequestPrefabAsync(collectionId, prefabId, false);
+                }
             }
 
             void GetPooledNob()
             {
-                prefabId = reader.ReadNetworkObjectId();
                 ObjectPoolRetrieveOption retrieveOptions = (ObjectPoolRetrieveOption.MakeActive | ObjectPoolRetrieveOption.LocalSpace);
                 nob = NetworkManager.GetPooledInstantiated(prefabId, collectionId, retrieveOptions, null, nullablePosition, nullableRotation, nullableScale, false);
-                SetupNob();
             }
 
             void SetupNob()

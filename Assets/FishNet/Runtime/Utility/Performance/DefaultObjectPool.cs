@@ -151,7 +151,7 @@ namespace FishNet.Utility.Performance
         public override bool CanRetrieveObject(int prefabId, ushort collectionId, bool asServer)
         {
             PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
-            return po.HasObject(asServer, prefabId);
+            return po.HasObject(prefabId, asServer);
         }
 
         /// <summary>
@@ -210,36 +210,13 @@ namespace FishNet.Utility.Performance
         /// </summary>
         /// <param name="prefabId">PrefabId of the removed prefab</param>
         /// <param name="collectionId">CollectionId of the collection removed from</param>
-        internal override void CollectionObjectDiscarded(ushort collectionId, int prefabId, bool asServer)
+        internal override void OnPrefabDiscardedForCollection(ushort collectionId, int prefabId, bool asServer)
         {
-            if (NetworkManager.IsOffline)
-                return;
             /* We will assume user's implementing async spawns make the OnObjectDiscarded callback
              * after they ensure all instances of the prefab are despawned but before attempting to unload
              * them from memory
              */
-            ManagedObjects objects = NetworkManager.IsServerStarted ? NetworkManager.ServerManager.Objects : NetworkManager.ClientManager.Objects;
-
-            if (objects.PrefabSpawnCounts[prefabId] > 0)
-            {
-                NetworkManager.LogWarning(
-                    $"PrefabId: [{prefabId}] was removed from it's collection {collectionId} before all instances of it were despawned. " +
-                    $"Ensure all instances are despawned before removal.");
-                return;
-            }
-
             ClearIndividualCache(collectionId, prefabId);
-        }
-
-        /// <summary>
-        /// Is called once an object is added to a collection
-        /// </summary>
-        /// <param name="collectionId">CollectionId of the collection removed from</param>
-        /// <param name="prefabId">PrefabId of the removed prefab</param>
-        /// <param name="nob">Network object added</param>
-        internal override void CollectionObjectAdded(ushort collectionId, int prefabId, NetworkObject nob, bool asServer)
-        {
-            CacheObjects(nob, prefabId, asServer);
         }
 
 

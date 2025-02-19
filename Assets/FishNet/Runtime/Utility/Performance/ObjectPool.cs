@@ -24,8 +24,7 @@ namespace FishNet.Utility.Performance
         public virtual void InitializeOnce(NetworkManager nm)
         {
             NetworkManager = nm;
-            nm.SpawnablePrefabsManager.OnPrefabAddedForCollection += CollectionObjectAdded;
-            nm.SpawnablePrefabsManager.OnPrefabDiscardedForCollection += CollectionObjectDiscarded;
+            nm.RuntimeSpawnablePrefabsWrapper.OnPrefabDiscarded += OnPrefabDiscardedForCollection;
         }
 
         /// <summary>
@@ -33,21 +32,11 @@ namespace FishNet.Utility.Performance
         /// </summary>
         /// <param name="prefabId">PrefabId of the removed prefab</param>
         /// <param name="collectionId">CollectionId of the collection removed from</param>
-        internal virtual void CollectionObjectDiscarded(ushort collectionId, int prefabId, bool asServer)
+        internal virtual void OnPrefabDiscardedForCollection(ushort collectionId, int prefabId, bool asServer)
         {
             
         }
 
-        /// <summary>
-        /// Is called once an object is added to a collection
-        /// </summary>
-        /// <param name="collectionId">CollectionId of the collection removed from</param>
-        /// <param name="prefabId">PrefabId of the removed prefab</param>
-        /// <param name="nob">Network object added</param>
-        internal virtual void CollectionObjectAdded(ushort collectionId, int prefabId, NetworkObject nob, bool asServer)
-        {
-            
-        }
 
 
         /// <summary>
@@ -85,7 +74,7 @@ namespace FishNet.Utility.Performance
         public virtual bool CanRetrieveObject(int prefabId, ushort collectionId, bool asServer)
         {
             PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);       
-            return po.HasObject(asServer, prefabId);
+            return po.HasObject(prefabId, asServer);
         }
         /// <summary>
         /// Stores an object into the pool.

@@ -308,7 +308,7 @@ namespace FishNet.Managing.Object
                 else
                 {
                     PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(nob.SpawnableCollectionId, false);
-                    tpf = nob.GetTransformChanges(po.GetObject(asServer: true, nob.PrefabId).gameObject);
+                    tpf = nob.GetTransformChanges(po.GetObject(asServer: true, id: nob.PrefabId).gameObject);
                 }
             }
 

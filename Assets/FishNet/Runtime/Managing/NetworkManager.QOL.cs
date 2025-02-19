@@ -66,9 +66,9 @@ namespace FishNet.Managing
         /// <summary>
         /// 
         /// </summary>
-        private SpawnablePrefabsCollection<ushort, PrefabObjects> _runtimeSpawnablePrefabs = new();
+        private SpawnablePrefabsDictionary<ushort, PrefabObjects> _runtimeSpawnablePrefabs = new();
 
-        internal SpawnablePrefabsCollection<ushort, PrefabObjects> SpawnablePrefabsManager => _runtimeSpawnablePrefabs;
+        internal SpawnablePrefabsDictionary<ushort, PrefabObjects> RuntimeSpawnablePrefabsWrapper => _runtimeSpawnablePrefabs;
 
         /// <summary>
         /// Collection to use for spawnable objects added at runtime, such as addressables.
@@ -122,6 +122,17 @@ namespace FishNet.Managing
             }
 
             return po;
+        }
+
+        public void RequestPrefabAsync(ushort spawnableCollectionId, int prefabId, bool asServer)
+        {
+            GetPrefabObjects<PrefabObjects>(spawnableCollectionId, false).RequestObjectAsync(prefabId, asServer);
+        }
+       
+
+        public bool HasPrefabObject(ushort spawnableCollectionId, int prefabId, bool asServer)
+        {
+            return GetPrefabObjects<PrefabObjects>(spawnableCollectionId, false).HasObject(prefabId, asServer);
         }
 
         /// <summary>

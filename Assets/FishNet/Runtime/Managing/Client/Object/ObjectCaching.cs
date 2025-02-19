@@ -42,7 +42,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         private List<CachedNetworkObject> _cachedObjects = new();
         /// <summary>
-        /// Cached objects we are awaiting prefabs for.
+        /// Cached objects we are still loading prefabs for.
         /// </summary>
         private List<CachedNetworkObject> _pendingCachedObjects = new();
         /// <summary>
@@ -76,7 +76,6 @@ namespace FishNet.Managing.Client
         {
             _clientObjects = cobs;
             _networkManager = networkManager;
-            _networkManager.TimeManager.OnPostTick += CheckPendingCachedObjects;       
         }
 
         /// <summary>
@@ -118,8 +117,22 @@ namespace FishNet.Managing.Client
             //Set if initialization order has changed.
             _initializeOrderChanged |= (initializeOrder != 0);
 
+            // Check if this is a network object flagged for async loading
+            bool isAsyncSpawn = ost.HasFlag(SpawnType.IsInstantiateAsync);
+
+            int prefabIdNoNull = prefabId ?? NetworkObject.UNSET_OBJECTID_VALUE;
+
+            // If the async prefab is already available just run normally
+            if (isAsyncSpawn)
+            {
+                if (_networkManager.HasPrefabObject(collectionId, prefabIdNoNull, false))
+                {
+                    isAsyncSpawn = false;
+                }
+            }
+
             //Put in a seperate cache if the collection prefab may yet to be loaded.
-            List<CachedNetworkObject> caches = ost.HasFlag(SpawnType.IsInstantiateAsync) ? _pendingCachedObjects : _cachedObjects;
+            List<CachedNetworkObject> caches = CollectionCaches<CachedNetworkObject>.RetrieveList();
 
             CachedNetworkObject cnob = null;
             //If order has not changed then add normally.
@@ -171,25 +184,27 @@ namespace FishNet.Managing.Client
             cnob.InitializeSpawn(manager, collectionId, objectId, initializeOrder, ownerId, ost, nobComponentId, parentObjectId, parentComponentId, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncValues);
 
             ReadSpawningObjects.Add(objectId);
-        }
 
-        private void CheckPendingCachedObjects()
-        {
-            for (int i = _pendingCachedObjects.Count -1; i >= 0; i--)
+            (isAsyncSpawn ? _pendingCachedObjects : _cachedObjects).AddRange(caches);
+
+            // If async, store the caches in a seperate list and only move them to the spawn buffer
+            // after the spawnable collection signals it as loaded
+            if (isAsyncSpawn)
             {
-                CachedNetworkObject cached = _pendingCachedObjects[i];
+                Action<ushort, int, NetworkObject, bool> handler = null;
 
-                PrefabObjects prefabObjects = _networkManager.GetPrefabObjects<PrefabObjects>(cached.CollectionId, false);
-
-                if (prefabObjects.HasObject(false, cached.ObjectId))
+                handler = (ushort collectionId, int prefabIdNoNull, NetworkObject nob, bool asServer) =>
                 {
-                    _cachedObjects.Add(cached);
-                    _pendingCachedObjects.Remove(cached);
-                }
-            }
-            if (_cachedObjects.Count > 0)
-            {
-                Iterate();
+                    // Move the caches from pending to the list to the spawn spawn buffer list
+                    _cachedObjects.AddRange(caches);
+                    caches.ForEach(cache => _pendingCachedObjects.Remove(cache));
+                    CollectionCaches<CachedNetworkObject>.Store(caches);
+                    _networkManager.RuntimeSpawnablePrefabsWrapper.OnPrefabAdded -= handler;
+                };
+
+                _networkManager.RuntimeSpawnablePrefabsWrapper.OnPrefabAdded += handler;
+
+                _networkManager.RequestPrefabAsync(collectionId, prefabIdNoNull, false);
             }
         }
 

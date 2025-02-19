@@ -34,7 +34,7 @@ namespace FishNet.Managing.Object
         public abstract void Clear();
         public abstract int GetObjectCount();
         public abstract NetworkObject GetObject(bool asServer, int id);
-        public abstract bool HasObject(bool asServer, int id);
+        public abstract bool HasObject(int id, bool asServer);
         public abstract void RemoveNull();
         public abstract void AddObject(NetworkObject networkObject, bool checkForDuplicates = false, bool initializeAdded = true);
         public abstract void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false, bool initializeAdded = true);
@@ -46,11 +46,11 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Begin async retrieval of the object with id and then add them when done.
         /// </summary>
-        public virtual void RequestObjectAsync(int id) { }
+        public virtual void RequestObjectAsync(int id, bool asServer) { }
         /// <summary>
         /// Begin async retrieval of multiple objects by id and then add them.
         /// </summary>
-        public virtual void RequestObjectAsync(int[] ids) { }
+        public virtual void RequestObjectAsync(int[] ids, bool asServer) { }
 
     }
 }
