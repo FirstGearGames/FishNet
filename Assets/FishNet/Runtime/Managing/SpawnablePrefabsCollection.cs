@@ -14,8 +14,8 @@ namespace FishNet.Managing
         where TValue : PrefabObjects
     {
         private readonly Dictionary<TKey, TValue> _dictionary = new();
-        public event Action<TKey, int, NetworkObject, bool> OnPrefabAdded;
-        public event Action<TKey, int, bool> OnPrefabDiscarded;
+        public event Action<TKey, PrefabId, NetworkObject, bool> OnPrefabAdded;
+        public event Action<TKey, PrefabId, bool> OnPrefabDiscarded;
 
         public static implicit operator Dictionary<TKey, TValue>(SpawnablePrefabsDictionary<TKey, TValue> wrapper)
         {
@@ -130,14 +130,14 @@ namespace FishNet.Managing
             item.OnObjectDiscarded -= (prefabId, asServer) => HandleOnObjectDiscarded(key, prefabId, asServer);
         }
 
-        private void HandleOnObjectDiscarded(TKey key, int obj, bool asServer)
+        private void HandleOnObjectDiscarded(TKey key, PrefabId prefabId, bool asServer)
         {
-            OnPrefabDiscarded(key, obj, asServer);
+            OnPrefabDiscarded(key, prefabId, asServer);
         }
 
-        private void HandleOnObjectAdded(TKey key, int distance, NetworkObject nob, bool asServer)
+        private void HandleOnObjectAdded(TKey key, PrefabId prefabId, NetworkObject nob, bool asServer)
         {
-            OnPrefabAdded?.Invoke(key, distance, nob, asServer);
+            OnPrefabAdded?.Invoke(key, prefabId, nob, asServer);
         }
         #endregion
     } 

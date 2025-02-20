@@ -1,23 +1,66 @@
 using FishNet.Serializing;
 using System;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
-[Serializable]
-public struct PrefabId : IEquatable<PrefabId>, IComparable<PrefabId>
+
+/// <summary>
+/// An unique id assigned to every prefab in a spawnable objects collection.
+/// </summary>
+public struct PrefabId : IEquatable<PrefabId>//, IComparable<PrefabId>
 {
+    // Hack for serializing the nullable fields
+    [Serializable]
+    public struct SerializedPrefabId : ISerializationCallbackReceiver
+    {
+        [NonSerialized]
+        internal PrefabId PrefabId;
+
+        [SerializeField] private int _idInt32;
+        [SerializeField] private string _idGuid;
+        [SerializeField] private ushort _idUshort;
+        [SerializeField] private string _idString;
+
+        public void OnAfterDeserialize()
+        {
+            // this class is here because this constructor is private
+            if (_idInt32 == default && _idInt32 == default && _idUshort == default && _idString == default)
+                PrefabId = Invalid;
+
+            PrefabId = new PrefabId(_idInt32, Guid.Parse(_idGuid), _idUshort, _idString);
+        }
+
+        public void OnBeforeSerialize()
+        {
+            _idInt32 = PrefabId._idInt32 ?? Invalid._idInt32.Value;
+            _idGuid = (PrefabId._idGuid ?? Invalid._idGuid.Value).ToString();
+            _idUshort = PrefabId._idUshort ?? Invalid._idUshort.Value;
+            _idString = PrefabId._idString ?? Invalid._idString;
+        }
+    }
+
+
+
     // Using 2 bits to represent 4 possible types:
     // 00 - Int32    (0)
     // 01 - Guid     (1)
     // 10 - UShort   (2)
     // 11 - String   (3)
-    [SerializeField] private readonly int? _idInt32;
-    [SerializeField] private readonly Guid? _idGuid;
-    [SerializeField] private readonly ushort? _idUshort;
-    [SerializeField] private readonly string _idString;
+    private int? _idInt32;
+    private Guid? _idGuid;
+    private ushort? _idUshort;
+    private string _idString;
+
+    private bool intValid => _idInt32.HasValue && _idInt32.Value != Invalid.AsInt32;
+    private bool guidValid => _idGuid.HasValue && _idGuid.Value != Invalid.AsGuid;
+    private bool ushortValid => _idUshort.HasValue && _idUshort.Value != Invalid.AsUshort;
+    private bool stringValid => !string.IsNullOrEmpty(_idString) && _idString != Invalid.AsString;
+
+    //private string __idString { get { return _idString ?? Invalid._idString; } set { _idString = value; } }
 
     // Calculate type flags based on which value is set
-    private bool _typeFlag1 => _idGuid.HasValue || (_idString != null);
-    private bool _typeFlag2 => _idUshort.HasValue || (_idString != null);
+    private bool _typeFlag1 => intValid || guidValid;
+    private bool _typeFlag2 => ushortValid || stringValid;
 
     // Constructors
     public PrefabId(int id)
@@ -60,11 +103,11 @@ public struct PrefabId : IEquatable<PrefabId>, IComparable<PrefabId>
         _idString = str;
     }
 
-    public static PrefabId InvalidId = new PrefabId(int.MaxValue, default(Guid), ushort.MaxValue, null);
+    public static PrefabId Invalid = new PrefabId(int.MaxValue, default(Guid), ushort.MaxValue, "");
 
     public bool IsInvalid()
     {
-        return (this == InvalidId);
+        return (this == Invalid);
     }
 
     // Type checking using computed bit flags
@@ -73,7 +116,7 @@ public struct PrefabId : IEquatable<PrefabId>, IComparable<PrefabId>
     public bool IsUshort => !_typeFlag1 && _typeFlag2;
     public bool IsString => _typeFlag1 && _typeFlag2;
 
-    public PrefabId(PooledReader reader)
+    public PrefabId(Reader reader)
     {
         bool typeFlag1 = reader.ReadBoolean();
         bool typeFlag2 = reader.ReadBoolean();
@@ -82,7 +125,7 @@ public struct PrefabId : IEquatable<PrefabId>, IComparable<PrefabId>
         _idUshort = (!typeFlag1 && typeFlag2) ? reader.ReadUInt16() : null;
         _idString = (typeFlag1 && typeFlag2) ? reader.ReadString() : null;
     }
-    public void Write(PooledWriter writer)
+    public void Write(Writer writer)
     {
         writer.WriteBoolean(_typeFlag1);
         writer.WriteBoolean(_typeFlag2);
@@ -92,6 +135,15 @@ public struct PrefabId : IEquatable<PrefabId>, IComparable<PrefabId>
         if (IsString) writer.WriteString(AsString);
     }
 
+    public Type GetIdType()
+    {
+        if (IsInt32) return typeof(int);
+        if (IsGuid) return typeof(Guid);
+        if (IsUshort) return typeof(ushort);
+        if (IsString) return typeof(string);
+        return default;
+    }
+
     
 
     // Implicit conversions
@@ -99,6 +151,10 @@ public struct PrefabId : IEquatable<PrefabId>, IComparable<PrefabId>
     public static implicit operator PrefabId(Guid value) => new(value);
     public static implicit operator PrefabId(ushort value) => new(value);
     public static implicit operator PrefabId(string value) => new(value);
+
+    public static implicit operator int(PrefabId value) => value.AsInt32;
+    public static implicit operator Guid(PrefabId value) => value.AsGuid;
+    public static implicit operator ushort(PrefabId value) => value.AsUshort;
 
     public static implicit operator int?(PrefabId value) => value._idInt32;
     public static implicit operator Guid?(PrefabId value) => value._idGuid;
@@ -156,28 +212,28 @@ public struct PrefabId : IEquatable<PrefabId>, IComparable<PrefabId>
     }
 
     // Comparison
-    public int CompareTo(PrefabId other)
+   /* public int CompareTo(PrefabId other)
     {
         // First compare by type
         int typeComparison = GetTypeOrder().CompareTo(other.GetTypeOrder());
         if (typeComparison != 0) return typeComparison;
 
         // If same type, compare values
-        if (IsInt32) return _idInt32.Value.CompareTo(other._idInt32.Value);
-        if (IsGuid) return _idGuid.Value.CompareTo(other._idGuid.Value);
-        if (IsUshort) return _idUshort.Value.CompareTo(other._idUshort.Value);
+        if (IsInt32) return _idInt32.Value.CompareTo(other._idInt32 ?? Invalid._idInt32);
+        if (IsGuid) return (_idGuid?.CompareTo(other._idGuid ?? Invalid._idGuid) ?? 0) ;
+        if (IsUshort) return _idUshort.Value.CompareTo(other._idUshort ?? Invalid._idUshort);
         if (IsString) return string.Compare(_idString, other._idString, StringComparison.Ordinal);
 
         return 0;
-    }
+    }*/
 
     // Equality operators
     public static bool operator ==(PrefabId left, PrefabId right) => left.Equals(right);
     public static bool operator !=(PrefabId left, PrefabId right) => !left.Equals(right);
 
-    // Comparison operators
+   /* // Comparison operators
     public static bool operator <(PrefabId left, PrefabId right) => left.CompareTo(right) < 0;
     public static bool operator >(PrefabId left, PrefabId right) => left.CompareTo(right) > 0;
     public static bool operator <=(PrefabId left, PrefabId right) => left.CompareTo(right) <= 0;
-    public static bool operator >=(PrefabId left, PrefabId right) => left.CompareTo(right) >= 0;
+    public static bool operator >=(PrefabId left, PrefabId right) => left.CompareTo(right) >= 0;*/
 }

@@ -32,7 +32,7 @@ namespace FishNet.Managing
         
         public NetworkObject GetPooledInstantiated(GameObject prefab, bool asServer)
         {
-            if (SetPrefabInformation(prefab, out _, out int prefabId, out ushort collectionId))
+            if (SetPrefabInformation(prefab, out _, out PrefabId prefabId, out ushort collectionId))
                 return GetPooledInstantiated(prefabId, collectionId, ObjectPoolRetrieveOption.MakeActive, parent: null, position: null, rotation: null, scale: null, asServer);
             //Fallthrough, failure.
             return null;
@@ -43,7 +43,7 @@ namespace FishNet.Managing
         
         public NetworkObject GetPooledInstantiated(GameObject prefab, Transform parent, bool asServer)
         {
-            if (SetPrefabInformation(prefab, out _, out int prefabId, out ushort collectionId))
+            if (SetPrefabInformation(prefab, out _, out PrefabId prefabId, out ushort collectionId))
                 return GetPooledInstantiated(prefabId, collectionId, ObjectPoolRetrieveOption.MakeActive, parent, position: null, rotation: null, scale: null, asServer);
             //Fallthrough, failure.
             return null;
@@ -54,7 +54,7 @@ namespace FishNet.Managing
         
         public NetworkObject GetPooledInstantiated(GameObject prefab, Vector3 position, Quaternion rotation, bool asServer)
         {
-            if (SetPrefabInformation(prefab, out _, out int prefabId, out ushort collectionId))
+            if (SetPrefabInformation(prefab, out _, out PrefabId prefabId, out ushort collectionId))
                 return GetPooledInstantiated(prefabId, collectionId, ObjectPoolRetrieveOption.MakeActive, parent: null, position, rotation, scale: null, asServer);
             //Fallthrough, failure.
             return null;
@@ -71,7 +71,7 @@ namespace FishNet.Managing
         
         public NetworkObject GetPooledInstantiated(GameObject prefab, Vector3 position, Quaternion rotation, Transform parent, bool asServer)
         {
-            if (SetPrefabInformation(prefab, out _, out int prefabId, out ushort collectionId))
+            if (SetPrefabInformation(prefab, out _, out PrefabId prefabId, out ushort collectionId))
                 return GetPooledInstantiated(prefabId, collectionId, ObjectPoolRetrieveOption.MakeActive, parent, position, rotation, scale: null, asServer);
             //Fallthrough, failure.
             return null;
@@ -80,25 +80,25 @@ namespace FishNet.Managing
         /// Returns an instantiated or pooled object using supplied values. When a value is not specified it uses default values to the prefab or NetworkManager.
         /// </summary>
         
-        public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, bool asServer)
+        public NetworkObject GetPooledInstantiated(PrefabId prefabId, ushort collectionId, bool asServer)
             => GetPooledInstantiated(prefabId, collectionId, ObjectPoolRetrieveOption.MakeActive, parent: null, position: null, rotation: null, scale: null, asServer: asServer);
         /// <summary>
         /// Returns an instantiated or pooled object using supplied values. When a value is not specified it uses default values to the prefab or NetworkManager.
         /// </summary>
         
-        public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, Vector3 position, Quaternion rotation, bool asServer)
+        public NetworkObject GetPooledInstantiated(PrefabId prefabId, ushort collectionId, Vector3 position, Quaternion rotation, bool asServer)
             => GetPooledInstantiated(prefabId, collectionId, ObjectPoolRetrieveOption.MakeActive, parent: null, position, rotation, scale: null, asServer);
         /// <summary>
         /// Returns an instantiated or pooled object using supplied values. When a value is not specified it uses default values to the prefab or NetworkManager.
         /// </summary>
         /// <param name="makeActive">True to make the NetworkObject active if not already. Using false will not prevent an object from activating via instantation, but rather indicates to not set active manually prior to returning a NetworkObject.</param>
         [Obsolete("Use GetPooledInstantiated(int, ushort, RetrieveOption, parent, Vector3?, Quaternion? Vector3?, bool) instead.")] //Remove in V5
-        public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, Transform parent, Vector3? position, Quaternion? rotation, Vector3? scale, bool makeActive, bool asServer)
+        public NetworkObject GetPooledInstantiated(PrefabId prefabId, ushort collectionId, Transform parent, Vector3? position, Quaternion? rotation, Vector3? scale, bool makeActive, bool asServer)
             => _objectPool.RetrieveObject(prefabId, collectionId, parent, position, rotation, scale, makeActive, asServer);
         /// <summary>
         /// Returns an instantiated or pooled object using supplied values. When a value is not specified it uses default values to the prefab or NetworkManager.
         /// </summary>
-        public NetworkObject GetPooledInstantiated(int prefabId, ushort collectionId, ObjectPoolRetrieveOption options, Transform parent, Vector3? position, Quaternion? rotation, Vector3? scale, bool asServer)
+        public NetworkObject GetPooledInstantiated(PrefabId prefabId, ushort collectionId, ObjectPoolRetrieveOption options, Transform parent, Vector3? position, Quaternion? rotation, Vector3? scale, bool asServer)
             => _objectPool.RetrieveObject(prefabId, collectionId, options, parent, position, rotation, scale, asServer);
         /// <summary>
         /// Stores an instantied object.
@@ -118,7 +118,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Outputs a prefab, along with it's Id and collectionId. Returns if the information could be found.
         /// </summary>
-        private bool SetPrefabInformation(GameObject prefab, out NetworkObject nob, out int prefabId, out ushort collectionId)
+        private bool SetPrefabInformation(GameObject prefab, out NetworkObject nob, out PrefabId prefabId, out ushort collectionId)
         {
             if (!prefab.TryGetComponent(out nob))
             {

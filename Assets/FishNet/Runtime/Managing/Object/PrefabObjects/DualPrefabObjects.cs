@@ -34,8 +34,13 @@ namespace FishNet.Managing.Object
             return _prefabs.Count;
         }
 
-        public override NetworkObject GetObject(int id, bool asServer)
+        public override NetworkObject GetObject(PrefabId id, bool asServer)
         {
+            if (id.IsInt32 != true)
+            {
+                NetworkManagerExtensions.LogError($"Dual may only use int32 prefabids {id} is out of range.");
+            }
+            int intId = id.AsInt32;
             if (id < 0 || id >= _prefabs.Count)
             {
                 NetworkManagerExtensions.LogError($"PrefabId {id} is out of range.");
@@ -43,7 +48,7 @@ namespace FishNet.Managing.Object
             }
             else
             {
-                DualPrefab dp = _prefabs[id];
+                DualPrefab dp = _prefabs[id.AsInt32];
                 NetworkObject nob = (asServer) ? dp.Server : dp.Client;
                 if (nob == null)
                 {
@@ -66,14 +71,14 @@ namespace FishNet.Managing.Object
                 }
             }
         }
-        public override bool HasObject(int id, bool asServer)
+        public override bool HasObject(PrefabId id, bool asServer)
         {
             if (id < 0 || id >= _prefabs.Count)
             {
                 return false;
             }
 
-            DualPrefab dp = _prefabs[id];
+            DualPrefab dp = _prefabs[id.AsInt32];
             NetworkObject nob = (asServer) ? dp.Server : dp.Client;
             if (nob == null)
             {
@@ -106,7 +111,7 @@ namespace FishNet.Managing.Object
             }
 
             if (initializeAdded && Application.isPlaying)
-                InitializePrefabRange(0);
+                InitializePrefabs();
         }
 
         private void AddUniqueNetworkObjects(DualPrefab dp)
@@ -121,9 +126,9 @@ namespace FishNet.Managing.Object
         }
 
         
-        public override void InitializePrefabRange(int startIndex)
+        public override void InitializePrefabs()
         {
-            for (int i = startIndex; i < _prefabs.Count; i++)
+            for (int i = 0; i < _prefabs.Count; i++)
             {
                 ManagedObjects.InitializePrefab(_prefabs[i].Server, i, CollectionId);
                 ManagedObjects.InitializePrefab(_prefabs[i].Client, i, CollectionId);

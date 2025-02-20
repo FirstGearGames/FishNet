@@ -30,7 +30,7 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Represents [{PrefabId}, {amount of that prefab currently spawned}]
         /// </summary>
-        public Dictionary<int, int> PrefabSpawnCounts = new();
+        public Dictionary<PrefabId, int> PrefabSpawnCounts = new();
         #endregion
 
         #region Protected.
@@ -264,11 +264,11 @@ namespace FishNet.Managing.Object
         /// Initializes a prefab, not to be mistaken for initializing a spawned object.
         /// </summary>
         /// <param name="prefab">Prefab to initialize.</param>
-        /// <param name="index">Index within spawnable prefabs.</param>
-        public static void InitializePrefab(NetworkObject prefab, int index, ushort? collectionId = null)
+        /// <param name="prefabId">Index within spawnable prefabs.</param>
+        public static void InitializePrefab(NetworkObject prefab, PrefabId prefabId, ushort? collectionId = null)
         {
             const int invalidIndex = -1;
-            if (index == invalidIndex)
+            if (prefabId == PrefabId.Invalid)
             {
                 Debug.LogError($"An index of {invalidIndex} cannot be assigned as a PrefabId for {prefab.name}.");
                 return;
@@ -277,7 +277,7 @@ namespace FishNet.Managing.Object
             if (prefab == null)
                 return;
 
-            prefab.PrefabId = (ushort)index;
+            prefab.PrefabId = prefabId;
             if (collectionId != null)
                 prefab.SpawnableCollectionId = collectionId.Value;
 

@@ -993,23 +993,26 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="readSpawningObjects">Objects which have been read to be spawned this tick, but may not have spawned yet.</param>
         /// <returns></returns>
-        public NetworkObject ReadNetworkObject(out int objectOrPrefabId, HashSet<int> readSpawningObjects = null, bool logException = true)
+        public NetworkObject ReadNetworkObject(out PrefabId objectOrPrefabId, HashSet<int> readSpawningObjects = null, bool logException = true)
         {
 #if DEVELOPMENT
             LastNetworkBehaviour = null;
 #endif
-            objectOrPrefabId = ReadNetworkObjectId();
+            bool isSpawned = ReadBoolean();
 
-            bool isSpawned;
+            if (isSpawned)
+                objectOrPrefabId = ReadNetworkObjectId();
+            else
+                objectOrPrefabId = new PrefabId(this);
+
             /* UNSET indicates that the object
              * is null or no PrefabId is set.
              * PrefabIds are set in Awake within
              * the NetworkManager so that should
              * never happen so long as nob isn't null. */
-            if (objectOrPrefabId == NetworkObject.UNSET_OBJECTID_VALUE)
+            if (objectOrPrefabId == PrefabId.Invalid)
                 return null;
-            else
-                isSpawned = ReadBoolean();
+           
 
             bool isServer = NetworkManager.ServerManager.Started;
             bool isClient = NetworkManager.ClientManager.Started;
@@ -1018,6 +1021,9 @@ namespace FishNet.Serializing
             //Is spawned.
             if (isSpawned)
             {
+                // In this case we know it was the objectId written
+                int objectId = objectOrPrefabId.AsInt32;
+
                 result = null;
                 /* Try to get the object client side first if client
                  * is running. When acting as a host generally the object
@@ -1028,15 +1034,15 @@ namespace FishNet.Serializing
                  * use a fake host connection like some lesser solutions the client
                  * has to always be treated as it's own entity. */
                 if (isClient)
-                    NetworkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectOrPrefabId, out result);
+                    NetworkManager.ClientManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
                 //If not found on client and server is running then try server.
                 if (result == null && isServer)
-                    NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectOrPrefabId, out result);
+                    NetworkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(objectId, out result);
 
                 if (result == null && !isServer)
                 {
-                    if (logException && (readSpawningObjects == null || !readSpawningObjects.Contains(objectOrPrefabId)))
-                        NetworkManager.LogWarning($"Spawned NetworkObject was expected to exist but does not for Id {objectOrPrefabId}. This may occur if you sent a NetworkObject reference which does not exist, be it destroyed or if the client does not have visibility.");
+                    if (logException && (readSpawningObjects == null || !readSpawningObjects.Contains(objectId)))
+                        NetworkManager.LogWarning($"Spawned NetworkObject was expected to exist but does not for Id {objectId}. This may occur if you sent a NetworkObject reference which does not exist, be it destroyed or if the client does not have visibility.");
                 }
             }
             //Not spawned.
@@ -1104,7 +1110,9 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public NetworkBehaviour ReadNetworkBehaviour(out int objectId, out byte componentIndex, HashSet<int> readSpawningObjects = null, bool logException = true)
         {
-            NetworkObject nob = ReadNetworkObject(out objectId, readSpawningObjects, logException);
+            
+            NetworkObject nob = ReadNetworkObject(out PrefabId prefabOrObjectId, readSpawningObjects, logException);
+            objectId = prefabOrObjectId.AsInt32;
             componentIndex = ReadUInt8Unpacked();
 
             NetworkBehaviour result;

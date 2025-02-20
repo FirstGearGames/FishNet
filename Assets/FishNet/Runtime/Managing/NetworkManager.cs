@@ -262,7 +262,7 @@ namespace FishNet.Managing
             if (TryGetComponent<NetworkObject>(out _))
                 InternalLogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
 
-            SpawnablePrefabs.InitializePrefabRange(0);
+            SpawnablePrefabs.InitializePrefabs();
             SpawnablePrefabs.SetCollectionId(0);
 
             SetDontDestroyOnLoad();

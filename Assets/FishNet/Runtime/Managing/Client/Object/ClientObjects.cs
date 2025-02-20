@@ -370,7 +370,7 @@ namespace FishNet.Managing.Client
             Vector3? localScale;
             base.ReadTransformProperties(reader, out localPosition, out localRotation, out localScale);
 
-            int prefabId = 0;
+            PrefabId prefabId = PrefabId.Invalid;
             ulong sceneId = 0;
             string sceneName = string.Empty;
             string objectName = string.Empty;
@@ -385,7 +385,7 @@ namespace FishNet.Managing.Client
             }
             else
             {
-                prefabId = reader.ReadNetworkObjectId();
+                prefabId = new PrefabId(reader);
             }
 
             ArraySegment<byte> payload = base.ReadPayload(reader);
@@ -585,10 +585,10 @@ namespace FishNet.Managing.Client
             }
 
             NetworkManager networkManager = base.NetworkManager;
-            int prefabId = cnob.PrefabId.Value;
+            PrefabId prefabId = cnob.PrefabId.Value;
             NetworkObject result;
 
-            if (prefabId == NetworkObject.UNSET_OBJECTID_VALUE)
+            if (prefabId == PrefabId.Invalid)
             {
                 NetworkManager.LogError($"Spawned object has an invalid prefabId. Make sure all objects which are being spawned over the network are within SpawnableObjects on the NetworkManager.");
                 return null;

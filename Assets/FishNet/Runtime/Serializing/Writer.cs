@@ -985,15 +985,20 @@ namespace FishNet.Serializing
             {
                 bool spawned = nob.IsSpawned;
 
+                // I'm moving it here since objectId and prefabId
+                // are no longer both garunteed to be int32
+                // (although all current prefabObjects do assign int ids)
+                WriteBoolean(spawned);
+
                 if (spawned)
                     WriteNetworkObjectId(nob.ObjectId);
                 else
-                    WriteNetworkObjectId(nob.PrefabId);
+                    nob.PrefabId.Write(this);
 
                 /* Spawned is written after because it's only needed if nob
                  * is not null. If it were written before it would also have
                  * to be written when nob == null.*/
-                WriteBoolean(spawned);
+                // WriteBoolean(spawned);
             }
         }
 

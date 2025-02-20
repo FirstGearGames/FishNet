@@ -17,12 +17,12 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Invoked when an object is removed
         /// </summary>
-        public event Action<int, bool> OnObjectDiscarded;
+        public event Action<PrefabId, bool> OnObjectDiscarded;
        
         /// <summary>
         /// Invoked when an object is added
         /// </summary>
-        public event Action<int, NetworkObject, bool> OnObjectAdded;
+        public event Action<PrefabId, NetworkObject, bool> OnObjectAdded;
         /// <summary>
         /// Sets CollectionIdValue.
         /// </summary>
@@ -33,8 +33,8 @@ namespace FishNet.Managing.Object
         public abstract bool UsingOnDemandPrefabs();
         public abstract void Clear();
         public abstract int GetObjectCount();
-        public abstract NetworkObject GetObject(int id, bool asServer);
-        public abstract bool HasObject(int id, bool asServer);
+        public abstract NetworkObject GetObject(PrefabId id, bool asServer);
+        public abstract bool HasObject(PrefabId id, bool asServer);
         public abstract void RemoveNull();
         public abstract void AddObject(NetworkObject networkObject, bool checkForDuplicates = false, bool initializeAdded = true);
         public abstract void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false, bool initializeAdded = true);
@@ -42,15 +42,15 @@ namespace FishNet.Managing.Object
         public abstract void AddObject(DualPrefab dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true);
         public abstract void AddObjects(List<DualPrefab> dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true);
         public abstract void AddObjects(DualPrefab[] dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true);
-        public abstract void InitializePrefabRange(int startIndex);
+        public abstract void InitializePrefabs();
         /// <summary>
         /// Begin async retrieval of the object with id and then add them when done.
         /// </summary>
-        public virtual void RequestObjectAsync(int id, bool asServer) { }
+        public virtual void RequestObjectAsync(PrefabId id, bool asServer) { }
         /// <summary>
         /// Begin async retrieval of multiple objects by id and then add them.
         /// </summary>
-        public virtual void RequestObjectAsync(int[] ids, bool asServer) { }
+        public virtual void RequestObjectAsync(PrefabId[] ids, bool asServer) { }
 
     }
 }

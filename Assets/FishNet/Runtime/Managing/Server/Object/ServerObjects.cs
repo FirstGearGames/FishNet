@@ -671,7 +671,7 @@ namespace FishNet.Managing.Server
             //Read transform values which differ from serialized values.
             base.ReadTransformProperties(reader, out Vector3? nullablePosition, out Quaternion? nullableRotation, out Vector3? nullableScale);
 
-            int prefabId;
+            PrefabId prefabId;
             ulong sceneId = 0;
             string sceneName = string.Empty;
             string objectName = string.Empty;
@@ -699,8 +699,8 @@ namespace FishNet.Managing.Server
 
                 else
                 {
-                    Action<ushort, int, NetworkObject, bool> handler = null;
-                    handler = (ushort collectionId, int objectId, NetworkObject nob, bool asServer) =>
+                    Action<ushort, PrefabId, NetworkObject, bool> handler = null;
+                    handler = (ushort collectionId, PrefabId objectId, NetworkObject nob, bool asServer) =>
                     {
                         GetPooledNob();
                         SetupNob();

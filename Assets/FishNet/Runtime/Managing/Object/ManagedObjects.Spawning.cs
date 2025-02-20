@@ -102,7 +102,7 @@ namespace FishNet.Managing.Object
             /* Writing a spawned object. */
             else
             {
-                writer.WriteNetworkObjectId(nob.PrefabId);
+                nob.PrefabId.Write(writer);
             }
 
             NetworkConnection payloadSender = (predictedSpawn) ? NetworkManager.EmptyConnection : connection;

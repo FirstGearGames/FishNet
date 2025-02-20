@@ -124,13 +124,13 @@ namespace FishNet.Managing
             return po;
         }
 
-        public void RequestPrefabAsync(ushort spawnableCollectionId, int prefabId, bool asServer)
+        public void RequestPrefabAsync(ushort spawnableCollectionId, PrefabId prefabId, bool asServer)
         {
             GetPrefabObjects<PrefabObjects>(spawnableCollectionId, false).RequestObjectAsync(prefabId, asServer);
         }
        
 
-        public bool HasPrefabObject(ushort spawnableCollectionId, int prefabId, bool asServer)
+        public bool HasPrefabObject(ushort spawnableCollectionId, PrefabId prefabId, bool asServer)
         {
             return GetPrefabObjects<PrefabObjects>(spawnableCollectionId, false).HasObject(prefabId, asServer);
         }
@@ -172,7 +172,7 @@ namespace FishNet.Managing
         /// </summary>
         /// <param name="prefabId">PrefabId to get.</param>
         /// <param name="asServer">True if getting the prefab asServer.</param>
-        public NetworkObject GetPrefab(int prefabId, bool asServer)
+        public NetworkObject GetPrefab(PrefabId prefabId, bool asServer)
         {
             return SpawnablePrefabs.GetObject(prefabId, asServer);
         }

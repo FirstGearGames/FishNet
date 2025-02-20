@@ -28,8 +28,10 @@ namespace FishNet.Object
         /// <summary>
         /// Networked PrefabId assigned to this Prefab.
         /// </summary>
-        [field: SerializeField, HideInInspector]
-        public ushort PrefabId { get; internal set; } = NetworkObject.UNSET_PREFABID_VALUE;
+        public PrefabId PrefabId { get { return _prefabId.PrefabId; } internal set { _prefabId.PrefabId = value; } }
+
+        [SerializeField, HideInInspector]
+        private PrefabId.SerializedPrefabId _prefabId;
 
         /// <summary>
         /// Spawn collection to use assigned to this Prefab.
