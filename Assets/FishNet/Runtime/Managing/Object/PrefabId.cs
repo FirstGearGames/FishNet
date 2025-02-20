@@ -1,6 +1,6 @@
+using FishNet.Managing;
 using FishNet.Serializing;
 using System;
-using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 
@@ -105,9 +105,19 @@ public struct PrefabId : IEquatable<PrefabId>//, IComparable<PrefabId>
 
     public static PrefabId Invalid = new PrefabId(int.MaxValue, default(Guid), ushort.MaxValue, "");
 
-    public bool IsInvalid()
+    public bool IsNullOrInvalid()
     {
-        return (this == Invalid);
+        if (this == Invalid)
+        {
+            return true;
+        }
+        if (!_idInt32.HasValue && !_idGuid.HasValue && !_idUshort.HasValue && _idString == null)
+        {
+            NetworkManagerExtensions.LogError($"A PrefabID is completely null, this should normally be impossible.");
+            return true;
+        }
+        return false;
+
     }
 
     // Type checking using computed bit flags
@@ -161,11 +171,17 @@ public struct PrefabId : IEquatable<PrefabId>//, IComparable<PrefabId>
     public static implicit operator ushort?(PrefabId value) => value._idUshort;
     public static implicit operator string(PrefabId value) => value._idString;
 
+
+    private int _int32OrInvalid => _idInt32 ?? Invalid._idInt32.Value;
+    private Guid _guidOrInvalid => _idGuid ?? Invalid._idGuid.Value;
+    private ushort _ushortOrInvalid => _idUshort ?? Invalid._idUshort.Value;
+    private string _stringOrInvalid => _idString ?? Invalid._idString;
+
     // Value getters
-    public int AsInt32 => _idInt32 ?? throw new InvalidOperationException("PrefabId does not contain an Int32 value");
-    public Guid AsGuid => _idGuid ?? throw new InvalidOperationException("PrefabId does not contain a Guid value");
-    public ushort AsUshort => _idUshort ?? throw new InvalidOperationException("PrefabId does not contain a UShort value");
-    public string AsString => _idString ?? throw new InvalidOperationException("PrefabId does not contain a String value");
+    public int AsInt32 => _int32OrInvalid;
+    public Guid AsGuid => _guidOrInvalid;
+    public ushort AsUshort => _ushortOrInvalid;
+    public string AsString => _stringOrInvalid;
 
     // ToString override
     public override string ToString()
@@ -174,7 +190,7 @@ public struct PrefabId : IEquatable<PrefabId>//, IComparable<PrefabId>
         if (IsGuid) return $"Guid:{_idGuid}";
         if (IsUshort) return $"UShort:{_idUshort}";
         if (IsString) return $"String:{_idString}";
-        return "Invalid";
+        return "Null";
     }
 
     // Helper method to get type as number (for comparison)

@@ -36,11 +36,11 @@ namespace FishNet.Managing.Object
 
         public override NetworkObject GetObject(PrefabId id, bool asServer)
         {
-            if (id.IsInt32 != true)
+            if (id.IsNullOrInvalid() || id.IsInt32 != true)
             {
-                NetworkManagerExtensions.LogError($"Dual may only use int32 prefabids {id} is out of range.");
+                NetworkManagerExtensions.LogError($"PrefabId {id} is null, invalid or is not int.");
             }
-            int intId = id.AsInt32;
+            
             if (id < 0 || id >= _prefabs.Count)
             {
                 NetworkManagerExtensions.LogError($"PrefabId {id} is out of range.");
@@ -73,6 +73,11 @@ namespace FishNet.Managing.Object
         }
         public override bool HasObject(PrefabId id, bool asServer)
         {
+            if (id.IsNullOrInvalid() || id.IsInt32 != true)
+            {
+                NetworkManagerExtensions.LogError($"PrefabId {id} is null, invalid or is not int.");
+            }
+
             if (id < 0 || id >= _prefabs.Count)
             {
                 return false;

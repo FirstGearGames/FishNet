@@ -1,5 +1,6 @@
 using FishNet.Documenting;
 using FishNet.Object;
+using JetBrains.Annotations;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -37,19 +38,19 @@ namespace FishNet.Managing.Object
         }
         public override NetworkObject GetObject(PrefabId id, bool asServer)
         {
-            if (id.IsInt32 != true)
+            if (id.IsNullOrInvalid() || id.IsInt32 != true)
             {
-                NetworkManagerExtensions.LogError($"SinglePrefabObjects may only use int32 prefabids {id} is out of range.");
+                NetworkManagerExtensions.LogError($"PrefabId {id} is null, invalid or is not int.");
             }
-            int intId = id.AsInt32;
-            if (intId < 0 || intId >= _prefabs.Count)
+          
+            if (id < 0 || id >= _prefabs.Count)
             {
                 NetworkManagerExtensions.LogError($"PrefabId {id} is out of range.");
                 return null;
             }
             else
             {
-                NetworkObject nob = _prefabs[intId];
+                NetworkObject nob = _prefabs[id];
                 if (nob == null)
                     NetworkManagerExtensions.LogError($"Prefab on id {id} is null.");
 
@@ -59,12 +60,17 @@ namespace FishNet.Managing.Object
 
         public override bool HasObject(PrefabId id, bool asServer)
         {
+            if (id.IsNullOrInvalid() || id.IsInt32 == false)
+            {
+                return false;
+            }
+
             if (id < 0 || id >= _prefabs.Count)
             {
                 return false;
             }
              
-            NetworkObject nob = _prefabs[id.AsInt32];
+            NetworkObject nob = _prefabs[id];
             if (nob == null)
             {
                 return false;
@@ -126,7 +132,7 @@ namespace FishNet.Managing.Object
         public override void InitializePrefabs()
         {
             for (int i = 0; i < _prefabs.Count; i++)
-                ManagedObjects.InitializePrefab(_prefabs[i], new PrefabId(i), CollectionId);
+                ManagedObjects.InitializePrefab(_prefabs[i], i, CollectionId);
         }
 
 
