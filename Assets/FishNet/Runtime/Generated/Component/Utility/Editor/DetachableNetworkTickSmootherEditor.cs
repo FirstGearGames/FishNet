@@ -40,6 +40,7 @@ namespace FishNet.Component.Transforming.Editing
 
             GameKitEditing.AddObjectField("Script:", MonoScript.FromMonoBehaviour((DetachableNetworkTickSmoother)target), typeof(DetachableNetworkTickSmoother), false, EditorLayoutEnableType.Disabled);
 
+            EditorGUILayout.HelpBox("This component will be obsoleted soon. Use NetworkTickSmoother or OfflineTickSmoother.", MessageType.Warning);
             //Misc.
             EditorGUILayout.LabelField("Misc", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;

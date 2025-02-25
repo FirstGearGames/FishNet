@@ -765,8 +765,7 @@ namespace FishNet.Serializing
         [DefaultWriter]
         public void WriteQuaternion32(Quaternion value)
         {
-            uint result = Quaternion32Compression.Compress(value);
-            WriteUInt32Unpacked(result);
+            Quaternion32Compression.Compress(this, value);
         }
 
         /// <summary>

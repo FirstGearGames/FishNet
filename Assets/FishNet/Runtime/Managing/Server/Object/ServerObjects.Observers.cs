@@ -399,6 +399,8 @@ namespace FishNet.Managing.Server
              * and onspawnserver. */
             if (osc == ObserverStateChange.Added)
                 nob.OnSpawnServer(conn);
+            
+            _writer.Clear();
 
             /* If there is change then also rebuild recursive networkObjects. */
             foreach (NetworkBehaviour item in nob.RuntimeChildNetworkBehaviours)

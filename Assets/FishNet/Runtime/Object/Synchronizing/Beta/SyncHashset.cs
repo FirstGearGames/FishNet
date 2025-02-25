@@ -1,4 +1,4 @@
-﻿#if !FISHNET_STABLE_MODE
+﻿#if !FISHNET_STABLE_SYNCTYPES
 using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Object.Synchronizing.Internal;
@@ -6,9 +6,6 @@ using FishNet.Serializing;
 using GameKit.Dependencies.Utilities;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
@@ -368,7 +365,7 @@ namespace FishNet.Object.Synchronizing
         {
             base.ResetState(asServer);
 
-            bool canReset = (asServer || !base.IsReadAsClientHost(asServer));
+            bool canReset = base.IsInitialized && (asServer || !base.IsReadAsClientHost(asServer));
 
             if (canReset)
             {

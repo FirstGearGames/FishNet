@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace FishNet.Serializing.Helping
@@ -15,17 +14,25 @@ namespace FishNet.Serializing.Helping
         private const int IntScale = (1 << (BitsPerAxis - 1)) - 1;
         private const int IntMask = (1 << BitsPerAxis) - 1;
 
-        public static uint Compress(Quaternion quaternion)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="quaternion"></param>
+        /// <param name="axesFlippingEnabled">True to flip the smaller values when the largest axes is negative. Doing this saves a byte but the rotation numeric values will be reversed when decompressed.</param>
+        public static void Compress(Writer writer, Quaternion quaternion, bool axesFlippingEnabled = true)
         {
+            const float precision = 0.00098f;
+            
             float absX = Mathf.Abs(quaternion.x);
             float absY = Mathf.Abs(quaternion.y);
             float absZ = Mathf.Abs(quaternion.z);
             float absW = Mathf.Abs(quaternion.w);
-
+            
             ComponentType largestComponent = ComponentType.X;
             float largestAbs = absX;
             float largest = quaternion.x;
-            
+
             if (absY > largestAbs)
             {
                 largestAbs = absY;
@@ -42,6 +49,21 @@ namespace FishNet.Serializing.Helping
             {
                 largestComponent = ComponentType.W;
                 largest = quaternion.w;
+            }
+            
+            bool largestIsNegative = (largest < 0);
+
+            //If not flipping axes and any values are less than precision then 0 them out.
+            if (!axesFlippingEnabled)
+            {
+                if (absX < precision)
+                    quaternion.x = 0f;
+                if (absY < precision)
+                    quaternion.y = 0f;
+                if (absZ < precision)  
+                    quaternion.z = 0f;
+                if (absW < precision)
+                    quaternion.w = 0f;
             }
 
             float a = 0;
@@ -70,8 +92,9 @@ namespace FishNet.Serializing.Helping
                     c = quaternion.z;
                     break;
             }
-
-            if (largest < 0)
+            
+            //If it's okay to flip when largest is negative.
+            if (largestIsNegative && axesFlippingEnabled)
             {
                 a = -a;
                 b = -b;
@@ -82,7 +105,11 @@ namespace FishNet.Serializing.Helping
             uint integerB = ScaleToUint(b);
             uint integerC = ScaleToUint(c);
 
-            return (((uint)largestComponent) << LargestComponentShift) | (integerA << AShift) | (integerB << BShift) | integerC;
+            if (!axesFlippingEnabled)
+                writer.WriteBoolean((largest < 0f));
+
+            uint result = (((uint)largestComponent) << LargestComponentShift) | (integerA << AShift) | (integerB << BShift) | integerC;
+            writer.WriteUInt32Unpacked(result);
         }
 
         private static uint ScaleToUint(float v)
@@ -100,8 +127,17 @@ namespace FishNet.Serializing.Helping
             return unscaled;
         }
 
-        public static Quaternion Decompress(uint compressed)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="axesFlippingEnabled">True if the smaller values were flipped during compression when the largest axes was negative.</param>
+        /// <returns></returns>
+        public static Quaternion Decompress(Reader reader, bool axesFlippingEnabled = true)
         {
+            bool largestIsNegative = (axesFlippingEnabled) ? false : reader.ReadBoolean();
+            uint compressed = reader.ReadUInt32Unpacked();
+
             var largestComponentType = (ComponentType)(compressed >> LargestComponentShift);
             uint integerA = (compressed >> AShift) & IntMask;
             uint integerB = (compressed >> BShift) & IntMask;
@@ -119,45 +155,47 @@ namespace FishNet.Serializing.Helping
                     rotation.y = a;
                     rotation.z = b;
                     rotation.w = c;
-                    rotation.x = Mathf.Sqrt(1 - rotation.y * rotation.y
-                                               - rotation.z * rotation.z
-                                               - rotation.w * rotation.w);
+                    rotation.x = Mathf.Sqrt(1 - rotation.y * rotation.y - rotation.z * rotation.z - rotation.w * rotation.w);
+
+                    if (largestIsNegative)
+                        rotation.x *= -1f;
                     break;
                 case ComponentType.Y:
                     // x (?) z w
                     rotation.x = a;
                     rotation.z = b;
                     rotation.w = c;
-                    rotation.y = Mathf.Sqrt(1 - rotation.x * rotation.x
-                                               - rotation.z * rotation.z
-                                               - rotation.w * rotation.w);
+                    rotation.y = Mathf.Sqrt(1 - rotation.x * rotation.x - rotation.z * rotation.z - rotation.w * rotation.w);
+
+                    if (largestIsNegative)
+                        rotation.y *= -1f;
                     break;
                 case ComponentType.Z:
                     // x y (?) w
                     rotation.x = a;
                     rotation.y = b;
                     rotation.w = c;
-                    rotation.z = Mathf.Sqrt(1 - rotation.x * rotation.x
-                                               - rotation.y * rotation.y
-                                               - rotation.w * rotation.w);
+                    rotation.z = Mathf.Sqrt(1 - rotation.x * rotation.x - rotation.y * rotation.y - rotation.w * rotation.w);
+
+                    if (largestIsNegative)
+                        rotation.z *= -1f;
                     break;
                 case ComponentType.W:
                     // x y z (?)
                     rotation.x = a;
                     rotation.y = b;
                     rotation.z = c;
-                    rotation.w = Mathf.Sqrt(1 - rotation.x * rotation.x
-                                               - rotation.y * rotation.y
-                                               - rotation.z * rotation.z);
+                    rotation.w = Mathf.Sqrt(1 - rotation.x * rotation.x - rotation.y * rotation.y - rotation.z * rotation.z);
+
+                    if (largestIsNegative)
+                        rotation.w *= -1f;
                     break;
                 default:
                     // Should never happen!
-                    throw new ArgumentOutOfRangeException("Unknown rotation component type: " +
-                                                          largestComponentType);
+                    throw new ArgumentOutOfRangeException("Unknown rotation component type: " + largestComponentType);
             }
 
             return rotation;
         }
-
     }
 }

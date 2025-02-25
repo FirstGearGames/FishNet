@@ -8,7 +8,7 @@ namespace FishNet.Object
         Unset = 0,
         Position = (1 << 0),
         Rotation = (1 << 1),
-        LocalScale = (1 << 2),
+        Scale = (1 << 2),
         Everything = Enums.SHIFT_EVERYTHING_UINT,
     }
 

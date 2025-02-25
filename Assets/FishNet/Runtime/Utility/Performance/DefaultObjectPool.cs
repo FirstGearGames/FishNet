@@ -123,7 +123,7 @@ namespace FishNet.Utility.Performance
                     else
                     {
                         prefab.transform.OutWorldPropertyValues(nullablePosition, nullableRotation, nullableScale, out Vector3 pos, out Quaternion rot, out scale);
-                        result = Instantiate(prefab, pos, rot, parent);
+                        result = Instantiate(prefab, pos, rot, parent); 
                     }
 
                     result.transform.localScale = scale;

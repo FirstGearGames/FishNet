@@ -130,16 +130,7 @@ namespace FishNet.Demo.Prediction.Rigidbodies
         /// Next tick the controller is allowed to predicted fire.
         /// </summary>
         private uint _nextAllowedFireTick;
-        /// <summary>
-        /// Last data passed into replicate which was created.
-        /// </summary>
-        private ReplicateData _lastCreatedReplicateData = default;
 
-        /// <summary>
-        /// Allow firing every 50 ticks.
-        /// </summary>
-        private const uint FIRE_INTERVAL = 50;
-        
         private void Awake()
         {
             _root.Initialize(GetComponent<Rigidbody>());

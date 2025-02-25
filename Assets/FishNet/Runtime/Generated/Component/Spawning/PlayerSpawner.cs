@@ -7,10 +7,8 @@ using UnityEngine.Serialization;
 
 namespace FishNet.Component.Spawning
 {
-
     /// <summary>
     /// Spawns a player object for clients when they connect.
-    /// Must be placed on or beneath the NetworkManager object.
     /// </summary>
     [AddComponentMenu("FishNet/Component/PlayerSpawner")]
     public class PlayerSpawner : MonoBehaviour
@@ -29,11 +27,13 @@ namespace FishNet.Component.Spawning
         [Tooltip("Prefab to spawn for the player.")]
         [SerializeField]
         private NetworkObject _playerPrefab;
+
         /// <summary>
         /// Sets the PlayerPrefab to use.
         /// </summary>
         /// <param name="nob"></param>
         public void SetPlayerPrefab(NetworkObject nob) => _playerPrefab = nob;
+
         /// <summary>
         /// True to add player to the active scene when no global scenes are specified through the SceneManager.
         /// </summary>
@@ -49,7 +49,7 @@ namespace FishNet.Component.Spawning
 
         #region Private.
         /// <summary>
-        /// NetworkManager on this object or within this objects parents.
+        /// First instance of the NetworkManager found. This will be either the NetworkManager on or above this object, or InstanceFinder.NetworkManager.
         /// </summary>
         private NetworkManager _networkManager;
         /// <summary>
@@ -58,7 +58,7 @@ namespace FishNet.Component.Spawning
         private int _nextSpawn;
         #endregion
 
-        private void Start()
+        private void Awake()
         {
             InitializeOnce();
         }
@@ -68,14 +68,16 @@ namespace FishNet.Component.Spawning
             if (_networkManager != null)
                 _networkManager.SceneManager.OnClientLoadedStartScenes -= SceneManager_OnClientLoadedStartScenes;
         }
- 
 
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
         private void InitializeOnce()
         {
-            _networkManager = InstanceFinder.NetworkManager;
+            _networkManager = GetComponentInParent<NetworkManager>();
+            if (_networkManager == null)
+                _networkManager = InstanceFinder.NetworkManager;
+            
             if (_networkManager == null)
             {
                 NetworkManagerExtensions.LogWarning($"PlayerSpawner on {gameObject.name} cannot work as NetworkManager wasn't found on this object or within parent objects.");
@@ -111,7 +113,6 @@ namespace FishNet.Component.Spawning
 
             OnSpawned?.Invoke(nob);
         }
-
 
         /// <summary>
         /// Sets a spawn position and rotation.
@@ -155,8 +156,5 @@ namespace FishNet.Component.Spawning
             pos = prefab.position;
             rot = prefab.rotation;
         }
-
     }
-
-
 }

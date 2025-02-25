@@ -176,7 +176,7 @@ namespace FishNet.Component.Scenes
                     _networkManager.SceneManager.LoadConnectionScenes(sld);
             }
             //When server stops load offline scene.
-            else if (obj.ConnectionState == LocalConnectionState.Stopped)
+            else if (obj.ConnectionState == LocalConnectionState.Stopped && !_networkManager.ServerManager.AnyServerStarted())
             {
                 LoadOfflineScene();
             }

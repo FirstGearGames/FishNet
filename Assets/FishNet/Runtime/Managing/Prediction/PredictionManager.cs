@@ -88,6 +88,8 @@ namespace FishNet.Managing.Predicting
 
         public delegate void PostPhysicsSyncTransformDel(uint clientTick, uint serverTick);
 
+        public event PostPhysicsSyncTransformDel OnPostReconcileSyncTransforms;
+
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
         /// </summary>
@@ -180,7 +182,7 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// How many states to try and hold in a buffer before running them. Larger values add resilience against network issues at the cost of running states later.
         /// </summary> 
-        internal byte StateInterpolation => _stateInterpolation;
+        public byte StateInterpolation => _stateInterpolation;
         [Tooltip("How many states to try and hold in a buffer before running them on clients. Larger values add resilience against network issues at the cost of running states later.")]
         [Range(0, MAXIMUM_PAST_INPUTS)]
         [FormerlySerializedAs("_redundancyCount")] //Remove on V5.
@@ -545,6 +547,8 @@ namespace FishNet.Managing.Predicting
                         Physics2D.SyncTransforms();
                         OnPostPhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
                     }
+                    
+                    OnPostReconcileSyncTransforms?.Invoke(ClientStateTick, ServerStateTick);
                     /* Set first replicate to be the 1 tick
                      * after reconcile. This is because reconcile calcs
                      * should be performed after replicate has run.
@@ -578,7 +582,7 @@ namespace FishNet.Managing.Predicting
                     }
 
                     OnPostReconcile?.Invoke(ClientStateTick, ServerStateTick);
-
+                    
                     // ClientStateTick = TimeManager.UNSET_TICK;
                     // ServerStateTick = TimeManager.UNSET_TICK;
                     ClientReplayTick = TimeManager.UNSET_TICK;

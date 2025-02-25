@@ -126,7 +126,7 @@ namespace FishNet.CodeGenerating.Processing
         public override bool ImportReferences()
         {
             System.Type locType;
-            SR.MethodInfo locMi;
+            //SR.MethodInfo locMi;
 
             base.ImportReference(typeof(BasicQueue<>));
             ReplicateULDelegate_TypeRef = base.ImportReference(typeof(ReplicateUserLogicDelegate<>));

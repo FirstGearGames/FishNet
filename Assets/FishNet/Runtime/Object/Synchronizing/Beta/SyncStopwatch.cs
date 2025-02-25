@@ -1,10 +1,8 @@
-﻿#if !FISHNET_STABLE_MODE
-using FishNet.CodeGenerating;
+﻿#if !FISHNET_STABLE_SYNCTYPES
 using FishNet.Documenting;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace FishNet.Object.Synchronizing
 {

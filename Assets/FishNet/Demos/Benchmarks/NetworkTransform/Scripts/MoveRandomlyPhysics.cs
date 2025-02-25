@@ -13,6 +13,8 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         [SerializeField]
         private bool _isActive = true;
 
+        public bool ForDebug;
+
         [Header("Movement")]
         [Tooltip("How much force to apply.")]
         [Range(0f, 1000f)]
@@ -75,12 +77,24 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
 
             if (_forceOppositeY && force.y < 0f)
                 force.y *= -1f;
-            
+
             bool flipZ = Math.Sign(force.z) == Math.Sign(transform.position.z);
             if (_forceOppositeZ && flipZ)
                 force.z *= -1f;
-            
-            _rigidbody.AddForce(force, ForceMode.Impulse);
+
+            if (ForDebug)
+            {
+                force.x = 0f;
+                force.z = 0f;
+                force.y = _force;
+                _rigidbody.AddForce(force, ForceMode.Impulse);
+                float forceMultiplier = 1f;
+                _rigidbody.AddTorque(Random.insideUnitSphere * (_force * forceMultiplier), ForceMode.VelocityChange);
+            }
+            else
+            {
+                _rigidbody.AddForce(force, ForceMode.Impulse);
+            }
         }
     }
 }

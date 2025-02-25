@@ -3,38 +3,37 @@ using GameKit.Dependencies.Utilities;
 using GameKit.Dependencies.Utilities.Types;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
 namespace FishNet.Component.Prediction
 {
-
     public abstract class NetworkCollider : NetworkBehaviour
     {
         #region Types.
-        private struct ColliderData : IResettable
+        private struct CollisionData
         {
             /// <summary>
-            /// Tick which the collisions happened.
+            /// Tick when entering collision.
             /// </summary>
-            public uint Tick;
+            public uint EnterTick;
             /// <summary>
-            /// Hits for Tick.
+            /// Tick when exiting collision.
             /// </summary>
-            public HashSet<Collider> Hits;
+            public uint ExitTick;
 
-            public ColliderData(uint tick, HashSet<Collider> hits)
+            public CollisionData(uint enterTick) : this()
             {
-                Tick = tick;
-                Hits = hits;
+                EnterTick = enterTick;
+                ExitTick = FishNet.Managing.Timing.TimeManager.UNSET_TICK;
             }
 
-            public void InitializeState() { }
-            public void ResetState()
+            public CollisionData(uint enterTick, uint exitTick) : this()
             {
-                Tick = TimeManagerCls.UNSET_TICK;
-                CollectionCaches<Collider>.StoreAndDefault(ref Hits);
+                EnterTick = enterTick;
+                ExitTick = exitTick;
             }
         }
         #endregion
@@ -63,13 +62,6 @@ namespace FishNet.Component.Prediction
         [SerializeField]
         private ushort _maximumSimultaneousHits = 16;
         /// <summary>
-        /// How long of collision history to keep. Lower values will result in marginally better memory usage at the cost of collision histories desynchronizing on clients with excessive latency.
-        /// </summary>
-        [Tooltip("How long of collision history to keep. Lower values will result in marginally better memory usage at the cost of collision histories desynchronizing on clients with excessive latency.")]
-        [Range(0.1f, 2f)]
-        [SerializeField]
-        private float _historyDuration = 0.5f;
-        /// <summary>
         /// Units to extend collision traces by. This is used to prevent missed overlaps when colliders do not intersect enough.
         /// </summary>
         [Tooltip("Units to extend collision traces by. This is used to prevent missed overlaps when colliders do not intersect enough.")]
@@ -91,19 +83,17 @@ namespace FishNet.Component.Prediction
         /// The hits from the last check.
         /// </summary>
         private Collider[] _hits;
-        /// <summary>
-        /// The history of collider data.
-        /// </summary>
-        private ResettableRingBuffer<ColliderData> _colliderDataHistory;
+        // /// <summary>
+        // /// The history of collider data.
+        // /// </summary>
+        // private ResettableRingBuffer<ColliderData> _colliderDataHistory;
+        private Dictionary<Collider, CollisionData> _enteredColliders;
+
         /// <summary>
         /// True if colliders have been searched for at least once.
         /// We cannot check the null state on _colliders because Unity has a habit of initializing collections on it's own.
         /// </summary>
         private bool _collidersFound;
-        /// <summary>
-        /// True to cache collision histories for comparing start and exits.
-        /// </summary>
-        private bool _useCache => (OnEnter != null || OnExit != null);
         /// <summary>
         /// Last layer of the gameObject.
         /// </summary>
@@ -116,7 +106,8 @@ namespace FishNet.Component.Prediction
         protected virtual void Awake()
         {
             //_colliderDataHistory = ResettableCollectionCaches<ColliderData>.RetrieveRingBuffer();
-            _colliderDataHistory = new();
+            //_colliderDataHistory = new();
+            _enteredColliders = CollectionCaches<Collider, CollisionData>.RetrieveDictionary();
             _hits = CollectionCaches<Collider>.RetrieveArray();
             if (_hits.Length < _maximumSimultaneousHits)
                 _hits = new Collider[_maximumSimultaneousHits];
@@ -124,7 +115,7 @@ namespace FishNet.Component.Prediction
 
         private void OnDestroy()
         {
-            //ResettableCollectionCaches<ColliderData>.StoreAndDefault(ref _colliderDataHistory);
+            CollectionCaches<Collider, CollisionData>.StoreAndDefault(ref _enteredColliders);
             CollectionCaches<Collider>.StoreAndDefault(ref _hits, _hits.Length);
         }
 
@@ -133,31 +124,50 @@ namespace FishNet.Component.Prediction
             FindColliders();
 
             //Initialize the ringbuffer. Server only needs 1 tick worth of history.
-            uint historyTicks = (base.IsServerStarted) ? 1 : TimeManager.TimeToTicks(_historyDuration);
-            _colliderDataHistory.Initialize((int)historyTicks);
+            // uint historyTicks = (base.IsServerStarted) ? 1 : TimeManager.TimeToTicks(_historyDuration);
+            //_colliderDataHistory.Initialize((int)historyTicks);
 
             //Events needed by server and client.
-            TimeManager.OnPostPhysicsSimulation += TimeManager_OnPostPhysicsSimulation;
+            TimeManager.OnPrePhysicsSimulation += TimeManager_OnPostPhysicsSimulation;
         }
 
         public override void OnStartClient()
         {
             //Events only needed by the client.
             PredictionManager.OnPostReplicateReplay += PredictionManager_OnPostReplicateReplay;
+            PredictionManager.OnPostReconcileSyncTransforms += PredictionManagerOnOnPreReconcile;
+        }
+
+        private void PredictionManagerOnOnPreReconcile(uint clienttick, uint servertick)
+        {
+            if (_enteredColliders.Count > 0)
+            {
+                List<Collider> entriesToRemove = CollectionCaches<Collider>.RetrieveList();
+
+                foreach (KeyValuePair<Collider, CollisionData> kvp in _enteredColliders)
+                {
+                    if (kvp.Value.ExitTick < clienttick)
+                        entriesToRemove.Add(kvp.Key);
+                }
+                foreach (Collider entry in entriesToRemove)
+                    _enteredColliders.Remove(entry);
+
+                CollectionCaches<Collider>.Store(entriesToRemove);
+            }
+            CheckColliders(clienttick);
         }
 
         public override void OnStopClient()
         {
             //Events only needed by the client.
             PredictionManager.OnPostReplicateReplay -= PredictionManager_OnPostReplicateReplay;
-
+            PredictionManager.OnPostReconcileSyncTransforms -= PredictionManagerOnOnPreReconcile;
         }
 
         public override void OnStopNetwork()
         {
-            TimeManager.OnPostPhysicsSimulation -= TimeManager_OnPostPhysicsSimulation;
+            TimeManager.OnPrePhysicsSimulation -= TimeManager_OnPostPhysicsSimulation;
         }
-
 
         /// <summary>
         /// When using TimeManager for physics timing, this is called immediately after the physics simulation has occured for the tick.
@@ -165,7 +175,7 @@ namespace FishNet.Component.Prediction
         /// This may be useful if you wish to run physics differently for stacked scenes.
         private void TimeManager_OnPostPhysicsSimulation(float delta)
         {
-            CheckColliders(TimeManager.LocalTick, false);
+            CheckColliders(TimeManager.LocalTick);
         }
 
         /// <summary>
@@ -173,33 +183,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
         {
-            CheckColliders(clientTick, true);
-        }
-
-        /// <summary>
-        /// Cleans history up to, while excluding tick.
-        /// </summary>
-        
-        private void CleanHistory(uint tick)
-        {
-            if (_useCache)
-            {
-                int removeCount = 0;
-                int historyCount = _colliderDataHistory.Count;
-                for (int i = 0; i < historyCount; i++)
-                {
-                    if (_colliderDataHistory[i].Tick >= tick)
-                        break;
-                    removeCount++;
-                }
-                
-                _colliderDataHistory.RemoveRange(true, removeCount, resetRemoved: true);
-            }
-            //Cache is not used.
-            else
-            {
-                ClearColliderDataHistory();
-            }
+            CheckColliders(clientTick);
         }
 
         /// <summary>
@@ -210,53 +194,14 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Checks for any trigger changes;
         /// </summary>
-        
-        private void CheckColliders(uint tick, bool replay)
+        private void CheckColliders(uint tick)
         {
             //Should not be possible as tick always starts on 1.
             if (tick == TimeManagerCls.UNSET_TICK)
                 return;
 
-            const int INVALID_HISTORY_VALUE = -1;
-
             HashSet<Collider> current = CollectionCaches<Collider>.RetrieveHashSet();
-            HashSet<Collider> previous = null;
-
-            int previousHitsIndex = INVALID_HISTORY_VALUE;
-            /* Server only keeps 1 history so
-             * if server is started then
-             * simply clean one. When the server is
-             * started replay will never be true, so this
-             * will only call once per tick. */
-            if (base.IsServerStarted && tick > 0)
-                CleanHistory(tick - 1);
-
-            if (_useCache)
-            {
-                if (replay)
-                {
-                    previousHitsIndex = GetHistoryIndex(tick - 1, false);
-                    if (previousHitsIndex != -1)
-                        previous = _colliderDataHistory[previousHitsIndex].Hits;
-                }
-                //Not replaying.
-                else
-                {
-                    if (_colliderDataHistory.Count > 0)
-                    {
-                        ColliderData cd = _colliderDataHistory[_colliderDataHistory.Count - 1];
-                        /* If the hit tick one before current then it can be used, otherwise
-                        * use a new collection for previous. */
-                        if (cd.Tick == (tick - 1))
-                            previous = cd.Hits;
-                    }
-                }
-            }
-            //Not using history, clear it all.
-            else
-            {
-                ClearColliderDataHistory();
-            }
+            Dictionary<Collider, CollisionData> entered = _enteredColliders;
 
             /* Previous may not be set here if there were
              * no collisions during the previous tick. */
@@ -280,7 +225,7 @@ namespace FishNet.Component.Prediction
                 }
             }
 
-            // Check each collider for triggers.
+            //Check each collider for triggers.
             foreach (Collider col in _colliders)
             {
                 if (!col.enabled)
@@ -299,134 +244,74 @@ namespace FishNet.Component.Prediction
                 else
                     hits = 0;
 
-                // Check the hits for triggers.
+                /* Check hits for enter/exit callbacks. */
                 for (int i = 0; i < hits; i++)
                 {
                     Collider hit = _hits[i];
                     if (hit == null || hit == col)
                         continue;
 
-                    /* If not in previous then add and
-                     * invoke enter. */
-                    if (previous == null || !previous.Contains(hit))
-                        OnEnter?.Invoke(hit);
-
-                    //Also add to current hits.
                     current.Add(hit);
-                    OnStay?.Invoke(hit);
-                }
-            }
 
-            if (previous != null)
-            {
-                //Check for stays and exits.
-                foreach (Collider col in previous)
-                {
-                    //If it was in previous but not current, it has exited.
-                    if (!current.Contains(col))
-                        OnExit?.Invoke(col);
-                }
-            }
-
-            //If not using the cache then clean up collections.
-            if (_useCache)
-            {
-                //If not replaying add onto the end. */
-                if (!replay)
-                {
-                    AddToEnd();
-                }
-                /* If a replay then set current colliders
-                 * to one entry past historyIndex. If the next entry
-                 * beyond historyIndex is for the right tick it can be
-                 * updated, otherwise a result has to be inserted. */
-                else
-                {
-                    /* Previous hits was not found in history so we
-                     * cannot assume current results go right after the previousIndex.
-                     * Find whichever index is the closest to tick and return it. 
-                     * 
-                     * If an exact match is not found for tick then the entry just after
-                     * tick will be returned. This will let us insert current hits right
-                     * before that entry. */
-                    if (previousHitsIndex == -1)
+                    //Already entered.
+                    if (entered.TryGetValueIL2CPP(hit, out CollisionData collisionData))
                     {
-                        int currentIndex = GetHistoryIndex(tick, true);
-                        AddDataToIndex(currentIndex);
+                        /* If entered tick is beyond the tick being checked then
+                         * that means the collider entered at a later time, and something
+                         * is not aligning. Invoke OnExit and OnEnter again. */
+                        if (collisionData.EnterTick >= tick || collisionData.ExitTick != TimeManagerCls.UNSET_TICK)
+                        {
+                            OnExit?.Invoke(hit);
+                            OnEnter?.Invoke(hit);
+                            //Also update position in collection.
+                            entered[hit] = new CollisionData(tick);
+                        }
                     }
-                    //If previous hits are known then the index to update is right after previous index.
+                    //Not yet in entered state.
                     else
                     {
-                        int insertIndex = (previousHitsIndex + 1);
-                        /* InsertIndex is out of bounds which means
-                         * to add onto the end. */
-                        if (insertIndex >= _colliderDataHistory.Count)
-                            AddToEnd();
-                        //Not the last entry to insert in the middle.
-                        else
-                            AddDataToIndex(insertIndex);
+                        OnEnter?.Invoke(hit);
+                        //Also update position in collection.
+                        entered[hit] = new CollisionData(tick);
                     }
 
-                    /* Adds data to an index. If the tick
-                     * matches on index with the current tick then
-                     * replace the entry. Otherwise insert to the
-                     * correct location. */
-                    void AddDataToIndex(int index)
-                    {
-                        ColliderData colliderData = new(tick, current);
-                        /* If insertIndex is the same tick then replace, otherwise
-                         * put in front of. */
-                        //Replace.
-                        if (_colliderDataHistory[index].Tick == tick)
-                        {
-                            _colliderDataHistory[index].ResetState();
-                            _colliderDataHistory[index] = colliderData;
-                        }
-                        //Insert before.
-                        else
-                        {
-                            _colliderDataHistory.Insert(index, colliderData);
-                        }
-                    }
+                    //Always invoke OnStay when collider hits.
+                    OnStay?.Invoke(hit);
                 }
 
-                void AddToEnd()
+                List<Collider> collidersExited = CollectionCaches<Collider>.RetrieveList();
+                /* Check to invoke exit on any colliders which are no longer
+                 * in the entered state. */
+                foreach (Collider c in entered.Keys)
                 {
-                    ColliderData colliderData = new(tick, current);
-                    _colliderDataHistory.Add(colliderData);
+                    //Collider was still entered, no need to check exit.
+                    if (current.Contains(c))
+                        continue;
+                    //Should not be possible to exit the same time as entering unless
+                    if (entered[c].EnterTick == tick)
+                        continue;
+
+                    collidersExited.Add(c);
                 }
 
-            }
-            /* If not using caching then store results from this run. */
-            else
-            {
-                CollectionCaches<Collider>.Store(current);
-            }
-
-            //Returns history index for a tick.
-            /* GetClosest will return the closest match which is
-             * past lTick if lTick could not be found. */
-            int GetHistoryIndex(uint lTick, bool getClosest)
-            {
-                for (int i = 0; i < _colliderDataHistory.Count; i++)
+                //Invoke for exited and remove from entered.
+                foreach (Collider c in collidersExited)
                 {
-                    uint localTick = _colliderDataHistory[i].Tick;
-                    if (localTick == lTick)
-                        return i;
-                    /* Tick is too high, any further results
-                     * will also be too high. */
-                    if (localTick > tick)
-                    {
-                        if (getClosest)
-                            return i;
-                        else
-                            return INVALID_HISTORY_VALUE;
-                    }
-                }
+                    /* If here then the entered collider was not hit
+                     * this trace. Invoke exit and remove from entered. */
+                    OnExit?.Invoke(c);
 
-                //Fall through.
-                return INVALID_HISTORY_VALUE;
+                    
+
+                    if (base.IsServerStarted)
+                        entered.Remove(c);
+                    else
+                        entered[c] = new(entered[c].EnterTick, tick);
+                    //entered.Remove(c);
+                }
             }
+
+            CollectionCaches<Collider>.Store(current);
         }
 
         /// <summary>
@@ -457,7 +342,6 @@ namespace FishNet.Component.Prediction
         /// <returns>Number of colliders hit.</returns>
         private int GetBoxColliderHits(BoxCollider boxCollider, Quaternion rotation, int layerMask)
         {
-
             boxCollider.GetBoxOverlapParams(out Vector3 center, out Vector3 halfExtents);
             Vector3 additional = (Vector3.one * GetAdditionalSize());
             halfExtents += additional;
@@ -480,7 +364,6 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Resets this NetworkBehaviour so that it may be added to an object pool.
         /// </summary>
-        
         public override void ResetState(bool asServer)
         {
             base.ResetState(asServer);
@@ -492,11 +375,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private void ClearColliderDataHistory()
         {
-            foreach (ColliderData cd in _colliderDataHistory)
-                cd.ResetState();
-            _colliderDataHistory.Clear();
+            _enteredColliders.Clear();
         }
     }
-
-
 }

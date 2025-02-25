@@ -42,7 +42,7 @@ namespace FishNet.Managing.Object
             else
                 localRotation = null;
             //Scale.
-            if (tpf.FastContains(TransformPropertiesFlag.LocalScale))
+            if (tpf.FastContains(TransformPropertiesFlag.Scale))
                 localScale = reader.ReadVector3();
             else
                 localScale = null;
@@ -321,7 +321,7 @@ namespace FishNet.Managing.Object
                     headerWriter.WriteVector3(nob.transform.localPosition);
                 if (tpf.FastContains(TransformPropertiesFlag.Rotation))
                     headerWriter.WriteQuaternion(nob.transform.localRotation, NetworkManager.ServerManager.SpawnPacking.Rotation);
-                if (tpf.FastContains(TransformPropertiesFlag.LocalScale))
+                if (tpf.FastContains(TransformPropertiesFlag.Scale))
                     headerWriter.WriteVector3(nob.transform.localScale);
             }
         }

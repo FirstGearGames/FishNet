@@ -1,4 +1,5 @@
 ﻿using System;
+using FishNet.Component.Prediction;
 using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Prediction;
@@ -106,18 +107,24 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// Invokes whenever NetworkStart is called for owner.
         /// </summary>
         public static event Action<CharacterControllerPrediction> OnOwner;
-
-        [SerializeField]
-        private float _jumpForce = 30f;
-        [SerializeField]
-        private float _moveRate = 4f;
-
-        private CharacterController _characterController;
-
         /// <summary>
         /// Current stamina remaining.
         /// </summary>
         public float Stamina { get; private set; }
+
+        /// <summary>
+        /// Amount of force for jumping.
+        /// </summary>
+        [Tooltip("Amount of force for jumping.")]
+        [SerializeField]
+        private float _jumpForce = 30f;
+        /// <summary>
+        /// How quickly to move.
+        /// </summary>
+        [Tooltip("How quickly to move.")]
+        [SerializeField]
+        private float _moveRate = 4f;
+
         /// <summary>
         /// Current vertical velocity.
         /// </summary>
@@ -127,9 +134,9 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// </summary>
         private OneTimeInput _oneTimeInputs = new();
         /// <summary>
-        /// Last data passed into replicate which was created.
+        /// Last data which was supplied during replicate outside of reconcile.
         /// </summary>
-        private ReplicateData _lastCreatedReplicateData = default;
+        private ReplicateData _lastTickedReplicateData = default;
         /// <summary>
         /// Collider cache for performance.
         /// </summary>
@@ -138,15 +145,27 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// Current platform the player is on.
         /// </summary>
         private MovingPlatform _currentPlatform;
-
+        /// <summary>
+        /// Reference to the CharacterController component.
+        /// </summary>
+        private CharacterController _characterController;
+        /// <summary>
+        /// NetworkTrigger on this character; used to detact platforms.
+        /// </summary>
+        private NetworkTrigger _characterTrigger;
         /// <summary>
         /// maximum amount of stamina allowed.
         /// </summary>
         public const float Maximum_Stamina = 50f;
 
-        public override void OnStartNetwork()
+        private void Awake()
         {
             _characterController = GetComponent<CharacterController>();
+
+            _characterTrigger = GetComponentInChildren<NetworkTrigger>();
+            _characterTrigger.OnEnter += CharacterTrigger_OnEnter;
+            _characterTrigger.OnExit += CharacterTrigger_OnExit;
+            
             //We only need the OnTick callback for non-physics.
             base.SetTickCallbacks(TickCallback.Tick);
         }
@@ -236,13 +255,13 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             PerformReconcile(rd);
         }
 
-        private uint _lastNonReplayedTick;
-
         [Replicate]
         private void PerformReplicate(ReplicateData rd, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
         {
-            TraceAndSetParent();
-
+            //Always use the tickDelta as your delta when performing actions inside replicate.
+            float delta = (float)base.TimeManager.TickDelta;
+            bool useDefaultForces = false;
+            
             /* When client only run some checks to
              * further predict the clients future movement.
              * This can keep the object more inlined with real-time by
@@ -255,51 +274,48 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             //See https://fish-networking.gitbook.io/docs/manual/guides/prediction/version-2/creating-code/predicting-states
             if (!base.IsServerStarted && !base.IsOwner)
             {
-                if (!state.IsReplayed())
-                {
-                    _lastNonReplayedTick = rd.GetTick();
-                }
-                else
-                {
-                    if (rd.GetTick() > _lastNonReplayedTick)
-                        return;
-                }
-
-                /* If you wanted to always keep this controller in the past you can exit the method
-                 * when the state is created. This will only run data sent from the client to server to clients, or server to clients
-                 * when server is the controller.
-                 *
-                 * Past and future is explained more thoroughly in the documentation.
-                 * Uncomment the line below to keep this controller in the past. */
-                //if (state.IsReplayed() && !state.IsCreated()) return;
-
-                //State is created, no need to predict.
-                if (state.IsCreated())
+                /* If ticked then set last ticked value.
+                 * Ticked means the replicate is being run from the tick cycle, more
+                 * specifically NOT from a replay/reconcile. */
+                if (state.ContainsTicked())
                 {
                     /* Dispose of old should it have anything that needs to be cleaned up.
                      * If you are only using value types in your data you do not need to call Dispose.
                      * You must implement dispose manually to cache any non-value types, if you wish. */
-                    _lastCreatedReplicateData.Dispose();
+                    _lastTickedReplicateData.Dispose();
                     //Set new.
-                    _lastCreatedReplicateData = rd;
+                    _lastTickedReplicateData = rd;
                 }
-                //Not created.
-                else
+                /* In the future means there is no way the data can be known to this client
+                 * yet. For example, the client is running this script locally and due to
+                 * how networking works, they have not yet received the latest information from
+                 * the server.
+                 *
+                 * If in the future then we are only going to predict up to
+                 * a certain amount of ticks in the future. This is us assuming that the
+                 * server (or client which owns this in this case) is going to use the
+                 * same input for at least X number of ticks. You can predict none, or as many
+                 * as you like, but the more inputs you predict the higher likeliness of guessing
+                 * wrong. If you do however predict wrong often smoothing will cover up the mistake. */
+                else if (state.IsFuture())
                 {
-                    /* Predict the number of ticks that are equal to state
-                     * interpolation. This is not required but adds a little extra
-                     * real time reflection by moving before actually receiving
-                     * the data from the server, while staying within the interpolation
-                     * should this prediction is wrong. */
-                    //Predict x ticks just at or beyond 50ms.
-                    //If only x ticks beyond last created, then set current to last created.
-                    if (rd.GetTick() - _lastCreatedReplicateData.GetTick() <= base.PredictionManager.StateInterpolation)
+                    /* Predict up to whatever interpolation is on the PredictionManager. This is the safest way to protect against
+                     * graphical jitter by not predicting beyond global interpolation. */
+                    if (rd.GetTick() - _lastTickedReplicateData.GetTick() >= base.PredictionManager.StateInterpolation)
                     {
+                        useDefaultForces = true;
+                    }
+                    else
+                    {
+                        /* If here we are predicting the future. */
+
                         /* You likely do not need to dispose rd here since it would be default
-                         * when state is 'not created'. */
+                         * when state is 'not created'. We are simply doing it for good practice, should your ReplicateData
+                         * contain any garbage collection. */
                         rd.Dispose();
 
-                        rd = _lastCreatedReplicateData;
+                        rd = _lastTickedReplicateData;
+
                         /* There are some fields you might not want to predict, for example
                          * jump. The odds of a client pressing jump two ticks in a row is unlikely.
                          * The stamina check below would likely prevent such a scenario.
@@ -313,46 +329,62 @@ namespace FishNet.Demo.Prediction.CharacterControllers
                     }
                 }
             }
+            
+            Vector3 forces;
 
-            //Always use the tickDelta as your delta when performing actions inside replicate.
-            float delta = (float)base.TimeManager.TickDelta;
-
-            //Stamina regained over every second.
-            const float regainedStamina = 25f;
-            //Add stamina with every tick.
-            ModifyStamina(regainedStamina * delta);
-
-            //Add gravity. Extra gravity is added for snappier jumps.
-            _verticalVelocity += (Physics.gravity.y * delta * 3f);
-            //Cap gravity to -20f so the player doesn't fall too fast.
-            if (_verticalVelocity < -40f)
-                _verticalVelocity = -40f;
-
-            //Normalize direction so the player does not move faster at angles.
-            rd.Input = rd.Input.normalized;
-
-            /* Typically speaking any modification which can affect your CSP (prediction) should occur
-             * inside replicate. This is why we add/remove stamina, and move within replicate. */
-
-            //Default run multiplier.
-            float runMultiplier;
-            //Stamina required to run over a second.
-            const float runStamina = 50f;
-            if (rd.Run && TryRemoveStamina(runStamina * delta))
-                runMultiplier = 1.5f;
+            if (useDefaultForces)
+            {
+                /* Character controllers are a bit problematic with colliders.
+                 * If you were to pass Vector3.zero into the move then there's
+                 * a chance other colliders will clip through the characterController.
+                 * When this is combined with reconciles, it's practically gauranteed
+                 * this will happen.
+                 *
+                 * Because of this issue, if we are 'using default forces' we will apply a
+                 * very insignificant amount of force which makes the characterController
+                 * update properly. */
+                forces = new(0f, -1f, 0f);
+            }
+            //Calculate forces.
             else
-                runMultiplier = 1f;
+            {
+                //Stamina regained over every second.
+                const float regainedStamina = 25f;
+                //Add stamina with every tick.
+                ModifyStamina(regainedStamina * delta);
 
-            //Stamina required to jump.
-            const byte jumpStamina = 30;
-            /* For consistent jumps set to jump force when jumping, rather
-             * than add force onto current gravity. */
-            if (rd.OneTimeInputs.Jump && TryRemoveStamina(jumpStamina))
-                _verticalVelocity = _jumpForce;
+                //Add gravity. Extra gravity is added for snappier jumps.
+                _verticalVelocity += (Physics.gravity.y * delta * 3f);
+                //Cap gravity to -20f so the player doesn't fall too fast.
+                if (_verticalVelocity < -40f)
+                    _verticalVelocity = -40f;
 
-            Vector3 forces = new Vector3(rd.Input.x, 0f, rd.Input.y) * (_moveRate * runMultiplier);
-            //Add vertical velocity to forces.
-            forces.y = _verticalVelocity;
+                //Normalize direction so the player does not move faster at angles.
+                rd.Input = rd.Input.normalized;
+
+                /* Typically speaking any modification which can affect your CSP (prediction) should occur
+                 * inside replicate. This is why we add/remove stamina, and move within replicate. */
+
+                //Default run multiplier.
+                float runMultiplier;
+                //Stamina required to run over a second.
+                const float runStamina = 50f;
+                if (rd.Run && TryRemoveStamina(runStamina * delta))
+                    runMultiplier = 1.5f;
+                else
+                    runMultiplier = 1f;
+
+                //Stamina required to jump.
+                const byte jumpStamina = 30;
+                /* For consistent jumps set to jump force when jumping, rather
+                 * than add force onto current gravity. */
+                if (rd.OneTimeInputs.Jump && TryRemoveStamina(jumpStamina))
+                    _verticalVelocity = _jumpForce;
+
+                forces = new Vector3(rd.Input.x, 0f, rd.Input.y) * (_moveRate * runMultiplier);
+                //Add vertical velocity to forces.
+                forces.y = _verticalVelocity;
+            }
 
             _characterController.Move(forces * delta);
         }
@@ -383,27 +415,37 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             transform.localPosition = rd.Position;
         }
 
+      
         /// <summary>
-        /// Traces for something to parent, and sets parent based on result.
+        /// Called when the trigger on this object enters another collider.
         /// </summary>
-        private void TraceAndSetParent()
+        private void CharacterTrigger_OnEnter(Collider c)
         {
-            //Unset.
-            _currentPlatform = null;
-            
-            //Trace down to check for moving platforms.
-            int hits = Physics.OverlapSphereNonAlloc(transform.position, radius: 0.15f, _colliderCache);
-            
-            //Trace for new.
-            for (int i = 0; i < hits; i++)
-            {
-                if (_colliderCache[i].TryGetComponent(out MovingPlatform mp))
-                {
-                    _currentPlatform = mp;
-                    break;
-                }
-            }
+            //We only care about moving platforms.
+            if (!c.TryGetComponent(out MovingPlatform mp))
+                return;
 
+            _currentPlatform = mp;
+            SetParent();
+        }
+        
+        /// <summary>
+        /// Called when the trigger on this object exits another collider.
+        /// </summary>
+        private void CharacterTrigger_OnExit(Collider c)
+        {
+            if (!c.TryGetComponent(out MovingPlatform mp))
+                return;
+
+            //Only check if already attached to a platform.
+            if (_currentPlatform == null)
+                return;
+            //Not the current platform.
+            if (_currentPlatform != mp)
+                return;
+
+            //Is the current platform, unset.
+            _currentPlatform = null;
             SetParent();
         }
 

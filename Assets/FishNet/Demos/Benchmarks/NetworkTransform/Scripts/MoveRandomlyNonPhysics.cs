@@ -83,7 +83,7 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         {
             if (!_isActive)
                 return;
-            if (!base.HasAuthority)
+            if (!base.IsController)
                 return;
             
             transform.position = Vector3.MoveTowards(transform.position, _goalPosition, _moveRate * delta);

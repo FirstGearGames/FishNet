@@ -349,7 +349,7 @@ namespace FishNet.Serializing
         /// (not really for Quaternion).
         /// </summary>
         [DefaultDeltaReader]
-        public Quaternion ReadDeltaQuaternion(Quaternion valueA, float precision = Writer.QUATERNION_PRECISION) => QuaternionDeltaVariableCompression.Decompress(this, valueA, out _, precision);
+        public Quaternion ReadDeltaQuaternion(Quaternion valueA, float precision = Writer.QUATERNION_PRECISION) => QuaternionDeltaPrecisionCompression.Decompress(this, valueA, precision);
 
         /// <summary>
         /// Reads a difference, appending it onto a value.

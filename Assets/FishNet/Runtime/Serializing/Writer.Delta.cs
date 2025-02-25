@@ -558,7 +558,7 @@ namespace FishNet.Serializing
             if (!changed)
                 return false;
             
-            QuaternionDeltaVariableCompression.Compress(this, valueA, valueB, out _, precision);
+            QuaternionDeltaPrecisionCompression.Compress(this, valueA, valueB, precision);
             
             return true;
         }
@@ -665,7 +665,6 @@ namespace FishNet.Serializing
             /* If here there is change. */
             int startPosition = Position;
 
-            byte uint8Dpt = (byte)UDeltaPrecisionType.UInt8;
             /* If x, y, or z dpt doesn't contain uint8 then it must contain a higher value.
              * We already exited early if all values were unset, so there's no reason to
              * check for unset here. */

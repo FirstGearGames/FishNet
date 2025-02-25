@@ -30,11 +30,11 @@ namespace FishNet.Editing
              * to be passed before reminding. */
             int checkRemindCount = (EditorPrefs.GetInt(CHECK_REMIND_COUNT, 0) + 1);
             EditorPrefs.SetInt(CHECK_REMIND_COUNT, checkRemindCount);
-
+            
             //Not enough checks.
             if (checkRemindCount < 2)
                 return;
-
+            
             string dtStr = EditorPrefs.GetString(DATETIME_REMINDED, string.Empty);
             //Somehow got cleared. Reset.
             if (string.IsNullOrWhiteSpace(dtStr))
@@ -51,12 +51,14 @@ namespace FishNet.Editing
             }
             //Not enough time passed.
             DateTime dt = DateTime.FromBinary(binary);
+            
             if ((DateTime.Now - dt).TotalDays < 10)
                 return;
 
             //If here then the reminder can be shown.
             EditorPrefs.SetInt(CHECK_REMIND_COUNT, 0);
-
+            ResetDateTimeReminded();
+            
             ShowReminder();
         }
 
@@ -70,7 +72,7 @@ namespace FishNet.Editing
             InitializeWindow();
         }
       
-        static void InitializeWindow()
+        private static void InitializeWindow()
         {
             if (_window != null)
                 return;

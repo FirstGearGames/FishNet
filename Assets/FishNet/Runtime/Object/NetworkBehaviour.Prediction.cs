@@ -428,7 +428,7 @@ namespace FishNet.Object
              * The exception is for the owner, which we send the last replicate
              * tick so the owner knows which to roll back to. */
 
-//#if !FISHNET_STABLE_MODE
+//#if !FISHNET_STABLE_SYNCTYPES
 #if DO_NOT_USE
             methodWriter.WriteDeltaReconcile(lastReconcileData, reconcileData, GetDeltaSerializeOption());
 #else
@@ -535,7 +535,7 @@ namespace FishNet.Object
             if (findResult == ReplicateTickFinder.DataPlacementResult.Exact)
             {
                 data = replicatesHistory[replicateIndex];
-                state = ReplicateState.ReplayedCreated;
+                state = (ReplicateState.Replayed | ReplicateState.Ticked | ReplicateState.Created);
 
                 //SetReplicateTick(data.GetTick(), true);
                 del.Invoke(data, state, channel);
@@ -561,7 +561,17 @@ namespace FishNet.Object
                 {
                     data = replicatesHistory[replicateIndex];
                     //state = ReplicateState.ReplayedCreated;
-                    state = (_readReplicateTicks.Contains(replayTick)) ? ReplicateState.ReplayedCreated : ReplicateState.ReplayedFuture;
+                    state = ReplicateState.Replayed;
+
+                    bool isCreated = _readReplicateTicks.Contains(replayTick);
+                    //Set if created.
+                    if (isCreated)
+                        state |= ReplicateState.Created;
+                    /* Ticked will be true if value had ticked outside of reconcile,
+                     * or if data is created. It's possible for data to be created
+                     * and not yet ticked if state order is inserted rather than append. */
+                    if (replayTick <= _lastOrderedReplicatedTick || isCreated)
+                        state |= ReplicateState.Ticked;
                 }
                 else
                 {
@@ -580,7 +590,7 @@ namespace FishNet.Object
             {
                 data = default;
                 data.SetTick(replayTick);
-                state = ReplicateState.ReplayedFuture;
+                state = ReplicateState.Replayed;
             }
 
             //uint dataTick = data.GetTick();
@@ -663,7 +673,7 @@ namespace FishNet.Object
                         {
                             _remainingReconcileResends = pm.RedundancyCount;
 
-                            ReplicateData(queueEntry, ReplicateState.CurrentCreated);
+                            ReplicateData(queueEntry, (ReplicateState.Ticked | ReplicateState.Created));
 
                             //Update count since old entries were dropped and one replicate run.
                             count = replicatesQueue.Count;
@@ -679,7 +689,7 @@ namespace FishNet.Object
                                 int consumeAmount = Mathf.Min(maximumAllowedConsumes, maximumPossibleConsumes);
 
                                 for (int i = 0; i < consumeAmount; i++)
-                                    ReplicateData(replicatesQueue.Dequeue(), ReplicateState.CurrentCreated);
+                                    ReplicateData(replicatesQueue.Dequeue(), (ReplicateState.Ticked | ReplicateState.Created));
                             }
                         }
                     }
@@ -702,13 +712,13 @@ namespace FishNet.Object
                 uint tick = (GetDefaultedLastReplicateTick() + 1);
                 T data = default(T);
                 data.SetTick(tick);
-                ReplicateData(data, ReplicateState.CurrentFuture);
+                ReplicateData(data, ReplicateState.Ticked);
             }
 
             void ReplicateData(T data, ReplicateState state)
             {
                 uint tick = data.GetTick();
-                SetReplicateTick(tick, (state == ReplicateState.CurrentCreated));
+                SetReplicateTick(tick, state.ContainsCreated());
                 /* If server or appended state order then insert/add to history when run
                  * within this method.
                  * Whether data is inserted/added into the past (replicatesHistory) depends on
@@ -736,7 +746,7 @@ namespace FishNet.Object
                 else
                 {
                     InsertIntoReplicateHistory(tick, data, replicatesHistory);
-                    if (state == ReplicateState.CurrentCreated)
+                    if (state.ContainsCreated())
                         _readReplicateTicks.Add(tick);
                 }
 
@@ -835,7 +845,7 @@ namespace FishNet.Object
             SetReplicateTick(dataTick, createdReplicate: true);
 
             //Owner always replicates with new data.
-            del.Invoke(data, ReplicateState.CurrentCreated, channel);
+            del.Invoke(data, (ReplicateState.Ticked | ReplicateState.Created), channel);
         }
 
         /// <summary>
@@ -896,7 +906,7 @@ namespace FishNet.Object
              * write the queueTick. */
             if (!toServer)
                 methodWriter.WriteTickUnpacked(queuedTick);
-//#if !FISHNET_STABLE_MODE
+//#if !FISHNET_STABLE_SYNCTYPES
 #if DO_NOT_USE
             methodWriter.WriteDeltaReplicate(replicatesHistory, offset, deltaOption);
 #else
@@ -965,7 +975,7 @@ namespace FishNet.Object
                 tick = (tm.LastPacketTick.LastRemoteTick);
 
             int receivedReplicatesCount;
-//#if !FISHNET_STABLE_MODE
+//#if !FISHNET_STABLE_SYNCTYPES
 #if DO_NOT_USE
             receivedReplicatesCount = reader.ReadDeltaReplicate(lastReadReplicate, ref arrBuffer, tick);
 #else
@@ -1049,7 +1059,7 @@ namespace FishNet.Object
             methodWriter.WriteTickUnpacked(runTickOflastEntry);
             //Write the replicates.
             int redundancyCount = (int)Mathf.Min(_networkObjectCache.PredictionManager.RedundancyCount, queueCount);
-//#if !FISHNET_STABLE_MODE
+//#if !FISHNET_STABLE_SYNCTYPES
 #if DO_NOT_USE
             methodWriter.WriteDeltaReplicate(replicatesQueue, redundancyCount, GetDeltaSerializeOption());
 #else
@@ -1443,7 +1453,7 @@ namespace FishNet.Object
         public void Reconcile_Reader<T>(PooledReader reader, ref T lastReconciledata, Channel channel) where T : IReconcileData
         {
             uint tick = (IsOwner) ? PredictionManager.ClientStateTick : PredictionManager.ServerStateTick;
-//#if !FISHNET_STABLE_MODE
+//#if !FISHNET_STABLE_SYNCTYPES
 #if DO_NOT_USE
             T newData = reader.ReadDeltaReconcile(lastReconciledata);
 #else

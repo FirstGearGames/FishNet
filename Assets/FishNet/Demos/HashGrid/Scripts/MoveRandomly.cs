@@ -20,7 +20,7 @@ namespace FishNet.Demo.HashGrid
 
         private void Update()
         {
-            if (!base.HasAuthority)
+            if (!base.IsController)
                 return;
 
             transform.position = Vector3.MoveTowards(transform.position, _goal, (_moveRate * Time.deltaTime));

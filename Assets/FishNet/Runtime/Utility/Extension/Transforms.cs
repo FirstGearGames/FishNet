@@ -80,11 +80,12 @@ namespace FishNet.Utility.Extension
         /// <summary>
         /// Gets the offset values by subtracting this from target.
         /// </summary>
+        /// <param name="zeroScale">True to set scale to Vector3.zero.</param>
         public static TransformProperties GetTransformOffsets(this Transform t, Transform target)
         {
             if (target == null)
                 return default;
-
+            
             return new(
                 (target.position - t.position),
                 (target.rotation * Quaternion.Inverse(t.rotation)),

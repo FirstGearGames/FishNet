@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Transporting;
@@ -60,12 +59,7 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         #endregion
 
         [SerializeField]
-        private Transform _top;
-        public Transform Top => _top;
-
-        [SerializeField]
         private float _moveRate = 4f;
-
         /// <summary>
         /// Goal to move towards.
         /// </summary>
@@ -125,8 +119,9 @@ namespace FishNet.Demo.Prediction.CharacterControllers
              *
              * If you want to visually see this simple uncomment the line below. Be sure to add
              * latency to make the correction more noticeable. */
-            //if (state.IsFuture() && state.IsReplayed()) return;
-            
+            // if (state.IsFuture())
+            //     return;
+
             //Always use the tickDelta as your delta when performing actions inside replicate.
             float delta = (float)base.TimeManager.TickDelta;
 

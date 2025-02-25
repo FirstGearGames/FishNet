@@ -1,4 +1,4 @@
-﻿#if !FISHNET_STABLE_MODE
+﻿#if !FISHNET_STABLE_SYNCTYPES
 using FishNet.CodeGenerating;
 using FishNet.Documenting;
 using FishNet.Managing;
@@ -6,7 +6,6 @@ using FishNet.Object.Helping;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Serializing.Helping;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -460,7 +459,8 @@ namespace FishNet.Object.Synchronizing
              * asServer is true.
              * Is not network initialized.
              * asServer is false, and server is not started. */
-            if ((asServer && !base.NetworkManager.IsClientStarted) || (!asServer && base.NetworkBehaviour.IsDeinitializing))
+            bool clientStarted = (base.IsNetworkInitialized && base.NetworkManager.IsClientStarted);
+            if ((asServer && !clientStarted) || (!asServer && base.NetworkBehaviour.IsDeinitializing))
             {
                 _value = _initialValue;
                 _valueSetAfterInitialized = false;

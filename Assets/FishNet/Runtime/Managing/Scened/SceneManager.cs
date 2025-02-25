@@ -1,4 +1,4 @@
-﻿// #if !FISHNET_STABLE_MODE
+﻿// #if !STABLE_SCENEMANAGER_DEFINE
 // using FishNet.Connection;
 // using FishNet.Managing.Client;
 // using FishNet.Managing.Logging;

@@ -354,7 +354,7 @@ namespace FishNet.Managing.Server
                 return;
 #if DEVELOPMENT
             //If development but not set to development return.
-            else if (_remoteClientTimeout != RemoteTimeoutType.Development)
+            if (_remoteClientTimeout != RemoteTimeoutType.Development)
                 return;
 #endif
             //Wait two timing intervals to give packets a chance to come through.
@@ -378,7 +378,7 @@ namespace FishNet.Managing.Server
                 _nextClientTimeoutCheckIndex = 0;
 
             //Number of ticks passed for client to be timed out.
-            uint requiredTicks = NetworkManager.TimeManager.TimeToTicks(_remoteClientTimeoutDuration, TickRounding.RoundUp);
+            uint requiredTicks = NetworkManager.TimeManager.TimeToTicks((double)_remoteClientTimeoutDuration, TickRounding.RoundUp);
 
             const float FULL_CHECK_TIME = 2f;
             /* Number of times this is expected to run every 2 seconds.
@@ -497,7 +497,7 @@ namespace FishNet.Managing.Server
              * before the server completes it's actions. */
             Started = AnyServerStarted();
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
-            //If no servers are started then reset match conditions.
+            //If no servers are started then reset data.
             if (!Started)
             {
                 MatchCondition.StoreCollections(NetworkManager);
@@ -505,6 +505,8 @@ namespace FishNet.Managing.Server
                 Objects.DespawnWithoutSynchronization(true);
                 //Clear all clients.
                 Clients.Clear();
+                //Clients as list.
+                _clientsList.Clear();
             }
             Objects.OnServerConnectionState(args);
 

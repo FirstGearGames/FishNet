@@ -960,7 +960,7 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Converts time to ticks.
         /// </summary>
-        /// <param name="time">Time to convert.</param>
+        /// <param name="time">Time to convert as decimal.</param>
         /// <returns></returns>
         
         public uint TimeToTicks(double time, TickRounding rounding = TickRounding.RoundNearest)
@@ -974,22 +974,26 @@ namespace FishNet.Managing.Timing
             else
                 return (uint)Math.Ceiling(result);
         }
+
+        /// <summary>
+        /// Converts time to ticks.
+        /// </summary>
+        /// <param name="time">Time to convert as whole (milliseconds)</param>
+        /// <returns></returns>
+        
+        public uint TimeToTicks(long time, TickRounding rounding = TickRounding.RoundNearest)
+        {
+            double dTime = ((double)time / 1000d);
+            return TimeToTicks(dTime, rounding);
+        }
+
         
         /// <summary>
         /// Converts time to a PreciseTick.
         /// </summary>
         /// <param name="time">Time to convert.</param>
         /// <returns></returns>
-        public PreciseTick TimeToPreciseTick(double time)
-        {
-            double delta = TickDelta;
-            
-            uint ticks = (uint)Math.Floor(time / delta);
-            double percent = (time % delta);
-
-            return new PreciseTick(ticks, percent);
-        }
-
+        public PreciseTick TimeToPreciseTick(double time) => time.AsPreciseTick(TickDelta);
         
         /// <summary>
         /// Estimatedly converts a synchronized tick to what it would be for the local tick.
@@ -1129,7 +1133,9 @@ namespace FishNet.Managing.Timing
             uint lastPacketTick = LastPacketTick.RemoteTick;
             //Set Tick based on difference between localTick and clientTick, added onto lastPacketTick.
             uint prevTick = Tick;
-            uint nextTick = (LocalTick - clientTick) + lastPacketTick;
+            //Added ticks for delay in reading packet.
+            const uint socketReadDelay = 1;
+            uint nextTick = ((LocalTick - clientTick) / 2) + lastPacketTick + socketReadDelay;
             long difference = ((long)nextTick - (long)prevTick);
             Tick = nextTick;
 

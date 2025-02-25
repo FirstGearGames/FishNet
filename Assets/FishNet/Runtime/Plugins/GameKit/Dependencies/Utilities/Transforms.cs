@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class Transforms
     {
         /// <summary>
@@ -68,14 +67,26 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Destroys all children under the specified transform.
         /// </summary>
-        /// <param name="t"></param>
         public static void DestroyChildren(this Transform t, bool destroyImmediately = false)
         {
-            foreach (Transform child in t)
+            //If destroying immediately then the iteration needs to occur only on the top-most children.
+            if (destroyImmediately)
             {
-                if (destroyImmediately)
-                    MonoBehaviour.DestroyImmediate(child.gameObject);
-                else
+                List<Transform> children = CollectionCaches<Transform>.RetrieveList();
+                int childCount = t.childCount;
+
+                for (int i = 0; i < childCount; i++)
+                    children.Add(t.GetChild(i));
+
+                foreach (Transform child in children)
+                    UnityEngine.Object.DestroyImmediate(child);
+                
+                CollectionCaches<Transform>.Store(children);
+            }
+            //Iterate using Unitys enumerator.
+            else
+            {
+                foreach (Transform child in t)
                     UnityEngine.Object.Destroy(child.gameObject);
             }
         }
@@ -83,7 +94,6 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Destroys all children of a type under the specified transform.
         /// </summary>
-        /// <param name="t"></param>
         public static void DestroyChildren<T>(this Transform t, bool destroyImmediately = false) where T : MonoBehaviour
         {
             T[] children = t.GetComponentsInChildren<T>();
@@ -95,7 +105,6 @@ namespace GameKit.Dependencies.Utilities
                     UnityEngine.Object.Destroy(child.gameObject);
             }
         }
-
 
         /// <summary>
         /// Gets components in children and optionally parent.
@@ -130,6 +139,7 @@ namespace GameKit.Dependencies.Utilities
         {
             return (localSpace) ? t.localPosition : t.position;
         }
+
         /// <summary>
         /// Returns the rotation of this transform.
         /// </summary>
@@ -137,6 +147,7 @@ namespace GameKit.Dependencies.Utilities
         {
             return (localSpace) ? t.localRotation : t.rotation;
         }
+
         /// <summary>
         /// Returns the scale of this transform.
         /// </summary>
@@ -157,6 +168,7 @@ namespace GameKit.Dependencies.Utilities
             else
                 t.position = pos;
         }
+
         /// <summary>
         /// Sets the position of this transform.
         /// </summary>
@@ -169,6 +181,7 @@ namespace GameKit.Dependencies.Utilities
             else
                 t.rotation = rot;
         }
+
         /// <summary>
         /// Sets the position of this transform.
         /// </summary>
@@ -178,8 +191,5 @@ namespace GameKit.Dependencies.Utilities
         {
             t.localScale = scale;
         }
-
     }
-
-
 }

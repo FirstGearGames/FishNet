@@ -428,7 +428,7 @@ namespace FishNet.Object.Prediction
                     t.localRotation = Quaternion.RotateTowards(t.localRotation, rotGoal, rate * delta);
             }
 
-            if (movedProperties.FastContains(TransformPropertiesFlag.LocalScale))
+            if (movedProperties.FastContains(TransformPropertiesFlag.Scale))
             {
                 rate = scaleRate;
                 if (rate == MoveRatesCls.INSTANT_VALUE)
@@ -478,7 +478,7 @@ namespace FishNet.Object.Prediction
                     t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, rate * delta);
             }
 
-            if (movedProperties.FastContains(TransformPropertiesFlag.LocalScale))
+            if (movedProperties.FastContains(TransformPropertiesFlag.Scale))
             {
                 rate = scaleRate;
                 if (rate == MoveRatesCls.INSTANT_VALUE)

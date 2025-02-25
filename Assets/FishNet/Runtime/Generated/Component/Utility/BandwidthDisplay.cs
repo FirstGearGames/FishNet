@@ -180,8 +180,8 @@ namespace FishNet.Component.Utility
             string nl = System.Environment.NewLine;
             string result = string.Empty;
 
-            _clientAverages.AddIn(obj.ToServerBytes);
-            _clientAverages.AddOut(obj.FromServerBytes);
+            _clientAverages.AddIn(obj.FromServerBytes);
+            _clientAverages.AddOut(obj.ToServerBytes);
 
             if (_showIncoming)
                 result += $"Client In: {NetworkTraficStatistics.FormatBytesToLargest(_clientAverages.GetAverage(inAverage: true))}/s{nl}";

@@ -1,65 +1,48 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using FishNet.Managing;
 using UnityEngine;
 
 namespace FishNet.Serializing.Helping
 {
     [System.Flags]
-    public enum VariableDeltaQuaternionFlag : byte
+    internal enum QuaternionDeltaPrecisionFlag : byte
     {
         Unset = 0,
-        LargestIsX = (1 << 0),
-        LargestIsY = (1 << 1),
-        LargestIsZ = (1 << 2),
+        
+        /* Its probably safe to discard '-IsNegative'
+         * and replace with a single 'largest is negative'.
+         * Doing this would still use the same amount of bytes
+         * though, and would require a refactor on this and the delta
+         * compression class. */
+        NextAIsLarger = (1 << 0),
+        NextBIsLarger = (1 << 1),
+        NextCIsLarger = (1 << 2),
+        NextDIsNegative = (1 << 3),
+        
+        LargestIsX = (1 << 4),
+        LargestIsY = (1 << 5),
+        LargestIsZ = (1 << 6),
         //This flag can be discarded via refactor if we need it later.
-        LargestIsW = (1 << 3),
-        NextAIsLarger = (1 << 4),
-        NextBIsLarger = (1 << 5),
-        NextCIsLarger = (1 << 6),
-        LargestIsNegative = (1 << 7),
+        LargestIsW = (1 << 7),
     }
 
-    public static class VariableDeltaQuaternionFlagExtensions
+    internal static class QuaternionDeltaPrecisionFlagExtensions
     {
         /// <summary>
         /// Returns if whole contains part.
         /// </summary>
-        internal static bool FastContains(this VariableDeltaQuaternionFlag whole, VariableDeltaQuaternionFlag part) => (whole & part) == part;
+        internal static bool FastContains(this QuaternionDeltaPrecisionFlag whole, QuaternionDeltaPrecisionFlag part) => (whole & part) == part;
     }
 
-    public struct VariableOutput
-    {
-        public uint AWholeDifference;
-        public uint BWholeDifference;
-        public uint CWholeDifference;
-        public uint DWholeDifference;
-
-        public float AFloatDifference;
-        public float BFloatDifference;
-        public float CFloatDifference;
-        public float DFloatDifference;
-
-        public bool NextALarger;
-        public bool NextBLarger;
-        public bool NextCLarger;
-
-        public bool LargestIsX;
-        public bool LargestIsY;
-        public bool LargestIsZ;
-        public bool LargestIsW;
-
-        public bool LargestIsNegative;
-    }
-
-    public static class QuaternionDeltaVariableCompression
+    public static class QuaternionDeltaPrecisionCompression
     {
         /// <summary>
         /// Write a compressed a delta Quaternion using a variable precision.
         /// </summary>
-        public static void Compress(Writer writer, Quaternion valueA, Quaternion valueB, out VariableOutput output, float precision = 0.001f)
+        public static void Compress(Writer writer, Quaternion valueA, Quaternion valueB, float precision = 0.001f)
         {
-            output = new();
-
             uint multiplier = (uint)Mathf.RoundToInt(1f / precision);
 
             //Position where the next byte is to be written.
@@ -67,7 +50,7 @@ namespace FishNet.Serializing.Helping
             //Skip one byte so the flags can be inserted after everything else is writteh.
             writer.Skip(1);
 
-            VariableDeltaQuaternionFlag flags = VariableDeltaQuaternionFlag.Unset;
+            QuaternionDeltaPrecisionFlag flags = QuaternionDeltaPrecisionFlag.Unset;
             long largestUValue = -1;
 
             /* This becomes true if the largest difference is negative on valueB.
@@ -76,19 +59,19 @@ namespace FishNet.Serializing.Helping
 
             /* Set next is larger values, and output differneces. */
             bool xIsLarger = GetNextIsLarger(valueA.x, valueB.x, multiplier, out uint xDifference);
-            UpdateLargestValues(xDifference, valueB.x, VariableDeltaQuaternionFlag.LargestIsX);
+            UpdateLargestValues(xDifference, valueB.x, QuaternionDeltaPrecisionFlag.LargestIsX);
 
             bool yIsLarger = GetNextIsLarger(valueA.y, valueB.y, multiplier, out uint yDifference);
-            UpdateLargestValues(yDifference, valueB.y, VariableDeltaQuaternionFlag.LargestIsY);
+            UpdateLargestValues(yDifference, valueB.y, QuaternionDeltaPrecisionFlag.LargestIsY);
 
             bool zIsLarger = GetNextIsLarger(valueA.z, valueB.z, multiplier, out uint zDifference);
-            UpdateLargestValues(zDifference, valueB.z, VariableDeltaQuaternionFlag.LargestIsZ);
+            UpdateLargestValues(zDifference, valueB.z, QuaternionDeltaPrecisionFlag.LargestIsZ);
 
             bool wIsLarger = GetNextIsLarger(valueA.w, valueB.w, multiplier, out uint wDifference);
-            UpdateLargestValues(wDifference, valueB.w, VariableDeltaQuaternionFlag.LargestIsW);
-
+            UpdateLargestValues(wDifference, valueB.w, QuaternionDeltaPrecisionFlag.LargestIsW);
+            
             //If flags are unset something went wrong. This should never be possible.
-            if (flags == VariableDeltaQuaternionFlag.Unset)
+            if (flags == QuaternionDeltaPrecisionFlag.Unset)
             {
                 //Write that flags are unset and error.
                 writer.InsertUInt8Unpacked((byte)flags, startPosition);
@@ -97,7 +80,7 @@ namespace FishNet.Serializing.Helping
             }
 
             //Updates largest values and flags.
-            void UpdateLargestValues(uint checkedValue, float fValue, VariableDeltaQuaternionFlag newFlag)
+            void UpdateLargestValues(uint checkedValue, float fValue, QuaternionDeltaPrecisionFlag newFlag)
             {
                 if (checkedValue > largestUValue)
                 {
@@ -110,57 +93,38 @@ namespace FishNet.Serializing.Helping
             /* Write all but largest. */
 
             //X is largest.
-            if (flags == VariableDeltaQuaternionFlag.LargestIsX)
-                WriteValues(yDifference, yIsLarger, zDifference, zIsLarger, wDifference, wIsLarger, ref output);
+            if (flags == QuaternionDeltaPrecisionFlag.LargestIsX)
+                WriteValues(yDifference, yIsLarger, zDifference, zIsLarger, wDifference, wIsLarger);
             //Y is largest.
-            else if (flags == VariableDeltaQuaternionFlag.LargestIsY)
-                WriteValues(xDifference, xIsLarger, zDifference, zIsLarger, wDifference, wIsLarger, ref output);
+            else if (flags == QuaternionDeltaPrecisionFlag.LargestIsY)
+                WriteValues(xDifference, xIsLarger, zDifference, zIsLarger, wDifference, wIsLarger);
             //Z is largest.
-            else if (flags == VariableDeltaQuaternionFlag.LargestIsZ)
-                WriteValues(xDifference, xIsLarger, yDifference, yIsLarger, wDifference, wIsLarger, ref output);
+            else if (flags == QuaternionDeltaPrecisionFlag.LargestIsZ)
+                WriteValues(xDifference, xIsLarger, yDifference, yIsLarger, wDifference, wIsLarger);
             //W is largest.
-            else if (flags == VariableDeltaQuaternionFlag.LargestIsW)
-                WriteValues(xDifference, xIsLarger, yDifference, yIsLarger, zDifference, zIsLarger, ref output);
+            else if (flags == QuaternionDeltaPrecisionFlag.LargestIsW)
+                WriteValues(xDifference, xIsLarger, yDifference, yIsLarger, zDifference, zIsLarger);
 
             /* This must be set after values are written since the enum
              * checks above use ==, rather than a bit comparer. */
             if (largestIsNegative)
-                flags |= VariableDeltaQuaternionFlag.LargestIsNegative;
+                flags |= QuaternionDeltaPrecisionFlag.NextDIsNegative;
 
-            void WriteValues(uint aValue, bool aIsLarger, uint bValue, bool bIsLarger, uint cValue, bool cIsLarger, ref VariableOutput lOutput)
+            void WriteValues(uint aValue, bool aIsLarger, uint bValue, bool bIsLarger, uint cValue, bool cIsLarger)
             {
                 writer.WriteUnsignedPackedWhole(aValue);
                 if (aIsLarger)
-                    flags |= VariableDeltaQuaternionFlag.NextAIsLarger;
+                    flags |= QuaternionDeltaPrecisionFlag.NextAIsLarger;
 
                 writer.WriteUnsignedPackedWhole(bValue);
                 if (bIsLarger)
-                    flags |= VariableDeltaQuaternionFlag.NextBIsLarger;
+                    flags |= QuaternionDeltaPrecisionFlag.NextBIsLarger;
 
                 writer.WriteUnsignedPackedWhole(cValue);
                 if (cIsLarger)
-                    flags |= VariableDeltaQuaternionFlag.NextCIsLarger;
-
-                lOutput.AWholeDifference = aValue;
-                lOutput.BWholeDifference = bValue;
-                lOutput.CWholeDifference = cValue;
-
-                lOutput.AFloatDifference = ((float)aValue / multiplier);
-                lOutput.BFloatDifference = ((float)bValue / multiplier);
-                lOutput.CFloatDifference = ((float)cValue / multiplier);
-
-                lOutput.NextALarger = aIsLarger;
-                lOutput.NextBLarger = bIsLarger;
-                lOutput.NextCLarger = cIsLarger;
+                    flags |= QuaternionDeltaPrecisionFlag.NextCIsLarger;
             }
-
-            output.LargestIsX = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsX);
-            output.LargestIsY = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsY);
-            output.LargestIsZ = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsZ);
-            output.LargestIsW = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsW);
-
-            output.LargestIsNegative = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsNegative);
-
+            
             //Insert flags.
             writer.InsertUInt8Unpacked((byte)flags, startPosition);
         }
@@ -168,16 +132,14 @@ namespace FishNet.Serializing.Helping
         /// <summary>
         /// Write a compressed a delta Quaternion using a variable precision.
         /// </summary>
-        public static Quaternion Decompress(Reader reader, Quaternion valueA, out VariableOutput output, float precision = 0.001f)
+        public static Quaternion Decompress(Reader reader, Quaternion valueA, float precision = 0.001f)
         {
-            output = new();
-
             uint multiplier = (uint)Mathf.RoundToInt(1f / precision);
 
-            VariableDeltaQuaternionFlag flags = (VariableDeltaQuaternionFlag)reader.ReadUInt8Unpacked();
+            QuaternionDeltaPrecisionFlag flags = (QuaternionDeltaPrecisionFlag)reader.ReadUInt8Unpacked();
 
             //Unset flags mean something went wrong in writing.
-            if (flags == VariableDeltaQuaternionFlag.Unset)
+            if (flags == QuaternionDeltaPrecisionFlag.Unset)
             {
                 NetworkManagerExtensions.LogError($"Unset flags were returned.");
                 return default;
@@ -194,35 +156,18 @@ namespace FishNet.Serializing.Helping
             uint bWholeDifference = (uint)reader.ReadUnsignedPackedWhole();
             uint cWholeDifference = (uint)reader.ReadUnsignedPackedWhole();
 
+            //Debug.Log($"Read  {aWholeDifference}, {bWholeDifference}, {cWholeDifference}. ValueA {valueA}");
+
             float aFloatDifference = (float)aWholeDifference / multiplier;
             float bFloatDifference = (float)bWholeDifference / multiplier;
             float cFloatDifference = (float)cWholeDifference / multiplier;
 
-            output.AWholeDifference = aWholeDifference;
-            output.BWholeDifference = bWholeDifference;
-            output.CWholeDifference = cWholeDifference;
-
-            output.AFloatDifference = aFloatDifference;
-            output.BFloatDifference = bFloatDifference;
-            output.CFloatDifference = cFloatDifference;
-
-            output.NextALarger = flags.FastContains(VariableDeltaQuaternionFlag.NextAIsLarger);
-            output.NextBLarger = flags.FastContains(VariableDeltaQuaternionFlag.NextBIsLarger);
-            output.NextCLarger = flags.FastContains(VariableDeltaQuaternionFlag.NextCIsLarger);
-
-            output.LargestIsX = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsX);
-            output.LargestIsY = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsY);
-            output.LargestIsZ = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsZ);
-            output.LargestIsW = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsW);
-
-            output.LargestIsNegative = flags.FastContains(VariableDeltaQuaternionFlag.LargestIsNegative);
-
             //Invert differences as needed so they can all be added onto the previous value as negative or positive.
-            if (!flags.FastContains(VariableDeltaQuaternionFlag.NextAIsLarger))
+            if (!flags.FastContains(QuaternionDeltaPrecisionFlag.NextAIsLarger))
                 aFloatDifference *= -1f;
-            if (!flags.FastContains(VariableDeltaQuaternionFlag.NextBIsLarger))
+            if (!flags.FastContains(QuaternionDeltaPrecisionFlag.NextBIsLarger))
                 bFloatDifference *= -1f;
-            if (!flags.FastContains(VariableDeltaQuaternionFlag.NextCIsLarger))
+            if (!flags.FastContains(QuaternionDeltaPrecisionFlag.NextCIsLarger))
                 cFloatDifference *= -1f;
 
             float nextA;
@@ -230,29 +175,29 @@ namespace FishNet.Serializing.Helping
             float nextC;
 
             /* Add onto the previous value. */
-            if (flags.FastContains(VariableDeltaQuaternionFlag.LargestIsX))
+            if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsX))
             {
                 nextA = valueA.y + aFloatDifference;
                 nextB = valueA.z + bFloatDifference;
                 nextC = valueA.w + cFloatDifference;
             }
-            else if (flags.FastContains(VariableDeltaQuaternionFlag.LargestIsY))
+            else if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsY))
             {
                 nextA = valueA.x + aFloatDifference;
                 nextB = valueA.z + bFloatDifference;
                 nextC = valueA.w + cFloatDifference;
             }
-            else if (flags.FastContains(VariableDeltaQuaternionFlag.LargestIsZ))
+            else if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsZ))
             {
                 nextA = valueA.x + aFloatDifference;
-                nextB = valueA.z + bFloatDifference;
+                nextB = valueA.y + bFloatDifference;
                 nextC = valueA.w + cFloatDifference;
             }
             /* We do not really need the 'largest is W' since we know if
              * the other 3 are not the largest, then the remaining must be.
              * We have the available packing to use though, so use them
              * for now. */
-            else if (flags.FastContains(VariableDeltaQuaternionFlag.LargestIsW))
+            else if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsW))
             {
                 nextA = valueA.x + aFloatDifference;
                 nextB = valueA.y + bFloatDifference;
@@ -274,15 +219,16 @@ namespace FishNet.Serializing.Helping
                 nextD *= -1f;
 
             nextD = (float)Math.Sqrt(nextD);
-            
+
             //Get magnitude of all values.
             static float GetMagnitude(float a, float b, float c, float d = 0f) => (a * a + b * b + c * c + d * d);
 
-            if (nextD >= 0f && flags.FastContains(VariableDeltaQuaternionFlag.LargestIsNegative))
+            if (nextD >= 0f && flags.FastContains(QuaternionDeltaPrecisionFlag.NextDIsNegative))
                 nextD *= -1f;
 
             if (!TryNormalize())
                 return default;
+
             //Normalizes next values.
             bool TryNormalize()
             {
@@ -300,15 +246,15 @@ namespace FishNet.Serializing.Helping
 
                 return true;
             }
-            
+
             /* Add onto the previous value. */
-            if (flags.FastContains(VariableDeltaQuaternionFlag.LargestIsX))
+            if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsX))
                 return new Quaternion(nextD, nextA, nextB, nextC);
-            else if (flags.FastContains(VariableDeltaQuaternionFlag.LargestIsY))
+            else if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsY))
                 return new Quaternion(nextA, nextD, nextB, nextC);
-            else if (flags.FastContains(VariableDeltaQuaternionFlag.LargestIsZ))
+            else if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsZ))
                 return new Quaternion(nextA, nextB, nextD, nextC);
-            else if (flags.FastContains(VariableDeltaQuaternionFlag.LargestIsW))
+            else if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsW))
                 return new Quaternion(nextA, nextB, nextC, nextD);
             else
                 NetworkManagerExtensions.LogError($"Unhandled Largest flag. Received flags are {flags}.");

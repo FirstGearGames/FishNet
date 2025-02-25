@@ -157,6 +157,7 @@ namespace FishNet.Managing.Client
             }
             else
             {
+                networkObject.SetIsDestroying();
                 networkObject.Deinitialize(asServer: false);
                 NetworkManager.StorePooledInstantiated(networkObject, false);
             }
@@ -299,6 +300,7 @@ namespace FishNet.Managing.Client
                 if (Spawned.TryGetValueIL2CPP(usedObjectId, out NetworkObject nob))
                 {
                     //TODO support pooling. This first requires a rework of the initialization / clientHost message system.
+                    nob.SetIsDestroying(DespawnType.Destroy);
                     UnityEngine.Object.Destroy(nob.gameObject);
                     //nob.Deinitialize(asServer: false);
                     //NetworkManager.StorePooledInstantiated(nob, false);

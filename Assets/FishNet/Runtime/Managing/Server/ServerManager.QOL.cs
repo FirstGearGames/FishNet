@@ -147,7 +147,8 @@ namespace FishNet.Managing.Server
             DespawnType resolvedDespawnType = (!despawnType.HasValue)
                 ? networkObject.GetDefaultDespawnType()
                 : despawnType.Value;
-            Objects.Despawn(networkObject, resolvedDespawnType, true);
+            
+            Objects.Despawn(networkObject, resolvedDespawnType, asServer: true);
         }
 
         /// <summary>

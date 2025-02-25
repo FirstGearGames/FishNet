@@ -821,7 +821,7 @@ namespace FishNet.Component.Transforming
                     //Client auth.
                     if (_clientAuthoritative)
                     {
-                        c.enabled = base.HasAuthority;
+                        c.enabled = base.IsController;
                     }
                     //Server auth.
                     else
@@ -941,7 +941,7 @@ namespace FishNet.Component.Transforming
             //Client auth.
             if (_clientAuthoritative)
             {
-                return base.HasAuthority;
+                return base.IsController;
             }
             //Server auth.
             else
@@ -2341,7 +2341,7 @@ namespace FishNet.Component.Transforming
             if (base.IsServerInitialized)
             {
                 //If no owner, or not client auth.
-                if (base.HasAuthority || !_clientAuthoritative)
+                if (base.IsController || !_clientAuthoritative)
                     ObserversSetSynchronizedProperties(value);
                 else
                     return;

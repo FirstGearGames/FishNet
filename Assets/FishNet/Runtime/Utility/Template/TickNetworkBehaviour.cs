@@ -36,17 +36,24 @@ namespace FishNet.Utility.Template
         /// Last subscription state.
         /// </summary>
         private bool _subscribed;
+        /// <summary>
+        /// TimeManager subscribed to.
+        /// </summary>
+        private TimeManager _timeManager;
 
         internal override void OnStartNetwork_Internal()
         {
+            _timeManager = base.TimeManager;
+            ChangeSubscriptions(subscribe: true);
+            
             base.OnStartNetwork_Internal();
-            ChangeSubscriptions(true);
         }
 
         internal override void OnStopNetwork_Internal()
         {
+            ChangeSubscriptions(subscribe: false);
+            
             base.OnStopNetwork_Internal();
-            ChangeSubscriptions(false);
         }
 
         /// <summary>
@@ -63,7 +70,8 @@ namespace FishNet.Utility.Template
 
         private void ChangeSubscriptions(bool subscribe)
         {
-            TimeManager tm = base.TimeManager;
+            TimeManager tm = _timeManager;
+            
             if (tm == null)
                 return;
             if (subscribe == _subscribed)
@@ -72,28 +80,28 @@ namespace FishNet.Utility.Template
 
             if (subscribe)
             {
-                if (TickCallbackContains(_tickCallbacks, TickCallback.PreTick))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.PreTick))
                     tm.OnPreTick += TimeManager_OnPreTick;
-                if (TickCallbackContains(_tickCallbacks, TickCallback.Tick))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.Tick))
                     tm.OnTick += TimeManager_OnTick;
-                if (TickCallbackContains(_tickCallbacks, TickCallback.PostTick))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.PostTick))
                     tm.OnPostTick += TimeManager_OnPostTick;
-                if (TickCallbackContains(_tickCallbacks, TickCallback.Update))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.Update))
                     tm.OnUpdate += TimeManager_OnUpdate;
-                if (TickCallbackContains(_tickCallbacks, TickCallback.LateUpdate))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.LateUpdate))
                     tm.OnUpdate += TimeManager_OnLateUpdate;
             }
             else
             {
-                if (TickCallbackContains(_tickCallbacks, TickCallback.PreTick))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.PreTick))
                     tm.OnPreTick -= TimeManager_OnPreTick;
-                if (TickCallbackContains(_tickCallbacks, TickCallback.Tick))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.Tick))
                     tm.OnTick -= TimeManager_OnTick;
-                if (TickCallbackContains(_tickCallbacks, TickCallback.PostTick))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.PostTick))
                     tm.OnPostTick -= TimeManager_OnPostTick;
-                if (TickCallbackContains(_tickCallbacks, TickCallback.Update))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.Update))
                     tm.OnUpdate -= TimeManager_OnUpdate;
-                if (TickCallbackContains(_tickCallbacks, TickCallback.LateUpdate))
+                if (TickCallbackFastContains(_tickCallbacks, TickCallback.LateUpdate))
                     tm.OnUpdate -= TimeManager_OnLateUpdate;
             }
         }
@@ -104,6 +112,6 @@ namespace FishNet.Utility.Template
         protected virtual void TimeManager_OnUpdate() { }
         protected virtual void TimeManager_OnLateUpdate() { }
 
-        private bool TickCallbackContains(TickCallback whole, TickCallback part) => ((whole & part) == part);
+        private bool TickCallbackFastContains(TickCallback whole, TickCallback part) => ((whole & part) == part);
     }
 }

@@ -70,7 +70,7 @@ namespace FishNet.Object
         /// <summary>
         /// Invokes the OnStart/StopNetwork.
         /// </summary>
-        internal void InvokeOnNetwork(bool start)
+        internal void InvokeOnNetwork_Internal(bool start)
         {
             if (start)
             {
@@ -106,6 +106,7 @@ namespace FishNet.Object
         {
             _onStopNetworkCalled = true;
             _onStartNetworkCalled = false;
+            
             OnStopNetwork();
         }
         /// <summary>

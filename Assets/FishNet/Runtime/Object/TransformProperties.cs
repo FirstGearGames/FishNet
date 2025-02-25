@@ -144,6 +144,11 @@ namespace FishNet.Object
             IsValid = true;
         }
 
+        public override string ToString()
+        {
+            return $"Position: {Position.ToString()}, Rotation {Rotation.ToString()}, Scale {Scale.ToString()}";
+        }
+
         public TransformProperties(Transform t) : this(t.position, t.rotation, t.localScale) { }
 
         [Obsolete("Use ResetState.")]

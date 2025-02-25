@@ -188,7 +188,7 @@ namespace FishNet.CodeGenerating.Helping
             /* If a global serializer is declared for the type
             * and the method is not the declared serializer then
             * exit early. */
-            if (wp.IsGlobalSerializer(readMr.ReturnType) && readMr.Name.StartsWith(UtilityConstants.GeneratedReaderPrefix))
+            if (wp.DeclaresUseGlobalCustomSerializer(readMr.ReturnType) && readMr.Name.StartsWith(UtilityConstants.GeneratedReaderPrefix))
                 return;
 
             GeneratedReader_OnLoad_MethodDef.RemoveEndRet(base.Session);
@@ -294,7 +294,7 @@ namespace FishNet.CodeGenerating.Helping
             if (readMr != null)
             {
                 TypeReference dataTr = readMr.ReturnType;
-                bool isGlobalSerializer = base.GetClass<WriterProcessor>().IsGlobalSerializer(dataTr);
+                bool isGlobalSerializer = base.GetClass<WriterProcessor>().DeclaresUseGlobalCustomSerializer(dataTr);
 
                 //Make a local variable. 
                 createdVariableDef = base.GetClass<GeneralHelper>().CreateVariable(methodDef, readTypeRef);
@@ -340,7 +340,7 @@ namespace FishNet.CodeGenerating.Helping
             if (readMr != null)
             {
                 WriterProcessor wp = base.GetClass<WriterProcessor>();
-                bool isGlobalSerializer = (wp.IsGlobalSerializer(encasingValueVd.VariableType) || wp.IsGlobalSerializer(memberValueFr.FieldType));
+                bool isGlobalSerializer = (wp.DeclaresUseGlobalCustomSerializer(encasingValueVd.VariableType) || wp.DeclaresUseGlobalCustomSerializer(memberValueFr.FieldType));
 
                 ILProcessor processor = readerMd.Body.GetILProcessor();
                 /* How to load object instance. If it's a structure
@@ -448,7 +448,7 @@ namespace FishNet.CodeGenerating.Helping
         internal bool HasDeserializer(TypeReference typeRef, bool createMissing)
         {
             bool result = (GetInstancedReadMethodReference(typeRef) != null) ||
-                (GetStaticReadMethodReference(typeRef) != null);
+                (GetStaticReadMethodReference(typeRef) != null) || base.GetClass<WriterProcessor>().DeclaresUseGlobalCustomSerializer(typeRef);
 
             if (!result && createMissing)
             {

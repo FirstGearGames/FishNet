@@ -166,9 +166,9 @@ namespace FishNet.Object
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartNetwork", " Use (base.Owner.IsLocalClient || (base.IsServerInitialized && !Owner.Isvalid) instead.")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Start", "")]
-        public bool HasAuthority => (_networkObjectCache.IsOwner || (_networkObjectCache.IsServerInitialized && !_networkObjectCache.Owner.IsValid));
-        [Obsolete("Use HasAuthority")] //Remove v5
-        public bool IsOwnerOrServer => HasAuthority;
+        public bool IsController => (_networkObjectCache.IsOwner || (_networkObjectCache.IsServerInitialized && !_networkObjectCache.Owner.IsValid));
+        [Obsolete("Use IsController.")]
+        public bool HasAuthority => IsController;
         /// <summary>
         /// Owner of this object.
         /// </summary>

@@ -373,6 +373,16 @@ namespace FishNet.Managing.Server
         /// <param name="nobs"></param>
         private void InitializeRootNetworkObjects(List<NetworkObject> nobs)
         {
+            /* First update the nested status on all nobs, as well
+             * set them as not initialized. This is done as some scene objets might be prefabs
+             * that were changed in scene but have not had the prefab settings updated to those
+             * changes. */
+            foreach (NetworkObject nob in nobs) 
+            {
+                nob.SetIsNestedThroughTraversal();
+                nob.UnsetInitializedValuesSet();
+            }
+            
             //Initialize sceneNobs cache, but do not invoke callbacks till next frame.
             foreach (NetworkObject nob in nobs)
             {

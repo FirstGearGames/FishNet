@@ -258,7 +258,7 @@ namespace FishNet.CodeGenerating.Helping
             /* If a global serializer is declared for the type
              * and the method is not the declared serializer then
              * exit early. */
-            if (IsGlobalSerializer(writeMr.Parameters[1].ParameterType) && writeMr.Name.StartsWith(UtilityConstants.GeneratedWriterPrefix))
+            if (DeclaresUseGlobalCustomSerializer(writeMr.Parameters[1].ParameterType) && writeMr.Name.StartsWith(UtilityConstants.GeneratedWriterPrefix))
                 return;
 
             //Check if ret already exist, if so remove it; ret will be added on again in this method.
@@ -314,7 +314,7 @@ namespace FishNet.CodeGenerating.Helping
         internal bool HasSerializer(TypeReference typeRef, bool createMissing)
         {
             bool result = (GetInstancedWriteMethodReference(typeRef) != null) ||
-                          (GetStaticWriteMethodReference(typeRef) != null);
+                          (GetStaticWriteMethodReference(typeRef) != null) || DeclaresUseGlobalCustomSerializer(typeRef);
 
             if (!result && createMissing)
             {
@@ -522,7 +522,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Returns if a type should use a declared/custom serializer globally.
         /// </summary>
-        public bool IsGlobalSerializer(TypeReference dataTypeRef)
+        public bool DeclaresUseGlobalCustomSerializer(TypeReference dataTypeRef)
         {
             return dataTypeRef.CachedResolve(base.Session).HasCustomAttribute<UseGlobalCustomSerializerAttribute>();
         }
@@ -538,7 +538,7 @@ namespace FishNet.CodeGenerating.Helping
 
             if (writeMr != null)
             {
-                bool isGlobalSerializer = IsGlobalSerializer(valueParameterDef.ParameterType);
+                bool declaresUseGlobalSerializer = DeclaresUseGlobalCustomSerializer(valueParameterDef.ParameterType);
 
                 if (pooledWriterDef is VariableDefinition)
                 {
@@ -567,7 +567,7 @@ namespace FishNet.CodeGenerating.Helping
                     writeMr = writeMr.GetMethodReference(base.Session, genericTr);
                 }
 
-                if (isGlobalSerializer)
+                if (declaresUseGlobalSerializer)
                 {
                     //Switch out to use WriteUnpacked<T> instead.
                     writeMr = base.GetClass<WriterImports>().Writer_Write_MethodRef.GetMethodReference(base.Session, valueTr);
@@ -604,7 +604,7 @@ namespace FishNet.CodeGenerating.Helping
         {
             if (writeMr != null)
             {
-                bool isGlobalSerializer = (IsGlobalSerializer(memberValueFd.FieldType) || IsGlobalSerializer(encasingValuePd.ParameterType));
+                bool declaresUseGlobalSerializer = (DeclaresUseGlobalCustomSerializer(memberValueFd.FieldType) || DeclaresUseGlobalCustomSerializer(encasingValuePd.ParameterType));
 
                 ILProcessor processor = writerMd.Body.GetILProcessor();
                 ParameterDefinition writerPd = writerMd.Parameters[0];
@@ -639,7 +639,7 @@ namespace FishNet.CodeGenerating.Helping
                  * across assemblies, but at runtime we can make sure to favor the
                  * created one as described above. */
                 //True if has Write prefix for generated writers.
-                if (isGlobalSerializer)
+                if (declaresUseGlobalSerializer)
                 {
                     //Switch out to use WriteUnpacked<T> instead.
                     TypeReference genericTr = base.ImportReference(memberValueFd.FieldType);

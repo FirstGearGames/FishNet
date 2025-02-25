@@ -27,11 +27,12 @@ namespace FishNet.Managing.Timing
         /// Maximum value a percent can be as a byte.
         /// </summary>
         public const byte MAXIMUM_BYTE_PERCENT = 100;
+
         /// <summary>
         /// Value to use when a precise tick is unset.
         /// </summary>
         public static PreciseTick GetUnsetValue() => new(TimeManager.UNSET_TICK, (byte)0);
-        
+
         /// <summary>
         /// Creates a precise tick where the percentage is a byte between 0 and 100.
         /// </summary>
@@ -85,7 +86,6 @@ namespace FishNet.Managing.Timing
 
         public static bool operator >(PreciseTick a, PreciseTick b)
         {
-
             if (b.Tick > a.Tick) return false;
             if (a.Tick > b.Tick) return true;
             //if here ticks are the same.
@@ -96,10 +96,9 @@ namespace FishNet.Managing.Timing
 
         public bool Equals(PreciseTick other) => (Tick == other.Tick && PercentAsByte == other.PercentAsByte);
 
-        public override bool Equals(object obj)=> obj is PreciseTick other && Equals(other);
+        public override bool Equals(object obj) => obj is PreciseTick other && Equals(other);
 
         public override int GetHashCode() => HashCode.Combine(Tick, PercentAsDouble, PercentAsByte);
-        
     }
 
     public static class PreciseTickExtensions
@@ -112,22 +111,12 @@ namespace FishNet.Managing.Timing
         /// <returns></returns>
         public static PreciseTick Add(this PreciseTick pt, PreciseTick value, double delta)
         {
-            double percent = (pt.PercentAsDouble + value.PercentAsDouble);
-            ulong tick = (pt.Tick + value.Tick);
+            double ptDouble = pt.AsDouble(delta);
+            double valueDouble = value.AsDouble(delta);
 
-            if (percent > PreciseTick.MAXIMUM_DOUBLE_PERCENT)
-            {
-                tick++;
-                percent -= PreciseTick.MAXIMUM_DOUBLE_PERCENT;
-            }
+            double next = (ptDouble + valueDouble);
 
-            if (tick > uint.MaxValue)
-            {
-                tick = uint.MaxValue;
-                percent = 0d;
-            }
-
-            return new PreciseTick((uint)tick, percent);
+            return next.AsPreciseTick(delta);
         }
 
         /// <summary>
@@ -138,25 +127,44 @@ namespace FishNet.Managing.Timing
         /// <returns></returns>
         public static PreciseTick Subtract(this PreciseTick pt, PreciseTick value, double delta)
         {
-            double percent = (pt.PercentAsDouble - value.PercentAsDouble);
-            long tick = (pt.Tick - value.Tick);
+            double ptDouble = pt.AsDouble(delta);
+            double valueDouble = value.AsDouble(delta);
 
-            // Percentage is negative so subtract an additional tick and absolute percentage.
-            if (percent < 0d)
-            {
-                tick--;
-                percent += PreciseTick.MAXIMUM_DOUBLE_PERCENT;
-            }
+            double remainder = (ptDouble - valueDouble);
 
-            if (tick < 0)
-            {
-                tick = 0;
-                percent = 0d;
-            }
-
-            return new PreciseTick((uint)tick, percent);
+            return remainder.AsPreciseTick(delta);
         }
-        
+
+        /// <summary>
+        /// Converts a PreciceTick to a double.
+        /// </summary>
+        /// <param name="delta">Tick delta.</param>
+        /// <returns></returns>
+        public static double AsDouble(this PreciseTick pt, double delta)
+        {
+            return ((double)pt.Tick * delta) + (pt.PercentAsDouble * delta);
+        }
+
+        /// <summary>
+        /// Converts a double to a PreciseTick.
+        /// </summary>
+        /// <param name="delta">Tick delta.</param>
+        /// <returns></returns>
+        public static PreciseTick AsPreciseTick(this double ptDouble, double delta)
+        {
+            if (ptDouble <= 0)
+                return new(0, 0);
+            
+            ulong whole = (ulong)Math.Floor(ptDouble / delta);
+            //Overflow.
+            if (whole >= uint.MaxValue)
+                return PreciseTick.GetUnsetValue();
+            
+            double remainder = (ptDouble % delta);
+
+            double percent = (remainder / delta);
+            return new((uint)whole, percent);
+        }
     }
 
     public static class PreciseTickSerializer

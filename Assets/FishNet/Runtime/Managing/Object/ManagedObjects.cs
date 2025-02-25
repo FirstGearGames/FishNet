@@ -91,7 +91,7 @@ namespace FishNet.Managing.Object
             if (nob == null)
                 return;
 
-            RemoveFromSpawned(nob, true, asServer);
+            RemoveFromSpawned(nob, unexpectedlyDestroyed: true, asServer);
         }
 
         /// <summary>
@@ -169,6 +169,7 @@ namespace FishNet.Managing.Object
                 }
             }
 
+            nob.SetIsDestroying(despawnType);
             //Deinitialize to invoke callbacks.
             nob.Deinitialize(asServer);
             //Remove from match condition only if server.
@@ -287,6 +288,7 @@ namespace FishNet.Managing.Object
         /// <param name="nob"></param>
         protected virtual void DespawnWithoutSynchronization(NetworkObject nob, bool asServer, DespawnType despawnType, bool removeFromSpawned)
         {
+            nob.SetIsDestroying(despawnType);
             nob.Deinitialize(asServer);
             /* Only run if asServer, or not
              * asServer and server isn't running. This
@@ -296,7 +298,7 @@ namespace FishNet.Managing.Object
             {
                 if (removeFromSpawned)
                     RemoveFromSpawned(nob, false, asServer);
-                if (nob.IsSceneObject)
+                if (nob.IsSceneObject || nob.IsInitializedNested)
                 {
                     nob.gameObject.SetActive(false);
                 }
