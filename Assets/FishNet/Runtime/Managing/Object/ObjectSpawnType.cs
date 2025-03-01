@@ -26,6 +26,10 @@ namespace FishNet.Managing.Object
         /// Indicates the receiver is the predicted spawner.
         /// </summary>
         IsPredictedSpawner = 16,
+        /// <summary>
+        /// Indicates the requested prefab as unavailable until notice.
+        /// </summary>
+        IsInstantiateAsync = 32
     }
 
     [APIExclude]

@@ -251,6 +251,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     if (assetType != goType)
                         continue;
 
+
                     NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(item);
                     if (CanAddNetworkObject(nob, settings))
                     {
@@ -329,6 +330,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             Stopwatch sw = (log) ? Stopwatch.StartNew() : null;
             List<NetworkObject> foundNobs = new();
             HashSet<string> excludedPaths = new(settings.ExcludedFolders);
+            bool dirtiedAnyNobs = false;
 
             //If searching the entire project.
             if (settings.SearchScope == (int)SearchScopeType.EntireProject)
@@ -336,6 +338,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 foreach (string path in GetPrefabFiles("Assets", excludedPaths, true))
                 {
                     NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(path);
+                    dirtiedAnyNobs = nob?.SetUnityAssetGuidAndDirty(AssetDatabase.AssetPathToGUID(path)) == true;
                     if (CanAddNetworkObject(nob, settings))
                         foundNobs.Add(nob);
                 }
@@ -355,6 +358,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     foreach (string path in GetPrefabFiles(sf.Path, excludedPaths, sf.Recursive))
                     {
                         NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(path);
+                        dirtiedAnyNobs = nob?.SetUnityAssetGuidAndDirty(AssetDatabase.AssetPathToGUID(path)) == true;
                         if (CanAddNetworkObject(nob, settings))
                             foundNobs.Add(nob);
                     }
@@ -366,13 +370,16 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 UnityDebug.LogError($"{settings.SearchScope} is not handled; default prefabs will not generator properly.");
             }
 
+            if (dirtiedAnyNobs)
+                AssetDatabase.SaveAssets();
+
             DefaultPrefabObjects prefabCollection = GetDefaultPrefabObjects(settings);
             //No need to error if not found, GetDefaultPrefabObjects will throw.
             if (prefabCollection == null)
-                return;
+                return;                
 
-            //Clear and add built list.
-            prefabCollection.Clear();
+                //Clear and add built list.
+                prefabCollection.Clear();
             prefabCollection.AddObjects(foundNobs, checkForDuplicates: false, initializeAdded);
             bool dirtied = prefabCollection.SetAssetPathHashes(0);
 

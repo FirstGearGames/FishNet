@@ -3,6 +3,7 @@ using FishNet.Managing.Object;
 using FishNet.Object;
 using System;
 using UnityEngine;
+using UnityEngine.XR;
 
 namespace FishNet.Utility.Performance
 {
@@ -23,7 +24,21 @@ namespace FishNet.Utility.Performance
         public virtual void InitializeOnce(NetworkManager nm)
         {
             NetworkManager = nm;
+            nm.RuntimeSpawnablePrefabsWrapper.OnPrefabDiscarded += OnPrefabDiscardedForCollection;
         }
+
+        /// <summary>
+        /// Is called after a prefab is removed from a collection
+        /// </summary>
+        /// <param name="prefabId">PrefabId of the removed prefab</param>
+        /// <param name="collectionId">CollectionId of the collection removed from</param>
+        internal virtual void OnPrefabDiscardedForCollection(ushort collectionId, PrefabId prefabId, bool asServer)
+        {
+            
+        }
+
+
+
         /// <summary>
         /// Returns an object that has been stored. A new object will be created if no stored objects are available.
         /// </summary>
@@ -32,7 +47,7 @@ namespace FishNet.Utility.Performance
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
         [Obsolete("Use RetrieveObject(int, ushort, RetrieveOption, parent, Vector3?, Quaternion? Vector3?, bool) instead.")] //Remove in V5
-        public virtual NetworkObject RetrieveObject(int prefabId, ushort collectionId, Transform parent = null, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool makeActive = true, bool asServer = true) => null;
+        public virtual NetworkObject RetrieveObject(PrefabId prefabId, ushort collectionId, Transform parent = null, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool makeActive = true, bool asServer = true) => null;
         /// <summary>
         /// Returns an object that has been stored. A new object will be created if no stored objects are available.
         /// </summary>
@@ -40,7 +55,7 @@ namespace FishNet.Utility.Performance
         /// <param name="collectionId">CollectionId of the object to return.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
-        public virtual NetworkObject RetrieveObject(int prefabId, ushort collectionId, ObjectPoolRetrieveOption options, Transform parent = null, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool asServer = true) => null;
+        public virtual NetworkObject RetrieveObject(PrefabId prefabId, ushort collectionId, ObjectPoolRetrieveOption options, Transform parent = null, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool asServer = true) => null;
         /// <summary>
         /// Returns a prefab using specified values.
         /// </summary>
@@ -48,10 +63,18 @@ namespace FishNet.Utility.Performance
         /// <param name="collectionId">CollectionId of the object to return.</param>
         /// <param name="asServer">True if being called on the server side.</param>
         /// <returns></returns>
-        public virtual NetworkObject GetPrefab(int prefabId, ushort collectionId, bool asServer)
+        public virtual NetworkObject GetPrefab(PrefabId prefabId, ushort collectionId, bool asServer)
         {
             PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);
-            return po.GetObject(asServer, prefabId);
+            return po.GetObject(prefabId, asServer);
+        }
+        /// <summary>
+        /// Checks if the <see cref="PrefabObjects"/> of collectionId has the specified prefab readily available.
+        /// </summary>
+        public virtual bool CanRetrieveObject(PrefabId prefabId, ushort collectionId, bool asServer)
+        {
+            PrefabObjects po = NetworkManager.GetPrefabObjects<PrefabObjects>(collectionId, false);       
+            return po.HasObject(prefabId, asServer);
         }
         /// <summary>
         /// Stores an object into the pool.

@@ -20,10 +20,18 @@ namespace FishNet.Object
     {
         #region Public.
         /// <summary>
-        /// Networked PrefabId assigned to this Prefab.
+        /// Unity's internal id assigned to every asset file.
         /// </summary>
         [field: SerializeField, HideInInspector]
-        public ushort PrefabId { get; internal set; } = NetworkObject.UNSET_PREFABID_VALUE;
+        public string UnityAssetGuid { get; internal set; } = "";
+
+        /// <summary>
+        /// Networked PrefabId assigned to this Prefab.
+        /// </summary>
+        public PrefabId PrefabId { get { return _prefabId.PrefabId; } internal set { _prefabId.PrefabId = value; } }
+
+        [SerializeField, HideInInspector]
+        private PrefabId.SerializedPrefabId _prefabId;
 
         /// <summary>
         /// Spawn collection to use assigned to this Prefab.
@@ -200,6 +208,20 @@ namespace FishNet.Object
 
                 CreateSceneId(gameObject.scene, force, out _, out _);
             }
+        }
+
+        internal bool SetUnityAssetGuidAndDirty(string guid)
+        {
+            if (Application.isPlaying)
+                return false;
+            if (string.IsNullOrEmpty(guid))
+            {
+                return false;
+            }
+            UnityAssetGuid = guid;
+            EditorUtility.SetDirty(this);
+
+            return true;
         }
 
         private bool IsEditingInPrefabMode()

@@ -23,6 +23,8 @@ namespace FishNet.Managing.Object
         /// </summary>
         public IReadOnlyList<DualPrefab> Prefabs => _prefabs;
 
+        public override bool UsingOnDemandPrefabs() => false;
+
         public override void Clear()
         {
             _prefabs.Clear();
@@ -32,8 +34,13 @@ namespace FishNet.Managing.Object
             return _prefabs.Count;
         }
 
-        public override NetworkObject GetObject(bool asServer, int id)
+        public override NetworkObject GetObject(PrefabId id, bool asServer)
         {
+            if (id.IsNullOrInvalid() || id.IsInt32 != true)
+            {
+                NetworkManagerExtensions.LogError($"PrefabId {id} is null, invalid or is not int.");
+            }
+            
             if (id < 0 || id >= _prefabs.Count)
             {
                 NetworkManagerExtensions.LogError($"PrefabId {id} is out of range.");
@@ -41,7 +48,7 @@ namespace FishNet.Managing.Object
             }
             else
             {
-                DualPrefab dp = _prefabs[id];
+                DualPrefab dp = _prefabs[id.AsInt32];
                 NetworkObject nob = (asServer) ? dp.Server : dp.Client;
                 if (nob == null)
                 {
@@ -63,6 +70,27 @@ namespace FishNet.Managing.Object
                     i--;
                 }
             }
+        }
+        public override bool HasObject(PrefabId id, bool asServer)
+        {
+            if (id.IsNullOrInvalid() || id.IsInt32 != true)
+            {
+                NetworkManagerExtensions.LogError($"PrefabId {id} is null, invalid or is not int.");
+            }
+
+            if (id < 0 || id >= _prefabs.Count)
+            {
+                return false;
+            }
+
+            DualPrefab dp = _prefabs[id.AsInt32];
+            NetworkObject nob = (asServer) ? dp.Server : dp.Client;
+            if (nob == null)
+            {
+                return false;
+            }
+
+            return true;            
         }
 
         public override void AddObject(DualPrefab dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true)
@@ -88,7 +116,7 @@ namespace FishNet.Managing.Object
             }
 
             if (initializeAdded && Application.isPlaying)
-                InitializePrefabRange(0);
+                InitializePrefabs();
         }
 
         private void AddUniqueNetworkObjects(DualPrefab dp)
@@ -103,9 +131,9 @@ namespace FishNet.Managing.Object
         }
 
         
-        public override void InitializePrefabRange(int startIndex)
+        public override void InitializePrefabs()
         {
-            for (int i = startIndex; i < _prefabs.Count; i++)
+            for (int i = 0; i < _prefabs.Count; i++)
             {
                 ManagedObjects.InitializePrefab(_prefabs[i].Server, i, CollectionId);
                 ManagedObjects.InitializePrefab(_prefabs[i].Client, i, CollectionId);

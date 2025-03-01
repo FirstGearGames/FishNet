@@ -43,7 +43,7 @@ namespace FishNet.Object
 
     [DefaultExecutionOrder(short.MinValue + 1)]
     [DisallowMultipleComponent]
-    public partial class NetworkObject : MonoBehaviour, IOrderable
+    public partial class NetworkObject : MonoBehaviour, IOrderable, IExposedAssetGuid
     {
         #region Public.
         /// <summary>

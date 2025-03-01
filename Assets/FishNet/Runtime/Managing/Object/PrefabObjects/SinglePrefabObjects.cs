@@ -1,5 +1,6 @@
 using FishNet.Documenting;
 using FishNet.Object;
+using JetBrains.Annotations;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -12,6 +13,8 @@ namespace FishNet.Managing.Object
     [CreateAssetMenu(fileName = "New SinglePrefabObjects", menuName = "FishNet/Spawnable Prefabs/Single Prefab Objects")]
     public class SinglePrefabObjects : PrefabObjects
     {
+        // This PrefabObjects collection uses Int32 PrefabIds which are equal to their position in the list
+
         /// <summary>
         /// 
         /// </summary>
@@ -23,6 +26,8 @@ namespace FishNet.Managing.Object
         /// </summary>
         public IReadOnlyList<NetworkObject> Prefabs => _prefabs;
 
+        public override bool UsingOnDemandPrefabs() => false;
+
         public override void Clear()
         {
             _prefabs.Clear();
@@ -31,8 +36,13 @@ namespace FishNet.Managing.Object
         {
             return _prefabs.Count;
         }
-        public override NetworkObject GetObject(bool asServer, int id)
+        public override NetworkObject GetObject(PrefabId id, bool asServer)
         {
+            if (id.IsNullOrInvalid() || id.IsInt32 != true)
+            {
+                NetworkManagerExtensions.LogError($"PrefabId {id} is null, invalid or is not int.");
+            }
+          
             if (id < 0 || id >= _prefabs.Count)
             {
                 NetworkManagerExtensions.LogError($"PrefabId {id} is out of range.");
@@ -46,6 +56,27 @@ namespace FishNet.Managing.Object
 
                 return nob;
             }
+        }
+
+        public override bool HasObject(PrefabId id, bool asServer)
+        {
+            if (id.IsNullOrInvalid() || id.IsInt32 == false)
+            {
+                return false;
+            }
+
+            if (id < 0 || id >= _prefabs.Count)
+            {
+                return false;
+            }
+             
+            NetworkObject nob = _prefabs[id];
+            if (nob == null)
+            {
+                return false;
+            }
+
+            return nob;
         }
 
         public override void RemoveNull()
@@ -68,7 +99,7 @@ namespace FishNet.Managing.Object
                 AddUniqueNetworkObject(networkObject);
 
             if (initializeAdded && Application.isPlaying)
-                InitializePrefabRange(0);
+                InitializePrefabs();
         }
 
         public override void AddObjects(List<NetworkObject> networkObjects, bool checkForDuplicates = false, bool initializeAdded = true)
@@ -84,7 +115,7 @@ namespace FishNet.Managing.Object
             }
 
             if (initializeAdded && Application.isPlaying)
-                InitializePrefabRange(0);
+                InitializePrefabs();
         }
         public override void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false, bool initializeAdded = true)
         {
@@ -98,9 +129,9 @@ namespace FishNet.Managing.Object
         }
 
         
-        public override void InitializePrefabRange(int startIndex)
+        public override void InitializePrefabs()
         {
-            for (int i = startIndex; i < _prefabs.Count; i++)
+            for (int i = 0; i < _prefabs.Count; i++)
                 ManagedObjects.InitializePrefab(_prefabs[i], i, CollectionId);
         }
 

@@ -66,7 +66,10 @@ namespace FishNet.Managing
         /// <summary>
         /// 
         /// </summary>
-        private Dictionary<ushort, PrefabObjects> _runtimeSpawnablePrefabs = new();
+        private SpawnablePrefabsDictionary<ushort, PrefabObjects> _runtimeSpawnablePrefabs = new();
+
+        internal SpawnablePrefabsDictionary<ushort, PrefabObjects> RuntimeSpawnablePrefabsWrapper => _runtimeSpawnablePrefabs;
+
         /// <summary>
         /// Collection to use for spawnable objects added at runtime, such as addressables.
         /// </summary>
@@ -121,6 +124,17 @@ namespace FishNet.Managing
             return po;
         }
 
+        public void RequestPrefabAsync(ushort spawnableCollectionId, PrefabId prefabId, bool asServer)
+        {
+            GetPrefabObjects<PrefabObjects>(spawnableCollectionId, false).RequestObjectAsync(prefabId, asServer);
+        }
+       
+
+        public bool HasPrefabObject(ushort spawnableCollectionId, PrefabId prefabId, bool asServer)
+        {
+            return GetPrefabObjects<PrefabObjects>(spawnableCollectionId, false).HasObject(prefabId, asServer);
+        }
+
         /// <summary>
         /// Removes the PrefabObjects collection from memory.
         /// This should only be called after you properly disposed of it's contents properly.
@@ -143,7 +157,7 @@ namespace FishNet.Managing
             int count = SpawnablePrefabs.GetObjectCount();
             for (int i = 0; i < count; i++)
             {
-                GameObject go = SpawnablePrefabs.GetObject(asServer, i).gameObject;
+                GameObject go = SpawnablePrefabs.GetObject(i, asServer).gameObject;
                 if (go == prefab)
                     return i;
             }
@@ -158,9 +172,9 @@ namespace FishNet.Managing
         /// </summary>
         /// <param name="prefabId">PrefabId to get.</param>
         /// <param name="asServer">True if getting the prefab asServer.</param>
-        public NetworkObject GetPrefab(int prefabId, bool asServer)
+        public NetworkObject GetPrefab(PrefabId prefabId, bool asServer)
         {
-            return SpawnablePrefabs.GetObject(asServer, prefabId);
+            return SpawnablePrefabs.GetObject(prefabId, asServer);
         }
 
 

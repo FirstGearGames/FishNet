@@ -42,6 +42,10 @@ namespace FishNet.Managing.Client
         /// </summary>
         private List<CachedNetworkObject> _cachedObjects = new();
         /// <summary>
+        /// Cached objects we are still loading prefabs for.
+        /// </summary>
+        private List<CachedNetworkObject> _pendingCachedObjects = new();
+        /// <summary>
         /// NetworkObjects which have been spawned already during the current iteration.
         /// </summary>
         private HashSet<NetworkObject> _iteratedSpawns = new();
@@ -108,17 +112,34 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Initializes for a spawned NetworkObject.
         /// </summary>
-        public void AddSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType ost, byte? nobComponentId, int? parentObjectId, byte? parentComponentId, int? prefabId, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string sceneName, string objectName, ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
+        public void AddSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType ost, byte? nobComponentId, int? parentObjectId, byte? parentComponentId, PrefabId? prefabId, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string sceneName, string objectName, ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
         {
             //Set if initialization order has changed.
             _initializeOrderChanged |= (initializeOrder != 0);
+
+            // Check if this is a network object flagged for async loading
+            bool isAsyncSpawn = ost.HasFlag(SpawnType.IsInstantiateAsync);
+
+            PrefabId prefabIdNoNull = prefabId ?? PrefabId.Invalid;
+
+            // If the async prefab is already available just run normally
+            if (isAsyncSpawn)
+            {
+                if (_networkManager.HasPrefabObject(collectionId, prefabIdNoNull, false))
+                {
+                    isAsyncSpawn = false;
+                }
+            }
+
+            //Put in a seperate cache if the collection prefab may yet to be loaded.
+            List<CachedNetworkObject> caches = CollectionCaches<CachedNetworkObject>.RetrieveList();
 
             CachedNetworkObject cnob = null;
             //If order has not changed then add normally.
             if (!_initializeOrderChanged)
             {
                 cnob = ResettableObjectCaches<CachedNetworkObject>.Retrieve();
-                _cachedObjects.Add(cnob);
+                caches.Add(cnob);
             }
             //Otherwise see if values need to be sorted.
             else
@@ -137,17 +158,17 @@ namespace FishNet.Managing.Client
                  * as well to preserve user spawn order if they spawned multiple
                  * objects the same which, with the same order. */
 
-                int written = _cachedObjects.Count;
+                int written = caches.Count;
                 for (int i = 0; i < written; i++)
                 {
-                    CachedNetworkObject item = _cachedObjects[i];
+                    CachedNetworkObject item = caches[i];
                     /* If item order is larger then that means
                      * initializeOrder has reached the last entry
                      * of its value. Insert just before item index. */
                     if (initializeOrder < item.InitializeOrder)
                     {
                         cnob = ResettableObjectCaches<CachedNetworkObject>.Retrieve();
-                        _cachedObjects.Insert(i, cnob);
+                        caches.Insert(i, cnob);
                         break;
                     }
                 }
@@ -156,13 +177,35 @@ namespace FishNet.Managing.Client
                 if (cnob == null)
                 {
                     cnob = ResettableObjectCaches<CachedNetworkObject>.Retrieve();
-                    _cachedObjects.Add(cnob);
+                    caches.Add(cnob);
                 }
             }
 
             cnob.InitializeSpawn(manager, collectionId, objectId, initializeOrder, ownerId, ost, nobComponentId, parentObjectId, parentComponentId, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncValues);
 
             ReadSpawningObjects.Add(objectId);
+
+            (isAsyncSpawn ? _pendingCachedObjects : _cachedObjects).AddRange(caches);
+
+            // If async, store the caches in a seperate list and only move them to the spawn buffer
+            // after the spawnable collection signals it as loaded
+            if (isAsyncSpawn)
+            {
+                Action<ushort, PrefabId, NetworkObject, bool> handler = null;
+
+                handler = (ushort collectionId, PrefabId prefabIdNoNull, NetworkObject nob, bool asServer) =>
+                {
+                    // Move the caches from pending to the list to the spawn spawn buffer list
+                    _cachedObjects.AddRange(caches);
+                    caches.ForEach(cache => _pendingCachedObjects.Remove(cache));
+                    CollectionCaches<CachedNetworkObject>.Store(caches);
+                    _networkManager.RuntimeSpawnablePrefabsWrapper.OnPrefabAdded -= handler;
+                };
+
+                _networkManager.RuntimeSpawnablePrefabsWrapper.OnPrefabAdded += handler;
+
+                _networkManager.RequestPrefabAsync(collectionId, prefabIdNoNull, false);
+            }
         }
 
         public void AddDespawn(int objectId, DespawnType despawnType)
@@ -563,7 +606,7 @@ namespace FishNet.Managing.Client
         public byte? ComponentId;
         public int? ParentObjectId;
         public byte? ParentComponentId;
-        public int? PrefabId;
+        public PrefabId? PrefabId;
         public Vector3? Position;
         public Quaternion? Rotation;
         public Vector3? Scale;
@@ -595,7 +638,7 @@ namespace FishNet.Managing.Client
         public PooledReader SyncTypesReader;
 #pragma warning restore 0649
 
-        public void InitializeSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType objectSpawnType, byte? nobComponentId, int? parentObjectId, byte? parentComponentId, int? prefabId, Vector3? position, Quaternion? rotation, Vector3? scale, ulong sceneId, string sceneName, string objectName, ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncTypes)
+        public void InitializeSpawn(NetworkManager manager, ushort collectionId, int objectId, sbyte initializeOrder, int ownerId, SpawnType objectSpawnType, byte? nobComponentId, int? parentObjectId, byte? parentComponentId, PrefabId? prefabId, Vector3? position, Quaternion? rotation, Vector3? scale, ulong sceneId, string sceneName, string objectName, ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncTypes)
         {
             ResetState();
             Action = ActionType.Spawn;

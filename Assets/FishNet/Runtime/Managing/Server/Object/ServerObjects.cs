@@ -18,6 +18,7 @@ using FishNet.Serializing.Helping;
 using FishNet.Utility.Performance;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 namespace FishNet.Managing.Server
 {
@@ -680,7 +681,7 @@ namespace FishNet.Managing.Server
             //Read transform values which differ from serialized values.
             base.ReadTransformProperties(reader, out Vector3? nullablePosition, out Quaternion? nullableRotation, out Vector3? nullableScale);
 
-            int prefabId;
+            PrefabId prefabId;
             ulong sceneId = 0;
             string sceneName = string.Empty;
             string objectName = string.Empty;
@@ -693,61 +694,95 @@ namespace FishNet.Managing.Server
                     base.CheckReadSceneObjectDetails(reader, ref sceneName, ref objectName);
 #endif
                 nob = base.GetSceneNetworkObject(sceneId, sceneName, objectName);
+
+                SetupNob();
             }
             else
             {
                 prefabId = reader.ReadNetworkObjectId();
+
+                if (!st.HasFlag(SpawnType.IsInstantiateAsync) || NetworkManager.HasPrefabObject(collectionId, prefabId, false))
+                {
+                    GetPooledNob();
+                    SetupNob();
+                }
+
+                else
+                {
+                    Action<ushort, PrefabId, NetworkObject, bool> handler = null;
+                    handler = (ushort collectionId, PrefabId objectId, NetworkObject nob, bool asServer) =>
+                    {
+                        GetPooledNob();
+                        SetupNob();
+
+                        NetworkManager.RuntimeSpawnablePrefabsWrapper.OnPrefabAdded -= handler;
+                    };
+
+                    NetworkManager.RuntimeSpawnablePrefabsWrapper.OnPrefabAdded += handler;
+
+                    // Do this last in case it loads immediately
+                    NetworkManager.RequestPrefabAsync(collectionId, prefabId, false);
+                }
+            }
+
+            void GetPooledNob()
+            {
                 ObjectPoolRetrieveOption retrieveOptions = (ObjectPoolRetrieveOption.MakeActive | ObjectPoolRetrieveOption.LocalSpace);
                 nob = NetworkManager.GetPooledInstantiated(prefabId, collectionId, retrieveOptions, null, nullablePosition, nullableRotation, nullableScale, false);
             }
 
-            /* NetworkObject could not be found. User could be sending an invalid Id,
-             * or perhaps it was a scene object and the scene had unloaded prior to getting
-             * this spawn message. */
-            if (nob == null)
+            void SetupNob()
             {
-                NetworkManager.Log($"Predicted spawn failed due to the NetworkObject not being found. Scene object: {sceneObject}, ObjectId {objectId}, CollectionId {collectionId}.");
-                SendFailedResponse(objectId);
-                return;
+                /* NetworkObject could not be found. User could be sending an invalid Id,
+                     * or perhaps it was a scene object and the scene had unloaded prior to getting
+                     * this spawn message. */
+                if (nob == null)
+                {
+                    NetworkManager.Log($"Predicted spawn failed due to the NetworkObject not being found. Scene object: {sceneObject}, ObjectId {objectId}, CollectionId {collectionId}.");
+                    SendFailedResponse(objectId);
+                    return;
+                }
+                /* Update sceneObject position.
+                 * There is no need to do this on instantiate since the position is set
+                 * during the instantiation. */
+                else if (sceneObject)
+                {
+                    nob.transform.SetLocalPositionRotationAndScale(nullablePosition, nullableRotation, nullableScale);
+                }
+
+                //Check if nob allows predicted spawning.
+                if (!base.CanPredictedSpawn(nob, conn, true, reader))
+                    return;
+
+                nob.SetIsGlobal(isGlobal);
+                nob.SetIsNetworked(true);
+                nob.InitializeEarly(NetworkManager, objectId, owner, true);
+                //Initialize for prediction.
+                nob.InitializePredictedObject_Server(conn);
+
+                base.ReadPayload(conn, nob, reader);
+                base.ReadRpcLinks(reader);
+                base.ReadSyncTypesForSpawn(reader);
+
+                //Check user implementation of trySpawn.
+                if (!nob.PredictedSpawn.OnTrySpawnServer(conn, owner))
+                {
+                    //Inform client of failure.
+                    SendFailedResponse(objectId);
+                    return;
+                }
+
+                //Once here everything is good.
+
+                //Get connections to send spawn to.
+                List<NetworkConnection> conns = RetrieveAuthenticatedConnections();
+
+                SendSuccessResponse(objectId);
+                //Store caches used.
+                CollectionCaches<NetworkConnection>.Store(conns);
+
+                
             }
-            /* Update sceneObject position.
-             * There is no need to do this on instantiate since the position is set
-             * during the instantiation. */
-            else if (sceneObject)
-            {
-                nob.transform.SetLocalPositionRotationAndScale(nullablePosition, nullableRotation, nullableScale);
-            }
-
-            //Check if nob allows predicted spawning.
-            if (!base.CanPredictedSpawn(nob, conn, true, reader))
-                return;
-
-            nob.SetIsGlobal(isGlobal);
-            nob.SetIsNetworked(true);
-            nob.InitializeEarly(NetworkManager, objectId, owner, true);
-            //Initialize for prediction.
-            nob.InitializePredictedObject_Server(conn);
-
-            base.ReadPayload(conn, nob, reader);
-            base.ReadRpcLinks(reader);
-            base.ReadSyncTypesForSpawn(reader);
-
-            //Check user implementation of trySpawn.
-            if (!nob.PredictedSpawn.OnTrySpawnServer(conn, owner))
-            {
-                //Inform client of failure.
-                SendFailedResponse(objectId);
-                return;
-            }
-
-            //Once here everything is good.
-
-            //Get connections to send spawn to.
-            List<NetworkConnection> conns = RetrieveAuthenticatedConnections();
-
-            SendSuccessResponse(objectId);
-            //Store caches used.
-            CollectionCaches<NetworkConnection>.Store(conns);
 
             //Sends a failed response.
             void SendFailedResponse(int lObjectId)
