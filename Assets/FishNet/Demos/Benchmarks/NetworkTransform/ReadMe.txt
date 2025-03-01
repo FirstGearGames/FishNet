@@ -18,4 +18,4 @@ Notes:
 
     * To configure object rates and movement:
             * Open prefab NetworkTransform Benchmark XYZ.
-            * Configure MoveRandomly.    
+            * Configure MoveRandomly.

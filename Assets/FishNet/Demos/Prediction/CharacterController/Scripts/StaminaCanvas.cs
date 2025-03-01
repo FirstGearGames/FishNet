@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if !FISHNET_STABLE_REPLICATESTATES
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace FishNet.Demo.Prediction.CharacterControllers
@@ -37,3 +38,4 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         }
     }
 }
+#endif

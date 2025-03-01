@@ -245,8 +245,8 @@ MonoBehaviour:
   _componentIndexCache: 255
   _addedNetworkObject: {fileID: 442045876}
   _networkObjectCache: {fileID: 0}
-  _prefab: {fileID: 4512293259955182956, guid: f32d4c19de900e64cb73cedcb8ba6f70, type: 3}
-  _count: 100
+  _prefab: {fileID: 4512293259955182956, guid: b8017cef39731ba439c70fecc09488e3, type: 3}
+  _count: 50
 --- !u!1 &584355000
 GameObject:
   m_ObjectHideFlags: 0

@@ -15,26 +15,45 @@ namespace FishNet.Editing.Beta
     {
         #region const.
         private const string STABLE_SYNCTYPES_DEFINE = "FISHNET_STABLE_SYNCTYPES";
+        private const string STABLE_REPLICATESTATES_DEFINE = "FISHNET_STABLE_REPLICATESTATES";
         #endregion
 
         #region Beta SyncTypes
 #if FISHNET_STABLE_SYNCTYPES
         [MenuItem("Tools/Fish-Networking/Beta/Enable for SyncTypes", false, -1101)]
-        private static void EnableBetaSyncTypes() => SetBetaSyncTypes(enabled: true);
+        private static void EnableBetaSyncTypes() => SetBetaSyncTypes(useStable: false);
 #else
         [MenuItem("Tools/Fish-Networking/Beta/Disable for SyncTypes", false, -1101)]
-        private static void DisableBetaSyncTypes() => SetBetaSyncTypes(enabled: true);
+        private static void DisableBetaSyncTypes() => SetBetaSyncTypes(useStable: true);
 #endif
-        private static void SetBetaSyncTypes(bool enabled)
+        private static void SetBetaSyncTypes(bool useStable)
         {
-            bool result = DeveloperMenu.RemoveOrAddDefine(STABLE_SYNCTYPES_DEFINE, !enabled);
+            bool result = DeveloperMenu.RemoveOrAddDefine(STABLE_SYNCTYPES_DEFINE, removeDefine: !useStable);
             if (result)
-            {
-                string enabledState = (enabled) ? "enabled" : "disabled";
-                Debug.LogWarning($"Beta SyncTypes are now {enabledState}.");
-            }
+                Debug.LogWarning($"Beta SyncTypes are now {GetBetaEnabledText(useStable)}.");
         }
         #endregion
+        
+        #region Beta ReplicateStates
+#if FISHNET_STABLE_REPLICATESTATES
+        [MenuItem("Tools/Fish-Networking/Beta/Enable for ReplicateStates", false, -1101)]
+        private static void EnableBetaReplicateStates() => SetBetaReplicateStates(useStable: false);
+#else
+        [MenuItem("Tools/Fish-Networking/Beta/Disable for ReplicateStates", false, -1101)]
+        private static void DisableBetaReplicateStates() => SetBetaReplicateStates(useStable: true);
+#endif
+        private static void SetBetaReplicateStates(bool useStable)
+        {
+            bool result = DeveloperMenu.RemoveOrAddDefine(STABLE_REPLICATESTATES_DEFINE,  removeDefine: !useStable);
+            if (result)
+                Debug.LogWarning($"Beta ReplicateStates are now {GetBetaEnabledText(useStable)}.");
+        }
+        #endregion
+
+        private static string GetBetaEnabledText(bool useStable) 
+        {
+            return (useStable) ? "disabled" : "enabled";
+        }
     }
 }
 

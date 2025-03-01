@@ -1,5 +1,8 @@
 This demo shows how to use a character controller with our prediction system.
 
+Important:
+    * Beta ReplicateStates must be enabled to use this demo. You can toggle this setting using the Fish-Networking menu. 
+
 Setup:
 	* Open demo scene.
 	* Start server, host, or client only. You may test with parrelSync or host the project.

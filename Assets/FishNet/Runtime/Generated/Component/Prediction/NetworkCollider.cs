@@ -135,10 +135,10 @@ namespace FishNet.Component.Prediction
         {
             //Events only needed by the client.
             PredictionManager.OnPostReplicateReplay += PredictionManager_OnPostReplicateReplay;
-            PredictionManager.OnPostReconcileSyncTransforms += PredictionManagerOnOnPreReconcile;
+            PredictionManager.OnPostReconcileSyncTransforms += PredictionManagerOnPreReconcile;
         }
 
-        private void PredictionManagerOnOnPreReconcile(uint clienttick, uint servertick)
+        private void PredictionManagerOnPreReconcile(uint clientTick, uint serverTick)
         {
             if (_enteredColliders.Count > 0)
             {
@@ -146,7 +146,7 @@ namespace FishNet.Component.Prediction
 
                 foreach (KeyValuePair<Collider, CollisionData> kvp in _enteredColliders)
                 {
-                    if (kvp.Value.ExitTick < clienttick)
+                    if (kvp.Value.ExitTick < clientTick)
                         entriesToRemove.Add(kvp.Key);
                 }
                 foreach (Collider entry in entriesToRemove)
@@ -154,14 +154,15 @@ namespace FishNet.Component.Prediction
 
                 CollectionCaches<Collider>.Store(entriesToRemove);
             }
-            CheckColliders(clienttick);
+            
+            CheckColliders(clientTick);
         }
 
         public override void OnStopClient()
         {
             //Events only needed by the client.
             PredictionManager.OnPostReplicateReplay -= PredictionManager_OnPostReplicateReplay;
-            PredictionManager.OnPostReconcileSyncTransforms -= PredictionManagerOnOnPreReconcile;
+            PredictionManager.OnPostReconcileSyncTransforms -= PredictionManagerOnPreReconcile;
         }
 
         public override void OnStopNetwork()

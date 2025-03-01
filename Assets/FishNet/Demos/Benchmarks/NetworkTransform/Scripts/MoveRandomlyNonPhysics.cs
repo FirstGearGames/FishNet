@@ -18,10 +18,16 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         [SerializeField]
         private bool _isActive = true;
 
+        [SerializeField]
+        private bool _is2d;
+        
         [Header("Changes")]
         [SerializeField]
         [Range(0, 3)]
         private byte _axes = 3;
+        [Range(0.1f, 1f)]
+        [SerializeField]
+        private float _chancePerAxes = 0.8f;
         [SerializeField]
         [Range(0f, 1f)]
         private float _rotationChance = 0.33f;
@@ -37,7 +43,7 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         [SerializeField]
         [Range(0.1f, 30f)]
         private float _moveRate = 3f;
-        [Range(1f, 1000f)]
+        [Range(1f, 30f)]
         [SerializeField]
         private float _rotateRate = 30f;
         [Range(0.1f, 40f)]
@@ -87,7 +93,10 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
                 return;
             
             transform.position = Vector3.MoveTowards(transform.position, _goalPosition, _moveRate * delta);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, _goalRotation, _rotateRate * delta);
+            if (!_is2d)
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, _goalRotation, _rotateRate * delta);
+            else
+                transform.rotation = _goalRotation;
 
             if (transform.position == _goalPosition)
                 SetNextGoal();
@@ -123,27 +132,40 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
             {
                 if (_axes > 0)
                 {
-                    Vector3 currentPosition = transform.position;
-                    Vector3 goal = (Random.insideUnitSphere * _range);
-                    switch (_axes)
-                    {
-                        case 1:
-                            goal.y = currentPosition.y;
-                            goal.z = currentPosition.z;
-                            break;
-                        case 2:
-                            goal.z = currentPosition.z;
-                            break;
-                    }
+                    Vector3 rnd = (Random.insideUnitSphere * _range);
+                    Vector3 next = transform.position;
 
-                    _goalPosition = goal;
+                    if (_axes >= 1 && RandomizeAxes())
+                        next.x = rnd.x;
+                    if (_axes >= 2 && RandomizeAxes())
+                        next.y = rnd.y;
+                    if (_axes >= 3 && RandomizeAxes())
+                        next.z = rnd.z;
+                    
+                    //Make sure at least one axes is set.
+                    if (next == transform.position)
+                        next.x = rnd.x;
+                    
+                    bool RandomizeAxes() => (Random.Range(0f, 1f) <= _chancePerAxes);
+
+                    _goalPosition = next;
                 }
 
                 if (_rotationChance > 0f)
                 {
                     if (Random.Range(0f, 1f) <= _rotationChance)
                     {
-                        Vector3 euler = Random.insideUnitSphere * 180f;
+                        Vector3 euler;
+                        if (!_is2d)
+                        {
+                            euler = Random.insideUnitSphere * 180f;
+                        }
+                        else
+                        {
+                            float nextY = (transform.eulerAngles.y == 0f) ? 180f : 0f;
+                            euler = new Vector3(0f, nextY, 0f);
+                        }
+
                         _goalRotation = Quaternion.Euler(euler);
                     }
                     else

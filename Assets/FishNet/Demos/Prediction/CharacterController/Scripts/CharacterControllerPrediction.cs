@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !FISHNET_STABLE_REPLICATESTATES
+using System;
 using FishNet.Component.Prediction;
 using FishNet.Connection;
 using FishNet.Object;
@@ -482,3 +483,4 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         }
     }
 }
+#endif
