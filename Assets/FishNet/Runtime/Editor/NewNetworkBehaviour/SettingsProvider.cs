@@ -35,7 +35,7 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
                     "Networking",
                     "Prefab",
                     "Objects",
-                    "Generator",
+                    "CreateNewNetworkBehaviour",
                 },
             };
         }
