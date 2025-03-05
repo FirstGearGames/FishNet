@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using File = System.IO.File;
 
-#if DEBUG
+#if UNITY_EDITOR
 namespace FishNet.Editing.NewNetworkBehaviourScript
 {
     internal sealed class CreateNewNetworkBehaviour : MonoBehaviour
