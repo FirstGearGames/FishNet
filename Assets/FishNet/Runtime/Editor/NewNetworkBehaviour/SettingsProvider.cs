@@ -1,15 +1,13 @@
 #if UNITY_EDITOR
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
+
 using UnityEditor;
 using UnityEngine;
 using UnitySettingsProviderAttribute = UnityEditor.SettingsProviderAttribute;
 using UnitySettingsProvider = UnityEditor.SettingsProvider;
 using FishNet.Configuring;
-using System.Linq;
+using System.IO;
+
 
 namespace FishNet.Editing.NewNetworkBehaviourScript
 {
@@ -18,7 +16,7 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
 
 
         private static PrefabGeneratorConfigurations _settings;
-
+        static string templatePath = Application.dataPath + "/FishNet/Assets/FishNet/Runtime/Editor/NewNetworkBehaviour/template.txt";
 
         [UnitySettingsProvider]
         private static UnitySettingsProvider Create()
@@ -33,16 +31,22 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
                 {
                     "Fish",
                     "Networking",
-                    "Prefab",
-                    "Objects",
                     "CreateNewNetworkBehaviour",
+                    "Template"
                 },
             };
         }
 
         private static void OnGUI(string searchContext)
         {
-          
+          if(GUILayout.Button("Edit template"))
+            {
+                if (!File.Exists(templatePath))
+                {
+                    CreateNewNetworkBehaviour.CopyExistingTemplate(templatePath);
+                }
+                System.Diagnostics.Process.Start(templatePath);
+            }
         }
 
        
