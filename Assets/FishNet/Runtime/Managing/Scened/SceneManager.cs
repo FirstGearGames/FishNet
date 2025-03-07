@@ -3573,7 +3573,7 @@ namespace FishNet.Managing.Scened
                     }
 
                     //Add to loaded scenes.
-                    Scene loaded = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
+                    Scene loaded = UnitySceneManager.GetSceneByName(loadableScenes[i].Name);
                     loadedScenes.Add(loaded);
                     _sceneProcessor.AddLoadedScene(loaded);
                 }
