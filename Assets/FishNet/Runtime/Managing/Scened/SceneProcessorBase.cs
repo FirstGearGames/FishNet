@@ -66,7 +66,8 @@ namespace FishNet.Managing.Scened
         /// Begin loading a scene using an async method.
         /// </summary>
         /// <param name="sceneName">Scene name to load.</param>
-        public abstract void BeginLoadAsync(string sceneName, LoadSceneParameters parameters);
+		/// <param name="onSceneLoaded">Callback for when scene load is completed.</param>
+        public abstract void BeginLoadAsync(string sceneName, LoadSceneParameters parameters, Action<string> onSceneLoaded);
         /// <summary>
         /// Begin unloading a scene using an async method.
         /// </summary>

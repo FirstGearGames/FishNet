@@ -3551,7 +3551,12 @@ namespace FishNet.Managing.Scened
                      * 1f / 2f is 0.5f. */
                     float maximumIndexWorth = (1f / (float)loadableScenes.Count);
 
-                    _sceneProcessor.BeginLoadAsync(loadableScenes[i].Name, loadSceneParameters);
+                    _sceneProcessor.BeginLoadAsync(loadableScenes[i].Name, loadSceneParameters, (s) =>
+					{
+						Scene loaded = UnitySceneManager.GetSceneByName(s);
+						loadedScenes.Add(loaded);
+						_sceneProcessor.AddLoadedScene(loaded);
+					});
                     while (!_sceneProcessor.IsPercentComplete())
                     {
                         float percent = _sceneProcessor.GetPercentComplete();
@@ -3573,9 +3578,9 @@ namespace FishNet.Managing.Scened
                     }
 
                     //Add to loaded scenes.
-                    Scene loaded = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
-                    loadedScenes.Add(loaded);
-                    _sceneProcessor.AddLoadedScene(loaded);
+                    //Scene loaded = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
+                    //loadedScenes.Add(loaded);
+                    //_sceneProcessor.AddLoadedScene(loaded);
                 }
                 //When all scenes are loaded invoke with 100% done.
                 InvokeOnScenePercentChange(data, 1f);
