@@ -9,6 +9,7 @@ assignees: ''
 
 # Important
 If General, Description, and Replication are not completed the issue will be closed immediately.
+See this link on how to most effectively create a bug report: https://fish-networking.gitbook.io/docs/manual/guides/creating-bug-reports
 
 **General**
 Unity version: 
