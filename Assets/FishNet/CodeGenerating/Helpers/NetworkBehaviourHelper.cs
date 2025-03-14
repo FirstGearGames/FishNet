@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using MethodAttributes = MonoFN.Cecil.MethodAttributes;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -30,10 +31,10 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference EmptyReplicatesQueueIntoHistory_MethodRef;
         public MethodReference Reconcile_Client_Start_MethodRef;
         public MethodReference Replicate_Replay_Start_MethodRef;
-        public MethodReference Replicate_NonAuthoritative_MethodRef;
-        public MethodReference Replicate_Authortative_MethodRef;
+        public MethodReference Replicate_Current_MethodRef;
         public MethodReference Reconcile_Client_MethodRef;
         public MethodReference Reconcile_Client_Local_MethodRef;
+        public MethodReference ClearReplicateCache_Internal_MethodRef;
         public MethodReference Replicate_Replay_MethodRef;
         public MethodReference Reconcile_Reader_MethodRef;
         public MethodReference RegisterReplicateRpc_MethodRef;
@@ -111,24 +112,14 @@ namespace FishNet.CodeGenerating.Helping
                     SendObserversRpc_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.SendTargetRpc))
                     SendTargetRpc_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Reader))
-                    Replicate_Reader_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Reader))
-                    Reconcile_Reader_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Server))
-                    Reconcile_Server_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client))
-                    Reconcile_Client_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client_Local))
-                    Reconcile_Client_Local_MethodRef = base.ImportReference(mi);
                 //Misc.
                 else if (mi.Name == nameof(NetworkBehaviour.OwnerMatches))
                     OwnerMatches_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.NetworkInitializeIfDisabled))
                     NetworkInitializeIfDisabled_MethodRef = base.ImportReference(mi);
                 //Prediction
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Authoritative))
-                    Replicate_Authortative_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Current))
+                    Replicate_Current_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Replay_Start))
                     Replicate_Replay_Start_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.EmptyReplicatesQueueIntoHistory))
@@ -139,8 +130,18 @@ namespace FishNet.CodeGenerating.Helping
                     Reconcile_Client_Start_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Replay))
                     Replicate_Replay_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Replicate_NonAuthoritative))
-                    Replicate_NonAuthoritative_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Reader))
+                    Replicate_Reader_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Reader))
+                    Reconcile_Reader_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Server))
+                    Reconcile_Server_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client))
+                    Reconcile_Client_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client_Local))
+                    Reconcile_Client_Local_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.ClearReplicateCache_Internal))
+                    ClearReplicateCache_Internal_MethodRef = base.ImportReference(mi);
             }
 
             foreach (PropertyInfo pi in networkBehaviourType.GetProperties((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))

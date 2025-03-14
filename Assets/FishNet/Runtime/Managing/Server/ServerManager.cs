@@ -541,7 +541,7 @@ namespace FishNet.Managing.Server
             }
 
             conn.HasSentVersion = true;
-            string version = reader.ReadString();
+            string version = reader.ReadStringAllocated();
             //Version match.
             if (version == NetworkManager.FISHNET_VERSION)
             {

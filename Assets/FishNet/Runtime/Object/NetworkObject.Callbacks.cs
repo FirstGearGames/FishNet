@@ -113,15 +113,13 @@ namespace FishNet.Object
 
             if (invokeSyncTypeCallbacks)
                 InvokeOnStopSyncTypeCallbacks(asServer);
-
-            bool invokeOnNetwork = !asServer || !_onStartClientCalled;
-
+            
             if (asServer && _onStartServerCalled)
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStopServer_Internal();
 
-                if (invokeOnNetwork)
+                if (!_onStartClientCalled)
                     InvokeOnNetwork();
 
                 _onStartServerCalled = false;
@@ -131,7 +129,12 @@ namespace FishNet.Object
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStopClient_Internal();
 
-                InvokeOnNetwork();
+                /* Only invoke OnNetwork if server start isn't called, otherwise
+                 * that means this is still intialized on the server. This would
+                 * happen if the object despawned for the clientHost but not on the
+                 * server. */
+                if (!_onStartServerCalled)
+                    InvokeOnNetwork();
 
                 _onStartClientCalled = false;
             }

@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
 
-namespace FishNet.Object
+namespace FishNet.Object.Prediction
 {
     [System.Flags]
     public enum ReplicateState : byte

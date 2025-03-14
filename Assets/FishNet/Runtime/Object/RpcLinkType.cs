@@ -1,4 +1,5 @@
 ﻿using FishNet.Object.Helping;
+using FishNet.Transporting;
 
 namespace FishNet.Object
 {
@@ -7,18 +8,23 @@ namespace FishNet.Object
     internal struct RpcLinkType
     {
         /// <summary>
-        /// Index of link.
+        /// Hash for the Rpc.
         /// </summary>
-        public ushort LinkIndex;
+        public readonly uint RpcHash;
         /// <summary>
-        /// Type of Rpc link is for.
+        /// PacketId used for the Rpc type when not using links.
         /// </summary>
-        public RpcType RpcType;
+        public readonly PacketId RpcPacketId;
+        /// <summary>
+        /// PacketId sent for the RpcLink.
+        /// </summary>
+        public readonly ushort LinkPacketId;
 
-        public RpcLinkType(ushort linkIndex, RpcType rpcType)
+        public RpcLinkType(uint rpcHash, PacketId packetId, ushort linkPacketId)
         {
-            LinkIndex = linkIndex;
-            RpcType = rpcType;
+            RpcHash = rpcHash;
+            RpcPacketId = packetId;
+            LinkPacketId = linkPacketId;
         }
     }
 

@@ -18,6 +18,9 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// </summary>
         public struct OneTimeInput
         {
+            /// <summary>
+            /// True to jump.
+            /// </summary>
             public bool Jump;
 
             /// <summary>
@@ -58,7 +61,10 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             /// </summary>
             private uint _tick;
 
-            public void Dispose() { }
+            public void Dispose() 
+            {
+                OneTimeInputs.ResetState();
+            }
 
             public uint GetTick() => _tick;
             public void SetTick(uint value) => _tick = value;
@@ -138,10 +144,6 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// Last data which was supplied during replicate outside of reconcile.
         /// </summary>
         private ReplicateData _lastTickedReplicateData = default;
-        /// <summary>
-        /// Collider cache for performance.
-        /// </summary>
-        private Collider[] _colliderCache = new Collider[10];
         /// <summary>
         /// Current platform the player is on.
         /// </summary>
@@ -258,7 +260,7 @@ namespace FishNet.Demo.Prediction.CharacterControllers
 
         [Replicate]
         private void PerformReplicate(ReplicateData rd, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
-        {
+        {            
             //Always use the tickDelta as your delta when performing actions inside replicate.
             float delta = (float)base.TimeManager.TickDelta;
             bool useDefaultForces = false;

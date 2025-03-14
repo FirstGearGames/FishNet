@@ -10,29 +10,41 @@ namespace FishNet.Managing.Debugging
     public class DebugManager : MonoBehaviour
     {
         /// <summary>
-        /// True to write scene and object name when sending scene object ids to clients.
+        /// True to write additional information about scene objects being sent in spawn messages. This is primarily used to resolve sceneId not found errors.
         /// </summary>
-        public bool WriteSceneObjectDetails = false;
+        [Tooltip("True to write additional information about scene objects being sent in spawn messages. This is primarily used to resolve sceneId not found errors.")]
+        public bool WriteSceneObjectDetails;
         /// <summary>
-        /// True to use RpcLinks for Observer RPCs.
+        /// True to validate written versus read length of Rpcs. Errors will be thrown if read length is not equal to written length.
         /// </summary>
-        public bool ObserverRpcLinks = true;
+        [Tooltip("True to validate written versus read length of Rpcs. Errors will be thrown if read length is not equal to written length.")]
+        public bool ValidateRpcLengths;
         /// <summary>
-        /// True to use RpcLinks for Target RPCs.
+        /// True to disable RpcLinks for Observer RPCs.
         /// </summary>
-        public bool TargetRpcLinks = true;
+        [Tooltip("True to disable RpcLinks for Observer RPCs.")]
+        public bool DisableObserversRpcLinks;
         /// <summary>
-        /// True to use RpcLinks for Replicate RPCs.
+        /// True to disable RpcLinks for Target RPCs.
         /// </summary>
-        public bool ReplicateRpcLinks = true;
+        [Tooltip("True to disable RpcLinks for Target RPCs.")]
+        public bool DisableTargetRpcLinks;
         /// <summary>
-        /// True to use RpcLinks for Reconcile RPCs.
+        /// True to disable RpcLinks for Server RPCs.
         /// </summary>
-        public bool ReconcileRpcLinks = true;
+        [Tooltip("True to disable RpcLinks for Server RPCs.")]
+        public bool DisableServerRpcLinks;
         /// <summary>
-        /// True to use RpcLinks for Server RPCs.
+        /// True to disable RpcLinks for Replicate RPCs.
         /// </summary>
-        public bool ServerRpcLinks = true;
+        [Tooltip("True to disable RpcLinks for Replicate RPCs.")]
+        public bool DisableReplicateRpcLinks;
+        /// <summary>
+        /// True to disable RpcLinks for Reconcile RPCs.
+        /// </summary>
+        [Tooltip("True to disable RpcLinks for Reconcile RPCs.")]
+        public bool DisableReconcileRpcLinks;
+
     }
 
 

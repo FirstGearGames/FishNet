@@ -414,12 +414,20 @@ namespace FishNet.Managing.Object
         /// </summary>
         internal void ParseReplicateRpc(PooledReader reader, NetworkConnection conn, Channel channel)
         {
+#if DEVELOPMENT
+            NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
+#endif
+            
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.ServerRpc, reader, channel);
             if (nb != null && nb.IsSpawned)
                 nb.OnReplicateRpc(null, reader, conn, channel);
             else
                 SkipDataLength((ushort)PacketId.ServerRpc, reader, dataLength);
+            
+#if DEVELOPMENT
+            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount);
+#endif
         }
 
 #if DEVELOPMENT
@@ -443,8 +451,8 @@ namespace FishNet.Managing.Object
         {
             if (NetworkManager.DebugManager.WriteSceneObjectDetails)
             {
-                sceneName = r.ReadString();
-                objectName = r.ReadString();
+                sceneName = r.ReadStringAllocated();
+                objectName = r.ReadStringAllocated();
             }
         }
 #endif

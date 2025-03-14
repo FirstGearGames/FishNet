@@ -228,7 +228,7 @@ namespace FishNet.Component.Transforming.Beta
             _tickDelta = initializationSettings.TickDelta;
             _detachOnStart = initializationSettings.DetachOnStart;
             _attachOnStop = initializationSettings.AttachOnStop;
-            
+
             SetCaches(GetUseOwnerSettings());
 
             //Use set method as it has sanity checks.
@@ -242,7 +242,7 @@ namespace FishNet.Component.Transforming.Beta
 
             _initialized = true;
         }
- 
+
         /// <summary>
         /// Returns if configured transforms are valid.
         /// </summary>
@@ -343,14 +343,15 @@ namespace FishNet.Component.Transforming.Beta
             TimeManager tm = _initializingNetworkBehaviour.TimeManager;
             if (clientStateTick == TimeManager.UNSET_TICK)
             {
-                //Not enough data to calculate; guestimate. This should only happen once or when the dev is manually updating interpolation.
-                float fRtt = tm.RoundTripTime;
-                interpolation = (fRtt / 10f);
+                //Calculate roughly what client state tick would be.
+                uint rttToTicks = tm.TimeToTicks(tm.RoundTripTime / 2);
+
+                long estimatedClientStateTick = (long)(rttToTicks / 2) - tm.NetworkManager.PredictionManager.StateInterpolation;
+                
+                clientStateTick = (estimatedClientStateTick < 0) ? 0 : (uint)estimatedClientStateTick;
             }
-            else
-            {
-                interpolation = (tm.LocalTick - clientStateTick);
-            }
+
+            interpolation = (tm.LocalTick - clientStateTick);
 
             interpolation *= GetInterpolationMultiplier();
             interpolation = Math.Clamp(interpolation, 2f, byte.MaxValue);

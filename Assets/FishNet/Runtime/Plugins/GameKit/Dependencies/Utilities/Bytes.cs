@@ -1,5 +1,6 @@
 ﻿
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace GameKit.Dependencies.Utilities
 {
@@ -9,6 +10,11 @@ namespace GameKit.Dependencies.Utilities
     /// </summary>
     public static class Bytes
     {
+        /// <summary>
+        /// Used to encode and decode strings.
+        /// </summary>
+        private static readonly UTF8Encoding _encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        
         /// <summary>
         /// Pads an index a specified value. Preferred over typical padding so that pad values used with skins can be easily found in the code.
         /// </summary>
@@ -55,5 +61,9 @@ namespace GameKit.Dependencies.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ValuesMatch(params byte[] values) => Ints.ValuesMatch((int[])(object)values);
 
+        /// <summary>
+        /// Converts bytes to a string without error checking.
+        /// </summary>
+        public static string ToString(this byte[] bytes, int offset, int count) => _encoding.GetString(bytes, offset, count);
     }
 }

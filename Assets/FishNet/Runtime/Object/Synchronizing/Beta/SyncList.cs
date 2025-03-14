@@ -424,10 +424,9 @@ namespace FishNet.Object.Synchronizing
         protected internal override void ResetState(bool asServer)
         {
             base.ResetState(asServer);
-
-            bool canReset = base.IsInitialized && (asServer || !base.IsReadAsClientHost(asServer));
-
-            if (canReset)
+            
+            bool clientStarted = (base.IsNetworkInitialized && base.NetworkManager.IsClientStarted);
+            if ((asServer && !clientStarted) || (!asServer && base.NetworkBehaviour.IsDeinitializing))
             {
                 _sendAll = false;
                 _changed.Clear();

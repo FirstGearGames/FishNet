@@ -34,6 +34,16 @@ namespace FishNet.Managing.Timing
         public static PreciseTick GetUnsetValue() => new(TimeManager.UNSET_TICK, (byte)0);
 
         /// <summary>
+        /// Creates a precise tick where the percentage is 0.
+        /// </summary>
+        public PreciseTick(uint tick)
+        {
+            Tick = tick;
+            PercentAsByte = 0;
+            PercentAsDouble = 0d;
+        }
+        
+        /// <summary>
         /// Creates a precise tick where the percentage is a byte between 0 and 100.
         /// </summary>
         public PreciseTick(uint tick, byte percentAsByte)

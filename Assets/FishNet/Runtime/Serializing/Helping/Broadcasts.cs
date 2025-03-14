@@ -22,7 +22,7 @@ namespace FishNet.Broadcast.Helping
             PooledWriter dataWriter = WriterPool.Retrieve();
             dataWriter.Write(message);
             //Write length of data.
-            writer.WriteLength(dataWriter.Length);
+            writer.WriteInt32(dataWriter.Length);
             //Write data.
             writer.WriteArraySegment(dataWriter.GetArraySegment());
             //Update channel to reliable if needed.

@@ -83,6 +83,11 @@ namespace FishNet.Managing.Scened
         /// <returns></returns>
         public abstract float GetPercentComplete();
         /// <summary>
+        /// Gets the scene last loaded by the processor.
+        /// </summary>
+        /// <remarks>This is called after IsPercentComplete returns true.</remarks>
+        public virtual Scene GetLastLoadedScene() => default;
+        /// <summary>
         /// Adds a scene to loaded scenes.
         /// </summary>
         /// <param name="scene">Scene loaded.</param>

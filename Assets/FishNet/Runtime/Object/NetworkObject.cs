@@ -362,7 +362,7 @@ namespace FishNet.Object
         public override string ToString()
         {
             string hashCode = (gameObject == null) ? $"NetworkObject HashCode [{GetHashCode()}]" : $"GameObject HashCode [{gameObject.GetHashCode()}]";
-            return $"Name [{gameObject.name}] Id [{ObjectId}] {hashCode}";
+            return $"Name [{gameObject.name}] ObjectId [{ObjectId}] OwnerId [{OwnerId}] {hashCode}";
         }
 
         protected virtual void Awake()
@@ -1089,7 +1089,7 @@ namespace FishNet.Object
 
             Deinitialize_Prediction(asServer);
 
-            InvokeStopCallbacks(asServer, true);
+            InvokeStopCallbacks(asServer, invokeSyncTypeCallbacks: true);
             for (int i = 0; i < NetworkBehaviours.Count; i++)
                 NetworkBehaviours[i].Deinitialize(asServer);
 

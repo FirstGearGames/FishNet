@@ -314,6 +314,10 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         internal void ParseReconcileRpc(PooledReader reader, Channel channel)
         {
+#if DEVELOPMENT
+            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
+#endif
+
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.Reconcile, reader, channel);
 
@@ -321,6 +325,10 @@ namespace FishNet.Managing.Client
                 nb.OnReconcileRpc(null, reader, channel);
             else
                 SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
+            
+#if DEVELOPMENT
+            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, base.NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount);
+#endif            
         }
 
         /// <summary>
@@ -329,12 +337,25 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         internal void ParseObserversRpc(PooledReader reader, Channel channel)
         {
+#if DEVELOPMENT
+            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
+#endif
+
             NetworkBehaviour nb = reader.ReadNetworkBehaviour(logException: false);
             int dataLength = Packets.GetPacketLength((ushort)PacketId.ObserversRpc, reader, channel);
             if (nb != null && nb.IsSpawned)
-                nb.ReadObserversRpc(null, reader, channel);
+            {
+                nb.ReadObserversRpc(fromRpcLink: false, methodHash: 0, reader, channel);
+            }
             else
+            {
+                base.NetworkManager.Log($"NetworkBehaviour not found for an ObserverRpc. Rpc data will be discarded.");
                 SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
+            }
+
+#if DEVELOPMENT
+            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, base.NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount);
+#endif
         }
 
         /// <summary>
@@ -343,11 +364,15 @@ namespace FishNet.Managing.Client
         /// <param name="reader"></param>
         internal void ParseTargetRpc(PooledReader reader, Channel channel)
         {
+#if DEVELOPMENT
+            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
+#endif
+
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.TargetRpc, reader, channel);
 
             if (nb != null && nb.IsSpawned)
-                nb.ReadTargetRpc(null, reader, channel);
+                nb.ReadTargetRpc(fromRpcLink: false, methodHash: 0, reader, channel);
             else
                 SkipDataLength((ushort)PacketId.TargetRpc, reader, dataLength);
         }
@@ -420,7 +445,7 @@ namespace FishNet.Managing.Client
 
                         //Payload.
                         segmentReader.Initialize(payload, NetworkManager, Reader.DataSource.Server);
-                        ReadPayload(sender: null, nob, segmentReader);
+                        ReadPayload(sender: null, nob, segmentReader, segmentReader.Length);
 
                         //SyncTypes.
                         segmentReader.Initialize(syncTypes, NetworkManager, Reader.DataSource.Server);
@@ -539,8 +564,8 @@ namespace FishNet.Managing.Client
                     RpcLink link = new(nob.ObjectId, componentId,
                         //RpcHash.
                         reader.ReadUInt16Unpacked(),
-                        //ObserverRpc.
-                        (RpcType)reader.ReadUInt8Unpacked());
+                        //packetId for rpc.
+                        reader.ReadPacketId());
                     //Add to links.
                     SetRpcLink(linkIndex, link);
                     rpcLinkIndexes.Add(linkIndex);

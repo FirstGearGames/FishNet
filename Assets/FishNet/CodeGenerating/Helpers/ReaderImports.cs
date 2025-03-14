@@ -49,9 +49,9 @@ namespace FishNet.CodeGenerating.Helping
                 if (methodInfo.Name == nameof(PooledReader.ReadUnsignedPackedWhole))
                     Reader_ReadPackedWhole_MethodRef = base.ImportReference(methodInfo);
                 //Relay readers.
-                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadDictionaryAllocated))
+                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadDictionary))
                     Reader_ReadDictionary_MethodRef = base.ImportReference(methodInfo);
-                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadListAllocated))
+                else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadList))
                     Reader_ReadList_MethodRef = base.ImportReference(methodInfo);
                 else if (parameterCount == 0 && methodInfo.Name == nameof(PooledReader.ReadArrayAllocated))
                     Reader_ReadArray_MethodRef = base.ImportReference(methodInfo);

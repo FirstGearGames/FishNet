@@ -206,7 +206,7 @@ namespace FishNet.Example.CustomSyncObject
                     next = reader.Read<Structy>();
                 //Name.
                 else if (operation == CustomOperation.Name)
-                    next.Name = reader.ReadString();
+                    next.Name = reader.ReadStringAllocated();
                 //Age
                 else if (operation == CustomOperation.Age)
                     next.Age = reader.ReadUInt16();

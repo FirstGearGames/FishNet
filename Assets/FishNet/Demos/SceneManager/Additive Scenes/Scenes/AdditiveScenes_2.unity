@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -139,17 +138,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: 3.58, y: 0.5, z: -3.188}
-    Rotation: {x: -0, y: 0.8870109, z: -0, w: 0.46174863}
-    LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -167,8 +166,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 3349393191
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 3208030125
+  SerializedTransformProperties:
+    Position: {x: 3.58, y: 0.5, z: -3.188}
+    Rotation: {x: -0, y: 0.8870109, z: -0, w: 0.46174863}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!1 &108939185
 GameObject:
   m_ObjectHideFlags: 0
@@ -229,17 +233,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: -3.41, y: 0.5, z: -4.14}
-    Rotation: {x: -0, y: 0.76604444, z: -0, w: 0.64278764}
-    LocalScale: {x: 0.75000006, y: 0.75, z: 0.75000006}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -257,8 +261,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 2406940527
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 4021791653
+  SerializedTransformProperties:
+    Position: {x: -3.41, y: 0.5, z: -4.14}
+    Rotation: {x: -0, y: 0.76604444, z: -0, w: 0.64278764}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!1 &422957713
 GameObject:
   m_ObjectHideFlags: 0
@@ -357,17 +366,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: 4.3, y: 0.5, z: -5.39}
-    Rotation: {x: -0, y: 0.42261827, z: -0, w: 0.9063079}
-    LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -385,8 +394,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 3882771327
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 3086446463
+  SerializedTransformProperties:
+    Position: {x: 4.3, y: 0.5, z: -5.39}
+    Rotation: {x: -0, y: 0.42261827, z: -0, w: 0.9063079}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!114 &552945233
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -402,17 +416,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: 3.47, y: 0.5, z: 2.42}
-    Rotation: {x: -0, y: 0.42261827, z: -0, w: 0.9063079}
-    LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -430,8 +444,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 3753323319
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 4293656437
+  SerializedTransformProperties:
+    Position: {x: 3.47, y: 0.5, z: 2.42}
+    Rotation: {x: -0, y: 0.42261827, z: -0, w: 0.9063079}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!1 &594330602
 GameObject:
   m_ObjectHideFlags: 0
@@ -490,17 +509,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: 2.88, y: 0.5, z: 5.64}
-    Rotation: {x: 0, y: 0.2588191, z: 0, w: 0.9659258}
-    LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -518,8 +537,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 2415394725
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 2275649407
+  SerializedTransformProperties:
+    Position: {x: 2.88, y: 0.5, z: 5.64}
+    Rotation: {x: 0, y: 0.2588191, z: 0, w: 0.9659258}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!1 &1115572417
 GameObject:
   m_ObjectHideFlags: 0
@@ -554,18 +578,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours:
-  - {fileID: 1115572419}
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: -12.5, y: 0, z: 12.5}
-    Rotation: {x: 0, y: 0, z: 0, w: 1}
-    LocalScale: {x: 20, y: 5, z: 20}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -583,8 +606,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 4155407159
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 3877778303
+  SerializedTransformProperties:
+    Position: {x: -12.5, y: 0, z: 12.5}
+    Rotation: {x: 0, y: 0, z: 0, w: 1}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!114 &1115572419
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -726,17 +754,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: -3.1, y: 0.5, z: 5.64}
-    Rotation: {x: 0, y: 0.6427876, z: 0, w: 0.7660445}
-    LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -754,8 +782,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 3081989997
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 3752208295
+  SerializedTransformProperties:
+    Position: {x: -3.1, y: 0.5, z: 5.64}
+    Rotation: {x: 0, y: 0.6427876, z: 0, w: 0.7660445}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!114 &1355673456
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -771,17 +804,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: 1.12, y: 0.5, z: -4.14}
-    Rotation: {x: -0, y: 0.2164396, z: -0, w: 0.97629607}
-    LocalScale: {x: 0.75000006, y: 0.75, z: 0.75000006}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -799,8 +832,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 2280862517
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 3353764727
+  SerializedTransformProperties:
+    Position: {x: 1.12, y: 0.5, z: -4.14}
+    Rotation: {x: -0, y: 0.2164396, z: -0, w: 0.97629607}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!1 &1383041479
 GameObject:
   m_ObjectHideFlags: 0
@@ -850,17 +888,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: -5, y: 0.5, z: 2.42}
-    Rotation: {x: -0, y: 0.42261827, z: -0, w: 0.9063079}
-    LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -878,8 +916,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 2674619317
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 4017761063
+  SerializedTransformProperties:
+    Position: {x: -5, y: 0.5, z: 2.42}
+    Rotation: {x: -0, y: 0.42261827, z: -0, w: 0.9063079}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!1 &1521876168
 GameObject:
   m_ObjectHideFlags: 0
@@ -993,17 +1036,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: -1.97, y: 0.5, z: 2.16}
-    Rotation: {x: 0, y: -0.60876137, z: -0, w: 0.7933534}
-    LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -1021,8 +1064,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 4155173759
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 3745410861
+  SerializedTransformProperties:
+    Position: {x: -1.97, y: 0.5, z: 2.16}
+    Rotation: {x: 0, y: -0.60876137, z: -0, w: 0.7933534}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!114 &1686616503
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1038,17 +1086,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: -5, y: 0.5, z: -6.24}
-    Rotation: {x: -0, y: 0.42261827, z: -0, w: 0.9063079}
-    LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -1066,8 +1114,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 4281008063
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 3890360117
+  SerializedTransformProperties:
+    Position: {x: -5, y: 0.5, z: -6.24}
+    Rotation: {x: -0, y: 0.42261827, z: -0, w: 0.9063079}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!114 &1873854674
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1083,17 +1136,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: 2.0644817, y: 0.5, z: -0.2750473}
-    Rotation: {x: 0, y: -0.42261827, z: -0, w: 0.9063079}
-    LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -1111,8 +1164,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 4282346487
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 2267801391
+  SerializedTransformProperties:
+    Position: {x: 2.0644817, y: 0.5, z: -0.2750473}
+    Rotation: {x: 0, y: -0.42261827, z: -0, w: 0.9063079}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!114 &1931423709
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1128,17 +1186,17 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours: []
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: -1.85, y: 0.5, z: -3.188}
-    Rotation: {x: -0, y: 0.2164396, z: -0, w: 0.97629607}
-    LocalScale: {x: 0.75000006, y: 0.75, z: 0.75000006}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -1156,8 +1214,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 3353869303
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 3886758829
+  SerializedTransformProperties:
+    Position: {x: -1.85, y: 0.5, z: -3.188}
+    Rotation: {x: -0, y: 0.2164396, z: -0, w: 0.97629607}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!4 &543450651802355761
 Transform:
   m_ObjectHideFlags: 0

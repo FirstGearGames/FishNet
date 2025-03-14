@@ -23,6 +23,10 @@ namespace FishNet.Managing.Scened
         /// Current AsyncOperation being processed.
         /// </summary>
         protected AsyncOperation CurrentAsyncOperation;
+        /// <summary>
+        /// Last scene to load or begin loading.
+        /// </summary>
+        private UnityScene _lastLoadedScene;
         #endregion
 
         /// <summary>
@@ -68,6 +72,8 @@ namespace FishNet.Managing.Scened
             AsyncOperation ao = UnitySceneManager.LoadSceneAsync(sceneName, parameters);
             LoadingAsyncOperations.Add(ao);
             
+            _lastLoadedScene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1); 
+            
             CurrentAsyncOperation = ao;
             CurrentAsyncOperation.allowSceneActivation = false;
         }
@@ -98,6 +104,13 @@ namespace FishNet.Managing.Scened
         {
             return (CurrentAsyncOperation == null) ? 1f : CurrentAsyncOperation.progress;
         }
+
+        /// <summary>
+        /// Gets the scene last loaded by the processor.
+        /// </summary>
+        /// <remarks>This is called after IsPercentComplete returns true.</remarks>
+        public override UnityScene GetLastLoadedScene() => _lastLoadedScene;
+
 
         /// <summary>
         /// Adds a loaded scene.
@@ -156,8 +169,7 @@ namespace FishNet.Managing.Scened
                 }
                 yield return null;
             } while (notDone);
-
-            yield break;
+            
         }
     }
 

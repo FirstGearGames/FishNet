@@ -63,8 +63,8 @@ namespace FishNet.Managing.Server
         /// </summary>
         internal void StoreRpcLinks(Dictionary<uint, RpcLinkType> links)
         {
-            foreach (RpcLinkType rlt in links.Values)
-                _availableRpcLinkIndexes.Enqueue(rlt.LinkIndex);
+            foreach (RpcLinkType rlt in links.Values) 
+                _availableRpcLinkIndexes.Enqueue(rlt.LinkPacketId);
         }
     }
 

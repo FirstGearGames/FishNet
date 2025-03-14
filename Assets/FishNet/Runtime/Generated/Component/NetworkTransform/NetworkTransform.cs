@@ -565,6 +565,14 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private bool _subscribedToUpdate;
         /// <summary>
+        /// Starting interpolation on the rigidbody.
+        /// </summary>
+        private RigidbodyInterpolation? _initializedRigidbodyInterpolation;
+        /// <summary>
+        /// Starting interpolation on the rigidbody2d.
+        /// </summary>
+        private RigidbodyInterpolation2D? _initializedRigidbodyInterpolation2d;
+        /// <summary>
         /// Last TransformData to be received from the server.
         /// </summary>
         private TransformData _lastReceivedServerTransformData;
@@ -604,12 +612,10 @@ namespace FishNet.Component.Transforming
         /// If not unset a force send will occur on or after this tick.
         /// </summary>
         private uint _forceSendTick = Managing.Timing.TimeManager.UNSET_TICK;
-
         /// <summary>
         /// Returns all properties as changed.
         /// </summary>
         private ChangedDelta _fullChanged => ChangedDelta.All;
-
         /// <summary>
         /// When true teleport will be sent with the next changed data.
         /// </summary>
@@ -653,7 +659,6 @@ namespace FishNet.Component.Transforming
         public override void OnStartServer()
         {
             _lastReceivedClientTransformData = ObjectCaches<TransformData>.Retrieve();
-            ConfigureComponents();
             InitializeFields(true);
             SetDefaultGoalData();
         }
@@ -769,7 +774,7 @@ namespace FishNet.Component.Transforming
                 else
                     _lastSentTransformData = ResettableObjectCaches<TransformData>.Retrieve();
             }
-            
+
             if (asServer)
             {
                 if (_toClientChangedWriter != null)
@@ -794,23 +799,36 @@ namespace FishNet.Component.Transforming
             {
                 if (TryGetComponent(out Rigidbody c))
                 {
+                    //If first time set starting interpolation.
+                    if (_initializedRigidbodyInterpolation == null)
+                        _initializedRigidbodyInterpolation = c.interpolation;
+                    
                     bool isKinematic = CanMakeKinematic();
                     c.isKinematic = isKinematic;
-                    c.interpolation = RigidbodyInterpolation.None;
+                    
+                    if (isKinematic)
+                        c.interpolation = RigidbodyInterpolation.None;
+                    else
+                        c.interpolation = _initializedRigidbodyInterpolation.Value;
                 }
             }
             //RB2D
             else if (_componentConfiguration == ComponentConfigurationType.Rigidbody2D)
             {
-                //Only client authoritative needs to be configured.
-                if (!_clientAuthoritative)
-                    return;
                 if (TryGetComponent(out Rigidbody2D c))
                 {
+                    //If first time set starting interpolation.
+                    if (_initializedRigidbodyInterpolation2d == null)
+                        _initializedRigidbodyInterpolation2d = c.interpolation;
+
                     bool isKinematic = CanMakeKinematic();
                     c.isKinematic = isKinematic;
                     c.simulated = !isKinematic;
-                    c.interpolation = RigidbodyInterpolation2D.None;
+                    
+                    if (isKinematic)
+                        c.interpolation = RigidbodyInterpolation2D.None;
+                    else
+                        c.interpolation = _initializedRigidbodyInterpolation2d.Value;
                 }
             }
             //CC
