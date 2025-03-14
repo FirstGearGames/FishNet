@@ -1,6 +1,7 @@
 
 using UnityEditor;
 using UnityEngine;
+using System.IO;
 using File = System.IO.File;
 
 #if UNITY_EDITOR
@@ -14,7 +15,15 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
         [MenuItem("Assets/Create/NetworkBehaviour Script", false, -220)]
         private static void CreateNewAsset()
         {
-            string templatePath = Application.dataPath + "/FishNet/Assets/FishNet/Runtime/Editor/NewNetworkBehaviour/template.txt";
+            string templatePath;
+            if (Directory.Exists(Application.dataPath + "/FishNet"))
+            {
+                templatePath = Application.dataPath + "/FishNet/Assets/FishNet/Runtime/Editor/NewNetworkBehaviour/template.txt";
+            }
+            else
+            {
+                templatePath = "Packages/com.firstgeargames.fishnet/Runtime/Editor/NewNetworkBehaviour/template.txt";
+            }
             if (!File.Exists(templatePath))
             {
 
