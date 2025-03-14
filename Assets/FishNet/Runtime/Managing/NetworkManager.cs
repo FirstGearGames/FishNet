@@ -167,11 +167,11 @@ namespace FishNet.Managing
         /// Starting index for RpcLinks.
         /// </summary>
         internal static ushort StartingRpcLinkIndex;
-        #if DEVELOPMENT
+#if DEVELOPMENT
         /// <summary>
-        /// Last read packetId be it from server or client.
+        /// Logs data about parser to help debug.
         /// </summary>
-        internal PacketId LastReadPacketId;
+        internal PacketIdHistory PacketIdHistory = new();
 #endif
         #endregion
 

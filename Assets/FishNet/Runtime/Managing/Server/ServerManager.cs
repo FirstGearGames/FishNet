@@ -223,7 +223,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Logs data about parser to help debug.
         /// </summary>
-        private ParseLogger _parseLogger = new();
+        private PacketIdHistory _packetIdHistory = new();
 #endif
         #endregion
 
@@ -683,10 +683,6 @@ namespace FishNet.Managing.Server
         /// <param name="args"></param>
         private void ParseReceived(ServerReceivedDataArgs args)
         {
-#if DEVELOPMENT
-            _parseLogger.Reset();
-#endif
-
             //Not from a valid connection.
             if (args.ConnectionId < 0)
                 return;
@@ -729,7 +725,7 @@ namespace FishNet.Managing.Server
             if (reader.PeekPacketId() == PacketId.Split)
             {
 #if DEVELOPMENT
-                NetworkManager.LastReadPacketId = PacketId.Split;
+                NetworkManager.PacketIdHistory.ReceivedPacket(PacketId.Split, packetFromServer: false);
 #endif
                 //Skip packetId.
                 reader.ReadPacketId();
@@ -764,8 +760,7 @@ namespace FishNet.Managing.Server
             {
                 packetId = reader.ReadPacketId();
 #if DEVELOPMENT
-                NetworkManager.LastReadPacketId = packetId;
-                _parseLogger.AddPacket(packetId);
+                NetworkManager.PacketIdHistory.ReceivedPacket(packetId, packetFromServer: false);
 #endif
                 NetworkConnection conn;
 
@@ -830,7 +825,7 @@ namespace FishNet.Managing.Server
                 {
 #if DEVELOPMENT
                     NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} on channel {args.Channel} from connectionId {args.ConnectionId}. Remaining data has been purged.");
-                    _parseLogger.Print(NetworkManager);
+                    NetworkManager.LogError(NetworkManager.PacketIdHistory.GetReceivedPacketIds(packetsFromServer: false));
 #else
                         NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} on channel {args.Channel} from connectionId {args.ConnectionId}. Connection will be kicked immediately.");
                         NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);

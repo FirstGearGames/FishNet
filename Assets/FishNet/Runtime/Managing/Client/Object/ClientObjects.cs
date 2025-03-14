@@ -325,10 +325,10 @@ namespace FishNet.Managing.Client
                 nb.OnReconcileRpc(null, reader, channel);
             else
                 SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
-            
+
 #if DEVELOPMENT
             NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, base.NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
-#endif            
+#endif
         }
 
         /// <summary>

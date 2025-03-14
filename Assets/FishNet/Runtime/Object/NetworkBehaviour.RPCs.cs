@@ -499,7 +499,8 @@ namespace FishNet.Object
                 if (readAmount != expectedReadAmount)
                 {
                     string src = (fromRpcLink) ? "RpcLink" : "Rpc";
-                    string msg = $"A {src} read an incorrect amount of data on channel {channel}. Read length was {readAmount}, expected length is {expectedReadAmount}. {rpcInformation}. Last packetId was {manager.LastReadPacketId}.";
+                    string msg = $"A {src} read an incorrect amount of data on channel {channel}. Read length was {readAmount}, expected length is {expectedReadAmount}. {rpcInformation}." +
+                                 $" {manager.PacketIdHistory.GetReceivedPacketIds(packetsFromServer: (reader.Source == Reader.DataSource.Server))}.";
                     manager.LogError(msg);
 
                     return true;

@@ -89,7 +89,7 @@ namespace FishNet.Utility.Template
                 if (TickCallbackFastContains(_tickCallbacks, TickCallback.Update))
                     tm.OnUpdate += TimeManager_OnUpdate;
                 if (TickCallbackFastContains(_tickCallbacks, TickCallback.LateUpdate))
-                    tm.OnUpdate += TimeManager_OnLateUpdate;
+                    tm.OnLateUpdate += TimeManager_OnLateUpdate;
             }
             else
             {
@@ -102,7 +102,7 @@ namespace FishNet.Utility.Template
                 if (TickCallbackFastContains(_tickCallbacks, TickCallback.Update))
                     tm.OnUpdate -= TimeManager_OnUpdate;
                 if (TickCallbackFastContains(_tickCallbacks, TickCallback.LateUpdate))
-                    tm.OnUpdate -= TimeManager_OnLateUpdate;
+                    tm.OnLateUpdate -= TimeManager_OnLateUpdate;
             }
         }
 
