@@ -426,7 +426,7 @@ namespace FishNet.Managing.Object
                 SkipDataLength((ushort)PacketId.ServerRpc, reader, dataLength);
             
 #if DEVELOPMENT
-            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount);
+            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
 #endif
         }
 

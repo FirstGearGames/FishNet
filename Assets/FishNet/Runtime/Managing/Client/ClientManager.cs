@@ -401,6 +401,9 @@ namespace FishNet.Managing.Client
              * received. */
             if (reader.PeekPacketId() == PacketId.Split)
             {
+#if DEVELOPMENT
+                NetworkManager.LastReadPacketId = PacketId.Split;
+#endif
                 //Skip packetId.
                 reader.ReadPacketId();
                 int expectedMessages;
@@ -421,6 +424,7 @@ namespace FishNet.Managing.Client
             {
                 packetId = reader.ReadPacketId();
 #if DEVELOPMENT
+                NetworkManager.LastReadPacketId = packetId;
                 // if (!NetworkManager.IsServerStarted)
                 //     print = true;
                 // if (print)

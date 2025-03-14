@@ -1,7 +1,6 @@
 ﻿
 using System;
 using System.Text;
-using UnityEditor.VersionControl;
 
 namespace GameKit.Dependencies.Utilities
 {
