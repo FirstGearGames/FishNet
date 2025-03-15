@@ -72,7 +72,7 @@ namespace FishNet.Managing.Client
             }
 
 #if DEVELOPMENT
-            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: true, base.NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount);
+            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: true, base.NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
 #endif
         }
 

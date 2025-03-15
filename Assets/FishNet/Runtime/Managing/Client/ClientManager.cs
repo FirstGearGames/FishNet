@@ -139,12 +139,6 @@ namespace FishNet.Managing.Client
         /// Used to read splits.
         /// </summary>
         private SplitReader _splitReader = new();
-#if DEVELOPMENT
-        /// <summary>
-        /// Logs data about parser to help debug.
-        /// </summary>
-        private ParseLogger _parseLogger = new();
-#endif
         #endregion
 
         private void OnDestroy()
@@ -366,9 +360,6 @@ namespace FishNet.Managing.Client
         /// </summary>
         private void ParseReceived(ClientReceivedDataArgs args)
         {
-#if DEVELOPMENT
-            _parseLogger.Reset();
-#endif
             _lastPacketTime = Time.unscaledTime;
 
             ArraySegment<byte> segment;
@@ -401,6 +392,9 @@ namespace FishNet.Managing.Client
              * received. */
             if (reader.PeekPacketId() == PacketId.Split)
             {
+#if DEVELOPMENT
+                NetworkManager.PacketIdHistory.ReceivedPacket(PacketId.Split, packetFromServer: true);
+#endif
                 //Skip packetId.
                 reader.ReadPacketId();
                 int expectedMessages;
@@ -421,6 +415,7 @@ namespace FishNet.Managing.Client
             {
                 packetId = reader.ReadPacketId();
 #if DEVELOPMENT
+                NetworkManager.PacketIdHistory.ReceivedPacket(packetId, packetFromServer: true);
                 // if (!NetworkManager.IsServerStarted)
                 //     print = true;
                 // if (print)
@@ -431,7 +426,6 @@ namespace FishNet.Managing.Client
                 //         Debug.LogWarning($"PacketId {packetId} - Remaining {reader.Remaining}.");
                 // }
                 // print = false;
-                _parseLogger.AddPacket(packetId);
 #endif
                 bool spawnOrDespawn = (packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn);
                 /* Length of data. Only available if using unreliable. Unreliable packets
@@ -525,7 +519,7 @@ namespace FishNet.Managing.Client
                     {
                         NetworkManager.LogError($"Client received an unhandled PacketId of {(ushort)packetId} on channel {channel}. Remaining data has been purged.");
 #if DEVELOPMENT
-                        _parseLogger.Print(NetworkManager);
+                        NetworkManager.LogError(NetworkManager.PacketIdHistory.GetReceivedPacketIds(packetsFromServer: true));
 #endif
                         return;
                     }
