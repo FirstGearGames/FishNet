@@ -7,6 +7,7 @@ using UnitySettingsProviderAttribute = UnityEditor.SettingsProviderAttribute;
 using UnitySettingsProvider = UnityEditor.SettingsProvider;
 using FishNet.Configuring;
 using System.IO;
+using System.Xml.Linq;
 
 
 namespace FishNet.Editing.NewNetworkBehaviourScript
@@ -16,8 +17,7 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
 
 
         private static PrefabGeneratorConfigurations _settings;
-        static string templatePath = Application.dataPath + "/FishNet/Assets/FishNet/Runtime/Editor/NewNetworkBehaviour/template.txt";
-
+        static string  templatePath;
         [UnitySettingsProvider]
         private static UnitySettingsProvider Create()
         {
@@ -39,7 +39,9 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
 
         private static void OnGUI(string searchContext)
         {
-          if(GUILayout.Button("Edit template"))
+            if(templatePath == null) templatePath = Application.dataPath + "/FishnetNBTemplate.txt";
+
+            if (GUILayout.Button("Edit template"))
             {
                 if (!File.Exists(templatePath))
                 {
@@ -47,6 +49,9 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
                 }
                 System.Diagnostics.Process.Start(templatePath);
             }
+           
+            EditorGUILayout.LabelField($"Template path:  {templatePath}");
+            
         }
 
        
