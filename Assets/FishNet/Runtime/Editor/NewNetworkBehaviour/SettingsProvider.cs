@@ -7,7 +7,8 @@ using UnitySettingsProviderAttribute = UnityEditor.SettingsProviderAttribute;
 using UnitySettingsProvider = UnityEditor.SettingsProvider;
 using FishNet.Configuring;
 using System.IO;
-using System.Xml.Linq;
+using System;
+using System.Text.RegularExpressions;
 
 
 namespace FishNet.Editing.NewNetworkBehaviourScript
@@ -16,8 +17,10 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
     {
 
 
-        private static PrefabGeneratorConfigurations _settings;
-        static string  templatePath;
+        private static CreateNewNetworkBehaviourConfigurations _settings;
+        static string templatePath;
+        private static GUIContent _folderIcon;
+        private static readonly Regex SlashRegex = new(@"[\\//]");
         [UnitySettingsProvider]
         private static UnitySettingsProvider Create()
         {
@@ -39,25 +42,70 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
 
         private static void OnGUI(string searchContext)
         {
-            if(templatePath == null) templatePath = Application.dataPath + "/FishnetNBTemplate.txt";
+            if (_settings == null)
+                _settings = Configuration.Configurations.CreateNewNetworkBehaviour;
+
+            if (_folderIcon == null)
+                _folderIcon = EditorGUIUtility.IconContent("d_FolderOpened Icon");
+
+            EditorGUI.BeginChangeCheck();
+
+            GUILayoutOption iconWidthConstraint = GUILayout.MaxWidth(32.0f);
+            GUILayoutOption iconHeightConstraint = GUILayout.MaxHeight(EditorGUIUtility.singleLineHeight);
 
             if (GUILayout.Button("Edit template"))
             {
+                templatePath = Path.Combine(_settings.templateDirectoryPath, "FishnetNBTemplate.txt");
+
                 if (!File.Exists(templatePath))
                 {
                     CreateNewNetworkBehaviour.CopyExistingTemplate(templatePath);
                 }
                 System.Diagnostics.Process.Start(templatePath);
             }
-           
-            EditorGUILayout.LabelField($"Template path:  {templatePath}");
-            
+            GUILayout.Space(20);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("Template directory: ", GUILayout.MaxWidth(150));
+            string newDirectoryPath;
+
+            newDirectoryPath = EditorGUILayout.DelayedTextField(_settings.templateDirectoryPath, GUILayout.MaxWidth(600));
+            if (newDirectoryPath.StartsWith("Assets") && Directory.Exists(newDirectoryPath))
+            {
+                _settings.templateDirectoryPath = newDirectoryPath;
+            }
+            else
+            {
+                EditorWindow.focusedWindow.ShowNotification(new($"Directory must be inside the Assets folder."), 2);
+            }
+
+
+            if (GUILayout.Button(_folderIcon, iconHeightConstraint, iconWidthConstraint))
+            {
+                newDirectoryPath = EditorUtility.OpenFolderPanel("Select template directory", _settings.templateDirectoryPath, "");
+            }
+            if (newDirectoryPath.StartsWith(Application.dataPath, StringComparison.OrdinalIgnoreCase))
+            {
+                newDirectoryPath = SlashRegex.Replace(newDirectoryPath.Remove(0, Path.GetDirectoryName(Application.dataPath).Length + 1), Path.DirectorySeparatorChar.ToString());
+                _settings.templateDirectoryPath = newDirectoryPath;
+            }
+            else if (!newDirectoryPath.StartsWith(Application.dataPath, StringComparison.OrdinalIgnoreCase) && !newDirectoryPath.StartsWith("Assets"))
+            {
+                EditorWindow.focusedWindow.ShowNotification(new($"Directory must be inside the Assets folder."), 2);
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.HelpBox("By default MonoBehaviour script template will be copied", MessageType.Info);
+            if (EditorGUI.EndChangeCheck())
+                Configuration.Configurations.Write(true);
+
+
+
+
+
+
         }
-
-       
-
-      
     }
-}
 
+}
 #endif

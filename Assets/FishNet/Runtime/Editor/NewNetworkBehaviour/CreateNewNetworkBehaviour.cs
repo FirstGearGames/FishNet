@@ -1,4 +1,5 @@
 
+using FishNet.Configuring;
 using System;
 using System.IO;
 using UnityEditor;
@@ -12,11 +13,14 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
     {
 
         private const string DEFAULT_TEMPLATE_NAME = "1-Scripting__MonoBehaviour Script-NewMonoBehaviourScript.cs.txt";
+       
+
 
         [MenuItem("Assets/Create/NetworkBehaviour Script", false, -220)]
         private static void CreateNewAsset()
         {
-            string templatePath = Application.dataPath + "/FishnetNBTemplate.txt";
+            
+            string templatePath = Path.Combine(Configuration.Configurations.CreateNewNetworkBehaviour.templateDirectoryPath,"FishnetNBTemplate.txt");
             if (!File.Exists(templatePath))
             {
 
@@ -32,7 +36,8 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
 
         public static void CopyExistingTemplate(string templatePath)
         {
-            File.Copy(EditorApplication.applicationContentsPath + "/Resources/ScriptTemplates/" + DEFAULT_TEMPLATE_NAME, templatePath);
+         
+            File.Copy(EditorApplication.applicationContentsPath + "/Resources/ScriptTemplates/" + DEFAULT_TEMPLATE_NAME,templatePath);
             string fileContent = File.ReadAllText(templatePath);
             fileContent = fileContent.ReplaceFirstOccurence("MonoBehaviour", "NetworkBehaviour");
             fileContent = fileContent.Replace("using UnityEngine;", "using UnityEngine;\nusing FishNet.Object;");
