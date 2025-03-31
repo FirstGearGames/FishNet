@@ -224,7 +224,7 @@ namespace FishNet.Demo.Prediction.Rigidbodies
              * to boost tick before adding boost.
              * This is done in the scenario a boost happened outside replay,
              * we don't want to boost during a replay before the boost started. */
-            if (_boostStartTick != TimeManager.UNSET_TICK && rdTick <= _boostStartTick)
+            if (_boostStartTick != TimeManager.UNSET_TICK && rdTick >= _boostStartTick)
             {
                 //Add boost to forward force.                
                 forwardForce += new Vector3(0f, 0f, _boostForce);
