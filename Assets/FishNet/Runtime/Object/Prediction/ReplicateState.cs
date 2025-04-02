@@ -65,7 +65,7 @@ namespace FishNet.Object.Prediction
         public static bool IsTickedCreated(this ReplicateState value) => (value == (ReplicateState.Ticked | ReplicateState.Created));
 
         /// <summary>
-        /// Returns if value equals (ReplicateState.Ticked.
+        /// Returns if value equals ReplicateState.Ticked.
         /// </summary>
         public static bool IsTickedNonCreated(this ReplicateState value) => (value == ReplicateState.Ticked);
 
@@ -77,7 +77,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns if value is ReplicateState.Replayed without ReplicateState.Ticked nor ReplicateState.Created.
         /// </summary>
-        public static bool IsFuture(this ReplicateState value) => value.ContainsReplayed() && !value.ContainsTicked() && !value.ContainsCreated();
+        public static bool IsFuture(this ReplicateState value) => (value == ReplicateState.Replayed);
 
         [Obsolete("Use ContainsCreated.")]
         public static bool IsCreated(this ReplicateState value) => value.ContainsCreated();

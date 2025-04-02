@@ -106,6 +106,10 @@ namespace FishNet.Managing.Timing
         /// RoundTripTime in milliseconds. This value includes latency from the tick rate.
         /// </summary>
         public long RoundTripTime { get; private set; }
+        /// <summary>
+        /// Returns half value of RoundTripTime rounded to nearest whole.
+        /// </summary>
+        public long HalfRoundTripTime => (long)Math.Round((double)RoundTripTime / 2d);
 
         /// <summary>
         /// True if the number of frames per second are less than the number of expected ticks per second.
@@ -454,7 +458,7 @@ namespace FishNet.Managing.Timing
         private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
         {
             //If no servers are running.
-            if (!NetworkManager.ServerManager.AnyServerStarted())
+            if (!NetworkManager.ServerManager.IsAnyServerStarted())
             {
                 LastPacketTick.ResetTicks();
                 ServerUptime = 0f;
@@ -704,7 +708,7 @@ namespace FishNet.Managing.Timing
                     NetworkManager.PredictionManager.ReconcileToStates();
                     OnTick?.Invoke();
 
-                    if (PhysicsMode == PhysicsMode.TimeManager)
+                    if (PhysicsMode == PhysicsMode.TimeManager && tickDelta > 0f)
                     {
                         OnPrePhysicsSimulation?.Invoke(tickDelta);
                         Physics.Simulate(tickDelta);
@@ -1050,20 +1054,21 @@ namespace FishNet.Managing.Timing
                  * be new data going out each tick, since
                  * movement is often based off the tick system.
                  * Because of this don't iterate incoming if
-                 * it's the same frame but the outgoing
-                 * may iterate multiple times per frame. */
+                 * it's the same frame, but the outgoing
+                 * may iterate multiple times per frame due to
+                 * there possibly being multiple ticks per frame. */
                 int frameCount = Time.frameCount;
                 if (frameCount == _lastIncomingIterationFrame)
                     return;
                 _lastIncomingIterationFrame = frameCount;
 
-                NetworkManager.TransportManager.IterateIncoming(true);
-                NetworkManager.TransportManager.IterateIncoming(false);
+                NetworkManager.TransportManager.IterateIncoming(asServer: true);
+                NetworkManager.TransportManager.IterateIncoming(asServer: false);
             }
             else
             {
-                NetworkManager.TransportManager.IterateOutgoing(true);
-                NetworkManager.TransportManager.IterateOutgoing(false);
+                NetworkManager.TransportManager.IterateOutgoing(asServer: true);
+                NetworkManager.TransportManager.IterateOutgoing(asServer: false);
             }
         }
 

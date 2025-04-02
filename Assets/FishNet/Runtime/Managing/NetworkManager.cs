@@ -224,7 +224,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.6.4";
+        public const string FISHNET_VERSION = "4.6.5";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
@@ -398,7 +398,7 @@ namespace FishNet.Managing
             if (_persistence == PersistenceType.DestroyNewest)
             {
                 InternalLog($"NetworkManager on object {gameObject.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance already exist on {firstInstance.name}.");
-                Destroy(gameObject);
+                DestroyImmediate(gameObject);
                 //This one is being destroyed because its the newest.
                 return false;
             }
@@ -406,7 +406,7 @@ namespace FishNet.Managing
             else if (_persistence == PersistenceType.DestroyOldest)
             {
                 InternalLog($"NetworkManager on object {firstInstance.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance has been created on {gameObject.name}.");
-                Destroy(firstInstance.gameObject);
+                DestroyImmediate(firstInstance.gameObject);
                 //This being the new one will persist, allow initialization.
                 return true;
             }

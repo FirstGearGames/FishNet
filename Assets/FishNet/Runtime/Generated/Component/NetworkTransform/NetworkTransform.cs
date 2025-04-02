@@ -802,10 +802,10 @@ namespace FishNet.Component.Transforming
                     //If first time set starting interpolation.
                     if (_initializedRigidbodyInterpolation == null)
                         _initializedRigidbodyInterpolation = c.interpolation;
-                    
+
                     bool isKinematic = CanMakeKinematic();
                     c.isKinematic = isKinematic;
-                    
+
                     if (isKinematic)
                         c.interpolation = RigidbodyInterpolation.None;
                     else
@@ -824,7 +824,7 @@ namespace FishNet.Component.Transforming
                     bool isKinematic = CanMakeKinematic();
                     c.isKinematic = isKinematic;
                     c.simulated = !isKinematic;
-                    
+
                     if (isKinematic)
                         c.interpolation = RigidbodyInterpolation2D.None;
                     else
@@ -1917,7 +1917,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets move rates which will occur over time.
         /// </summary>
-        private void SetCalculatedRates(TransformData prevTd, RateData prevRd, GoalData nextGd, ChangedFull changedFull, bool hasChanged, Channel channel, bool asServer)
+        private void SetCalculatedRates(TransformData prevTd, RateData prevRd, GoalData nextGd, ChangedFull changedFull, bool hasChanged, Channel channel)
         {
             /* Only update rates if data has changed.
              * When data comes in reliably for eventual consistency
@@ -1933,7 +1933,7 @@ namespace FishNet.Component.Transforming
             }
 
             float timePassed;
-            uint tickDifference = GetTickDifference(prevTd, nextGd, 1, asServer, out timePassed);
+            uint tickDifference = GetTickDifference(prevTd, nextGd, 1, out timePassed);
 
             //Distance between properties.
             float distance;
@@ -2091,31 +2091,20 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Gets the tick difference between two GoalDatas.
         /// </summary>
-        private uint GetTickDifference(TransformData prevTd, GoalData nextGd, uint minimum, bool asServer, out float timePassed)
+        private uint GetTickDifference(TransformData prevTd, GoalData nextGd, uint minimum, out float timePassed)
         {
-            long tickDifference;
+            TransformData nextTd = nextGd.Transforms;
 
-            //Clients send every interval to server.
-            if (asServer)
-            {
-                tickDifference = 1;
-            }
-            //Server does not always send every interval to client.
-            else
-            {
-                TransformData nextTd = nextGd.Transforms;
+            uint lastTick = prevTd.Tick;
+            /* Ticks passed between datas. If 0 then the last data
+             * was either not set or reliable, in which case the tick
+             * difference should be considered 1. */
+            if (lastTick == 0)
+                lastTick = (nextTd.Tick - _interval);
 
-                uint lastTick = prevTd.Tick;
-                /* Ticks passed between datas. If 0 then the last data
-                 * was either not set or reliable, in which case the tick
-                 * difference should be considered 1. */
-                if (lastTick == 0)
-                    lastTick = (nextTd.Tick - _interval);
-
-                tickDifference = (nextTd.Tick - lastTick);
-                if (tickDifference < minimum)
-                    tickDifference = minimum;
-            }
+            long tickDifference = (nextTd.Tick - lastTick);
+            if (tickDifference < minimum)
+                tickDifference = minimum;
 
             timePassed = (float)base.NetworkManager.TimeManager.TicksToTime((uint)tickDifference);
             return (uint)tickDifference;
@@ -2221,13 +2210,13 @@ namespace FishNet.Component.Transforming
             //If server only teleport.
             if (asServer && !base.IsClientStarted)
             {
-                uint tickDifference = GetTickDifference(prevTd, nextGd, 1, asServer: true, out float timePassed);
+                uint tickDifference = GetTickDifference(prevTd, nextGd, 1, out float timePassed);
                 SetInstantRates(nextGd.Rates, tickDifference, timePassed);
             }
             //Otherwise use timed.
             else
             {
-                SetCalculatedRates(prevTd, prevRd, nextGd, changedFull, hasChanged, channel, asServer);
+                SetCalculatedRates(prevTd, prevRd, nextGd, changedFull, hasChanged, channel);
             }
 
             _lastReceiveReliable = (channel == Channel.Reliable);
@@ -2431,6 +2420,7 @@ namespace FishNet.Component.Transforming
             /* Reset server and client side since this is called from
              * OnStopNetwork. */
 
+            _lastObserversRpcTick = TimeManager.UNSET_TICK;
             _authoritativeClientData.ResetState();
 
             WriterPool.StoreAndDefault(ref _toClientChangedWriter);

@@ -7,7 +7,6 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Public.
@@ -40,6 +39,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="connection">Connection receiving the payload. When sending to the server connection.IsValid will return false.</param>
         public virtual void WritePayload(NetworkConnection connection, Writer writer) { }
+
         /// <summary>
         /// Called before network start callbacks, but after the object is initialized with network values. This may be used to read information from predicted spawning, or simply have values set before initialization without depending on SyncTypes.
         /// </summary>
@@ -66,7 +66,6 @@ namespace FishNet.Object
                 item.OnStopCallback(asServer);
         }
 
-
         /// <summary>
         /// Invokes the OnStart/StopNetwork.
         /// </summary>
@@ -76,6 +75,12 @@ namespace FishNet.Object
             {
                 if (_onStartNetworkCalled)
                     return;
+
+                if (!gameObject.activeInHierarchy)
+                {
+                    NetworkInitialize___Early();
+                    NetworkInitialize___Late();
+                }
                 OnStartNetwork_Internal();
             }
             else
@@ -86,13 +91,13 @@ namespace FishNet.Object
             }
         }
 
-        
         internal virtual void OnStartNetwork_Internal()
         {
             _onStartNetworkCalled = true;
             _onStopNetworkCalled = false;
             OnStartNetwork();
         }
+
         /// <summary>
         /// Called when the network has initialized this object. May be called for server or client but will only be called once.
         /// When as host or server this method will run before OnStartServer. 
@@ -100,15 +105,14 @@ namespace FishNet.Object
         /// </summary>
         public virtual void OnStartNetwork() { }
 
-
-        
         internal virtual void OnStopNetwork_Internal()
         {
             _onStopNetworkCalled = true;
             _onStartNetworkCalled = false;
-            
+
             OnStopNetwork();
         }
+
         /// <summary>
         /// Called when the network is deinitializing this object. May be called for server or client but will only be called once.
         /// When as host or server this method will run after OnStopServer.
@@ -116,39 +120,36 @@ namespace FishNet.Object
         /// </summary>
         public virtual void OnStopNetwork() { }
 
-
-        
         internal void OnStartServer_Internal()
         {
             OnStartServerCalled = true;
             OnStartServer();
         }
+
         /// <summary>
         /// Called on the server after initializing this object.
         /// SyncTypes modified before or during this method will be sent to clients in the spawn message.
         /// </summary> 
         public virtual void OnStartServer() { }
 
-
-        
         internal void OnStopServer_Internal()
         {
             OnStartServerCalled = false;
             ReturnRpcLinks();
             OnStopServer();
         }
+
         /// <summary>
         /// Called on the server before deinitializing this object.
         /// </summary>
         public virtual void OnStopServer() { }
 
-
-        
         internal void OnOwnershipServer_Internal(NetworkConnection prevOwner)
         {
             ResetState_Prediction(true);
             OnOwnershipServer(prevOwner);
         }
+
         /// <summary>
         /// Called on the server after ownership has changed.
         /// </summary>
@@ -161,37 +162,35 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="connection">Connection the object is being spawned for.</param>
         public virtual void OnSpawnServer(NetworkConnection connection) { }
+
         /// <summary>
         /// Called on the server before a despawn message for this object has been sent to connection.
         /// Useful for sending remote calls or actions to clients.
         /// </summary>
         public virtual void OnDespawnServer(NetworkConnection connection) { }
 
-
-        
         internal void OnStartClient_Internal()
         {
             OnStartClientCalled = true;
             OnStartClient();
         }
+
         /// <summary>
         /// Called on the client after initializing this object.
         /// </summary>
         public virtual void OnStartClient() { }
 
-
-        
         internal void OnStopClient_Internal()
         {
             OnStartClientCalled = false;
             OnStopClient();
         }
+
         /// <summary>
         /// Called on the client before deinitializing this object.
         /// </summary>
         public virtual void OnStopClient() { }
 
-        
         internal void OnOwnershipClient_Internal(NetworkConnection prevOwner)
         {
             //If losing or gaining ownership then clear replicate cache.
@@ -208,8 +207,5 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="prevOwner">Previous owner of this object.</param>
         public virtual void OnOwnershipClient(NetworkConnection prevOwner) { }
-
     }
-
-
 }

@@ -76,7 +76,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <param name="channel"></param>
         internal void SetCurrentChannel(Channel channel) => _currentChannel = channel;
         #endregion
-        
+
         #region Private.
         /// <summary>
         /// Sync interval converted to ticks.
@@ -380,8 +380,7 @@ namespace FishNet.Object.Synchronizing.Internal
             _lastReadChangeId = id;
             return true;
         }
-        
-        
+
         /// <summary>
         /// Writes the readId for a change.
         /// </summary>
@@ -398,18 +397,38 @@ namespace FishNet.Object.Synchronizing.Internal
             {
                 rollOver = false;
             }
-            
+
             _lastWrittenChangeId++;
             writer.WriteBoolean(rollOver);
             writer.WriteUInt16(_lastWrittenChangeId);
         }
 
+#if !FISHNET_STABLE_SYNCTYPES        
         /// <summary>
         /// Returns true if values are being read as clientHost.
         /// </summary>
         /// <param name="asServer">True if reading as server.</param>
         /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
         protected bool IsReadAsClientHost(bool asServer) => (!asServer && NetworkManager.IsServerStarted);
+
+        /// <summary>
+        /// Returns true if values are being read as clientHost.
+        /// </summary>
+        /// <param name="asServer">True if reading as server.</param>
+        /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
+        protected bool CanReset(bool asServer)
+        {
+            bool clientStarted = (IsNetworkInitialized && NetworkManager.IsClientStarted);
+            return (asServer && !clientStarted) || (!asServer && NetworkBehaviour.IsDeinitializing);
+        }
+#else
+        /// <summary>
+        /// Returns true if values are being read as clientHost.
+        /// </summary>
+        /// <param name="asServer">True if reading as server.</param>
+        /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
+        protected bool IsReadAsClientHost(bool asServer) => (!asServer && (NetworkManager != null && NetworkManager.IsServerStarted));
+#endif
 
         /// <summary>
         /// Outputs values which may be helpful on how to process a read operation.

@@ -81,7 +81,7 @@ namespace FishNet.Managing.Client
                 //If not server then deinitialize normally.
                 if (!base.NetworkManager.IsServerStarted)
                 {
-                    base.DespawnWithoutSynchronization(false);
+                    base.DespawnWithoutSynchronization(recursive: true, asServer: false);
                 }
                 //Otherwise invoke stop callbacks only for client side.
                 else
@@ -315,7 +315,7 @@ namespace FishNet.Managing.Client
         internal void ParseReconcileRpc(PooledReader reader, Channel channel)
         {
 #if DEVELOPMENT
-            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
+            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int readerRemainingAfterLength, out string rpcInformation, out uint expectedReadAmount);
 #endif
 
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
@@ -327,7 +327,7 @@ namespace FishNet.Managing.Client
                 SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
 
 #if DEVELOPMENT
-            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, base.NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
+            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, base.NetworkManager, reader, readerRemainingAfterLength, rpcInformation, expectedReadAmount, channel);
 #endif
         }
 

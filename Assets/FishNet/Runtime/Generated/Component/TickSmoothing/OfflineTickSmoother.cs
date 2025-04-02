@@ -88,11 +88,9 @@ namespace FishNet.Component.Transforming.Beta
                 return;
             }
 
-            //_initialized = true;
-            
             SmootherController.SetTimeManager(timeManager);
 
-            _initializationSettings.UpdateRuntimeSettings(initializingNetworkBehaviour: null, transform, (float)timeManager.TickDelta);
+            _initializationSettings.UpdateRuntimeSettings(timeManager, transform, (float)timeManager.TickDelta);
             SmootherController.Initialize(_initializationSettings, _movementSettings, default);
             SmootherController.StartSmoother();
         }

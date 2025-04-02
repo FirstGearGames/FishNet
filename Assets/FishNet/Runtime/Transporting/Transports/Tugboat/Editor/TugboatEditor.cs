@@ -10,8 +10,9 @@ namespace FishNet.Transporting.Tugboat.Editing
     [CanEditMultipleObjects]
     public class TugboatEditor : Editor
     {
-        private SerializedProperty _unreliableMtu;
+        private SerializedProperty _stopSocketsOnThread;
         private SerializedProperty _dontRoute;
+        private SerializedProperty _unreliableMtu;
 
         private SerializedProperty _ipv4BindAddress;
         private SerializedProperty _enableIpv6;
@@ -24,6 +25,7 @@ namespace FishNet.Transporting.Tugboat.Editing
 
         protected virtual void OnEnable()
         {
+            _stopSocketsOnThread = serializedObject.FindProperty(nameof(_stopSocketsOnThread));
             _dontRoute = serializedObject.FindProperty(nameof(_dontRoute));
             _unreliableMtu = serializedObject.FindProperty(nameof(_unreliableMtu));
             _ipv4BindAddress = serializedObject.FindProperty(nameof(_ipv4BindAddress));
@@ -45,6 +47,7 @@ namespace FishNet.Transporting.Tugboat.Editing
 
             EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_stopSocketsOnThread);
             EditorGUILayout.PropertyField(_dontRoute);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();

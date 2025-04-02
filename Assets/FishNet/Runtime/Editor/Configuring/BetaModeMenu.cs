@@ -16,6 +16,7 @@ namespace FishNet.Editing.Beta
         #region const.
         private const string STABLE_SYNCTYPES_DEFINE = "FISHNET_STABLE_SYNCTYPES";
         private const string STABLE_REPLICATESTATES_DEFINE = "FISHNET_STABLE_REPLICATESTATES";
+        private const string STABLE_RECURSIVE_DESPAWNS_DEFINE = "FISHNET_STABLE_RECURSIVE_DESPAWNS";
         #endregion
 
         #region Beta SyncTypes
@@ -31,6 +32,22 @@ namespace FishNet.Editing.Beta
             bool result = DeveloperMenu.RemoveOrAddDefine(STABLE_SYNCTYPES_DEFINE, removeDefine: !useStable);
             if (result)
                 Debug.LogWarning($"Beta SyncTypes are now {GetBetaEnabledText(useStable)}.");
+        }
+        #endregion
+        
+        #region Beta Recursive Despawns
+#if FISHNET_STABLE_RECURSIVE_DESPAWNS
+        [MenuItem("Tools/Fish-Networking/Beta/Enable for Recursive Despawns", false, -1101)]
+        private static void EnableBetaRecursiveDespawns() => SetBetaRecursiveDespawns(useStable: false);
+#else
+        [MenuItem("Tools/Fish-Networking/Beta/Disable for Recursive Despawns", false, -1101)]
+        private static void DisableBetaRecursiveDespawns() => SetBetaRecursiveDespawns(useStable: true);
+#endif
+        private static void SetBetaRecursiveDespawns(bool useStable)
+        {
+            bool result = DeveloperMenu.RemoveOrAddDefine(STABLE_RECURSIVE_DESPAWNS_DEFINE,  removeDefine: !useStable);
+            if (result)
+                Debug.LogWarning($"Beta Recursive Despawns are now {GetBetaEnabledText(useStable)}.");
         }
         #endregion
         

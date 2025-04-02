@@ -73,7 +73,7 @@ namespace FishNet.Component.Spawning
                 return;
 
             //If more than 1 server is started then exit. This means the user is using multipass and another server already started.
-            if (!_serverManager.OneServerStarted())
+            if (!_serverManager.IsOnlyOneServerStarted())
                 return;
 
             Spawn_Internally();

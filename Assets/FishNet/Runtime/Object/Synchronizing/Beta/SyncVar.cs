@@ -167,7 +167,12 @@ namespace FishNet.Object.Synchronizing
         public void SetInitialValues(T value)
         {
             _initialValue = value;
-            UpdateValues(value);
+            /* Only update current if a value has not been set already.
+             * A value normally would not be set unless a SyncVar came through
+             * as the object was enabling, such as if it started in a disabled state
+             * and was later enabled. */
+            if (!_valueSetAfterInitialized)
+                UpdateValues(value);
 
             if (base.IsInitialized)
                 _valueSetAfterInitialized = true;
@@ -417,7 +422,7 @@ namespace FishNet.Object.Synchronizing
             //     if (!_valueSetAfterInitialized)
             //         return;
             // }
-            
+
             if (!_valueSetAfterInitialized)
                 return;
 
@@ -459,8 +464,7 @@ namespace FishNet.Object.Synchronizing
              * asServer is true.
              * Is not network initialized.
              * asServer is false, and server is not started. */
-            bool clientStarted = (base.IsNetworkInitialized && base.NetworkManager.IsClientStarted);
-            if ((asServer && !clientStarted) || (!asServer && base.NetworkBehaviour.IsDeinitializing))
+            if (base.CanReset(asServer))
             {
                 _value = _initialValue;
                 _valueSetAfterInitialized = false;

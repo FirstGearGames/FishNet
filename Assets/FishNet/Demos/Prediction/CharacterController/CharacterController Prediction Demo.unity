@@ -279,15 +279,17 @@ MonoBehaviour:
   _controllerMovementSettings:
     EnableTeleport: 0
     TeleportThreshold: 0
-    AdaptiveInterpolationValue: 1
+    AdaptiveInterpolationValue: 4
     InterpolationValue: 2
     SmoothedProperties: 4294967295
+    SnapNonSmoothedProperties: 0
   _spectatorMovementSettings:
     EnableTeleport: 0
     TeleportThreshold: 0
-    AdaptiveInterpolationValue: 1
+    AdaptiveInterpolationValue: 4
     InterpolationValue: 2
     SmoothedProperties: 4294967295
+    SnapNonSmoothedProperties: 0
 --- !u!1 &555580081
 GameObject:
   m_ObjectHideFlags: 0

@@ -122,10 +122,10 @@ namespace FishNet.CodeGenerating.Processing
             base.ImportReference(typeof(BasicQueue<>));
             ReplicateULDelegate_TypeRef = base.ImportReference(typeof(ReplicateUserLogicDelegate<>));
             ReconcileULDelegate_TypeRef = base.ImportReference(typeof(ReconcileUserLogicDelegate<>));
- 
+
             TypeDefinition replicateDataTd = base.ImportReference(typeof(ReplicateDataContainer<>)).CachedResolve(base.Session);
             ReplicateData_Ctor_MethodRef = base.ImportReference(replicateDataTd.GetConstructor(parameterCount: 2));
-            
+
             //Get/Set tick.
             locType = typeof(IReplicateData);
             foreach (SR.MethodInfo mi in locType.GetMethods())
@@ -562,7 +562,6 @@ namespace FishNet.CodeGenerating.Processing
         {
             GeneralHelper gh = base.GetClass<GeneralHelper>();
             TypeReference replicateDataTr = replicateMd.Parameters[0].ParameterType;
-            TypeReference replicateDataArrTr = replicateDataTr.MakeArrayType();
             TypeReference reconcileDataTr = reconcileMd.Parameters[0].ParameterType;
 
             GenericInstanceType git;
@@ -597,7 +596,8 @@ namespace FishNet.CodeGenerating.Processing
             typeDef.Fields.Add(lastReconcileDataFd);
 
             //Used for delta replicates.
-            FieldDefinition lastReadReplicateFd = new($"_lastReadReplicate___{replicateMd.Name}", FieldAttributes.Private, replicateDataTr);
+            git = gh.GetGenericType(typeof(ReplicateDataContainer<>), replicateDataTr);
+            FieldDefinition lastReadReplicateFd = new($"_lastReadReplicate___{replicateMd.Name}", FieldAttributes.Private, git);
             typeDef.Fields.Add(lastReadReplicateFd);
 
             predictionFields = new()
@@ -746,7 +746,7 @@ namespace FishNet.CodeGenerating.Processing
                 //new ReplicateData<T>(data, channel)
                 processor.Emit(OpCodes.Ldarg, replicateDataPd);
                 processor.Emit(OpCodes.Ldarg, channelPd);
-                GenericInstanceType git = GetGenericReplicateData(replicateDataTr);
+                GenericInstanceType git = GetGenericReplicateDataContainer(replicateDataTr);
                 MethodReference ctorMr = ReplicateData_Ctor_MethodRef.MakeHostInstanceGeneric(base.Session, git);
                 processor.Emit(OpCodes.Newobj, ctorMr);
 
@@ -1062,7 +1062,7 @@ namespace FishNet.CodeGenerating.Processing
             MethodReference methodGim = nbh.Reconcile_Reader_MethodRef.GetMethodReference(base.Session, dataTr);
 
             processor.Emit(OpCodes.Ldarg_0);
-            
+
             /* nb.Reconcile_Reader(readerPd, ref lastReadReconcile); */
             processor.Emit(OpCodes.Ldarg, readerPd);
             //Data to assign read value to.
@@ -1070,7 +1070,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldflda, predictionFields.LastReadReconcile);
 
             processor.Emit(OpCodes.Call, methodGim);
-            
+
             //Add end of method.
             processor.Emit(OpCodes.Ret);
 
@@ -1081,11 +1081,10 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Outputs generic RingBuffer for dataTr.
         /// </summary>
-        public GenericInstanceType GetGenericReplicateData(TypeReference dataTr)
+        public GenericInstanceType GetGenericReplicateDataContainer(TypeReference dataTr)
         {
-            TypeReference containerTr = base.ImportReference(typeof(ReplicateDataContainer<>));
-            return containerTr.MakeGenericInstanceType(dataTr);
-
+            TypeReference typeTr = base.ImportReference(typeof(ReplicateDataContainer<>));
+            return typeTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
         }
         #endregion
     }

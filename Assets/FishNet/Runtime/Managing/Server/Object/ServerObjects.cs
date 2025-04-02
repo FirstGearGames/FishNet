@@ -171,7 +171,7 @@ namespace FishNet.Managing.Server
             {
                 /* If there's no servers started besides the one
                  * that just started then build Ids and setup scene objects. */
-                if (base.NetworkManager.ServerManager.OneServerStarted())
+                if (base.NetworkManager.ServerManager.IsOnlyOneServerStarted())
                 {
                     BuildObjectIdCache();
                     SetupSceneObjects();
@@ -181,9 +181,9 @@ namespace FishNet.Managing.Server
             else
             {
                 //If no servers are started then reset.
-                if (!base.NetworkManager.ServerManager.AnyServerStarted())
+                if (!base.NetworkManager.ServerManager.IsAnyServerStarted())
                 {
-                    base.DespawnWithoutSynchronization(true);
+                    base.DespawnWithoutSynchronization(recursive: true, asServer: true);
                     base.SceneObjects_Internal.Clear();
                     _objectIdCache.Clear();
                     base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients);
@@ -191,8 +191,16 @@ namespace FishNet.Managing.Server
                 //If at least one server is started then only clear for disconnecting server.
                 else
                 {
+                    int transportIndex = args.TransportIndex;
+                    //Remove connection from all NetworkObjects to ensure they are not stuck in observers.
+                    foreach (NetworkConnection c in base.NetworkManager.ServerManager.Clients.Values)
+                    {
+                        if (c.TransportIndex == transportIndex)
+                            RemoveFromObserversWithoutSynchronization(c);
+                    }
+                    
                     //Remove connections only for transportIndex.
-                    base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients, args.TransportIndex);
+                    base.NetworkManager.ClearClientsCollection(base.NetworkManager.ServerManager.Clients, transportIndex);
                 }
             }
         }

@@ -424,21 +424,21 @@ namespace FishNet.Transporting.Multipass
         /// <summary>
         /// Processes data received by the socket.
         /// </summary>
-        /// <param name="server">True to process data received on the server.</param>
-        public override void IterateIncoming(bool server)
+        /// <param name="asServer">True to process data received on the server.</param>
+        public override void IterateIncoming(bool asServer)
         {
             foreach (Transport t in _transports)
-                t.IterateIncoming(server);
+                t.IterateIncoming(asServer);
         }
 
         /// <summary>
         /// Processes data to be sent by the socket.
         /// </summary>
-        /// <param name="server">True to process data received on the server.</param>
-        public override void IterateOutgoing(bool server)
+        /// <param name="asServer">True to send data from the local server to clients, false to send from the local client to server.
+        public override void IterateOutgoing(bool asServer)
         {
             foreach (Transport t in _transports)
-                t.IterateOutgoing(server);
+                t.IterateOutgoing(asServer);
         }
         #endregion
 
@@ -950,7 +950,7 @@ namespace FishNet.Transporting.Multipass
                 //Tell serve manager to write disconnect for those ids.
                 base.NetworkManager.ServerManager.SendDisconnectMessages(multipassIds);
                 //Iterate outgoing on transport which is being stopped.
-                _transports[transportIndex].IterateOutgoing(true);
+                _transports[transportIndex].IterateOutgoing(asServer: true);
             }
 
             return StopConnection(true, transportIndex);

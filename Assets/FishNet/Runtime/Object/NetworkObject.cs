@@ -127,6 +127,17 @@ namespace FishNet.Object
         internal List<NetworkObject> RetrieveNestedNetworkObjects(bool recursive)
         {
             List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
+            RetrieveNestedNetworkObjects(ref cache, recursive);
+
+            return cache;
+        }
+
+        /// <summary>
+        /// Returns a cached collection containing initialized and runtime nested NetworkObjects.
+        /// </summary>
+        /// <param name="recursive">True to also return nested NetworkObjects beyond direct children of this object.</param>
+        internal void RetrieveNestedNetworkObjects(ref List<NetworkObject> cache, bool recursive)
+        {
             cache.AddRange(InitializedNestedNetworkObjects);
             foreach (NetworkBehaviour nb in RuntimeChildNetworkBehaviours)
                 cache.Add(nb.NetworkObject);
@@ -141,8 +152,6 @@ namespace FishNet.Object
                     CollectionCaches<NetworkObject>.Store(recursiveCache);
                 }
             }
-
-            return cache;
         }
 
         /// <summary>
@@ -326,12 +335,12 @@ namespace FishNet.Object
         /// <summary>
         /// Becomes true once initialized values are set.
         /// </summary>
-        private bool _initializedValusSet;
+        private bool _initializedValuesSet;
 
         /// <summary>
         /// Sets that InitializedValues have not yet been set. This can be used to force objects to reinitialize which may have changed since the prefab was initialized, such as placed scene objects.
         /// </summary>
-        internal void UnsetInitializedValuesSet() => _initializedValusSet = false;
+        internal void UnsetInitializedValuesSet() => _initializedValuesSet = false;
         #endregion
 
         #region Const.
@@ -372,7 +381,7 @@ namespace FishNet.Object
             /* If networkBehaviours are not yet initialized then do so now.
              * After initializing at least 1 networkBehaviour will always exist
              * as emptyNetworkBehaviour is added automatically when none are present. */
-            if (!_initializedValusSet)
+            if (!_initializedValuesSet)
             {
                 bool isNested = false;
                 //Make sure there are no networkObjects above this since initializing will trickle down.
@@ -403,61 +412,19 @@ namespace FishNet.Object
 
         private void OnDisable()
         {
-            /* If deinitializing and an owner exist
-             * then remove object from owner. */
-            if (IsDeinitializing && Owner.IsValid)
+            /* If root check to despawn this object if not
+             * already deinitializing. */
+            if (!IsNested && (IsServerInitialized || PredictedSpawner.IsLocalClient))
             {
-                Owner.RemoveObject(this);
+                Despawn();
             }
-            /* Moving a nob @ runtime without using nob.SetParent is no longer supported
-             * and is considered user error.
-             *
-             * Since IsNested would always be false if theres no parent this
-             * else if block can likely be removed. */
-            //  
-            // /* If not nested then check to despawn this OnDisable.
-            //  * A nob may become disabled without being despawned if it's
-            //  * beneath another deinitializing nob. This can be true even while
-            //  * not nested because users may move a nob under another at runtime.
-            //  *
-            //  * This object must also be activeSelf, meaning that it became disabled
-            //  * because a parent was. If not activeSelf then it's possible the
-            //  * user simply deactivated the object themselves. */
-            // else if (IsServerStarted && !IsNested && gameObject.activeSelf)
-            // {
-            //     bool canDespawn = false;
-            //     Transform nextParent = transform.parent;
-            //     while (nextParent != null)
-            //     {
-            //         if (nextParent.TryGetComponent(out NetworkObject pNob))
-            //         {
-            //             /* If pNob is not the same as the initialized value
-            //              * then that means this object was moved around. It could be
-            //              * that this was previously a child of something else
-            //              * or that was given a parent later on in its life cycle.
-            //              *
-            //              * When this occurs do not send a despawn for this object.
-            //              * Rather, let it destroy from unity callbacks which will force
-            //             * the proper destroy/stop cycle. */
-            //             if (InitializedParentNetworkBehaviour != null && pNob != InitializedParentNetworkBehaviour.NetworkObject)
-            //                 break;
-            //             //If nob is deinitialized then this one cannot exist.
-            //             if (pNob.IsDeinitializing)
-            //             {
-            //                 canDespawn = true;
-            //                 break;
-            //             }
-            //         }
-            //
-            //         nextParent = nextParent.parent;
-            //     }
-            //
-            //     if (canDespawn)
-            //         Despawn();
-            // }
             //Nothing is started and is a sceneObject.
             else if (!IsServerStarted && !IsClientStarted && IsSceneObject)
             {
+                /* Remove owner no matter what. If owner is
+                 * not valid then nothing will happen. */
+                Owner.RemoveObject(this);
+                
                 ResetState(asServer: true);
                 ResetState(asServer: false);
             }
@@ -466,9 +433,9 @@ namespace FishNet.Object
         private void OnDestroy()
         {
             SetIsDestroying(DespawnType.Destroy);
-            
+
             //The object never initialized for use.
-            if (!_initializedValusSet)
+            if (!_initializedValuesSet)
                 return;
 
             /* There is however chance the object can get destroyed before deinitializing
@@ -882,14 +849,14 @@ namespace FishNet.Object
 
             /* If NetworkBehaviours is null then all collections are.
              * Set values for each collection. */
-            if (force || !_initializedValusSet)
+            if (force || !_initializedValuesSet)
             {
                 /* This only runs when playing, so it's safe to return existing to the pool. */
                 StoreCollections();
 
                 RetrieveCollections();
 
-                _initializedValusSet = true;
+                _initializedValuesSet = true;
             }
 
             SerializeTransformProperties();
@@ -1278,7 +1245,7 @@ namespace FishNet.Object
             PredictedSpawner = predictedSpawner;
             InitializeEarly(manager, objectId, owner, false);
         }
-        
+
         /// <summary>
         /// Sets the owner of this object.
         /// </summary>

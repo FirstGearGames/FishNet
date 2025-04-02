@@ -136,14 +136,14 @@ namespace FishNet.Transporting
         /// <summary>
         /// Processes data received by the socket.
         /// </summary>
-        /// <param name="server">True to process data received on the server.</param>
-        public abstract void IterateIncoming(bool server);
+        /// <param name="asServer">True to read data from clients, false to read data from the server.
+        public abstract void IterateIncoming(bool asServer);
 
         /// <summary>
         /// Processes data to be sent by the socket.
         /// </summary>
-        /// <param name="server">True to process data received on the server.</param>
-        public abstract void IterateOutgoing(bool server);
+        /// <param name="asServer">True to send data from the local server to clients, false to send from the local client to server.
+        public abstract void IterateOutgoing(bool asServer);
         #endregion
 
         #region Configuration.

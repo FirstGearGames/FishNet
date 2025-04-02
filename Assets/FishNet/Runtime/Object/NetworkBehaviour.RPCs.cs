@@ -69,12 +69,6 @@ namespace FishNet.Object
         /// Connections to exclude from RPCs, such as ExcludeOwner or ExcludeServer.
         /// </summary>
         private readonly HashSet<NetworkConnection> _networkConnectionCache = new();
-#if DEVELOPMENT
-        /// <summary>
-        /// Reserved writer for debug.
-        /// </summary>
-        private static readonly ReservedLengthWriter _reservedLengthWriter = new();
-#endif
         #endregion
 
         #region Const.
@@ -83,6 +77,12 @@ namespace FishNet.Object
         /// Realistically this value is much smaller but this value is used as a buffer.
         /// </summary>
         private const int MAXIMUM_RPC_HEADER_SIZE = 10;
+#if DEVELOPMENT
+        /// <summary>
+        /// Bytes used to write length for validating Rpc length.
+        /// </summary>
+        private const int VALIDATE_RPC_LENGTH_BYTES = 4;
+#endif
         #endregion
 
         /// <summary>
@@ -386,7 +386,7 @@ namespace FishNet.Object
             writer.WritePacketIdUnpacked(packetId);
 
 #if DEVELOPMENT
-            WriteDebugForValidateRpc(_reservedLengthWriter, writer, packetId, hash);
+            int written = WriteDebugForValidateRpc(writer, packetId, hash);
 #endif
 
             writer.WriteNetworkBehaviour(this);
@@ -400,7 +400,7 @@ namespace FishNet.Object
             writer.WriteArraySegment(methodWriter.GetArraySegment());
 
 #if DEVELOPMENT
-            WriteDebugLengthForValidateRpc(_reservedLengthWriter);
+            WriteDebugLengthForValidateRpc(writer, written);
 #endif
 
             return writer;
@@ -451,40 +451,46 @@ namespace FishNet.Object
         }
 
 #if DEVELOPMENT
-
-        private void WriteDebugForValidateRpc(ReservedLengthWriter reservedLengthWriter, Writer writer, PacketId packetId, uint hash)
+        private int WriteDebugForValidateRpc(Writer writer, PacketId packetId, uint hash)
         {
-            bool validateRpcLengths = _networkObjectCache.NetworkManager.DebugManager.ValidateRpcLengths;
+            if (!_networkObjectCache.NetworkManager.DebugManager.ValidateRpcLengths)
+                return -1;
 
-            if (validateRpcLengths)
-            {
-                string txt = $"NetworkObject Details: {_networkObjectCache.ToString()}. NetworkBehaviour Details: Name [{GetType().Name}]. Rpc Details: Name [{GetRpcMethodName(packetId, hash)}] PacketId [{packetId}] Hash [{hash}]";
-                writer.WriteString(txt);
-                reservedLengthWriter.Initialize(writer, reservedBytes: 4);
-            }
+            writer.Skip(VALIDATE_RPC_LENGTH_BYTES);
+            int positionStart = writer.Position;
+
+            string txt = $"NetworkObject Details: {_networkObjectCache.ToString()}. NetworkBehaviour Details: Name [{GetType().Name}]. Rpc Details: Name [{GetRpcMethodName(packetId, hash)}] PacketId [{packetId}] Hash [{hash}]";
+            writer.WriteString(txt);
+
+            return positionStart;
         }
 
-        private void WriteDebugLengthForValidateRpc(ReservedLengthWriter reservedLengthWriter)
+        private void WriteDebugLengthForValidateRpc(Writer writer, int positionStart)
         {
-            if (_networkObjectCache.NetworkManager.DebugManager.ValidateRpcLengths)
-                reservedLengthWriter.WriteLength();
+            if (!_networkObjectCache.NetworkManager.DebugManager.ValidateRpcLengths)
+                return;
+
+            //Write length.
+            int writtenLength = (writer.Position - positionStart);
+            writer.InsertInt32Unpacked(writtenLength, positionStart - VALIDATE_RPC_LENGTH_BYTES);
         }
 
         /// <summary>
         /// Parses written data used to validate a Rpc packet.
         /// </summary>
-        internal static void ReadDebugForValidatedRpc(NetworkManager manager, PooledReader reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount)
+        internal static void ReadDebugForValidatedRpc(NetworkManager manager, PooledReader reader, out int readerRemainingAfterLength, out string rpcInformation, out uint expectedReadAmount)
         {
             rpcInformation = null;
             expectedReadAmount = 0;
+            readerRemainingAfterLength = 0;
 
-            if (manager.DebugManager.ValidateRpcLengths)
-            {
-                rpcInformation = reader.ReadStringAllocated();
-                expectedReadAmount = ReservedLengthWriter.ReadLength(reader, reservedBytes: 4);
-            }
+            if (!manager.DebugManager.ValidateRpcLengths)
+                return;
 
-            startReaderRemaining = reader.Remaining;
+            expectedReadAmount = (uint)reader.ReadInt32Unpacked();
+            readerRemainingAfterLength = reader.Remaining;
+
+            rpcInformation = reader.ReadStringAllocated();
         }
 
         /// <summary>
@@ -493,18 +499,17 @@ namespace FishNet.Object
         /// <returns>True if an error occurred.</returns>
         internal static bool TryPrintDebugForValidatedRpc(bool fromRpcLink, NetworkManager manager, PooledReader reader, int startReaderRemaining, string rpcInformation, uint expectedReadAmount, Channel channel)
         {
-            if (manager.DebugManager.ValidateRpcLengths)
-            {
-                int readAmount = (startReaderRemaining - reader.Remaining);
-                if (readAmount != expectedReadAmount)
-                {
-                    string src = (fromRpcLink) ? "RpcLink" : "Rpc";
-                    string msg = $"A {src} read an incorrect amount of data on channel {channel}. Read length was {readAmount}, expected length is {expectedReadAmount}. {rpcInformation}." +
-                                 $" {manager.PacketIdHistory.GetReceivedPacketIds(packetsFromServer: (reader.Source == Reader.DataSource.Server))}.";
-                    manager.LogError(msg);
+            if (!manager.DebugManager.ValidateRpcLengths)
+                return false;
 
-                    return true;
-                }
+            int readAmount = (startReaderRemaining - reader.Remaining);
+            if (readAmount != expectedReadAmount)
+            {
+                string src = (fromRpcLink) ? "RpcLink" : "Rpc";
+                string msg = $"A {src} read an incorrect amount of data on channel {channel}. Read length was {readAmount}, expected length is {expectedReadAmount}. {rpcInformation}." + $" {manager.PacketIdHistory.GetReceivedPacketIds(packetsFromServer: (reader.Source == Reader.DataSource.Server))}.";
+                manager.LogError(msg);
+
+                return true;
             }
 
             return false;

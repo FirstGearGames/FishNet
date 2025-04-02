@@ -92,6 +92,12 @@ namespace FishNet.Object
             return $"Name [{gameObject.name}] ComponentId [{ComponentIndex}] NetworkObject Name [{_networkObjectCache.name}] NetworkObject Id [{_networkObjectCache.ObjectId}]";
         }
 
+        [MakePublic]
+        internal virtual void NetworkInitialize___Early() { }
+        [MakePublic]
+        internal virtual void NetworkInitialize___Late() { }
+
+
         /// <summary>
         /// Preinitializes this script for the network.
         /// </summary>

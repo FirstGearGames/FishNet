@@ -2696,19 +2696,7 @@ namespace FishNet.Managing.Scened
                 _sceneProcessor = gameObject.AddComponent<DefaultSceneProcessor>();
             _sceneProcessor.Initialize(this);
         }
-
-        private void Start()
-        {
-            //No need to unregister since managers are on the same object.
-            NetworkManager.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
-            NetworkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
-            _clientManager.RegisterBroadcast<LoadScenesBroadcast>(OnLoadScenes);
-            _clientManager.RegisterBroadcast<UnloadScenesBroadcast>(OnUnloadScenes);
-            _serverManager.RegisterBroadcast<ClientScenesLoadedBroadcast>(OnClientLoadedScenes);
-            _serverManager.RegisterBroadcast<EmptyStartScenesBroadcast>(OnServerEmptyStartScenes);
-            _clientManager.RegisterBroadcast<EmptyStartScenesBroadcast>(OnClientEmptyStartScenes);
-        }
-
+        
         private void OnDestroy()
         {
             UnitySceneManager.sceneUnloaded -= SceneManager_SceneUnloaded;
@@ -2720,7 +2708,7 @@ namespace FishNet.Managing.Scened
         private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
         {
             //If no servers are started.
-            if (!NetworkManager.ServerManager.AnyServerStarted())
+            if (!NetworkManager.ServerManager.IsAnyServerStarted())
                 ResetValues();
         }
 
@@ -2754,6 +2742,14 @@ namespace FishNet.Managing.Scened
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
             NetworkManager = manager;
+            //No need to unregister since managers are on the same object.
+            NetworkManager.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
+            NetworkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
+            _clientManager.RegisterBroadcast<LoadScenesBroadcast>(OnLoadScenes);
+            _clientManager.RegisterBroadcast<UnloadScenesBroadcast>(OnUnloadScenes);
+            _serverManager.RegisterBroadcast<ClientScenesLoadedBroadcast>(OnClientLoadedScenes);
+            _serverManager.RegisterBroadcast<EmptyStartScenesBroadcast>(OnServerEmptyStartScenes);
+            _clientManager.RegisterBroadcast<EmptyStartScenesBroadcast>(OnClientEmptyStartScenes);
         }
 
         /// <summary>

@@ -34,15 +34,15 @@ namespace FishNet.Managing
         /// </summary>
         public bool IsServerOnlyStarted => (IsServerStarted && !IsClientStarted);
         /// <summary>
-        /// True if the client is started and authenticated.
+        /// True if the client is authenticated.
         /// </summary>
         public bool IsClientStarted => (ClientManager.Started && ClientManager.Connection.IsAuthenticated);
         /// <summary>
-        /// True if only the client is started and authenticated.
+        /// True if only the client is authenticated.
         /// </summary>
         public bool IsClientOnlyStarted => (!IsServerStarted && IsClientStarted);
         /// <summary>
-        /// True if client and server are started.
+        /// True if client is authenticated, and the server is started.
         /// </summary>
         public bool IsHostStarted => (IsServerStarted && IsClientStarted);
         /// <summary>

@@ -1,6 +1,5 @@
 #if UNITY_EDITOR
 
-
 using UnityEditor;
 using UnityEngine;
 using UnitySettingsProviderAttribute = UnityEditor.SettingsProviderAttribute;
@@ -10,17 +9,14 @@ using System.IO;
 using System;
 using System.Text.RegularExpressions;
 
-
 namespace FishNet.Editing.NewNetworkBehaviourScript
 {
     internal static class SettingsProvider
     {
-
-
         private static CreateNewNetworkBehaviourConfigurations _settings;
-        static string templatePath;
         private static GUIContent _folderIcon;
         private static readonly Regex SlashRegex = new(@"[\\//]");
+
         [UnitySettingsProvider]
         private static UnitySettingsProvider Create()
         {
@@ -55,13 +51,16 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
 
             if (GUILayout.Button("Edit template"))
             {
-                templatePath = Path.Combine(_settings.templateDirectoryPath, "FishnetNBTemplate.txt");
-
-                if (!File.Exists(templatePath))
+                CreateNewNetworkBehaviour.EnsureTemplateExists();
+                
+                try
                 {
-                    CreateNewNetworkBehaviour.CopyExistingTemplate(templatePath);
+                    System.Diagnostics.Process.Start(CreateNewNetworkBehaviour.TemplatePath);
                 }
-                System.Diagnostics.Process.Start(templatePath);
+                catch (Exception e)
+                {
+                    Debug.LogError($"An issue occurred while trying to launch the NetworkBehaviour template. {e.Message}");
+                }
             }
             GUILayout.Space(20);
             EditorGUILayout.BeginHorizontal();
@@ -95,17 +94,10 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
 
             EditorGUILayout.EndHorizontal();
 
-            EditorGUILayout.HelpBox("By default MonoBehaviour script template will be copied", MessageType.Info);
+//            EditorGUILayout.HelpBox("By default MonoBehaviour script template will be copied", MessageType.Info);
             if (EditorGUI.EndChangeCheck())
                 Configuration.Configurations.Write(true);
-
-
-
-
-
-
         }
     }
-
 }
 #endif

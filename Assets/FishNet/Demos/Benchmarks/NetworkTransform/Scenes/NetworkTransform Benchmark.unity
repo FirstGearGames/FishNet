@@ -1194,6 +1194,7 @@ GameObject:
   - component: {fileID: 7443408886575219566}
   - component: {fileID: 7443408886575219567}
   - component: {fileID: 7443408886575219568}
+  - component: {fileID: 7443408886575219569}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1291,3 +1292,22 @@ MonoBehaviour:
     type: 3}
   _addToDefaultScene: 1
   Spawns: []
+--- !u!114 &7443408886575219569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408886575219563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d0962ead4b02a34aae248fccce671ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WriteSceneObjectDetails: 0
+  ValidateRpcLengths: 1
+  DisableObserversRpcLinks: 0
+  DisableTargetRpcLinks: 0
+  DisableServerRpcLinks: 0
+  DisableReplicateRpcLinks: 0
+  DisableReconcileRpcLinks: 0

@@ -112,7 +112,7 @@ namespace FishNet.Object
             writer.WriteUInt16(link.LinkPacketId);
 
 #if DEVELOPMENT
-            WriteDebugForValidateRpc(_reservedLengthWriter, writer, link.RpcPacketId, link.RpcHash);
+            int written = WriteDebugForValidateRpc(writer, link.RpcPacketId, link.RpcHash);
 #endif
 
             //Write length only if reliable.
@@ -122,7 +122,7 @@ namespace FishNet.Object
             writer.WriteArraySegment(methodWriter.GetArraySegment());
             
 #if DEVELOPMENT
-            WriteDebugLengthForValidateRpc(_reservedLengthWriter);
+            WriteDebugLengthForValidateRpc(writer, written);
 #endif
             
             return writer;

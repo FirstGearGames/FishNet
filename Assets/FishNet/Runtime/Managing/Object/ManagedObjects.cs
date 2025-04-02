@@ -269,14 +269,14 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Despawns Spawned NetworkObjects. Scene objects will be disabled, others will be destroyed.
         /// </summary>
-        internal virtual void DespawnWithoutSynchronization(bool asServer)
+        internal virtual void DespawnWithoutSynchronization(bool recursive, bool asServer)
         {
             foreach (NetworkObject nob in Spawned.Values)
             {
                 if (nob == null)
                     continue;
 
-                DespawnWithoutSynchronization(nob, asServer, nob.GetDefaultDespawnType(), removeFromSpawned: false);
+                DespawnWithoutSynchronization(nob, recursive, asServer, nob.GetDefaultDespawnType(), removeFromSpawned: false);
             }
 
             Spawned.Clear();
@@ -286,30 +286,49 @@ namespace FishNet.Managing.Object
         /// Despawns a network object.
         /// </summary>
         /// <param name="nob"></param>
-        protected virtual void DespawnWithoutSynchronization(NetworkObject nob, bool asServer, DespawnType despawnType, bool removeFromSpawned)
+        protected virtual void DespawnWithoutSynchronization(NetworkObject nob, bool recursive, bool asServer, DespawnType despawnType, bool removeFromSpawned)
         {
-            nob.SetIsDestroying(despawnType);
-            nob.Deinitialize(asServer);
-            /* Only run if asServer, or not
-             * asServer and server isn't running. This
-             * prevents objects from affecting the server
-             * as host when being modified client side. */
-            if (asServer || (!NetworkManager.IsServerStarted))
+            //Also despawn all nested.
+            List<NetworkObject> allNobs = CollectionCaches<NetworkObject>.RetrieveList();
+            allNobs.Add(nob);
+
+#if !FISHNET_STABLE_RECURSIVE_DESPAWNS
+            if (recursive)
+                nob.RetrieveNestedNetworkObjects(ref allNobs, recursive: true);
+#endif
+            
+            //True if can deactivate or destroy.
+            bool canCleanup = (asServer || !NetworkManager.IsServerStarted);
+
+            foreach (NetworkObject lNob in allNobs)
             {
-                if (removeFromSpawned)
-                    RemoveFromSpawned(nob, false, asServer);
-                if (nob.IsSceneObject || nob.IsInitializedNested)
+                lNob.SetIsDestroying(despawnType);
+                lNob.Deinitialize(asServer);
+
+                if (canCleanup && removeFromSpawned)
+                    RemoveFromSpawned(lNob, unexpectedlyDestroyed: false, asServer);
+            }
+
+            /* Only need to check the first nob. If it's stored, deactivated,
+             * or destroyed, the rest will follow. */
+            if (canCleanup)
+            {
+                NetworkObject firstNob = allNobs[0];
+
+                if (firstNob.IsSceneObject || firstNob.IsInitializedNested)
                 {
-                    nob.gameObject.SetActive(false);
+                    firstNob.gameObject.SetActive(value: false);
                 }
                 else
                 {
                     if (despawnType == DespawnType.Destroy)
-                        UnityEngine.Object.Destroy(nob.gameObject);
+                        UnityEngine.Object.Destroy(firstNob.gameObject);
                     else
-                        NetworkManager.StorePooledInstantiated(nob, asServer);
+                        NetworkManager.StorePooledInstantiated(firstNob, asServer);
                 }
             }
+
+            CollectionCaches<NetworkObject>.Store(allNobs);
         }
 
         /// <summary>
@@ -417,14 +436,14 @@ namespace FishNet.Managing.Object
 #if DEVELOPMENT
             NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
 #endif
-            
+
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.ServerRpc, reader, channel);
             if (nb != null && nb.IsSpawned)
                 nb.OnReplicateRpc(null, reader, conn, channel);
             else
                 SkipDataLength((ushort)PacketId.ServerRpc, reader, dataLength);
-            
+
 #if DEVELOPMENT
             NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
 #endif
