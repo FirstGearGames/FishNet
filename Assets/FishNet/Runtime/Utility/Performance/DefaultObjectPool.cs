@@ -172,6 +172,18 @@ namespace FishNet.Utility.Performance
         /// <param name="asServer">True if storing prefabs for the server collection. This is only applicable when using DualPrefabObjects.</param>
         public override void CacheObjects(NetworkObject prefab, int count, bool asServer)
         {
+            GetCacheObjects(prefab, count, asServer);
+        }
+
+        /// <summary>
+        /// Instantiates a number of objects, adds them to the pool, and returns the objects.
+        /// </summary>
+        /// <param name="prefab">Prefab to cache.</param>
+        /// <param name="count">Quantity to spawn.</param>
+        /// <param name="asServer">True if storing prefabs for the server collection. This is only applicable when using DualPrefabObjects.</param>
+        /// <returns></returns>
+        public Stack<NetworkObject> GetCacheObjects(NetworkObject prefab, int count, bool asServer)
+        {
             if (!_enabled)
                 return;
             if (count <= 0)
@@ -191,6 +203,8 @@ namespace FishNet.Utility.Performance
                 nob.gameObject.SetActive(false);
                 cache.Push(nob);
             }
+
+            return cache;
         }
 
         /// <summary>
