@@ -1,5 +1,6 @@
 ﻿#if UNITY_EDITOR
 using System;
+using FishNet.Configuring;
 using UnityEditor;
 using UnityEngine;
 

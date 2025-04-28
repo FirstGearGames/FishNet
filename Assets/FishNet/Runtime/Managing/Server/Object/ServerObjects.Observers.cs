@@ -191,7 +191,7 @@ namespace FishNet.Managing.Server
             {
                 if (item.IsNested)
                     continue;
-
+                
                 sortedRootCache.AddOrdered(item);
             }
 
@@ -199,11 +199,18 @@ namespace FishNet.Managing.Server
              * their nested. Order nested in segments
              * of each root then insert after the root.
              * This must be performed after all roots are ordered. */
+            
+            //This holds the results of all values.
             List<NetworkObject> sortedRootAndNestedCache = CollectionCaches<NetworkObject>.RetrieveList();
+            
+            //Cache for sorting nested.
             List<NetworkObject> sortedNestedCache = CollectionCaches<NetworkObject>.RetrieveList();
+            
             foreach (NetworkObject item in sortedRootCache)
             {
-                List<NetworkObject> nested = item.RetrieveNestedNetworkObjects(recursive: true);
+                /* Remove recursive and only check Initialized and Runtime. Once iterated
+                 * check each added entry again using Initialized and Recursive. */
+                List<NetworkObject> nested = item.GetNetworkObjects(GetNetworkObjectOption.InitializedRuntimeRecursive);
                 foreach (NetworkObject nestedItem in nested)
                     sortedNestedCache.AddOrdered(nestedItem);
 

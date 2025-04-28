@@ -263,7 +263,7 @@ namespace FishNet.CodeGenerating.Processing
                         }
                     }
 
-                    base.LogError($"{reconcileMd.DeclaringType.Name} implements {crName} but does not call reconcile method {reconcileMd.Name}.");
+                    base.LogError($"{reconcileMd.DeclaringType.Name} implements {crName} but does not call reconcile method {reconcileMd.Name}. If you are calling CreateReconcile from another type please make a new method to call in {reconcileMd.DeclaringType.Name}, which in return calls CreateReconcile.");
                     //Fallthrough.
                     return false;
                 }
@@ -271,10 +271,13 @@ namespace FishNet.CodeGenerating.Processing
 
             bool MethodIsPrivate(MethodDefinition md)
             {
-                bool isPrivate = md.Attributes.HasFlag(MethodAttributes.Private);
-                if (!isPrivate)
-                    base.LogError($"Method {md.Name} within {typeDef.Name} is a prediction method and must be private.");
-                return isPrivate;
+                //Do we actually need private checks anymore?
+                return true;
+
+                // bool isPrivate = md.Attributes.HasFlag(MethodAttributes.Private);
+                // if (!isPrivate)
+                //     base.LogError($"Method {md.Name} within {typeDef.Name} is a prediction method and must be private.");
+                // return isPrivate;
             }
 
             bool AlreadyFound(MethodDefinition md)
@@ -382,7 +385,7 @@ namespace FishNet.CodeGenerating.Processing
         private bool TickFieldIsNonSerializable(TypeDefinition dataTd, bool replicate)
         {
             string methodName = (replicate) ? IReplicateData_GetTick_MethodRef.Name : IReconcileData_GetTick_MethodRef.Name;
-            MethodDefinition getMd = dataTd.GetMethod(methodName);
+            MethodDefinition getMd = dataTd.GetMethodDefinitionInAnyBase(base.Session, methodName);
 
             //Try to find ldFld.
             Instruction ldFldInst = null;
@@ -398,18 +401,16 @@ namespace FishNet.CodeGenerating.Processing
             //If ldFld not found.
             if (ldFldInst == null)
             {
-                base.LogError($"{dataTd.FullName} method {getMd.Name} does not return a field type for the Tick. Make a new private field of uint type and return it's value within {getMd.Name}.");
+                base.LogError($"{dataTd.FullName} method {getMd.Name} does not return a field type for the Tick. Make a new private or protected field of uint type and return it's value within {getMd.Name}.");
                 return false;
             }
-            //Make sure the field is private.
-            else
+
+            //Make sure the field is correct accessibility
+            FieldDefinition fd = (FieldDefinition)ldFldInst.Operand;
+            if (!fd.Attributes.HasFlag(FieldAttributes.Private) && !fd.Attributes.HasFlag(FieldAttributes.Family))
             {
-                FieldDefinition fd = (FieldDefinition)ldFldInst.Operand;
-                if (!fd.Attributes.HasFlag(FieldAttributes.Private))
-                {
-                    base.LogError($"{dataTd.FullName} method {getMd.Name} returns a tick field but it's not marked as private. Make the field {fd.Name} private.");
-                    return false;
-                }
+                base.LogError($"{dataTd.FullName} method {getMd.Name} returns a tick field it does not have the correct accessibility. Make the field {fd.Name} private or protected.");
+                return false;
             }
 
             //All checks pass.
@@ -1014,24 +1015,23 @@ namespace FishNet.CodeGenerating.Processing
             NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
             GenericInstanceMethod methodGim;
 
-            /* Reconcile_Client_Local. */
-            methodGim = nbh.Reconcile_Client_Local_MethodRef.MakeGenericMethod(new TypeReference[] { reconcileDataPd.ParameterType });
+            /* Reconcile_Current. */
+            methodGim = nbh.Reconcile_Current_MethodRef.MakeGenericMethod(new TypeReference[] { reconcileDataPd.ParameterType });
 
-            processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldfld, predictionFields.LocalReconciles);
-            processor.Emit(OpCodes.Ldarg, reconcileDataPd);
-            processor.Emit(OpCodes.Call, methodGim);
-
-            /* Reconcile_Server. */
-            methodGim = nbh.Reconcile_Server_MethodRef.MakeGenericMethod(new TypeReference[] { reconcileDataPd.ParameterType });
-
+            //Hash.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldc_I4, (int)rpcCount);
+            //Last reconcile data.
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldflda, predictionFields.LastReadReconcile);
+            //Reconciles history (local reconciles).
+            processor.Emit(OpCodes.Ldarg_0);
+            processor.Emit(OpCodes.Ldfld, predictionFields.LocalReconciles);
+            //Data.
             processor.Emit(OpCodes.Ldarg, reconcileDataPd);
+            //Channel.
             processor.Emit(OpCodes.Ldarg, channelPd);
+            
             processor.Emit(OpCodes.Call, methodGim);
 
             rpcCount++;

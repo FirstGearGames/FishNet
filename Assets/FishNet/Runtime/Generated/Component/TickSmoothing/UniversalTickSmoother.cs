@@ -49,6 +49,13 @@ namespace FishNet.Component.Transforming.Beta
         }
         #endregion
 
+        #region public.
+        /// <summary>
+        /// True if currently initialized.
+        /// </summary>
+        public bool IsInitialized { get; private set; }
+        #endregion
+
         #region Private.
         /// <summary>
         /// How quickly to move towards goal values.
@@ -59,13 +66,13 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private bool _preTicked;
         /// <summary>
-        /// World offset values of the graphical from the NetworkObject during initialization.
+        /// World values of the graphical after it's been aligned to initialized values in PreTick.
         /// </summary>
-        private TransformProperties _graphicalInitializedOffsetValues;
+        private TransformProperties _trackerPreTickWorldValues;
         /// <summary>
         /// World values of the graphical after it's been aligned to initialized values in PreTick.
         /// </summary>
-        private TransformProperties _gfxPreTickWorldValues;
+        private TransformProperties _graphicsPreTickWorldValues;
         /// <summary>
         /// Cached value of adaptive interpolation value.
         /// </summary>
@@ -99,13 +106,19 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private bool _moveImmediately;
         /// <summary>
-        /// Transform the graphics shoulod follow.
+        /// Transform the graphics should follow.
         /// </summary>
         private Transform _targetTransform;
         /// <summary>
         /// Cached value of the object to smooth.
         /// </summary>
         private Transform _graphicalTransform;
+        /// <summary>
+        /// Empty gameObject containing a transform which has properties checked after each simulation.
+        /// If the graphical starts off as nested of targetTransform then this object is created where the graphical object is.
+        /// Otherwise, this object is placed directly beneath targetTransform.
+        /// </summary>
+        private Transform _trackerTransform;
         /// <summary>
         /// TimeManager tickDelta.
         /// </summary>
@@ -126,10 +139,6 @@ namespace FishNet.Component.Transforming.Beta
         /// TransformProperties to move towards.
         /// </summary>
         private BasicQueue<TickTransformProperties> _transformProperties;
-        /// <summary>
-        /// Previous parent the graphical was attached to.
-        /// </summary>
-        private Transform _previousParent;
         /// <summary>
         /// True if to smooth using owner settings, false for spectator settings.
         /// This is only used for performance gains.
@@ -152,14 +161,6 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private MovementSettings _spectatorMovementSettings;
         /// <summary>
-        /// True if initialized.
-        /// </summary>
-        private bool _initialized;
-        /// <summary>
-        /// Additional offsets to add to graphicsInitializedOffsetValues.
-        /// </summary>
-        private TransformProperties _additionalGraphicsOffsetValues;
-        /// <summary>
         /// True if moving has started and has not been stopped.
         /// </summary>
         private bool _isMoving;
@@ -181,65 +182,96 @@ namespace FishNet.Component.Transforming.Beta
             ResetState();
         }
 
-        /// <summary>
-        /// Sets relative world space values of target the smoothed transform should move towards when at a complete stop.
-        /// </summary>
-        /// <param name="value">Next values.</param>
-        public void SetGraphicalInitializedOffsetValues(TransformProperties value) => _graphicalInitializedOffsetValues = value;
+        [Obsolete("This method is no longer used. Use TrySetGraphicalTrackerLocalProperties(TransformProperties).")] //Remove V5
+        public void SetGraphicalInitializedOffsetValues(TransformProperties value) { }
+
+        [Obsolete("This method is no longer used. Use GetGraphicalTrackerLocalProperties.")] //Remove V5
+        public TransformProperties GetGraphicalInitializedOffsetValues() => default;
 
         /// <summary>
-        /// Gets relative world space values of target the smoothed transform should move towards when at a complete stop.
+        /// Tries to set local properties for the graphical tracker transform.
         /// </summary>
-        public TransformProperties GetGraphicalInitializedOffsetValues() => _graphicalInitializedOffsetValues;
+        /// <param name="localValues">New values.</param>
+        /// <returns>Returns true if the tracker has been setup and values have been applied to teh tracker transform.</returns>
+        /// <remarks>When false is returned the values are cached and will be set when tracker is created. A cached value will be used every time the tracker is setup; to disable this behavior call this method with null value.</remarks>
+        public bool TrySetGraphicalTrackerLocalProperties(TransformProperties? localValues)
+        {
+            if (_trackerTransform == null || localValues == null)
+            {
+                _queuedTrackerProperties = localValues;
+                return false;
+            }
+
+
+            _trackerTransform.SetLocalProperties(localValues.Value);
+            return true;
+        }
+
+        [Obsolete("This method is no longer used. Use TrySetGraphicalTrackerLocalProperties(TransformProperties).")] //Remove V5
+        public void SetAdditionalGraphicalOffsetValues(TransformProperties localValues) { }
+
+        [Obsolete("This method is no longer used. Use GetGraphicalTrackerLocalProperties.")] //Remove V5
+        public TransformProperties GetAdditionalGraphicalOffsetValues() => default;
+
+        public TransformProperties GetGraphicalTrackerLocalProperties()
+        {
+            if (_trackerTransform != null)
+                return new(_trackerTransform.localPosition, _trackerTransform.localRotation, _trackerTransform.localScale);
+            if (_queuedTrackerProperties != null)
+                return _queuedTrackerProperties.Value;
+
+            //Fall through.
+            NetworkManager manager = (_initializingNetworkBehaviour == null) ? null : _initializingNetworkBehaviour.NetworkManager;
+            manager.LogWarning($"Graphical tracker properties cannot be returned because tracker is not setup yet, and no setup properties have been specified. Use TrySetGraphicalTrackerProperties to set setup properties or call this method after IsInitialized is true.");
+            return default;
+        }
 
         /// <summary>
-        /// Adds additional offsets to relative initial values of the target. 
+        /// Properties for the tracker which are queued to be set when the tracker is setup.
         /// </summary>
-        /// <remarks>This can be useful if the graphical is detached, and you wish to temporarily alter the offset. Using a default value will remove any additional offset.</remarks>
-        /// <param name="value">Next values.</param>
-        public void SetAdditionalGraphicalOffsetValues(TransformProperties value) => _additionalGraphicsOffsetValues = value;
-
-        /// <summary>
-        /// Gets additional offsets to relative initial values of the target. 
-        /// </summary>
-        public TransformProperties GetAdditionalGraphicalOffsetValues() => _additionalGraphicsOffsetValues;
+        private TransformProperties? _queuedTrackerProperties;
 
         /// <summary>
         /// Updates the smoothedProperties value.
         /// </summary>
         /// <param name="value">New value.</param>
-        public void SetSmoothedProperties(TransformPropertiesFlag value) => _controllerMovementSettings.SmoothedProperties = value;
+        /// <param name="forOwnerOrOfflineSmoother">True if updating owner smoothing settings, or updating settings on an offline smoother. False to update spectator settings</param>
+        public void SetSmoothedProperties(TransformPropertiesFlag value, bool forOwnerOrOfflineSmoother)
+        {
+            _controllerMovementSettings.SmoothedProperties = value;
+            SetCaches(forOwnerOrOfflineSmoother);
+        }
 
         /// <summary>
         /// Updates the interpolationValue when not using adaptive interpolation. Calling this method will also disable adaptive interpolation.
         /// </summary>
         /// <param name="value"></param>
-        public void SetInterpolationValue(byte value, bool forOwner) => SetInterpolationValue(value, forOwner, unsetAdaptiveInterpolation: true);
+        public void SetInterpolationValue(byte value, bool forOwnerOrOfflineSmoother) => SetInterpolationValue(value, forOwnerOrOfflineSmoother, unsetAdaptiveInterpolation: true);
 
         /// <summary>
         /// Updates the interpolationValue when not using adaptive interpolation. Calling this method will also disable adaptive interpolation.
         /// </summary>
-        private void SetInterpolationValue(byte value, bool forOwner, bool unsetAdaptiveInterpolation)
+        private void SetInterpolationValue(byte value, bool forOwnerOrOfflineSmoother, bool unsetAdaptiveInterpolation)
         {
             if (value < 1)
                 value = 1;
 
-            if (forOwner)
+            if (forOwnerOrOfflineSmoother)
                 _controllerMovementSettings.InterpolationValue = value;
             else
                 _spectatorMovementSettings.InterpolationValue = value;
 
             if (unsetAdaptiveInterpolation)
-                SetAdaptiveInterpolation(AdaptiveInterpolationType.Off, forOwner);
+                SetAdaptiveInterpolation(AdaptiveInterpolationType.Off, forOwnerOrOfflineSmoother);
         }
 
         /// <summary>
         /// Updates the adaptiveInterpolation value.
         /// </summary>
         /// <param name="adaptiveInterpolation">New value.</param>
-        public void SetAdaptiveInterpolation(AdaptiveInterpolationType value, bool forOwner)
+        public void SetAdaptiveInterpolation(AdaptiveInterpolationType value, bool forOwnerOrOfflineSmoother)
         {
-            if (forOwner)
+            if (forOwnerOrOfflineSmoother)
                 _controllerMovementSettings.AdaptiveInterpolationValue = value;
             else
                 _spectatorMovementSettings.AdaptiveInterpolationValue = value;
@@ -283,15 +315,31 @@ namespace FishNet.Component.Transforming.Beta
             SetCaches(GetUseOwnerSettings());
 
             //Use set method as it has sanity checks.
-            SetInterpolationValue(_controllerMovementSettings.InterpolationValue, forOwner: true, unsetAdaptiveInterpolation: false);
-            SetInterpolationValue(_spectatorMovementSettings.InterpolationValue, forOwner: false, unsetAdaptiveInterpolation: false);
+            SetInterpolationValue(_controllerMovementSettings.InterpolationValue, forOwnerOrOfflineSmoother: true, unsetAdaptiveInterpolation: false);
+            SetInterpolationValue(_spectatorMovementSettings.InterpolationValue, forOwnerOrOfflineSmoother: false, unsetAdaptiveInterpolation: false);
 
-            SetAdaptiveInterpolation(_controllerMovementSettings.AdaptiveInterpolationValue, forOwner: true);
-            SetAdaptiveInterpolation(_spectatorMovementSettings.AdaptiveInterpolationValue, forOwner: false);
+            SetAdaptiveInterpolation(_controllerMovementSettings.AdaptiveInterpolationValue, forOwnerOrOfflineSmoother: true);
+            SetAdaptiveInterpolation(_spectatorMovementSettings.AdaptiveInterpolationValue, forOwnerOrOfflineSmoother: false);
 
-            SetGraphicalInitializedOffsetValues(_targetTransform.GetTransformOffsets(_graphicalTransform));
+            SetupTrackerTransform();
+            /* This is called after setting up the tracker transform in the scenario
+             * the user set additional offsets before this was initialized. */
+            if (_queuedTrackerProperties != null)
+                TrySetGraphicalTrackerLocalProperties(_queuedTrackerProperties.Value);
 
-            _initialized = true;
+            void SetupTrackerTransform()
+            {
+                _trackerTransform = new GameObject($"{_graphicalTransform.name}_Tracker").transform;
+                _trackerTransform.SetParent(_graphicalTransform.parent);
+                _trackerTransform.SetLocalPositionRotationAndScale(_graphicalTransform.localPosition, graphicalTransform.localRotation, graphicalTransform.localScale);
+            }
+
+            if (_detachOnStart)
+                _trackerTransform.SetParent(_targetTransform);
+            else
+                _trackerTransform.SetParent(_graphicalTransform.parent);
+
+            IsInitialized = true;
         }
 
         /// <summary>
@@ -372,7 +420,7 @@ namespace FishNet.Component.Transforming.Beta
         public void Deinitialize()
         {
             ResetState();
-            _initialized = false;
+            IsInitialized = false;
         }
 
         /// <summary>
@@ -438,11 +486,6 @@ namespace FishNet.Component.Transforming.Beta
         /// <remarks>This does not need to be called if there is no initializing NetworkBehaviour.</remarks>
         internal void StopSmoother()
         {
-            if (!_detachOnStart)
-                return;
-            if (_previousParent == null || _graphicalTransform == null)
-                return;
-
             AttachOnStop();
         }
 
@@ -469,7 +512,8 @@ namespace FishNet.Component.Transforming.Beta
 
             _preTicked = true;
             DiscardExcessiveTransformPropertiesQueue();
-            _gfxPreTickWorldValues = _graphicalTransform.GetWorldProperties();
+            _graphicsPreTickWorldValues = _graphicalTransform.GetWorldProperties();
+            _trackerPreTickWorldValues = GetTrackerWorldProperties();
         }
 
         /// <summary>
@@ -512,9 +556,9 @@ namespace FishNet.Component.Transforming.Beta
 
                 //Only needs to be put to pretick position if not detached.
                 if (!_detachOnStart)
-                    _graphicalTransform.SetWorldProperties(_gfxPreTickWorldValues);
+                    _graphicalTransform.SetWorldProperties(_graphicsPreTickWorldValues);
 
-                SnapNonSmoothedProperties();
+                //SnapNonSmoothedProperties();
                 AddTransformProperties(clientTick);
             }
             //If did not pretick then the only thing we can do is snap to instantiated values.
@@ -522,7 +566,7 @@ namespace FishNet.Component.Transforming.Beta
             {
                 //Only set to position if not to detach.
                 if (!_detachOnStart)
-                    _graphicalTransform.SetWorldProperties(GetNetworkObjectWorldPropertiesWithOffset());
+                    _graphicalTransform.SetWorldProperties(GetTrackerWorldProperties());
             }
         }
 
@@ -541,7 +585,7 @@ namespace FishNet.Component.Transforming.Beta
             if (smoothedProperties == TransformPropertiesFlag.Everything)
                 return;
 
-            TransformProperties goalValeus = GetNetworkObjectWorldPropertiesWithOffset();
+            TransformProperties goalValeus = GetTrackerWorldProperties();
 
             if (!smoothedProperties.FastContains(TransformPropertiesFlag.Position))
                 _graphicalTransform.position = goalValeus.Position;
@@ -559,7 +603,6 @@ namespace FishNet.Component.Transforming.Beta
         /// <summary>
         /// Teleports the graphical to it's starting position and clears the internal movement queue.
         /// </summary>
-        /// <remarks>This is dependent on the initializing NetworkBehaviour being set if using adaptive interpolation.</remarks>
         public void Teleport()
         {
             if (_initializingTimeManager == null)
@@ -567,26 +610,15 @@ namespace FishNet.Component.Transforming.Beta
 
             //If using adaptive interpolation then set the tick which was teleported.
             if (_controllerMovementSettings.AdaptiveInterpolationValue != AdaptiveInterpolationType.Off)
-                _teleportedTick = _initializingTimeManager.LocalTick;
+            {
+                TimeManager tm = (_initializingTimeManager == null) ? InstanceFinder.TimeManager : _initializingTimeManager;
+                if (tm != null)
+                    _teleportedTick = tm.LocalTick;
+            }
 
             ClearTransformPropertiesQueue();
 
-            TransformProperties startProperties = _gfxPreTickWorldValues;
-            startProperties.Add(GetCombinedGraphicalInitializedOffsetValues());
-            _graphicalTransform.SetWorldProperties(startProperties);
-        }
-
-        /// <summary>
-        /// Returns the graphical initialized offset values with additional offsets added.
-        /// </summary>
-        public TransformProperties GetCombinedGraphicalInitializedOffsetValues()
-        {
-            TransformProperties properties = GetGraphicalInitializedOffsetValues();
-            TransformProperties additionalProperties = GetAdditionalGraphicalOffsetValues();
-            if (additionalProperties.IsValid)
-                properties.Add(additionalProperties);
-
-            return properties;
+            _graphicalTransform.SetWorldProperties(_trackerTransform.GetWorldProperties());
         }
 
         /// <summary>
@@ -606,6 +638,7 @@ namespace FishNet.Component.Transforming.Beta
         {
             int propertiesCount = _transformProperties.Count;
             int dequeueCount = (propertiesCount - (_realtimeInterpolation + MAXIMUM_QUEUED_OVER_INTERPOLATION));
+
             //If there are entries to dequeue.
             if (dequeueCount > 0)
             {
@@ -622,7 +655,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void AddTransformProperties(uint tick)
         {
-            TickTransformProperties tpp = new(tick, GetNetworkObjectWorldPropertiesWithOffset());
+            TickTransformProperties tpp = new(tick, GetTrackerWorldProperties());
             _transformProperties.Enqueue(tpp);
 
             //If first entry then set move rates.
@@ -653,7 +686,7 @@ namespace FishNet.Component.Transforming.Beta
                 }
                 else
                 {
-                    TransformProperties newProperties = GetNetworkObjectWorldPropertiesWithOffset();
+                    TransformProperties newProperties = GetTrackerWorldProperties();
                     /* Adjust transformProperties to ease into any corrections.
                      * The corrected value is used the more the index is to the end
                      * of the queue. */
@@ -677,7 +710,7 @@ namespace FishNet.Component.Transforming.Beta
                         newProperties.Scale = Vector3.Lerp(oldProperties.Scale, newProperties.Scale, easePercent);
                     }
 
-                    _transformProperties[index] = new(tick, newProperties, _graphicalTransform.localScale);
+                    _transformProperties[index] = new(tick, newProperties);
                 }
             }
             else
@@ -687,22 +720,18 @@ namespace FishNet.Component.Transforming.Beta
         }
 
         /// <summary>
-        /// Returns TransformProperties of the NetworkObject with the graphical's initialized offsets, and additional offsets.
+        /// Gets properties of the tracker.
         /// </summary>
-        /// <returns></returns>
-        private TransformProperties GetNetworkObjectWorldPropertiesWithOffset()
+        private TransformProperties GetTrackerWorldProperties()
         {
-            TransformProperties properties = _targetTransform.GetWorldProperties(_graphicalInitializedOffsetValues);
-
-            TransformProperties additionalProperties = GetAdditionalGraphicalOffsetValues();
-            if (additionalProperties.IsValid)
-                properties.Add(additionalProperties);
-
-            //properties.Position = properties.Position.Multiply(properties.Scale);
-
-            return properties;
+            /* Return lossyScale if graphical is not attached. Otherwise,
+             * graphical should retain the tracker localScale so it changes
+             * with root. */
+            
+            Vector3 scale = (_detachOnStart) ? _trackerTransform.lossyScale : _trackerTransform.localScale;
+            return new(_trackerTransform.position, _trackerTransform.rotation, scale);
         }
-
+        
         /// <summary>
         /// Returns if prediction can be used on this rigidbody.
         /// </summary>
@@ -807,6 +836,7 @@ namespace FishNet.Component.Transforming.Beta
             TickTransformProperties ttp = _transformProperties.Peek();
 
             TransformPropertiesFlag smoothedProperties = _cachedSmoothedProperties;
+
             _moveRates.MoveWorldToTarget(_graphicalTransform, ttp.Properties, smoothedProperties, (delta * _movementMultiplier));
 
             float tRemaining = _moveRates.TimeRemaining;
@@ -837,7 +867,6 @@ namespace FishNet.Component.Transforming.Beta
             if (!_detachOnStart)
                 return;
 
-            _previousParent = _graphicalTransform.parent;
             TransformProperties gfxWorldProperties = _graphicalTransform.GetWorldProperties();
             _graphicalTransform.SetParent(null);
             _graphicalTransform.SetWorldProperties(gfxWorldProperties);
@@ -848,27 +877,32 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void AttachOnStop()
         {
-            if (!_attachOnStop)
+            //Never detached.
+            if (!_detachOnStart)
                 return;
+            //Graphical is null, nothing can be moved.
             if (_graphicalTransform == null)
                 return;
+            if (ApplicationState.IsQuitting())
+                return;
 
-            if (_targetTransform != null && _targetTransform != _graphicalTransform.parent)
-            {
-                //Check isQuitting for UnityEditor fix //https://github.com/FirstGearGames/FishNet/issues/818
-                if (_detachOnStart && !ApplicationState.IsQuitting())
-                    _graphicalTransform.SetParent(_targetTransform);
-                _graphicalTransform.SetWorldProperties(GetNetworkObjectWorldPropertiesWithOffset());
-            }
-            else if (_detachOnStart)
+            /* If not to re-attach or if there's no target to reference
+             * then the graphical must be destroyed. */
+            bool destroy = !_attachOnStop || (_targetTransform == null);
+            //If not to re-attach then destroy graphical if needed.
+            if (destroy)
             {
                 UnityEngine.Object.Destroy(_graphicalTransform.gameObject);
+                return;
             }
+
+            _graphicalTransform.SetParent(_targetTransform.parent);
+            _graphicalTransform.SetLocalProperties(_trackerTransform.GetLocalProperties());
         }
 
         public void ResetState()
         {
-            if (!_initialized)
+            if (!IsInitialized)
                 return;
 
             AttachOnStop();
@@ -883,11 +917,14 @@ namespace FishNet.Component.Transforming.Beta
             CollectionCaches<TickTransformProperties>.StoreAndDefault(ref _transformProperties);
             _moveRates = default;
             _preTicked = default;
-            _graphicalInitializedOffsetValues = default;
-            _additionalGraphicsOffsetValues = default;
-            _gfxPreTickWorldValues = default;
+            _queuedTrackerProperties = null;
+            _trackerPreTickWorldValues = default;
+            _graphicsPreTickWorldValues = default;
             _realtimeInterpolation = default;
             _isMoving = default;
+
+            if (_trackerTransform != null)
+                UnityEngine.Object.Destroy(_trackerTransform.gameObject);
         }
 
         public void InitializeState() { }

@@ -655,14 +655,24 @@ namespace FishNet.Managing.Server
             if (GetAllowPredictedSpawning())
             {
                 int count = Mathf.Min(Objects.GetObjectIdCache().Count, GetReservedObjectIds());
-                writer.WriteUInt8Unpacked((byte)count);
-
+                if (count > byte.MaxValue)
+                    count = byte.MaxValue;
+                
+                List<int> ids = CollectionCaches<int>.RetrieveList();
                 for (int i = 0; i < count; i++)
                 {
-                    ushort val = (ushort)Objects.GetNextNetworkObjectId(false);
-                    writer.WriteNetworkObjectId(val);
-                    conn.PredictedObjectIds.Enqueue(val);
+                    if (Objects.GetNextNetworkObjectId(out int nId))
+                        ids.Add(nId);
                 }
+                
+                writer.WriteUInt8Unpacked((byte)ids.Count);
+                foreach (int id in ids) 
+                {
+                    writer.WriteNetworkObjectId(id);
+                    conn.PredictedObjectIds.Enqueue(id);
+                }
+           
+                CollectionCaches<int>.Store(ids);
             }
 
             NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), conn);

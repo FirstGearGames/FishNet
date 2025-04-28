@@ -330,7 +330,7 @@ namespace FishNet.Object.Synchronizing
         {
             if (!base.IsInitialized)
                 return;
-            if (!base.CanNetworkSetValues(true))
+            if (!base.CanNetworkSetValues(log: true))
                 return;
 
             //Also set that values have changed since the user is forcing a sync.

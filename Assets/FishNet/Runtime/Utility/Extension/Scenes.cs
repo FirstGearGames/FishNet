@@ -77,7 +77,7 @@ namespace FishNet.Utility.Extension
                 //There is a duplicate.
                 if (sceneIds.TryGetValue(id, out NetworkObject originalNob))
                 {
-                    string err = $"Object {nob.name} and {originalNob.name} in scene {nob.gameObject.scene.name} have the same sceneId of {id}. This will result in spawning errors. Exit play mode and use the Fish-Networking menu to rebuild sceneIds for scene {nob.gameObject.scene.name}.";
+                    string err = $"Object {nob.name} and {originalNob.name} in scene {nob.gameObject.scene.name} have the same sceneId of {id}. This will result in spawning errors. Exit play mode and use the Fish-Networking menu to reserialize sceneIds for scene {nob.gameObject.scene.name}.";
                     NetworkManagerExtensions.LogError(err);
                     return true;
                 }

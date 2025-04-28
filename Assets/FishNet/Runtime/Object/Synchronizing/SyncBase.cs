@@ -221,7 +221,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// PreInitializes this for use with the network.
         /// </summary>
         [MakePublic]
-        protected internal void PreInitialize(NetworkManager networkManager)
+        protected internal void PreInitialize(NetworkManager networkManager, bool asServer)
         {
             NetworkManager = networkManager;
 

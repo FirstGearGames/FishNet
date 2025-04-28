@@ -25,7 +25,7 @@ namespace FishNet.Transporting.Tugboat
         internal bool StopSocketsOnThread => _stopSocketsOnThread;
         [Tooltip("True to stop local server and client sockets using a new thread.")]
         [SerializeField]
-        private bool _stopSocketsOnThread = true;
+        private bool _stopSocketsOnThread = false;
         [Tooltip("While true, forces sockets to send data directly to interface without routing.")]
         /// <summary>
         /// While true, forces sockets to send data directly to interface without routing.

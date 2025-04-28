@@ -968,7 +968,7 @@ namespace FishNet.Serializing
         {
             WriteNetworkObjectId(nob.ObjectId);
             WriteUInt16(nob.SpawnableCollectionId);
-            WriteInt8Unpacked(nob.GetInitializeOrder());
+            WriteInt32(nob.GetInitializeOrder());
         }
 
         /// <summary>

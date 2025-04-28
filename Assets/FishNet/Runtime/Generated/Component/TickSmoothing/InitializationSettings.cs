@@ -12,7 +12,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         [Tooltip("While this script is typically placed on a nested graphical object, the targetTransform would be the object which moves every tick; the TargetTransform can be the same object this script resides but may not be a rigidbody if true;")]
         [SerializeField]
-        public  Transform TargetTransform;
+        public Transform TargetTransform;
         /// <summary>
         /// The transform which is smoothed.
         /// </summary>
@@ -32,8 +32,8 @@ namespace FishNet.Component.Transforming.Beta
         /// <summary>
         /// True to begin moving soon as movement data becomes available. Movement will ease in until at interpolation value. False to prevent movement until movement data count meet interpolation.
         /// </summary>
+        /// <remarks>This is not yet used.</remarks>
         [Tooltip("True to begin moving soon as movement data becomes available. Movement will ease in until at interpolation value. False to prevent movement until movement data count meet interpolation.")]
-            
         public bool MoveImmediately => false;
         /// <summary>
         /// NetworkBehaviour which initialized these settings. This value may be null if not initialized from a NetworkBehaviour.
@@ -46,17 +46,21 @@ namespace FishNet.Component.Transforming.Beta
         [System.NonSerialized]
         internal TimeManager InitializingTimeManager;
 
-        public void UpdateRuntimeSettings(NetworkBehaviour initializingNetworkBehaviour, Transform graphicalTransform, float tickDelta)
+        public void SetNetworkedRuntimeValues(NetworkBehaviour initializingNetworkBehaviour, Transform graphicalTransform)
         {
             InitializingNetworkBehaviour = initializingNetworkBehaviour;
             GraphicalTransform = graphicalTransform;
             InitializingTimeManager = initializingNetworkBehaviour.TimeManager;
         }
-        public void UpdateRuntimeSettings(TimeManager timeManager, Transform graphicalTransform, float tickDelta)
+        /// <summary>
+        /// Sets values used at runtime. NetworkBehaviour is nullified when calling this method.
+        /// </summary>
+        public void SetOfflineRuntimeValues(TimeManager timeManager, Transform graphicalTransform)
         {
             InitializingNetworkBehaviour = null;
             GraphicalTransform = graphicalTransform;
             InitializingTimeManager = timeManager;
         }
+     
     }
 }

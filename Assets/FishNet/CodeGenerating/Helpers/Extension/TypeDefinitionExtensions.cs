@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
@@ -100,6 +101,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// </summary>
         private static bool IsExcluded(TypeDefinition typeDef, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
+            if (typeDef.FullName == typeof(LoadSceneParameters).FullName)
+                return false;
+            
             if (excludedBaseTypes != null)
             {
                 foreach (System.Type t in excludedBaseTypes)

@@ -787,15 +787,18 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Configures components automatically.
         /// </summary>
+
+        /// <summary>
+        /// Configures components automatically.
+        /// </summary>
         private void ConfigureComponents()
         {
             //Disabled.
             if (_componentConfiguration == ComponentConfigurationType.Disabled)
-            {
                 return;
-            }
+
             //RB.
-            else if (_componentConfiguration == ComponentConfigurationType.Rigidbody)
+            if (_componentConfiguration == ComponentConfigurationType.Rigidbody)
             {
                 if (TryGetComponent(out Rigidbody c))
                 {
@@ -856,10 +859,23 @@ namespace FishNet.Component.Transforming
 
             bool CanMakeKinematic()
             {
-                if (_clientAuthoritative)
-                    return (!base.IsOwner || base.IsServerOnlyStarted);
-                else
-                    return !base.IsServerInitialized;
+                bool isServerStarted = base.IsServerStarted;
+
+                //When not client auth, kinematic is always true if not server.
+                if (!_clientAuthoritative)
+                    return !isServerStarted;
+
+                /* If here then is client-auth. */
+
+                //Owner shouldn't be kinematic as they are controller.
+                if (base.IsOwner)
+                    return false;
+
+                //Is server, and there is no owner.
+                if (isServerStarted && !base.Owner.IsActive)
+                    return false;
+
+                return true;
             }
         }
 
@@ -1806,15 +1822,15 @@ namespace FishNet.Component.Transforming
         private ChangedDelta GetChanged(TransformData transformData)
         {
             //If default return full changed.
-            if (transformData.IsDefault)
+            if (transformData == null || transformData.IsDefault)
                 return _fullChanged;
-            else
-                /* If parent behaviour exist.
-                 * Parent isn't sent as a delta so
-                 * if it exist always send regardless
-                 * of the previously sent transform
-                 * data. */
-                return GetChanged(transformData.Position, transformData.Rotation, transformData.Scale, transformData.ParentBehaviour);
+
+            /* If parent behaviour exist.
+             * Parent isn't sent as a delta so
+             * if it exist always send regardless
+             * of the previously sent transform
+             * data. */
+            return GetChanged(transformData.Position, transformData.Rotation, transformData.Scale, transformData.ParentBehaviour);
         }
 
         /// <summary>

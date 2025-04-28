@@ -707,7 +707,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stack to use.
         /// </summary>
-        private readonly static Stack<T> _stack = new();
+        private static readonly Stack<T> _stack = new();
 
         /// <summary>
         /// Returns a value from the stack or creates an instance when the stack is empty.

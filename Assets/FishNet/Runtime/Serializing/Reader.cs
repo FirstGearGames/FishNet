@@ -1045,11 +1045,11 @@ namespace FishNet.Serializing
         /// Reads the Id for a NetworkObject and outputs spawn settings.
         /// </summary>
         /// <returns></returns>
-        internal int ReadNetworkObjectForSpawn(out sbyte initializeOrder, out ushort collectionid)
+        internal int ReadNetworkObjectForSpawn(out int initializeOrder, out ushort collectionid)
         {
             int objectId = ReadNetworkObjectId();
             collectionid = ReadUInt16();
-            initializeOrder = ReadInt8Unpacked();
+            initializeOrder = ReadInt32();
 
             return objectId;
         }

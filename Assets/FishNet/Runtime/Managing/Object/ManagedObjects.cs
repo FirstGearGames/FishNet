@@ -32,7 +32,11 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Returns the next ObjectId to use.
         /// </summary>
-        protected internal virtual int GetNextNetworkObjectId(bool errorCheck = true) => NetworkObject.UNSET_OBJECTID_VALUE;
+        protected internal virtual bool GetNextNetworkObjectId(out int nextNetworkObjectId)
+        {
+            nextNetworkObjectId = NetworkObject.UNSET_OBJECTID_VALUE;
+            return false;
+        }
 
         /// <summary>
         /// NetworkManager handling this.
@@ -125,8 +129,11 @@ namespace FishNet.Managing.Object
                 return;
             }
 
+
             //True if should be destroyed, false if deactivated.
             bool destroy = false;
+            bool wasRemovedFromPending = false;
+
             /* Only modify object state if asServer,
              * or !asServer and not host. This is so clients, when acting as
              * host, don't destroy objects they lost observation of. */
@@ -163,8 +170,30 @@ namespace FishNet.Managing.Object
                          * Pending objects are ones that exist on the server
                          * side only to await destruction from client side.
                          * Objects can also be destroyed if server is not
-                         * active. */
-                        destroy = (!isServer || NetworkManager.ServerManager.Objects.RemoveFromPending(nob.ObjectId));
+                         * active. */ 
+                        wasRemovedFromPending = NetworkManager.ServerManager.Objects.RemoveFromPending(nob);
+                        destroy = (!isServer || wasRemovedFromPending);
+                    }
+                }
+            }
+
+            TryUnsetParent();
+            /* If this had a parent set at runtime then
+             * unset parent before checks are completed.
+             * If we did not do this then this nob would
+             * just be disabled beneath its runtime parent,
+             * when it should be pooled separately or destroyed. */
+            void TryUnsetParent()
+            {
+                if (!asServer || wasRemovedFromPending)
+                {
+                    if (nob.RuntimeParentNetworkBehaviour != null)
+                    {
+                        nob.UnsetParent();
+                        /* DespawnType also has to be updated to use default
+                         * for the networkObject since this despawn is happening
+                         * automatically. */
+                        despawnType = nob.GetDefaultDespawnType();
                     }
                 }
             }
@@ -233,10 +262,11 @@ namespace FishNet.Managing.Object
                  * individual despawns for each child. */
                 if (asServer)
                 {
-                    foreach (NetworkObject childNob in nob.InitializedNestedNetworkObjects)
+                    List<NetworkObject> childNobs = nob.GetNetworkObjects(GetNetworkObjectOption.InitializedRuntime);
+                    foreach (NetworkObject childNob in childNobs)
                     {
                         if (childNob != null && !childNob.IsDeinitializing)
-                            Despawn(childNob, despawnType, asServer);
+                            Despawn(childNob, despawnType, asServer: true);
                     }
                 }
             }
@@ -288,15 +318,13 @@ namespace FishNet.Managing.Object
         /// <param name="nob"></param>
         protected virtual void DespawnWithoutSynchronization(NetworkObject nob, bool recursive, bool asServer, DespawnType despawnType, bool removeFromSpawned)
         {
-            //Also despawn all nested.
-            List<NetworkObject> allNobs = CollectionCaches<NetworkObject>.RetrieveList();
-            allNobs.Add(nob);
-
-#if !FISHNET_STABLE_RECURSIVE_DESPAWNS
-            if (recursive)
-                nob.RetrieveNestedNetworkObjects(ref allNobs, recursive: true);
+#if FISHNET_STABLE_RECURSIVE_DESPAWNS
+            recursive = false;
 #endif
-            
+
+            GetNetworkObjectOption getOption = (recursive) ? GetNetworkObjectOption.All : GetNetworkObjectOption.IncludeSelf;
+            List<NetworkObject> allNobs = nob.GetNetworkObjects(getOption);
+
             //True if can deactivate or destroy.
             bool canCleanup = (asServer || !NetworkManager.IsServerStarted);
 
