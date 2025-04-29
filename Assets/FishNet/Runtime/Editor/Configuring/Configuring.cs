@@ -9,11 +9,8 @@ using UnityEditor.Build;
 
 namespace FishNet.Configuring
 {
-
-
     public class Configuration
     {
-
         /// <summary>
         /// 
         /// </summary>
@@ -31,16 +28,30 @@ namespace FishNet.Configuring
                     throw new("Fish-Networking Configurations could not be loaded. Certain features such as code-stripping may not function.");
                 return _configurations;
             }
-            private set
-            {
-                _configurations = value;
-            }
+            private set { _configurations = value; }
         }
 
         /// <summary>
         /// File name for configuration disk data.
         /// </summary>
         public const string CONFIG_FILE_NAME = "FishNet.Config.XML";
+
+        /// <summary>
+        /// Returns true if this editor is a multiplayer clone.
+        /// </summary>
+        /// <returns></returns>
+        public static bool IsMultiplayerClone()
+        {
+#if UNITY_EDITOR
+            if (Application.dataPath.ToLower().Contains("library/vp/"))
+                return true;
+
+#if PARRELSYNC
+            return ParrelSync.ClonesManager.IsClone();
+#endif
+#endif
+            return false;
+        }
 
         /// <summary>
         /// Returns the path for the configuration file.
@@ -53,6 +64,7 @@ namespace FishNet.Configuring
                 a = Path.Combine(a, additional);
             return a;
         }
+
         /// <summary>
         /// Returns FishNetworking ConfigurationData.
         /// </summary>
@@ -91,11 +103,8 @@ namespace FishNet.Configuring
             }
 
             return _configurations;
-
         }
-
     }
-
-
 }
+
 #endif

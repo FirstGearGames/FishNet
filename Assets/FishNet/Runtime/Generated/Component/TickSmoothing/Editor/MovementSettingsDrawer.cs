@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using FishNet.Object;
 using GameKit.Dependencies.Utilities;
 using UnityEditor;
 using UnityEngine;
@@ -25,6 +26,7 @@ namespace FishNet.Component.Transforming.Beta.Editing
             SerializedProperty adaptiveInterpolationValue = property.FindPropertyRelative("AdaptiveInterpolationValue");
             SerializedProperty interpolationValue = property.FindPropertyRelative("InterpolationValue");
             SerializedProperty smoothedProperties = property.FindPropertyRelative("SmoothedProperties");
+            SerializedProperty snapNonSmoothedProperties = property.FindPropertyRelative("SnapNonSmoothedProperties");
 
             _propertyDrawer.DrawProperty(enableTeleport, "Enable Teleport");
             if (enableTeleport.boolValue == true)
@@ -35,6 +37,8 @@ namespace FishNet.Component.Transforming.Beta.Editing
                 _propertyDrawer.DrawProperty(interpolationValue, "Interpolation Value", indent: 1);
 
             _propertyDrawer.DrawProperty(smoothedProperties, "Smoothed Properties");
+            if ((uint)smoothedProperties.intValue != (uint)TransformPropertiesFlag.Everything)
+                _propertyDrawer.DrawProperty(snapNonSmoothedProperties, "Snap Non-Smoothed Properties", indent: 1);
 
             _propertyDrawer.SetIndentToStarting();
 

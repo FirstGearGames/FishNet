@@ -534,17 +534,17 @@ namespace FishNet.Serializing
                 WriteInt32(Writer.UNSET_COLLECTION_SIZE_VALUE);
                 return;
             }
-
-            int length = value.Length;
+            
+            byte[] buffer = Strings.Buffer;
+            int length = value.ToBytes(ref buffer);
+            
             WriteInt32(length);
 
             //Nothing to write.
             if (length == 0)
                 return;
 
-            byte[] buffer = Strings.Buffer;
-            int bytesLength = value.ToBytes(ref buffer);
-            WriteUInt8Array(buffer, 0, bytesLength);
+            WriteUInt8Array(buffer, 0, length);
         }
 
         /// <summary>
@@ -968,7 +968,7 @@ namespace FishNet.Serializing
         {
             WriteNetworkObjectId(nob.ObjectId);
             WriteUInt16(nob.SpawnableCollectionId);
-            WriteInt8Unpacked(nob.GetInitializeOrder());
+            WriteInt32(nob.GetInitializeOrder());
         }
 
         /// <summary>

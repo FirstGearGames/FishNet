@@ -465,9 +465,7 @@ namespace FishNet.Object.Prediction
                 else
                     t.position = Vector3.MoveTowards(t.position, posGoal, rate * delta);
             }
-
-            //Debug.Log($"StartX {start.x.ToString("0.00")}. End {t.position.x.ToString("0.00")}. Rate {posRate}. Delta {delta}");
-
+            
             if (movedProperties.FastContains(TransformPropertiesFlag.Rotation))
             {
                 rate = rotRate;

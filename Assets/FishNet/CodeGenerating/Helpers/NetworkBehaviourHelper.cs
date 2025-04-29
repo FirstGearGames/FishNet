@@ -33,7 +33,7 @@ namespace FishNet.CodeGenerating.Helping
         public MethodReference Replicate_Replay_Start_MethodRef;
         public MethodReference Replicate_Current_MethodRef;
         public MethodReference Reconcile_Client_MethodRef;
-        public MethodReference Reconcile_Client_Local_MethodRef;
+        public MethodReference Reconcile_Current_MethodRef;
         public MethodReference ClearReplicateCache_Internal_MethodRef;
         public MethodReference Replicate_Replay_MethodRef;
         public MethodReference Reconcile_Reader_MethodRef;
@@ -136,10 +136,10 @@ namespace FishNet.CodeGenerating.Helping
                     Reconcile_Reader_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Server))
                     Reconcile_Server_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client))
+                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client)) 
                     Reconcile_Client_MethodRef = base.ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client_Local))
-                    Reconcile_Client_Local_MethodRef = base.ImportReference(mi);
+                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Current))
+                    Reconcile_Current_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.ClearReplicateCache_Internal))
                     ClearReplicateCache_Internal_MethodRef = base.ImportReference(mi);
             }

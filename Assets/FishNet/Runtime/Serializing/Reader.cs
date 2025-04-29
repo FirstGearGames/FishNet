@@ -565,17 +565,17 @@ namespace FishNet.Serializing
         [DefaultReader]
         public string ReadStringAllocated()
         {
-            int size = ReadInt32();
+            int length = ReadInt32();
             //Null string.
-            if (size == Writer.UNSET_COLLECTION_SIZE_VALUE)
+            if (length == Writer.UNSET_COLLECTION_SIZE_VALUE)
                 return null;
 
-            if (size == 0)
+            if (length == 0)
                 return string.Empty;
-            if (!CheckAllocationAttack(size))
+            if (!CheckAllocationAttack(length))
                 return string.Empty;
 
-            ArraySegment<byte> data = ReadArraySegment(size);
+            ArraySegment<byte> data = ReadArraySegment(length);
             return data.Array.ToString(data.Offset, data.Count);
         }
 
@@ -1045,11 +1045,11 @@ namespace FishNet.Serializing
         /// Reads the Id for a NetworkObject and outputs spawn settings.
         /// </summary>
         /// <returns></returns>
-        internal int ReadNetworkObjectForSpawn(out sbyte initializeOrder, out ushort collectionid)
+        internal int ReadNetworkObjectForSpawn(out int initializeOrder, out ushort collectionid)
         {
             int objectId = ReadNetworkObjectId();
             collectionid = ReadUInt16();
-            initializeOrder = ReadInt8Unpacked();
+            initializeOrder = ReadInt32();
 
             return objectId;
         }

@@ -81,7 +81,7 @@ namespace FishNet.Managing.Client
                 //If not server then deinitialize normally.
                 if (!base.NetworkManager.IsServerStarted)
                 {
-                    base.DespawnWithoutSynchronization(false);
+                    base.DespawnWithoutSynchronization(recursive: true, asServer: false);
                 }
                 //Otherwise invoke stop callbacks only for client side.
                 else
@@ -140,13 +140,14 @@ namespace FishNet.Managing.Client
         {
             //No more Ids to use.
             Queue<int> predictedObjectIds = NetworkManager.ClientManager.Connection.PredictedObjectIds;
-            if (predictedObjectIds.Count == 0)
+            if (!predictedObjectIds.TryPeek(out int objectId))
             {
                 NetworkManager.LogError($"Predicted spawn for object {networkObject.name} failed because no more predicted ObjectIds remain. This usually occurs when the client is spawning excessively before the server can respond. Increasing ReservedObjectIds within the ServerManager component or reducing spawn rate could prevent this problem.");
+                StoreNetworkObject();
                 return;
             }
 
-            networkObject.InitializePredictedObject_Client(base.NetworkManager, predictedObjectIds.Dequeue(), ownerConnection, base.NetworkManager.ClientManager.Connection);
+            networkObject.InitializePredictedObject_Client(base.NetworkManager, objectId, ownerConnection, base.NetworkManager.ClientManager.Connection);
             NetworkManager.ClientManager.Objects.AddToSpawned(networkObject, false);
             networkObject.Initialize(asServer: false, invokeSyncTypeCallbacks: true);
 
@@ -154,12 +155,20 @@ namespace FishNet.Managing.Client
             if (WriteSpawn(networkObject, writer, connection: null))
             {
                 base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
+                //Also dequeue entry, since we only peeked it earlier.
+                predictedObjectIds.Dequeue();
             }
             else
             {
+                StoreNetworkObject();
+            }
+
+            void StoreNetworkObject()
+            {
                 networkObject.SetIsDestroying();
                 networkObject.Deinitialize(asServer: false);
-                NetworkManager.StorePooledInstantiated(networkObject, false);
+                
+                NetworkManager.StorePooledOrDestroyInstantiated(networkObject, asServer: false);
             }
 
             writer.Store();
@@ -249,7 +258,7 @@ namespace FishNet.Managing.Client
             NetworkObject nob = reader.ReadNetworkObject();
             NetworkConnection newOwner = reader.ReadNetworkConnection();
             if (nob != null && nob.IsSpawned)
-                nob.GiveOwnership(newOwner, asServer: false, includeNested: false);
+                nob.GiveOwnership(newOwner, asServer: false, recursive: false);
             else
                 NetworkManager.LogWarning($"NetworkBehaviour could not be found when trying to parse OwnershipChange packet.");
         }
@@ -315,7 +324,7 @@ namespace FishNet.Managing.Client
         internal void ParseReconcileRpc(PooledReader reader, Channel channel)
         {
 #if DEVELOPMENT
-            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
+            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int readerRemainingAfterLength, out string rpcInformation, out uint expectedReadAmount);
 #endif
 
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
@@ -327,7 +336,7 @@ namespace FishNet.Managing.Client
                 SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
 
 #if DEVELOPMENT
-            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, base.NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
+            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, base.NetworkManager, reader, readerRemainingAfterLength, rpcInformation, expectedReadAmount, channel);
 #endif
         }
 
@@ -389,7 +398,7 @@ namespace FishNet.Managing.Client
             ReadNestedSpawnIds(reader, st, out byte? nobComponentId, out int? parentObjectId, out byte? parentComponentId, _objectCache.ReadSpawningObjects);
 
             //NeworkObject and owner information.
-            int objectId = reader.ReadNetworkObjectForSpawn(out sbyte initializeOrder, out ushort collectionId);
+            int objectId = reader.ReadNetworkObjectForSpawn(out int initializeOrder, out ushort collectionId);
             int ownerId = reader.ReadNetworkConnectionId();
             //Read transform values which differ from serialized values.
             Vector3? localPosition;

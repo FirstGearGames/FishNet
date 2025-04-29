@@ -6,7 +6,9 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using GameKit.Dependencies.Utilities;
 using UnityEngine;
 
 namespace FishNet.Managing.Server
@@ -22,75 +24,98 @@ namespace FishNet.Managing.Server
         #endregion
 
         /// <summary>
+        /// Stores a cache and returns a boolean result.
+        /// </summary>
+        /// <returns></returns>
+        private bool StoreTransportCacheAndReturn(List<Transport> cache, bool returnedValue)
+        {
+            CollectionCaches<Transport>.Store(cache);
+            return returnedValue;
+        }
+        
+        /// <summary>
+        /// Returns true if all server sockets have a local connection state of stopped.
+        /// </summary>
+        public bool AreAllServersStopped()
+        {
+            List<Transport> transports = NetworkManager.TransportManager.GetAllTransports(includeMultipass: false);
+
+            foreach (Transport t in transports)
+            {
+                if (t.GetConnectionState(server: true) != LocalConnectionState.Stopped)
+                    return StoreTransportCacheAndReturn(transports, returnedValue: false);
+            }
+
+            return StoreTransportCacheAndReturn(transports, returnedValue: true);
+        }
+
+        /// <summary>
         /// Returns true if only one server is started.
         /// </summary>
         /// <returns></returns>
-        public bool OneServerStarted()
+        public bool IsOnlyOneServerStarted()
         {
+            List<Transport> transports = NetworkManager.TransportManager.GetAllTransports(includeMultipass: false);
+
             int startedCount = 0;
-            TransportManager tm = NetworkManager.TransportManager;
-            //If using multipass check all transports.
-            if (tm.Transport is Multipass mp)
-            {
 
-                foreach (Transport t in mp.Transports)
-                {
-                    //Another transport is started, no need to load start scenes again.
-                    if (t.GetConnectionState(true) == LocalConnectionState.Started)
-                        startedCount++;
-                }
-            }
-            //Not using multipass.
-            else
+            foreach (Transport t in transports)
             {
-                if (tm.Transport.GetConnectionState(true) == LocalConnectionState.Started)
-                    startedCount = 1;
+                if (t.GetConnectionState(true) == LocalConnectionState.Started)
+                    startedCount++;
             }
 
-            return (startedCount == 1);
+            return StoreTransportCacheAndReturn(transports, (startedCount == 1));
+        }
+
+        [Obsolete("Use IsOnlyOneServerStarted().")]
+        public bool OneServerStarted() => IsOnlyOneServerStarted();
+
+
+        /// <summary>
+        /// Returns true if any server socket is in the started state.
+        /// </summary>
+        /// <param name="excludedTransport">When set the transport will be ignored. This value is only used with Multipass.</param>
+        public bool IsAnyServerStarted(Transport excludedTransport)
+        {
+            List<Transport> transports = NetworkManager.TransportManager.GetAllTransports(includeMultipass: false);
+
+            foreach (Transport t in transports)
+            {
+                if (t == excludedTransport)
+                    continue;
+                //Another transport is started, no need to load start scenes again.
+                if (t.GetConnectionState(true) == LocalConnectionState.Started)
+                    return StoreTransportCacheAndReturn(transports, returnedValue: true);
+            }
+
+            return StoreTransportCacheAndReturn(transports, returnedValue: false);
         }
 
         /// <summary>
         /// Returns true if any server socket is in the started state.
         /// </summary>
         /// <param name="excludedIndex">When set the transport on this index will be ignored. This value is only used with Multipass.</param>
-        /// <returns></returns>
-        public bool AnyServerStarted(int? excludedIndex = null)
+        public bool IsAnyServerStarted(int excludedIndex = TransportConsts.UNSET_TRANSPORT_INDEX)
         {
-            TransportManager tm = NetworkManager.TransportManager;
-            //If using multipass check all transports.
-            if (tm.Transport is Multipass mp)
+            Transport excludedTransport = null;
+            if (excludedIndex != TransportConsts.UNSET_TRANSPORT_INDEX)
             {
-                //Get transport which had state changed.
-                Transport excludedTransport = (excludedIndex == null) ? null : mp.GetTransport(excludedIndex.Value);
-
-                foreach (Transport t in mp.Transports)
-                {
-                    /* Skip t if is the transport that had it's state changed.
-                     * We are looking for other transports already in started. */
-                    if (t == excludedTransport)
-                        continue;
-                    //Another transport is started, no need to load start scenes again.
-                    if (t.GetConnectionState(true) == LocalConnectionState.Started)
-                        return true;
-                }
+                if (NetworkManager.TransportManager.Transport is Multipass mp)
+                    excludedTransport = mp.GetTransport(excludedIndex);
             }
-            //Not using multipass.
-            else
-            {
-                return (tm.Transport.GetConnectionState(true) == LocalConnectionState.Started);
-            }
-
-            //Fall through, none started.
-            return false;
+            
+            return IsAnyServerStarted(excludedTransport);
         }
+
+        [Obsolete("Use IsAnyServerStarted.")]
+        public bool AnyServerStarted(int excludedIndex = TransportConsts.UNSET_TRANSPORT_INDEX) => IsAnyServerStarted(excludedIndex);
 
         /// <summary>
         /// Spawns an object over the network. Can only be called on the server.
         /// </summary>
         /// <param name="go">GameObject instance to spawn.</param>
         /// <param name="ownerConnection">Connection to give ownership to.</param>
-        
         public void Spawn(GameObject go, NetworkConnection ownerConnection = null, UnityEngine.SceneManagement.Scene scene = default)
         {
             if (go == null)
@@ -102,7 +127,6 @@ namespace FishNet.Managing.Server
             NetworkObject nob = go.GetComponent<NetworkObject>();
             Spawn(nob, ownerConnection, scene);
         }
-
 
         /// <summary>
         /// Spawns an object over the network. Can only be called on the server.
@@ -124,7 +148,6 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="go">GameObject instance to despawn.</param>
         /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
-        
         public void Despawn(GameObject go, DespawnType? despawnType = null)
         {
             if (go == null)
@@ -144,10 +167,8 @@ namespace FishNet.Managing.Server
         /// <param name="despawnType">Despawn override type.</param>
         public void Despawn(NetworkObject networkObject, DespawnType? despawnType = null)
         {
-            DespawnType resolvedDespawnType = (!despawnType.HasValue)
-                ? networkObject.GetDefaultDespawnType()
-                : despawnType.Value;
-            
+            DespawnType resolvedDespawnType = (!despawnType.HasValue) ? networkObject.GetDefaultDespawnType() : despawnType.Value;
+
             Objects.Despawn(networkObject, resolvedDespawnType, asServer: true);
         }
 
@@ -200,6 +221,4 @@ namespace FishNet.Managing.Server
             Kick(conn, kickReason, loggingType, log);
         }
     }
-
-
 }

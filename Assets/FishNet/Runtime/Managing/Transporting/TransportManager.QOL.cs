@@ -1,6 +1,8 @@
-﻿using FishNet.Connection;
+﻿using System.Collections.Generic;
+using FishNet.Connection;
 using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
+using GameKit.Dependencies.Utilities;
 using UnityEngine;
 
 namespace FishNet.Managing.Transporting
@@ -66,6 +68,35 @@ namespace FishNet.Managing.Transporting
                 else
                     return default(T);
             }
+        }
+        
+        /// <summary>
+        /// Returns all transports configured on the TransportManager.
+        /// </summary>
+        /// <param name="includeMultipass">True to add Multipass to the results if being used. When false and using Multipass only the transport specified within Multipass will be returned.</param>
+        /// <returns></returns>
+        /// <remarks>This returns a collection from cache.</remarks>
+        public List<Transport> GetAllTransports(bool includeMultipass)
+        {
+            List<Transport> results = CollectionCaches<Transport>.RetrieveList();
+            
+            //If using multipass check all transports.
+            if (Transport is Multipass mp)
+            {
+                if (includeMultipass)
+                    results.Add(Transport);
+
+
+                foreach (Transport t in mp.Transports)
+                    results.Add(t);
+            }
+            //Not using multipass.
+            else
+            {
+                results.Add(Transport);
+            }
+
+            return results;
         }
     }
 

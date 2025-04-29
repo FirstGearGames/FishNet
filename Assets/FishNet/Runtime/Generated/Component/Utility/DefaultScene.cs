@@ -164,7 +164,7 @@ namespace FishNet.Component.Scenes
                  * we just got a started callback, or two+ are started.
                  * When a server has already started there's no reason to load
                  * scenes again. */
-                if (!_networkManager.ServerManager.OneServerStarted())
+                if (!_networkManager.ServerManager.IsOnlyOneServerStarted())
                     return;
 
                 //If here can load scene.
@@ -176,7 +176,7 @@ namespace FishNet.Component.Scenes
                     _networkManager.SceneManager.LoadConnectionScenes(sld);
             }
             //When server stops load offline scene.
-            else if (obj.ConnectionState == LocalConnectionState.Stopped && !_networkManager.ServerManager.AnyServerStarted())
+            else if (obj.ConnectionState == LocalConnectionState.Stopped && !_networkManager.ServerManager.IsAnyServerStarted())
             {
                 LoadOfflineScene();
             }

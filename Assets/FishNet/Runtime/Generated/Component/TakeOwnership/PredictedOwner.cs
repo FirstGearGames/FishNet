@@ -63,7 +63,7 @@ namespace FishNet.Component.Ownership
         /// </summary>
         private void _allowTakeOwnershipSyncVar_OnChange(bool prev, bool next, bool asServer)
         {
-            if (asServer || (!asServer && !base.IsHostStarted))
+            if (asServer || !base.IsHostStarted)
                 _allowTakeOwnership = next;
         }
 
@@ -126,14 +126,14 @@ namespace FishNet.Component.Ownership
         [Server]
         
         [Obsolete("Use OnTakeOwnership(bool).")]
-        protected virtual void OnTakeOwnership(NetworkConnection caller) => OnTakeOwnership(caller, includeNested: false);
+        protected virtual void OnTakeOwnership(NetworkConnection caller) => OnTakeOwnership(caller, recursive: false);
 
         /// <summary>
         /// Called on the server when a client tries to take ownership of this object.
         /// </summary>
         /// <param name="caller">Connection trying to take ownership.</param>
         [Server]
-        protected virtual void OnTakeOwnership(NetworkConnection caller, bool includeNested)
+        protected virtual void OnTakeOwnership(NetworkConnection caller, bool recursive)
         {
             //Client somehow disconnected between here and there.
             if (!caller.IsActive)
@@ -146,15 +146,15 @@ namespace FishNet.Component.Ownership
                 return;
 
             base.GiveOwnership(caller);
-            if (includeNested)
+            if (recursive)
             {
-                List<NetworkObject> allNested = base.NetworkObject.RetrieveNestedNetworkObjects(recursive: true);
+                List<NetworkObject> allNested = base.NetworkObject.GetNetworkObjects(GetNetworkObjectOption.InitializedRuntimeRecursive);
                 
                 foreach (NetworkObject nob in allNested)
                 {
                     PredictedOwner po = nob.PredictedOwner;
                     if (po != null)
-                        po.OnTakeOwnership(caller, includeNested: true);
+                        po.OnTakeOwnership(caller, recursive: true);
                 }
 
                 CollectionCaches<NetworkObject>.Store(allNested);

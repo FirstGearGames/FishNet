@@ -9,15 +9,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FishNet.Demos", "FishNet.De
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{4e97400e-6901-e4b2-61ca-c2b7083738e0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Edgegap", "Edgegap.csproj", "{33062ca1-c144-2e80-1df7-850ffaf220e4}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "asset-store-tools-editor", "asset-store-tools-editor.csproj", "{d7cde7c1-471b-c843-4cbd-8c809a39f5d5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FishNet.Codegen.Cecil", "FishNet.Codegen.Cecil.csproj", "{f32bffeb-fbfd-b774-267e-e93be467af42}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.FishNet.Codegen", "Unity.FishNet.Codegen.csproj", "{f3bba7ee-098b-afe8-82aa-7d137aa0c340}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{a57f55b2-aea4-8755-8bcc-3dcaea2d377b}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,16 +28,12 @@ Global
 		{e26d1d97-7c0c-fd3f-c6d2-c3d7566d51d7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4e97400e-6901-e4b2-61ca-c2b7083738e0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4e97400e-6901-e4b2-61ca-c2b7083738e0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{33062ca1-c144-2e80-1df7-850ffaf220e4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{33062ca1-c144-2e80-1df7-850ffaf220e4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{d7cde7c1-471b-c843-4cbd-8c809a39f5d5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{d7cde7c1-471b-c843-4cbd-8c809a39f5d5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{f32bffeb-fbfd-b774-267e-e93be467af42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{f32bffeb-fbfd-b774-267e-e93be467af42}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{f3bba7ee-098b-afe8-82aa-7d137aa0c340}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{f3bba7ee-098b-afe8-82aa-7d137aa0c340}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{a57f55b2-aea4-8755-8bcc-3dcaea2d377b}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{a57f55b2-aea4-8755-8bcc-3dcaea2d377b}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -186,7 +186,6 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 8013474958425823559}
   _networkObjectCache: {fileID: 8013474958425823559}
   _maximumSimultaneousHits: 16
-  _historyDuration: 0.5
   _additionalSize: 0.1
   _layers:
     serializedVersion: 2
@@ -363,12 +362,14 @@ MonoBehaviour:
   _controllerMovementSettings:
     EnableTeleport: 0
     TeleportThreshold: 0
-    AdaptiveInterpolationValue: 1
+    AdaptiveInterpolationValue: 4
     InterpolationValue: 2
     SmoothedProperties: 4294967295
+    SnapNonSmoothedProperties: 0
   _spectatorMovementSettings:
     EnableTeleport: 0
     TeleportThreshold: 0
-    AdaptiveInterpolationValue: 1
+    AdaptiveInterpolationValue: 4
     InterpolationValue: 2
     SmoothedProperties: 4294967295
+    SnapNonSmoothedProperties: 0

@@ -47,7 +47,7 @@ namespace FishNet.Component.Transforming.Beta
         {
             RetrieveControllers();
 
-            _initializationSettings.UpdateRuntimeSettings(this, transform, (float)base.TimeManager.TickDelta);
+            _initializationSettings.SetNetworkedRuntimeValues(initializingNetworkBehaviour: this, graphicalTransform: transform);
             SmootherController.Initialize(_initializationSettings, _controllerMovementSettings, _spectatorMovementSettings);
 
             SmootherController.StartSmoother();

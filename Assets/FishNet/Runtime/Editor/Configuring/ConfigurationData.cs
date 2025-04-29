@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 using UnityEditor;
+using UnityEngine;
 
 
 namespace FishNet.Configuring
@@ -19,6 +20,12 @@ namespace FishNet.Configuring
     {
         EntireProject = 0,
         SpecificFolders = 1,
+    }
+
+    public class CreateNewNetworkBehaviourConfigurations
+    {
+        public string templateDirectoryPath = "Assets";
+
     }
 
     public class PrefabGeneratorConfigurations
@@ -53,6 +60,7 @@ namespace FishNet.Configuring
 
         public PrefabGeneratorConfigurations PrefabGenerator = new();
         public CodeStrippingConfigurations CodeStripping = new();
+        public CreateNewNetworkBehaviourConfigurations CreateNewNetworkBehaviour = new();
     }
 
     public static class ConfigurationDataExtension

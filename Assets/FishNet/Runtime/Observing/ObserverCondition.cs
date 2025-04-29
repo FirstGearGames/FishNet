@@ -32,7 +32,7 @@ namespace FishNet.Observing
         private sbyte _addOrder;
         /// <summary>
         /// Setting this to true can save performance on conditions which do change settings or store data at runtime.
-        /// This feature does not function yet but you may set values now for future implementation.
+        /// This feature does not function yet, but you may set values now for future implementation.
         /// </summary>
         public bool IsConstant => _isConstant;
         [Tooltip("Setting this to true can save performance on conditions which do change settings or store data at runtime. This feature does not function yet but you may set values now for future implementation.")]

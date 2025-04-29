@@ -302,9 +302,8 @@ namespace FishNet.Demo.Prediction.CharacterControllers
                  * wrong. If you do however predict wrong often smoothing will cover up the mistake. */
                 else if (state.IsFuture())
                 {
-                    /* Predict up to whatever interpolation is on the PredictionManager. This is the safest way to protect against
-                     * graphical jitter by not predicting beyond global interpolation. */
-                    if (rd.GetTick() - _lastTickedReplicateData.GetTick() >= base.PredictionManager.StateInterpolation)
+                    /* Predict up to 1 tick more. */
+                    if (rd.GetTick() - _lastTickedReplicateData.GetTick() > 1)
                     {
                         useDefaultForces = true;
                     }

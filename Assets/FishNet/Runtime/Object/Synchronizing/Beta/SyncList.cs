@@ -425,8 +425,7 @@ namespace FishNet.Object.Synchronizing
         {
             base.ResetState(asServer);
             
-            bool clientStarted = (base.IsNetworkInitialized && base.NetworkManager.IsClientStarted);
-            if ((asServer && !clientStarted) || (!asServer && base.NetworkBehaviour.IsDeinitializing))
+            if (base.CanReset(asServer))
             {
                 _sendAll = false;
                 _changed.Clear();

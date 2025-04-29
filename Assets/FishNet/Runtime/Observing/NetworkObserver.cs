@@ -5,6 +5,7 @@ using FishNet.Object;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
+using FishNet.Managing;
 using UnityEngine;
 
 namespace FishNet.Observing
@@ -42,9 +43,9 @@ namespace FishNet.Observing
         /// <summary>
         /// True if the ObserverManager had already added conditions for this component.
         /// </summary>
-        internal bool ConditionsSetByObserverManager; 
+        internal bool ConditionsSetByObserverManager;
         #endregion
-        
+
         #region Serialized.
         /// <summary>
         /// 
@@ -191,6 +192,8 @@ namespace FishNet.Observing
             _serverManager = _networkObject.ServerManager;
             _serverManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
 
+            bool observerFound = _conditionsInitializedPreviously;
+
             if (!_conditionsInitializedPreviously)
             {
                 _conditionsInitializedPreviously = true;
@@ -222,8 +225,7 @@ namespace FishNet.Observing
                 //Caches for ordering.
                 List<ObserverCondition> nonTimedConditions = CollectionCaches<ObserverCondition>.RetrieveList();
                 List<ObserverCondition> timedConditions = CollectionCaches<ObserverCondition>.RetrieveList();
-
-                bool observerFound = false;
+                
                 foreach (ObserverCondition condition in _observerConditions)
                 {
                     if (condition == null)
@@ -267,19 +269,18 @@ namespace FishNet.Observing
                 //Store caches.
                 CollectionCaches<ObserverCondition>.Store(nonTimedConditions);
                 CollectionCaches<ObserverCondition>.Store(timedConditions);
-
-                //No observers specified, do not need to take further action.
-                if (!observerFound)
-                    return;
             }
 
-            //Initialize conditions.
-            for (int i = 0; i < _observerConditions.Count; i++)
-                _observerConditions[i].Initialize(_networkObject);
-
+            if (observerFound)
+            {
+                //Initialize conditions.
+                for (int i = 0; i < _observerConditions.Count; i++)
+                    _observerConditions[i].Initialize(_networkObject);
+                
+                RegisterTimedConditions();
+            }
+            
             _initialized = true;
-
-            RegisterTimedConditions();
         }
 
         /// <summary>
@@ -309,6 +310,13 @@ namespace FishNet.Observing
         /// <returns>True if added to Observers.</returns>
         internal ObserverStateChange RebuildObservers(NetworkConnection connection, bool timedOnly)
         {
+            if (!_initialized)
+            {
+                string goName = (gameObject == null) ? "Empty" : gameObject.name;
+                NetworkManagerExtensions.LogError($"{GetType().Name} is not initialized on NetworkObject [{goName}]. RebuildObservers should not be called. If you are able to reproduce this error consistently please report this issue.");
+                return ObserverStateChange.Unchanged;
+            }
+
             bool currentlyAdded = (_networkObject.Observers.Contains(connection));
 
             //True if all conditions are met.

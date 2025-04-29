@@ -309,7 +309,7 @@ namespace FishNet.Managing.Server
         /// This does not iterate outgoing automatically.
         /// </summary>
         /// <param name="connectionIds"></param>
-        internal void SendDisconnectMessages(int[] connectionIds)
+        public void SendDisconnectMessages(int[] connectionIds)
         {
             List<NetworkConnection> conns = new();
             foreach (int item in connectionIds)
@@ -323,9 +323,9 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
-        /// Sends a disconnect message to all clients and immediately iterates outgoing.
+        /// Sends a disconnect message to all clients and optionally immediately iterates outgoing.
         /// </summary>
-        private void SendDisconnectMessages(List<NetworkConnection> conns, bool iterate)
+        public void SendDisconnectMessages(List<NetworkConnection> conns, bool iterate)
         {
             PooledWriter writer = WriterPool.Retrieve();
             writer.WritePacketIdUnpacked(PacketId.Disconnect);
@@ -337,7 +337,7 @@ namespace FishNet.Managing.Server
             writer.Store();
 
             if (iterate)
-                NetworkManager.TransportManager.IterateOutgoing(true);
+                NetworkManager.TransportManager.IterateOutgoing(asServer: true);
         }
 
         /// <summary>
@@ -510,14 +510,14 @@ namespace FishNet.Managing.Server
             /* Let the client manager know the server state is changing first.
              * This gives the client an opportunity to clean-up or prepare
              * before the server completes it's actions. */
-            Started = AnyServerStarted();
+            Started = IsAnyServerStarted();
             NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
             //If no servers are started then reset data.
             if (!Started)
             {
                 MatchCondition.StoreCollections(NetworkManager);
                 //Despawn without synchronizing network objects.
-                Objects.DespawnWithoutSynchronization(true);
+                Objects.DespawnWithoutSynchronization(recursive: true, asServer: true);
                 //Clear all clients.
                 Clients.Clear();
                 //Clients as list.
@@ -655,14 +655,24 @@ namespace FishNet.Managing.Server
             if (GetAllowPredictedSpawning())
             {
                 int count = Mathf.Min(Objects.GetObjectIdCache().Count, GetReservedObjectIds());
-                writer.WriteUInt8Unpacked((byte)count);
-
+                if (count > byte.MaxValue)
+                    count = byte.MaxValue;
+                
+                List<int> ids = CollectionCaches<int>.RetrieveList();
                 for (int i = 0; i < count; i++)
                 {
-                    ushort val = (ushort)Objects.GetNextNetworkObjectId(false);
-                    writer.WriteNetworkObjectId(val);
-                    conn.PredictedObjectIds.Enqueue(val);
+                    if (Objects.GetNextNetworkObjectId(out int nId))
+                        ids.Add(nId);
                 }
+                
+                writer.WriteUInt8Unpacked((byte)ids.Count);
+                foreach (int id in ids) 
+                {
+                    writer.WriteNetworkObjectId(id);
+                    conn.PredictedObjectIds.Enqueue(id);
+                }
+           
+                CollectionCaches<int>.Store(ids);
             }
 
             NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, writer.GetArraySegment(), conn);
