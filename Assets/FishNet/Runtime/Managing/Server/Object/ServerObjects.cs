@@ -462,7 +462,7 @@ namespace FishNet.Managing.Server
                         NetworkManager.LogError($"NetworkObject {nob.name} in scene {nob.gameObject.scene.name} needs to be reserialized. Please use the Fish-Networking menu -> Utility -> Reserialize NetworkObjects.");
                         continue;
                     }
-                    
+
                     base.AddToSceneObjects(nob);
                     /* If was active in the editor (before hitting play), or currently active
                      * then PreInitialize without synchronizing to clients. There is no reason
@@ -599,11 +599,11 @@ namespace FishNet.Managing.Server
             else
                 SpawnWithoutChecks(networkObject, recursiveSpawnCache: null, ownerConnection);
         }
-
+        
         /// <summary>
         /// Spawns networkObject without any checks.
         /// </summary>
-        private void SpawnWithoutChecks(NetworkObject networkObject, List<NetworkObject> recursiveSpawnCache = null, NetworkConnection ownerConnection = null, int? objectId = null, bool rebuildObservers = true, bool initializeEarly = true)
+        private void SpawnWithoutChecks(NetworkObject networkObject, List<NetworkObject> recursiveSpawnCache = null, NetworkConnection ownerConnection = null, int? objectId = null, bool rebuildObservers = true, bool initializeEarly = true, bool isRecursiveIteration = false)
         {
             /* Setup locally without sending to clients.
              * When observers are built for the network object
@@ -626,24 +626,20 @@ namespace FishNet.Managing.Server
              * If nested was fetched after SetupWithout Synchronize just below then it would
              * include the newly nested object, and try to initialize it twice.
              */
-            List<NetworkObject> nestedNetworkObjects = networkObject.GetNetworkObjects(GetNetworkObjectOption.InitializedRuntimeRecursive);
+            List<NetworkObject> nestedNetworkObjects = (isRecursiveIteration) ? null : networkObject.GetNetworkObjects(GetNetworkObjectOption.AllNestedRecursive);
 
             SetupWithoutSynchronization(networkObject, ownerConnection, objectId, initializeEarly);
-            
-            foreach (NetworkObject item in nestedNetworkObjects)
+
+            if (nestedNetworkObjects != null)
             {
-                /* Only spawn recursively if the nob state is unset.
-                 * Unset indicates that the nob has not been manually spawned or despawned. */
-                if (item.gameObject.activeInHierarchy || item.State == NetworkObjectState.Spawned)
-                    SpawnWithoutChecks(item, recursiveSpawnCache: null, ownerConnection);
+                foreach (NetworkObject item in nestedNetworkObjects)
+                {
+                    /* Only spawn recursively if the nob state is unset.
+                     * Unset indicates that the nob has not been manually spawned or despawned. */
+                    if (item.gameObject.activeInHierarchy || item.State == NetworkObjectState.Spawned)
+                        SpawnWithoutChecks(item, recursiveSpawnCache: null, ownerConnection, isRecursiveIteration: true);
+                }
             }
-            // foreach (NetworkObject item in networkObject.InitializedNestedNetworkObjects)
-            // {
-            //     /* Only spawn recursively if the nob state is unset.
-            //      * Unset indicates that the nob has not been manually spawned or despawned. */
-            //     if (item.gameObject.activeInHierarchy || item.State == NetworkObjectState.Spawned)
-            //         SpawnWithoutChecks(item, recursiveSpawnCache: null, ownerConnection);
-            // }
 
             /* Copy to a new cache then reset _spawnCache
              * just incase rebuilding observers would lead to
@@ -677,7 +673,7 @@ namespace FishNet.Managing.Server
                 }
             }
 
-            CollectionCaches<NetworkObject>.Store(nestedNetworkObjects);
+            CollectionCaches<NetworkObject>.StoreAndDefault(ref nestedNetworkObjects);
 
             /* If collection was null then store the one retrieved.
              * Otherwise, let the calling method handle the provided
@@ -856,7 +852,7 @@ namespace FishNet.Managing.Server
                     conn.PredictedObjectIds.Enqueue(nextId);
                 else
                     nextId = NetworkObject.UNSET_OBJECTID_VALUE;
-                
+
                 //Write nextId even if invalid. Client will not add invalid Ids.
                 writer.WriteNetworkObjectId(nextId);
 
@@ -955,15 +951,15 @@ namespace FishNet.Managing.Server
             /* Becomes true if there was a null entry and pending must be rebuilt.
              * This would be very uncommon */
             bool rebuildPending = false;
-            
+
             foreach (NetworkObject n in _pendingDestroy)
             {
-                if (n == null) 
+                if (n == null)
                 {
                     rebuildPending = true;
                     continue;
                 }
-                
+
                 if (n.ObjectId == objectId)
                     return n;
             }
@@ -976,7 +972,7 @@ namespace FishNet.Managing.Server
                     if (n != null)
                         newPending.Add(n);
                 }
-                
+
                 CollectionCaches<NetworkObject>.Store(_pendingDestroy);
                 _pendingDestroy = newPending;
             }

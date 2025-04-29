@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44664782, g: 0.49649352, b: 0.57486135, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -289,20 +288,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
+  WasActiveDuringEdit: 0
+  WasActiveDuringEdit_Set: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours:
-  - {fileID: 110068716}
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: -4.45, y: 1.5, z: 7.95}
-    Rotation: {x: 0, y: 0, z: 0, w: 1}
-    LocalScale: {x: 1, y: 1.85, z: 0.1}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -320,8 +320,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 65535
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 6823410710706878447
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 4109294955
+  SerializedTransformProperties:
+    Position: {x: -4.45, y: 1.5, z: 7.95}
+    Rotation: {x: 0, y: 0, z: 0, w: 1}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!1 &293940165
 GameObject:
   m_ObjectHideFlags: 0
@@ -675,10 +680,8 @@ MonoBehaviour:
   _extrapolation: 0
   _enableTeleport: 0
   _teleportThreshold: 1
-  _scaleThreshold: 1
   _clientAuthoritative: 0
   _sendToOwner: 0
-  _enableNetworkLod: 1
   _interval: 1
   _synchronizePosition: 1
   _positionSnapping:
@@ -812,23 +815,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
+  WasActiveDuringEdit: 1
+  WasActiveDuringEdit_Set: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours:
-  - {fileID: 374579919}
-  - {fileID: 374579913}
-  - {fileID: 374579921}
-  - {fileID: 374579914}
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: 0, y: 0, z: 0}
-    Rotation: {x: 0, y: 0, z: 0, w: 0}
-    LocalScale: {x: 0, y: 0, z: 0}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -846,8 +847,13 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 65535
   <SpawnableCollectionId>k__BackingField: 0
-  <SceneId>k__BackingField: 6823410710584987682
   <AssetPathHash>k__BackingField: 0
+  <SceneId>k__BackingField: 309320059
+  SerializedTransformProperties:
+    Position: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0, w: 0}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!1 &485115532
 GameObject:
   m_ObjectHideFlags: 0
@@ -926,6 +932,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _color: {r: 0, g: 0, b: 0, a: 1}
   _placement: 3
+  _secondsAveraged: 1
   _showOutgoing: 1
   _showIncoming: 1
 --- !u!114 &557728926
@@ -1930,6 +1937,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -2142,7 +2150,7 @@ MonoBehaviour:
   _objectPool: {fileID: 0}
   _persistence: 0
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: 68e79e63a16f2c74e81f070bd36822b8, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: ef18464092139404db8e515b0bf59331, type: 2}
 --- !u!114 &1016939666208092864
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2191,6 +2199,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f48f002b825cbd45a19bd96d90f9edb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _stopSocketsOnThread: 0
   _dontRoute: 0
   _unreliableMtu: 1023
   _ipv4BindAddress: 

@@ -312,10 +312,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
+  WasActiveDuringEdit: 1
+  WasActiveDuringEdit_Set: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
-  NetworkBehaviours: []
+  NetworkBehaviours:
+  - {fileID: 6767263130208162619}
+  - {fileID: -7170926880071132319}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -340,15 +344,15 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 20
+  <PrefabId>k__BackingField: 10
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 5491988111533709812
   <SceneId>k__BackingField: 0
   SerializedTransformProperties:
     Position: {x: 0, y: 20, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
-    Scale: {x: 0, y: 0, z: 0}
-    IsValid: 0
+    Scale: {x: 1, y: 1, z: 1}
+    IsValid: 1
 --- !u!114 &6767263130208162619
 MonoBehaviour:
   m_ObjectHideFlags: 0

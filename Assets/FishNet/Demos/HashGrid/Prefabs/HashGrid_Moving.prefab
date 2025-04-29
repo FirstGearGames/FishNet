@@ -132,28 +132,47 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
+  WasActiveDuringEdit: 1
+  WasActiveDuringEdit_Set: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours:
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours:
   - {fileID: 4670340455971777434}
   - {fileID: 3019520109258855553}
-  <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
-  <NestedRootNetworkBehaviours>k__BackingField: []
-  SerializedTransformProperties:
-    Position: {x: 0, y: 0, z: 0}
-    Rotation: {x: 0, y: 0, z: 0, w: 0}
-    LocalScale: {x: 0, y: 0, z: 0}
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
-  <PrefabId>k__BackingField: 0
+  _enablePrediction: 0
+  _predictionType: 0
+  _graphicalObject: {fileID: 0}
+  _detachGraphicalObject: 0
+  _enableStateForwarding: 1
+  _networkTransform: {fileID: 0}
+  _ownerInterpolation: 1
+  _ownerSmoothedProperties: 255
+  _adaptiveInterpolation: 3
+  _spectatorSmoothedProperties: 255
+  _spectatorInterpolation: 2
+  _enableTeleport: 0
+  _teleportThreshold: 1
+  <PrefabId>k__BackingField: 18
   <SpawnableCollectionId>k__BackingField: 0
-  _scenePathHash: 0
-  <SceneId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 11406911356865610645
+  <SceneId>k__BackingField: 0
+  SerializedTransformProperties:
+    Position: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0, w: 1}
+    Scale: {x: 3, y: 3, z: 3}
+    IsValid: 1
 --- !u!114 &4670340455971777434
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -195,10 +214,8 @@ MonoBehaviour:
   _extrapolation: 2
   _enableTeleport: 1
   _teleportThreshold: 0.5
-  _scaleThreshold: 1
   _clientAuthoritative: 1
   _sendToOwner: 1
-  _enableNetworkLod: 1
   _interval: 1
   _synchronizePosition: 1
   _positionSnapping:

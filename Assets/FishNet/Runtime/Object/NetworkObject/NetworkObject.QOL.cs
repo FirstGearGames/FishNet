@@ -335,7 +335,7 @@ namespace FishNet.Object
 
             if (recursive)
             {
-                List<NetworkObject> allNested = GetNetworkObjects(GetNetworkObjectOption.InitializedRuntimeRecursive);
+                List<NetworkObject> allNested = GetNetworkObjects(GetNetworkObjectOption.AllNestedRecursive);
 
                 foreach (NetworkObject nob in allNested)
                     nob.SetLocalOwnership(caller, recursive: true);

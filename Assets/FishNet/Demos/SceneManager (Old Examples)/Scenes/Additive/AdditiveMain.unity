@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -782,7 +781,7 @@ MonoBehaviour:
   _objectPool: {fileID: 0}
   _persistence: 0
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: 68e79e63a16f2c74e81f070bd36822b8, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: ef18464092139404db8e515b0bf59331, type: 2}
 --- !u!114 &7443408887680269500
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -814,6 +813,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f48f002b825cbd45a19bd96d90f9edb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _stopSocketsOnThread: 0
   _dontRoute: 0
   _unreliableMtu: 1023
   _ipv4BindAddress: 
@@ -877,5 +877,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _sceneProcessor: {fileID: 0}
   _lightProbeUpdating: 0
-  _moveClientHostObjects: 1
+  _moveClientObjects: 1
   _setActiveScene: 0

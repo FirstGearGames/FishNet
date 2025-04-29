@@ -148,7 +148,7 @@ namespace FishNet.Component.Ownership
             base.GiveOwnership(caller);
             if (recursive)
             {
-                List<NetworkObject> allNested = base.NetworkObject.GetNetworkObjects(GetNetworkObjectOption.InitializedRuntimeRecursive);
+                List<NetworkObject> allNested = base.NetworkObject.GetNetworkObjects(GetNetworkObjectOption.AllNestedRecursive);
                 
                 foreach (NetworkObject nob in allNested)
                 {

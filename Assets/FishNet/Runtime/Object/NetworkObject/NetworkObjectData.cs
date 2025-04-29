@@ -39,15 +39,15 @@ namespace FishNet.Object
         /// <summary>
         /// Include NetworkObject which nested are being returned for. 
         /// </summary>
-        IncludeSelf = (1 << 0),
+        Self = (1 << 0),
         /// <summary>
         /// Include initialize nested.
         /// </summary>
-        Initialized = (1 << 1),
+        InitializedNested = (1 << 1),
         /// <summary>
         /// Include runtime nested.
         /// </summary>
-        Runtime = (1 << 2),
+        RuntimeNested = (1 << 2),
         /// <summary>
         /// Recursively iterate nested includes.
         /// </summary>
@@ -55,13 +55,13 @@ namespace FishNet.Object
         Recursive = (1 << 3),
         
         /// <summary>
-        /// Uses Initialized and Runtime flags.
+        /// Uses InitializedNested and RuntimeNested flags.
         /// </summary>
-        InitializedRuntime = (Initialized | Runtime),
+        AllNested = (InitializedNested | RuntimeNested),
         /// <summary>
-        /// Uses Initialized, Runtime, and Recursive flags.
+        /// Uses InitializedNested, RuntimeNested, and Recursive flags.
         /// </summary>
-        InitializedRuntimeRecursive = (Initialized | Runtime | Recursive),
+        AllNestedRecursive = (InitializedNested | RuntimeNested | Recursive),
         /// <summary>
         /// Sets all flags.
         /// </summary>

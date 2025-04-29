@@ -191,7 +191,7 @@ namespace FishNet.Managing.Server
             {
                 if (item.IsNested)
                     continue;
-                
+
                 sortedRootCache.AddOrdered(item);
             }
 
@@ -199,20 +199,25 @@ namespace FishNet.Managing.Server
              * their nested. Order nested in segments
              * of each root then insert after the root.
              * This must be performed after all roots are ordered. */
-            
+
             //This holds the results of all values.
             List<NetworkObject> sortedRootAndNestedCache = CollectionCaches<NetworkObject>.RetrieveList();
-            
+
             //Cache for sorting nested.
             List<NetworkObject> sortedNestedCache = CollectionCaches<NetworkObject>.RetrieveList();
-            
+
             foreach (NetworkObject item in sortedRootCache)
             {
-                /* Remove recursive and only check Initialized and Runtime. Once iterated
+                /* Remove recursive and only check Initialized and Runtime. Once iterated 
                  * check each added entry again using Initialized and Recursive. */
-                List<NetworkObject> nested = item.GetNetworkObjects(GetNetworkObjectOption.InitializedRuntimeRecursive);
+                List<NetworkObject> nested = item.GetNetworkObjects(GetNetworkObjectOption.AllNestedRecursive);
                 foreach (NetworkObject nestedItem in nested)
-                    sortedNestedCache.AddOrdered(nestedItem);
+                {
+                    if (sortedNestedCache.Contains(nestedItem))
+                        Debug.LogError("Already contains " + nestedItem.name);
+                    else
+                        sortedNestedCache.AddOrdered(nestedItem);
+                }
 
                 CollectionCaches<NetworkObject>.Store(nested);
 
@@ -406,7 +411,7 @@ namespace FishNet.Managing.Server
              * and onspawnserver. */
             if (osc == ObserverStateChange.Added)
                 nob.OnSpawnServer(conn);
-            
+
             _writer.Clear();
 
             /* If there is change then also rebuild recursive networkObjects. */

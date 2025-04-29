@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -274,16 +273,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
+  WasActiveDuringEdit: 1
+  WasActiveDuringEdit_Set: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
   NetworkBehaviours: []
-  <InitializedParentNetworkBehaviour>k__BackingField: {fileID: 0}
-  <InitializedNestedNetworkObjects>k__BackingField: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -302,11 +306,12 @@ MonoBehaviour:
   <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 0
-  <SceneId>k__BackingField: 4494144455973923660
+  <SceneId>k__BackingField: 3674181050
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
-    LocalScale: {x: 1, y: 1, z: 1}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
 --- !u!114 &442045877
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -571,7 +576,7 @@ MonoBehaviour:
   _objectPool: {fileID: 0}
   _persistence: 0
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: 68e79e63a16f2c74e81f070bd36822b8, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: ef18464092139404db8e515b0bf59331, type: 2}
 --- !u!1 &7443408886575219563
 GameObject:
   m_ObjectHideFlags: 0
@@ -620,6 +625,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f48f002b825cbd45a19bd96d90f9edb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _stopSocketsOnThread: 0
   _dontRoute: 0
   _unreliableMtu: 1023
   _ipv4BindAddress: 

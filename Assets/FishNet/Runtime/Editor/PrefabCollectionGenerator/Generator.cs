@@ -688,6 +688,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         private static bool CanAddNetworkObject(NetworkObject networkObject, PrefabGeneratorConfigurations settings)
         {
+            settings = GetSettingsIfNull(settings);
             return networkObject != null && (networkObject.GetIsSpawnable() || !settings.SpawnableOnly);
         }
     }

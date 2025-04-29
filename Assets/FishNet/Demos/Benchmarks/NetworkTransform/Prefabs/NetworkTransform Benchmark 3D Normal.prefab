@@ -48,6 +48,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
+  WasActiveDuringEdit: 1
+  WasActiveDuringEdit_Set: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
@@ -78,7 +80,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 17
+  <PrefabId>k__BackingField: 23
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 12758516177287752350
   <SceneId>k__BackingField: 0
@@ -104,6 +106,7 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 4512293259955182956}
   _tickCallbacks: 10
   _isActive: 1
+  _is2d: 0
   _axes: 3
   _chancePerAxes: 0.8
   _rotationChance: 0.33

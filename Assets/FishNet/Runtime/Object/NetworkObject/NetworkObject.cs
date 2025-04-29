@@ -544,19 +544,19 @@ namespace FishNet.Object
         {
             List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
 
-            if (option.FastContains(GetNetworkObjectOption.IncludeSelf))
+            if (option.FastContains(GetNetworkObjectOption.Self))
                 cache.Add(this);
 
             //Becomes true if to include any nested.
             bool includesNested = false;
 
-            if (option.FastContains(GetNetworkObjectOption.Initialized))
+            if (option.FastContains(GetNetworkObjectOption.InitializedNested))
             {
                 cache.AddRange(InitializedNestedNetworkObjects);
                 includesNested = true;
             }
 
-            if (option.FastContains(GetNetworkObjectOption.Runtime))
+            if (option.FastContains(GetNetworkObjectOption.RuntimeNested))
             {
                 foreach (NetworkBehaviour nb in RuntimeChildNetworkBehaviours)
                     cache.Add(nb.NetworkObject);
@@ -568,7 +568,7 @@ namespace FishNet.Object
             {
                 /* Remove include self from options otherwise
                  * each nested entry would get added twice. */
-                option &= ~GetNetworkObjectOption.IncludeSelf;
+                option &= ~GetNetworkObjectOption.Self;
 
                 int count = cache.Count;
                 for (int i = 0; i < count; i++)
@@ -1277,7 +1277,7 @@ namespace FishNet.Object
 
             if (recursive)
             {
-                List<NetworkObject> allNested = GetNetworkObjects(GetNetworkObjectOption.InitializedRuntimeRecursive);
+                List<NetworkObject> allNested = GetNetworkObjects(GetNetworkObjectOption.AllNestedRecursive);
 
                 foreach (NetworkObject nob in allNested)
                     nob.GiveOwnership(newOwner, asServer, recursive: true);

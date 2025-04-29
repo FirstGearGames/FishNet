@@ -262,7 +262,7 @@ namespace FishNet.Managing.Object
                  * individual despawns for each child. */
                 if (asServer)
                 {
-                    List<NetworkObject> childNobs = nob.GetNetworkObjects(GetNetworkObjectOption.InitializedRuntime);
+                    List<NetworkObject> childNobs = nob.GetNetworkObjects(GetNetworkObjectOption.AllNested);
                     foreach (NetworkObject childNob in childNobs)
                     {
                         if (childNob != null && !childNob.IsDeinitializing)
@@ -322,7 +322,7 @@ namespace FishNet.Managing.Object
             recursive = false;
 #endif
 
-            GetNetworkObjectOption getOption = (recursive) ? GetNetworkObjectOption.All : GetNetworkObjectOption.IncludeSelf;
+            GetNetworkObjectOption getOption = (recursive) ? GetNetworkObjectOption.All : GetNetworkObjectOption.Self;
             List<NetworkObject> allNobs = nob.GetNetworkObjects(getOption);
 
             //True if can deactivate or destroy.

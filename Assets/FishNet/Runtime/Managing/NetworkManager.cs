@@ -47,15 +47,6 @@ namespace FishNet.Managing
     {
         #region Types.
         /// <summary>
-        /// Which socket to iterate data on first when as host.
-        /// </summary>
-        public enum HostIterationOrder
-        {
-            ServerFirst,
-            ClientFirst
-        }
-
-        /// <summary>
         /// How to persist with multiple NetworkManagers.
         /// </summary>
         public enum PersistenceType
@@ -224,7 +215,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.6.6";
+        public const string FISHNET_VERSION = "4.6.7";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>

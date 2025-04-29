@@ -209,14 +209,14 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     if (customAttribute.Is(replicateAttributeFullName))
                     {
-                        if (!MethodIsPrivate(methodDef) || AlreadyFound(replicateMd))
+                        if (!IsMethodPrivate(methodDef) || IsPredictionMethodAlreadyFound(replicateMd))
                             error = true;
                         else
                             replicateMd = methodDef;
                     }
                     else if (customAttribute.Is(reconcileAttributeFullName))
                     {
-                        if (!MethodIsPrivate(methodDef) || AlreadyFound(reconcileMd))
+                        if (!IsMethodPrivate(methodDef) || IsPredictionMethodAlreadyFound(reconcileMd))
                         {
                             error = true;
                         }
@@ -269,18 +269,19 @@ namespace FishNet.CodeGenerating.Processing
                 }
             }
 
-            bool MethodIsPrivate(MethodDefinition md)
+            /* Forcing a method to private is not necessarily needed
+             * but it adds a safe-guard against users calling base.Reconcile/Replicate
+             * from another replicate. Doing this would cause the replicate to run twice
+             * for the same script hierarchy, which would create unpredictable behavior. */
+            bool IsMethodPrivate(MethodDefinition md)
             {
-                //Do we actually need private checks anymore?
-                return true;
-
-                // bool isPrivate = md.Attributes.HasFlag(MethodAttributes.Private);
-                // if (!isPrivate)
-                //     base.LogError($"Method {md.Name} within {typeDef.Name} is a prediction method and must be private.");
-                // return isPrivate;
+                bool isPrivate = md.Attributes.HasFlag(MethodAttributes.Private);
+                if (!isPrivate)
+                    base.LogError($"Method {md.Name} within {typeDef.Name} is a prediction method and must be private.");
+                return isPrivate;
             }
 
-            bool AlreadyFound(MethodDefinition md)
+            bool IsPredictionMethodAlreadyFound(MethodDefinition md)
             {
                 bool alreadyFound = (md != null);
                 if (alreadyFound)

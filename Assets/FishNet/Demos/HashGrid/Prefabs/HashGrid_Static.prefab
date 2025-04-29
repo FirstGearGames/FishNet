@@ -131,16 +131,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
+  WasActiveDuringEdit: 1
+  WasActiveDuringEdit_Set: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
-  NetworkBehaviours: []
-  <InitializedParentNetworkBehaviour>k__BackingField: {fileID: 0}
-  <InitializedNestedNetworkObjects>k__BackingField: []
+  NetworkBehaviours:
+  - {fileID: 437322326027960749}
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
   _isGlobal: 0
   _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
@@ -156,14 +162,15 @@ MonoBehaviour:
   _spectatorInterpolation: 1
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 22
+  <PrefabId>k__BackingField: 29
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 17472515426990886281
   <SceneId>k__BackingField: 0
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
-    LocalScale: {x: 1, y: 1, z: 1}
+    Scale: {x: 1, y: 1, z: 1}
+    IsValid: 1
 --- !u!114 &437322326027960749
 MonoBehaviour:
   m_ObjectHideFlags: 0
