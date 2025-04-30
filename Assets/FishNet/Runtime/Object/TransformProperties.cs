@@ -128,7 +128,7 @@ namespace FishNet.Object
     {
         public Vector3 Position;
         public Quaternion Rotation;
-        [Obsolete("Use Scale.")]
+        [Obsolete("Use Scale.")] //Remove V5
         public Vector3 LocalScale => Scale;
         public Vector3 Scale;
         /// <summary>
@@ -144,6 +144,11 @@ namespace FishNet.Object
             IsValid = true;
         }
 
+        /// <summary>
+        /// Creates a TransformProperties with default position and rotation, with Vector3.one scale. 
+        /// </summary>
+        public static TransformProperties GetTransformDefault() => new(Vector3.zero, Quaternion.identity, Vector3.one);
+        
         public override string ToString()
         {
             return $"Position: {Position.ToString()}, Rotation {Rotation.ToString()}, Scale {Scale.ToString()}";

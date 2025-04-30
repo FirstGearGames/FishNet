@@ -45,13 +45,13 @@
 //         /// </summary>
 //         private Transform _graphicalObject;
 //         /// <summary>
-//         /// When not MoveRatesCls.UNSET_VALUE the graphical object will teleport into it's next position if the move distance exceeds this value.
+//         /// When not MoveRates.UNSET_VALUE the graphical object will teleport into it's next position if the move distance exceeds this value.
 //         /// </summary>
 //         private float _teleportThreshold;
 //         /// <summary>
 //         /// How quickly to move towards goal values.
 //         /// </summary>
-//         private MoveRates _moveRates = new MoveRates(MoveRatesCls.UNSET_VALUE);
+//         private MoveRates _moveRates = new MoveRates(MoveRates.UNSET_VALUE);
 //         /// <summary>
 //         /// True if a pretick occurred since last postTick.
 //         /// </summary>
@@ -389,7 +389,7 @@
 //         {
 //             _transformProperties.Clear();
 //             //Also unset move rates since there is no more queue.
-//             _moveRates = new MoveRates(MoveRatesCls.UNSET_VALUE);
+//             _moveRates = new MoveRates(MoveRates.UNSET_VALUE);
 //         }
 //
 //         /// <summary>

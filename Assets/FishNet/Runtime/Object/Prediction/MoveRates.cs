@@ -1,372 +1,31 @@
-﻿
-using GameKit.Dependencies.Utilities;
-using System.Runtime.CompilerServices;
+﻿using GameKit.Dependencies.Utilities;
 using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace FishNet.Object.Prediction
 {
     /// <summary>
-    /// Data to be used to configure smoothing for an owned predicted object.
+    /// Used to make calculations and perform actions in moving transforms over time.
     /// </summary>
     [Preserve]
-    internal struct MoveRates
+    public struct MoveRates
     {
+        /// <summary>
+        /// Rate at which to move Position.
+        /// </summary>
         public float Position;
+        /// <summary>
+        /// Rate at which to move Rotation.
+        /// </summary>
         public float Rotation;
+        /// <summary>
+        /// Rate at which to move Scale.
+        /// </summary>
         public float Scale;
+        /// <summary>
+        /// Time remaining until the move is complete.
+        /// </summary>
         public float TimeRemaining;
-
-        public MoveRates(float value) : this()
-        {
-            Position = value;
-            Rotation = value;
-            Scale = value;
-        }
-        public MoveRates(float position, float rotation) : this()
-        {
-            Position = position;
-            Rotation = rotation;
-            Scale = MoveRatesCls.INSTANT_VALUE;
-        }
-        public MoveRates(float position, float rotation, float scale) : this()
-        {
-            Position = position;
-            Rotation = rotation;
-            Scale = scale;
-        }
-        public MoveRates(float position, float rotation, float scale, float timeRemaining)
-        {
-            Position = position;
-            Rotation = rotation;
-            Scale = scale;
-            TimeRemaining = timeRemaining;
-        }
-
-        /// <summary>
-        /// True if a positional move rate is set.
-        /// </summary>
-        public bool PositionSet => (Position != MoveRatesCls.UNSET_VALUE);
-        /// <summary>
-        /// True if rotation move rate is set.
-        /// </summary>
-        public bool RotationSet => (Rotation != MoveRatesCls.UNSET_VALUE);
-        /// <summary>
-        /// True if a scale move rate is set.
-        /// </summary>
-        public bool ScaleSet => (Scale != MoveRatesCls.UNSET_VALUE);
-        /// <summary>
-        /// True if any move rate is set.
-        /// </summary>
-        public bool AnySet => (PositionSet || RotationSet || ScaleSet);
-
-        /// <summary>
-        /// True if position move rate should be instant.
-        /// </summary>
-        public bool InstantPosition => (Position == MoveRatesCls.INSTANT_VALUE);
-        /// <summary>
-        /// True if rotation move rate should be instant.
-        /// </summary>
-        public bool InstantRotation => (Rotation == MoveRatesCls.INSTANT_VALUE);
-        /// <summary>
-        /// True if scale move rate should be instant.
-        /// </summary>
-        public bool InstantScale => (Scale == MoveRatesCls.INSTANT_VALUE);
-
-        /// <summary>
-        /// Sets all rates to instant.
-        /// </summary>
-        
-        public void SetInstantRates()
-        {
-            Update(MoveRatesCls.INSTANT_VALUE);
-        }
-        /// <summary>
-        /// Sets all rates to the same value.
-        /// </summary>
-        
-        public void Update(float value)
-        {
-            Update(value, value, value);
-        }
-        /// <summary>
-        /// Sets rates for each property.
-        /// </summary>
-        public void Update(float position, float rotation, float scale)
-        {
-            Position = position;
-            Rotation = rotation;
-            Scale = scale;
-        }
-
-        /// <summary>
-        /// Returns a new MoveRates based on previous values, and a transforms current position.
-        /// </summary>
-        
-        public static MoveRates GetWorldMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
-        {
-            return GetMoveRates(from.position, to.position, from.rotation, to.rotation, from.localScale, to.localScale, duration, teleportThreshold);
-        }
-
-        /// <summary>
-        /// Returns a new MoveRates based on previous values, and a transforms current position.
-        /// </summary>
-        
-        public static MoveRates GetLocalMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
-        {
-            return GetMoveRates(from.localPosition, to.localPosition, from.localRotation, to.localRotation, from.localScale, to.localScale, duration, teleportThreshold);
-        }
-
-        /// <summary>
-        /// Returns a new MoveRates based on previous values, and a transforms current position.
-        /// </summary>
-        
-        public static MoveRates GetWorldMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
-        {
-            return GetMoveRates(prevValues.Position, t.position, prevValues.Rotation, t.rotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
-        }
-
-        /// <summary>
-        /// Returns a new MoveRates based on previous values, and a transforms current position.
-        /// </summary>
-        
-        public static MoveRates GetLocalMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
-        {
-            return GetMoveRates(prevValues.Position, t.localPosition, prevValues.Rotation, t.localRotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
-        }
-
-        /// <summary>
-        /// Returns a new MoveRates based on previous values, and a transforms current position.
-        /// </summary>
-        
-        public static MoveRates GetMoveRates(TransformProperties prevValues, TransformProperties nextValues, float duration, float teleportThreshold)
-        {
-            return GetMoveRates(prevValues.Position, nextValues.Position, prevValues.Rotation, nextValues.Rotation, prevValues.Scale, nextValues.Scale, duration, teleportThreshold);
-        }
-
-        /// <summary>
-        /// Returns a new MoveRates based on previous values, and a transforms current position.
-        /// </summary>
-        
-        public static MoveRates GetMoveRates(Vector3 fromPosition, Vector3 toPosition, Quaternion fromRotation, Quaternion toRotation, Vector3 fromScale, Vector3 toScale, float duration, float teleportThreshold)
-        {
-            float rate;
-            float distance;
-
-            /* Position. */
-            rate = toPosition.GetRate(fromPosition, duration, out distance);
-            //Basic teleport check.
-            if (teleportThreshold != MoveRatesCls.UNSET_VALUE && distance > teleportThreshold)
-            {
-                return new(MoveRatesCls.INSTANT_VALUE);
-            }
-            //Smoothing.
-            else
-            {
-                float positionRate = rate.SetIfUnderTolerance(0.0001f, MoveRatesCls.INSTANT_VALUE);
-                rate = toRotation.GetRate(fromRotation, duration, out _);
-                float rotationRate = rate.SetIfUnderTolerance(0.2f, MoveRatesCls.INSTANT_VALUE);
-                rate = toScale.GetRate(fromScale, duration, out _);
-                float scaleRate = rate.SetIfUnderTolerance(0.0001f, MoveRatesCls.INSTANT_VALUE);
-
-                return new(positionRate, rotationRate, scaleRate);
-            }
-        }
-
-        /// <summary>
-        /// Gets a move rate for two Vector3s.
-        /// </summary>
-        
-        public static float GetMoveRate(Vector3 fromPosition, Vector3 toPosition, float duration, float teleportThreshold)
-        {
-            float rate;
-            float distance;
-
-            /* Position. */
-            rate = toPosition.GetRate(fromPosition, duration, out distance);
-            //Basic teleport check.
-            if (teleportThreshold != MoveRatesCls.UNSET_VALUE && distance > teleportThreshold)
-            {
-                return MoveRatesCls.INSTANT_VALUE;
-            }
-            //Smoothing.
-            else
-            {
-                float positionRate = rate.SetIfUnderTolerance(0.0001f, MoveRatesCls.INSTANT_VALUE);
-                return positionRate;
-            }
-        }
-
-
-        /// <summary>
-        /// Gets a move rate for two Quaternions.
-        /// </summary>
-        
-        public static float GetMoveRate(Quaternion fromRotation, Quaternion toRotation, float duration)
-        {
-            float rate = toRotation.GetRate(fromRotation, duration, out _);
-            float rotationRate = rate.SetIfUnderTolerance(0.2f, MoveRatesCls.INSTANT_VALUE);
-            return rotationRate;
-        }
-
-        /// <summary>
-        /// Moves transform to target values.
-        /// </summary>
-        
-        public void MoveLocalToTarget(Transform movingTransform, TransformProperties goalProperties, float delta)
-        {
-            //No rates are set.
-            if (!AnySet)
-                return;
-
-            MoveRatesCls.MoveLocalToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta);
-            TimeRemaining -= delta;
-        }
-
-        /// <summary>
-        /// Moves transform to target values.
-        /// </summary>
-        
-        public void MoveWorldToTarget(Transform movingTransform, TransformProperties goalProperties, float delta)
-        {
-            //No rates are set.
-            if (!AnySet)
-                return;
-
-            MoveRatesCls.MoveWorldToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta);
-            TimeRemaining -= delta;
-        }
-        /// <summary>
-        /// Moves transform to target values.
-        /// </summary>
-        
-        public void MoveWorldToTarget(Transform movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta)
-        {
-            //No rates are set.
-            if (!AnySet)
-                return;
-
-            MoveRatesCls.MoveWorldToTarget(movingTransform, movedProperties, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta);
-            TimeRemaining -= delta;
-        }
-    }
-
-
-    /// <summary>
-    /// Data to be used to configure smoothing for an owned predicted object.
-    /// </summary>
-    internal class MoveRatesCls : IResettable
-    {
-        public float Position;
-        public float Rotation;
-        public float Scale;
-        public float TimeRemaining;
-
-        public MoveRatesCls(float value)
-        {
-            Position = value;
-            Rotation = value;
-            Scale = value;
-        }
-        public MoveRatesCls(float position, float rotation)
-        {
-            Position = position;
-            Rotation = rotation;
-            Scale = INSTANT_VALUE;
-        }
-        public MoveRatesCls(float position, float rotation, float scale)
-        {
-            Position = position;
-            Rotation = rotation;
-            Scale = scale;
-        }
-
-        public MoveRatesCls(float position, float rotation, float scale, float timeRemaining)
-        {
-            Position = position;
-            Rotation = rotation;
-            Scale = scale;
-            TimeRemaining = timeRemaining;
-        }
-
-        /// <summary>
-        /// True if a positional move rate is set.
-        /// </summary>
-        public bool PositionSet => (Position != UNSET_VALUE);
-        /// <summary>
-        /// True if rotation move rate is set.
-        /// </summary>
-        public bool RotationSet => (Rotation != UNSET_VALUE);
-        /// <summary>
-        /// True if a scale move rate is set.
-        /// </summary>
-        public bool ScaleSet => (Scale != UNSET_VALUE);
-        /// <summary>
-        /// True if any move rate is set.
-        /// </summary>
-        public bool AnySet => (PositionSet || RotationSet || ScaleSet);
-
-        /// <summary>
-        /// True if position move rate should be instant.
-        /// </summary>
-        public bool InstantPosition => (Position == INSTANT_VALUE);
-        /// <summary>
-        /// True if rotation move rate should be instant.
-        /// </summary>
-        public bool InstantRotation => (Rotation == INSTANT_VALUE);
-        /// <summary>
-        /// True if scale move rate should be instant.
-        /// </summary>
-        public bool InstantScale => (Scale == INSTANT_VALUE);
-
-        public MoveRatesCls()
-        {
-            Update(UNSET_VALUE, UNSET_VALUE, UNSET_VALUE);
-        }
-
-        /// <summary>
-        /// Sets all rates to instant.
-        /// </summary>
-        
-        public void SetInstantRates()
-        {
-            Update(INSTANT_VALUE);
-        }
-        /// <summary>
-        /// Sets all rates to the same value.
-        /// </summary>
-        
-        public void Update(float value)
-        {
-            Update(value, value, value);
-        }
-        /// <summary>
-        /// Updaes values.
-        /// </summary>
-        public void Update(float position, float rotation, float scale)
-        {
-            Position = position;
-            Rotation = rotation;
-            Scale = scale;
-        }
-        /// <summary>
-        /// Updaes values.
-        /// </summary>
-        
-        public void Update(MoveRatesCls mr)
-        {
-            Update(mr.Position, mr.Rotation, mr.Scale);
-        }
-
-        public void ResetState()
-        {
-            Position = UNSET_VALUE;
-            Rotation = UNSET_VALUE;
-            Scale = UNSET_VALUE;
-            TimeRemaining = UNSET_VALUE;
-        }
-
-        public void InitializeState() { }
 
         /// <summary>
         /// Value used when data is not set.
@@ -377,117 +36,405 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public const float INSTANT_VALUE = float.PositiveInfinity;
 
+        /// <summary>
+        /// True if any data is set. Once set, this will remain true until ResetState is called.
+        /// </summary>
+        public bool IsValid { get; private set; }
+
+        public MoveRates(float value) : this()
+        {
+            Position = value;
+            Rotation = value;
+            Scale = value;
+
+            IsValid = true;
+        }
+
+        public MoveRates(float position, float rotation) : this()
+        {
+            Position = position;
+            Rotation = rotation;
+            Scale = INSTANT_VALUE;
+
+            IsValid = true;
+        }
+
+        public MoveRates(float position, float rotation, float scale) : this()
+        {
+            Position = position;
+            Rotation = rotation;
+            Scale = scale;
+
+            IsValid = true;
+        }
+
+        public MoveRates(float position, float rotation, float scale, float timeRemaining)
+        {
+            Position = position;
+            Rotation = rotation;
+            Scale = scale;
+            TimeRemaining = timeRemaining;
+
+            IsValid = true;
+        }
+
+        /// <summary>
+        /// True if a positional move rate is set.
+        /// </summary>
+        public bool IsPositionSet => (Position != UNSET_VALUE);
+        /// <summary>
+        /// True if rotation move rate is set.
+        /// </summary>
+        public bool IsRotationSet => (Rotation != UNSET_VALUE);
+        /// <summary>
+        /// True if a scale move rate is set.
+        /// </summary>
+        public bool IsScaleSet => (Scale != UNSET_VALUE);
+
+        /// <summary>
+        /// True if position move rate should be instant.
+        /// </summary>
+        public bool IsPositionInstantValue => (Position == INSTANT_VALUE);
+        /// <summary>
+        /// True if rotation move rate should be instant.
+        /// </summary>
+        public bool IsRotationInstantValue => (Rotation == INSTANT_VALUE);
+        /// <summary>
+        /// True if scale move rate should be instant.
+        /// </summary>
+        public bool IsScaleInstantValue => (Scale == INSTANT_VALUE);
+
+        /// <summary>
+        /// Sets all rates to instant.
+        /// </summary>
+        public void SetInstantRates() => Update(INSTANT_VALUE);
+
+        /// <summary>
+        /// Sets all rates to the same value.
+        /// </summary>
+        public void Update(float value) => Update(value, value, value);
+
+        /// <summary>
+        /// Sets rates for each property.
+        /// </summary>
+        public void Update(float position, float rotation, float scale)
+        {
+            Position = position;
+            Rotation = rotation;
+            Scale = scale;
+
+            IsValid = true;
+        }
+
+        /// <summary>
+        /// Sets rates for each property.
+        /// </summary>
+        public void Update(float position, float rotation, float scale, float timeRemaining)
+        {
+            Position = position;
+            Rotation = rotation;
+            Scale = scale;
+            TimeRemaining = timeRemaining;
+
+            IsValid = true;
+        }
+
+        /// <summary>
+        /// Updates to new values.
+        /// </summary>
+        public void Update(MoveRates moveRates) => Update(moveRates.Position, moveRates.Rotation, moveRates.Scale, moveRates.TimeRemaining);
+
+        /// <summary>
+        /// Updates to new values.
+        /// </summary>
+        public void Update(MoveRatesCls moveRates) => Update(moveRates.Position, moveRates.Rotation, moveRates.Scale, moveRates.TimeRemaining);
+
+        /// <summary>
+        /// Resets to unset values.
+        /// </summary>
+        public void ResetState()
+        {
+            Update(MoveRates.UNSET_VALUE, MoveRates.UNSET_VALUE, MoveRates.UNSET_VALUE, timeRemaining: 0f);
+
+            IsValid = false;
+        }
+
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        public static MoveRates GetWorldMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
+        {
+            return GetMoveRates(from.position, to.position, from.rotation, to.rotation, from.localScale, to.localScale, duration, teleportThreshold);
+        }
+
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        public static MoveRates GetLocalMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
+        {
+            return GetMoveRates(from.localPosition, to.localPosition, from.localRotation, to.localRotation, from.localScale, to.localScale, duration, teleportThreshold);
+        }
+
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        public static MoveRates GetWorldMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
+        {
+            return GetMoveRates(prevValues.Position, t.position, prevValues.Rotation, t.rotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
+        }
+
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        public static MoveRates GetLocalMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
+        {
+            return GetMoveRates(prevValues.Position, t.localPosition, prevValues.Rotation, t.localRotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
+        }
+
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        public static MoveRates GetMoveRates(TransformProperties prevValues, TransformProperties nextValues, float duration, float teleportThreshold)
+        {
+            return GetMoveRates(prevValues.Position, nextValues.Position, prevValues.Rotation, nextValues.Rotation, prevValues.Scale, nextValues.Scale, duration, teleportThreshold);
+        }
+
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        public static MoveRates GetMoveRates(Vector3 fromPosition, Vector3 toPosition, Quaternion fromRotation, Quaternion toRotation, Vector3 fromScale, Vector3 toScale, float duration, float teleportThreshold)
+        {
+            float rate;
+
+            /* Position. */
+            rate = toPosition.GetRate(fromPosition, duration, out float distance);
+            //Basic teleport check.
+            if (teleportThreshold != UNSET_VALUE && distance > teleportThreshold)
+                return new(INSTANT_VALUE, INSTANT_VALUE, INSTANT_VALUE, duration);
+
+            //Smoothing.
+            float positionRate = rate.SetIfUnderTolerance(0.0001f, INSTANT_VALUE);
+            rate = toRotation.GetRate(fromRotation, duration, out _);
+            float rotationRate = rate.SetIfUnderTolerance(0.2f, INSTANT_VALUE);
+            rate = toScale.GetRate(fromScale, duration, out _);
+            float scaleRate = rate.SetIfUnderTolerance(0.0001f, INSTANT_VALUE);
+
+            return new(positionRate, rotationRate, scaleRate, duration);
+        }
+
+        /// <summary>
+        /// Gets a move rate for two Vector3s.
+        /// </summary>
+        public static float GetMoveRate(Vector3 fromPosition, Vector3 toPosition, float duration, float teleportThreshold)
+        {
+            float rate;
+            float distance;
+
+            /* Position. */
+            rate = toPosition.GetRate(fromPosition, duration, out distance);
+            //Basic teleport check.
+            if (teleportThreshold != UNSET_VALUE && distance > teleportThreshold)
+            {
+                return INSTANT_VALUE;
+            }
+            //Smoothing.
+            else
+            {
+                float positionRate = rate.SetIfUnderTolerance(0.0001f, INSTANT_VALUE);
+                return positionRate;
+            }
+        }
+
+        /// <summary>
+        /// Gets a move rate for two Quaternions.
+        /// </summary>
+        public static float GetMoveRate(Quaternion fromRotation, Quaternion toRotation, float duration)
+        {
+            float rate = toRotation.GetRate(fromRotation, duration, out _);
+            float rotationRate = rate.SetIfUnderTolerance(0.2f, INSTANT_VALUE);
+            return rotationRate;
+        }
 
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        
-        public void MoveLocalToTarget(Transform movingTransform, TransformPropertiesCls goalProperties, float delta)
+        public void Move(Transform movingTransform, TransformProperties goalProperties, float delta, bool useWorldSpace)
         {
-            //No rates are set.
-            if (!AnySet)
+            if (!IsValid)
                 return;
 
-            MoveRatesCls.MoveLocalToTarget(movingTransform, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.LocalScale, Scale, delta);
+            Move(movingTransform, TransformPropertiesFlag.Everything, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta, useWorldSpace);
+            TimeRemaining -= delta;
+        }
+        
+        /// <summary>
+        /// Moves transform to target values.
+        /// </summary>
+        public void Move(Transform movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta, bool useWorldSpace)
+        {
+            if (!IsValid)
+                return;
+
+            Move(movingTransform, movedProperties, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta, useWorldSpace);
             TimeRemaining -= delta;
         }
 
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        
-        public static void MoveLocalToTarget(Transform movingTransform, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
-        {
-            MoveLocalToTarget(movingTransform, TransformPropertiesFlag.Everything, posGoal, posRate, rotGoal, rotRate, scaleGoal, scaleRate, delta);
-        }
-
-        /// <summary>
-        /// Moves transform to target values.
-        /// </summary>
-        
-        public static void MoveLocalToTarget(Transform movingTransform, TransformPropertiesFlag movedProperties, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
+        public static void Move(Transform movingTransform, TransformPropertiesFlag movedProperties, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta, bool useWorldSpace)
         {
             Transform t = movingTransform;
-            float rate;
 
-            if (movedProperties.FastContains(TransformPropertiesFlag.Position))
+            bool containsPosition = movedProperties.FastContains(TransformPropertiesFlag.Position);
+            bool containsRotation = movedProperties.FastContains(TransformPropertiesFlag.Rotation);
+            bool containsScale = movedProperties.FastContains(TransformPropertiesFlag.Scale);
+
+            //World space.
+            if (useWorldSpace)
             {
-                rate = posRate;
-                if (rate == MoveRatesCls.INSTANT_VALUE)
-                    t.localPosition = posGoal;
-                else
-                    t.localPosition = Vector3.MoveTowards(t.localPosition, posGoal, rate * delta);
+                if (containsPosition)
+                {
+                    if (posRate == INSTANT_VALUE)
+                        t.position = posGoal;
+                    else if (posRate == UNSET_VALUE) { }
+                    else
+                        t.position = Vector3.MoveTowards(t.position, posGoal, posRate * delta);
+                }
+
+                if (containsRotation)
+                {
+                    if (rotRate == INSTANT_VALUE)
+                        t.rotation = rotGoal;
+                    else if (rotRate == UNSET_VALUE) { }
+                    else
+                        t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, rotRate * delta);
+                }
+            }
+            //Local space.
+            else
+            {
+                if (containsPosition)
+                {
+                    if (posRate == INSTANT_VALUE)
+                        t.localPosition = posGoal;
+                    else if (posRate == UNSET_VALUE) { }
+                    else
+                        t.localPosition = Vector3.MoveTowards(t.localPosition, posGoal, posRate * delta);
+                }
+
+                if (containsRotation)
+                {
+                    if (rotRate == INSTANT_VALUE)
+                        t.localRotation = rotGoal;
+                    else if (rotRate == UNSET_VALUE) { }
+                    else
+                        t.localRotation = Quaternion.RotateTowards(t.localRotation, rotGoal, rotRate * delta);
+                }
             }
 
-            if (movedProperties.FastContains(TransformPropertiesFlag.Rotation))
+            //Scale always uses local.
+            if (containsScale)
             {
-                rate = rotRate;
-                if (rate == MoveRatesCls.INSTANT_VALUE)
-                    t.localRotation = rotGoal;
-                else
-                    t.localRotation = Quaternion.RotateTowards(t.localRotation, rotGoal, rate * delta);
-            }
-
-            if (movedProperties.FastContains(TransformPropertiesFlag.Scale))
-            {
-                rate = scaleRate;
-                if (rate == MoveRatesCls.INSTANT_VALUE)
+                if (scaleRate == INSTANT_VALUE)
                     t.localScale = scaleGoal;
+                else if (scaleRate == UNSET_VALUE) { }
                 else
-                    t.localScale = Vector3.MoveTowards(t.localScale, scaleGoal, rate * delta);
+                    t.localScale = Vector3.MoveTowards(t.localScale, scaleGoal, scaleRate * delta);
             }
         }
-
-        /// <summary>
-        /// Moves transform to target values.
-        /// </summary>
-        
-        public static void MoveWorldToTarget(Transform movingTransform, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
-        {
-            MoveWorldToTarget(movingTransform, TransformPropertiesFlag.Everything, posGoal, posRate, rotGoal, rotRate, scaleGoal, scaleRate, delta);
-        }
-
-        /// <summary>
-        /// Moves transform to target values.
-        /// </summary>
-        
-        public static void MoveWorldToTarget(Transform movingTransform, TransformPropertiesFlag movedProperties, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta)
-        {
-            Transform t = movingTransform;
-            float rate;
-
-            if (movedProperties.FastContains(TransformPropertiesFlag.Position))
-            {
-                rate = posRate;
-                if (rate == MoveRatesCls.INSTANT_VALUE)
-                    t.position = posGoal;
-                else if (rate == MoveRatesCls.UNSET_VALUE) { }
-                else
-                    t.position = Vector3.MoveTowards(t.position, posGoal, rate * delta);
-            }
-            
-            if (movedProperties.FastContains(TransformPropertiesFlag.Rotation))
-            {
-                rate = rotRate;
-                if (rate == MoveRatesCls.INSTANT_VALUE)
-                    t.rotation = rotGoal;
-                else if (rate == MoveRatesCls.UNSET_VALUE) { }
-                else
-                    t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, rate * delta);
-            }
-
-            if (movedProperties.FastContains(TransformPropertiesFlag.Scale))
-            {
-                rate = scaleRate;
-                if (rate == MoveRatesCls.INSTANT_VALUE)
-                    t.localScale = scaleGoal;
-                else if (rate == MoveRatesCls.UNSET_VALUE) { }
-                else
-                    t.localScale = Vector3.MoveTowards(t.localScale, scaleGoal, rate * delta);
-            }
-        }
-
     }
 
+    /// <summary>
+    /// Used to make calculations and perform actions in moving transforms over time.
+    /// </summary>
+    /// <remarks>This acts as a wrapper for MoveRates struct.</remarks>
+    public class MoveRatesCls : IResettable
+    {
+        /// <summary>
+        /// Container of all move rate information.
+        /// </summary>
+        private MoveRates _moveRates = new();
 
+        /// <summary>
+        /// Rate at which to move Position.
+        /// </summary>
+        public float Position => _moveRates.Position;
+        /// <summary>
+        /// Rate at which to move Rotation.
+        /// </summary>
+        public float Rotation => _moveRates.Rotation;
+        /// <summary>
+        /// Rate at which to move Scale.
+        /// </summary>
+        public float Scale => _moveRates.Scale;
+        /// <summary>
+        /// Time remaining until the move is complete.
+        /// </summary>
+        public float TimeRemaining => _moveRates.TimeRemaining;
+
+        /// <summary>
+        /// True if position move rate should be instant.
+        /// </summary>
+        public bool IsPositionInstantValue => _moveRates.IsPositionInstantValue;
+        /// <summary>
+        /// True if rotation move rate should be instant.
+        /// </summary>
+        public bool IsRotationInstantValue => _moveRates.IsRotationInstantValue;
+        /// <summary>
+        /// True if scale move rate should be instant.
+        /// </summary>
+        public bool IsScaleInstantValue => _moveRates.IsScaleInstantValue;
+
+        /// <summary>
+        /// True if any data is set.
+        /// </summary>
+        public bool IsValid => _moveRates.IsValid;
+
+        public MoveRatesCls(float value) => _moveRates = new MoveRates(value);
+        public MoveRatesCls(float position, float rotation) => _moveRates = new MoveRates(position, rotation);
+        public MoveRatesCls(float position, float rotation, float scale) => _moveRates = new MoveRates(position, rotation, scale);
+        public MoveRatesCls(float position, float rotation, float scale, float timeRemaining) => _moveRates = new MoveRates(position, rotation, scale, timeRemaining);
+
+        public MoveRatesCls() => _moveRates.ResetState();
+
+        /// <summary>
+        /// Sets all rates to instant.
+        /// </summary>
+        public void SetInstantRates() => _moveRates.SetInstantRates();
+
+        /// <summary>
+        /// Sets all rates to the same value.
+        /// </summary>
+        public void Update(float value) => _moveRates.Update(value);
+
+        /// <summary>
+        /// Updates values.
+        /// </summary>
+        public void Update(float position, float rotation, float scale) => _moveRates.Update(position, rotation, scale);
+
+        /// <summary>
+        /// Updates values.
+        /// </summary>
+        public void Update(float position, float rotation, float scale, float timeRemaining) => _moveRates.Update(position, rotation, scale, timeRemaining);
+
+        /// <summary>
+        /// Updaes values.
+        /// </summary>
+        public void Update(MoveRatesCls mr) => _moveRates.Update(mr.Position, mr.Rotation, mr.Scale);
+        
+        /// <summary>
+        /// Moves transform to target values.
+        /// </summary>
+        public void Move(Transform movingTransform, TransformProperties goalProperties, float delta, bool useWorldSpace) => _moveRates.Move(movingTransform, goalProperties, delta, useWorldSpace);
+        
+        /// <summary>
+        /// Moves transform to target values.
+        /// </summary>
+        public void Move(Transform movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta, bool useWorldSpace) => _moveRates.Move(movingTransform, goalProperties, movedProperties, delta, useWorldSpace);
+
+        public void ResetState() => _moveRates.ResetState();
+
+        public void InitializeState() { }
+    }
 }

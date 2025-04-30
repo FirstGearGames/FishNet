@@ -1360,7 +1360,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a replicate along with it's past replicates into a collection.
         /// </summary>
-        internal List<ReplicateDataContainer<T>> ReadReplicate<T>(uint tick) where T : IReplicateData
+        internal List<ReplicateDataContainer<T>> ReadReplicate<T>(uint tick) where T : IReplicateData, new()
         {
             List<ReplicateDataContainer<T>> collection = CollectionCaches<ReplicateDataContainer<T>>.RetrieveList();
 
@@ -1397,7 +1397,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a ReplicateData and applies tick and channel.
         /// </summary>
-        private ReplicateDataContainer<T> ReadReplicateData<T>(uint tick) where T : IReplicateData
+        private ReplicateDataContainer<T> ReadReplicateData<T>(uint tick) where T : IReplicateData, new()
         {
             T data = Read<T>();
             Channel c = ReadChannel();

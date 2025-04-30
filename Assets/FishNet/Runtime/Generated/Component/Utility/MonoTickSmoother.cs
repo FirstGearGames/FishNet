@@ -118,7 +118,7 @@ namespace FishNet.Component.Transforming
             {
                 if (_tickSmoother != null)
                 {
-                    float tDistance = (_enableTeleport) ? _teleportThreshold : MoveRatesCls.UNSET_VALUE;
+                    float tDistance = (_enableTeleport) ? _teleportThreshold : MoveRates.UNSET_VALUE;
                     _tickSmoother.InitializeOnce(_graphicalObject, tDistance, (float)_timeManager.TickDelta, 1);
                 }
                 _timeManager.OnPreTick += _timeManager_OnPreTick;

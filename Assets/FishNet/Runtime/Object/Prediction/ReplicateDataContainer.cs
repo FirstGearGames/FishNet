@@ -9,12 +9,22 @@ using GameKit.Dependencies.Utilities;
 namespace FishNet.Object.Prediction
 {
     [MakePublic]
-    internal struct ReplicateDataContainer<T> where T : IReplicateData
+    internal struct ReplicateDataContainer<T> where T : IReplicateData, new()
     {
+        #region Types
+        private enum DataCachingType
+        {
+            Unset,
+            ValueType,
+            IResettableReferenceType,
+            ReferenceType,
+        }
+        #endregion
+
         /// <summary>
         /// Replicate data.
         /// </summary>
-        public  T Data;
+        public T Data;
         /// <summary>
         /// True if the data was created locally or came through the network as created.
         /// </summary>
@@ -23,33 +33,70 @@ namespace FishNet.Object.Prediction
         /// Channel the data came in on.
         /// </summary>
         public readonly Channel Channel;
+        /// <summary>
+        /// True if populated.
+        /// </summary>
+        public bool IsValid { get; private set; }
+
+        /// <summary>
+        /// How data should be cached and retrieved when not set.
+        /// </summary>
+        private static DataCachingType _dataCachingType = DataCachingType.Unset;
 
         public ReplicateDataContainer(T data, Channel channel) : this(data, channel, tick: 0, isCreated: false) { }
 
         public ReplicateDataContainer(T data, Channel channel, bool isCreated) : this(data, channel, tick: 0, isCreated) { }
-        public ReplicateDataContainer(T data, Channel channel, uint tick) : this(data, channel, tick, isCreated: false) { }
 
-        public ReplicateDataContainer(T data, Channel channel, uint tick, bool isCreated)
+        public ReplicateDataContainer(T data, Channel channel, uint tick, bool isCreated = false)
         {
             Data = data;
             Channel = channel;
-            Data.SetTick(tick);
             IsCreated = isCreated;
+            IsValid = true;
+
+            SetDataTick(tick);
         }
 
         /// <summary>
         /// A shortcut to calling Data.SetTick.
         /// </summary>
-        public void SetDataTick(uint tick) => Data.SetTick(tick);
-        
+        public void SetDataTick(uint tick)
+        {
+            SetDataIfNull(ref Data);
+            Data.SetTick(tick);
+        }
+
+        /// <summary>
+        /// Sets data to new() if is nullable type, and is null.
+        /// </summary>
+        /// <param name="data"></param>
+        private void SetDataIfNull(ref T data)
+        {
+            //Only figure out data caching type once to save perf.
+            if (_dataCachingType == DataCachingType.Unset)
+            {
+                if (typeof(T).IsValueType)
+                    _dataCachingType = DataCachingType.ValueType;
+                else if (typeof(IResettable).IsAssignableFrom(typeof(T)))
+                    _dataCachingType = DataCachingType.IResettableReferenceType;
+                else
+                    _dataCachingType = DataCachingType.ReferenceType;
+            }
+
+            if (_dataCachingType != DataCachingType.ValueType && data == null)
+                data = ObjectCaches<T>.Retrieve();
+        }
+
         public void Dispose()
         {
-            Data.Dispose();
+            if (Data != null)
+                Data.Dispose();
+
+            IsValid = false;
         }
 
         public static ReplicateDataContainer<T> GetDefault(uint tick) => new(default(T), Channel.Unreliable, tick);
 
         public static ReplicateDataContainer<T> GetDefault() => GetDefault(tick: 0);
     }
-    
 }

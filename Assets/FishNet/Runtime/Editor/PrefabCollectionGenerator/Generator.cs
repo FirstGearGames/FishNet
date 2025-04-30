@@ -280,7 +280,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             if (settings.SearchScope == (int)SearchScopeType.EntireProject)
             {
                 folderStrs = new List<string>();
-                folderStrs.Add("Assets");
+                folderStrs.Add("Assets*");
             }
             else if (settings.SearchScope == (int)SearchScopeType.SpecificFolders)
             {

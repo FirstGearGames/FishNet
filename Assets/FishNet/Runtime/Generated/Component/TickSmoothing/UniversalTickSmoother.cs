@@ -60,7 +60,7 @@ namespace FishNet.Component.Transforming.Beta
         /// <summary>
         /// How quickly to move towards goal values.
         /// </summary>
-        private MoveRates _moveRates = new(MoveRatesCls.UNSET_VALUE);
+        private MoveRates _moveRates = new();
         /// <summary>
         /// True if a pretick occurred since last postTick.
         /// </summary>
@@ -330,14 +330,19 @@ namespace FishNet.Component.Transforming.Beta
             void SetupTrackerTransform()
             {
                 _trackerTransform = new GameObject($"{_graphicalTransform.name}_Tracker").transform;
-                _trackerTransform.SetParent(_graphicalTransform.parent);
+
+                if (_detachOnStart)
+                {
+                    _trackerTransform.SetParent(_targetTransform);
+                }
+                else
+                {
+                    Transform trackerParent = _graphicalTransform.IsChildOf(targetTransform) ? _graphicalTransform.parent : targetTransform;
+                    _trackerTransform.SetParent(trackerParent);
+                }
+
                 _trackerTransform.SetLocalPositionRotationAndScale(_graphicalTransform.localPosition, graphicalTransform.localRotation, graphicalTransform.localScale);
             }
-
-            if (_detachOnStart)
-                _trackerTransform.SetParent(_targetTransform);
-            else
-                _trackerTransform.SetParent(_graphicalTransform.parent);
 
             IsInitialized = true;
         }
@@ -411,7 +416,7 @@ namespace FishNet.Component.Transforming.Beta
             _cachedAdaptiveInterpolationValue = movementSettings.AdaptiveInterpolationValue;
             _cachedInterpolationValue = movementSettings.InterpolationValue;
 
-            _cachedTeleportThreshold = (movementSettings.EnableTeleport) ? (movementSettings.TeleportThreshold * movementSettings.TeleportThreshold) : MoveRatesCls.UNSET_VALUE;
+            _cachedTeleportThreshold = (movementSettings.EnableTeleport) ? (movementSettings.TeleportThreshold * movementSettings.TeleportThreshold) : MoveRates.UNSET_VALUE;
         }
 
         /// <summary>
@@ -628,7 +633,7 @@ namespace FishNet.Component.Transforming.Beta
         {
             _transformProperties.Clear();
             //Also unset move rates since there is no more queue.
-            _moveRates = new(MoveRatesCls.UNSET_VALUE);
+            _moveRates = new(MoveRates.UNSET_VALUE);
         }
 
         /// <summary>
@@ -752,7 +757,7 @@ namespace FishNet.Component.Transforming.Beta
         {
             if (_transformProperties.Count == 0)
             {
-                _moveRates = new(MoveRatesCls.UNSET_VALUE);
+                _moveRates = new(MoveRates.UNSET_VALUE);
                 return;
             }
 
@@ -837,7 +842,7 @@ namespace FishNet.Component.Transforming.Beta
 
             TransformPropertiesFlag smoothedProperties = _cachedSmoothedProperties;
 
-            _moveRates.MoveWorldToTarget(_graphicalTransform, ttp.Properties, smoothedProperties, (delta * _movementMultiplier));
+            _moveRates.Move(_graphicalTransform, ttp.Properties, smoothedProperties, (delta * _movementMultiplier), useWorldSpace: true);
 
             float tRemaining = _moveRates.TimeRemaining;
             //if TimeLeft is <= 0f then transform is at goal. Grab a new goal if possible.

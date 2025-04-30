@@ -15,7 +15,7 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private Transform _graphicalObject;
         /// <summary>
-        /// When not MoveRatesCls.UNSET_VALUE the graphical object will teleport into it's next position if the move distance exceeds this value.
+        /// When not MoveRates.UNSET_VALUE the graphical object will teleport into it's next position if the move distance exceeds this value.
         /// </summary>
         private float _teleportThreshold;
         /// <summary>
@@ -136,7 +136,7 @@ namespace FishNet.Object.Prediction
         
         private void MoveToTarget()
         {
-            _moveRates.MoveLocalToTarget(_graphicalObject, _gfxInitializedLocalValues, Time.deltaTime);
+            _moveRates.Move(_graphicalObject, _gfxInitializedLocalValues, Time.deltaTime, useWorldSpace: false);
         }
 
         public void ResetState()

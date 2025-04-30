@@ -72,13 +72,13 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private Transform _graphicalObject;
         /// <summary>
-        /// When not MoveRatesCls.UNSET_VALUE the graphical object will teleport into it's next position if the move distance exceeds this value.
+        /// When not MoveRates.UNSET_VALUE the graphical object will teleport into it's next position if the move distance exceeds this value.
         /// </summary>
         private float _teleportThreshold;
         /// <summary>
         /// How quickly to move towards goal values.
         /// </summary>
-        private MoveRates _moveRates = new(MoveRatesCls.UNSET_VALUE);
+        private MoveRates _moveRates = new(MoveRates.UNSET_VALUE);
         /// <summary>
         /// True if a pretick occurred since last postTick.
         /// </summary>
@@ -478,7 +478,7 @@ namespace FishNet.Component.Transforming
         {
             _transformProperties.Clear();
             //Also unset move rates since there is no more queue.
-            _moveRates = new(MoveRatesCls.UNSET_VALUE);
+            _moveRates = new(MoveRates.UNSET_VALUE);
         }
 
         /// <summary>
@@ -573,7 +573,7 @@ namespace FishNet.Component.Transforming
         {
             if (_transformProperties.Count == 0)
             {
-                _moveRates = new(MoveRatesCls.UNSET_VALUE);
+                _moveRates = new(MoveRates.UNSET_VALUE);
                 return;
             }
 
@@ -626,7 +626,7 @@ namespace FishNet.Component.Transforming
 
             TickTransformProperties ttp = _transformProperties.Peek();
             TransformPropertiesFlag smoothedProperties = (_useOwnerSmoothing) ? _ownerSmoothedProperties : _spectatorSmoothedProperties;
-            _moveRates.MoveWorldToTarget(_graphicalObject, ttp.Properties, smoothedProperties, (delta * _movementMultiplier));
+            _moveRates.Move(_graphicalObject, ttp.Properties, smoothedProperties, (delta * _movementMultiplier), useWorldSpace: true);
 
             float tRemaining = _moveRates.TimeRemaining;
             //if TimeLeft is <= 0f then transform is at goal. Grab a new goal if possible.

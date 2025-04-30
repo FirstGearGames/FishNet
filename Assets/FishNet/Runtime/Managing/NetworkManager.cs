@@ -215,7 +215,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.6.7";
+        public const string FISHNET_VERSION = "4.6.7hf0";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>

@@ -57,7 +57,7 @@ namespace FishNet.Object
         /// <summary>
         /// Gets the index in replicates where the tick matches.
         /// </summary>
-        public static int GetReplicateHistoryIndex<T>(uint tick, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, out DataPlacementResult findResult) where T : IReplicateData
+        public static int GetReplicateHistoryIndex<T>(uint tick, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, out DataPlacementResult findResult) where T : IReplicateData, new()
         {
             int replicatesCount = replicatesHistory.Count;
             if (replicatesCount == 0)
@@ -344,7 +344,7 @@ namespace FishNet.Object
         /// Clears cached replicates and histories.
         /// </summary>
         [MakePublic]
-        internal void ClearReplicateCache_Internal<T, T2>(BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, RingBuffer<LocalReconcile<T2>> reconcilesHistory, ref T lastReadReplicate, ref T2 lastReadReconcile) where T : IReplicateData where T2 : IReconcileData
+        internal void ClearReplicateCache_Internal<T, T2>(BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, RingBuffer<LocalReconcile<T2>> reconcilesHistory, ref T lastReadReplicate, ref T2 lastReadReconcile) where T : IReplicateData, new() where T2 : IReconcileData, new()
         {
             while (replicatesQueue.Count > 0)
             {
@@ -481,7 +481,7 @@ namespace FishNet.Object
         /// Performs a replicate for current tick.
         /// </summary>
         [MakePublic]
-        internal void Replicate_Current<T>(ReplicateUserLogicDelegate<T> del, uint methodHash, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, ReplicateDataContainer<T> dataContainer) where T : IReplicateData
+        internal void Replicate_Current<T>(ReplicateUserLogicDelegate<T> del, uint methodHash, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, ReplicateDataContainer<T> dataContainer) where T : IReplicateData, new()
         {
             /* Do not run if currently reconciling.
              * This change allows devs to call inherited replicates
@@ -501,7 +501,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="enqueueData">True to enqueue data for replaying.</param>
         /// <returns>True if data has changed..</returns>
-        private void Replicate_Authoritative<T>(ReplicateUserLogicDelegate<T> del, uint methodHash, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, ReplicateDataContainer<T> dataContainer) where T : IReplicateData
+        private void Replicate_Authoritative<T>(ReplicateUserLogicDelegate<T> del, uint methodHash, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, ReplicateDataContainer<T> dataContainer) where T : IReplicateData, new()
         {
             bool ownerlessAndServer = (!Owner.IsValid && IsServerStarted);
             if (!IsOwner && !ownerlessAndServer)
@@ -585,7 +585,7 @@ namespace FishNet.Object
         /// Gets the next replicate in perform when server or non-owning client.
         /// </summary>
         /// </summary>
-        private void Replicate_NonAuthoritative<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData
+        private void Replicate_NonAuthoritative<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
         {
             bool serverStarted = _networkObjectCache.IsServerStarted;
             bool ownerlessAndServer = (!Owner.IsValid && serverStarted);
@@ -746,7 +746,7 @@ namespace FishNet.Object
         /// </summary>
         /// <remarks>The server calls this from codegen but it never completes as IsBehaviourReconciling will always be false on server.</remarks>
         [MakePublic]
-        internal void Replicate_Replay<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData
+        internal void Replicate_Replay<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
         {
             //Reconcile data was not received so cannot replay.
             if (!IsBehaviourReconciling)
@@ -761,7 +761,7 @@ namespace FishNet.Object
         /// <summary>
         /// Replays an input for authoritative entity.
         /// </summary>
-        private void Replicate_Replay_Authoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData
+        private void Replicate_Replay_Authoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
         {
             ReplicateTickFinder.DataPlacementResult findResult;
             int replicateIndex = ReplicateTickFinder.GetReplicateHistoryIndex(replayTick, replicatesHistory, out findResult);
@@ -787,7 +787,7 @@ namespace FishNet.Object
         /// Replays an input for non authoritative entity.
         /// </summary>
         [MakePublic]
-        private void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData
+        private void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
         {
                          
             ReplicateDataContainer<T> dataContainer;
@@ -856,7 +856,7 @@ namespace FishNet.Object
         /// This should only be called when client only.
         /// </summary>
         [MakePublic]
-        internal void EmptyReplicatesQueueIntoHistory<T>(BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData
+        internal void EmptyReplicatesQueueIntoHistory<T>(BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
         {
             while (replicatesQueue.TryDequeue(out ReplicateDataContainer<T> data))
                 InsertIntoReplicateHistory(data, replicatesHistory);
@@ -891,7 +891,7 @@ namespace FishNet.Object
         /// <summary>
         /// Sends a Replicate to server or clients.
         /// </summary>
-        private void Replicate_SendAuthoritative<T>(bool toServer, uint hash, int pastInputs, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, uint queuedTick, Channel channel, DeltaSerializerOption deltaOption) where T : IReplicateData
+        private void Replicate_SendAuthoritative<T>(bool toServer, uint hash, int pastInputs, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, uint queuedTick, Channel channel, DeltaSerializerOption deltaOption) where T : IReplicateData, new()
         {
             /* Do not use IsSpawnedWithWarning because the server
              * will still call this a tick or two as clientHost when
@@ -966,7 +966,7 @@ namespace FishNet.Object
         /// Reads a replicate the client.
         /// </summary>
         [MakePublic]
-        internal void Replicate_Reader<T>(uint hash, PooledReader reader, NetworkConnection sender, ref ReplicateDataContainer<T> lastReadReplicate, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, Channel channel) where T : IReplicateData
+        internal void Replicate_Reader<T>(uint hash, PooledReader reader, NetworkConnection sender, ref ReplicateDataContainer<T> lastReadReplicate, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory, Channel channel) where T : IReplicateData, new()
         {
             /* This will never be received on owner, except in the condition
              * the server is the owner and also a client. In such condition
@@ -1038,7 +1038,7 @@ namespace FishNet.Object
         /// Sends data from a reader which only contains the replicate packet.
         /// </summary>
         [MakePublic]
-        internal void Replicate_SendNonAuthoritative<T>(uint hash, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, Channel channel) where T : IReplicateData
+        internal void Replicate_SendNonAuthoritative<T>(uint hash, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, Channel channel) where T : IReplicateData, new()
         {
             if (!IsServerStarted)
                 return;
@@ -1098,7 +1098,7 @@ namespace FishNet.Object
         /// <summary>
         /// Handles a received replicate packet.
         /// </summary>
-        private void Replicate_EnqueueReceivedReplicate<T>(List<ReplicateDataContainer<T>> readDatas, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData
+        private void Replicate_EnqueueReceivedReplicate<T>(List<ReplicateDataContainer<T>> readDatas, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
         {
             int startQueueCount = replicatesQueue.Count;
             /* Owner never gets this for their own object so
@@ -1172,7 +1172,7 @@ namespace FishNet.Object
         /// Inserts data into the replicatesHistory collection.
         /// This should only be called when client only.
         /// </summary>
-        private void InsertIntoReplicateHistory<T>(ReplicateDataContainer<T> dataContainer, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData
+        private void InsertIntoReplicateHistory<T>(ReplicateDataContainer<T> dataContainer, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
         {
             /* See if replicate tick is in history. Keep in mind
              * this is the localTick from the server, not the localTick of
@@ -1209,7 +1209,7 @@ namespace FishNet.Object
         /// <summary>
         /// Adds to replicate history disposing of old entries if needed.
         /// </summary>
-        private void AddReplicatesHistory<T>(RingBuffer<ReplicateDataContainer<T>> replicatesHistory, ReplicateDataContainer<T> value) where T : IReplicateData
+        private void AddReplicatesHistory<T>(RingBuffer<ReplicateDataContainer<T>> replicatesHistory, ReplicateDataContainer<T> value) where T : IReplicateData, new()
         {
             ReplicateDataContainer<T> prev = replicatesHistory.Add(value);
             if (prev.Data != null)
@@ -1219,7 +1219,7 @@ namespace FishNet.Object
         /// <summary>
         /// Inserts to replicate history disposing of old entries if needed.
         /// </summary>
-        private void InsertReplicatesHistory<T>(RingBuffer<ReplicateDataContainer<T>> replicatesHistory, ReplicateDataContainer<T> value, int index) where T : IReplicateData
+        private void InsertReplicatesHistory<T>(RingBuffer<ReplicateDataContainer<T>> replicatesHistory, ReplicateDataContainer<T> value, int index) where T : IReplicateData, new()
         {
             ReplicateDataContainer<T> prev = replicatesHistory.Insert(index, value);
             if (prev.Data != null)
@@ -1288,7 +1288,7 @@ namespace FishNet.Object
         /// Called by codegen with data provided by user, such as from overriding CreateReconcile.
         /// </summary>
         [MakePublic]
-        internal void Reconcile_Current<T>(uint hash, ref T lastReconcileData, RingBuffer<LocalReconcile<T>> reconcilesHistory, T data, Channel channel) where T : IReconcileData
+        internal void Reconcile_Current<T>(uint hash, ref T lastReconcileData, RingBuffer<LocalReconcile<T>> reconcilesHistory, T data, Channel channel) where T : IReconcileData, new()
         {
             if (_networkObjectCache.PredictionManager.IsReconciling)
                 return;
@@ -1303,7 +1303,7 @@ namespace FishNet.Object
         /// Runs a reconcile. Prefers server data if available, otherwise uses local history data.
         /// </summary>
         [MakePublic]
-        internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, RingBuffer<ReplicateDataContainer<T2>> replicatesHistory, RingBuffer<LocalReconcile<T>> reconcilesHistory, T data) where T : IReconcileData where T2 : IReplicateData
+        internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, RingBuffer<ReplicateDataContainer<T2>> replicatesHistory, RingBuffer<LocalReconcile<T>> reconcilesHistory, T data) where T : IReconcileData where T2 : IReplicateData, new()
         {
             bool isBehaviourReconciling = IsBehaviourReconciling;
 

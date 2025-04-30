@@ -274,7 +274,7 @@ namespace FishNet.Object
         {
             if (PredictionSmoother == null)
                 return;
-            float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRatesCls.UNSET_VALUE;
+            float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRates.UNSET_VALUE;
             PredictionSmoother.InitializeNetworked(this, _graphicalObject, _detachGraphicalObject, teleportT, (float)TimeManager.TickDelta, _ownerInterpolation, _ownerSmoothedProperties, _spectatorInterpolation, _spectatorSmoothedProperties, _adaptiveInterpolation);
         }
 
