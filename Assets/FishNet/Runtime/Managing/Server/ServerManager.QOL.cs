@@ -6,6 +6,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using FishNet.Transporting.Multipass;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using GameKit.Dependencies.Utilities;
@@ -147,17 +148,28 @@ namespace FishNet.Managing.Server
         /// Despawns an object over the network. Can only be called on the server.
         /// </summary>
         /// <param name="go">GameObject instance to despawn.</param>
-        /// <param name="cacheOnDespawnOverride">Overrides the default DisableOnDespawn value for this single despawn. Scene objects will never be destroyed.</param>
-        public void Despawn(GameObject go, DespawnType? despawnType = null)
+        /// <param name="despawnType">Despawn override type.</param>
+        /// <param name="delay">Delays despawn in seconds </param>
+        public void Despawn(GameObject go, DespawnType? despawnType = null,float delay = 0.0f)
         {
-            if (go == null)
+            if (delay < 0.0f)
             {
-                NetworkManager.LogWarning($"GameObject cannot be despawned because it is null.");
+                NetworkManager.LogWarning("Gameobject cannot be despawned because delay is negative.");
                 return;
             }
 
-            NetworkObject nob = go.GetComponent<NetworkObject>();
-            Despawn(nob, despawnType);
+            StartCoroutine(DelayedCoroutine(delay, () =>
+            {
+                if (go == null)
+                {
+                    NetworkManager.LogWarning($"GameObject cannot be despawned because it is null.");
+                    return;
+                }
+
+                NetworkObject nob = go.GetComponent<NetworkObject>();
+                Despawn(nob, despawnType);
+            }));
+            
         }
 
         /// <summary>
@@ -165,11 +177,30 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <param name="networkObject">NetworkObject instance to despawn.</param>
         /// <param name="despawnType">Despawn override type.</param>
-        public void Despawn(NetworkObject networkObject, DespawnType? despawnType = null)
+        /// <param name="delay">Delays despawn in seconds </param>
+        public void Despawn(NetworkObject networkObject, DespawnType? despawnType = null, float delay = 0.0f)
         {
-            DespawnType resolvedDespawnType = (!despawnType.HasValue) ? networkObject.GetDefaultDespawnType() : despawnType.Value;
+            if (delay < 0.0f)
+            {
+                NetworkManager.LogWarning("Gameobject cannot be despawned because delay is negative.");
+                return;
+            }
 
-            Objects.Despawn(networkObject, resolvedDespawnType, asServer: true);
+            StartCoroutine(DelayedCoroutine(delay, () =>
+            {
+                DespawnType resolvedDespawnType = (!despawnType.HasValue) ? networkObject.GetDefaultDespawnType() : despawnType.Value;
+
+                Objects.Despawn(networkObject, resolvedDespawnType, asServer: true);
+            }));
+              
+            
+        }
+
+        private IEnumerator DelayedCoroutine(float delay,Action job)
+        {
+            yield return new WaitForSeconds(delay);
+            job?.Invoke();
+            
         }
 
         /// <summary>
