@@ -125,7 +125,7 @@ namespace FishNet.Object.Synchronizing
         public SyncList(List<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new()) : base(settings)
         {
             _comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
-            Collection = collection;
+            Collection = (collection == null) ? CollectionCaches<T>.RetrieveList() : collection;
             ClientHostCollection = CollectionCaches<T>.RetrieveList();
 
             _initialValues = CollectionCaches<T>.RetrieveList();

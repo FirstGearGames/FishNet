@@ -119,7 +119,7 @@ namespace FishNet.Object.Synchronizing
         public SyncHashSet(HashSet<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new()) : base(settings)
         {
             _comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
-            Collection = collection;
+            Collection = (collection == null) ? CollectionCaches<T>.RetrieveHashSet() : collection;
 
             _initialValues = CollectionCaches<T>.RetrieveHashSet();
             _changed = CollectionCaches<ChangeData>.RetrieveList();

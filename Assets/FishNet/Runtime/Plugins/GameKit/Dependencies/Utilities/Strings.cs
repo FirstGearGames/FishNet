@@ -18,6 +18,49 @@ namespace GameKit.Dependencies.Utilities
         public static byte[] Buffer = new byte[1024];
         
         /// <summary>
+        /// Converts a member string text to PascalCase
+        /// </summary>
+        /// <remarks>A member string is expected to be in the format '_memberName'.</remarks>
+        public static string MemberToPascalCase(this string txt)
+        {
+            if (txt.Length < 2)
+            {
+                UnityEngine.Debug.LogError($"Text '{txt}' is too short.");
+                return string.Empty;
+            }
+
+            if (txt[0] != '_')
+            {
+                UnityEngine.Debug.LogError($"Text '{txt}' has the incorrect member prefix.");
+                return string.Empty;
+            }
+
+            string firstLeter = txt[1].ToString().ToUpper();
+
+            string substring = (txt.Length > 2) ? txt.Substring(2) : string.Empty;
+            return $"{firstLeter}{substring}";
+        }
+
+        /// <summary>
+        /// Converts a pascal case string to member case.
+        /// </summary>
+        /// <remarks>A PascalCase string is expected to be in the format 'PropertyName'.</remarks>
+        public static string PascalCaseToMember(this string txt)
+        {
+            if (txt.Length < 1)
+            {
+                UnityEngine.Debug.LogError($"Text '{txt}' is too short.");
+                return string.Empty;
+            }
+
+            string firstLeter = txt[0].ToString().ToLower();
+
+            string subString = (txt.Length > 1) ? txt.Substring(1) : string.Empty;
+            return $"_{firstLeter}{subString}";
+        }
+        
+        
+        /// <summary>
         /// Attachs or detaches an suffix to a string.
         /// </summary>
         /// <param name="text"></param>

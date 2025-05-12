@@ -3,7 +3,8 @@ using FishNet.Editing;
 using GameKit.Dependencies.Utilities;
 using UnityEditor;
 using UnityEngine;
-using GameKitEditing = GameKit.Dependencies.Utilities.Editing;
+using LayoutTools = GameKit.Dependencies.Utilities.EditorGuiLayoutTools;
+
 
 namespace FishNet.Component.Transforming.Editing
 {
@@ -53,7 +54,7 @@ namespace FishNet.Component.Transforming.Editing
         {
             serializedObject.Update();
 
-            GameKitEditing.AddObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkTransform)target), typeof(NetworkTransform), false, EditorLayoutEnableType.Disabled);
+            LayoutTools.AddObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkTransform)target), typeof(NetworkTransform), false, EditorLayoutEnableType.Disabled);
 
             bool isPro = false;
             

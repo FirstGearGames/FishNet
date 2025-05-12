@@ -167,7 +167,7 @@ namespace FishNet.Managing.Statistic
         /// <summary>
         /// Formats passed in bytes value to the largest possible data type with 2 decimals.
         /// </summary>
-        public static string FormatBytesToLargest(ulong bytes)
+        public static string FormatBytesToLargest(float bytes)
         {
             int decimalPlaces = 2;
             if (bytes == 0)

@@ -3,7 +3,7 @@ using FishNet.Managing.Debugging;
 using GameKit.Dependencies.Utilities;
 using UnityEditor;
 using UnityEngine;
-using GameKitEditing = GameKit.Dependencies.Utilities.Editing;
+using LayoutTools = GameKit.Dependencies.Utilities.EditorGuiLayoutTools;
 
 namespace FishNet.Managing.Editing
 {
@@ -39,28 +39,28 @@ namespace FishNet.Managing.Editing
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(DebugManager), typeof(DebugManager), false);
             GUI.enabled = true;
             
-            GameKitEditing.AddHelpBox("Debug features will only be run in Unity Editor, and development builds. Enabling debug features will increase bandwidth consumption and likely create garbage allocations.", MessageType.Warning);
+            LayoutTools.AddHelpBox("Debug features will only be run in Unity Editor, and development builds. Enabling debug features will increase bandwidth consumption and likely create garbage allocations.", MessageType.Warning);
             
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Detail Writing",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            GameKitEditing.AddPropertyField(_writeSceneObjectDetails, "Scene Objects");
+            LayoutTools.AddPropertyField(_writeSceneObjectDetails, "Scene Objects");
             EditorGUI.indentLevel--;
             
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Packet Validation",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            GameKitEditing.AddPropertyField(_validateRpcLengths, "Rpc Lengths");
+            LayoutTools.AddPropertyField(_validateRpcLengths, "Rpc Lengths");
             EditorGUI.indentLevel--;
             
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Disable RpcLinks",EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            GameKitEditing.AddPropertyField(_disableObserversRpcLinks, "ObserversRpcs");
-            GameKitEditing.AddPropertyField(_disableTargetRpcLinks, "TargetRpcs");
-            GameKitEditing.AddPropertyField(_disableServerRpcLinks, "ServerRpcs");
-            GameKitEditing.AddPropertyField(_disableReplicateRpcLinks, "ReplicateRpcs");
-            GameKitEditing.AddPropertyField(_disableReconcileRpcLinks, "ReconcileRpcs");
+            LayoutTools.AddPropertyField(_disableObserversRpcLinks, "ObserversRpcs");
+            LayoutTools.AddPropertyField(_disableTargetRpcLinks, "TargetRpcs");
+            LayoutTools.AddPropertyField(_disableServerRpcLinks, "ServerRpcs");
+            LayoutTools.AddPropertyField(_disableReplicateRpcLinks, "ReplicateRpcs");
+            LayoutTools.AddPropertyField(_disableReconcileRpcLinks, "ReconcileRpcs");
             EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();

@@ -138,7 +138,7 @@ namespace FishNet.Object
 
                 _onStartClientCalled = false;
             }
-
+ 
             void InvokeOnNetwork()
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)

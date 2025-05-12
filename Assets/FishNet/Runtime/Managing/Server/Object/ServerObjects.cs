@@ -457,7 +457,7 @@ namespace FishNet.Managing.Server
                 //Only setup if a scene object and not initialzied.
                 if (nob.GetIsNetworked() && nob.IsSceneObject && nob.IsDeinitializing)
                 {
-                    if (!nob.WasActiveDuringEdit_Set)
+                    if (!nob.WasActiveDuringEdit_Set1)
                     {
                         NetworkManager.LogError($"NetworkObject {nob.name} in scene {nob.gameObject.scene.name} needs to be reserialized. Please use the Fish-Networking menu -> Utility -> Reserialize NetworkObjects.");
                         continue;
@@ -762,7 +762,7 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            if (!nob.WasActiveDuringEdit_Set)
+            if (!nob.WasActiveDuringEdit_Set1)
             {
                 string sceneOrPrefabText = (sceneObject) ? $"in scene {nob.gameObject.scene.name}" : "prefab";
                 NetworkManager.LogError($"NetworkObject {nob.name} {sceneOrPrefabText}. Please use the Fish-Networking menu -> Utility -> Reserialize NetworkObjects.");

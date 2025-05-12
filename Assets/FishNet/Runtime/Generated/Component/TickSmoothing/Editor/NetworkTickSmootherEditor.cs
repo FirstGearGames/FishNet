@@ -14,7 +14,7 @@ namespace FishNet.Component.Transforming.Beta
         private SerializedProperty _controllerMovementSettings;
         private SerializedProperty _spectatorMovementSettings;
         
-        private bool _showOwnerSmoothingSettings;
+        private bool _showControllerSmoothingSettings;
         private bool _showSpectatorSmoothingSettings;
         
         protected virtual void OnEnable()
@@ -36,11 +36,11 @@ namespace FishNet.Component.Transforming.Beta
             
             EditorGUILayout.PropertyField(_initializationSettings);
             
-            _showOwnerSmoothingSettings = EditorGUILayout.Foldout(_showOwnerSmoothingSettings, "Owner Smoothing");
-            if (_showOwnerSmoothingSettings)
+            _showControllerSmoothingSettings = EditorGUILayout.Foldout(_showControllerSmoothingSettings, new GUIContent("Controller Smoothing", "Smoothing applied when object controller. This would be the owner, or if there is no owner and are also server."));
+            if (_showControllerSmoothingSettings)
                 EditorGUILayout.PropertyField(_controllerMovementSettings);
 
-            _showSpectatorSmoothingSettings = EditorGUILayout.Foldout(_showSpectatorSmoothingSettings, "Spectator Smoothing");
+            _showSpectatorSmoothingSettings = EditorGUILayout.Foldout(_showSpectatorSmoothingSettings, new GUIContent("Spectator Smoothing", "Smoothing applied when object not the owner. This is when server and there is an owner, or when client and not the owner."));
             if (_showSpectatorSmoothingSettings)
                 EditorGUILayout.PropertyField(_spectatorMovementSettings);
             

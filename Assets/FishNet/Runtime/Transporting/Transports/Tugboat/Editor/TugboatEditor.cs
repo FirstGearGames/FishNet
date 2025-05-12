@@ -12,6 +12,7 @@ namespace FishNet.Transporting.Tugboat.Editing
     {
         private SerializedProperty _stopSocketsOnThread;
         private SerializedProperty _dontRoute;
+        private SerializedProperty _reuseAddress;
         private SerializedProperty _unreliableMtu;
 
         private SerializedProperty _ipv4BindAddress;
@@ -27,6 +28,7 @@ namespace FishNet.Transporting.Tugboat.Editing
         {
             _stopSocketsOnThread = serializedObject.FindProperty(nameof(_stopSocketsOnThread));
             _dontRoute = serializedObject.FindProperty(nameof(_dontRoute));
+            _reuseAddress = serializedObject.FindProperty(nameof(_reuseAddress));
             _unreliableMtu = serializedObject.FindProperty(nameof(_unreliableMtu));
             _ipv4BindAddress = serializedObject.FindProperty(nameof(_ipv4BindAddress));
             _enableIpv6 = serializedObject.FindProperty(nameof(_enableIpv6));
@@ -60,6 +62,7 @@ namespace FishNet.Transporting.Tugboat.Editing
 
             EditorGUILayout.LabelField("Server", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_reuseAddress);
             EditorGUILayout.PropertyField(_ipv4BindAddress);
             EditorGUILayout.PropertyField(_enableIpv6);
             if (_enableIpv6.boolValue == true)

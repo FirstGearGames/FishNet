@@ -26,13 +26,20 @@ namespace FishNet.Transporting.Tugboat
         [Tooltip("True to stop local server and client sockets using a new thread.")]
         [SerializeField]
         private bool _stopSocketsOnThread = false;
-        [Tooltip("While true, forces sockets to send data directly to interface without routing.")]
         /// <summary>
         /// While true, forces sockets to send data directly to interface without routing.
         /// </summary>
         internal bool DontRoute => _dontRoute;
+        [Tooltip("While true, forces sockets to send data directly to interface without routing.")]
         [SerializeField]
         private bool _dontRoute;
+        /// <summary>
+        /// Allows the same address and port to be used multiple times by the server. This can be useful if you wish to launch multiple builds or server instances on the same machine using the same configuration.
+        /// </summary>
+        internal bool ReuseAddress => _reuseAddress;
+        [Tooltip("Allows the same address and port to be used multiple times by the server. This can be useful if you wish to launch multiple builds or server instances on the same machine using the same configuration.")]
+        [SerializeField]
+        private bool _reuseAddress;
         /* Channels. */
         /// <summary>
         /// Maximum transmission unit for the unreliable channel.
@@ -147,6 +154,7 @@ namespace FishNet.Transporting.Tugboat
         {
             return ServerSocket.GetConnectionAddress(connectionId);
         }
+
         /// <summary>
         /// Called when a connection state changes for the local client.
         /// </summary>
@@ -159,6 +167,7 @@ namespace FishNet.Transporting.Tugboat
         /// Called when a connection state changes for a remote client.
         /// </summary>
         public override event Action<RemoteConnectionStateArgs> OnRemoteConnectionState;
+
         /// <summary>
         /// Gets the current local ConnectionState.
         /// </summary>
@@ -170,6 +179,7 @@ namespace FishNet.Transporting.Tugboat
             else
                 return ClientSocket.GetConnectionState();
         }
+
         /// <summary>
         /// Gets the current ConnectionState of a remote client on the server.
         /// </summary>
@@ -178,6 +188,7 @@ namespace FishNet.Transporting.Tugboat
         {
             return ServerSocket.GetConnectionState(connectionId);
         }
+
         /// <summary>
         /// Handles a ConnectionStateArgs for the local client.
         /// </summary>
@@ -186,6 +197,7 @@ namespace FishNet.Transporting.Tugboat
         {
             OnClientConnectionState?.Invoke(connectionStateArgs);
         }
+
         /// <summary>
         /// Handles a ConnectionStateArgs for the local server.
         /// </summary>
@@ -194,6 +206,7 @@ namespace FishNet.Transporting.Tugboat
         {
             OnServerConnectionState?.Invoke(connectionStateArgs);
         }
+
         /// <summary>
         /// Handles a ConnectionStateArgs for a remote client.
         /// </summary>
@@ -238,38 +251,38 @@ namespace FishNet.Transporting.Tugboat
                 ClientSocket.IterateOutgoing();
         }
         #endregion
-        
+
         #region Sending.
         /// <summary>
         /// Sends to the server or all clients.
         /// </summary>
         /// <param name="channelId">Channel to use.</param>
         /// <param name="segment">Data to send.</param>
-        
         public override void SendToServer(byte channelId, ArraySegment<byte> segment)
         {
             SanitizeChannel(ref channelId);
             ClientSocket.SendToServer(channelId, segment);
         }
+
         /// <summary>
         /// Sends data to a client.
         /// </summary>
         /// <param name="channelId"></param>
         /// <param name="segment"></param>
         /// <param name="connectionId"></param>
-        
         public override void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId)
         {
             SanitizeChannel(ref channelId);
             ServerSocket.SendToClient(channelId, segment, connectionId);
         }
         #endregion
-        
+
         #region Receiving.
         /// <summary>
         /// Called when client receives data.
         /// </summary>
         public override event Action<ClientReceivedDataArgs> OnClientReceivedData;
+
         /// <summary>
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
@@ -278,10 +291,12 @@ namespace FishNet.Transporting.Tugboat
         {
             OnClientReceivedData?.Invoke(receivedDataArgs);
         }
+
         /// <summary>
         /// Called when server receives data.
         /// </summary>
         public override event Action<ServerReceivedDataArgs> OnServerReceivedData;
+
         /// <summary>
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
@@ -325,9 +340,10 @@ namespace FishNet.Transporting.Tugboat
             if (GetConnectionState(false) != LocalConnectionState.Stopped)
                 base.NetworkManager.LogWarning("PacketLayer is set but will not be applied until the client stops.");
 
-            ServerSocket.Initialize(this, _unreliableMtu, _packetLayer, _enableIpv6);
-            ClientSocket.Initialize(this, _unreliableMtu, _packetLayer);
+            InitializeSocket(asServer: true);
+            InitializeSocket(asServer: false);
         }
+
         /// <summary>
         /// How long in seconds until either the server or client socket must go without data before being timed out.
         /// </summary>
@@ -338,6 +354,7 @@ namespace FishNet.Transporting.Tugboat
             //Server and client uses the same timeout.
             return (float)MAX_TIMEOUT_SECONDS;
         }
+
         /// <summary>
         /// Sets how long in seconds until either the server or client socket must go without data before being timed out.
         /// </summary>
@@ -352,6 +369,7 @@ namespace FishNet.Transporting.Tugboat
 
             UpdateTimeout();
         }
+
         /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
         /// </summary>
@@ -360,6 +378,7 @@ namespace FishNet.Transporting.Tugboat
         {
             return ServerSocket.GetMaximumClients();
         }
+
         /// <summary>
         /// Sets maximum number of clients allowed to connect to the server. If applied at runtime and clients exceed this value existing clients will stay connected but new clients may not connect.
         /// </summary>
@@ -369,6 +388,7 @@ namespace FishNet.Transporting.Tugboat
             _maximumClients = value;
             ServerSocket.SetMaximumClients(value);
         }
+
         /// <summary>
         /// Sets which address the client will connect to.
         /// </summary>
@@ -377,6 +397,7 @@ namespace FishNet.Transporting.Tugboat
         {
             _clientAddress = address;
         }
+
         /// <summary>
         /// Gets which address the client will connect to.
         /// </summary>
@@ -396,6 +417,7 @@ namespace FishNet.Transporting.Tugboat
             else
                 _ipv6BindAddress = address;
         }
+
         /// <summary>
         /// Gets which address the server will bind to.
         /// </summary>
@@ -407,6 +429,7 @@ namespace FishNet.Transporting.Tugboat
             else
                 return _ipv6BindAddress;
         }
+
         /// <summary>
         /// Sets which port to use.
         /// </summary>
@@ -415,6 +438,7 @@ namespace FishNet.Transporting.Tugboat
         {
             _port = port;
         }
+
         /// <summary>
         /// Gets which port to use.
         /// </summary>
@@ -483,11 +507,22 @@ namespace FishNet.Transporting.Tugboat
 
         #region Privates.
         /// <summary>
+        /// Initializes client or server socket.
+        /// </summary>
+        private void InitializeSocket(bool asServer)
+        {
+            if (asServer)
+                ServerSocket.Initialize(this, _unreliableMtu, _packetLayer, _enableIpv6);
+            else
+                ClientSocket.Initialize(this, _unreliableMtu, _packetLayer);
+        }
+
+        /// <summary>
         /// Starts server.
         /// </summary>
         private bool StartServer()
         {
-            ServerSocket.Initialize(this, _unreliableMtu, _packetLayer, _enableIpv6);
+            InitializeSocket(asServer: true);
             UpdateTimeout();
             return ServerSocket.StartConnection(_port, _maximumClients, _ipv4BindAddress, _ipv6BindAddress);
         }
@@ -509,7 +544,7 @@ namespace FishNet.Transporting.Tugboat
         /// <param name="address"></param>
         private bool StartClient(string address)
         {
-            ClientSocket.Initialize(this, _unreliableMtu, _packetLayer);
+            InitializeSocket(asServer: false);
             UpdateTimeout();
             return ClientSocket.StartConnection(address, _port);
         }
@@ -522,6 +557,7 @@ namespace FishNet.Transporting.Tugboat
             ClientSocket.UpdateTimeout(_clientTimeout);
             ServerSocket.UpdateTimeout(_serverTimeout);
         }
+
         /// <summary>
         /// Stops the client.
         /// </summary>
@@ -548,6 +584,7 @@ namespace FishNet.Transporting.Tugboat
                 channelId = 0;
             }
         }
+
         /// <summary>
         /// Gets the MTU for a channel. This should take header size into consideration.
         /// For example, if MTU is 1200 and a packet header for this channel is 10 in size, this method should return 1190.

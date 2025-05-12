@@ -5,6 +5,7 @@ namespace FishNet.Object.Synchronizing
     /// <summary>
     /// Settings which can be passed into SyncTypes.
     /// </summary>
+    [System.Serializable]
     public struct SyncTypeSettings
     {
         public WritePermission WritePermission;

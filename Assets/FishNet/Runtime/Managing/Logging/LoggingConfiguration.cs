@@ -17,7 +17,13 @@ namespace FishNet.Managing.Logging
         /// True to use logging features. False to disable all logging.
         /// </summary>
         [Tooltip("True to use logging features. False to disable all logging.")]
-        public bool LoggingEnabled = true;
+        public bool IsEnabled = true;
+        [Obsolete("Use IsEnabled.")] //Remove V5
+        public bool LoggingEnabled
+        {
+            get => IsEnabled;
+            set => IsEnabled = value;
+        }
         #endregion
 
         /// <summary>

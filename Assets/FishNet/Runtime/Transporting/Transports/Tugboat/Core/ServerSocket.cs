@@ -62,10 +62,6 @@ namespace FishNet.Transporting.Tugboat.Server
         #endregion
 
         /// <summary>
-        /// Key required to connect.
-        /// </summary>
-        private string _key = string.Empty;
-        /// <summary>
         /// How long in seconds until client times from server.
         /// </summary>
         private int _timeout;
@@ -135,6 +131,7 @@ namespace FishNet.Transporting.Tugboat.Server
 
             base.NetManager = new(listener, _packetLayer, false);
             base.NetManager.DontRoute = ((Tugboat)base.Transport).DontRoute;
+            base.NetManager.ReuseAddress = ((Tugboat)base.Transport).ReuseAddress;
             base.NetManager.MtuOverride = (_mtu + NetConstants.FragmentedHeaderTotalSize);
 
             UpdateTimeout(_timeout);
@@ -371,7 +368,7 @@ namespace FishNet.Transporting.Tugboat.Server
                 return;
             }
 
-            request.AcceptIfKey(_key);
+            request.AcceptIfKey(key: string.Empty);
         }
 
         /// <summary>

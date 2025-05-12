@@ -14,10 +14,8 @@ using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using UnityEngine;
 using FishNet.Managing.Scened;
-using FishNet.Authenticating;
 using FishNet.Object;
 using FishNet.Documenting;
-using FishNet.Managing.Logging;
 using System.Collections.Generic;
 using System;
 using FishNet.Managing.Observing;
@@ -25,12 +23,10 @@ using System.Linq;
 using FishNet.Managing.Debugging;
 using FishNet.Managing.Object;
 using FishNet.Transporting;
-using FishNet.Utility.Extension;
 using FishNet.Managing.Statistic;
 using FishNet.Utility.Performance;
 using FishNet.Component.ColliderRollback;
 using FishNet.Managing.Predicting;
-using System.Runtime.CompilerServices;
 using GameKit.Dependencies.Utilities;
 
 
@@ -215,7 +211,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.6.7hf0";
+        public const string FISHNET_VERSION = "4.6.8";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>

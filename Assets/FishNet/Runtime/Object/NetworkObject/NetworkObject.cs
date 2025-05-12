@@ -70,7 +70,7 @@ namespace FishNet.Object
         /// This value is used to ensure users have reserialized NetworkObjects to apply WasActiveDuringEdit. //Remove V5.
         /// </summary>
         [field: SerializeField, HideInInspector]
-        internal bool WasActiveDuringEdit_Set;
+        internal bool WasActiveDuringEdit_Set1;
 
         /// <summary>
         /// Returns if this object was placed in the scene during edit-time.
@@ -296,7 +296,7 @@ namespace FishNet.Object
 
                     return (multiplier * modifierBase);
                 }
-                
+
                 return (_initializeOrder + GetOrderModifier());
             }
         }
@@ -343,7 +343,6 @@ namespace FishNet.Object
         /// Becomes true once initialized values are set.
         /// </summary>
         private bool _initializedValusSet;
-
         /// <summary>
         /// Sets that InitializedValues have not yet been set. This can be used to force objects to reinitialize which may have changed since the prefab was initialized, such as placed scene objects.
         /// </summary>
@@ -364,13 +363,7 @@ namespace FishNet.Object
         /// </summary>
         public const int UNSET_PREFABID_VALUE = ushort.MaxValue;
         #endregion
-
-        #region Editor Debug.
-#if UNITY_EDITOR
-        private int _editorOwnerId;
-#endif
-        #endregion
-
+        
         /// <summary>
         /// Outputs data about this NetworkObject to string.
         /// </summary>
@@ -445,34 +438,33 @@ namespace FishNet.Object
              * as clientHost. If not clientHost its safe to skip deinitializing again.
              * But if clientHost, check if the client has deinitialized. If not then do
              * so now for the client side. */
-            bool exitMethod = false;
-
-            /* If already deinitializing then FishNet is in the process of,
-             * or has finished cleaning up this object. */
-            //callStopNetwork = (ServerManager.Objects.GetFromPending(ObjectId) == null);
-            if (IsDeinitializing)
-            {
-                if (IsHostStarted)
-                {
-                    if (!_onStartClientCalled)
-                        exitMethod = true;
-                }
-                else
-                {
-                    exitMethod = true;
-                }
-            }
-
-            if (Owner.IsValid)
-                Owner.RemoveObject(this);
+            //bool exitMethod = false;
+            //
+            // /* If already deinitializing then FishNet is in the process of,
+            //  * or has finished cleaning up this object. */
+            // //callStopNetwork = (ServerManager.Objects.GetFromPending(ObjectId) == null);
+            // if (IsDeinitializing)
+            // {
+            //     if (IsHostStarted)
+            //     {
+            //         if (!_onStartClientCalled)
+            //             exitMethod = true;
+            //     }
+            //     else
+            //     {
+            //         exitMethod = true;
+            //     }
+            // }
+            
+            
             if (NetworkObserver != null)
                 NetworkObserver.Deinitialize(destroyed: true);
 
-            if (exitMethod)
-            {
-                NetworkBehaviour_OnDestroy();
-                return;
-            }
+            // if (exitMethod)
+            // {
+            //     NetworkBehaviour_OnDestroy();
+            //     return;
+            // }
 
             if (NetworkManager != null)
             {
@@ -514,6 +506,9 @@ namespace FishNet.Object
             SetDeinitializedStatus();
 
             NetworkBehaviour_OnDestroy();
+
+            ResetState(asServer: true);
+            ResetState(asServer: false);
 
             StoreCollections();
 
@@ -1153,7 +1148,7 @@ namespace FishNet.Object
              * being unset as Spawned when only the root was despawned. */
             if (!IsNested || State == NetworkObjectState.Despawned)
                 State = NetworkObjectState.Unset;
-                
+
             // //If nested then set active state to serialized value.
             // if (IsNested)
             //     gameObject.SetActive(WasActiveDuringEdit);
@@ -1162,15 +1157,16 @@ namespace FishNet.Object
             if (NetworkObserver != null)
                 NetworkObserver.Deinitialize(false);
 
-            //QOL references.
-            NetworkManager = null;
-            ServerManager = null;
-            ClientManager = null;
-            ObserverManager = null;
-            TransportManager = null;
-            TimeManager = null;
-            SceneManager = null;
-            RollbackManager = null;
+            //Never clear references -- these are needed for cleanup in unexpected destroys.
+            // NetworkManager = null;
+            // ServerManager = null;
+            // ClientManager = null;
+            // ObserverManager = null;
+            // TransportManager = null;
+            // TimeManager = null;
+            // SceneManager = null;
+            // RollbackManager = null;
+            
             //Misc sets.
             ObjectId = NetworkObject.UNSET_OBJECTID_VALUE;
         }
@@ -1397,7 +1393,6 @@ namespace FishNet.Object
             RuntimeChildNetworkBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveList();
         }
 
-
         #region Editor.
 #if UNITY_EDITOR
         /// <summary>
@@ -1421,8 +1416,21 @@ namespace FishNet.Object
 #if UNITY_EDITOR
             if (setWasActiveDuringEdit)
             {
-                WasActiveDuringEdit = gameObject.activeSelf;
-                WasActiveDuringEdit_Set = true;
+                bool hasNetworkObjectParent = false;
+                Transform parent = transform.parent;
+                while (parent != null) 
+                {
+                    if (parent.TryGetComponent<NetworkObject>(out _)) 
+                    {
+                        hasNetworkObjectParent = true;
+                        break;
+                    }
+
+                    parent = parent.parent;
+                }
+
+                WasActiveDuringEdit = (hasNetworkObjectParent && gameObject.activeSelf) || (!hasNetworkObjectParent && gameObject.activeInHierarchy);
+                WasActiveDuringEdit_Set1 = true;
             }
 
             if (setSceneId)
@@ -1441,11 +1449,6 @@ namespace FishNet.Object
         private void Reset()
         {
             ReferenceIds_Reset();
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            _editorOwnerId = (Owner == null) ? -1 : Owner.ClientId;
         }
 #endif
         #endregion

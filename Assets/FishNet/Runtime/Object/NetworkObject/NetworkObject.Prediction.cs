@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using FishNet.Connection;
 using FishNet.Managing.Server;
 using UnityEngine;
+
 #pragma warning disable CS0618 // Type or member is obsolete
 
 namespace FishNet.Object
@@ -312,7 +313,8 @@ namespace FishNet.Object
 
             if (!asServer)
             {
-                TimeManager.OnUpdate -= TimeManager_Update;
+                if (TimeManager != null)
+                    TimeManager.OnUpdate -= TimeManager_Update;
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnStopClient();
             }

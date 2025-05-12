@@ -130,9 +130,9 @@ namespace FishNet.Object.Synchronizing
         #region Constructors.
         public SyncDictionary(SyncTypeSettings settings = new()) : this(CollectionCaches<TKey, TValue>.RetrieveDictionary(), settings) { }
 
-        public SyncDictionary(Dictionary<TKey, TValue> objects, SyncTypeSettings settings = new()) : base(settings)
+        public SyncDictionary(Dictionary<TKey, TValue> collection, SyncTypeSettings settings = new()) : base(settings)
         {
-            Collection = objects;
+            Collection = (collection == null) ? CollectionCaches<TKey, TValue>.RetrieveDictionary() : collection;
             ClientHostCollection = CollectionCaches<TKey, TValue>.RetrieveDictionary();
 
             _initialValues = CollectionCaches<TKey, TValue>.RetrieveDictionary();
@@ -140,7 +140,7 @@ namespace FishNet.Object.Synchronizing
             _serverOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
             _clientOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
             //Add to clienthostcollection.
-            foreach (KeyValuePair<TKey, TValue> item in objects)
+            foreach (KeyValuePair<TKey, TValue> item in collection)
                 ClientHostCollection[item.Key] = item.Value;
         }
         #endregion
