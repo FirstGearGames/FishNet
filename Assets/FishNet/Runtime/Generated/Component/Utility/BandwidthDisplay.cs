@@ -1,5 +1,4 @@
 ﻿using FishNet.Managing.Statistic;
-using GameKit.Dependencies.Utilities;
 using GameKit.Dependencies.Utilities.Types;
 using UnityEngine;
 
@@ -272,7 +271,7 @@ namespace FishNet.Component.Utility
         }
 
         [ContextMenu("Reset Averages")]
-        private void ResetAverages()
+        public void ResetAverages()
         {
             ResetCalculationsAndDisplay(forServer: true);
             ResetCalculationsAndDisplay(forServer: false);

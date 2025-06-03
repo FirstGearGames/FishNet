@@ -1301,51 +1301,34 @@ namespace FishNet.Serializing
         /// </summary>
         public ulong ReadUnsignedPackedWhole()
         {
-            byte data = ReadUInt8Unpacked();
-            ulong result = (ulong)(data & 0x7F);
-            if ((data & 0x80) == 0) return result;
+            int shift = 0;
+            ulong value = 0;
+            /* Maximum number of bytes for ulong.
+             * Prevents endless loop. Should not be neccessary but is a nice precaution. */
+            int maximumIterations = 10;
+            int iterations = 0;
+            int bufferLength = GetBuffer().Length;
 
-            data = ReadUInt8Unpacked();
-            result |= (ulong)(data & 0x7F) << 7;
-            if ((data & 0x80) == 0) return result;
 
-            data = ReadUInt8Unpacked();
-            result |= (ulong)(data & 0x7F) << 14;
-            if ((data & 0x80) == 0) return result;
-
-            data = ReadUInt8Unpacked();
-            result |= (ulong)(data & 0x7F) << 21;
-            if ((data & 0x80) == 0) return result;
-
-            data = ReadUInt8Unpacked();
-            result |= (ulong)(data & 0x0F) << 28;
-            int extraBytes = data >> 4;
-
-            switch (extraBytes)
+            while (iterations < maximumIterations)
             {
-                case 0:
+                if (Position >= bufferLength)
+                {
+                    NetworkManager.LogError($"Read position of {Position} is beyond reader's buffer length of {bufferLength}.");
+                    return 0;
+                }
+
+                byte currentByte = _buffer[Position++];
+                value |= (ulong)(currentByte & 0x7F) << shift;
+
+                if ((currentByte & 0x80) == 0)
                     break;
-                case 1:
-                    result |= (ulong)ReadUInt8Unpacked() << 32;
-                    break;
-                case 2:
-                    result |= (ulong)ReadUInt8Unpacked() << 32;
-                    result |= (ulong)ReadUInt8Unpacked() << 40;
-                    break;
-                case 3:
-                    result |= (ulong)ReadUInt8Unpacked() << 32;
-                    result |= (ulong)ReadUInt8Unpacked() << 40;
-                    result |= (ulong)ReadUInt8Unpacked() << 48;
-                    break;
-                case 4:
-                    result |= (ulong)ReadUInt8Unpacked() << 32;
-                    result |= (ulong)ReadUInt8Unpacked() << 40;
-                    result |= (ulong)ReadUInt8Unpacked() << 48;
-                    result |= (ulong)ReadUInt8Unpacked() << 56;
-                    break;
+
+                shift += 7;
+                iterations++;
             }
 
-            return result;
+            return value;
         }
         #endregion
 

@@ -433,49 +433,20 @@ namespace FishNet.Object
             //The object never initialized for use.
             if (!_initializedValusSet)
                 return;
-
-            /* There is however chance the object can get destroyed before deinitializing
-             * as clientHost. If not clientHost its safe to skip deinitializing again.
-             * But if clientHost, check if the client has deinitialized. If not then do
-             * so now for the client side. */
-            //bool exitMethod = false;
-            //
-            // /* If already deinitializing then FishNet is in the process of,
-            //  * or has finished cleaning up this object. */
-            // //callStopNetwork = (ServerManager.Objects.GetFromPending(ObjectId) == null);
-            // if (IsDeinitializing)
-            // {
-            //     if (IsHostStarted)
-            //     {
-            //         if (!_onStartClientCalled)
-            //             exitMethod = true;
-            //     }
-            //     else
-            //     {
-            //         exitMethod = true;
-            //     }
-            // }
-            
             
             if (NetworkObserver != null)
                 NetworkObserver.Deinitialize(destroyed: true);
-
-            // if (exitMethod)
-            // {
-            //     NetworkBehaviour_OnDestroy();
-            //     return;
-            // }
-
+            
             if (NetworkManager != null)
             {
                 //Server.
                 Deinitialize_Prediction(asServer: true);
-                NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, asServer: true);
+                NetworkManager.ServerManager.Objects.NetworkObjectDestroyed(this, asServer: true);
                 InvokeStopCallbacks(asServer: true, invokeSyncTypeCallbacks: true);
-
+ 
                 //Client.
                 Deinitialize_Prediction(asServer: false);
-                NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, asServer: false);
+                NetworkManager.ClientManager.Objects.NetworkObjectDestroyed(this, asServer: false);
                 InvokeStopCallbacks(asServer: false, invokeSyncTypeCallbacks: true);
             }
 
@@ -645,11 +616,15 @@ namespace FishNet.Object
         /// Preinitializes this object for the network.
         /// </summary>
         /// <param name="networkManager"></param>
+        //public static event Action DebugOnInitialize; //QUICK-TEST Uncomment this
+        
         internal void InitializeEarly(NetworkManager networkManager, int objectId, NetworkConnection owner, bool asServer)
         {
             //Only initialize this bit once even if clientHost.
             if (!networkManager.DoubleLogic(asServer))
             {
+                //DebugOnInitialize?.Invoke(); //QUICK-TEST Uncomment this
+                
                 State = NetworkObjectState.Spawned;
                 InitializeNetworkBehavioursIfDisabled();
                 IsDeinitializing = false;

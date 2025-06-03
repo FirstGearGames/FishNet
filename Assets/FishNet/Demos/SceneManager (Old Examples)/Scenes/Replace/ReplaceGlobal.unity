@@ -171,7 +171,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 1
   WasActiveDuringEdit: 1
-  WasActiveDuringEdit_Set: 1
+  WasActiveDuringEdit_Set1: 1
   <ComponentIndex>k__BackingField: 1
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
@@ -203,7 +203,7 @@ MonoBehaviour:
   <PrefabId>k__BackingField: 65535
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 0
-  <SceneId>k__BackingField: 3126788094
+  <SceneId>k__BackingField: 511705074
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 0}
@@ -386,7 +386,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
   WasActiveDuringEdit: 1
-  WasActiveDuringEdit_Set: 1
+  WasActiveDuringEdit_Set1: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
@@ -418,7 +418,7 @@ MonoBehaviour:
   <PrefabId>k__BackingField: 65535
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 0
-  <SceneId>k__BackingField: 853475314
+  <SceneId>k__BackingField: 3732856310
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 0}

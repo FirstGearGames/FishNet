@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using System;
 using FishNet.Configuring;
 using FishNet.Managing;
 using UnityEditor;
@@ -50,7 +51,7 @@ namespace FishNet.Editing
             //Only log the link when editor opens.
             if (Time.realtimeSinceStartup < 10f)
             {
-                string msg = @"Thank you for using Fish-Networking! If you have any feedback—whether it's suggestions, documentation, or performance-related—please let us know through our anonymous <a href=https://forms.gle/1g13VY4KKMnEqpkp6>Google feedback form!</a>";
+                string msg = $"Thank you for using Fish-Networking! If you have any feedback -- be suggestions, documentation, or performance related, let us know through our anonymous Google feedback form!{Environment.NewLine}" + @"<color=#67d419>https://forms.gle/1g13VY4KKMnEqpkp6</color>";
                 Debug.Log(msg);
             }
         }

@@ -607,7 +607,7 @@ namespace FishNet.Managing.Client
             //If predicted spawning is enabled also get reserved Ids.
             if (NetworkManager.ServerManager.GetAllowPredictedSpawning())
             {
-                byte count = reader.ReadUInt8Unpacked();
+                int count = (int)reader.ReadSignedPackedWhole();
                 Queue<int> q = Connection.PredictedObjectIds;
                 for (int i = 0; i < count; i++)
                     q.Enqueue(reader.ReadNetworkObjectId());

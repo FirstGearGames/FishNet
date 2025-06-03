@@ -243,10 +243,10 @@ namespace FishNet.Managing.Client
         /// Called when a NetworkObject runs Deactivate.
         /// </summary>
         /// <param name="nob"></param>
-        internal override void NetworkObjectUnexpectedlyDestroyed(NetworkObject nob, bool asServer)
+        internal override void NetworkObjectDestroyed(NetworkObject nob, bool asServer)
         {
             nob.RemoveClientRpcLinkIndexes();
-            base.NetworkObjectUnexpectedlyDestroyed(nob, asServer);
+            base.NetworkObjectDestroyed(nob, asServer);
         }
 
         /// <summary>

@@ -125,15 +125,15 @@ namespace FishNet.Managing.Server
         /// 
         /// </summary>
         [Tooltip("Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.")]
-        [Range(1, 100)]
+        [Range(1, MAXIMUM_RESERVED_OBJECT_IDS)]
         [SerializeField]
-        private byte _reservedObjectIds = 15;
+        private ushort _reservedObjectIds = 15;
 
         /// <summary>
         /// Maximum number of Ids to reserve on clients for predicted spawning. Higher values will allow clients to send more predicted spawns per second but may reduce availability of ObjectIds with high player counts.
         /// </summary>
         /// <returns></returns>
-        internal byte GetReservedObjectIds() => _reservedObjectIds;
+        internal ushort GetReservedObjectIds() => _reservedObjectIds;
 
         /// <summary>
         /// Default send rate for SyncTypes. A value of 0f will send changed values every tick.
@@ -232,6 +232,10 @@ namespace FishNet.Managing.Server
         /// Maximum value the remote client timeout can be set to.
         /// </summary>
         public const ushort MAXIMUM_REMOTE_CLIENT_TIMEOUT_DURATION = 1500;
+        /// <summary>
+        /// Maximum number of reserved object Ids allowed for predicted spawning.
+        /// </summary>
+        private const int MAXIMUM_RESERVED_OBJECT_IDS = 100;  //QUICK-TEST Increase this to 5000, save, within ServerManager set maximum reserved Ids to max.
         #endregion
 
         private void OnDestroy()
@@ -655,8 +659,8 @@ namespace FishNet.Managing.Server
             if (GetAllowPredictedSpawning())
             {
                 int count = Mathf.Min(Objects.GetObjectIdCache().Count, GetReservedObjectIds());
-                if (count > byte.MaxValue)
-                    count = byte.MaxValue;
+                if (count > MAXIMUM_RESERVED_OBJECT_IDS)
+                    count = MAXIMUM_RESERVED_OBJECT_IDS;
                 
                 List<int> ids = CollectionCaches<int>.RetrieveList();
                 for (int i = 0; i < count; i++)
@@ -664,8 +668,8 @@ namespace FishNet.Managing.Server
                     if (Objects.GetNextNetworkObjectId(out int nId))
                         ids.Add(nId);
                 }
-                
-                writer.WriteUInt8Unpacked((byte)ids.Count);
+
+                writer.WriteSignedPackedWhole(ids.Count);
                 foreach (int id in ids) 
                 {
                     writer.WriteNetworkObjectId(id);

@@ -1124,90 +1124,20 @@ namespace FishNet.Serializing
         /// Writes a packed whole number.
         /// </summary>
         /// <param name="value"></param>
+        /// <summary>
+        /// Writes a packed whole number.
+        /// </summary>
+        /// <param name="value"> </param>
         public void WriteUnsignedPackedWhole(ulong value)
         {
-            if (value < 0x80UL)
+            EnsureBufferLength(9);
+            while (value > 127)
             {
-                EnsureBufferLength(1);
-                _buffer[Position++] = (byte)(value & 0x7F);
-            }
-            else if (value < 0x4000UL)
-            {
-                EnsureBufferLength(2);
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
-                _buffer[Position++] = (byte)((value >> 7) & 0x7F);
-            }
-            else if (value < 0x200000UL)
-            {
-                EnsureBufferLength(3);
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
-                _buffer[Position++] = (byte)((value >> 14) & 0x7F);
-            }
-            else if (value < 0x10000000UL)
-            {
-                EnsureBufferLength(4);
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
-                _buffer[Position++] = (byte)((value >> 21) & 0x7F);
-            }
-            else if (value < 0x100000000UL)
-            {
-                EnsureBufferLength(5);
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
-                _buffer[Position++] = (byte)((value >> 28) & 0x0F);
-            }
-            else if (value < 0x10000000000UL)
-            {
-                EnsureBufferLength(6);
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
-                _buffer[Position++] = (byte)(0x10 | ((value >> 28) & 0x0F));
-                _buffer[Position++] = (byte)((value >> 32) & 0xFF);
-            }
-            else if (value < 0x1000000000000UL)
-            {
-                EnsureBufferLength(7);
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
-                _buffer[Position++] = (byte)(0x20 | ((value >> 28) & 0x0F));
-                _buffer[Position++] = (byte)((value >> 32) & 0xFF);
-                _buffer[Position++] = (byte)((value >> 40) & 0xFF);
-            }
-            else if (value < 0x100000000000000UL)
-            {
-                EnsureBufferLength(8);
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
-                _buffer[Position++] = (byte)(0x30 | ((value >> 28) & 0x0F));
-                _buffer[Position++] = (byte)((value >> 32) & 0xFF);
-                _buffer[Position++] = (byte)((value >> 40) & 0xFF);
-                _buffer[Position++] = (byte)((value >> 48) & 0xFF);
-            }
-            else
-            {
-                EnsureBufferLength(9);
-                _buffer[Position++] = (byte)(0x80 | (value & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 7) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 14) & 0x7F));
-                _buffer[Position++] = (byte)(0x80 | ((value >> 21) & 0x7F));
-                _buffer[Position++] = (byte)(0x40 | ((value >> 28) & 0x0F));
-                _buffer[Position++] = (byte)((value >> 32) & 0xFF);
-                _buffer[Position++] = (byte)((value >> 40) & 0xFF);
-                _buffer[Position++] = (byte)((value >> 48) & 0xFF);
-                _buffer[Position++] = (byte)((value >> 56) & 0xFF);
+                _buffer[Position++] = (byte)((value & 0x7F) | 0x80);
+                value >>= 7;
             }
 
+            _buffer[Position++] = (byte)(value & 0x7F);
             Length = Math.Max(Length, Position);
         }
         #endregion

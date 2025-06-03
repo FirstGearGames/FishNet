@@ -312,8 +312,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
-  WasActiveDuringEdit: 1
-  WasActiveDuringEdit_Set: 1
+  WasActiveDuringEdit: 0
+  WasActiveDuringEdit_Set1: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
@@ -344,7 +344,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 10
+  <PrefabId>k__BackingField: 13
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 5491988111533709812
   <SceneId>k__BackingField: 0

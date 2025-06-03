@@ -170,12 +170,15 @@ namespace FishNet.Managing.Statistic
         public static string FormatBytesToLargest(float bytes)
         {
             int decimalPlaces = 2;
-            if (bytes == 0)
+            if (bytes < 1f || float.IsInfinity(bytes) || float.IsNaN(bytes))
+                return ReturnZero();
+
+            string ReturnZero() 
             {
                 decimalPlaces = 0;
                 return string.Format("{0:n" + decimalPlaces + "} B/s", 0);
             }
-
+            
             // mag is 0 for bytes, 1 for KB, 2, for MB, etc.
             int mag = (int)Math.Log(bytes, 1024);
 
