@@ -7,10 +7,16 @@ assignees: ''
 
 ---
 
-# Important
-If General, Description, and Replication are not completed the issue will be closed immediately.
-See this link on how to most effectively create a bug report: https://fish-networking.gitbook.io/docs/manual/guides/creating-bug-reports
+**Please review our guide on creating a bug report:** https://fish-networking.gitbook.io/docs/guides/troubleshooting/creating-bug-reports
 
+:star: **Important**
+If General, Description, and Replication are not completed your report is at risk of being closed without review; we understand exceptions apply.
+
+:star: :star: **Really Important**
+Attachments or links to files larger than 2mB will not be considered and will be removed.
+
+*Template below this line
+---------------------------*
 **General**
 Unity version: 
 Fish-Networking version: 
