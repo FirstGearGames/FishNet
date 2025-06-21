@@ -25,6 +25,7 @@
       "url": "http://www.firstgeargames.com"
     },
     "dependencies": {
-      "com.unity.nuget.newtonsoft-json": "3.2.1"
+      "com.unity.nuget.newtonsoft-json": "3.2.1",
+      "com.unity.profiling.core": "1.0.2"
     }
   }
