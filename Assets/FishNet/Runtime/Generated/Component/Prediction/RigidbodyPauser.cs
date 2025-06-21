@@ -92,7 +92,7 @@ namespace FishNet.Component.Prediction
                 Velocity = Vector2.zero;
                 AngularVelocity = 0f;
                 Simulated = rb.simulated;
-                IsKinematic = rb.isKinematic;
+                IsKinematic = rb.bodyType == RigidbodyType2D.Static;
                 CollisionDetectionMode = rb.collisionDetectionMode;
             }
 
@@ -101,7 +101,7 @@ namespace FishNet.Component.Prediction
                 Velocity = rb.velocity;
                 AngularVelocity = rb.angularVelocity;
                 Simulated = rb.simulated;
-                IsKinematic = rb.isKinematic;
+                IsKinematic = rb.bodyType == RigidbodyType2D.Static;
                 CollisionDetectionMode = rb.collisionDetectionMode;
             }
         }
@@ -163,7 +163,7 @@ namespace FishNet.Component.Prediction
             List<Rigidbody> rigidbodies = CollectionCaches<Rigidbody>.RetrieveList();
             foreach (Rigidbody rb in rbs)
                 rigidbodies.Add(rb);
-            
+
             UpdateRigidbodies(rigidbodies);
 
             CollectionCaches<Rigidbody>.Store(rigidbodies);
@@ -171,7 +171,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Assigns rigidbodies manually and initializes component.
         /// </summary>
-        private void UpdateRigidbodies(List<Rigidbody> rbs) 
+        private void UpdateRigidbodies(List<Rigidbody> rbs)
         {
             _rigidbodyDatas.Clear();
 
@@ -189,7 +189,7 @@ namespace FishNet.Component.Prediction
             List<Rigidbody2D> rigidbodies = CollectionCaches<Rigidbody2D>.RetrieveList();
             foreach (Rigidbody2D rb in rbs)
                 rigidbodies.Add(rb);
-            
+
             UpdateRigidbodies2D(rigidbodies);
 
             CollectionCaches<Rigidbody2D>.Store(rigidbodies);
@@ -197,7 +197,7 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Assigns rigidbodies manually and initializes component.
         /// </summary>
-        private void UpdateRigidbodies2D(List<Rigidbody2D> rbs) 
+        private void UpdateRigidbodies2D(List<Rigidbody2D> rbs)
         {
             _rigidbody2dDatas.Clear();
 
@@ -220,7 +220,7 @@ namespace FishNet.Component.Prediction
             if (rbType == RigidbodyType.Rigidbody)
             {
                 List<Rigidbody> rigidbodies = CollectionCaches<Rigidbody>.RetrieveList();
-                
+
                 if (getInChildren)
                 {
                     Rigidbody[] rbs = t.GetComponentsInChildren<Rigidbody>();
@@ -233,7 +233,7 @@ namespace FishNet.Component.Prediction
                     if (rb != null)
                         rigidbodies.Add(rb);
                 }
-                
+
                 UpdateRigidbodies(rigidbodies);
                 CollectionCaches<Rigidbody>.Store(rigidbodies);
             }
@@ -241,7 +241,7 @@ namespace FishNet.Component.Prediction
             else
             {
                 List<Rigidbody2D> rigidbodies = CollectionCaches<Rigidbody2D>.RetrieveList();
-                
+
                 if (getInChildren)
                 {
                     Rigidbody2D[] rbs = t.GetComponentsInChildren<Rigidbody2D>();
@@ -254,7 +254,7 @@ namespace FishNet.Component.Prediction
                     if (rb != null)
                         rigidbodies.Add(rb);
                 }
-                
+
                 UpdateRigidbodies2D(rigidbodies);
                 CollectionCaches<Rigidbody2D>.Store(rigidbodies);
             }
@@ -327,8 +327,7 @@ namespace FishNet.Component.Prediction
                     rbData.Update(rb);
                     _rigidbody2dDatas[index] = rbData;
                     rb.collisionDetectionMode = CollisionDetectionMode2D.Discrete;
-                    rb.isKinematic = true;
-                    rb.simulated = false;
+                    rb.bodyType = RigidbodyType2D.Static;
 
                     return true;
                 }
@@ -408,11 +407,11 @@ namespace FishNet.Component.Prediction
                         return true;
 
                     // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                    rb.isKinematic = rbData.IsKinematic;
+                    rb.bodyType = rbData.IsKinematic ? RigidbodyType2D.Static : RigidbodyType2D.Dynamic;
                     // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                     rb.simulated = rbData.Simulated;
                     rb.collisionDetectionMode = rbData.CollisionDetectionMode;
-                    if (!rb.isKinematic)
+                    if (rb.bodyType != RigidbodyType2D.Static)
                     {
                         rb.velocity = rbData.Velocity;
                         rb.angularVelocity = rbData.AngularVelocity;

@@ -825,8 +825,7 @@ namespace FishNet.Component.Transforming
                         _initializedRigidbodyInterpolation2d = c.interpolation;
 
                     bool isKinematic = CanMakeKinematic();
-                    c.isKinematic = isKinematic;
-                    c.simulated = !isKinematic;
+                    c.bodyType = isKinematic ? RigidbodyType2D.Static : RigidbodyType2D.Dynamic;
 
                     if (isKinematic)
                         c.interpolation = RigidbodyInterpolation2D.None;
@@ -1620,16 +1619,16 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-                    
-                        /* If everything matches up then end queue.
-                         * Otherwise let it play out until stuff
-                         * aligns. Generally the time remaining is enough
-                         * but every once in awhile something goes funky
-                         * and it's thrown off. */
-                        if (!HasChanged(td))
-                            _currentGoalData = null;
-                        OnInterpolationComplete?.Invoke();
-                        
+
+                    /* If everything matches up then end queue.
+                     * Otherwise let it play out until stuff
+                     * aligns. Generally the time remaining is enough
+                     * but every once in awhile something goes funky
+                     * and it's thrown off. */
+                    if (!HasChanged(td))
+                        _currentGoalData = null;
+                    OnInterpolationComplete?.Invoke();
+
                 }
             }
         }
@@ -2135,7 +2134,7 @@ namespace FishNet.Component.Transforming
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-            
+
         }
 
         /// <summary>

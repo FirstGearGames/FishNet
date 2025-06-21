@@ -8,7 +8,7 @@ namespace FishNet.Component.Prediction
     [UseGlobalCustomSerializer]
     [Preserve]
     public struct RigidbodyState
-    {        
+    {
         public Vector3 Position;
         public Quaternion Rotation;
         public bool IsKinematic;
@@ -51,7 +51,7 @@ namespace FishNet.Component.Prediction
             Velocity = rb.velocity;
             AngularVelocity = rb.angularVelocity;
             Simulated = simulated;
-            IsKinematic = rb.isKinematic;
+            IsKinematic = rb.bodyType == RigidbodyType2D.Static;
         }
 
         public Rigidbody2DState(Rigidbody2D rb)
@@ -61,7 +61,7 @@ namespace FishNet.Component.Prediction
             Velocity = rb.velocity;
             AngularVelocity = rb.angularVelocity;
             Simulated = rb.simulated;
-            IsKinematic = rb.isKinematic;
+            IsKinematic = rb.bodyType == RigidbodyType2D.Static;
         }
     }
 
