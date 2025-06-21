@@ -92,7 +92,7 @@ namespace FishNet.Component.Prediction
                 Velocity = Vector2.zero;
                 AngularVelocity = 0f;
                 Simulated = rb.simulated;
-                IsKinematic = rb.isKinematic;
+                IsKinematic = rb.bodyType == RigidbodyType2D.Static;
                 CollisionDetectionMode = rb.collisionDetectionMode;
             }
 
@@ -101,7 +101,7 @@ namespace FishNet.Component.Prediction
                 Velocity = rb.velocity;
                 AngularVelocity = rb.angularVelocity;
                 Simulated = rb.simulated;
-                IsKinematic = rb.isKinematic;
+                IsKinematic = rb.bodyType == RigidbodyType2D.Static;
                 CollisionDetectionMode = rb.collisionDetectionMode;
             }
         }
@@ -327,8 +327,7 @@ namespace FishNet.Component.Prediction
                     rbData.Update(rb);
                     _rigidbody2dDatas[index] = rbData;
                     rb.collisionDetectionMode = CollisionDetectionMode2D.Discrete;
-                    rb.isKinematic = true;
-                    rb.simulated = false;
+                    rb.bodyType = RigidbodyType2D.Static;
 
                     return true;
                 }
@@ -407,12 +406,10 @@ namespace FishNet.Component.Prediction
                     if (rbData.IsKinematic || !rbData.Simulated)
                         return true;
 
-                    // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                    rb.isKinematic = rbData.IsKinematic;
-                    // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                    rb.bodyType = rbData.IsKinematic ? RigidbodyType2D.Static : RigidbodyType2D.Dynamic;
                     rb.simulated = rbData.Simulated;
                     rb.collisionDetectionMode = rbData.CollisionDetectionMode;
-                    if (!rb.isKinematic)
+                    if (rb.bodyType != RigidbodyType2D.Static)
                     {
                         rb.velocity = rbData.Velocity;
                         rb.angularVelocity = rbData.AngularVelocity;
