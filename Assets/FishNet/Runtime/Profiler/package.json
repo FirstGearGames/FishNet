@@ -1,0 +1,12 @@
+{
+    "name": "com.fishnet.fishnet-profiler",
+    "displayName": "FishNet Profiler",
+    "version": "1.0.0",
+    "unity": "2022.3",
+    "description": "Network profiler for FishNet",
+    "author": "FishNet",
+    "dependencies": {
+        "com.unity.profiling.core": "1.0.2"
+    },
+    "samples": []
+}
