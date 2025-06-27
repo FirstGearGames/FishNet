@@ -30,7 +30,4 @@ Discord: https://discord.gg/Ta9HgDh4Hj
   Between 15-25% of monthly profits are reinvested into Fish-Networking. The use of these funds can range from tipping our helpers to hiring coders to support more third-party extensions or complete backlogged features.
 
 # Donation Options
-
-  Github sponsor (preferred): https://github.com/sponsors/FirstGearGames
-  
-  Patreon: https://www.patreon.com/firstgeargames
+  Becoming a supporter and accessing perks: https://fish-networking.gitbook.io/docs/overview/readme/pro-projects-and-support
