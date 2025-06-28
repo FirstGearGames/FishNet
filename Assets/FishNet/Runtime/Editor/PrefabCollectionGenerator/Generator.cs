@@ -325,6 +325,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             foreach (SpecifiedFolder sf in specifiedFolders)
                 foundNobs.AddRange(GetNetworkObjects(sf, settings));
 
+            foundNobs = foundNobs.OrderBy(nob => nob.AssetPathHash).ToList();
             return foundNobs;
         }
 
