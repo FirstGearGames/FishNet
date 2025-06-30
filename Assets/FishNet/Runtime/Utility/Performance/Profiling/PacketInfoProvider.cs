@@ -1,4 +1,6 @@
-﻿using FishNet.Object;
+﻿using System;
+using System.Collections.Generic;
+using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Object.Synchronizing;
 using FishNet.Transporting;
@@ -8,62 +10,8 @@ namespace FishNet.Utility.Performance.Profiling
 
     public static class PacketInfoProvider
     {
-        // private readonly NetworkWorld _world;
-        //
-        // public PacketInfoProvider(NetworkWorld world)
-        // {
-        //     _world = world;
-        // }
-        //
-        // public uint? GetNetId(NetworkDiagnostics.MessageInfo info)
-        // {
-        //     switch (info.message)
-        //     {
-        //         case RpcMessage msg: return msg.NetId;
-        //         case RpcWithReplyMessage msg: return msg.NetId;
-        //         case SpawnMessage msg: return msg.NetId;
-        //         case RemoveAuthorityMessage msg: return msg.NetId;
-        //         case ObjectDestroyMessage msg: return msg.NetId;
-        //         case ObjectHideMessage msg: return msg.NetId;
-        //         case UpdateVarsMessage msg: return msg.NetId;
-        //         default: return default;
-        //     }
-        // }
-        //
-        // public NetworkIdentity GetNetworkIdentity(uint? netId)
-        // {
-        //     if (!netId.HasValue)
-        //         return null;
-        //
-        //     if (_world == null)
-        //         return null;
-        //
-        //     return _world.TryGetIdentity(netId.Value, out var identity)
-        //         ? identity
-        //         : null;
-        // }
-        //
-        // public string GetRpcName(NetworkDiagnostics.MessageInfo info)
-        // {
-        //     switch (info.message)
-        //     {
-        //         case RpcMessage msg:
-        //             return GetRpcName(msg.NetId, msg.FunctionIndex);
-        //         case RpcWithReplyMessage msg:
-        //             return GetRpcName(msg.NetId, msg.FunctionIndex);
-        //         default: return string.Empty;
-        //     }
-        // }
-        //
-        // private string GetRpcName(uint netId, int functionIndex)
-        // {
-        //     var identity = GetNetworkIdentity(netId);
-        //     if (identity == null)
-        //         return string.Empty;
-        //
-        //     var rpc = identity.RemoteCallCollection.GetAbsolute(functionIndex);
-        //     return rpc.Name;
-        // }
+        private static Dictionary<Type, List<string>> SyncTypeNamesCache = new();
+        private static Dictionary<Type, List<string>> RpcNamesCache = new();
 
         public static string GetPropertyName(NetworkBehaviour nb, int propertyHash, PacketId packetId)
         {
@@ -72,69 +20,83 @@ namespace FishNet.Utility.Performance.Profiling
             {
                 case PacketId.SyncObject:
                 case PacketId.SyncVar:
-                    int syncTypeCount = 0;
-                    bool foundSyncType = false;
-                    foreach (var fieldInfo in nb.GetType().GetFields())
+                    if (SyncTypeNamesCache.TryGetValue(nb.GetType(), out var syncTypeNames))
                     {
-                        foreach (var customAttribute in fieldInfo.CustomAttributes)
+                        if (propertyHash < syncTypeNames.Count)
                         {
-                            if (customAttribute.AttributeType.FullName == typeof(SyncVarAttribute).FullName ||
-                                customAttribute.AttributeType.FullName == typeof(SyncObjectAttribute).FullName)
+                            res = syncTypeNames[propertyHash];
+                        }
+                    }
+                    else
+                    {
+                        List<string> typeNamesList = new();
+                        int syncTypeCount = 0;
+                        foreach (var fieldInfo in nb.GetType().GetFields())
+                        {
+                            foreach (var customAttribute in fieldInfo.CustomAttributes)
                             {
-                                if (syncTypeCount == propertyHash)
+                                if (customAttribute.AttributeType.FullName == typeof(SyncVarAttribute).FullName ||
+                                    customAttribute.AttributeType.FullName == typeof(SyncObjectAttribute).FullName)
                                 {
-                                    res = fieldInfo.Name;
-                                    foundSyncType = true;
-                                    break;
+                                    if (syncTypeCount == propertyHash)
+                                    {
+                                        res = fieldInfo.Name;
+                                    }
+                                    syncTypeCount++;
+                                    typeNamesList.Add(fieldInfo.Name);
                                 }
-                                syncTypeCount++;
                             }
                         }
 
-                        if (foundSyncType)
-                        {
-                            break;
-                        }
+                        SyncTypeNamesCache[nb.GetType()] = typeNamesList;
                     }
                     break;
                 case PacketId.Reconcile:
                 case PacketId.ObserversRpc:
                 case PacketId.TargetRpc:
-                    int rpcCount = 0;
-                    bool foundRpc = false;
-                    // Iterate the replicates first, that's what the codegen does
-                    foreach (var fieldInfo in nb.GetType().GetMethods())
+                    if (RpcNamesCache.TryGetValue(nb.GetType(), out var rpcNames))
                     {
-                        foreach (var customAttribute in fieldInfo.CustomAttributes)
+                        if (propertyHash < rpcNames.Count)
                         {
-                            if (customAttribute.AttributeType.FullName == typeof(ReplicateAttribute).FullName)
-                            {
-                                rpcCount++;
-                            }
+                            res = rpcNames[propertyHash];
                         }
                     }
-                    foreach (var methodInfo in nb.GetType().GetMethods())
+                    else
                     {
-                        foreach (var customAttribute in methodInfo.CustomAttributes)
+                        List<string> rpcNamesList = new();
+                        int rpcCount = 0;
+                        // Iterate the replicates first, that's what the codegen does
+                        foreach (var methodInfo in nb.GetType().GetMethods())
                         {
-                            if (customAttribute.AttributeType.FullName == typeof(ObserversRpcAttribute).FullName ||
-                                customAttribute.AttributeType.FullName == typeof(TargetRpcAttribute).FullName ||
-                                customAttribute.AttributeType.FullName == typeof(ReconcileAttribute).FullName)
+                            foreach (var customAttribute in methodInfo.CustomAttributes)
                             {
-                                if (rpcCount == propertyHash)
+                                if (customAttribute.AttributeType.FullName == typeof(ReplicateAttribute).FullName)
                                 {
-                                    res = methodInfo.Name;
-                                    foundRpc = true;
-                                    break;
+                                    rpcNamesList.Add(methodInfo.Name);
+                                    rpcCount++;
                                 }
-                                rpcCount++;
+                            }
+                        }
+                        foreach (var methodInfo in nb.GetType().GetMethods())
+                        {
+                            foreach (var customAttribute in methodInfo.CustomAttributes)
+                            {
+                                if (customAttribute.AttributeType.FullName == typeof(ObserversRpcAttribute).FullName ||
+                                    customAttribute.AttributeType.FullName == typeof(TargetRpcAttribute).FullName ||
+                                    customAttribute.AttributeType.FullName == typeof(ReconcileAttribute).FullName)
+                                {
+                                    if (rpcCount == propertyHash)
+                                    {
+                                        res = methodInfo.Name;
+                                        break;
+                                    }
+                                    rpcCount++;
+                                    rpcNamesList.Add(methodInfo.Name);
+                                }
                             }
                         }
 
-                        if (foundRpc)
-                        {
-                            break;
-                        }
+                        RpcNamesCache[nb.GetType()] = rpcNamesList;
                     }
                     break;
             }
