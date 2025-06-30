@@ -43,11 +43,7 @@ namespace FishNet.Utility.Performance.Profiling
             var frame = _frames.GetFrame(_frameIndex);
             frame.Messages.Add(
                 new PacketInfo(
-                    new PacketInfoProvider(), 
-                    args.NetworkBehaviour?.name, 
-                    args.PacketId,
-                    args.DataLength,
-                    1,
+                    args,
                     frame.Messages.Count));
             frame.Bytes+= args.DataLength;
         }

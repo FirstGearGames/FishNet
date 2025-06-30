@@ -24,16 +24,16 @@ namespace FishNet.Utility.Performance.Profiling
         public string PacketIdName => ((PacketId)_packetId).ToString();
         public string RpcName => _rpcName;
 
-        public PacketInfo(IPacketInfoProvider provider, string objectName, PacketId packetId, int length, int count, int order)
+        public PacketInfo(PacketProcessingArgs args, int order)
         {
             _order = order;
-            _length = length;
-            _count = count;
-            _packetId = (int)packetId;
-            _objectName = objectName;
+            _length = args.DataLength;
+            _count = 1;
+            _packetId = (int)args.PacketId;
+            _objectName = args.NetworkBehaviour.name;
             // var obj = provider.GetNetworkIdentity(id);
             // _objectName = obj != null ? obj.name : null;
-            // _rpcName = provider.GetRpcName(msg);
+            _rpcName = PacketInfoProvider.GetPropertyName(args.NetworkBehaviour, args.PropertyHash, args.PacketId);
         }
     }
 }

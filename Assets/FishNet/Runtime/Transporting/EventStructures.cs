@@ -108,11 +108,14 @@ namespace FishNet.Transporting
 
         public int DataLength;
 
-        public PacketProcessingArgs(NetworkBehaviour nb, PacketId packetId, int dataLength)
+        public int PropertyHash;
+
+        public PacketProcessingArgs(NetworkBehaviour nb, int propertyHash, PacketId packetId, int dataLength)
         {
             NetworkBehaviour = nb;
             PacketId = packetId;
             DataLength = dataLength;
+            PropertyHash = propertyHash;
         }
     }
 

@@ -165,6 +165,19 @@ namespace FishNet.Object
                 bRpc.Writer.Store();
             _bufferedRpcs.Clear();
         }
+        
+        /// <summary>
+        /// Reads a RPC hash.
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        internal uint PeekRpcHash(PooledReader reader)
+        {
+            if (_rpcHashSize == 1)
+                return reader.PeekByte();
+            else
+                return reader.PeekUInt16();
+        }
 
         /// <summary>
         /// Reads a RPC hash.

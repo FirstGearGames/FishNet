@@ -8,7 +8,7 @@ namespace Fishnet.NetworkProfiler.ModuleGUI.Messages
     {
         private const int EXPAND_WIDTH = 25;
         private const int FULL_NAME_WIDTH = 300;
-        private const int NAME_WIDTH = 150;
+        private const int NAME_WIDTH = 450;
         private const int OTHER_WIDTH = 100;
 
         private readonly ColumnInfo[] _columns;
@@ -20,7 +20,7 @@ namespace Fishnet.NetworkProfiler.ModuleGUI.Messages
         public readonly ColumnInfo BytesPerMessage;
         //public readonly ColumnInfo NetId;
         public readonly ColumnInfo ObjectName;
-        //public readonly ColumnInfo RpcName;
+        public readonly ColumnInfo PropertyName;
 
         public Columns()
         {
@@ -44,10 +44,10 @@ namespace Fishnet.NetworkProfiler.ModuleGUI.Messages
             ObjectName = new ColumnInfo("GameObject Name", NAME_WIDTH, x => x.ObjectName);
             ObjectName.AddSort(null, m => m.ObjectName);
 
-            // RpcName = new ColumnInfo("RPC Name (hover for full name)", FULL_NAME_WIDTH, x => RpcShortName(x.RpcName));
-            // RpcName.AddSort(null, m => m.RpcName);
-            // // full name in tooltip
-            // RpcName.AddToolTip(m => m.RpcName);
+            PropertyName = new ColumnInfo("Prop Name (hover for full name)", FULL_NAME_WIDTH, x => RpcShortName(x.RpcName));
+            PropertyName.AddSort(null, m => m.RpcName);
+            // full name in tooltip
+            PropertyName.AddToolTip(m => m.RpcName);
 
             _columns = new ColumnInfo[] {
 
@@ -58,7 +58,7 @@ namespace Fishnet.NetworkProfiler.ModuleGUI.Messages
                 BytesPerMessage,
                 //NetId,
                 ObjectName,
-               // RpcName,
+                PropertyName,
             };
         }
 

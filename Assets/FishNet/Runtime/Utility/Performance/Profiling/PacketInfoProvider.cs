@@ -1,16 +1,12 @@
-﻿namespace FishNet.Utility.Performance.Profiling
-{
-    /// <summary>
-    /// Returns information about NetworkMessage
-    /// </summary>
-    public interface IPacketInfoProvider
-    {
-        // uint? GetNetId(NetworkDiagnostics.MessageInfo info);
-        // NetworkIdentity GetNetworkIdentity(uint? netId);
-        // string GetRpcName(NetworkDiagnostics.MessageInfo info);
-    }
+﻿using FishNet.Object;
+using FishNet.Object.Prediction;
+using FishNet.Object.Synchronizing;
+using FishNet.Transporting;
 
-    public class PacketInfoProvider : IPacketInfoProvider
+namespace FishNet.Utility.Performance.Profiling
+{
+
+    public static class PacketInfoProvider
     {
         // private readonly NetworkWorld _world;
         //
@@ -68,5 +64,82 @@
         //     var rpc = identity.RemoteCallCollection.GetAbsolute(functionIndex);
         //     return rpc.Name;
         // }
+
+        public static string GetPropertyName(NetworkBehaviour nb, int propertyHash, PacketId packetId)
+        {
+            string res = "";
+            switch (packetId)
+            {
+                case PacketId.SyncObject:
+                case PacketId.SyncVar:
+                    int syncTypeCount = 0;
+                    bool foundSyncType = false;
+                    foreach (var fieldInfo in nb.GetType().GetFields())
+                    {
+                        foreach (var customAttribute in fieldInfo.CustomAttributes)
+                        {
+                            if (customAttribute.AttributeType.FullName == typeof(SyncVarAttribute).FullName ||
+                                customAttribute.AttributeType.FullName == typeof(SyncObjectAttribute).FullName)
+                            {
+                                if (syncTypeCount == propertyHash)
+                                {
+                                    res = fieldInfo.Name;
+                                    foundSyncType = true;
+                                    break;
+                                }
+                                syncTypeCount++;
+                            }
+                        }
+
+                        if (foundSyncType)
+                        {
+                            break;
+                        }
+                    }
+                    break;
+                case PacketId.Reconcile:
+                case PacketId.ObserversRpc:
+                case PacketId.TargetRpc:
+                    int rpcCount = 0;
+                    bool foundRpc = false;
+                    // Iterate the replicates first, that's what the codegen does
+                    foreach (var fieldInfo in nb.GetType().GetMethods())
+                    {
+                        foreach (var customAttribute in fieldInfo.CustomAttributes)
+                        {
+                            if (customAttribute.AttributeType.FullName == typeof(ReplicateAttribute).FullName)
+                            {
+                                rpcCount++;
+                            }
+                        }
+                    }
+                    foreach (var methodInfo in nb.GetType().GetMethods())
+                    {
+                        foreach (var customAttribute in methodInfo.CustomAttributes)
+                        {
+                            if (customAttribute.AttributeType.FullName == typeof(ObserversRpcAttribute).FullName ||
+                                customAttribute.AttributeType.FullName == typeof(TargetRpcAttribute).FullName ||
+                                customAttribute.AttributeType.FullName == typeof(ReconcileAttribute).FullName)
+                            {
+                                if (rpcCount == propertyHash)
+                                {
+                                    res = methodInfo.Name;
+                                    foundRpc = true;
+                                    break;
+                                }
+                                rpcCount++;
+                            }
+                        }
+
+                        if (foundRpc)
+                        {
+                            break;
+                        }
+                    }
+                    break;
+            }
+
+            return res;
+        }
     }
 }

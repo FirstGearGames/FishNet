@@ -266,6 +266,20 @@ namespace FishNet.Serializing
         {
             return _buffer[Position];
         }
+        
+        /// <summary>
+        /// Returns the next uint16 to be read.
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ushort PeekUInt16()
+        {
+            ushort result = 0;
+            result |= _buffer[Position];
+            result |= (ushort)(_buffer[Position+1] << 8);
+
+            return result;
+        }
 
         /// <summary>
         /// Skips a number of bytes in the reader.
