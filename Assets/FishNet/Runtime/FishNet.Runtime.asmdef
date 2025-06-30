@@ -1,8 +1,10 @@
 {
     "name": "FishNet.Runtime",
+    "rootNamespace": "",
     "references": [
         "GUID:894a6cc6ed5cd2645bb542978cbed6a9",
-        "GUID:17013b2a21298c14ea4808251346a38a"
+        "GUID:17013b2a21298c14ea4808251346a38a",
+        "GUID:b46779583a009f04ba9f5f31d0e7e6ac"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

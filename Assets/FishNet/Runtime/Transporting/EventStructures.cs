@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using FishNet.Object;
 
 namespace FishNet.Transporting
 {
@@ -93,6 +94,25 @@ namespace FishNet.Transporting
             Data = data;
             Channel = channel;
             TransportIndex = transportIndex;
+        }
+    }
+    
+    /// <summary>
+    /// Container about data received on the local client.
+    /// </summary>
+    public struct PacketProcessingArgs
+    {
+        public NetworkBehaviour NetworkBehaviour;
+
+        public PacketId PacketId;
+
+        public int DataLength;
+
+        public PacketProcessingArgs(NetworkBehaviour nb, PacketId packetId, int dataLength)
+        {
+            NetworkBehaviour = nb;
+            PacketId = packetId;
+            DataLength = dataLength;
         }
     }
 

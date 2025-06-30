@@ -46,6 +46,10 @@ namespace FishNet.Managing.Client
         /// </summary>
         public event Action<ConnectedClientsArgs> OnConnectedClients;
         /// <summary>
+        /// Called when the client processes a packet.
+        /// </summary>
+        public event Action<PacketProcessingArgs> OnPacketRead;
+        /// <summary>
         /// True if the client connection is connected to the server.
         /// </summary>
         public bool Started { get; private set; }
@@ -152,6 +156,7 @@ namespace FishNet.Managing.Client
             NetworkManager = manager;
             Objects = new ClientObjects(manager);
             Objects.SubscribeToSceneLoaded(true);
+            Objects.OnPacketRead += (args) => OnPacketRead?.Invoke(args);
             /* Unsubscribe before subscribing.
              * Shouldn't be an issue but better safe than sorry. */
             SubscribeToEvents(false);
@@ -400,6 +405,7 @@ namespace FishNet.Managing.Client
                     reader.Initialize(NetworkManager.TransportManager.ProcessIntermediateIncoming(fullMessage, true), NetworkManager, dataSource);
                 else
                     reader.Initialize(fullMessage, NetworkManager, dataSource);
+                OnPacketRead?.Invoke(new PacketProcessingArgs(null, PacketId.Split, expectedMessages*1500));
             }
             //Not split.
             else
