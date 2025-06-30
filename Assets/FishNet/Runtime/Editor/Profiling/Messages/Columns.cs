@@ -7,6 +7,7 @@ namespace Fishnet.NetworkProfiler.ModuleGUI.Messages
     internal sealed class Columns : IEnumerable<ColumnInfo>
     {
         private const int EXPAND_WIDTH = 25;
+        private const int SHORT_NAME_WIDTH = 75;
         private const int FULL_NAME_WIDTH = 300;
         private const int NAME_WIDTH = 450;
         private const int OTHER_WIDTH = 100;
@@ -26,7 +27,7 @@ namespace Fishnet.NetworkProfiler.ModuleGUI.Messages
         {
             Expand = new ColumnInfo("+", EXPAND_WIDTH, x => "");
 
-            FullName = new ColumnInfo("Packet Type", FULL_NAME_WIDTH, x => x.PacketIdName);
+            FullName = new ColumnInfo("Packet Type", SHORT_NAME_WIDTH, x => x.PacketIdName);
             FullName.AddSort(m => m.Name, m => m.PacketIdName);
 
             TotalBytes = new ColumnInfo("Total Bytes", OTHER_WIDTH, x => x.TotalBytes.ToString());
